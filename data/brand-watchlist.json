@@ -1,0 +1,1702 @@
+[
+    {
+        "id":  "무신사",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "무신사",
+        "country":  "KR/Global",
+        "referenceStrength":  "패션 플랫폼/남녀 코디/세일 후킹",
+        "hookPattern":  "랭킹·단독특가·브랜드명 후킹",
+        "keyword":  "무신사",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%AC%B4%EC%8B%A0%EC%82%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%AC%B4%EC%8B%A0%EC%82%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "29cm",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "29CM",
+        "country":  "KR/Global",
+        "referenceStrength":  "감도 높은 룩북/브랜드 큐레이션",
+        "hookPattern":  "무드컷·카피톤·기획전",
+        "keyword":  "29CM",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=29CM\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=29CM"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "w컨셉",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "W컨셉",
+        "country":  "KR/Global",
+        "referenceStrength":  "디자이너 브랜드/여성 패션",
+        "hookPattern":  "브랜드 감도·시즌 신상",
+        "keyword":  "W컨셉",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=W%EC%BB%A8%EC%85%89\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=W%EC%BB%A8%EC%85%89"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "에이블리",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "에이블리",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 패션 앱/가격·트렌드",
+        "hookPattern":  "저가·추천템·앱다운로드",
+        "keyword":  "에이블리",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%97%90%EC%9D%B4%EB%B8%94%EB%A6%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%97%90%EC%9D%B4%EB%B8%94%EB%A6%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "지그재그",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "지그재그",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 패션 앱/트렌드 큐레이션",
+        "hookPattern":  "혜택·카테고리·랭킹",
+        "keyword":  "지그재그",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A7%80%EA%B7%B8%EC%9E%AC%EA%B7%B8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A7%80%EA%B7%B8%EC%9E%AC%EA%B7%B8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "브랜디",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "브랜디",
+        "country":  "KR/Global",
+        "referenceStrength":  "10~20대 여성 패션/빠른 트렌드",
+        "hookPattern":  "가격소구·오늘출발",
+        "keyword":  "브랜디",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%B8%8C%EB%9E%9C%EB%94%94\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%B8%8C%EB%9E%9C%EB%94%94"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "퀸잇",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "퀸잇",
+        "country":  "KR/Global",
+        "referenceStrength":  "4050 여성 패션 타깃",
+        "hookPattern":  "연령 공감·핏·퀄리티",
+        "keyword":  "퀸잇",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%80%B8%EC%9E%87\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%80%B8%EC%9E%87"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "하고",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "하고",
+        "country":  "KR/Global",
+        "referenceStrength":  "국내 디자이너 브랜드 큐레이션",
+        "hookPattern":  "브랜드 스토리·단독 할인",
+        "keyword":  "하고",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%95%98%EA%B3%A0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%95%98%EA%B3%A0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "lf몰",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "LF몰",
+        "country":  "KR/Global",
+        "referenceStrength":  "프리미엄 패션/브랜드 세일",
+        "hookPattern":  "브랜드 파워·시즌오프",
+        "keyword":  "LF몰",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=LF%EB%AA%B0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=LF%EB%AA%B0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "eql",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "EQL",
+        "country":  "KR/Global",
+        "referenceStrength":  "온라인 편집샵/감도형 콘텐츠",
+        "hookPattern":  "룩북·기획전·프리미엄",
+        "keyword":  "EQL",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=EQL\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=EQL"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "dint",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "DINT",
+        "country":  "KR/Global",
+        "referenceStrength":  "포멀/하객룩/오피스룩",
+        "hookPattern":  "상황별 룩·고급스러운 무드",
+        "keyword":  "DINT",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=DINT\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=DINT"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "스토리나인",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "스토리나인",
+        "country":  "KR/Global",
+        "referenceStrength":  "3040 여성 데일리룩",
+        "hookPattern":  "실용성·체형커버·시즌 코디",
+        "keyword":  "스토리나인",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%8A%A4%ED%86%A0%EB%A6%AC%EB%82%98%EC%9D%B8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%8A%A4%ED%86%A0%EB%A6%AC%EB%82%98%EC%9D%B8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "젬마월드",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "젬마월드",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 데일리/오피스룩",
+        "hookPattern":  "기본템·핏·컬러",
+        "keyword":  "젬마월드",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A0%AC%EB%A7%88%EC%9B%94%EB%93%9C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A0%AC%EB%A7%88%EC%9B%94%EB%93%9C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "리리앤코",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "리리앤코",
+        "country":  "KR/Global",
+        "referenceStrength":  "빅사이즈/여성 패션",
+        "hookPattern":  "사이즈·체형커버·착용컷",
+        "keyword":  "리리앤코",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A6%AC%EB%A6%AC%EC%95%A4%EC%BD%94\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A6%AC%EB%A6%AC%EC%95%A4%EC%BD%94"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "블랙업",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "블랙업",
+        "country":  "KR/Global",
+        "referenceStrength":  "트렌디 여성 패션",
+        "hookPattern":  "힙한 무드·모델컷",
+        "keyword":  "블랙업",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%B8%94%EB%9E%99%EC%97%85\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%B8%94%EB%9E%99%EC%97%85"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "더무드",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "더무드",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 데일리룩/쇼핑몰",
+        "hookPattern":  "가격·신상·코디",
+        "keyword":  "더무드",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%8D%94%EB%AC%B4%EB%93%9C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%8D%94%EB%AC%B4%EB%93%9C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "디프니",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "디프니",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 쇼핑몰/데일리룩",
+        "hookPattern":  "신상·코디세트",
+        "keyword":  "디프니",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%94%94%ED%94%84%EB%8B%88\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%94%94%ED%94%84%EB%8B%88"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "라룸",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "라룸",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 의류/심플룩",
+        "hookPattern":  "미니멀·데일리",
+        "keyword":  "라룸",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%9D%BC%EB%A3%B8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%9D%BC%EB%A3%B8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "저스트원",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "저스트원",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 데일리웨어",
+        "hookPattern":  "편한핏·실용성",
+        "keyword":  "저스트원",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A0%80%EC%8A%A4%ED%8A%B8%EC%9B%90\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A0%80%EC%8A%A4%ED%8A%B8%EC%9B%90"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "저스트보니",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "저스트보니",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 의류/캐주얼",
+        "hookPattern":  "신상·가격소구",
+        "keyword":  "저스트보니",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A0%80%EC%8A%A4%ED%8A%B8%EB%B3%B4%EB%8B%88\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A0%80%EC%8A%A4%ED%8A%B8%EB%B3%B4%EB%8B%88"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "퓨어다",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "퓨어다",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 데일리/러블리 무드",
+        "hookPattern":  "감성컷·봄/여름룩",
+        "keyword":  "퓨어다",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%93%A8%EC%96%B4%EB%8B%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%93%A8%EC%96%B4%EB%8B%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "커먼유니크",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "커먼유니크",
+        "country":  "KR/Global",
+        "referenceStrength":  "트렌디 여성 패션",
+        "hookPattern":  "유니크핏·신상",
+        "keyword":  "커먼유니크",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%BB%A4%EB%A8%BC%EC%9C%A0%EB%8B%88%ED%81%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%BB%A4%EB%A8%BC%EC%9C%A0%EB%8B%88%ED%81%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "아뜨랑스",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "아뜨랑스",
+        "country":  "KR/Global",
+        "referenceStrength":  "여성 오피스/데이트룩",
+        "hookPattern":  "상황별 코디·페미닌",
+        "keyword":  "아뜨랑스",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%95%84%EB%9C%A8%EB%9E%91%EC%8A%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%95%84%EB%9C%A8%EB%9E%91%EC%8A%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "핫핑",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "핫핑",
+        "country":  "KR/Global",
+        "referenceStrength":  "빅사이즈/여성 캐주얼",
+        "hookPattern":  "체형커버·사이즈",
+        "keyword":  "핫핑",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%95%AB%ED%95%91\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%95%AB%ED%95%91"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "슬로우앤드",
+        "priority":  "A",
+        "category":  "패션/플랫폼",
+        "brand":  "슬로우앤드",
+        "country":  "KR/Global",
+        "referenceStrength":  "감성 데일리룩",
+        "hookPattern":  "컬러감·소장가치",
+        "keyword":  "슬로우앤드",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%8A%AC%EB%A1%9C%EC%9A%B0%EC%95%A4%EB%93%9C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%8A%AC%EB%A1%9C%EC%9A%B0%EC%95%A4%EB%93%9C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "젝시믹스",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "젝시믹스",
+        "country":  "KR/Global",
+        "referenceStrength":  "애슬레저/레깅스/운동복",
+        "hookPattern":  "라인·기능성·특가",
+        "keyword":  "젝시믹스",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A0%9D%EC%8B%9C%EB%AF%B9%EC%8A%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A0%9D%EC%8B%9C%EB%AF%B9%EC%8A%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "안다르",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "안다르",
+        "country":  "KR/Global",
+        "referenceStrength":  "애슬레저/요가복",
+        "hookPattern":  "편안함·일상복 전환",
+        "keyword":  "안다르",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%95%88%EB%8B%A4%EB%A5%B4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%95%88%EB%8B%A4%EB%A5%B4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "뮬라웨어",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "뮬라웨어",
+        "country":  "KR/Global",
+        "referenceStrength":  "애슬레저/여성 운동복",
+        "hookPattern":  "핏·소재·운동 루틴",
+        "keyword":  "뮬라웨어",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%AE%AC%EB%9D%BC%EC%9B%A8%EC%96%B4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%AE%AC%EB%9D%BC%EC%9B%A8%EC%96%B4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "룰루레몬",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "룰루레몬",
+        "country":  "KR/Global",
+        "referenceStrength":  "프리미엄 애슬레저",
+        "hookPattern":  "커뮤니티·프리미엄 기능",
+        "keyword":  "룰루레몬",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A3%B0%EB%A3%A8%EB%A0%88%EB%AA%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A3%B0%EB%A3%A8%EB%A0%88%EB%AA%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "mlb-korea",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "MLB Korea",
+        "country":  "KR/Global",
+        "referenceStrength":  "캐주얼/모자/스트릿",
+        "hookPattern":  "셀럽·로고·신상",
+        "keyword":  "MLB Korea",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=MLB+Korea\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=MLB+Korea"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "탑텐",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "탑텐",
+        "country":  "KR/Global",
+        "referenceStrength":  "SPA/기본템",
+        "hookPattern":  "가격·시즌 필수템",
+        "keyword":  "탑텐",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%83%91%ED%85%90\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%83%91%ED%85%90"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "스파오",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "스파오",
+        "country":  "KR/Global",
+        "referenceStrength":  "SPA/캐릭터 협업",
+        "hookPattern":  "콜라보·가격",
+        "keyword":  "스파오",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%8A%A4%ED%8C%8C%EC%98%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%8A%A4%ED%8C%8C%EC%98%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "유니클로",
+        "priority":  "A",
+        "category":  "패션/애슬레저·SPA",
+        "brand":  "유니클로",
+        "country":  "KR/Global",
+        "referenceStrength":  "기본템/글로벌 SPA",
+        "hookPattern":  "기능성·라이프웨어",
+        "keyword":  "유니클로",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%9C%A0%EB%8B%88%ED%81%B4%EB%A1%9C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%9C%A0%EB%8B%88%ED%81%B4%EB%A1%9C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "올리브영",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "올리브영",
+        "country":  "KR/Global",
+        "referenceStrength":  "뷰티 플랫폼/랭킹/세일",
+        "hookPattern":  "랭킹·리뷰·올영세일",
+        "keyword":  "올리브영",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%98%AC%EB%A6%AC%EB%B8%8C%EC%98%81\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%98%AC%EB%A6%AC%EB%B8%8C%EC%98%81"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "달바",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "달바",
+        "country":  "KR/Global",
+        "referenceStrength":  "선크림/미스트/프리미엄 뷰티",
+        "hookPattern":  "임상·셀럽·광채",
+        "keyword":  "달바",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%8B%AC%EB%B0%94\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%8B%AC%EB%B0%94"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "아누아",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "아누아",
+        "country":  "KR/Global",
+        "referenceStrength":  "스킨케어/진정",
+        "hookPattern":  "문제공감·전후비교",
+        "keyword":  "아누아",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%95%84%EB%88%84%EC%95%84\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%95%84%EB%88%84%EC%95%84"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "토리든",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "토리든",
+        "country":  "KR/Global",
+        "referenceStrength":  "수분/세럼",
+        "hookPattern":  "수분감·저자극",
+        "keyword":  "토리든",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%86%A0%EB%A6%AC%EB%93%A0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%86%A0%EB%A6%AC%EB%93%A0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "라운드랩",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "라운드랩",
+        "country":  "KR/Global",
+        "referenceStrength":  "선크림/스킨케어",
+        "hookPattern":  "성분·수분·민감피부",
+        "keyword":  "라운드랩",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%9D%BC%EC%9A%B4%EB%93%9C%EB%9E%A9\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%9D%BC%EC%9A%B4%EB%93%9C%EB%9E%A9"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "넘버즈인",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "넘버즈인",
+        "country":  "KR/Global",
+        "referenceStrength":  "기능성 스킨케어",
+        "hookPattern":  "숫자형 제품명·문제해결",
+        "keyword":  "넘버즈인",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%84%98%EB%B2%84%EC%A6%88%EC%9D%B8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%84%98%EB%B2%84%EC%A6%88%EC%9D%B8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "메디큐브",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "메디큐브",
+        "country":  "KR/Global",
+        "referenceStrength":  "디바이스/스킨케어",
+        "hookPattern":  "전후·임상·홈케어",
+        "keyword":  "메디큐브",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A9%94%EB%94%94%ED%81%90%EB%B8%8C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A9%94%EB%94%94%ED%81%90%EB%B8%8C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "vt",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "VT",
+        "country":  "KR/Global",
+        "referenceStrength":  "리들샷/스킨케어",
+        "hookPattern":  "성분 후킹·사용감",
+        "keyword":  "VT",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=VT\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=VT"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "닥터지",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "닥터지",
+        "country":  "KR/Global",
+        "referenceStrength":  "더마/선케어",
+        "hookPattern":  "피부타입·더마 신뢰",
+        "keyword":  "닥터지",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%8B%A5%ED%84%B0%EC%A7%80\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%8B%A5%ED%84%B0%EC%A7%80"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "조선미녀",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "조선미녀",
+        "country":  "KR/Global",
+        "referenceStrength":  "K-뷰티/선크림",
+        "hookPattern":  "전통 콘셉트·글로벌 반응",
+        "keyword":  "조선미녀",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A1%B0%EC%84%A0%EB%AF%B8%EB%85%80\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A1%B0%EC%84%A0%EB%AF%B8%EB%85%80"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "마녀공장",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "마녀공장",
+        "country":  "KR/Global",
+        "referenceStrength":  "클렌징/스킨케어",
+        "hookPattern":  "성분·대용량·착한 가격",
+        "keyword":  "마녀공장",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A7%88%EB%85%80%EA%B3%B5%EC%9E%A5\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A7%88%EB%85%80%EA%B3%B5%EC%9E%A5"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "코스알엑스",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "코스알엑스",
+        "country":  "KR/Global",
+        "referenceStrength":  "트러블/글로벌 K뷰티",
+        "hookPattern":  "문제성 피부·리뷰",
+        "keyword":  "코스알엑스",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%BD%94%EC%8A%A4%EC%95%8C%EC%97%91%EC%8A%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%BD%94%EC%8A%A4%EC%95%8C%EC%97%91%EC%8A%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "스킨1004",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "스킨1004",
+        "country":  "KR/Global",
+        "referenceStrength":  "마다가스카르 센텔라",
+        "hookPattern":  "원료 스토리·진정",
+        "keyword":  "스킨1004",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%8A%A4%ED%82%A81004\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%8A%A4%ED%82%A81004"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "티르티르",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "티르티르",
+        "country":  "KR/Global",
+        "referenceStrength":  "쿠션/베이스",
+        "hookPattern":  "커버력·컬러 쉐이드",
+        "keyword":  "티르티르",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%8B%B0%EB%A5%B4%ED%8B%B0%EB%A5%B4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%8B%B0%EB%A5%B4%ED%8B%B0%EB%A5%B4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "롬앤",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "롬앤",
+        "country":  "KR/Global",
+        "referenceStrength":  "색조/립",
+        "hookPattern":  "컬러명·발색·무드",
+        "keyword":  "롬앤",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A1%AC%EC%95%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A1%AC%EC%95%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "페리페라",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "페리페라",
+        "country":  "KR/Global",
+        "referenceStrength":  "색조/10대~20대",
+        "hookPattern":  "컬러칩·귀여운 후킹",
+        "keyword":  "페리페라",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%8E%98%EB%A6%AC%ED%8E%98%EB%9D%BC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%8E%98%EB%A6%AC%ED%8E%98%EB%9D%BC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "힌스",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "힌스",
+        "country":  "KR/Global",
+        "referenceStrength":  "무드 색조/베이스",
+        "hookPattern":  "감도 높은 비주얼",
+        "keyword":  "힌스",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%9E%8C%EC%8A%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%9E%8C%EC%8A%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "에스쁘아",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "에스쁘아",
+        "country":  "KR/Global",
+        "referenceStrength":  "메이크업/베이스",
+        "hookPattern":  "전문성·컬러",
+        "keyword":  "에스쁘아",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%97%90%EC%8A%A4%EC%81%98%EC%95%84\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%97%90%EC%8A%A4%EC%81%98%EC%95%84"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "헤라",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "헤라",
+        "country":  "KR/Global",
+        "referenceStrength":  "프리미엄 뷰티",
+        "hookPattern":  "셀럽·고급감",
+        "keyword":  "헤라",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%97%A4%EB%9D%BC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%97%A4%EB%9D%BC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "이니스프리",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "이니스프리",
+        "country":  "KR/Global",
+        "referenceStrength":  "자연주의/스킨케어",
+        "hookPattern":  "성분·제주 원료",
+        "keyword":  "이니스프리",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%9D%B4%EB%8B%88%EC%8A%A4%ED%94%84%EB%A6%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%9D%B4%EB%8B%88%EC%8A%A4%ED%94%84%EB%A6%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "에뛰드",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "에뛰드",
+        "country":  "KR/Global",
+        "referenceStrength":  "색조/트렌드",
+        "hookPattern":  "컬러·가격·신제품",
+        "keyword":  "에뛰드",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%97%90%EB%9B%B0%EB%93%9C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%97%90%EB%9B%B0%EB%93%9C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "탬버린즈",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "탬버린즈",
+        "country":  "KR/Global",
+        "referenceStrength":  "향/핸드케어",
+        "hookPattern":  "공간감·브랜드 무드",
+        "keyword":  "탬버린즈",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%83%AC%EB%B2%84%EB%A6%B0%EC%A6%88\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%83%AC%EB%B2%84%EB%A6%B0%EC%A6%88"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "이솝",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "이솝",
+        "country":  "KR/Global",
+        "referenceStrength":  "핸드워시/향/라이프스타일",
+        "hookPattern":  "선물·감도",
+        "keyword":  "이솝",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%9D%B4%EC%86%9D\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%9D%B4%EC%86%9D"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "셀퓨전씨",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "셀퓨전씨",
+        "country":  "KR/Global",
+        "referenceStrength":  "더마 선케어",
+        "hookPattern":  "피부과·선크림",
+        "keyword":  "셀퓨전씨",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%85%80%ED%93%A8%EC%A0%84%EC%94%A8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%85%80%ED%93%A8%EC%A0%84%EC%94%A8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "메디힐",
+        "priority":  "A",
+        "category":  "뷰티",
+        "brand":  "메디힐",
+        "country":  "KR/Global",
+        "referenceStrength":  "마스크팩/스킨케어",
+        "hookPattern":  "팩·즉각효과·리뷰",
+        "keyword":  "메디힐",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A9%94%EB%94%94%ED%9E%90\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A9%94%EB%94%94%ED%9E%90"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "마켓컬리",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "마켓컬리",
+        "country":  "KR/Global",
+        "referenceStrength":  "프리미엄 식품/새벽배송",
+        "hookPattern":  "신선함·첫구매·가격",
+        "keyword":  "마켓컬리",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%A7%88%EC%BC%93%EC%BB%AC%EB%A6%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%A7%88%EC%BC%93%EC%BB%AC%EB%A6%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "오아시스마켓",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "오아시스마켓",
+        "country":  "KR/Global",
+        "referenceStrength":  "친환경 식품/새벽배송",
+        "hookPattern":  "신선식품·가격",
+        "keyword":  "오아시스마켓",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%98%A4%EC%95%84%EC%8B%9C%EC%8A%A4%EB%A7%88%EC%BC%93\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%98%A4%EC%95%84%EC%8B%9C%EC%8A%A4%EB%A7%88%EC%BC%93"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "cj제일제당",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "CJ제일제당",
+        "country":  "KR/Global",
+        "referenceStrength":  "식품 대기업/비비고",
+        "hookPattern":  "간편식·브랜드 신뢰",
+        "keyword":  "CJ제일제당",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=CJ%EC%A0%9C%EC%9D%BC%EC%A0%9C%EB%8B%B9\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=CJ%EC%A0%9C%EC%9D%BC%EC%A0%9C%EB%8B%B9"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "비비고",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "비비고",
+        "country":  "KR/Global",
+        "referenceStrength":  "HMR/만두/한식",
+        "hookPattern":  "먹방·간편함",
+        "keyword":  "비비고",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%B9%84%EB%B9%84%EA%B3%A0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%B9%84%EB%B9%84%EA%B3%A0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "정육각",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "정육각",
+        "country":  "KR/Global",
+        "referenceStrength":  "신선식품/정육",
+        "hookPattern":  "신선도·오늘도축",
+        "keyword":  "정육각",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A0%95%EC%9C%A1%EA%B0%81\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A0%95%EC%9C%A1%EA%B0%81"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "프레시지",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "프레시지",
+        "country":  "KR/Global",
+        "referenceStrength":  "밀키트",
+        "hookPattern":  "간편조리·집밥",
+        "keyword":  "프레시지",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%94%84%EB%A0%88%EC%8B%9C%EC%A7%80\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%94%84%EB%A0%88%EC%8B%9C%EC%A7%80"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "쿠캣",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "쿠캣",
+        "country":  "KR/Global",
+        "referenceStrength":  "간편식/디저트",
+        "hookPattern":  "먹방형·신제품",
+        "keyword":  "쿠캣",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%BF%A0%EC%BA%A3\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%BF%A0%EC%BA%A3"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "윙잇",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "윙잇",
+        "country":  "KR/Global",
+        "referenceStrength":  "간편식 큐레이션",
+        "hookPattern":  "후기·간편함",
+        "keyword":  "윙잇",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%9C%99%EC%9E%87\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%9C%99%EC%9E%87"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "hbaf",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "HBAF",
+        "country":  "KR/Global",
+        "referenceStrength":  "스낵/아몬드",
+        "hookPattern":  "맛 종류·선물",
+        "keyword":  "HBAF",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=HBAF\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=HBAF"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "국대한우",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "국대한우",
+        "country":  "KR/Global",
+        "referenceStrength":  "한우/정육 이커머스",
+        "hookPattern":  "가격·등급·부위 설명",
+        "keyword":  "국대한우",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EA%B5%AD%EB%8C%80%ED%95%9C%EC%9A%B0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EA%B5%AD%EB%8C%80%ED%95%9C%EC%9A%B0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "랭킹닭컴",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "랭킹닭컴",
+        "country":  "KR/Global",
+        "referenceStrength":  "닭가슴살/다이어트식",
+        "hookPattern":  "식단관리·가격",
+        "keyword":  "랭킹닭컴",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%9E%AD%ED%82%B9%EB%8B%AD%EC%BB%B4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%9E%AD%ED%82%B9%EB%8B%AD%EC%BB%B4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "다노샵",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "다노샵",
+        "country":  "KR/Global",
+        "referenceStrength":  "다이어트/건강식",
+        "hookPattern":  "여성 타깃·식단 루틴",
+        "keyword":  "다노샵",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%8B%A4%EB%85%B8%EC%83%B5\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%8B%A4%EB%85%B8%EC%83%B5"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "뉴트리원",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "뉴트리원",
+        "country":  "KR/Global",
+        "referenceStrength":  "건기식",
+        "hookPattern":  "성분·효능·전문가",
+        "keyword":  "뉴트리원",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%89%B4%ED%8A%B8%EB%A6%AC%EC%9B%90\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%89%B4%ED%8A%B8%EB%A6%AC%EC%9B%90"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "종근당건강",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "종근당건강",
+        "country":  "KR/Global",
+        "referenceStrength":  "건기식/락토핏",
+        "hookPattern":  "인지도·기능성",
+        "keyword":  "종근당건강",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%A2%85%EA%B7%BC%EB%8B%B9%EA%B1%B4%EA%B0%95\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%A2%85%EA%B7%BC%EB%8B%B9%EA%B1%B4%EA%B0%95"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "고려은단",
+        "priority":  "A",
+        "category":  "식품/건기식",
+        "brand":  "고려은단",
+        "country":  "KR/Global",
+        "referenceStrength":  "비타민/건기식",
+        "hookPattern":  "성분함량·신뢰",
+        "keyword":  "고려은단",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EA%B3%A0%EB%A0%A4%EC%9D%80%EB%8B%A8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EA%B3%A0%EB%A0%A4%EC%9D%80%EB%8B%A8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "오늘의집",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "오늘의집",
+        "country":  "KR/Global",
+        "referenceStrength":  "인테리어/라이프스타일 플랫폼",
+        "hookPattern":  "비포애프터·공간후킹",
+        "keyword":  "오늘의집",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%98%A4%EB%8A%98%EC%9D%98%EC%A7%91\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%98%A4%EB%8A%98%EC%9D%98%EC%A7%91"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "자주",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "자주",
+        "country":  "KR/Global",
+        "referenceStrength":  "생활용품/리빙",
+        "hookPattern":  "실용성·계절상품",
+        "keyword":  "자주",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%9E%90%EC%A3%BC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%9E%90%EC%A3%BC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "오아",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "오아",
+        "country":  "KR/Global",
+        "referenceStrength":  "소형가전/생활가전",
+        "hookPattern":  "문제해결·기능시연",
+        "keyword":  "오아",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%98%A4%EC%95%84\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%98%A4%EC%95%84"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "일룸",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "일룸",
+        "country":  "KR/Global",
+        "referenceStrength":  "가구/공간",
+        "hookPattern":  "라이프스타일·공간컷",
+        "keyword":  "일룸",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%9D%BC%EB%A3%B8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%9D%BC%EB%A3%B8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "바디럽",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "바디럽",
+        "country":  "KR/Global",
+        "referenceStrength":  "생활용품/샤워필터",
+        "hookPattern":  "문제공감·비포애프터",
+        "keyword":  "바디럽",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%B0%94%EB%94%94%EB%9F%BD\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%B0%94%EB%94%94%EB%9F%BD"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "런드리고",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "런드리고",
+        "country":  "KR/Global",
+        "referenceStrength":  "세탁 서비스",
+        "hookPattern":  "귀찮음 해결·생활 루틴",
+        "keyword":  "런드리고",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%9F%B0%EB%93%9C%EB%A6%AC%EA%B3%A0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%9F%B0%EB%93%9C%EB%A6%AC%EA%B3%A0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "라이프썸",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "라이프썸",
+        "country":  "KR/Global",
+        "referenceStrength":  "생활가전/잡화",
+        "hookPattern":  "기능·가성비",
+        "keyword":  "라이프썸",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%9D%BC%EC%9D%B4%ED%94%84%EC%8D%B8\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%9D%BC%EC%9D%B4%ED%94%84%EC%8D%B8"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "다이슨-코리아",
+        "priority":  "A",
+        "category":  "리빙/가전",
+        "brand":  "다이슨 코리아",
+        "country":  "KR/Global",
+        "referenceStrength":  "프리미엄 가전",
+        "hookPattern":  "기술력·데모",
+        "keyword":  "다이슨 코리아",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%8B%A4%EC%9D%B4%EC%8A%A8+%EC%BD%94%EB%A6%AC%EC%95%84\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%8B%A4%EC%9D%B4%EC%8A%A8+%EC%BD%94%EB%A6%AC%EC%95%84"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "베베테일러",
+        "priority":  "A",
+        "category":  "육아/펫",
+        "brand":  "베베테일러",
+        "country":  "KR/Global",
+        "referenceStrength":  "아동복/감성 키즈룩",
+        "hookPattern":  "착장컷·시즌룩",
+        "keyword":  "베베테일러",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%B2%A0%EB%B2%A0%ED%85%8C%EC%9D%BC%EB%9F%AC\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%B2%A0%EB%B2%A0%ED%85%8C%EC%9D%BC%EB%9F%AC"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "아이팜",
+        "priority":  "A",
+        "category":  "육아/펫",
+        "brand":  "아이팜",
+        "country":  "KR/Global",
+        "referenceStrength":  "육아용품",
+        "hookPattern":  "안전·사용시연",
+        "keyword":  "아이팜",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EC%95%84%EC%9D%B4%ED%8C%9C\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EC%95%84%EC%9D%B4%ED%8C%9C"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "모윰",
+        "priority":  "A",
+        "category":  "육아/펫",
+        "brand":  "모윰",
+        "country":  "KR/Global",
+        "referenceStrength":  "유아용품",
+        "hookPattern":  "엄마 공감·기능",
+        "keyword":  "모윰",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%EB%AA%A8%EC%9C%B0\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%EB%AA%A8%EC%9C%B0"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "하기스",
+        "priority":  "A",
+        "category":  "육아/펫",
+        "brand":  "하기스",
+        "country":  "KR/Global",
+        "referenceStrength":  "기저귀/육아",
+        "hookPattern":  "육아문제 해결",
+        "keyword":  "하기스",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%95%98%EA%B8%B0%EC%8A%A4\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%95%98%EA%B8%B0%EC%8A%A4"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "펫프렌즈",
+        "priority":  "A",
+        "category":  "육아/펫",
+        "brand":  "펫프렌즈",
+        "country":  "KR/Global",
+        "referenceStrength":  "펫커머스",
+        "hookPattern":  "반려동물 공감·정기배송",
+        "keyword":  "펫프렌즈",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%8E%AB%ED%94%84%EB%A0%8C%EC%A6%88\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%8E%AB%ED%94%84%EB%A0%8C%EC%A6%88"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "핏펫",
+        "priority":  "A",
+        "category":  "육아/펫",
+        "brand":  "핏펫",
+        "country":  "KR/Global",
+        "referenceStrength":  "펫 헬스케어",
+        "hookPattern":  "건강검사·문제해결",
+        "keyword":  "핏펫",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=%ED%95%8F%ED%8E%AB\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=%ED%95%8F%ED%8E%AB"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "glossier",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Glossier",
+        "country":  "KR/Global",
+        "referenceStrength":  "글로벌 뷰티 DTC/커뮤니티",
+        "hookPattern":  "UGC·리뷰·라이프스타일",
+        "keyword":  "Glossier",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Glossier\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Glossier"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "rhode",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Rhode",
+        "country":  "KR/Global",
+        "referenceStrength":  "셀럽 뷰티/스킨케어",
+        "hookPattern":  "셀럽·제품 질감·미니멀",
+        "keyword":  "Rhode",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Rhode\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Rhode"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "rare-beauty",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Rare Beauty",
+        "country":  "KR/Global",
+        "referenceStrength":  "셀럽 뷰티/색조",
+        "hookPattern":  "브랜드 미션·컬러",
+        "keyword":  "Rare Beauty",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Rare+Beauty\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Rare+Beauty"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "fenty-beauty",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Fenty Beauty",
+        "country":  "KR/Global",
+        "referenceStrength":  "포용성/쉐이드 다양성",
+        "hookPattern":  "다양성·베이스 쉐이드",
+        "keyword":  "Fenty Beauty",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Fenty+Beauty\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Fenty+Beauty"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "summer-fridays",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Summer Fridays",
+        "country":  "KR/Global",
+        "referenceStrength":  "스킨케어/립밤",
+        "hookPattern":  "텍스처·패키지·소장감",
+        "keyword":  "Summer Fridays",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Summer+Fridays\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Summer+Fridays"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "skims",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "SKIMS",
+        "country":  "KR/Global",
+        "referenceStrength":  "이너웨어/쉐이프웨어",
+        "hookPattern":  "핏·바디 다양성·셀럽",
+        "keyword":  "SKIMS",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=SKIMS\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=SKIMS"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "gymshark",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Gymshark",
+        "country":  "KR/Global",
+        "referenceStrength":  "피트니스 DTC",
+        "hookPattern":  "커뮤니티·운동 루틴",
+        "keyword":  "Gymshark",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Gymshark\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Gymshark"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "alo-yoga",
+        "priority":  "A",
+        "category":  "해외 DTC",
+        "brand":  "Alo Yoga",
+        "country":  "KR/Global",
+        "referenceStrength":  "프리미엄 애슬레저",
+        "hookPattern":  "라이프스타일·요가 커뮤니티",
+        "keyword":  "Alo Yoga",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Alo+Yoga\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Alo+Yoga"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "cider",
+        "priority":  "B",
+        "category":  "해외 DTC",
+        "brand":  "Cider",
+        "country":  "KR/Global",
+        "referenceStrength":  "글로벌 패션앱",
+        "hookPattern":  "트렌드·가격·컬렉션",
+        "keyword":  "Cider",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Cider\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Cider"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "allbirds",
+        "priority":  "B",
+        "category":  "해외 DTC",
+        "brand":  "Allbirds",
+        "country":  "KR/Global",
+        "referenceStrength":  "친환경 슈즈",
+        "hookPattern":  "소재·지속가능성",
+        "keyword":  "Allbirds",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Allbirds\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Allbirds"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "away",
+        "priority":  "B",
+        "category":  "해외 DTC",
+        "brand":  "Away",
+        "country":  "KR/Global",
+        "referenceStrength":  "여행가방 DTC",
+        "hookPattern":  "여행 라이프스타일·기능",
+        "keyword":  "Away",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Away\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Away"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "mejuri",
+        "priority":  "B",
+        "category":  "해외 DTC",
+        "brand":  "Mejuri",
+        "country":  "KR/Global",
+        "referenceStrength":  "주얼리 DTC",
+        "hookPattern":  "데일리 럭셔리·가격투명성",
+        "keyword":  "Mejuri",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Mejuri\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Mejuri"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    },
+    {
+        "id":  "popflex",
+        "priority":  "B",
+        "category":  "해외 DTC",
+        "brand":  "Popflex",
+        "country":  "KR/Global",
+        "referenceStrength":  "피트니스/여성복 DTC",
+        "hookPattern":  "창업자 콘텐츠·커뮤니티",
+        "keyword":  "Popflex",
+        "urls":  {
+                     "meta":  "https://www.facebook.com/ads/library/?active_status=active\u0026ad_type=all\u0026country=KR\u0026media_type=all\u0026q=Popflex\u0026search_type=keyword_unordered",
+                     "tiktok":  "https://ads.tiktok.com/business/creativecenter/inspiration/topads/pc/en",
+                     "google":  "https://adstransparency.google.com/?region=KR\u0026search=Popflex"
+                 },
+        "memo":  "브랜드명 검색 후 Page ID 확인 권장",
+        "enabled":  true
+    }
+]

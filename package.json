@@ -1,0 +1,32 @@
+{
+  "name": "adatlas",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "collect:daily": "node scripts/daily-collector.mjs",
+    "collect:schedule": "node scripts/schedule-daily-collector.mjs",
+    "crawl:watchlist": "node scripts/watchlist-crawler.mjs",
+    "crawl:watchlist:schedule": "node scripts/schedule-watchlist-crawler.mjs"
+  },
+  "dependencies": {
+    "next": "16.2.9",
+    "playwright": "^1.61.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
