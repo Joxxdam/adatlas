@@ -15,6 +15,7 @@ type Status = { kind: "idle" | "loading" | "success" | "error"; message: string 
 type MetaCrawlItem = {
   brandName: string;
   imageUrl: string;
+  localImagePath?: string;
   originalAdUrl: string;
   collectedAt: string;
 };
@@ -61,7 +62,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [selectedBrandId, setSelectedBrandId] = useState(initialBrands[0]?.id ?? "");
   const [selectedReferenceId, setSelectedReferenceId] = useState(initialImages[0]?.id ?? "");
   const [websiteUrl, setWebsiteUrl] = useState("");
-  const [crawlLimit, setCrawlLimit] = useState(20);
+  const [crawlLimit, setCrawlLimit] = useState(5);
   const [crawledItems, setCrawledItems] = useState<MetaCrawlItem[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "idle", message: "MVP 작업을 선택하세요." });
   const [generatedPreview, setGeneratedPreview] = useState<{ productName: string } | null>(null);
@@ -125,7 +126,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         body: JSON.stringify({
           brandName: selectedBrand.brandName,
           metaLibraryUrl: selectedBrand.metaLibraryUrl,
-          limit: crawlLimit,
+          limit: 5,
         }),
       });
       const result = await response.json();
@@ -135,7 +136,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       }
 
       setCrawledItems(result.items ?? []);
-      setStatus({ kind: "success", message: `${result.brandName} 이미지 ${result.count}개를 수집했습니다.` });
+      await refreshImages();
+      setStatus({ kind: "success", message: `${result.brandName} 이미지 ${result.count}개를 수집했습니다. 저장 ${result.added}개, 전체 ${result.total}개.` });
     } catch (error) {
       setStatus({
         kind: "error",
@@ -145,20 +147,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   }
 
   async function handleCollectAll() {
-    setStatus({ kind: "loading", message: "브랜드 100개 기준 이미지 수집을 실행 중입니다. 브랜드당 최대 20개입니다." });
-    const response = await fetch("/api/mvp/collect", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ brandLimit: 100, limitPerBrand: 20 }),
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      setStatus({ kind: "error", message: result.error ?? "이미지 수집 실패" });
-      return;
-    }
-    await refreshImages();
-    setActiveMenu("이미지 수집");
-    setStatus({ kind: "success", message: `새 이미지 ${result.added}개 저장, 전체 ${result.totalImages}개입니다.` });
+    await handleCrawl();
   }
 
   async function handleAnalyze() {
@@ -299,7 +288,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             <h2>브랜드 100개에서 광고 이미지를 모으고, 분석하고, 새 광고 이미지를 만듭니다.</h2>
           </div>
           <div className="mvp-primary-actions">
-            <button onClick={handleCollectAll} type="button">오늘 이미지 수집 실행</button>
+            <button onClick={handleCollectAll} type="button">선택 브랜드 이미지 5개 수집</button>
             <button onClick={() => setActiveMenu("이미지 수집")} type="button">수집된 이미지 보기</button>
             <button onClick={() => setActiveMenu("광고 생성")} type="button">광고 이미지 생성하기</button>
           </div>
@@ -371,10 +360,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   <option key={brand.id} value={brand.id}>{brand.brandName}</option>
                 ))}
               </select>
-              <select value={crawlLimit} onChange={(event) => setCrawlLimit(Number(event.target.value))}>
+              <select value={crawlLimit} onChange={(event) => setCrawlLimit(Number(event.target.value))} disabled>
                 <option value={5}>5개 테스트</option>
-                <option value={10}>10개</option>
-                <option value={20}>20개</option>
               </select>
             </div>
             <div className="collection-state">
@@ -443,7 +430,7 @@ function CrawledGrid({ items }: { items: MetaCrawlItem[] }) {
     <div className="mvp-image-grid">
       {items.map((item) => (
         <article key={`${item.imageUrl}-${item.originalAdUrl}`}>
-          <img alt={`${item.brandName} 수집 광고 이미지`} src={item.imageUrl} />
+          <img alt={`${item.brandName} 수집 광고 이미지`} src={item.localImagePath || item.imageUrl} />
           <div>
             <strong>{item.brandName}</strong>
             <span>{new Date(item.collectedAt).toLocaleString("ko-KR")}</span>

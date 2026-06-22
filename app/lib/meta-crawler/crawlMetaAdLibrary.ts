@@ -1,8 +1,8 @@
 import { chromium, type Browser, type Locator, type Page } from "playwright";
 import { MetaAdCard, MetaCrawlRequest, MetaCrawlResult } from "./types";
 
-const DEFAULT_LIMIT = 20;
-const MAX_LIMIT = 40;
+const DEFAULT_LIMIT = 5;
+const MAX_LIMIT = 5;
 
 function normalizeLimit(limit?: number) {
   if (!Number.isFinite(limit)) {
@@ -22,9 +22,8 @@ function isLikelyMetaAdUrl(url: string) {
 
 function shouldRunHeadless() {
   const configured = process.env.META_CRAWLER_HEADLESS;
-  if (configured === "true") return true;
   if (configured === "false") return false;
-  return process.env.NODE_ENV === "production";
+  return true;
 }
 
 async function safeText(locator: Locator) {
@@ -137,6 +136,59 @@ async function scrollToLoad(page: Page, limit: number) {
   }
 }
 
+async function collectImageCandidates(page: Page, brandName: string, limit: number): Promise<MetaAdCard[]> {
+  const pageUrl = page.url();
+  const crawledAt = new Date().toISOString();
+  const candidates = await page.evaluate(() => {
+    const blocked = /(logo|icon|favicon|sprite|emoji|profile|avatar|badge|static.xx.fbcdn.net)/i;
+
+    return Array.from(document.images)
+      .map((image) => {
+        const source =
+          image.currentSrc ||
+          image.src ||
+          image.getAttribute("data-src") ||
+          image.getAttribute("data-imgsrc") ||
+          image.getAttribute("srcset")?.split(",")[0]?.trim().split(/\s+/)[0] ||
+          "";
+
+        return {
+          source,
+          alt: image.alt || "",
+          width: image.naturalWidth || image.width || 0,
+          height: image.naturalHeight || image.height || 0,
+        };
+      })
+      .filter((item) => item.source)
+      .filter((item) => !item.source.startsWith("data:") && !item.source.startsWith("blob:"))
+      .filter((item) => !blocked.test(item.source) && !blocked.test(item.alt))
+      .filter((item) => item.width >= 250 && item.height >= 250)
+      .sort((a, b) => {
+        const aLargeEnough = a.width >= 300 && a.height >= 300 ? 1 : 0;
+        const bLargeEnough = b.width >= 300 && b.height >= 300 ? 1 : 0;
+        return bLargeEnough - aLargeEnough || b.width * b.height - a.width * a.height;
+      });
+  });
+
+  const byUrl = new Map<string, MetaAdCard>();
+
+  for (const candidate of candidates) {
+    const imageUrl = absoluteUrl(candidate.source, pageUrl);
+    if (!imageUrl || byUrl.has(imageUrl)) continue;
+
+    byUrl.set(imageUrl, {
+      brandName,
+      adText: candidate.alt,
+      imageUrl,
+      crawledAt,
+    });
+
+    if (byUrl.size >= limit) break;
+  }
+
+  return [...byUrl.values()];
+}
+
 export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<MetaCrawlResult> {
   const brandName = request.brandName.trim();
   const metaLibraryUrl = request.metaLibraryUrl.trim();
@@ -165,13 +217,30 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
     });
     const page = await context.newPage();
 
-    await page.goto(metaLibraryUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    try {
+      await page.goto(metaLibraryUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    } catch (error) {
+      throw new Error(`Meta 페이지 접속 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
+    }
     await page.waitForTimeout(2500);
     await scrollToLoad(page, limit);
 
+    const imageCandidates = await collectImageCandidates(page, brandName, limit);
+    if (imageCandidates.length >= limit) {
+      return {
+        brandName,
+        metaLibraryUrl,
+        limit,
+        count: imageCandidates.length,
+        ads: imageCandidates,
+        warnings,
+        crawledAt: new Date().toISOString(),
+      };
+    }
+
     const cards = await collectCandidateCards(page);
     const count = Math.min(await cards.count(), limit * 3);
-    const byKey = new Map<string, MetaAdCard>();
+    const byKey = new Map<string, MetaAdCard>(imageCandidates.map((ad) => [ad.imageUrl ?? ad.adSnapshotUrl ?? ad.adText, ad]));
 
     for (let index = 0; index < count && byKey.size < limit; index += 1) {
       try {
