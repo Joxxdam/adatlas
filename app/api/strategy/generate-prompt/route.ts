@@ -8,12 +8,21 @@ const requiredImagePromptTerms = [
   "no readable text",
   "no letters",
   "no numbers",
+  "no emoji",
+  "no emoticons",
+  "no pictograms",
   "no logo",
   "leave empty space for Korean headline",
   "product-focused composition",
   "high contrast",
   "promotional badge shapes without text",
 ];
+
+const emojiRegex = /[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]/gu;
+
+function stripEmoji(value: string) {
+  return value.replace(emojiRegex, "").replace(/\s{2,}/g, " ").trim();
+}
 
 function fallbackProduct(productInfo: Partial<ProductInfoForPrompt>): ProductInfoForPrompt {
   return {
@@ -24,6 +33,13 @@ function fallbackProduct(productInfo: Partial<ProductInfoForPrompt>): ProductInf
     mainBenefit: productInfo.mainBenefit ?? "",
     targetCustomer: productInfo.targetCustomer ?? "",
     landingUrl: productInfo.landingUrl ?? "",
+    productImagePath: productInfo.productImagePath ?? "",
+    backgroundImagePath: productInfo.backgroundImagePath ?? "",
+    extractedDescription: productInfo.extractedDescription ?? "",
+    extractedMainImage: productInfo.extractedMainImage ?? "",
+    extractedGalleryImages: productInfo.extractedGalleryImages ?? [],
+    selectedBackgroundSource: productInfo.selectedBackgroundSource ?? "",
+    backgroundMode: productInfo.backgroundMode ?? "none",
   };
 }
 
@@ -82,17 +98,17 @@ function normalizeStrategy(value: Partial<GeneratedAdStrategyPrompt>): Generated
   return {
     hookType: String(value.hookType ?? ""),
     appealPoint: String(value.appealPoint ?? ""),
-    headline: String(value.headline ?? ""),
-    subCopy: String(value.subCopy ?? ""),
-    cta: String(value.cta ?? ""),
-    imageGenerationPrompt: prompt,
+    headline: stripEmoji(String(value.headline ?? "")),
+    subCopy: stripEmoji(String(value.subCopy ?? "")),
+    cta: stripEmoji(String(value.cta ?? "")),
+    imageGenerationPrompt: stripEmoji(prompt),
     textOverlayPlan: {
       canvasSize: "1200x1200",
       headlineArea: String(value.textOverlayPlan?.headlineArea ?? "top"),
       productArea: String(value.textOverlayPlan?.productArea ?? "center"),
       priceBadgeArea: String(value.textOverlayPlan?.priceBadgeArea ?? "bottom-right"),
       ctaArea: String(value.textOverlayPlan?.ctaArea ?? "bottom"),
-      style: String(value.textOverlayPlan?.style ?? ""),
+      style: stripEmoji(String(value.textOverlayPlan?.style ?? "")),
     },
   };
 }
@@ -116,6 +132,7 @@ async function generateWithOpenAI(productInfo: ProductInfoForPrompt, labels: AdI
                 "선택된 광고 레퍼런스의 소구 구조와 레이아웃 원리만 참고해 새 상품용 광고 전략, 한국어 카피, 영어 이미지 생성 프롬프트를 만드세요. " +
                 "기존 레퍼런스를 그대로 베끼지 말고 새 상품에 맞게 변형하세요. headline, subCopy, cta는 한국어. imageGenerationPrompt는 영어. " +
                 `imageGenerationPrompt에는 반드시 다음 조건을 모두 포함하세요: ${requiredImagePromptTerms.join(", ")}. ` +
+                "광고문구와 이미지 생성 프롬프트 모두 이모지, 이모티콘, pictogram, decorative symbols를 절대 쓰지 마세요. " +
                 "반드시 JSON만 반환하세요. 키는 hookType, appealPoint, headline, subCopy, cta, imageGenerationPrompt, textOverlayPlan 입니다.\n\n" +
                 `productInfo:\n${JSON.stringify(productInfo, null, 2)}\n\nselectedReferenceLabels:\n${JSON.stringify(labels, null, 2)}`,
             },

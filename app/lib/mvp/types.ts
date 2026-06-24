@@ -34,6 +34,14 @@ export type AdImageAnalysisDraft = {
   layoutPattern: string;
   whyItWorks: string;
   recommendedUse: string;
+  firstLineHook: string;
+  copyStructure: string;
+  toneOfVoice: string;
+  trendElements: string;
+  consumerInsight: string;
+  purchaseTrigger: string;
+  reusableCopyPattern: string;
+  visualCopyRelation: string;
 };
 
 export type AdImageLabel = {
@@ -55,7 +63,15 @@ export type ProductInfoForPrompt = {
   mainBenefit: string;
   targetCustomer: string;
   landingUrl: string;
-  productImagePath?: string;
+  productImagePath: string;
+  secondaryProductImagePath?: string;
+  productImagePaths?: string[];
+  backgroundImagePath: string;
+  extractedDescription?: string;
+  extractedMainImage?: string;
+  extractedGalleryImages?: string[];
+  selectedBackgroundSource?: string;
+  backgroundMode?: "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
 };
 
 export type GeneratedAdStrategyPrompt = {
@@ -81,6 +97,7 @@ export type ExtractedProductInfo = {
   price: string;
   discountInfo: string;
   mainImage: string;
+  galleryImages: string[];
   description: string;
   landingUrl: string;
 };
@@ -91,6 +108,7 @@ export type GeneratedAdCopy = {
   highlightCopy: string;
   bottomBarCopy: string;
   cta: string;
+  price: string;
   hookType: string;
   appealPoint: string;
   whyThisWorks: string;

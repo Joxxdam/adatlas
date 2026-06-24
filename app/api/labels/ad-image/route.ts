@@ -4,9 +4,45 @@ import { AdImageLabel } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
+const emptyAnalysisDraft = {
+  ocrText: "",
+  category: "",
+  hookType: "",
+  appealPoint: "",
+  targetEmotion: "",
+  copyNuance: "",
+  visualTone: "",
+  layoutPattern: "",
+  whyItWorks: "",
+  recommendedUse: "",
+  firstLineHook: "",
+  copyStructure: "",
+  toneOfVoice: "",
+  trendElements: "",
+  consumerInsight: "",
+  purchaseTrigger: "",
+  reusableCopyPattern: "",
+  visualCopyRelation: "",
+};
+
+function normalizeAnalysisDraft(value: Partial<AdImageLabel["finalLabel"]> | undefined, category = "") {
+  return {
+    ...emptyAnalysisDraft,
+    ...(value ?? {}),
+    category: value?.category ?? category,
+  };
+}
+
 export async function GET() {
   const labels = await readAdImageLabels();
-  return NextResponse.json({ ok: true, labels });
+  return NextResponse.json({
+    ok: true,
+    labels: labels.map((label) => ({
+      ...label,
+      aiDraft: normalizeAnalysisDraft(label.aiDraft, label.category),
+      finalLabel: normalizeAnalysisDraft(label.finalLabel, label.category),
+    })),
+  });
 }
 
 export async function POST(request: Request) {
@@ -23,11 +59,8 @@ export async function POST(request: Request) {
       brandName: body.brandName ?? "",
       sourcePlatform: body.sourcePlatform ?? "",
       localImagePath: body.localImagePath,
-      aiDraft: body.aiDraft,
-      finalLabel: {
-        ...body.finalLabel,
-        category: body.finalLabel.category ?? body.category ?? "",
-      },
+      aiDraft: normalizeAnalysisDraft(body.aiDraft, body.category ?? body.finalLabel.category ?? ""),
+      finalLabel: normalizeAnalysisDraft(body.finalLabel, body.category ?? body.finalLabel.category ?? ""),
       labeledAt: new Date().toISOString(),
     });
 
