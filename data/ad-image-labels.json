@@ -1,0 +1,34 @@
+[
+  {
+    "imageId": "img-7381ef07cce31fd3",
+    "category": "식품/선물",
+    "brandName": "",
+    "sourcePlatform": "meta",
+    "localImagePath": "/collected-images/20260622_100242.png",
+    "aiDraft": {
+      "ocrText": "4만원대로 생색 제대로 내는 선물 찾았습니다\n국내산 설록우 찜진 등심\n기존가 148,800원\n파격가 49,800원",
+      "category": "식품/선물",
+      "hookType": "가격소구형",
+      "appealPoint": "가성비",
+      "targetEmotion": "기쁨",
+      "copyNuance": "부담 없는 가격에 특별한 선물을 찾는 재미",
+      "visualTone": "고급스러움과 실용성을 강조",
+      "layoutPattern": "좌우 대비로 가격과 제품을 강조",
+      "whyItWorks": "파격적인 할인과 프리미엄 이미지를 조합하여 소비자의 클릭을 유도",
+      "recommendedUse": "특별한 날이나 명절 선물, 고급 음식을 원하는 소비자 타겟"
+    },
+    "finalLabel": {
+      "ocrText": "4만원대로 생색 제대로 내는 선물 찾았습니다\n국내산 설록우 찜진 등심\n기존가 148,800원\n파격가 49,800원",
+      "category": "식품/선물",
+      "hookType": "가격소구형",
+      "appealPoint": "가성비",
+      "targetEmotion": "기쁨",
+      "copyNuance": "부담 없는 가격에 특별한 선물을 찾는 재미",
+      "visualTone": "고급스러움과 실용성을 강조",
+      "layoutPattern": "좌우 대비로 가격과 제품을 강조",
+      "whyItWorks": "파격적인 할인과 프리미엄 이미지를 조합하여 소비자의 클릭을 유도",
+      "recommendedUse": "특별한 날이나 명절 선물, 고급 음식을 원하는 소비자 타겟"
+    },
+    "labeledAt": "2026-06-23T12:32:19.150Z"
+  }
+]
