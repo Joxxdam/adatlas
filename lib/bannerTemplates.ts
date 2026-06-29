@@ -1,3 +1,5 @@
+import type { TemplateCopyLimits } from "../app/lib/mvp/types";
+
 export type HeadlineFontPresetId =
   | "impact-korean-red"
   | "commerce-heavy-black"
@@ -90,6 +92,58 @@ export type BannerTemplateDefinition = {
   style: Record<string, string | number | boolean>;
   typography: Record<string, number>;
   zones: Record<string, string>;
+  copyLimits?: TemplateCopyLimits;
+};
+
+export const foodTemplateCopyLimits: Record<string, TemplateCopyLimits> = {
+  "food-template-001": {
+    headline: { maxChars: 14, maxLines: 2, minFontSize: 58, maxFontSize: 112, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 40, maxLines: 2, minFontSize: 28, maxFontSize: 42, overflowStrategy: "shrink-wrap-ellipsis" },
+    highlightCopy: { maxChars: 26, maxLines: 2, minFontSize: 28, maxFontSize: 38, overflowStrategy: "shrink-wrap-ellipsis" },
+    bottomBarCopy: { maxChars: 30, maxLines: 1, minFontSize: 24, maxFontSize: 36, overflowStrategy: "shrink-ellipsis" },
+    cta: { maxChars: 10, maxLines: 1, minFontSize: 22, maxFontSize: 32, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 42, maxFontSize: 70, overflowStrategy: "shrink-ellipsis" },
+  },
+  "food-template-002": {
+    headline: { maxChars: 12, maxLines: 2, minFontSize: 52, maxFontSize: 92, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 34, maxLines: 2, minFontSize: 24, maxFontSize: 34, overflowStrategy: "shrink-wrap-ellipsis" },
+    highlightCopy: { maxChars: 24, maxLines: 1, minFontSize: 24, maxFontSize: 34, overflowStrategy: "shrink-ellipsis" },
+    bottomBarCopy: { maxChars: 28, maxLines: 1, minFontSize: 24, maxFontSize: 34, overflowStrategy: "shrink-ellipsis" },
+    cta: { maxChars: 8, maxLines: 1, minFontSize: 22, maxFontSize: 32, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 48, maxFontSize: 82, overflowStrategy: "shrink-ellipsis" },
+  },
+  "food-template-003": {
+    headline: { maxChars: 18, maxLines: 2, minFontSize: 34, maxFontSize: 48, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 44, maxLines: 2, minFontSize: 18, maxFontSize: 30, overflowStrategy: "shrink-wrap-ellipsis" },
+    highlightCopy: { maxChars: 24, maxLines: 2, minFontSize: 20, maxFontSize: 34, overflowStrategy: "shrink-wrap-ellipsis" },
+    bottomBarCopy: { maxChars: 30, maxLines: 1, minFontSize: 22, maxFontSize: 34, overflowStrategy: "shrink-ellipsis" },
+    cta: { maxChars: 10, maxLines: 1, minFontSize: 20, maxFontSize: 30, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 34, maxFontSize: 60, overflowStrategy: "shrink-ellipsis" },
+  },
+  "food-template-004": {
+    headline: { maxChars: 20, maxLines: 2, minFontSize: 42, maxFontSize: 78, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 50, maxLines: 3, minFontSize: 20, maxFontSize: 34, overflowStrategy: "shrink-wrap-ellipsis" },
+    highlightCopy: { maxChars: 22, maxLines: 1, minFontSize: 22, maxFontSize: 32, overflowStrategy: "shrink-ellipsis" },
+    bottomBarCopy: { maxChars: 30, maxLines: 2, minFontSize: 22, maxFontSize: 32, overflowStrategy: "shrink-wrap-ellipsis" },
+    cta: { maxChars: 10, maxLines: 1, minFontSize: 20, maxFontSize: 30, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 34, maxFontSize: 54, overflowStrategy: "shrink-ellipsis" },
+  },
+  "food-template-005": {
+    headline: { maxChars: 16, maxLines: 2, minFontSize: 52, maxFontSize: 92, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 36, maxLines: 2, minFontSize: 24, maxFontSize: 36, overflowStrategy: "shrink-wrap-ellipsis" },
+    highlightCopy: { maxChars: 24, maxLines: 1, minFontSize: 28, maxFontSize: 48, overflowStrategy: "shrink-ellipsis" },
+    bottomBarCopy: { maxChars: 30, maxLines: 1, minFontSize: 26, maxFontSize: 42, overflowStrategy: "shrink-ellipsis" },
+    cta: { maxChars: 10, maxLines: 1, minFontSize: 20, maxFontSize: 30, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 50, maxFontSize: 96, overflowStrategy: "shrink-ellipsis" },
+  },
+  "food-impact-hero-001": {
+    headline: { maxChars: 16, maxLines: 2, minFontSize: 56, maxFontSize: 108, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 40, maxLines: 2, minFontSize: 28, maxFontSize: 43, overflowStrategy: "shrink-wrap-ellipsis" },
+    highlightCopy: { maxChars: 26, maxLines: 1, minFontSize: 24, maxFontSize: 35, overflowStrategy: "shrink-ellipsis" },
+    bottomBarCopy: { maxChars: 30, maxLines: 1, minFontSize: 24, maxFontSize: 37, overflowStrategy: "shrink-ellipsis" },
+    cta: { maxChars: 10, maxLines: 1, minFontSize: 22, maxFontSize: 34, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 36, maxFontSize: 56, overflowStrategy: "shrink-ellipsis" },
+  },
 };
 
 const baseFoodFont = "Pretendard, \"Noto Sans KR\", \"Apple SD Gothic Neo\", \"Malgun Gothic\", sans-serif";
@@ -123,6 +177,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     },
     typography: { headlineFontSize: 112, bodyFontSize: 42, highlightFontSize: 36, bottomBarFontSize: 36, ctaFontSize: 32 },
     zones: { headline: "top", body: "top-mid", highlight: "mid-band", product: "center-large", bottom: "bottom-bar", cta: "bottom-pill" },
+    copyLimits: foodTemplateCopyLimits["food-template-001"],
   },
   {
     id: "food-template-002",
@@ -152,6 +207,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     },
     typography: { headlineFontSize: 92, bodyFontSize: 34, highlightFontSize: 34, bottomBarFontSize: 34, ctaFontSize: 32 },
     zones: { headline: "top-left", badge: "top-right", product: "center", price: "bottom-right-large", bottom: "bottom-black", cta: "red-pill" },
+    copyLimits: foodTemplateCopyLimits["food-template-002"],
   },
   {
     id: "food-template-003",
@@ -180,6 +236,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     },
     typography: { headlineFontSize: 84, bodyFontSize: 36, highlightFontSize: 32, bottomBarFontSize: 30, ctaFontSize: 30 },
     zones: { headline: "top-premium", product: "center-framed", body: "bottom-copy", highlight: "gold-label", price: "subtle", cta: "gold-button" },
+    copyLimits: foodTemplateCopyLimits["food-template-003"],
   },
   {
     id: "food-template-004",
@@ -206,6 +263,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     },
     typography: { headlineFontSize: 78, bodyFontSize: 34, highlightFontSize: 32, bottomBarFontSize: 32, ctaFontSize: 30 },
     zones: { headline: "review-top", body: "speech-card", product: "center-photo", highlight: "reaction-card", cta: "bottom-dark" },
+    copyLimits: foodTemplateCopyLimits["food-template-004"],
   },
   {
     id: "food-template-005",
@@ -240,6 +298,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     },
     typography: { headlineFontSize: 92, bodyFontSize: 36, highlightFontSize: 30, bottomBarFontSize: 34, ctaFontSize: 30 },
     zones: { background: "full-bleed-blur", headline: "top-overlay", product: "center-foreground", price: "bottom-large", cta: "bottom-red" },
+    copyLimits: foodTemplateCopyLimits["food-template-005"],
   },
 ];
 
@@ -287,6 +346,7 @@ export const foodImpactHeroTemplate = {
     highlightLineHeight: 1.14,
     letterSpacing: -4,
   },
+  copyLimits: foodTemplateCopyLimits["food-impact-hero-001"],
 };
 
 export type FoodImpactHeroTemplate = typeof foodImpactHeroTemplate;

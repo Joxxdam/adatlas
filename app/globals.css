@@ -794,6 +794,86 @@ select {
   background: #e5e7eb;
 }
 
+.gpt-image-generator {
+  display: grid;
+  gap: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.gpt-image-generator button {
+  width: 100%;
+}
+
+.product-cutout-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.product-cutout-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.product-image-variant-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.product-image-variant-grid button {
+  display: grid;
+  gap: 6px;
+  height: auto;
+  min-height: 92px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px;
+  background: #f8fafc;
+  color: var(--text);
+}
+
+.product-image-variant-grid button.selected {
+  border-color: var(--brand);
+  background: #e8f7f4;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.16);
+}
+
+.product-image-variant-grid button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.product-image-variant-grid img {
+  width: 100%;
+  height: 56px;
+  border-radius: 6px;
+  object-fit: contain;
+  background:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-color: #ffffff;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.product-image-variant-grid span {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .template-picker {
   display: grid;
   gap: 10px;

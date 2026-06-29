@@ -74,6 +74,27 @@ export type ProductInfoForPrompt = {
   backgroundMode?: "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
 };
 
+export type ProductImageMode =
+  | "original"
+  | "cutout"
+  | "styled-cutout";
+
+export type ProductImageEffectPreset =
+  | "none"
+  | "clean-outline"
+  | "soft-glow"
+  | "commerce-shadow"
+  | "outline-glow-shadow";
+
+export type ProductImageState = {
+  originalImagePath: string;
+  cutoutImagePath?: string;
+  styledCutoutImagePath?: string;
+  selectedImageMode: ProductImageMode;
+  cutoutApplied: boolean;
+  effectPreset?: ProductImageEffectPreset;
+};
+
 export type GeneratedAdStrategyPrompt = {
   hookType: string;
   appealPoint: string;
@@ -102,16 +123,51 @@ export type ExtractedProductInfo = {
   landingUrl: string;
 };
 
-export type GeneratedAdCopy = {
+export type CopySlotKey =
+  | "headline"
+  | "bodyCopy"
+  | "highlightCopy"
+  | "bottomBarCopy"
+  | "cta"
+  | "price";
+
+export type CopyOverflowStrategy =
+  | "shrink"
+  | "wrap"
+  | "ellipsis"
+  | "shrink-wrap"
+  | "shrink-ellipsis"
+  | "shrink-wrap-ellipsis";
+
+export type CopyLimit = {
+  maxChars: number;
+  maxLines: number;
+  minFontSize: number;
+  maxFontSize: number;
+  overflowStrategy: CopyOverflowStrategy;
+};
+
+export type TemplateCopyLimits = Partial<Record<CopySlotKey, CopyLimit>>;
+
+export type GeneratedAdCopyVariant = {
   headline: string;
   bodyCopy: string;
   highlightCopy: string;
   bottomBarCopy: string;
   cta: string;
+  price?: string;
+};
+
+export type GeneratedAdCopy = GeneratedAdCopyVariant & {
   price: string;
   hookType: string;
   appealPoint: string;
   whyThisWorks: string;
+  copyVariants?: {
+    short: GeneratedAdCopyVariant;
+    medium: GeneratedAdCopyVariant;
+    long: GeneratedAdCopyVariant;
+  };
 };
 
 export type ImageAnalysis = {

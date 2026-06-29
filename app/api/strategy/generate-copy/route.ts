@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
-import { AdImageLabel, GeneratedAdCopy, ProductInfoForPrompt } from "../../../lib/mvp/types";
+import { AdImageLabel, GeneratedAdCopy, GeneratedAdCopyVariant, ProductInfoForPrompt } from "../../../lib/mvp/types";
 
 type Body = {
   productInfo?: Partial<ProductInfoForPrompt>;
@@ -135,6 +135,86 @@ function replaceForbiddenPhrases(value: string) {
     (text, [forbidden, replacement]) => text.replaceAll(forbidden, replacement),
     withoutEmoji,
   );
+}
+
+function copyLength(value: string) {
+  return String(value || "").replace(/\s+/g, "").length;
+}
+
+function shortenCopy(value: string, maxChars: number, fallback: string) {
+  const normalized = replaceForbiddenPhrases(String(value || fallback || "").replace(/\s+/g, " ").trim());
+  if (copyLength(normalized) <= maxChars) return normalized;
+
+  const firstPhrase = normalized
+    .split(/[,.!?\n]/)
+    .map((part) => part.trim())
+    .find((part) => part && copyLength(part) <= maxChars);
+  if (firstPhrase) return firstPhrase;
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (copyLength(candidate) > maxChars) break;
+    current = candidate;
+  }
+  if (current) return current;
+
+  let output = "";
+  for (const char of normalized) {
+    if (/\s/.test(char)) continue;
+    if (copyLength(output + char) > Math.max(1, maxChars - 2)) break;
+    output += char;
+  }
+  return output ? `${output}...` : fallback;
+}
+
+function compactCta(value: string) {
+  const text = replaceForbiddenPhrases(value || "");
+  if (copyLength(text) <= 10) return text || "구성보기";
+  if (/혜택|할인|특가/.test(text)) return "혜택보기";
+  if (/장바구니|담/.test(text)) return "담아보기";
+  if (/구성|세트|상품/.test(text)) return "구성보기";
+  return "보러가기";
+}
+
+function buildCopyVariants(copy: GeneratedAdCopy): GeneratedAdCopy["copyVariants"] {
+  const existing = copy.copyVariants;
+  const base: GeneratedAdCopyVariant = {
+    headline: copy.headline,
+    bodyCopy: copy.bodyCopy,
+    highlightCopy: copy.highlightCopy,
+    bottomBarCopy: copy.bottomBarCopy,
+    cta: copy.cta,
+    price: copy.price,
+  };
+
+  return {
+    short: {
+      headline: shortenCopy(existing?.short?.headline || base.headline, 12, base.headline),
+      bodyCopy: shortenCopy(existing?.short?.bodyCopy || base.bodyCopy, 24, base.bodyCopy),
+      highlightCopy: shortenCopy(existing?.short?.highlightCopy || base.highlightCopy, 18, base.highlightCopy),
+      bottomBarCopy: shortenCopy(existing?.short?.bottomBarCopy || base.bottomBarCopy, 22, base.bottomBarCopy),
+      cta: compactCta(existing?.short?.cta || base.cta),
+      price: existing?.short?.price || base.price,
+    },
+    medium: {
+      headline: shortenCopy(existing?.medium?.headline || base.headline, 16, base.headline),
+      bodyCopy: shortenCopy(existing?.medium?.bodyCopy || base.bodyCopy, 40, base.bodyCopy),
+      highlightCopy: shortenCopy(existing?.medium?.highlightCopy || base.highlightCopy, 26, base.highlightCopy),
+      bottomBarCopy: shortenCopy(existing?.medium?.bottomBarCopy || base.bottomBarCopy, 30, base.bottomBarCopy),
+      cta: compactCta(existing?.medium?.cta || base.cta),
+      price: existing?.medium?.price || base.price,
+    },
+    long: {
+      headline: shortenCopy(existing?.long?.headline || base.headline, 22, base.headline),
+      bodyCopy: shortenCopy(existing?.long?.bodyCopy || base.bodyCopy, 56, base.bodyCopy),
+      highlightCopy: shortenCopy(existing?.long?.highlightCopy || base.highlightCopy, 34, base.highlightCopy),
+      bottomBarCopy: shortenCopy(existing?.long?.bottomBarCopy || base.bottomBarCopy, 38, base.bottomBarCopy),
+      cta: compactCta(existing?.long?.cta || base.cta),
+      price: existing?.long?.price || base.price,
+    },
+  };
 }
 
 function inferPrimaryHookType(labels: AdImageLabel[]) {
@@ -460,7 +540,11 @@ function normalizeCopy(value: Partial<GeneratedAdCopy>, product: ProductInfoForP
     ),
   };
 
-  return applyReferenceNuance(normalized, product, labels);
+  const referenceApplied = applyReferenceNuance(normalized, product, labels);
+  return {
+    ...referenceApplied,
+    copyVariants: buildCopyVariants(referenceApplied),
+  };
 }
 
 function mockCopy(product: ProductInfoForPrompt, labels: AdImageLabel[]): GeneratedAdCopy {
@@ -672,7 +756,33 @@ ${JSON.stringify(labels.map((label) => ({
   "price": "",
   "hookType": "",
   "appealPoint": "",
-  "whyThisWorks": ""
+  "whyThisWorks": "",
+  "copyVariants": {
+    "short": {
+      "headline": "",
+      "bodyCopy": "",
+      "highlightCopy": "",
+      "bottomBarCopy": "",
+      "cta": "",
+      "price": ""
+    },
+    "medium": {
+      "headline": "",
+      "bodyCopy": "",
+      "highlightCopy": "",
+      "bottomBarCopy": "",
+      "cta": "",
+      "price": ""
+    },
+    "long": {
+      "headline": "",
+      "bodyCopy": "",
+      "highlightCopy": "",
+      "bottomBarCopy": "",
+      "cta": "",
+      "price": ""
+    }
+  }
 }
 `;
 
@@ -716,7 +826,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const copy = process.env.OPENAI_API_KEY ? await generateWithOpenAI(product, selectedLabels) : mockCopy(product, selectedLabels);
+    const rawCopy = process.env.OPENAI_API_KEY ? await generateWithOpenAI(product, selectedLabels) : mockCopy(product, selectedLabels);
+    const copy = {
+      ...rawCopy,
+      copyVariants: rawCopy.copyVariants || buildCopyVariants(rawCopy),
+    };
 
     return NextResponse.json({
       ok: true,

@@ -9,6 +9,9 @@ import type {
   GeneratedAdCopy,
   ExtractedProductInfo,
   MvpBrand,
+  ProductImageEffectPreset,
+  ProductImageMode,
+  ProductImageState,
   ProductInfoForPrompt,
 } from "../lib/mvp/types";
 import { foodCategoryTemplates, foodImpactHeroTemplate, type BannerTemplateDefinition } from "../../lib/bannerTemplates";
@@ -49,6 +52,13 @@ type BannerTextColorState = {
 
 type MainImageSourceMode = "detail" | "upload" | "gpt";
 
+const emptyProductImageState: ProductImageState = {
+  originalImagePath: "",
+  selectedImageMode: "original",
+  cutoutApplied: false,
+  effectPreset: "outline-glow-shadow",
+};
+
 type SystemFontOption = {
   id: string;
   label: string;
@@ -74,25 +84,25 @@ const systemFontOptions: SystemFontOption[] = [
   {
     id: "cafe24-ohsquare",
     label: "Cafe24 Ohsquare",
-    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Ohsquare\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Ohsquare OTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Ohsquare-v2.0.otf",
   },
   {
     id: "cafe24-dangdanghae",
     label: "Cafe24 Dangdanghae",
-    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Dangdanghae\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Dangdanghae OTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Dangdanghae-v2.0.otf",
   },
   {
     id: "cafe24-supermagic",
     label: "Cafe24 Supermagic",
-    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Supermagic\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Supermagic OTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Supermagic-Regular-v1.0.otf",
   },
   {
     id: "cafe24-nyangi",
     label: "Cafe24 Nyangi",
-    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Nyangi\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Cafe24 Nyangi B\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Nyangi-B-v1.0.ttf",
   },
   {
@@ -116,19 +126,19 @@ const systemFontOptions: SystemFontOption[] = [
   {
     id: "gmarket-bold",
     label: "Gmarket Sans Bold",
-    fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans TTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFBold.ttf",
   },
   {
     id: "gmarket-medium",
     label: "Gmarket Sans Medium",
-    fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans TTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFMedium.ttf",
   },
   {
     id: "gmarket-light",
     label: "Gmarket Sans Light",
-    fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans\", \"Noto Sans KR\", sans-serif",
+    fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans TTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFLight.ttf",
   },
   {
@@ -288,6 +298,24 @@ function normalizeProductCategory(...values: string[]) {
   return categoryOptions.includes(values[0]) ? values[0] : "기타";
 }
 
+function getSelectedProductImagePath(state: ProductImageState) {
+  if (state.selectedImageMode === "styled-cutout" && state.styledCutoutImagePath) {
+    return state.styledCutoutImagePath;
+  }
+
+  if (state.selectedImageMode === "cutout" && state.cutoutImagePath) {
+    return state.cutoutImagePath;
+  }
+
+  return state.originalImagePath;
+}
+
+function productImageModeLabel(mode: ProductImageMode) {
+  if (mode === "cutout") return "누끼본";
+  if (mode === "styled-cutout") return "효과 적용 누끼본";
+  return "원본";
+}
+
 const emptyBannerCopy: GeneratedAdCopy = {
   headline: "",
   bodyCopy: "",
@@ -331,6 +359,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [labelStatus, setLabelStatus] = useState<Status>({ kind: "idle", message: "이미지를 선택하면 라벨 편집 패널이 열립니다." });
   const [selectedReferenceLabelIds, setSelectedReferenceLabelIds] = useState<string[]>([]);
   const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(emptyProductInfo);
+  const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState("");
   const [productExtractStatus, setProductExtractStatus] = useState<Status>({ kind: "idle", message: "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다." });
   const [strategyStatus, setStrategyStatus] = useState<Status>({ kind: "idle", message: "라벨 완료 레퍼런스 1~3개와 새 상품 정보를 입력하세요." });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
@@ -345,6 +374,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [mainImageSourceMode, setMainImageSourceMode] = useState<MainImageSourceMode>("detail");
   const [uploadedMainImageDataUrl, setUploadedMainImageDataUrl] = useState("");
   const [gptMainImagePath, setGptMainImagePath] = useState("");
+  const [gptImageStatus, setGptImageStatus] = useState<Status>({ kind: "idle", message: "이미지 생성 버튼을 누르면 상품 정보 기반 이미지를 생성합니다." });
+  const [productImageState, setProductImageState] = useState<ProductImageState>(emptyProductImageState);
+  const [productImageProcessStatus, setProductImageProcessStatus] = useState<Status>({
+    kind: "idle",
+    message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
+  });
   const [selectedHeadlineFontId, setSelectedHeadlineFontId] = useState(systemFontOptions[0].id);
   const [selectedBodyFontId, setSelectedBodyFontId] = useState(systemFontOptions[11].id);
   const [selectedTemplateId, setSelectedTemplateId] = useState("food-template-001");
@@ -396,21 +431,23 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       : productInfo.backgroundMode === "selected-detail-blur-dark"
         ? productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value || ""
         : "";
-  const currentMainProductImage =
+  const originalMainProductImage =
     mainImageSourceMode === "upload"
       ? uploadedMainImageDataUrl
       : mainImageSourceMode === "gpt"
         ? gptMainImagePath
         : productInfo.productImagePath;
+  const currentMainProductImage = getSelectedProductImagePath(productImageState);
   const currentSecondaryProductImage =
-    productInfo.secondaryProductImagePath || backgroundImageOptions.find((option) => option.value !== currentMainProductImage)?.value || currentMainProductImage;
+    productInfo.secondaryProductImagePath || backgroundImageOptions.find((option) => option.value !== originalMainProductImage)?.value || currentMainProductImage;
   const currentProductImagePaths = useMemo(() => {
     if (mainImageSourceMode !== "detail") return [currentMainProductImage].filter(Boolean);
     const selected = (productInfo.productImagePaths?.length
       ? productInfo.productImagePaths
       : [productInfo.productImagePath, productInfo.secondaryProductImagePath]).filter(Boolean);
     const fallback = backgroundImageOptions[0]?.value || "";
-    return (selected.length ? selected : [fallback]).filter(Boolean).slice(0, 4);
+    const originals = (selected.length ? selected : [fallback]).filter(Boolean).slice(0, 4);
+    return [currentMainProductImage || originals[0], ...originals.slice(1)].filter(Boolean).slice(0, 4);
   }, [backgroundImageOptions, currentMainProductImage, mainImageSourceMode, productInfo.productImagePath, productInfo.productImagePaths, productInfo.secondaryProductImagePath]);
   const selectedHeadlineFont = systemFontOptions.find((option) => option.id === selectedHeadlineFontId) ?? systemFontOptions[0];
   const selectedBodyFont = systemFontOptions.find((option) => option.id === selectedBodyFontId) ?? systemFontOptions[11];
@@ -461,6 +498,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       setSelectedTemplateId(categoryTemplates[0].id);
     }
   }, [categoryTemplates, selectedTemplateId]);
+
+  useEffect(() => {
+    setProductImageState({
+      ...emptyProductImageState,
+      originalImagePath: originalMainProductImage || "",
+    });
+    setProductImageProcessStatus({
+      kind: "idle",
+      message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
+    });
+  }, [originalMainProductImage]);
 
   async function refreshImages() {
     const response = await fetch("/api/mvp/images");
@@ -598,7 +646,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     });
   }
 
-  function mergeExtractedProductInfo(current: ProductInfoForPrompt, extracted: ExtractedProductInfo): ProductInfoForPrompt {
+  function mergeExtractedProductInfo(current: ProductInfoForPrompt, extracted: ExtractedProductInfo, replaceExtractedFields: boolean): ProductInfoForPrompt {
     const extractedCategory = normalizeProductCategory(
       extracted.category,
       extracted.productName,
@@ -613,23 +661,24 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     const selectedBackgroundSource = shouldRefreshSelectedBackground
       ? extracted.mainImage || galleryImages[0] || ""
       : current.selectedBackgroundSource;
+    const nextProductImagePaths = galleryImages.slice(0, 4);
 
     return {
       ...current,
-      productName: current.productName || extracted.productName || "",
-      category: current.category || extractedCategory,
-      price: current.price || extracted.price || "",
-      discountInfo: extracted.discountInfo || current.discountInfo || "",
-      mainBenefit: current.mainBenefit || extracted.description || "",
+      productName: replaceExtractedFields ? extracted.productName || "" : current.productName || extracted.productName || "",
+      category: replaceExtractedFields ? extractedCategory : current.category || extractedCategory,
+      price: replaceExtractedFields ? extracted.price || "" : current.price || extracted.price || "",
+      discountInfo: replaceExtractedFields ? extracted.discountInfo || "" : extracted.discountInfo || current.discountInfo || "",
+      mainBenefit: replaceExtractedFields ? extracted.description || "" : current.mainBenefit || extracted.description || "",
       landingUrl: current.landingUrl || extracted.landingUrl || "",
-      productImagePath: extracted.mainImage || current.productImagePath || "",
-      secondaryProductImagePath: current.secondaryProductImagePath || galleryImages.find((image) => image !== extracted.mainImage) || "",
-      productImagePaths: current.productImagePaths?.length ? current.productImagePaths : galleryImages.slice(0, 2),
-      backgroundImagePath: current.backgroundImagePath || "",
-      extractedDescription: extracted.description || current.extractedDescription || "",
-      extractedMainImage: extracted.mainImage || current.extractedMainImage || "",
-      extractedGalleryImages: galleryImages.length ? galleryImages : current.extractedGalleryImages || [],
-      selectedBackgroundSource,
+      productImagePath: replaceExtractedFields ? extracted.mainImage || nextProductImagePaths[0] || "" : extracted.mainImage || current.productImagePath || "",
+      secondaryProductImagePath: replaceExtractedFields ? nextProductImagePaths.find((image) => image !== extracted.mainImage) || "" : current.secondaryProductImagePath || galleryImages.find((image) => image !== extracted.mainImage) || "",
+      productImagePaths: replaceExtractedFields ? nextProductImagePaths : current.productImagePaths?.length ? current.productImagePaths : nextProductImagePaths,
+      backgroundImagePath: replaceExtractedFields ? "" : current.backgroundImagePath || "",
+      extractedDescription: replaceExtractedFields ? extracted.description || "" : extracted.description || current.extractedDescription || "",
+      extractedMainImage: replaceExtractedFields ? extracted.mainImage || "" : extracted.mainImage || current.extractedMainImage || "",
+      extractedGalleryImages: replaceExtractedFields ? galleryImages : galleryImages.length ? galleryImages : current.extractedGalleryImages || [],
+      selectedBackgroundSource: replaceExtractedFields ? extracted.mainImage || nextProductImagePaths[0] || "" : selectedBackgroundSource,
       backgroundMode: current.backgroundMode === "none" ? "auto-detail-blur-dark" : current.backgroundMode || "auto-detail-blur-dark",
     };
   }
@@ -660,9 +709,13 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
 
       let mergedProductInfo = productInfo;
       setProductInfo((current) => {
-        mergedProductInfo = mergeExtractedProductInfo(current, result.productInfo);
+        const replaceExtractedFields = productUrl !== lastLoadedProductUrl;
+        mergedProductInfo = mergeExtractedProductInfo(current, result.productInfo, replaceExtractedFields);
         return mergedProductInfo;
       });
+      setLastLoadedProductUrl(productUrl);
+      setGeneratedBannerPath("");
+      setGptMainImagePath("");
       setProductExtractStatus({ kind: "success", message: "상품 정보를 불러왔습니다. 필요한 부분은 직접 수정할 수 있습니다." });
       return mergedProductInfo;
     } catch (error) {
@@ -682,8 +735,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       let productInfoForCopy = productInfo;
       const hasUrl = Boolean(productInfo.landingUrl.trim());
       const hasExtractedDetails = Boolean(productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription);
+      const isDifferentUrl = productInfo.landingUrl.trim() !== lastLoadedProductUrl;
 
-      if (hasUrl && !hasExtractedDetails) {
+      if (hasUrl && (!hasExtractedDetails || isDifferentUrl)) {
         setProductExtractStatus({ kind: "loading", message: "상품 상세페이지 정보를 불러오는 중입니다." });
         productInfoForCopy = await loadProductInfoFromUrl({ silent: true });
       }
@@ -745,6 +799,53 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     reader.readAsDataURL(file);
   }
 
+  async function generateGptMainImage() {
+    const hasProductContext = Boolean(productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription || bannerCopy.headline);
+    if (!hasProductContext) {
+      setGptImageStatus({ kind: "error", message: "상품 정보나 광고 문구가 있어야 이미지를 생성할 수 있습니다." });
+      return;
+    }
+
+    setGptImageStatus({ kind: "loading", message: "GPT 이미지 생성 API를 호출하는 중입니다." });
+
+    try {
+      const response = await fetch("/api/image/generate-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productInfo: {
+            ...productInfo,
+            productImagePath: currentMainProductImage || productInfo.productImagePath,
+            productImagePaths: currentProductImagePaths,
+          },
+          prompt: [
+            bannerCopy.headline,
+            bannerCopy.bodyCopy,
+            bannerCopy.highlightCopy,
+            productInfo.productName,
+            productInfo.mainBenefit,
+            productInfo.extractedDescription,
+          ].filter(Boolean).join(" / "),
+          styleHint: selectedTemplate?.description || "",
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "이미지 생성에 실패했습니다.");
+      }
+
+      setGptMainImagePath(result.imagePath);
+      setMainImageSourceMode("gpt");
+      setGptImageStatus({ kind: "success", message: `생성 완료: ${result.imagePath}` });
+    } catch (error) {
+      setGptImageStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "이미지 생성에 실패했습니다.",
+      });
+    }
+  }
+
   function setProductImageSlot(index: number, value: string) {
     setProductInfo((current) => {
       const next = [...(current.productImagePaths?.length ? current.productImagePaths : [current.productImagePath, current.secondaryProductImagePath].filter((imagePath): imagePath is string => Boolean(imagePath)))];
@@ -757,6 +858,85 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         productImagePaths: compact,
       };
     });
+  }
+
+  function selectProductImageMode(selectedImageMode: ProductImageMode) {
+    setProductImageState((current) => ({ ...current, selectedImageMode }));
+  }
+
+  async function applyCutoutToProductImage() {
+    if (!productImageState.originalImagePath) {
+      setProductImageProcessStatus({ kind: "error", message: "누끼를 적용할 원본 이미지를 먼저 선택해 주세요." });
+      return;
+    }
+
+    setProductImageProcessStatus({ kind: "loading", message: "선택한 상품 이미지의 배경을 제거하는 중입니다." });
+
+    try {
+      const response = await fetch("/api/image/remove-background", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceImagePath: productImageState.originalImagePath,
+          effectPreset: productImageState.effectPreset || "none",
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
+      }
+
+      setProductImageState((current) => ({
+        ...current,
+        cutoutImagePath: result.cutoutImagePath,
+        selectedImageMode: "cutout",
+        cutoutApplied: true,
+      }));
+      setProductImageProcessStatus({ kind: "success", message: "누끼본을 생성했습니다. 원본/누끼본 중 원하는 이미지를 선택할 수 있습니다." });
+    } catch (error) {
+      setProductImageProcessStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
+      });
+    }
+  }
+
+  async function applyEffectToCutout() {
+    if (!productImageState.cutoutImagePath) {
+      setProductImageProcessStatus({ kind: "error", message: "효과를 적용하려면 먼저 누끼본을 생성해 주세요." });
+      return;
+    }
+
+    setProductImageProcessStatus({ kind: "loading", message: "누끼본에 상품 강조 효과를 적용하는 중입니다." });
+
+    try {
+      const response = await fetch("/api/image/apply-product-effect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cutoutImagePath: productImageState.cutoutImagePath,
+          effectPreset: productImageState.effectPreset || "outline-glow-shadow",
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "효과 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
+      }
+
+      setProductImageState((current) => ({
+        ...current,
+        styledCutoutImagePath: result.styledCutoutImagePath,
+        selectedImageMode: "styled-cutout",
+      }));
+      setProductImageProcessStatus({ kind: "success", message: "효과 적용 누끼본을 생성했습니다. 배너에 사용할 이미지를 선택해 주세요." });
+    } catch (error) {
+      setProductImageProcessStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "효과 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
+      });
+    }
   }
 
   async function renderBanner() {
@@ -785,6 +965,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           productImagePath: currentMainProductImage,
           secondaryProductImagePath: currentSecondaryProductImage,
           productImagePaths: currentProductImagePaths,
+          productImageState,
           backgroundMode: productInfo.backgroundMode || "none",
           selectedBackgroundSource: currentBackgroundSource,
           backgroundStyle: {
@@ -1283,23 +1464,106 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     </label>
                   ) : null}
                   {mainImageSourceMode === "gpt" ? (
-                    <label>
-                      <span>GPT 생성 이미지 URL/경로</span>
-                      <input
-                        onChange={(event) => setGptMainImagePath(event.target.value)}
-                        placeholder="/generated-product-images/example.png 또는 https://..."
-                        value={gptMainImagePath}
-                      />
-                    </label>
+                    <div className="gpt-image-generator">
+                      <label>
+                        <span>GPT 생성 이미지 URL/경로</span>
+                        <input
+                          onChange={(event) => setGptMainImagePath(event.target.value)}
+                          placeholder="/generated-product-images/example.png 또는 https://..."
+                          value={gptMainImagePath}
+                        />
+                      </label>
+                      <button
+                        disabled={gptImageStatus.kind === "loading"}
+                        onClick={generateGptMainImage}
+                        type="button"
+                      >
+                        {gptImageStatus.kind === "loading" ? "이미지 생성 중..." : "이미지 생성"}
+                      </button>
+                      <p className={`mvp-status ${gptImageStatus.kind}`}>{gptImageStatus.message}</p>
+                    </div>
                   ) : null}
                   {currentMainProductImage ? (
                     <div className="background-preview-thumb">
                       <img alt="선택된 메인 상품 이미지 미리보기" src={currentMainProductImage} />
-                      <span>배너 중앙에 크게 들어갈 메인 상품 이미지</span>
+                      <span>현재 배너에 사용하는 이미지: {productImageModeLabel(productImageState.selectedImageMode)}</span>
                     </div>
                   ) : (
                     <p className="strategy-empty">상세페이지 이미지, 첨부 이미지, GPT 생성 이미지 중 하나를 선택해주세요.</p>
                   )}
+                  <div className="product-cutout-panel">
+                    <p>기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.</p>
+                    <div className="background-style-grid">
+                      <button
+                        disabled={!productImageState.originalImagePath || productImageProcessStatus.kind === "loading"}
+                        onClick={applyCutoutToProductImage}
+                        type="button"
+                      >
+                        누끼 적용
+                      </button>
+                      <button
+                        disabled={!productImageState.cutoutImagePath || productImageProcessStatus.kind === "loading"}
+                        onClick={applyEffectToCutout}
+                        type="button"
+                      >
+                        효과 적용
+                      </button>
+                    </div>
+                    <label>
+                      <span>효과 프리셋</span>
+                      <select
+                        onChange={(event) => setProductImageState((current) => ({ ...current, effectPreset: event.target.value as ProductImageEffectPreset }))}
+                        value={productImageState.effectPreset || "outline-glow-shadow"}
+                      >
+                        <option value="none">none</option>
+                        <option value="clean-outline">clean-outline</option>
+                        <option value="soft-glow">soft-glow</option>
+                        <option value="commerce-shadow">commerce-shadow</option>
+                        <option value="outline-glow-shadow">outline-glow-shadow</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>배너 이미지 모드</span>
+                      <select
+                        onChange={(event) => selectProductImageMode(event.target.value as ProductImageMode)}
+                        value={productImageState.selectedImageMode}
+                      >
+                        <option value="original">원본 이미지 사용</option>
+                        <option disabled={!productImageState.cutoutImagePath} value="cutout">누끼 이미지 사용</option>
+                        <option disabled={!productImageState.styledCutoutImagePath} value="styled-cutout">효과 적용 누끼 사용</option>
+                      </select>
+                    </label>
+                    <div className={`mvp-status ${productImageProcessStatus.kind}`}>{productImageProcessStatus.message}</div>
+                    <div className="product-image-variant-grid">
+                      <button
+                        className={productImageState.selectedImageMode === "original" ? "selected" : ""}
+                        disabled={!productImageState.originalImagePath}
+                        onClick={() => selectProductImageMode("original")}
+                        type="button"
+                      >
+                        {productImageState.originalImagePath ? <img alt="원본 이미지" src={productImageState.originalImagePath} /> : null}
+                        <span>원본</span>
+                      </button>
+                      <button
+                        className={productImageState.selectedImageMode === "cutout" ? "selected" : ""}
+                        disabled={!productImageState.cutoutImagePath}
+                        onClick={() => selectProductImageMode("cutout")}
+                        type="button"
+                      >
+                        {productImageState.cutoutImagePath ? <img alt="누끼 이미지" src={productImageState.cutoutImagePath} /> : null}
+                        <span>누끼본</span>
+                      </button>
+                      <button
+                        className={productImageState.selectedImageMode === "styled-cutout" ? "selected" : ""}
+                        disabled={!productImageState.styledCutoutImagePath}
+                        onClick={() => selectProductImageMode("styled-cutout")}
+                        type="button"
+                      >
+                        {productImageState.styledCutoutImagePath ? <img alt="효과 적용 누끼 이미지" src={productImageState.styledCutoutImagePath} /> : null}
+                        <span>효과본</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div className="background-settings render-settings">
                   <div>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import sharp from "sharp";
 import { ExtractedProductInfo } from "../../../lib/mvp/types";
 
 function decodeHtml(value: string) {
@@ -231,7 +232,7 @@ function looksLikeUsableProductImage(value: string) {
   const lower = value.toLowerCase();
   if (!/^https?:\/\//.test(lower)) return false;
   if (lower.startsWith("data:")) return false;
-  if (/(sprite|favicon|logo|icon|blank|placeholder|loading|tracking|pixel|badge|btn|button|coupon|event|banner|ad_|ads?\/)/.test(lower)) return false;
+  if (/(sprite|favicon|logo|icon|blank|placeholder|loading|tracking|pixel|badge|btn|button|coupon|event|banner|share|kakao|talk|qr|app|ad_|ads?\/|noimage|salelabel|main_floting|main_info|floating|whiteclose|floating_zoom|contents\/images|commonimg)/.test(lower)) return false;
   if (/\.(svg)(?:[?#].*)?$/.test(lower)) return false;
   return /\.(jpg|jpeg|png|webp|gif)(?:[?#].*)?$/.test(lower) || /image|goods|product|detail|thumb|photo|cdn|shop|item/.test(lower);
 }
@@ -261,14 +262,58 @@ function isDetailContext(context: string) {
 
 const maxGalleryImages = 30;
 
+function productImageCandidateScore(value: string, context = "") {
+  const text = `${value} ${context}`.toLowerCase();
+  let score = 0;
+  if (/(product|goods|item|detail|thumb|thumbnail|photo|gallery|prd|prod|contents?|view|viewarea|detailview)/.test(text)) score += 2;
+  if (/(상품|제품|상세|상세정보|상품정보|대표|썸네일|포토|사진|갤러리|원본|고기|한우|소고기|스테이크|등심|갈비|내장|곱창|육즙|조리컷|실제|구이|구성)/.test(text)) score += 3;
+  if (/\/userfiles\/[^?]+\/thumfull\//.test(text)) score += 18;
+  if (/\/userfiles\/[^?]+\/thumbpc\//.test(text)) score += 10;
+  if (/\/data\/goods\/[^?]+\/small\/thum2\//.test(text)) score -= 9;
+  if (/(main|large|big|origin|original)/.test(text)) score += 1;
+  if (/(banner|event|coupon|promo|promotion|logo|icon|badge|button|btn|sprite|delivery|review-star|recommend|related|recent|bestitem|share|kakao|qr)/.test(text)) score -= 7;
+  if (/(배너|이벤트|쿠폰|기획전|프로모션|로고|아이콘|배송|혜택|버튼|공유|카카오|앱\s*다운로드|qr|오늘의\s*추천상품|추천상품|관련상품|최근\s*본\s*상품|함께\s*구매|다른\s*고객|best\s*item|related|recommend|recently\s*viewed)/.test(text)) score -= 12;
+  return score;
+}
+
+function isProductRecommendationContext(context: string) {
+  return /(오늘의\s*추천상품|추천상품|관련상품|최근\s*본\s*상품|함께\s*구매|다른\s*고객|많이\s*본\s*상품|베스트\s*상품|인기\s*상품|best\s*item|related\s*products?|recommend(?:ed|ation)?|recently\s*viewed)/i.test(context);
+}
+
+function isProductDetailContext(context: string) {
+  return /(상세\s*정보|상세정보|상품\s*정보|상품정보|제품\s*상세|상세컷|상세이미지|조리컷|실제|구이|육즙|소내장탕|상품설명|product\s*detail|detail\s*view|goods\s*view|goodsdetail|detailarea|detailimg|prd_detail)/i.test(context);
+}
+
+function detailHtmlRanges(html: string) {
+  const starts = [
+    ...html.matchAll(/(?:상세\s*정보|상세정보|상품\s*정보|상품정보|제품\s*상세|product\s*detail|detail\s*view|goods\s*view|goodsdetail|detailarea|detailimg|prd_detail)/gi),
+  ].map((match) => match.index ?? 0);
+  const endPattern = /(?:오늘의\s*추천상품|추천상품|관련상품|최근\s*본\s*상품|함께\s*구매|많이\s*본\s*상품|베스트\s*상품|footer|recommend|related|recently\s*viewed)/gi;
+  const ranges: Array<[number, number]> = [];
+
+  for (const start of starts) {
+    const tail = html.slice(start);
+    const endMatch = tail.match(endPattern);
+    const end = endMatch?.index ? start + endMatch.index : Math.min(html.length, start + 500_000);
+    ranges.push([start, Math.max(start + 1, end)]);
+  }
+
+  return ranges;
+}
+
+function indexInRanges(index: number, ranges: Array<[number, number]>) {
+  return ranges.some(([start, end]) => index >= start && index <= end);
+}
+
 function collectGalleryImages(html: string, baseUrl: string, seedImages: string[]) {
+  const detailRanges = detailHtmlRanges(html);
   const candidates: { image: string; score: number; order: number; inDetail: boolean }[] = [
     ...seedImages,
     absoluteUrl(metaContent(html, "og:image"), baseUrl),
     absoluteUrl(metaContent(html, "twitter:image"), baseUrl),
   ].filter(Boolean).map((image, index) => ({
     image,
-    score: imageCandidateScore(image) - 1,
+    score: productImageCandidateScore(image) - 1,
     order: 100_000 + index,
     inDetail: false,
   }));
@@ -284,9 +329,9 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
     const index = match.index ?? 0;
     const nearbyText = textContextFromHtml(html.slice(Math.max(0, index - 900), Math.min(html.length, index + 900)));
     const context = `${[...tag.matchAll(contextPattern)].map((item) => item[1]).join(" ")} ${nearbyText}`;
-    const inDetail = isDetailContext(context);
-    if (!inDetail && isRecommendationContext(context)) continue;
-    if (imageCandidateScore("", context) <= -3) continue;
+    const inDetail = indexInRanges(index, detailRanges) || isProductDetailContext(context) || isDetailContext(context);
+    if (!inDetail && (isProductRecommendationContext(context) || isRecommendationContext(context))) continue;
+    if (productImageCandidateScore("", context) <= -4) continue;
 
     const dimensions = [...tag.matchAll(dimensionPattern)].map((item) => Number(item[1])).filter(Boolean);
     if (dimensions.length && Math.max(...dimensions) < 180) continue;
@@ -300,8 +345,8 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
     const images = [absoluteUrl(src || "", baseUrl), srcset ? imageFromSrcset(srcset, baseUrl) : ""].filter(Boolean);
     for (const image of images) {
       const score =
-        imageCandidateScore(image, context) +
-        (inDetail ? 8 : 0) +
+        productImageCandidateScore(image, context) +
+        (inDetail ? 12 : 0) +
         (dimensions.length ? 1 : 0);
       if (score >= 1 || dimensions.some((size) => size >= 300)) {
         candidates.push({ image, score, order: index, inDetail });
@@ -312,7 +357,6 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
   return candidates
     .sort((a, b) => {
       if (a.inDetail !== b.inDetail) return a.inDetail ? -1 : 1;
-      if (a.inDetail && b.inDetail) return a.order - b.order;
       if (a.score !== b.score) return b.score - a.score;
       return a.order - b.order;
     })
@@ -325,6 +369,103 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
       return true;
     })
     .slice(0, maxGalleryImages);
+}
+
+async function remoteImageMetadata(imageUrl: string) {
+  try {
+    const response = await fetch(imageUrl, {
+      headers: {
+        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (compatible; AdAtlasProductExtractor/1.0)",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) return null;
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType && !contentType.startsWith("image/")) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const metadata = await sharp(buffer).metadata();
+    if (!metadata.width || !metadata.height) return null;
+    const { data, info } = await sharp(buffer)
+      .resize(96, 96, { fit: "inside" })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    let meatPixels = 0;
+    let whitePixels = 0;
+    let darkPixels = 0;
+    const totalPixels = Math.max(1, info.width * info.height);
+
+    for (let index = 0; index < data.length; index += 3) {
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const saturation = max - min;
+      if (red > 70 && saturation > 20 && red > green * 1.02 && red > blue * 1.02) meatPixels += 1;
+      if (red > 220 && green > 220 && blue > 220) whitePixels += 1;
+      if (red < 55 && green < 55 && blue < 55) darkPixels += 1;
+    }
+
+    return {
+      width: metadata.width,
+      height: metadata.height,
+      meatRatio: meatPixels / totalPixels,
+      whiteRatio: whitePixels / totalPixels,
+      darkRatio: darkPixels / totalPixels,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function meatPhotoScore(imageUrl: string, metadata: { width: number; height: number; meatRatio: number; whiteRatio: number; darkRatio: number }) {
+  const lower = imageUrl.toLowerCase();
+  const { width, height, meatRatio, whiteRatio, darkRatio } = metadata;
+  const ratio = height / Math.max(1, width);
+
+  if (width < 220 || height < 220) return -100;
+  if (ratio > 2.15) return -100;
+  if (ratio < 0.38) return -100;
+  if (meatRatio < 0.08) return -100;
+  if (whiteRatio > 0.58 && meatRatio < 0.2) return -100;
+  if (whiteRatio > 0.46 && meatRatio < 0.26) return -100;
+  if (ratio > 1.35 && whiteRatio > 0.38 && meatRatio < 0.34) return -100;
+
+  let score = 0;
+  if (/\/userfiles\/[^?]+\/thumfull\//.test(lower)) score += 8;
+  if (/\/userfiles\/[^?]+\/thumbpc\//.test(lower)) score += 7;
+  if (/\/data\/goods\/[^?]+\/small\/thum2\//.test(lower)) score -= 6;
+  if (/(갈비|등심|한우|고기|소고기|스테이크|meat|beef)/i.test(decodeURIComponent(imageUrl))) score += 4;
+  if (width >= 500 && height >= 500) score += 3;
+  if (ratio >= 0.55 && ratio <= 1.65) score += 5;
+  score += meatRatio * 24;
+  score -= whiteRatio * 10;
+  score -= darkRatio * 3;
+
+  return score;
+}
+
+async function filterProductPhotoImages(images: string[]) {
+  const scored: { image: string; score: number; order: number }[] = [];
+
+  for (const [order, image] of images.slice(0, 40).entries()) {
+    const metadata = await remoteImageMetadata(image);
+    if (!metadata) continue;
+    const score = meatPhotoScore(image, metadata);
+    if (score <= -50) continue;
+    scored.push({ image, score, order });
+  }
+
+  const filtered = scored
+    .sort((a, b) => (a.score === b.score ? a.order - b.order : b.score - a.score))
+    .map((item) => item.image);
+
+  const detailProductPhotos = filtered.filter((image) => /\/userfiles\/[^?]+\/(?:thumfull|thumbpc)\//i.test(image));
+  const finalImages = detailProductPhotos.length >= 4 ? detailProductPhotos : filtered;
+
+  return finalImages.length ? finalImages.slice(0, maxGalleryImages) : images;
 }
 
 export async function POST(request: Request) {
@@ -363,8 +504,9 @@ export async function POST(request: Request) {
     const jsonLd = extractJsonLd(html, url.toString());
     const price = extractPrice(html, jsonLd.price);
     const fallbackMainImage = jsonLd.image || absoluteUrl(metaContent(html, "og:image") || metaContent(html, "twitter:image"), url.toString());
-    const galleryImages = collectGalleryImages(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
-    const mainImage = galleryImages[0] || fallbackMainImage;
+    const rawGalleryImages = collectGalleryImages(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
+    const galleryImages = await filterProductPhotoImages(rawGalleryImages);
+    const mainImage = galleryImages[0] || rawGalleryImages[0] || fallbackMainImage;
     const productInfo: ExtractedProductInfo = {
       productName: jsonLd.name || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html),
       category: extractCategory(html, jsonLd.category),
