@@ -72,6 +72,9 @@ export type ProductInfoForPrompt = {
   extractedGalleryImages?: string[];
   selectedBackgroundSource?: string;
   backgroundMode?: "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
+  sourceImageCandidates?: SourceImageCandidate[];
+  selectedSourceImageId?: string;
+  selectedSourceImagePath?: string;
 };
 
 export type ProductImageMode =
@@ -93,6 +96,211 @@ export type ProductImageState = {
   selectedImageMode: ProductImageMode;
   cutoutApplied: boolean;
   effectPreset?: ProductImageEffectPreset;
+};
+
+export type SourceImageCandidate = {
+  id: string;
+  type: "hero" | "detail" | "upload";
+  imagePath: string;
+  originalUrl?: string;
+  label: string;
+  selected: boolean;
+  createdAt: string;
+};
+
+export type SourceImageSelectionState = {
+  candidates: SourceImageCandidate[];
+  selectedSourceImageId?: string;
+  selectedSourceImagePath?: string;
+};
+
+export type GptImageGenerationMode =
+  | "visual-only"
+  | "text-in-image";
+
+export type ImageCreativeDirection = {
+  visualTone: string;
+  composition: string;
+  textPolicy: string;
+  productPreservationPolicy: string;
+  whyThisPrompt: string;
+};
+
+export type GeneratedImageAsset = {
+  imagePath: string;
+  mode: GptImageGenerationMode;
+  imageSourceMode?: GptImageSourceMode;
+  preservationMode?: GptImagePreservationMode;
+  promptMode?: GptPromptMode;
+  selectedSourceImagePath?: string;
+  basePrompt?: string;
+  revisionPrompt?: string;
+  failureReasons?: GptImageFailureReason[];
+  customFeedback?: string;
+  attempt?: number;
+  parentCandidateId?: string;
+  promptUsed: string;
+  createdAt: string;
+};
+
+export type GptImageFailureReason =
+  | "original-subject-changed"
+  | "turned-into-packaged-product"
+  | "cooked-food-turned-raw"
+  | "product-too-small"
+  | "bad-background"
+  | "unwanted-text"
+  | "unwanted-label-or-logo"
+  | "copied-reference-product"
+  | "weak-advertising-mood"
+  | "too-ai-looking"
+  | "wrong-composition"
+  | "other";
+
+export type GptImageEvaluation = {
+  originalPreservationScore?: number;
+  advertisingMoodScore?: number;
+  subjectPreservationScore?: number;
+  commercialMoodScore?: number;
+  compositionScore?: number;
+  hasUnwantedText?: boolean;
+  hasInventedPackaging?: boolean;
+  hasInventedLogoOrLabel?: boolean;
+  subjectTooDifferent?: boolean;
+  shouldRegenerate?: boolean;
+  hasUnwantedPackaging?: boolean;
+  copiedReferenceTooClosely?: boolean;
+  flags?: GptImageFailureReason[];
+  reasons?: string[];
+};
+
+export type GptImageFeedbackState = {
+  selectedCandidateId?: string | null;
+  failureReasons: GptImageFailureReason[];
+  customFeedback?: string;
+  revisionPrompt?: string;
+};
+
+export type GptImageCandidate = {
+  id: string;
+  imagePath: string;
+  sourceImagePath?: string;
+  promptUsed: string;
+  autoPrompt?: string;
+  customPromptNote?: string;
+  basePrompt?: string;
+  revisionPrompt?: string;
+  failureReasons?: GptImageFailureReason[];
+  customFeedback?: string;
+  imageGenerationMode: GptImageGenerationMode;
+  imageSourceMode: GptImageSourceMode;
+  preservationMode: GptImagePreservationMode;
+  promptTemplateMode: GptPromptTemplateMode;
+  canvasPreset: GptOutputCanvasPreset;
+  productName?: string;
+  category?: string;
+  selectedSourceImagePath?: string;
+  attempt: number;
+  parentCandidateId?: string;
+  createdAt: string;
+  evaluation?: GptImageEvaluation;
+};
+
+export type GptImageSourceMode =
+  | "text-to-image"
+  | "image-edit";
+
+export type GptImagePreservationMode =
+  | "free-generate"
+  | "preserve-product";
+
+export type GptPromptTemplateMode =
+  | "ad-image-with-copy"
+  | "visual-only";
+
+export type GptOutputCanvasPreset =
+  | "sns-square-1200";
+
+export type GptPromptTemplateInput = {
+  templateMode: GptPromptTemplateMode;
+  outputCanvasPreset: GptOutputCanvasPreset;
+  productName?: string;
+  category?: string;
+  targetCustomer?: string;
+  mainBenefit?: string;
+  discountInfo?: string;
+  price?: string;
+  headline?: string;
+  bodyCopy?: string;
+  highlightCopy?: string;
+  bottomBarCopy?: string;
+  cta?: string;
+  referenceVisualTone?: string;
+  referenceLayoutPattern?: string;
+  referenceAppealPoint?: string;
+  referenceHookType?: string;
+  referenceCopyNuance?: string;
+  selectedSourceImagePath?: string;
+  referenceImagePaths?: string[];
+  preservationMode?: GptImagePreservationMode;
+  customPromptNote?: string;
+};
+
+export type GptPromptTemplateResult = {
+  mode: GptPromptTemplateMode;
+  canvasPreset: GptOutputCanvasPreset;
+  promptText: string;
+};
+
+export type GptImageFeedbackRecord = {
+  id: string;
+  sourceImagePath?: string;
+  generatedImagePath?: string;
+  parentCandidateId?: string;
+  candidateId?: string;
+  promptTemplateMode: GptPromptTemplateMode;
+  canvasPreset: GptOutputCanvasPreset;
+  imageGenerationMode: GptImageGenerationMode;
+  imageSourceMode: GptImageSourceMode;
+  preservationMode: GptImagePreservationMode;
+  productName?: string;
+  category?: string;
+  failureReasons: GptImageFailureReason[];
+  customFeedback: string;
+  autoPrompt?: string;
+  basePrompt?: string;
+  revisionPrompt: string;
+  promptUsed?: string;
+  attempt: number;
+  createdAt: string;
+};
+
+export type GptImageGenerationRequest = {
+  imageGenerationMode: GptImageGenerationMode;
+  imageSourceMode: GptImageSourceMode;
+  preservationMode: GptImagePreservationMode;
+  selectedSourceImagePath?: string;
+  selectedSourceImageType?: "hero" | "detail" | "upload";
+  selectedSourceImageLabel?: string;
+  productName?: string;
+  category?: string;
+  mainBenefit?: string;
+  targetCustomer?: string;
+  generatedCopy?: Partial<GeneratedAdCopy>;
+  selectedReferenceLabels?: unknown[];
+  templateId?: string;
+};
+
+export type GptPromptMode =
+  | "auto"
+  | "custom";
+
+export type GptCustomPromptState = {
+  promptMode: GptPromptMode;
+  autoPrompt: string;
+  customPrompt: string;
+  customPromptNote?: string;
+  finalPrompt: string;
 };
 
 export type GeneratedAdStrategyPrompt = {
@@ -121,6 +329,9 @@ export type ExtractedProductInfo = {
   galleryImages: string[];
   description: string;
   landingUrl: string;
+  heroImage?: string;
+  detailImages?: string[];
+  sourceImageCandidates?: SourceImageCandidate[];
 };
 
 export type CopySlotKey =
@@ -149,6 +360,35 @@ export type CopyLimit = {
 
 export type TemplateCopyLimits = Partial<Record<CopySlotKey, CopyLimit>>;
 
+export type TemplateFitInfo = {
+  templateId?: string;
+  templateName?: string;
+  usedCopyLimits?: Partial<Record<CopySlotKey, number>>;
+  fitNotes?: string;
+};
+
+export type TemplateCopySlotFit = {
+  key: CopySlotKey;
+  originalText: string;
+  fittedText: string;
+  maxChars: number;
+  currentChars: number;
+  status: "ok" | "trimmed" | "too-long" | "empty" | "needs-review";
+  message?: string;
+};
+
+export type TemplateFittedCopy = {
+  headline: string;
+  bodyCopy: string;
+  highlightCopy: string;
+  bottomBarCopy: string;
+  cta: string;
+  price?: string;
+  templateId: string;
+  slotFits: TemplateCopySlotFit[];
+  createdAt: string;
+};
+
 export type GeneratedAdCopyVariant = {
   headline: string;
   bodyCopy: string;
@@ -158,11 +398,34 @@ export type GeneratedAdCopyVariant = {
   price?: string;
 };
 
+export type ReferencePatternUsage = {
+  usedHookPattern?: string;
+  usedCopyStructure?: string;
+  usedToneOfVoice?: string;
+  usedConsumerInsight?: string;
+  usedPurchaseTrigger?: string;
+  usedReusablePattern?: string;
+  usedVisualCopyRelation?: string;
+};
+
+export type GeneratedCopyValidation = {
+  bodyCopy?: {
+    ok: boolean;
+    reasons: string[];
+    original?: string;
+    normalized?: string;
+    finalLength: number;
+  };
+};
+
 export type GeneratedAdCopy = GeneratedAdCopyVariant & {
   price: string;
   hookType: string;
   appealPoint: string;
   whyThisWorks: string;
+  templateFit?: TemplateFitInfo;
+  referencePatternUsage?: ReferencePatternUsage;
+  copyValidation?: GeneratedCopyValidation;
   copyVariants?: {
     short: GeneratedAdCopyVariant;
     medium: GeneratedAdCopyVariant;

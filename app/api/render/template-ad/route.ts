@@ -5,8 +5,8 @@ import { pathToFileURL } from "url";
 import sharp from "sharp";
 import { NextResponse } from "next/server";
 import { foodCategoryTemplateIds, foodImpactHeroTemplate, headlineFontPresets, templateHeadlinePresetMap, templatesById } from "@/lib/bannerTemplates";
-import { adaptCopyToTemplate } from "../../../lib/mvp/copyAdapter";
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
+import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
 import type { GeneratedAdCopy, GeneratedAdCopyVariant, ProductImageState, TemplateCopyLimits } from "../../../lib/mvp/types";
 
@@ -754,9 +754,28 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RenderBody;
     const requestedTemplateId = body.templateId || "food-template-001";
     const templateId = supportedTemplateIds.has(requestedTemplateId) ? requestedTemplateId : "food-template-001";
+    const template = templatesById.get(templateId) ?? (templateId === foodImpactHeroTemplate.id ? foodImpactHeroTemplate : undefined);
+    const fittedCopy = fitCopyToTemplate({
+      copy: body.copy ?? {},
+      templateId,
+      copyLimits: template?.copyLimits,
+    });
+    const bodyWithFittedCopy: RenderBody = {
+      ...body,
+      templateId,
+      copy: {
+        ...body.copy,
+        headline: fittedCopy.headline,
+        bodyCopy: fittedCopy.bodyCopy,
+        highlightCopy: fittedCopy.highlightCopy,
+        bottomBarCopy: fittedCopy.bottomBarCopy,
+        cta: fittedCopy.cta,
+        price: fittedCopy.price || body.copy?.price,
+      },
+    };
     const imagePath = foodCategoryTemplateIds.includes(templateId)
-      ? await renderFoodCategoryTemplate({ ...body, templateId }, templateId)
-      : await renderFoodImpactHero({ ...body, templateId });
+      ? await renderFoodCategoryTemplate(bodyWithFittedCopy, templateId)
+      : await renderFoodImpactHero(bodyWithFittedCopy);
     return NextResponse.json({ success: true, imagePath, templateId });
   } catch (error) {
     return NextResponse.json(

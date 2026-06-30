@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
-import { ExtractedProductInfo } from "../../../lib/mvp/types";
+import { ExtractedProductInfo, SourceImageCandidate } from "../../../lib/mvp/types";
 
 function decodeHtml(value: string) {
   return value
@@ -507,6 +507,31 @@ export async function POST(request: Request) {
     const rawGalleryImages = collectGalleryImages(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
     const galleryImages = await filterProductPhotoImages(rawGalleryImages);
     const mainImage = galleryImages[0] || rawGalleryImages[0] || fallbackMainImage;
+    const createdAt = new Date().toISOString();
+    const detailImages = galleryImages.filter((image) => image && image !== mainImage).slice(0, 30);
+    const sourceImageCandidates: SourceImageCandidate[] = [];
+    if (mainImage) {
+      sourceImageCandidates.push({
+        id: "hero-001",
+        type: "hero",
+        imagePath: mainImage,
+        originalUrl: mainImage,
+        label: "대표 이미지",
+        selected: true,
+        createdAt,
+      });
+    }
+    sourceImageCandidates.push(
+      ...detailImages.map((imagePath, index): SourceImageCandidate => ({
+        id: `detail-${String(index + 1).padStart(3, "0")}`,
+        type: "detail",
+        imagePath,
+        originalUrl: imagePath,
+        label: `상세 이미지 ${index + 1}`,
+        selected: false,
+        createdAt,
+      })),
+    );
     const productInfo: ExtractedProductInfo = {
       productName: jsonLd.name || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html),
       category: extractCategory(html, jsonLd.category),
@@ -516,9 +541,21 @@ export async function POST(request: Request) {
       galleryImages,
       description: jsonLd.description || metaContent(html, "og:description") || metaContent(html, "description") || metaContent(html, "twitter:description"),
       landingUrl: url.toString(),
+      heroImage: mainImage,
+      detailImages,
+      sourceImageCandidates,
     };
 
-    return NextResponse.json({ ok: true, productInfo });
+    return NextResponse.json({
+      ok: true,
+      success: true,
+      productInfo,
+      productName: productInfo.productName,
+      price: productInfo.price,
+      heroImage: mainImage,
+      detailImages,
+      sourceImageCandidates,
+    });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "Product extraction failed." },

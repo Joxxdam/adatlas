@@ -7,13 +7,28 @@ import type {
   CollectedAdImage,
   GeneratedAdImage,
   GeneratedAdCopy,
+  GeneratedImageAsset,
+  GptImageCandidate,
+  GptImageFailureReason,
+  GptImageGenerationMode,
+  GptImagePreservationMode,
+  GptImageSourceMode,
+  GptPromptTemplateMode,
+  GptCustomPromptState,
   ExtractedProductInfo,
   MvpBrand,
   ProductImageEffectPreset,
   ProductImageMode,
   ProductImageState,
   ProductInfoForPrompt,
+  SourceImageCandidate,
+  SourceImageSelectionState,
+  TemplateFittedCopy,
 } from "../lib/mvp/types";
+import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
+import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
+import { buildImageGenerationPrompt } from "../lib/mvp/imagePromptBuilder";
+import { fitCopyToTemplate } from "../lib/mvp/templateCopyFitter";
 import { foodCategoryTemplates, foodImpactHeroTemplate, type BannerTemplateDefinition } from "../../lib/bannerTemplates";
 
 type Props = {
@@ -51,6 +66,73 @@ type BannerTextColorState = {
 };
 
 type MainImageSourceMode = "detail" | "upload" | "gpt";
+
+const gptImageFailureReasonOptions: { value: GptImageFailureReason; label: string }[] = [
+  { value: "original-subject-changed", label: "원본 상품이 바뀜" },
+  { value: "turned-into-packaged-product", label: "포장 상품처럼 바뀜" },
+  { value: "cooked-food-turned-raw", label: "조리/원물 상태가 바뀜" },
+  { value: "product-too-small", label: "상품이 너무 작음" },
+  { value: "bad-background", label: "배경이 어색함" },
+  { value: "unwanted-text", label: "원치 않는 글씨가 생김" },
+  { value: "unwanted-label-or-logo", label: "라벨/로고가 생김" },
+  { value: "copied-reference-product", label: "레퍼런스를 너무 따라감" },
+  { value: "weak-advertising-mood", label: "광고 느낌이 약함" },
+  { value: "too-ai-looking", label: "AI 느낌이 강함" },
+  { value: "wrong-composition", label: "구도가 안 맞음" },
+  { value: "other", label: "기타" },
+];
+
+const preserveSourcePromptTemplate = `이 이미지는 GPT 이미지 생성의 기준 이미지입니다.
+
+원본 이미지의 핵심 피사체, 형태, 색감, 질감, 구도, 음식의 상태를 최대한 유지해주세요.
+현재 이미지가 조리된 고기 또는 상세페이지 음식 이미지라면, 이를 포장육 상품, 플라스틱 트레이 상품, 새로운 패키지 상품으로 바꾸지 마세요.
+
+Preserve the original subject, food texture, cooked appearance, composition, color tone, and visual identity.
+Do not redesign the product.
+Do not replace the food with a packaged product, plastic tray product, raw meat package, or a different item.
+Do not create a new package, label, logo, or container unless explicitly requested.
+
+변경해도 되는 것은 배경, 조명, 선명도, 광고 분위기, 색 보정, 약한 그림자 정도입니다.
+Edit only the background, lighting, sharpness, commercial mood, color grading, and subtle shadows.
+
+이미지 안에는 글씨, 숫자, 로고, 캡션, 버튼 문구를 넣지 마세요.
+No readable text.
+No typography.
+No letters.
+No numbers.
+No captions.
+
+최종 이미지는 원본 이미지를 기반으로 한 글씨 없는 광고 비주얼이어야 합니다.`;
+
+const noTextAdVisualPromptTemplate = `원본 이미지를 기반으로 1:1 비율의 이커머스 광고용 비주얼을 만들어주세요.
+
+상품 또는 음식은 화면의 주인공처럼 크게 보이게 해주세요.
+Make the product or food the main hero.
+Keep the original subject recognizable.
+
+배경과 조명은 더 광고스럽고 고급스럽게 개선해주세요.
+Edit only the background, lighting, and advertising mood.
+
+이미지 안에는 글씨를 넣지 마세요.
+No readable text.
+No typography.
+No letters.
+No numbers.
+No captions.`;
+
+const noPackageChangePromptTemplate = `중요:
+원본 이미지가 포장 제품이 아니라면, 절대 포장 제품으로 바꾸지 마세요.
+Do not turn the original image into a packaged product.
+Do not create a plastic tray package.
+Do not add a new product label.
+Do not add a brand logo.
+Do not change cooked food into raw meat or packaged meat.`;
+
+const emptySourceImageSelection: SourceImageSelectionState = {
+  candidates: [],
+  selectedSourceImageId: "",
+  selectedSourceImagePath: "",
+};
 
 const emptyProductImageState: ProductImageState = {
   originalImagePath: "",
@@ -272,6 +354,9 @@ const emptyProductInfo: ProductInfoForPrompt = {
   extractedGalleryImages: [],
   selectedBackgroundSource: "",
   backgroundMode: "none",
+  sourceImageCandidates: [],
+  selectedSourceImageId: "",
+  selectedSourceImagePath: "",
 };
 
 const productFields: { key: keyof ProductInfoForPrompt; label: string; placeholder: string }[] = [
@@ -314,6 +399,45 @@ function productImageModeLabel(mode: ProductImageMode) {
   if (mode === "cutout") return "누끼본";
   if (mode === "styled-cutout") return "효과 적용 누끼본";
   return "원본";
+}
+
+function copyVisibleLength(value: string) {
+  return [...String(value || "").replace(/\s+/g, "").trim()].length;
+}
+
+function buildSourceImageCandidates(extracted: ExtractedProductInfo): SourceImageCandidate[] {
+  const createdAt = new Date().toISOString();
+  const heroImage = extracted.heroImage || extracted.mainImage || extracted.galleryImages?.[0] || "";
+  const detailImages = (extracted.detailImages?.length ? extracted.detailImages : extracted.galleryImages ?? [])
+    .filter((imagePath) => imagePath && imagePath !== heroImage)
+    .slice(0, 30);
+  const candidates: SourceImageCandidate[] = [];
+
+  if (heroImage) {
+    candidates.push({
+      id: "hero-001",
+      type: "hero",
+      imagePath: heroImage,
+      originalUrl: heroImage,
+      label: "대표 이미지",
+      selected: true,
+      createdAt,
+    });
+  }
+
+  detailImages.forEach((imagePath, index) => {
+    candidates.push({
+      id: `detail-${String(index + 1).padStart(3, "0")}`,
+      type: "detail",
+      imagePath,
+      originalUrl: imagePath,
+      label: `상세 이미지 ${index + 1}`,
+      selected: false,
+      createdAt,
+    });
+  });
+
+  return candidates;
 }
 
 const emptyBannerCopy: GeneratedAdCopy = {
@@ -360,11 +484,14 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [selectedReferenceLabelIds, setSelectedReferenceLabelIds] = useState<string[]>([]);
   const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(emptyProductInfo);
   const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState("");
+  const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(emptySourceImageSelection);
+  const [sourceImageStatus, setSourceImageStatus] = useState<Status>({ kind: "idle", message: "GPT 이미지 생성 기준이 될 원본 이미지를 선택해주세요." });
   const [productExtractStatus, setProductExtractStatus] = useState<Status>({ kind: "idle", message: "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다." });
   const [strategyStatus, setStrategyStatus] = useState<Status>({ kind: "idle", message: "라벨 완료 레퍼런스 1~3개와 새 상품 정보를 입력하세요." });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
   const [copyReferenceLabels, setCopyReferenceLabels] = useState<AdImageLabel[]>([]);
   const [copyStatus, setCopyStatus] = useState<Status>({ kind: "idle", message: "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다." });
+  const [templateFittedCopy, setTemplateFittedCopy] = useState<TemplateFittedCopy | null>(null);
   const [bannerCopy, setBannerCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
   const [showCta, setShowCta] = useState(true);
   const [headlineStyleOverrides, setHeadlineStyleOverrides] = useState<HeadlineStyleOverrides>({});
@@ -374,7 +501,30 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [mainImageSourceMode, setMainImageSourceMode] = useState<MainImageSourceMode>("detail");
   const [uploadedMainImageDataUrl, setUploadedMainImageDataUrl] = useState("");
   const [gptMainImagePath, setGptMainImagePath] = useState("");
+  const [gptTextAdImagePath, setGptTextAdImagePath] = useState("");
+  const [latestImagePrompt, setLatestImagePrompt] = useState("");
+  const [gptVisualAsset, setGptVisualAsset] = useState<GeneratedImageAsset | null>(null);
+  const [gptTextAdAsset, setGptTextAdAsset] = useState<GeneratedImageAsset | null>(null);
+  const [gptReferenceImages, setGptReferenceImages] = useState<SourceImageCandidate[]>([]);
+  const [gptImageCandidates, setGptImageCandidates] = useState<GptImageCandidate[]>([]);
+  const [selectedGptImageCandidateId, setSelectedGptImageCandidateId] = useState<string | null>(null);
+  const [selectedImageFailureReasons, setSelectedImageFailureReasons] = useState<GptImageFailureReason[]>([]);
+  const [imageCustomFeedback, setImageCustomFeedback] = useState("");
+  const [imageRevisionPrompt, setImageRevisionPrompt] = useState("");
+  const [numImageCandidates, setNumImageCandidates] = useState(1);
   const [gptImageStatus, setGptImageStatus] = useState<Status>({ kind: "idle", message: "이미지 생성 버튼을 누르면 상품 정보 기반 이미지를 생성합니다." });
+  const [gptTextAdStatus, setGptTextAdStatus] = useState<Status>({ kind: "idle", message: "글씨 포함 광고 이미지를 따로 생성할 수 있습니다." });
+  const [gptReferenceImageStatus, setGptReferenceImageStatus] = useState<Status>({ kind: "idle", message: "참고 이미지는 분위기/구도 참고용으로만 사용됩니다." });
+  const [gptImageSourceMode, setGptImageSourceMode] = useState<GptImageSourceMode>("image-edit");
+  const [gptPreservationMode, setGptPreservationMode] = useState<GptImagePreservationMode>("preserve-product");
+  const [gptPromptTemplateMode, setGptPromptTemplateMode] = useState<GptPromptTemplateMode>("visual-only");
+  const [gptPromptState, setGptPromptState] = useState<GptCustomPromptState>({
+    promptMode: "auto",
+    autoPrompt: "",
+    customPrompt: "",
+    customPromptNote: "",
+    finalPrompt: "",
+  });
   const [productImageState, setProductImageState] = useState<ProductImageState>(emptyProductImageState);
   const [productImageProcessStatus, setProductImageProcessStatus] = useState<Status>({
     kind: "idle",
@@ -425,6 +575,36 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       return true;
     });
   }, [productInfo.extractedGalleryImages, productInfo.extractedMainImage, productInfo.productImagePath]);
+  const sourceImageCandidatesForDisplay = useMemo(() => {
+    const existing = sourceImageSelection.candidates.length
+      ? sourceImageSelection.candidates
+      : productInfo.sourceImageCandidates ?? [];
+
+    if (existing.length) return existing;
+
+    const createdAt = new Date().toISOString();
+    return backgroundImageOptions.map((option, index): SourceImageCandidate => ({
+      id: index === 0 ? "hero-001" : `detail-${String(index).padStart(3, "0")}`,
+      type: index === 0 ? "hero" : "detail",
+      imagePath: option.value,
+      originalUrl: option.value,
+      label: option.label,
+      selected: index === 0,
+      createdAt,
+    }));
+  }, [backgroundImageOptions, productInfo.sourceImageCandidates, sourceImageSelection.candidates]);
+  const selectedSourceImage =
+    sourceImageCandidatesForDisplay.find((candidate) => candidate.id === sourceImageSelection.selectedSourceImageId) ||
+    sourceImageCandidatesForDisplay.find((candidate) => candidate.imagePath === sourceImageSelection.selectedSourceImagePath) ||
+    sourceImageCandidatesForDisplay.find((candidate) => candidate.imagePath === productInfo.selectedSourceImagePath) ||
+    sourceImageCandidatesForDisplay[0];
+  const selectedSourceImagePath =
+    selectedSourceImage?.imagePath ||
+    sourceImageSelection.selectedSourceImagePath ||
+    productInfo.selectedSourceImagePath ||
+    productInfo.productImagePath ||
+    backgroundImageOptions[0]?.value ||
+    "";
   const currentBackgroundSource =
     productInfo.backgroundMode === "auto-detail-blur-dark"
       ? productInfo.extractedMainImage || productInfo.productImagePath || productInfo.selectedBackgroundSource || ""
@@ -461,6 +641,57 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     return isFoodGiftCategory ? [...foodCategoryTemplates, legacyFoodImpactTemplateOption] : [];
   }, [productInfo.category]);
   const selectedTemplate = categoryTemplates.find((template) => template.id === selectedTemplateId) ?? categoryTemplates[0];
+  const selectedCopyLimits = selectedTemplate?.copyLimits;
+  const slotMaxChars = (key: "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price") => selectedCopyLimits?.[key]?.maxChars || (key === "headline" ? 14 : key === "bodyCopy" ? 32 : key === "highlightCopy" ? 24 : key === "bottomBarCopy" ? 28 : key === "cta" ? 8 : 12);
+  const autoGptImagePrompt = useMemo(() => {
+    const reference = selectedReferenceLabels[0]?.finalLabel;
+    return buildAutoImagePrompt({
+      templateMode: gptPromptTemplateMode,
+      outputCanvasPreset: "sns-square-1200",
+      productName: productInfo.productName,
+      category: productInfo.category,
+      targetCustomer: productInfo.targetCustomer,
+      mainBenefit: productInfo.mainBenefit,
+      discountInfo: productInfo.discountInfo,
+      price: productInfo.price,
+      headline: bannerCopy.headline,
+      bodyCopy: bannerCopy.bodyCopy,
+      highlightCopy: bannerCopy.highlightCopy,
+      bottomBarCopy: bannerCopy.bottomBarCopy,
+      cta: bannerCopy.cta,
+      referenceVisualTone: reference?.visualTone,
+      referenceLayoutPattern: reference?.layoutPattern || reference?.visualCopyRelation,
+      referenceAppealPoint: reference?.appealPoint,
+      referenceHookType: copyResult?.hookType || bannerCopy.hookType || reference?.hookType,
+      referenceCopyNuance: reference?.copyNuance || reference?.toneOfVoice,
+      selectedSourceImagePath,
+      referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+      preservationMode: gptPreservationMode,
+      customPromptNote: gptPromptState.customPromptNote,
+    }).promptText;
+  }, [
+    bannerCopy,
+    gptPreservationMode,
+    gptReferenceImages,
+    gptPromptState.customPromptNote,
+    gptPromptTemplateMode,
+    productInfo.category,
+    productInfo.discountInfo,
+    productInfo.mainBenefit,
+    productInfo.price,
+    productInfo.productName,
+    productInfo.targetCustomer,
+    selectedReferenceLabels,
+    selectedSourceImagePath,
+  ]);
+  const finalGptImagePrompt =
+    gptPromptState.promptMode === "custom" && gptPromptState.customPrompt.trim()
+      ? gptPromptState.customPrompt.trim()
+      : autoGptImagePrompt.trim();
+  const selectedGptImageCandidate = useMemo(
+    () => gptImageCandidates.find((candidate) => candidate.id === selectedGptImageCandidateId) || gptImageCandidates[0],
+    [gptImageCandidates, selectedGptImageCandidateId],
+  );
   const analyzedImages = images.filter((image) => labelsByImageId.has(image.id));
   const filteredImages = images.filter((image) => {
     const label = labelsByImageId.get(image.id);
@@ -509,6 +740,52 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
     });
   }, [originalMainProductImage]);
+
+  useEffect(() => {
+    setGptPromptState((current) => ({
+      ...current,
+      autoPrompt: autoGptImagePrompt,
+      finalPrompt: current.promptMode === "custom" && current.customPrompt.trim()
+        ? current.customPrompt.trim()
+        : autoGptImagePrompt,
+    }));
+  }, [autoGptImagePrompt]);
+
+  function buildPromptForImageMode(imageGenerationMode: GptImageGenerationMode) {
+    const templateMode: GptPromptTemplateMode = imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only";
+    const reference = selectedReferenceLabels[0]?.finalLabel;
+    return buildAutoImagePrompt({
+      templateMode,
+      outputCanvasPreset: "sns-square-1200",
+      productName: productInfo.productName,
+      category: productInfo.category,
+      targetCustomer: productInfo.targetCustomer,
+      mainBenefit: productInfo.mainBenefit,
+      discountInfo: productInfo.discountInfo,
+      price: productInfo.price,
+      headline: bannerCopy.headline,
+      bodyCopy: bannerCopy.bodyCopy,
+      highlightCopy: bannerCopy.highlightCopy,
+      bottomBarCopy: bannerCopy.bottomBarCopy,
+      cta: bannerCopy.cta,
+      referenceVisualTone: reference?.visualTone,
+      referenceLayoutPattern: reference?.layoutPattern || reference?.visualCopyRelation,
+      referenceAppealPoint: reference?.appealPoint,
+      referenceHookType: copyResult?.hookType || bannerCopy.hookType || reference?.hookType,
+      referenceCopyNuance: reference?.copyNuance || reference?.toneOfVoice,
+      selectedSourceImagePath,
+      referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+      preservationMode: gptPreservationMode,
+      customPromptNote: gptPromptState.customPromptNote,
+    }).promptText;
+  }
+
+  function finalPromptForImageMode(imageGenerationMode: GptImageGenerationMode) {
+    const autoPrompt = buildPromptForImageMode(imageGenerationMode);
+    return gptPromptState.promptMode === "custom" && gptPromptState.customPrompt.trim()
+      ? gptPromptState.customPrompt.trim()
+      : autoPrompt;
+  }
 
   async function refreshImages() {
     const response = await fetch("/api/mvp/images");
@@ -654,6 +931,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     );
 
     const galleryImages = [extracted.mainImage, ...(extracted.galleryImages ?? [])].filter(Boolean);
+    const sourceCandidates = (extracted.sourceImageCandidates?.length ? extracted.sourceImageCandidates : buildSourceImageCandidates(extracted))
+      .filter((candidate, index, candidates) => candidate.imagePath && candidates.findIndex((item) => item.imagePath === candidate.imagePath) === index);
+    const selectedCandidate = sourceCandidates.find((candidate) => candidate.selected) || sourceCandidates[0];
     const shouldRefreshSelectedBackground =
       !current.selectedBackgroundSource ||
       current.selectedBackgroundSource === current.extractedMainImage ||
@@ -680,6 +960,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       extractedGalleryImages: replaceExtractedFields ? galleryImages : galleryImages.length ? galleryImages : current.extractedGalleryImages || [],
       selectedBackgroundSource: replaceExtractedFields ? extracted.mainImage || nextProductImagePaths[0] || "" : selectedBackgroundSource,
       backgroundMode: current.backgroundMode === "none" ? "auto-detail-blur-dark" : current.backgroundMode || "auto-detail-blur-dark",
+      sourceImageCandidates: replaceExtractedFields ? sourceCandidates : current.sourceImageCandidates?.length ? current.sourceImageCandidates : sourceCandidates,
+      selectedSourceImageId: replaceExtractedFields ? selectedCandidate?.id || "" : current.selectedSourceImageId || selectedCandidate?.id || "",
+      selectedSourceImagePath: replaceExtractedFields ? selectedCandidate?.imagePath || "" : current.selectedSourceImagePath || selectedCandidate?.imagePath || "",
     };
   }
 
@@ -713,9 +996,19 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         mergedProductInfo = mergeExtractedProductInfo(current, result.productInfo, replaceExtractedFields);
         return mergedProductInfo;
       });
+      setSourceImageSelection({
+        candidates: mergedProductInfo.sourceImageCandidates ?? [],
+        selectedSourceImageId: mergedProductInfo.selectedSourceImageId,
+        selectedSourceImagePath: mergedProductInfo.selectedSourceImagePath,
+      });
+      setSourceImageStatus({ kind: "success", message: "원본 기준 이미지 후보를 불러왔습니다. GPT 생성 기준 이미지를 선택할 수 있습니다." });
       setLastLoadedProductUrl(productUrl);
       setGeneratedBannerPath("");
       setGptMainImagePath("");
+      setGptTextAdImagePath("");
+      setGptVisualAsset(null);
+      setGptTextAdAsset(null);
+      setLatestImagePrompt("");
       setProductExtractStatus({ kind: "success", message: "상품 정보를 불러왔습니다. 필요한 부분은 직접 수정할 수 있습니다." });
       return mergedProductInfo;
     } catch (error) {
@@ -728,6 +1021,14 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   }
 
   async function generateBannerCopy() {
+    if (!selectedTemplate) {
+      setCopyStatus({
+        kind: "error",
+        message: "먼저 사용할 템플릿을 선택해주세요. 템플릿의 문구 영역에 맞춰 광고 문구를 생성합니다.",
+      });
+      return;
+    }
+
     setCopyStatus({ kind: "loading", message: "선택한 라벨 레퍼런스를 참고해 광고문구를 생성 중입니다." });
     setGeneratedBannerPath("");
 
@@ -745,7 +1046,13 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       const response = await fetch("/api/strategy/generate-copy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productInfo: productInfoForCopy, referenceLabels: selectedReferenceLabels }),
+        body: JSON.stringify({
+          productInfo: productInfoForCopy,
+          referenceLabels: selectedReferenceLabels,
+          templateId: selectedTemplate.id,
+          templateName: selectedTemplate.name,
+          copyLimits: selectedTemplate.copyLimits,
+        }),
       });
       const result = await response.json();
 
@@ -753,8 +1060,39 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         throw new Error(result.error ?? "광고문구 생성 실패");
       }
 
-      setCopyResult(result.copy);
-      setBannerCopy(result.copy);
+      const generatedCopy = result.copy as GeneratedAdCopy;
+      const fitted = generatedCopy.templateFit?.templateId === selectedTemplate.id
+        ? {
+          headline: generatedCopy.headline,
+          bodyCopy: generatedCopy.bodyCopy,
+          highlightCopy: generatedCopy.highlightCopy,
+          bottomBarCopy: generatedCopy.bottomBarCopy,
+          cta: generatedCopy.cta,
+          price: generatedCopy.price,
+          templateId: selectedTemplate.id,
+          slotFits: fitCopyToTemplate({
+            copy: generatedCopy,
+            templateId: selectedTemplate.id,
+            copyLimits: selectedTemplate.copyLimits,
+          }).slotFits,
+          createdAt: new Date().toISOString(),
+        }
+        : fitCopyToTemplate({
+          copy: generatedCopy,
+          templateId: selectedTemplate.id,
+          copyLimits: selectedTemplate.copyLimits,
+        });
+      setCopyResult(generatedCopy);
+      setTemplateFittedCopy(fitted);
+      setBannerCopy({
+        ...generatedCopy,
+        headline: fitted.headline,
+        bodyCopy: fitted.bodyCopy,
+        highlightCopy: fitted.highlightCopy,
+        bottomBarCopy: fitted.bottomBarCopy,
+        cta: fitted.cta,
+        price: fitted.price || generatedCopy.price,
+      });
       setCopyReferenceLabels(result.referenceLabels ?? selectedReferenceLabels);
       setCopyStatus({
         kind: "success",
@@ -799,34 +1137,152 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     reader.readAsDataURL(file);
   }
 
-  async function generateGptMainImage() {
+  function selectSourceImage(candidate: SourceImageCandidate) {
+    const baseCandidates = sourceImageCandidatesForDisplay.length ? sourceImageCandidatesForDisplay : sourceImageSelection.candidates;
+    const candidates = baseCandidates.map((item) => ({
+      ...item,
+      selected: item.id === candidate.id,
+    }));
+    setSourceImageSelection({
+      candidates,
+      selectedSourceImageId: candidate.id,
+      selectedSourceImagePath: candidate.imagePath,
+    });
+    setProductInfo((current) => ({
+      ...current,
+      sourceImageCandidates: candidates,
+      selectedSourceImageId: candidate.id,
+      selectedSourceImagePath: candidate.imagePath,
+    }));
+    setSourceImageStatus({ kind: "success", message: `${candidate.label}을 GPT 원본 기준 이미지로 선택했습니다.` });
+  }
+
+  async function uploadSourceImage(file: File | undefined) {
+    if (!file) return;
+    setSourceImageStatus({ kind: "loading", message: "업로드 이미지를 추가하는 중입니다." });
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/source-image", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "업로드 이미지 추가에 실패했습니다.");
+      }
+
+      const candidate = result.candidate as SourceImageCandidate;
+      setSourceImageSelection((current) => {
+        const candidates = [...current.candidates.filter((item) => item.imagePath !== candidate.imagePath), candidate];
+        return {
+          candidates,
+          selectedSourceImageId: current.selectedSourceImageId || candidate.id,
+          selectedSourceImagePath: current.selectedSourceImagePath || candidate.imagePath,
+        };
+      });
+      setProductInfo((current) => {
+        const candidates = [...(current.sourceImageCandidates ?? []).filter((item) => item.imagePath !== candidate.imagePath), candidate];
+        return {
+          ...current,
+          sourceImageCandidates: candidates,
+          selectedSourceImageId: current.selectedSourceImageId || candidate.id,
+          selectedSourceImagePath: current.selectedSourceImagePath || candidate.imagePath,
+        };
+      });
+      setSourceImageStatus({ kind: "success", message: "업로드 이미지가 원본 기준 이미지 후보에 추가됐습니다." });
+    } catch (error) {
+      setSourceImageStatus({ kind: "error", message: error instanceof Error ? error.message : "업로드 이미지 추가에 실패했습니다." });
+    }
+  }
+
+  async function uploadGptReferenceImage(file: File | undefined) {
+    if (!file) return;
+    setGptReferenceImageStatus({ kind: "loading", message: "GPT 참고 이미지를 업로드하는 중입니다." });
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/source-image", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "참고 이미지 업로드에 실패했습니다.");
+      }
+
+      const candidate = result.candidate as SourceImageCandidate;
+      setGptReferenceImages((current) => [
+        ...current.filter((item) => item.imagePath !== candidate.imagePath),
+        { ...candidate, label: candidate.label.replace("직접 업로드", "참고 이미지") },
+      ].slice(-3));
+      setGptReferenceImageStatus({ kind: "success", message: "참고 이미지를 추가했습니다. 상품 원본은 바꾸지 않고 분위기/구도만 참고합니다." });
+    } catch (error) {
+      setGptReferenceImageStatus({ kind: "error", message: error instanceof Error ? error.message : "참고 이미지 업로드에 실패했습니다." });
+    }
+  }
+
+  async function generateGptImage(imageGenerationMode: GptImageGenerationMode) {
     const hasProductContext = Boolean(productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription || bannerCopy.headline);
+    const isTextInImage = imageGenerationMode === "text-in-image";
+    const promptTemplateMode: GptPromptTemplateMode = isTextInImage ? "ad-image-with-copy" : "visual-only";
+    const autoPromptForGeneration = buildPromptForImageMode(imageGenerationMode);
+    const promptForGeneration = finalPromptForImageMode(imageGenerationMode);
+    setGptPromptTemplateMode(promptTemplateMode);
     if (!hasProductContext) {
-      setGptImageStatus({ kind: "error", message: "상품 정보나 광고 문구가 있어야 이미지를 생성할 수 있습니다." });
+      const errorStatus = { kind: "error" as const, message: "상품 정보나 광고 문구가 있어야 이미지를 생성할 수 있습니다." };
+      if (isTextInImage) setGptTextAdStatus(errorStatus);
+      else setGptImageStatus(errorStatus);
       return;
     }
 
-    setGptImageStatus({ kind: "loading", message: "GPT 이미지 생성 API를 호출하는 중입니다." });
+    if (isTextInImage) {
+      setGptTextAdStatus({ kind: "loading", message: "글씨 포함 광고 이미지를 생성하는 중입니다." });
+    } else {
+      setGptImageStatus({ kind: "loading", message: "글씨 없는 상품 비주얼을 생성하는 중입니다." });
+    }
 
     try {
       const response = await fetch("/api/image/generate-product", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          imageGenerationMode,
+          imageSourceMode: gptImageSourceMode,
+          preservationMode: gptPreservationMode,
+          promptMode: gptPromptState.promptMode,
+          customPrompt: gptPromptState.customPrompt,
+          promptTemplateMode,
+          canvasPreset: "sns-square-1200",
+          productName: productInfo.productName,
+          category: productInfo.category,
+          autoPrompt: autoPromptForGeneration,
+          customPromptNote: gptPromptState.customPromptNote,
+          finalPrompt: promptForGeneration,
           productInfo: {
             ...productInfo,
             productImagePath: currentMainProductImage || productInfo.productImagePath,
             productImagePaths: currentProductImagePaths,
+            selectedSourceImageId: selectedSourceImage?.id,
+            selectedSourceImagePath,
           },
-          prompt: [
-            bannerCopy.headline,
-            bannerCopy.bodyCopy,
-            bannerCopy.highlightCopy,
-            productInfo.productName,
-            productInfo.mainBenefit,
-            productInfo.extractedDescription,
-          ].filter(Boolean).join(" / "),
-          styleHint: selectedTemplate?.description || "",
+          productImagePath: currentMainProductImage || productInfo.productImagePath,
+          productImagePaths: currentProductImagePaths,
+          productImageState,
+          selectedSourceImagePath,
+          referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+          selectedSourceImageType: selectedSourceImage?.type,
+          selectedSourceImageLabel: selectedSourceImage?.label,
+          selectedReferenceLabels,
+          generatedCopy: bannerCopy,
+          templateId: selectedTemplate?.id,
+          templateSummary: selectedTemplate?.description || "",
+          basePrompt: promptForGeneration,
+          numCandidates: numImageCandidates,
         }),
       });
       const result = await response.json();
@@ -835,14 +1291,294 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         throw new Error(result.error || "이미지 생성에 실패했습니다.");
       }
 
-      setGptMainImagePath(result.imagePath);
-      setMainImageSourceMode("gpt");
-      setGptImageStatus({ kind: "success", message: `생성 완료: ${result.imagePath}` });
+      const candidates: GptImageCandidate[] = Array.isArray(result.images) && result.images.length
+        ? result.images
+        : [{
+          id: `legacy-${Date.now()}`,
+          imagePath: result.imagePath,
+          imageGenerationMode: result.imageGenerationMode || imageGenerationMode,
+          imageSourceMode: result.imageSourceMode || gptImageSourceMode,
+          preservationMode: result.preservationMode || gptPreservationMode,
+          promptTemplateMode: result.promptTemplateMode || promptTemplateMode,
+          canvasPreset: result.canvasPreset || "sns-square-1200",
+          sourceImagePath: result.selectedSourceImagePath || selectedSourceImagePath,
+          productName: productInfo.productName,
+          category: productInfo.category,
+          selectedSourceImagePath: result.selectedSourceImagePath || selectedSourceImagePath,
+          promptUsed: result.promptUsed || "",
+          autoPrompt: result.autoPrompt || autoPromptForGeneration,
+          customPromptNote: result.customPromptNote || gptPromptState.customPromptNote,
+          basePrompt: result.basePrompt || promptForGeneration,
+          revisionPrompt: result.revisionPrompt || undefined,
+          failureReasons: result.failureReasons || [],
+          customFeedback: result.customFeedback || "",
+          attempt: 1,
+          createdAt: result.createdAt || new Date().toISOString(),
+        }];
+      const firstCandidate = candidates[0];
+      const asset: GeneratedImageAsset = {
+        imagePath: firstCandidate.imagePath,
+        mode: firstCandidate.imageGenerationMode || imageGenerationMode,
+        imageSourceMode: firstCandidate.imageSourceMode || gptImageSourceMode,
+        preservationMode: firstCandidate.preservationMode || gptPreservationMode,
+        promptMode: result.promptMode || gptPromptState.promptMode,
+        selectedSourceImagePath: firstCandidate.selectedSourceImagePath || selectedSourceImagePath,
+        promptUsed: firstCandidate.promptUsed || "",
+        basePrompt: firstCandidate.basePrompt,
+        revisionPrompt: firstCandidate.revisionPrompt,
+        failureReasons: firstCandidate.failureReasons,
+        customFeedback: firstCandidate.customFeedback,
+        attempt: firstCandidate.attempt,
+        parentCandidateId: firstCandidate.parentCandidateId,
+        createdAt: firstCandidate.createdAt || new Date().toISOString(),
+      };
+      setGptImageCandidates((current) => [...candidates, ...current].slice(0, 24));
+      setSelectedGptImageCandidateId(firstCandidate.id);
+      setImageRevisionPrompt("");
+      setSelectedImageFailureReasons([]);
+      setImageCustomFeedback("");
+      setLatestImagePrompt(asset.promptUsed);
+      setGptPromptState((current) => ({ ...current, finalPrompt: asset.promptUsed }));
+
+      if (isTextInImage) {
+        setGptTextAdImagePath(asset.imagePath);
+        setGptTextAdAsset(asset);
+        setGptTextAdStatus({ kind: "success", message: `글씨 포함 광고 생성 완료: ${asset.imagePath}` });
+      } else {
+        setGptMainImagePath(asset.imagePath);
+        setGptVisualAsset(asset);
+        setMainImageSourceMode("gpt");
+        setGptImageStatus({ kind: "success", message: `이미지 생성 완료: ${asset.imagePath}` });
+      }
     } catch (error) {
-      setGptImageStatus({
+      const errorStatus = {
         kind: "error",
-        message: error instanceof Error ? error.message : "이미지 생성에 실패했습니다.",
+        message: error instanceof Error ? error.message : isTextInImage ? "텍스트 포함 광고 이미지 생성에 실패했습니다." : "GPT 이미지 생성에 실패했습니다.",
+      } as const;
+      if (isTextInImage) setGptTextAdStatus(errorStatus);
+      else setGptImageStatus(errorStatus);
+    }
+  }
+
+  function selectGptCandidate(candidate: GptImageCandidate) {
+    setSelectedGptImageCandidateId(candidate.id);
+    if (candidate.imageGenerationMode === "text-in-image") {
+      setGptTextAdImagePath(candidate.imagePath);
+      setGptTextAdAsset({
+        imagePath: candidate.imagePath,
+        mode: candidate.imageGenerationMode,
+        imageSourceMode: candidate.imageSourceMode,
+        preservationMode: candidate.preservationMode,
+        selectedSourceImagePath: candidate.selectedSourceImagePath,
+        promptUsed: candidate.promptUsed,
+        basePrompt: candidate.basePrompt,
+        revisionPrompt: candidate.revisionPrompt,
+        failureReasons: candidate.failureReasons,
+        customFeedback: candidate.customFeedback,
+        attempt: candidate.attempt,
+        parentCandidateId: candidate.parentCandidateId,
+        createdAt: candidate.createdAt,
       });
+    } else {
+      setGptMainImagePath(candidate.imagePath);
+      setGptVisualAsset({
+        imagePath: candidate.imagePath,
+        mode: candidate.imageGenerationMode,
+        imageSourceMode: candidate.imageSourceMode,
+        preservationMode: candidate.preservationMode,
+        selectedSourceImagePath: candidate.selectedSourceImagePath,
+        promptUsed: candidate.promptUsed,
+        basePrompt: candidate.basePrompt,
+        revisionPrompt: candidate.revisionPrompt,
+        failureReasons: candidate.failureReasons,
+        customFeedback: candidate.customFeedback,
+        attempt: candidate.attempt,
+        parentCandidateId: candidate.parentCandidateId,
+        createdAt: candidate.createdAt,
+      });
+      setMainImageSourceMode("gpt");
+    }
+    setLatestImagePrompt(candidate.promptUsed);
+  }
+
+  function toggleImageFailureReason(reason: GptImageFailureReason) {
+    setSelectedImageFailureReasons((current) =>
+      current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason],
+    );
+  }
+
+  async function saveImageFeedbackRecord(params: {
+    revisionPrompt: string;
+    candidate?: GptImageCandidate;
+    generatedImagePath?: string;
+    attempt?: number;
+  }) {
+    try {
+      const candidate = params.candidate || selectedGptImageCandidate;
+      await fetch("/api/image/feedbacks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceImagePath: candidate?.sourceImagePath || candidate?.selectedSourceImagePath || selectedSourceImagePath,
+          generatedImagePath: params.generatedImagePath || candidate?.imagePath,
+          parentCandidateId: candidate?.parentCandidateId || candidate?.id,
+          candidateId: candidate?.id,
+          promptTemplateMode: candidate?.promptTemplateMode || gptPromptTemplateMode,
+          canvasPreset: candidate?.canvasPreset || "sns-square-1200",
+          imageGenerationMode: candidate?.imageGenerationMode || (gptPromptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only"),
+          imageSourceMode: candidate?.imageSourceMode || gptImageSourceMode,
+          preservationMode: candidate?.preservationMode || gptPreservationMode,
+          productName: productInfo.productName,
+          category: productInfo.category,
+          failureReasons: selectedImageFailureReasons,
+          customFeedback: imageCustomFeedback,
+          autoPrompt: candidate?.autoPrompt || autoGptImagePrompt,
+          basePrompt: candidate?.basePrompt || candidate?.promptUsed || autoGptImagePrompt,
+          revisionPrompt: params.revisionPrompt,
+          promptUsed: candidate?.promptUsed,
+          attempt: params.attempt || candidate?.attempt || 1,
+        }),
+      });
+    } catch {
+      const statusSetter = selectedGptImageCandidate?.imageGenerationMode === "text-in-image" ? setGptTextAdStatus : setGptImageStatus;
+      statusSetter({ kind: "error", message: "이미지는 유지됐지만 피드백 JSON 저장에 실패했습니다." });
+    }
+  }
+
+  async function makeImageRevisionPrompt() {
+    const prompt = buildRevisionPromptFromFeedback({
+      failureReasons: selectedImageFailureReasons,
+      customFeedback: imageCustomFeedback,
+      category: productInfo.category,
+    });
+    setImageRevisionPrompt(prompt);
+    await saveImageFeedbackRecord({ revisionPrompt: prompt });
+    setGptImageStatus({ kind: "success", message: "수정 프롬프트가 JSON에 저장되었습니다." });
+    return prompt;
+  }
+
+  async function regenerateImageWithFeedback() {
+    const candidate = selectedGptImageCandidate;
+    if (!candidate) {
+      setGptImageStatus({ kind: "error", message: "피드백을 적용할 GPT 이미지 후보를 먼저 선택해주세요." });
+      return;
+    }
+    const revisionPrompt = imageRevisionPrompt.trim() || buildRevisionPromptFromFeedback({
+      failureReasons: selectedImageFailureReasons,
+      customFeedback: imageCustomFeedback,
+      category: productInfo.category,
+    });
+    if (!imageRevisionPrompt.trim()) {
+      setImageRevisionPrompt(revisionPrompt);
+      await saveImageFeedbackRecord({ revisionPrompt, candidate });
+    }
+    const sourcePath = candidate.selectedSourceImagePath || selectedSourceImagePath;
+    if (!sourcePath) {
+      setGptImageStatus({ kind: "error", message: "재생성에는 원본 기준 이미지가 필요합니다." });
+      return;
+    }
+    const isTextInImage = candidate.imageGenerationMode === "text-in-image";
+    const basePromptForCandidate = candidate.basePrompt || candidate.promptUsed || buildPromptForImageMode(candidate.imageGenerationMode);
+    if (isTextInImage) {
+      setGptTextAdStatus({ kind: "loading", message: "피드백을 반영해 글씨 포함 광고 이미지를 다시 생성하는 중입니다." });
+    } else {
+      setGptImageStatus({ kind: "loading", message: "피드백을 반영해 이미지를 다시 생성하는 중입니다." });
+    }
+
+    try {
+      const response = await fetch("/api/image/generate-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageGenerationMode: candidate.imageGenerationMode || "visual-only",
+          imageSourceMode: "image-edit",
+          preservationMode: "preserve-product",
+          promptMode: gptPromptState.promptMode,
+          promptTemplateMode: candidate.promptTemplateMode || (candidate.imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only"),
+          canvasPreset: candidate.canvasPreset || "sns-square-1200",
+          productName: productInfo.productName,
+          autoPrompt: candidate.autoPrompt || buildPromptForImageMode(candidate.imageGenerationMode),
+          customPromptNote: candidate.customPromptNote || gptPromptState.customPromptNote,
+          productInfo: {
+            ...productInfo,
+            productImagePath: currentMainProductImage || productInfo.productImagePath,
+            productImagePaths: currentProductImagePaths,
+            selectedSourceImageId: selectedSourceImage?.id,
+            selectedSourceImagePath: sourcePath,
+          },
+          productImagePath: currentMainProductImage || productInfo.productImagePath,
+          productImagePaths: currentProductImagePaths,
+          productImageState,
+          selectedSourceImagePath: sourcePath,
+          referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+          selectedSourceImageType: selectedSourceImage?.type,
+          selectedSourceImageLabel: selectedSourceImage?.label,
+          selectedReferenceLabels,
+          generatedCopy: bannerCopy,
+          templateId: selectedTemplate?.id,
+          templateSummary: selectedTemplate?.description || "",
+          basePrompt: basePromptForCandidate,
+          revisionPrompt,
+          failureReasons: selectedImageFailureReasons,
+          customFeedback: imageCustomFeedback,
+          parentCandidateId: candidate.id,
+          attempt: (candidate.attempt || 1) + 1,
+          category: productInfo.category,
+          numCandidates: numImageCandidates,
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "피드백 재생성에 실패했습니다.");
+      }
+
+      const candidates: GptImageCandidate[] = Array.isArray(result.images) && result.images.length
+        ? result.images
+        : [{
+          id: `revision-${Date.now()}`,
+          imagePath: result.imagePath,
+          imageGenerationMode: candidate.imageGenerationMode,
+          imageSourceMode: "image-edit",
+          preservationMode: "preserve-product",
+          promptTemplateMode: candidate.promptTemplateMode || (candidate.imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only"),
+          canvasPreset: "sns-square-1200",
+          sourceImagePath: sourcePath,
+          productName: productInfo.productName,
+          category: productInfo.category,
+          selectedSourceImagePath: sourcePath,
+          promptUsed: result.promptUsed || revisionPrompt,
+          autoPrompt: result.autoPrompt || candidate.autoPrompt || buildPromptForImageMode(candidate.imageGenerationMode),
+          customPromptNote: result.customPromptNote || candidate.customPromptNote || gptPromptState.customPromptNote,
+          basePrompt: basePromptForCandidate,
+          revisionPrompt,
+          failureReasons: selectedImageFailureReasons,
+          customFeedback: imageCustomFeedback,
+          attempt: (candidate.attempt || 1) + 1,
+          parentCandidateId: candidate.id,
+          createdAt: result.createdAt || new Date().toISOString(),
+        }];
+      setGptImageCandidates((current) => [...candidates, ...current].slice(0, 24));
+      selectGptCandidate(candidates[0]);
+      setImageRevisionPrompt(revisionPrompt);
+      await saveImageFeedbackRecord({
+        revisionPrompt,
+        candidate,
+        generatedImagePath: candidates[0].imagePath,
+        attempt: candidates[0].attempt,
+      });
+      if (isTextInImage) {
+        setGptTextAdStatus({ kind: "success", message: `피드백 재생성 완료: ${candidates[0].imagePath}` });
+      } else {
+        setGptImageStatus({ kind: "success", message: `피드백 재생성 완료: ${candidates[0].imagePath}` });
+      }
+    } catch (error) {
+      const errorStatus = {
+        kind: "error",
+        message: error instanceof Error ? error.message : "피드백 재생성에 실패했습니다.",
+      } as const;
+      if (isTextInImage) setGptTextAdStatus(errorStatus);
+      else setGptImageStatus(errorStatus);
     }
   }
 
@@ -948,6 +1684,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     setRenderStatus({ kind: "loading", message: "SVG 템플릿을 1200x1200 PNG로 렌더링 중입니다." });
 
     try {
+      const copyForRender = fitCopyToTemplate({
+        copy: bannerCopy,
+        templateId: selectedTemplate.id,
+        copyLimits: selectedTemplate.copyLimits,
+      });
+      setTemplateFittedCopy(copyForRender);
       const response = await fetch("/api/render/template-ad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -955,12 +1697,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           templateId: selectedTemplate.id,
           canvasSize: { width: 1200, height: 1200 },
           copy: {
-            headline: bannerCopy.headline,
-            bodyCopy: bannerCopy.bodyCopy,
-            highlightCopy: bannerCopy.highlightCopy,
-            bottomBarCopy: bannerCopy.bottomBarCopy,
-            cta: showCta ? bannerCopy.cta : "",
-            price: bannerCopy.price || productInfo.price,
+            headline: copyForRender.headline,
+            bodyCopy: copyForRender.bodyCopy,
+            highlightCopy: copyForRender.highlightCopy,
+            bottomBarCopy: copyForRender.bottomBarCopy,
+            cta: showCta ? copyForRender.cta : "",
+            price: copyForRender.price || bannerCopy.price || productInfo.price,
           },
           productImagePath: currentMainProductImage,
           secondaryProductImagePath: currentSecondaryProductImage,
@@ -1144,6 +1886,28 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
 
             <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
             <div className="banner-builder">
+              <section className="strategy-form template-first-panel">
+                <p className="eyebrow">Template First</p>
+                <h4>먼저 템플릿 선택</h4>
+                <label>
+                  <span>사용할 템플릿</span>
+                  <select
+                    onChange={(event) => setSelectedTemplateId(event.target.value)}
+                    value={selectedTemplate?.id || ""}
+                  >
+                    {categoryTemplates.length ? categoryTemplates.map((template) => (
+                      <option key={template.id} value={template.id}>{template.name}</option>
+                    )) : <option value="">선택 가능한 템플릿 없음</option>}
+                  </select>
+                </label>
+                {selectedTemplate ? (
+                  <p className="template-limit-summary">
+                    문구 제한: headline {slotMaxChars("headline")}자 / body {slotMaxChars("bodyCopy")}자 / 하단 {slotMaxChars("bottomBarCopy")}자 / CTA {slotMaxChars("cta")}자
+                  </p>
+                ) : (
+                  <p className="strategy-empty">먼저 사용할 템플릿을 선택해주세요.</p>
+                )}
+              </section>
               <section className="strategy-reference-panel">
                 <p className="eyebrow">Reference Labels</p>
                 <h4>선택한 레퍼런스 {selectedReferenceLabels.length}/3</h4>
@@ -1205,7 +1969,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       <input
                         onChange={(event) => setProductInfo((current) => ({ ...current, [field.key]: event.target.value }))}
                         placeholder={field.placeholder}
-                        value={productInfo[field.key] || ""}
+                        value={String(productInfo[field.key] || "")}
                       />
                     )}
                   </label>
@@ -1214,6 +1978,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   상품정보 불러오기
                 </button>
                 <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
+                <p className="copy-generation-note">광고 문구는 선택한 템플릿의 문구 영역에 맞춰 생성됩니다. 먼저 템플릿을 선택하면 문구가 배너에서 잘릴 가능성이 줄어듭니다.</p>
                 <button disabled={copyStatus.kind === "loading"} onClick={generateBannerCopy} type="button">광고문구 생성</button>
               </section>
             </div>
@@ -1226,12 +1991,18 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                 </div>
                 {(["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta"] as const).map((key) => (
                   <label key={key}>
-                    <span>{key}</span>
+                    <span>
+                      {key}
+                      {` ${copyVisibleLength(bannerCopy[key])}/${slotMaxChars(key)}자`}
+                    </span>
                     <textarea
                       onChange={(event) => setBannerCopy((current) => ({ ...current, [key]: event.target.value }))}
                       rows={key === "headline" ? 2 : 3}
                       value={bannerCopy[key]}
                     />
+                    {copyVisibleLength(bannerCopy[key]) > slotMaxChars(key) ? (
+                      <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
+                    ) : null}
                   </label>
                 ))}
                 <label>
@@ -1343,13 +2114,43 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   </div>
                 ) : null}
                 <label>
-                  <span>price</span>
+                  <span>price {copyVisibleLength(productInfo.price)}/{slotMaxChars("price")}자</span>
                   <input
                     onChange={(event) => setProductInfo((current) => ({ ...current, price: event.target.value }))}
                     value={productInfo.price}
                   />
+                  {copyVisibleLength(productInfo.price) > slotMaxChars("price") ? (
+                    <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
+                  ) : null}
                 </label>
+                {templateFittedCopy?.slotFits.some((slot) => slot.status === "trimmed") ? (
+                  <p className="copy-validation-note">선택한 템플릿 제한에 맞춰 일부 문구가 자동 압축되었습니다.</p>
+                ) : null}
                 {copyResult ? <p className="strategy-empty">{copyResult.whyThisWorks}</p> : null}
+                {copyResult?.copyValidation?.bodyCopy && (!copyResult.copyValidation.bodyCopy.ok || copyResult.copyValidation.bodyCopy.original !== copyResult.copyValidation.bodyCopy.normalized) ? (
+                  <p className="copy-validation-note">바디카피의 반말/비격식 표현이 존댓말형으로 보정되었습니다.</p>
+                ) : null}
+                {copyResult?.referencePatternUsage ? (
+                  <details className="reference-pattern-usage">
+                    <summary>참고한 레퍼런스 패턴</summary>
+                    <dl>
+                      {[
+                        ["후킹 패턴", copyResult.referencePatternUsage.usedHookPattern],
+                        ["문구 구조", copyResult.referencePatternUsage.usedCopyStructure],
+                        ["톤앤매너", copyResult.referencePatternUsage.usedToneOfVoice],
+                        ["소비자 인사이트", copyResult.referencePatternUsage.usedConsumerInsight],
+                        ["구매 트리거", copyResult.referencePatternUsage.usedPurchaseTrigger],
+                        ["재사용 문구 패턴", copyResult.referencePatternUsage.usedReusablePattern],
+                        ["비주얼/문구 관계", copyResult.referencePatternUsage.usedVisualCopyRelation],
+                      ].filter(([, value]) => Boolean(value)).map(([label, value]) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                ) : null}
               </section>
 
               <section className="banner-preview-panel">
@@ -1374,6 +2175,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                           <div>
                             <strong>{index + 1}. {template.name}</strong>
                             <span>{template.description.split(".")[0]}</span>
+                            <small>문구 제한: headline {template.copyLimits?.headline?.maxChars || 14}자 / body {template.copyLimits?.bodyCopy?.maxChars || 32}자 / 하단 {template.copyLimits?.bottomBarCopy?.maxChars || 28}자 / CTA {template.copyLimits?.cta?.maxChars || 8}자</small>
                           </div>
                           {selectedTemplateId === template.id ? <b>선택됨</b> : null}
                           <div className="template-palette" aria-hidden="true">
@@ -1388,6 +2190,463 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <p className="strategy-empty">아직 해당 카테고리 전용 템플릿이 없습니다. 식품/선물 템플릿부터 먼저 지원합니다.</p>
                   )}
                 </div>
+                <details className="background-settings source-image-settings source-image-dropdown">
+                  <summary>
+                    <div>
+                      <p className="eyebrow">GPT Source</p>
+                      <strong>원본 기준 이미지 선택 / GPT 이미지 생성</strong>
+                      <span>GPT 생성이 필요할 때만 열어서 기준 이미지, 생성 옵션, 결과를 관리하세요.</span>
+                    </div>
+                    <b>{selectedSourceImagePath ? "기준 이미지 있음" : "선택 필요"}</b>
+                  </summary>
+                  <div className="source-image-panel-body">
+                  <label>
+                    <span>직접 업로드</span>
+                    <input
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) => uploadSourceImage(event.target.files?.[0])}
+                      type="file"
+                    />
+                  </label>
+                  <div className={`mvp-status ${sourceImageStatus.kind}`}>{sourceImageStatus.message}</div>
+                  <div className="source-image-layout">
+                    <div className="source-image-candidates">
+                      {sourceImageCandidatesForDisplay.length ? sourceImageCandidatesForDisplay.map((candidate) => (
+                        <button
+                          className={candidate.id === selectedSourceImage?.id ? "selected" : ""}
+                          key={candidate.id}
+                          onClick={() => selectSourceImage(candidate)}
+                          type="button"
+                        >
+                          <img alt={candidate.label} src={candidate.imagePath} />
+                          <span>{candidate.type === "hero" ? "대표 이미지" : candidate.type === "upload" ? "직접 업로드" : "상세 이미지"}</span>
+                          <strong>{candidate.label}</strong>
+                          {candidate.id === selectedSourceImage?.id ? <b>현재 원본 기준</b> : null}
+                        </button>
+                      )) : (
+                        <p className="strategy-empty">상품정보를 불러오면 상세페이지 이미지가 원본 기준 후보로 표시됩니다.</p>
+                      )}
+                    </div>
+                    <div className="source-image-preview">
+                      <strong>현재 GPT 생성 기준 이미지</strong>
+                      {selectedSourceImagePath ? (
+                        <>
+                          <img alt="현재 GPT 생성 기준 이미지" src={selectedSourceImagePath} />
+                          <span>{selectedSourceImage?.label || "기본 대표 이미지"}</span>
+                          <small>이 이미지를 기준으로 상품 원형, 색상, 포장, 표면 디테일을 최대한 유지합니다.</small>
+                        </>
+                      ) : (
+                        <p className="strategy-empty">아직 선택된 기준 이미지가 없습니다.</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="gpt-reference-upload">
+                    <div>
+                      <strong>GPT 참고 이미지</strong>
+                      <small>원본 상품은 위 기준 이미지를 유지하고, 참고 이미지는 분위기/구도/조명만 참고합니다. 최대 3장까지 첨부됩니다.</small>
+                    </div>
+                    <label>
+                      <span>참고 이미지 첨부</span>
+                      <input
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={(event) => {
+                          uploadGptReferenceImage(event.target.files?.[0]);
+                          event.currentTarget.value = "";
+                        }}
+                        type="file"
+                      />
+                    </label>
+                    {gptReferenceImages.length ? (
+                      <div className="gpt-reference-list">
+                        {gptReferenceImages.map((image) => (
+                          <article key={image.id}>
+                            <img alt={image.label} src={image.imagePath} />
+                            <span>{image.label}</span>
+                            <button
+                              onClick={() => setGptReferenceImages((current) => current.filter((item) => item.id !== image.id))}
+                              type="button"
+                            >
+                              제거
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="strategy-empty">참고 이미지가 없으면 원본 기준 이미지만 사용합니다.</p>
+                    )}
+                    <p className={`mvp-status ${gptReferenceImageStatus.kind}`}>{gptReferenceImageStatus.message}</p>
+                  </div>
+                  <details className="gpt-generator-dropdown">
+                    <summary>
+                      <div>
+                        <p className="eyebrow">Optional GPT</p>
+                        <strong>GPT 이미지 생성</strong>
+                        <span>선택한 원본 기준 이미지로 광고용 이미지를 생성합니다.</span>
+                      </div>
+                      <b>{gptVisualAsset || gptTextAdAsset ? "생성 결과 있음" : "선택 사항"}</b>
+                    </summary>
+                    <div className="gpt-image-generator">
+                      <div>
+                        <p className="eyebrow">GPT Image</p>
+                        <h4>GPT 이미지 생성</h4>
+                        <p className="source-help">상품 원본을 최대한 유지하려면 “선택 이미지 기준 생성 + 상품 원본 최대한 유지”를 사용하세요.</p>
+                      </div>
+                      <div className="gpt-compact-controls">
+                        <label>
+                          <span>생성 방식</span>
+                          <select
+                            onChange={(event) => setGptImageSourceMode(event.target.value as GptImageSourceMode)}
+                            value={gptImageSourceMode}
+                          >
+                            <option value="image-edit">선택 이미지 기준으로 생성</option>
+                            <option value="text-to-image">새 이미지 생성</option>
+                          </select>
+                          <small>{gptImageSourceMode === "image-edit" ? "선택한 원본 기준 이미지를 바탕으로 배경/조명/무드를 보정합니다." : "상품 정보를 바탕으로 새 이미지를 생성합니다. 원본 상품 유지력은 낮을 수 있습니다."}</small>
+                        </label>
+                        <label>
+                          <span>원본 유지</span>
+                          <select
+                            onChange={(event) => setGptPreservationMode(event.target.value as GptImagePreservationMode)}
+                            value={gptPreservationMode}
+                          >
+                            <option value="preserve-product">상품 원본 최대한 유지</option>
+                            <option value="free-generate">자유 생성</option>
+                          </select>
+                          <small>상품 형태, 포장, 색상, 개수, 라벨 위치 보존 여부입니다.</small>
+                        </label>
+                        <label>
+                          <span>프롬프트</span>
+                          <select
+                            onChange={(event) => setGptPromptState((current) => ({
+                              ...current,
+                              promptMode: event.target.value as "auto" | "custom",
+                              finalPrompt: event.target.value === "custom" && current.customPrompt.trim()
+                                ? current.customPrompt.trim()
+                                : autoGptImagePrompt,
+                            }))}
+                            value={gptPromptState.promptMode}
+                          >
+                            <option value="auto">자동 프롬프트</option>
+                            <option value="custom">직접 작성 프롬프트</option>
+                          </select>
+                          <small>{gptPromptState.promptMode === "custom" ? "직접 작성한 프롬프트가 실제 생성에 우선 적용됩니다." : "상품정보와 기준 이미지로 자동 생성합니다."}</small>
+                        </label>
+                        <label>
+                          <span>자동 프롬프트 목적</span>
+                          <select
+                            onChange={(event) => {
+                              const templateMode = event.target.value as GptPromptTemplateMode;
+                              setGptPromptTemplateMode(templateMode);
+                              setGptPromptState((current) => ({
+                                ...current,
+                                promptMode: "auto",
+                                customPrompt: "",
+                              }));
+                            }}
+                            value={gptPromptTemplateMode}
+                          >
+                            <option value="visual-only">글씨 없는 광고 비주얼</option>
+                            <option value="ad-image-with-copy">문구 포함 광고 배너</option>
+                          </select>
+                          <small>두 모드 모두 1200x1200 SNS 배너 기준으로 자동 작성됩니다.</small>
+                        </label>
+                        <label>
+                          <span>후보 개수</span>
+                          <select
+                            onChange={(event) => setNumImageCandidates(Number(event.target.value))}
+                            value={numImageCandidates}
+                          >
+                            <option value={1}>1개</option>
+                            <option value={2}>2개</option>
+                            <option value={3}>3개</option>
+                            <option value={4}>4개</option>
+                          </select>
+                          <small>빠르게 보려면 1개, 비교가 필요하면 2~4개를 선택하세요.</small>
+                        </label>
+                      </div>
+                      <details className="gpt-prompt-panel">
+                        <summary>프롬프트 설정 열기</summary>
+                        <label>
+                          <span>세부 수정 프롬프트</span>
+                          <textarea
+                            onChange={(event) => setGptPromptState((current) => ({
+                              ...current,
+                              customPromptNote: event.target.value,
+                            }))}
+                            placeholder="예: 배경은 더 어둡게, 고기 색감은 원본처럼 유지, 포장 트레이처럼 만들지 말 것."
+                            rows={3}
+                            value={gptPromptState.customPromptNote || ""}
+                          />
+                          <small>전체 프롬프트를 다시 쓰지 않고, 자동 프롬프트 뒤에 추가로 붙일 지시만 적습니다.</small>
+                        </label>
+                        <label>
+                          <span>자동 생성 프롬프트</span>
+                          <textarea
+                            onChange={(event) => setGptPromptState((current) => ({
+                              ...current,
+                              promptMode: "custom",
+                              customPrompt: event.target.value,
+                              finalPrompt: event.target.value,
+                            }))}
+                            rows={9}
+                            value={gptPromptState.promptMode === "custom" && gptPromptState.customPrompt ? gptPromptState.customPrompt : autoGptImagePrompt}
+                          />
+                          <small>자동 프롬프트를 직접 수정하면 직접 작성 프롬프트 모드로 전환됩니다.</small>
+                        </label>
+                        <label>
+                          <span>직접 작성 프롬프트</span>
+                          <textarea
+                            onChange={(event) => setGptPromptState((current) => ({
+                              ...current,
+                              promptMode: "custom",
+                              customPrompt: event.target.value,
+                              finalPrompt: event.target.value,
+                            }))}
+                            placeholder="예: 원본 이미지의 구운 고기 형태와 질감은 유지하고, 포장육 상품처럼 바꾸지 마세요. 배경과 조명만 광고스럽게 개선해주세요. 글씨는 넣지 마세요."
+                            rows={6}
+                            value={gptPromptState.customPrompt}
+                          />
+                        </label>
+                        <div className="gpt-prompt-actions">
+                          <button onClick={() => setGptPromptState((current) => ({
+                            ...current,
+                            promptMode: "custom",
+                            customPrompt: preserveSourcePromptTemplate,
+                            finalPrompt: preserveSourcePromptTemplate,
+                          }))} type="button">
+                            원본 이미지 유지형 프롬프트 불러오기
+                          </button>
+                          <button onClick={() => setGptPromptState((current) => ({
+                            ...current,
+                            promptMode: "custom",
+                            customPrompt: noTextAdVisualPromptTemplate,
+                            finalPrompt: noTextAdVisualPromptTemplate,
+                          }))} type="button">
+                            글씨 없는 광고 비주얼 프롬프트 불러오기
+                          </button>
+                          <button onClick={() => setGptPromptState((current) => {
+                            const base = current.customPrompt.trim() || autoGptImagePrompt;
+                            const customPrompt = `${base}\n\n${noPackageChangePromptTemplate}`.trim();
+                            return {
+                              ...current,
+                              promptMode: "custom",
+                              customPrompt,
+                              finalPrompt: customPrompt,
+                            };
+                          })} type="button">
+                            포장 변경 금지 프롬프트 추가
+                          </button>
+                        </div>
+                        <label>
+                          <span>실제 생성에 사용될 최종 프롬프트</span>
+                          <textarea readOnly rows={5} value={finalGptImagePrompt} />
+                        </label>
+                      </details>
+                      <label>
+                        <span>GPT 이미지 전용 결과 URL/경로</span>
+                        <input
+                          onChange={(event) => {
+                            setGptMainImagePath(event.target.value);
+                            if (event.target.value) setMainImageSourceMode("gpt");
+                          }}
+                          placeholder="/generated-product-images/example.png 또는 https://..."
+                          value={gptMainImagePath}
+                        />
+                      </label>
+                      <div className="gpt-image-actions">
+                        <button
+                          disabled={gptImageStatus.kind === "loading"}
+                          onClick={() => generateGptImage("visual-only")}
+                          type="button"
+                        >
+                          {gptImageStatus.kind === "loading" ? "이미지 생성 중..." : "이미지만 생성"}
+                        </button>
+                        <button
+                          disabled={gptTextAdStatus.kind === "loading"}
+                          onClick={() => generateGptImage("text-in-image")}
+                          type="button"
+                        >
+                          {gptTextAdStatus.kind === "loading" ? "광고 생성 중..." : "글씨까지 생성"}
+                        </button>
+                      </div>
+                      <p className={`mvp-status ${gptImageStatus.kind}`}>{gptImageStatus.message}</p>
+                      <p className={`mvp-status ${gptTextAdStatus.kind}`}>{gptTextAdStatus.message}</p>
+                    </div>
+                  </details>
+                  <details className="gpt-generator-dropdown gpt-result-dropdown">
+                    <summary>
+                      <div>
+                        <p className="eyebrow">Optional GPT</p>
+                        <strong>GPT 생성 결과</strong>
+                        <span>생성한 이미지가 있을 때만 열어서 메인 이미지나 최종 광고안으로 채택하세요.</span>
+                      </div>
+                      <b>{gptImageCandidates.length || gptVisualAsset || gptTextAdAsset || gptMainImagePath || gptTextAdImagePath ? "결과 있음" : "비어 있음"}</b>
+                    </summary>
+                    <p className="source-help">
+                      이미지 생성 결과가 마음에 들지 않으면 실패 이유를 선택하고 다시 생성할 수 있습니다. 정확한 상품 형태, 한글 문구, 가격, CTA는 이미지 생성보다 템플릿 합성이 더 안정적입니다.
+                    </p>
+                    <div className="gpt-result-grid">
+                      <article className="gpt-image-result">
+                        <strong>GPT 이미지 생성 결과</strong>
+                        <span>글씨 없는 비주얼</span>
+                        {gptVisualAsset?.imagePath || gptMainImagePath ? (
+                          <>
+                            <img alt="GPT 이미지 전용 결과" src={gptVisualAsset?.imagePath || gptMainImagePath} />
+                            <button onClick={() => {
+                              const imagePath = gptVisualAsset?.imagePath || gptMainImagePath;
+                              setGptMainImagePath(imagePath);
+                              setMainImageSourceMode("gpt");
+                            }} type="button">
+                              이 이미지를 메인 상품 이미지로 사용
+                            </button>
+                          </>
+                        ) : (
+                          <p className="strategy-empty">[이미지만 생성] 결과가 여기에 표시됩니다.</p>
+                        )}
+                      </article>
+                      <article className="gpt-image-result">
+                        <strong>GPT 글씨 포함 광고 생성 결과</strong>
+                        <span>완성형 광고안</span>
+                        {gptTextAdAsset?.imagePath || gptTextAdImagePath ? (
+                          <>
+                            <img alt="GPT 글씨 포함 광고 결과" src={gptTextAdAsset?.imagePath || gptTextAdImagePath} />
+                            <button onClick={() => {
+                              const imagePath = gptTextAdAsset?.imagePath || gptTextAdImagePath;
+                              setGeneratedBannerPath(imagePath);
+                            }} type="button">
+                              이 이미지를 최종 광고안으로 채택
+                            </button>
+                          </>
+                        ) : (
+                          <p className="strategy-empty">[글씨까지 생성] 결과가 여기에 표시됩니다.</p>
+                        )}
+                      </article>
+                    </div>
+                    {gptImageCandidates.length ? (
+                      <div className="gpt-candidate-panel">
+                        <div>
+                          <p className="eyebrow">Candidates</p>
+                          <h4>생성 후보</h4>
+                        </div>
+                        <div className="source-candidate-grid">
+                          {gptImageCandidates.map((candidate) => (
+                            <article
+                              className={`source-candidate-card ${selectedGptImageCandidate?.id === candidate.id ? "selected" : ""}`}
+                              key={candidate.id}
+                            >
+                              <button onClick={() => selectGptCandidate(candidate)} type="button">
+                                <img alt="GPT 생성 후보" src={candidate.imagePath} />
+                                <span>{candidate.imageGenerationMode === "text-in-image" ? "글씨 포함" : "이미지 전용"} · {candidate.attempt}차</span>
+                                <small>{candidate.imageSourceMode === "image-edit" ? "원본 기준" : "새 생성"}</small>
+                              </button>
+                              <div className="gpt-prompt-actions">
+                                <button onClick={() => selectGptCandidate(candidate)} type="button">이 이미지 선택</button>
+                                <button onClick={() => {
+                                  setSelectedGptImageCandidateId(candidate.id);
+                                  setSelectedImageFailureReasons(candidate.failureReasons || []);
+                                  setImageCustomFeedback(candidate.customFeedback || "");
+                                  setImageRevisionPrompt(candidate.revisionPrompt || "");
+                                }} type="button">
+                                  피드백 작성 기준
+                                </button>
+                              </div>
+                              <details className="gpt-prompt-panel">
+                                <summary>생성/수정 기록 보기</summary>
+                                <textarea readOnly rows={8} value={[
+                                  `id: ${candidate.id}`,
+                                  `imagePath: ${candidate.imagePath}`,
+                                  `sourceImagePath: ${candidate.sourceImagePath || candidate.selectedSourceImagePath || ""}`,
+                                  `promptTemplateMode: ${candidate.promptTemplateMode || ""}`,
+                                  `canvasPreset: ${candidate.canvasPreset || ""}`,
+                                  `attempt: ${candidate.attempt}`,
+                                  `imageGenerationMode: ${candidate.imageGenerationMode}`,
+                                  `imageSourceMode: ${candidate.imageSourceMode}`,
+                                  `preservationMode: ${candidate.preservationMode}`,
+                                  `selectedSourceImagePath: ${candidate.selectedSourceImagePath || ""}`,
+                                  `parentCandidateId: ${candidate.parentCandidateId || ""}`,
+                                  `productName: ${candidate.productName || ""}`,
+                                  `category: ${candidate.category || ""}`,
+                                  `createdAt: ${candidate.createdAt}`,
+                                  "",
+                                  "[autoPrompt]",
+                                  candidate.autoPrompt || "",
+                                  "",
+                                  "[customPromptNote]",
+                                  candidate.customPromptNote || "",
+                                  "",
+                                  "[basePrompt]",
+                                  candidate.basePrompt || "",
+                                  "",
+                                  "[revisionPrompt]",
+                                  candidate.revisionPrompt || "",
+                                  "",
+                                  "[failureReasons]",
+                                  (candidate.failureReasons || []).join(", "),
+                                  "",
+                                  "[customFeedback]",
+                                  candidate.customFeedback || "",
+                                  "",
+                                  "[promptUsed]",
+                                  candidate.promptUsed || "",
+                                ].join("\n")} />
+                              </details>
+                            </article>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="gpt-candidate-panel">
+                      <div>
+                        <p className="eyebrow">Feedback Loop</p>
+                        <h4>실패 이유 선택 후 다시 생성</h4>
+                        <p className="source-help">선택한 후보의 원본 기준 이미지를 유지한 채, 아래 피드백을 수정 프롬프트로 바꿔 재생성합니다.</p>
+                      </div>
+                      <div className="feedback-reason-list">
+                        {gptImageFailureReasonOptions.map((option) => (
+                          <label className="feedback-reason-option" key={option.value}>
+                            <input
+                              checked={selectedImageFailureReasons.includes(option.value)}
+                              onChange={() => toggleImageFailureReason(option.value)}
+                              type="checkbox"
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <label>
+                        <span>추가 피드백</span>
+                        <textarea
+                          onChange={(event) => setImageCustomFeedback(event.target.value)}
+                          placeholder="예: 고기 색감은 유지하고 배경만 더 깔끔하게. 포장 트레이처럼 만들지 말 것."
+                          rows={4}
+                          value={imageCustomFeedback}
+                        />
+                      </label>
+                      <label>
+                        <span>수정 프롬프트</span>
+                        <textarea
+                          readOnly
+                          rows={7}
+                          value={imageRevisionPrompt}
+                        />
+                      </label>
+                      <div className="gpt-image-actions">
+                        <button onClick={makeImageRevisionPrompt} type="button">수정 프롬프트 만들기</button>
+                        <button
+                          disabled={!selectedGptImageCandidate || gptImageStatus.kind === "loading" || gptTextAdStatus.kind === "loading"}
+                          onClick={regenerateImageWithFeedback}
+                          type="button"
+                        >
+                          이 피드백으로 다시 생성
+                        </button>
+                      </div>
+                    </div>
+                    {latestImagePrompt ? (
+                      <p className="prompt-summary">최근 GPT 이미지 프롬프트: {latestImagePrompt.slice(0, 220)}{latestImagePrompt.length > 220 ? "..." : ""}</p>
+                    ) : null}
+                  </details>
+                  </div>
+                </details>
                 <div className="background-settings render-settings">
                   <div>
                     <p className="eyebrow">Render Image</p>
@@ -1462,26 +2721,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                         type="file"
                       />
                     </label>
-                  ) : null}
-                  {mainImageSourceMode === "gpt" ? (
-                    <div className="gpt-image-generator">
-                      <label>
-                        <span>GPT 생성 이미지 URL/경로</span>
-                        <input
-                          onChange={(event) => setGptMainImagePath(event.target.value)}
-                          placeholder="/generated-product-images/example.png 또는 https://..."
-                          value={gptMainImagePath}
-                        />
-                      </label>
-                      <button
-                        disabled={gptImageStatus.kind === "loading"}
-                        onClick={generateGptMainImage}
-                        type="button"
-                      >
-                        {gptImageStatus.kind === "loading" ? "이미지 생성 중..." : "이미지 생성"}
-                      </button>
-                      <p className={`mvp-status ${gptImageStatus.kind}`}>{gptImageStatus.message}</p>
-                    </div>
                   ) : null}
                   {currentMainProductImage ? (
                     <div className="background-preview-thumb">
