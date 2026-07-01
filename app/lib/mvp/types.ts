@@ -89,6 +89,28 @@ export type ProductImageEffectPreset =
   | "commerce-shadow"
   | "outline-glow-shadow";
 
+export type ProductImageRenderEffect = {
+  outline: boolean;
+  outlineColor: string;
+  outlineWidth: number;
+  shadow: boolean;
+  shadowBaseColor?: string;
+  shadowOpacity?: number;
+  shadowColor: string;
+  shadowBlur: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+  glow: boolean;
+  glowBaseColor?: string;
+  glowOpacity?: number;
+  glowColor: string;
+  glowBlur: number;
+  productScale: number;
+  productOffsetX: number;
+  productOffsetY: number;
+  productRotation: number;
+};
+
 export type ProductImageState = {
   originalImagePath: string;
   cutoutImagePath?: string;
@@ -418,11 +440,21 @@ export type GeneratedCopyValidation = {
   };
 };
 
+export type GeneratedCopyReasoning = {
+  headlineReason?: string;
+  bodyReason?: string;
+  highlightReason?: string;
+  referencePatternUsed?: string;
+  consumerInsightUsed?: string;
+  purchaseTriggerUsed?: string;
+};
+
 export type GeneratedAdCopy = GeneratedAdCopyVariant & {
   price: string;
   hookType: string;
   appealPoint: string;
   whyThisWorks: string;
+  reasoning?: GeneratedCopyReasoning;
   templateFit?: TemplateFitInfo;
   referencePatternUsage?: ReferencePatternUsage;
   copyValidation?: GeneratedCopyValidation;

@@ -473,7 +473,7 @@ opacity 조절 가능
 ```text
 Canvas/SVG는 상품 이미지를 자동으로 누끼 따는 기능이 아닙니다.
 이미 누끼가 따진 투명 PNG에 테두리와 그림자를 적용하는 기능입니다.
-자동 누끼 제거는 추후 remove.bg, rembg, Clipdrop, Segment Anything 등을 검토합니다.
+자동 누끼 제거는 `REMOVE_BG_API_KEY`가 설정된 경우 remove.bg API로 처리하며, 결과 PNG는 `public/processed-products`에 저장됩니다.
 ```
 
 ---

@@ -26,6 +26,8 @@ export const runtime = "nodejs";
 
 type Body = {
   productInfo?: Partial<ProductInfoForPrompt>;
+  prompt?: string;
+  styleHint?: string;
   productName?: string;
   category?: string;
   mainBenefit?: string;
@@ -64,6 +66,32 @@ type Body = {
 
 const outputDir = path.join(process.cwd(), "public", "generated-product-images");
 
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function productPrompt(productInfo?: Partial<ProductInfoForPrompt>, prompt?: string, styleHint?: string) {
+  const productName = cleanText(productInfo?.productName) || "상품";
+  const category = cleanText(productInfo?.category) || "이커머스 상품";
+  const price = cleanText(productInfo?.price);
+  const discountInfo = cleanText(productInfo?.discountInfo);
+  const mainBenefit = cleanText(productInfo?.mainBenefit || productInfo?.extractedDescription);
+  const targetCustomer = cleanText(productInfo?.targetCustomer);
+
+  return [
+    "Create a 1200x1200 square SNS ecommerce advertising image.",
+    "The output must be useful as a Korean performance marketing banner asset.",
+    `Product: ${productName}.`,
+    `Category: ${category}.`,
+    price ? `Price: ${price}.` : "",
+    discountInfo ? `Discount/benefit: ${discountInfo}.` : "",
+    mainBenefit ? `Main selling point: ${mainBenefit}.` : "",
+    targetCustomer ? `Target customer: ${targetCustomer}.` : "",
+    styleHint ? `Style hint: ${styleHint}.` : "",
+    prompt ? `User prompt: ${prompt}.` : "",
+  ].filter(Boolean).join("\n");
+}
+
 function normalizeMode(value?: string): GptImageGenerationMode {
   return value === "text-in-image" ? "text-in-image" : "visual-only";
 }
@@ -101,7 +129,11 @@ function normalizePromptTemplateMode(value?: string, imageGenerationMode?: GptIm
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Body;
-    const imageGenerationMode = normalizeMode(body.imageGenerationMode);
+    const promptTemplateMode = normalizePromptTemplateMode(body.promptTemplateMode, normalizeMode(body.imageGenerationMode));
+    const canvasPreset: GptOutputCanvasPreset = "sns-square-1200";
+    const imageGenerationMode = normalizeMode(
+      body.imageGenerationMode || (promptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only"),
+    );
     const selectedReferenceLabels = Array.isArray(body.selectedReferenceLabels)
       ? body.selectedReferenceLabels.slice(0, 3)
       : Array.isArray(body.referenceLabels)
@@ -157,20 +189,15 @@ export async function POST(request: Request) {
       imageSourceMode,
       preservationMode,
     });
-    const promptTemplateMode = normalizePromptTemplateMode(body.promptTemplateMode, imageGenerationMode);
-    const canvasPreset: GptOutputCanvasPreset = "sns-square-1200";
+    const fallbackProductPrompt = productPrompt(body.productInfo, body.prompt, body.styleHint);
     const autoPrompt = typeof body.autoPrompt === "string" && body.autoPrompt.trim()
       ? body.autoPrompt.trim()
-      : fallbackAutoPrompt;
-    const customPromptNote = typeof body.customPromptNote === "string" ? body.customPromptNote.trim() : "";
-    const basePrompt =
-      typeof body.finalPrompt === "string" && body.finalPrompt.trim()
-        ? body.finalPrompt.trim()
-        : typeof body.basePrompt === "string" && body.basePrompt.trim()
-          ? body.basePrompt.trim()
-          : typeof body.customPrompt === "string" && body.customPrompt.trim()
-            ? body.customPrompt.trim()
-            : autoPrompt;
+      : fallbackAutoPrompt || fallbackProductPrompt;
+    const customPromptNote = cleanText(body.customPromptNote);
+    const rawFinalPrompt = cleanText(body.finalPrompt) || (body.promptMode === "custom" ? cleanText(body.customPrompt) : "");
+    const rawBasePrompt = cleanText(body.basePrompt);
+    const rawPrompt = cleanText(body.prompt);
+    const basePrompt = rawFinalPrompt || rawBasePrompt || autoPrompt || rawPrompt || fallbackProductPrompt;
     const failureReasons = Array.isArray(body.failureReasons) ? body.failureReasons : [];
     const revisionPrompt =
       typeof body.revisionPrompt === "string" && body.revisionPrompt.trim()
@@ -193,20 +220,20 @@ export async function POST(request: Request) {
         ? `[Additional user direction]\n${customPromptNote}`
         : "";
     const revisionDirection = revisionPrompt ? `[Revision direction]\n${revisionPrompt}` : "";
-    const prompt = [basePrompt, additionalDirection, lockPrompt, revisionDirection].filter(Boolean).join("\n\n");
+    const promptUsed = [basePrompt, additionalDirection, lockPrompt, revisionDirection].filter(Boolean).join("\n\n");
 
     await fs.mkdir(outputDir, { recursive: true });
     const prefix = outputPrefix(imageSourceMode, imageGenerationMode);
     const numCandidates = normalizeCandidateCount(body.numCandidates);
     const createdAt = new Date().toISOString();
     const candidates = await Promise.all(Array.from({ length: numCandidates }, async (_, index): Promise<GptImageCandidate> => {
-      const { imageBuffer, promptUsed } = imageSourceMode === "image-edit"
+      const { imageBuffer, promptUsed: apiPromptUsed } = imageSourceMode === "image-edit"
         ? await editImageFromSource({
           sourceImagePath: fallbackSourceImagePath,
           referenceImagePaths: body.referenceImagePaths,
-          prompt,
+          prompt: promptUsed,
         })
-        : await generateImageFromText({ prompt });
+        : await generateImageFromText({ prompt: promptUsed });
       const fileName = `${prefix}-${Date.now()}-${index + 1}-${crypto.randomBytes(4).toString("hex")}.png`;
       const filePath = path.join(outputDir, fileName);
       await fs.writeFile(filePath, imageBuffer);
@@ -221,7 +248,7 @@ export async function POST(request: Request) {
         canvasPreset,
         productName: body.productName || body.productInfo?.productName,
         category: body.category || body.productInfo?.category,
-        promptUsed,
+        promptUsed: apiPromptUsed,
         autoPrompt,
         customPromptNote,
         basePrompt,
@@ -236,19 +263,26 @@ export async function POST(request: Request) {
     }));
 
     const firstCandidate = candidates[0];
-    await appendGptImageCandidates(candidates);
+    let candidateSaveError = "";
+    try {
+      await appendGptImageCandidates(candidates);
+    } catch (error) {
+      candidateSaveError = error instanceof Error ? error.message : String(error);
+      console.error("[generate-product] Failed to save GPT image candidates", error);
+    }
 
     return NextResponse.json({
       success: true,
       imagePath: firstCandidate.imagePath,
       images: candidates,
+      candidates,
       imageGenerationMode,
       imageSourceMode,
       preservationMode,
       promptTemplateMode,
       canvasPreset,
-      promptMode: body.finalPrompt || body.customPrompt ? "custom" : "auto",
-      promptUsed: firstCandidate.promptUsed,
+      promptMode: rawFinalPrompt || rawBasePrompt || rawPrompt ? "custom" : "auto",
+      promptUsed,
       autoPrompt,
       customPromptNote,
       basePrompt,
@@ -257,15 +291,23 @@ export async function POST(request: Request) {
       customFeedback: body.customFeedback?.trim() || "",
       creativeDirection,
       selectedSourceImagePath: fallbackSourceImagePath,
+      parentCandidateId: body.parentCandidateId,
+      attempt: Math.max(1, Math.floor(body.attempt || 1)),
       model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
       savedTo: {
         candidates: "data/gpt-image-candidates.json",
       },
+      candidateSaveError: candidateSaveError || undefined,
       createdAt,
     });
   } catch (error) {
+    console.error("[generate-product] Failed to generate product image", error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "GPT 이미지 생성에 실패했습니다." },
+      {
+        success: false,
+        error: "Failed to generate product image",
+        detail: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 },
     );
   }

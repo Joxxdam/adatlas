@@ -8,7 +8,7 @@ import { foodCategoryTemplateIds, foodImpactHeroTemplate, headlineFontPresets, t
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
 import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
-import type { GeneratedAdCopy, GeneratedAdCopyVariant, ProductImageState, TemplateCopyLimits } from "../../../lib/mvp/types";
+import type { GeneratedAdCopy, GeneratedAdCopyVariant, ProductImageRenderEffect, ProductImageState, TemplateCopyLimits } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
@@ -35,6 +35,7 @@ type RenderBody = {
     scale?: number;
   };
   style?: RenderStyle;
+  productEffect?: Partial<ProductImageRenderEffect>;
 };
 
 type TextLine = {
@@ -83,12 +84,108 @@ const supportedTemplateIds = new Set([
   "ugc-meme-005",
 ]);
 
+const defaultCutoutProductEffect: ProductImageRenderEffect = {
+  outline: true,
+  outlineColor: "#ffffff",
+  outlineWidth: 14,
+  shadow: true,
+  shadowColor: "rgba(0,0,0,0.45)",
+  shadowBlur: 24,
+  shadowOffsetX: 0,
+  shadowOffsetY: 10,
+  glow: true,
+  glowColor: "rgba(255,255,255,0.55)",
+  glowBlur: 28,
+  productScale: 1.08,
+  productOffsetX: 0,
+  productOffsetY: 0,
+  productRotation: 0,
+};
+
 function escapeXml(value: string) {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function isProcessedProductPath(value: string) {
+  return value.startsWith("/processed-products/");
+}
+
+function resolveProductEffect(
+  imagePath: string,
+  requestEffect?: Partial<ProductImageRenderEffect>,
+  templateEffect?: Partial<ProductImageRenderEffect>,
+) {
+  const hasRequestEffect = Boolean(requestEffect && Object.keys(requestEffect).length);
+  const hasTemplateEffect = Boolean(templateEffect && Object.keys(templateEffect).length);
+  if (!hasRequestEffect && !hasTemplateEffect && !isProcessedProductPath(imagePath)) return undefined;
+
+  return {
+    ...defaultCutoutProductEffect,
+    ...(templateEffect || {}),
+    ...(requestEffect || {}),
+  } as ProductImageRenderEffect;
+}
+
+function svgColorWithOpacity(color: string) {
+  const rgba = color.match(/^rgba?\(([^)]+)\)$/i);
+  if (!rgba) return { color, opacity: 1 };
+  const parts = rgba[1].split(",").map((part) => part.trim());
+  if (parts.length < 3) return { color, opacity: 1 };
+  return {
+    color: `rgb(${parts[0]},${parts[1]},${parts[2]})`,
+    opacity: parts[3] !== undefined ? Number(parts[3]) : 1,
+  };
+}
+
+function productEffectFilterDef(effect?: ProductImageRenderEffect) {
+  if (!effect) {
+    return `<filter id="productShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>`;
+  }
+
+  const shadow = svgColorWithOpacity(effect.shadowColor);
+  const glow = svgColorWithOpacity(effect.glowColor);
+  return `<filter id="productShadow" x="-45%" y="-45%" width="190%" height="210%" color-interpolation-filters="sRGB">
+    ${effect.outline && effect.outlineWidth > 0 ? `<feMorphology in="SourceAlpha" operator="dilate" radius="${effect.outlineWidth}" result="outline" />
+    <feFlood flood-color="${escapeXml(effect.outlineColor)}" flood-opacity="1" result="outlineColor" />
+    <feComposite in="outlineColor" in2="outline" operator="in" result="outlineLayer" />` : ""}
+    ${effect.glow && effect.glowBlur > 0 ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${effect.glowBlur}" result="glow" />
+    <feFlood flood-color="${escapeXml(glow.color)}" flood-opacity="${glow.opacity}" result="glowColor" />
+    <feComposite in="glowColor" in2="glow" operator="in" result="glowLayer" />` : ""}
+    ${effect.shadow && effect.shadowBlur > 0 ? `<feDropShadow dx="${effect.shadowOffsetX}" dy="${effect.shadowOffsetY}" stdDeviation="${effect.shadowBlur}" flood-color="${escapeXml(shadow.color)}" flood-opacity="${shadow.opacity}" result="shadowLayer" />` : ""}
+    <feMerge>
+      ${effect.shadow && effect.shadowBlur > 0 ? `<feMergeNode in="shadowLayer" />` : ""}
+      ${effect.glow && effect.glowBlur > 0 ? `<feMergeNode in="glowLayer" />` : ""}
+      ${effect.outline && effect.outlineWidth > 0 ? `<feMergeNode in="outlineLayer" />` : ""}
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>`;
+}
+
+function productImageSvg(
+  dataUrl: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  mode: "meet" | "cover" = "meet",
+  effect?: ProductImageRenderEffect,
+) {
+  if (!dataUrl) {
+    return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="22" fill="#ffffff" opacity="0.7" />`;
+  }
+
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  const transform = effect
+    ? ` transform="translate(${effect.productOffsetX} ${effect.productOffsetY}) rotate(${effect.productRotation} ${cx} ${cy}) translate(${cx} ${cy}) scale(${effect.productScale}) translate(${-cx} ${-cy})"`
+    : "";
+  return `<g${transform}><image href="${dataUrl}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid ${mode}" filter="url(#productShadow)" /></g>`;
 }
 
 function isHttpUrl(value: string) {
@@ -341,6 +438,11 @@ async function renderFoodImpactHero(body: RenderBody) {
   const selectedProductImagePath = body.productImageState
     ? getSelectedProductImagePath(body.productImageState)
     : body.productImagePath || "";
+  const productEffect = resolveProductEffect(
+    selectedProductImagePath,
+    body.productEffect,
+    (preset as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect,
+  );
   const productImageDataUrl = await imageToDataUrl(selectedProductImagePath || "");
   const backgroundMode = body.backgroundMode || "none";
   const backgroundSource =
@@ -534,9 +636,7 @@ async function renderFoodImpactHero(body: RenderBody) {
         font-style: normal;
       }
     </style>
-    <filter id="productShadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#000000" flood-opacity="0.18"/>
-    </filter>
+    ${productEffectFilterDef(productEffect)}
     <filter id="headlineShadow" x="-10%" y="-10%" width="120%" height="130%">
       <feDropShadow dx="${headlineStyle.shadowOffsetX}" dy="${headlineStyle.shadowOffsetY}" stdDeviation="${headlineStyle.shadowBlur}" flood-color="${escapeXml(headlineStyle.shadowColor)}"/>
     </filter>
@@ -554,7 +654,7 @@ async function renderFoodImpactHero(body: RenderBody) {
   <rect x="${highlightBoxX}" y="${highlightBoxY}" width="${highlightBoxWidth}" height="${highlightBoxHeight}" rx="0" fill="${style.highlightBackground}" />
   ${
     productImageDataUrl
-      ? `<image href="${productImageDataUrl}" x="42" y="${imageTop}" width="1116" height="${imageHeight}" preserveAspectRatio="xMidYMid meet" filter="url(#productShadow)" />`
+      ? productImageSvg(productImageDataUrl, 42, imageTop, 1116, imageHeight, "meet", productEffect)
       : `<rect x="70" y="${imageTop + 30}" width="1060" height="${Math.max(300, imageHeight - 60)}" rx="28" fill="#ffffff" />`
   }
   ${hasPrice ? `<rect x="${priceBadge.x}" y="${priceBadge.y}" width="${priceBadge.width}" height="${priceBadge.height}" rx="${priceBadge.height / 2}" fill="${style.priceColor}" />` : ""}
@@ -587,6 +687,11 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const selectedProductImagePath = body.productImageState
     ? getSelectedProductImagePath(body.productImageState)
     : body.productImagePath || "";
+  const productEffect = resolveProductEffect(
+    selectedProductImagePath,
+    body.productEffect,
+    (template as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect,
+  );
   const requestedProductImagePaths = (body.productImagePaths?.length
     ? [selectedProductImagePath || body.productImagePaths[0], ...body.productImagePaths.slice(1)]
     : [selectedProductImagePath, body.secondaryProductImagePath]).filter(Boolean).slice(0, 4) as string[];
@@ -621,17 +726,17 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
 
   const image = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") =>
     productImageDataUrl
-      ? `<image href="${productImageDataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid ${mode}" filter="url(#productShadow)" />`
+      ? productImageSvg(productImageDataUrl, x, y, w, h, mode, productEffect)
       : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`;
 
   const secondaryImage = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") =>
     secondaryProductImageDataUrl
-      ? `<image href="${secondaryProductImageDataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid ${mode}" filter="url(#productShadow)" />`
+      ? productImageSvg(secondaryProductImageDataUrl, x, y, w, h, mode, productEffect)
       : image(x, y, w, h, mode);
 
   const imageFromDataUrl = (dataUrl: string, x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") =>
     dataUrl
-      ? `<image href="${dataUrl}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid ${mode}" filter="url(#productShadow)" />`
+      ? productImageSvg(dataUrl, x, y, w, h, mode, productEffect)
       : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`;
 
   let shapes = "";
@@ -733,7 +838,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       @font-face { font-family: 'AdAtlasSelectedFont'; src: url('${selectedFontFileUrl}') format('${selectedFontFormat}'); font-weight: 400 900; font-style: normal; }
       @font-face { font-family: 'AdAtlasHeadlineFont'; src: url('${headlineFontFileUrl}') format('${headlineFontFormat}'); font-weight: 400 900; font-style: normal; }
     </style>
-    <filter id="productShadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#000000" flood-opacity="0.22"/></filter>
+    ${productEffectFilterDef(productEffect)}
     ${backgroundBlurDef}
     <filter id="headlineShadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000000"/></filter>
   </defs>

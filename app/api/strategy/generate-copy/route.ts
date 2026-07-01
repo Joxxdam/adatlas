@@ -8,7 +8,7 @@ import {
 } from "../../../lib/mvp/copyLengthPolicy";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
 import { copyLimitCharSummary, DEFAULT_TEMPLATE_COPY_LIMIT_CHARS, fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
-import { AdImageLabel, GeneratedAdCopy, GeneratedAdCopyVariant, ProductInfoForPrompt, ReferencePatternUsage, TemplateCopyLimits } from "../../../lib/mvp/types";
+import { AdImageLabel, GeneratedAdCopy, GeneratedCopyReasoning, GeneratedAdCopyVariant, ProductInfoForPrompt, ReferencePatternUsage, TemplateCopyLimits } from "../../../lib/mvp/types";
 
 type Body = {
   productInfo?: Partial<ProductInfoForPrompt>;
@@ -131,7 +131,7 @@ function selectReferenceLabels(product: ProductInfoForPrompt, allLabels: AdImage
   return [...source]
     .filter((label) => label.finalLabel && Object.values(label.finalLabel).some(Boolean))
     .sort((a, b) => scoreLabel(product, b) - scoreLabel(product, a))
-    .slice(0, requestedLabels.length ? 3 : 5);
+    .slice(0, 1);
 }
 
 function parseJsonObject(text: string) {
@@ -250,6 +250,22 @@ function compactCta(value: string) {
   return "보러가기";
 }
 
+function normalizeNonHeadlineCopy(input: string, fallback: string, maxLength: number) {
+  const source = isMetaAnalysisCopy(input || "") ? fallback : input;
+  const polite = normalizeCasualCopyToPolite(replaceForbiddenPhrases(source || ""));
+  const normalized = polite
+    .replace(/듯$/g, "듯해요")
+    .replace(/각$/g, "각이에요")
+    .replace(/반칙$/g, "반칙이에요")
+    .replace(/끝$/g, "끝내세요")
+    .replace(/됨$/g, "돼요")
+    .replace(/좋다$/g, "좋아요")
+    .replace(/필요함$/g, "필요해요")
+    .replace(/가능함$/g, "가능해요")
+    .trim();
+  return shortenCopy(normalized || fallback, maxLength, fallback);
+}
+
 function bodyCopyMaxChars(copyLimits?: TemplateCopyLimits) {
   return copyLimits?.bodyCopy?.maxChars || 36;
 }
@@ -272,24 +288,24 @@ function buildCopyVariants(copy: GeneratedAdCopy, product: ProductInfoForPrompt,
     short: {
       headline: shortenCopy(existing?.short?.headline || base.headline, 12, base.headline),
       bodyCopy: normalizeBodyCopyForBanner(shortenCopy(existing?.short?.bodyCopy || base.bodyCopy, shortBodyMax, base.bodyCopy), product, shortBodyMax).bodyCopy,
-      highlightCopy: shortenCopy(existing?.short?.highlightCopy || base.highlightCopy, 18, base.highlightCopy),
-      bottomBarCopy: shortenCopy(existing?.short?.bottomBarCopy || base.bottomBarCopy, 22, base.bottomBarCopy),
+      highlightCopy: normalizeNonHeadlineCopy(existing?.short?.highlightCopy || base.highlightCopy, base.highlightCopy, 18),
+      bottomBarCopy: normalizeNonHeadlineCopy(existing?.short?.bottomBarCopy || base.bottomBarCopy, base.bottomBarCopy, 22),
       cta: compactCta(existing?.short?.cta || base.cta),
       price: existing?.short?.price || base.price,
     },
     medium: {
       headline: shortenCopy(existing?.medium?.headline || base.headline, 16, base.headline),
       bodyCopy: normalizeBodyCopyForBanner(shortenCopy(existing?.medium?.bodyCopy || base.bodyCopy, mediumBodyMax, base.bodyCopy), product, mediumBodyMax).bodyCopy,
-      highlightCopy: shortenCopy(existing?.medium?.highlightCopy || base.highlightCopy, 26, base.highlightCopy),
-      bottomBarCopy: shortenCopy(existing?.medium?.bottomBarCopy || base.bottomBarCopy, 30, base.bottomBarCopy),
+      highlightCopy: normalizeNonHeadlineCopy(existing?.medium?.highlightCopy || base.highlightCopy, base.highlightCopy, 26),
+      bottomBarCopy: normalizeNonHeadlineCopy(existing?.medium?.bottomBarCopy || base.bottomBarCopy, base.bottomBarCopy, 30),
       cta: compactCta(existing?.medium?.cta || base.cta),
       price: existing?.medium?.price || base.price,
     },
     long: {
       headline: shortenCopy(existing?.long?.headline || base.headline, 22, base.headline),
       bodyCopy: normalizeBodyCopyForBanner(shortenCopy(existing?.long?.bodyCopy || base.bodyCopy, longBodyMax, base.bodyCopy), product, longBodyMax).bodyCopy,
-      highlightCopy: shortenCopy(existing?.long?.highlightCopy || base.highlightCopy, 34, base.highlightCopy),
-      bottomBarCopy: shortenCopy(existing?.long?.bottomBarCopy || base.bottomBarCopy, 38, base.bottomBarCopy),
+      highlightCopy: normalizeNonHeadlineCopy(existing?.long?.highlightCopy || base.highlightCopy, base.highlightCopy, 34),
+      bottomBarCopy: normalizeNonHeadlineCopy(existing?.long?.bottomBarCopy || base.bottomBarCopy, base.bottomBarCopy, 38),
       cta: compactCta(existing?.long?.cta || base.cta),
       price: existing?.long?.price || base.price,
     },
@@ -403,6 +419,11 @@ function productSubject(product: ProductInfoForPrompt, labels: AdImageLabel[]) {
 }
 
 function pricePhrase(product: ProductInfoForPrompt) {
+  const source = [product.price, product.discountInfo, product.extractedDescription, product.mainBenefit].filter(Boolean).join(" ");
+  const priceMatch = source.match(/[\d,]+\s*(?:원|만원|천원)/);
+  if (priceMatch) return priceMatch[0].replace(/\s+/g, "");
+  const percentMatch = source.match(/\d+\s*%/);
+  if (percentMatch) return percentMatch[0].replace(/\s+/g, "");
   return product.price || product.discountInfo || "이 조건";
 }
 
@@ -625,6 +646,29 @@ function buildReferencePatternUsage(labels: AdImageLabel[], fallback?: Partial<R
   };
 }
 
+function buildCopyReasoning(labels: AdImageLabel[], fallback?: Partial<GeneratedCopyReasoning>): GeneratedCopyReasoning {
+  const fields = referenceFieldBundle(labels);
+  const finalLabel = primaryFinalLabel(labels);
+
+  return {
+    headlineReason: firstFilled(
+      fallback?.headlineReason,
+      `headline uses firstLineHook/reusableCopyPattern: ${firstFilled(fields.firstLineHook, fields.reusableCopyPattern, finalLabel?.hookType)}`,
+    ),
+    bodyReason: firstFilled(
+      fallback?.bodyReason,
+      `bodyCopy uses consumerInsight in polite banner tone: ${firstFilled(fields.consumerInsight, finalLabel?.targetEmotion)}`,
+    ),
+    highlightReason: firstFilled(
+      fallback?.highlightReason,
+      `highlightCopy uses purchaseTrigger/appealPoint: ${firstFilled(fields.purchaseTrigger, finalLabel?.appealPoint)}`,
+    ),
+    referencePatternUsed: firstFilled(fallback?.referencePatternUsed, fields.reusableCopyPattern, fields.copyStructure, fields.firstLineHook),
+    consumerInsightUsed: firstFilled(fallback?.consumerInsightUsed, fields.consumerInsight, finalLabel?.targetEmotion),
+    purchaseTriggerUsed: firstFilled(fallback?.purchaseTriggerUsed, fields.purchaseTrigger, fields.whyItWorks),
+  };
+}
+
 function referenceAwareBody(product: ProductInfoForPrompt, labels: AdImageLabel[]) {
   const fields = referenceFieldBundle(labels);
   const subject = productSubject(product, labels);
@@ -731,6 +775,31 @@ function shouldRewriteBottomWithReference(bottomBarCopy: string, labels: AdImage
   return false;
 }
 
+function hasStrongReferenceCopyPattern(labels: AdImageLabel[]) {
+  const fields = referenceFieldBundle(labels);
+  return Boolean(fields.reusableCopyPattern || fields.firstLineHook || fields.copyStructure || fields.trendElements);
+}
+
+function headlineMissesReferencePattern(headline: string, labels: AdImageLabel[]) {
+  if (!hasStrongReferenceCopyPattern(labels)) return false;
+  const fields = referenceFieldBundle(labels);
+  const referenceText = [
+    fields.reusableCopyPattern,
+    fields.firstLineHook,
+    fields.copyStructure,
+    fields.trendElements,
+    fields.purchaseTrigger,
+  ].join(" ");
+  const normalizedHeadline = headline.replace(/\s+/g, "");
+
+  if (/OO|XX|YY|ZZ|찾|found|만원대|price range/i.test(referenceText) && !/(찾|만원|원|가격|구성|price|found)/i.test(normalizedHeadline)) return true;
+  if (/POV|pov|core|코어|야호|나와|버림|저장|장바구니|SNS|UGC/i.test(referenceText) && !/(POV|pov|코어|야호|나와|버림|저장|장바구니|각|결국)/i.test(normalizedHeadline)) return true;
+  if (/선물|부모|명절|체면|고급|premium|gift/i.test(referenceText) && !/(선물|부모|명절|체면|고급|격|부담)/i.test(normalizedHeadline)) return true;
+  if (/후기|리뷰|평점|써보|먹어보|review/i.test(referenceText) && !/(후기|리뷰|평점|써보|먹어보|알았|유명)/i.test(normalizedHeadline)) return true;
+
+  return false;
+}
+
 function applyReferenceNuance(copy: GeneratedAdCopy, product: ProductInfoForPrompt, labels: AdImageLabel[]): GeneratedAdCopy {
   const finalLabel = primaryFinalLabel(labels);
   if (!finalLabel) return copy;
@@ -741,7 +810,7 @@ function applyReferenceNuance(copy: GeneratedAdCopy, product: ProductInfoForProm
   const reusableCopyPattern = fields.reusableCopyPattern;
   const toneOfVoice = fields.toneOfVoice;
 
-  const headline = shouldRewriteHeadlineWithReference(copy.headline, labels)
+  const headline = shouldRewriteHeadlineWithReference(copy.headline, labels) || headlineMissesReferencePattern(copy.headline, labels)
     ? fallbackHeadline(product, labels)
     : copy.headline;
 
@@ -796,6 +865,7 @@ function normalizeCopy(
   const highlightCopy = replaceForbiddenPhrases(String(value.highlightCopy || ""));
   const bottomBarCopy = replaceForbiddenPhrases(String(value.bottomBarCopy || ""));
   const cta = replaceForbiddenPhrases(String(value.cta || ""));
+  const incomingReasoning = (value as Partial<GeneratedAdCopy> & { reasoning?: Partial<GeneratedCopyReasoning> }).reasoning;
 
   const normalized: GeneratedAdCopy = {
     headline: isGenericHeadline(headline) || isInvalidHeadlineCopy(headline) ? fallbackHeadline(product, labels) : headline,
@@ -817,6 +887,7 @@ function normalizeCopy(
       fitNotes: value.templateFit?.fitNotes || "선택한 템플릿의 문구 영역 길이 제한에 맞춰 작성했습니다.",
     },
     referencePatternUsage: buildReferencePatternUsage(labels, value.referencePatternUsage),
+    reasoning: buildCopyReasoning(labels, incomingReasoning),
   };
 
   const referenceApplied = applyReferenceNuance(normalized, product, labels);
@@ -824,6 +895,8 @@ function normalizeCopy(
   const policyApplied: GeneratedAdCopy = {
     ...referenceApplied,
     bodyCopy: bodyCopyPolicy.bodyCopy,
+    highlightCopy: normalizeNonHeadlineCopy(referenceApplied.highlightCopy, referenceAwareHighlight(product, labels), 34),
+    bottomBarCopy: normalizeNonHeadlineCopy(referenceApplied.bottomBarCopy, referenceAwareBottom(product, labels), 38),
     copyValidation: {
       ...referenceApplied.copyValidation,
       bodyCopy: bodyCopyPolicy.validation,
@@ -956,7 +1029,52 @@ async function generateWithOpenAI(
   const templateLimitLines = (Object.keys(DEFAULT_TEMPLATE_COPY_LIMIT_CHARS) as Array<keyof typeof DEFAULT_TEMPLATE_COPY_LIMIT_CHARS>)
     .map((slot) => `- ${slot}: ${copyLimitSummary[slot] || DEFAULT_TEMPLATE_COPY_LIMIT_CHARS[slot]}자 이내`)
     .join("\n");
+  const copyPromptHardening = `
+[STRICT COPY GENERATION RULES]
+You are generating Korean SNS/ecommerce performance ad copy, not generic brand copy.
+Use exactly ONE selected reference label as the primary pattern source. Do not average multiple references.
+
+Reference field priority:
+1. reusableCopyPattern
+2. firstLineHook
+3. copyStructure
+4. consumerInsight
+5. purchaseTrigger
+6. toneOfVoice
+7. trendElements
+8. visualCopyRelation
+9. hookType
+10. appealPoint
+11. copyNuance
+12. whyItWorks
+
+Headline rules:
+- Headline is the most important slot.
+- It must visibly adapt firstLineHook or reusableCopyPattern when either exists.
+- It must not be a vague brand line.
+- Never output only a number or a bare price as headline.
+- If a reference pattern says "OO price range found XX", transform it into a natural product-specific Korean headline.
+- If the reference has meme/UGC syntax such as POV, ~core, yaw-ho, saved-it, came-out, or intentionally broken sentence endings, adapt that syntax only when the reference actually has that tone.
+- If the reference is price/gift/premium, do not force meme syntax.
+
+Body/highlight/bottom/CTA rules:
+- bodyCopy must be polite Korean, one short sentence, banner-ready, and not a calm generic brand sentence.
+- bodyCopy must reflect consumerInsight or purchaseTrigger.
+- highlightCopy must reflect reusableCopyPattern, purchaseTrigger, price/configuration/benefit, or the strongest USP.
+- bottomBarCopy must be a short purchase reason or urgency line.
+- CTA must be a concrete action.
+
+Forbidden output:
+- Generic abstract copy such as "meet the new joy", "waiting for you", "special choice", "must-have item".
+- Meta-analysis text such as "this reflects consumer psychology" inside copy slots.
+- Awkward Korean like a bare number plus unclear predicate.
+- Any emoji or emoticon.
+
+Return JSON only. Include reasoning with:
+headlineReason, bodyReason, highlightReason, referencePatternUsed, consumerInsightUsed, purchaseTriggerUsed.
+`;
   const prompt = `
+${copyPromptHardening}
 너는 일반 브랜드 카피라이터가 아니라, 한국 이커머스 퍼포먼스 광고의 후킹 문구를 만드는 마케터다.
 예쁜 문장보다 클릭을 유도하는 첫 문장, 소비자 공감, 가격정당화, 선물명분, 후기형 말투, SNS식 표현을 우선한다.
 단, 모든 문구를 밈처럼 만들지 말고 referenceLabels의 실제 카피 톤에 맞춰야 한다.

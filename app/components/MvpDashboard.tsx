@@ -19,6 +19,7 @@ import type {
   MvpBrand,
   ProductImageEffectPreset,
   ProductImageMode,
+  ProductImageRenderEffect,
   ProductImageState,
   ProductInfoForPrompt,
   SourceImageCandidate,
@@ -140,6 +141,99 @@ const emptyProductImageState: ProductImageState = {
   cutoutApplied: false,
   effectPreset: "outline-glow-shadow",
 };
+
+const defaultCutoutProductEffect: ProductImageRenderEffect = {
+  outline: true,
+  outlineColor: "#ffffff",
+  outlineWidth: 14,
+  shadow: true,
+  shadowBaseColor: "#000000",
+  shadowOpacity: 0.45,
+  shadowColor: "rgba(0,0,0,0.45)",
+  shadowBlur: 24,
+  shadowOffsetX: 0,
+  shadowOffsetY: 10,
+  glow: true,
+  glowBaseColor: "#ffffff",
+  glowOpacity: 0.55,
+  glowColor: "rgba(255,255,255,0.55)",
+  glowBlur: 28,
+  productScale: 1.08,
+  productOffsetX: 0,
+  productOffsetY: 0,
+  productRotation: 0,
+};
+
+const cutoutProductEffectPresets: { id: string; label: string; effect: ProductImageRenderEffect }[] = [
+  {
+    id: "clean-outline",
+    label: "깔끔한 흰 테두리",
+    effect: {
+      ...defaultCutoutProductEffect,
+      outlineWidth: 10,
+      shadowOpacity: 0.28,
+      shadowColor: "rgba(0,0,0,0.28)",
+      shadowBlur: 16,
+      shadowOffsetY: 6,
+      glow: false,
+      glowOpacity: 0.4,
+      glowColor: "rgba(255,255,255,0.4)",
+      glowBlur: 0,
+      productScale: 1,
+    },
+  },
+  {
+    id: "strong-commerce",
+    label: "강한 광고 강조",
+    effect: {
+      ...defaultCutoutProductEffect,
+      outlineWidth: 16,
+      shadowOpacity: 0.5,
+      shadowColor: "rgba(0,0,0,0.5)",
+      shadowBlur: 28,
+      shadowOffsetY: 12,
+      glowOpacity: 0.65,
+      glowColor: "rgba(255,255,255,0.65)",
+      glowBlur: 34,
+      productScale: 1.12,
+    },
+  },
+  {
+    id: "yellow-deal",
+    label: "특가식 강전환",
+    effect: {
+      ...defaultCutoutProductEffect,
+      outlineColor: "#fff200",
+      outlineWidth: 12,
+      shadowOpacity: 0.6,
+      shadowColor: "rgba(0,0,0,0.6)",
+      shadowBlur: 30,
+      shadowOffsetY: 14,
+      glowBaseColor: "#fff200",
+      glowOpacity: 0.5,
+      glowColor: "rgba(255,242,0,0.5)",
+      glowBlur: 30,
+      productScale: 1.15,
+    },
+  },
+  {
+    id: "premium-gift",
+    label: "고급 선물 힌트",
+    effect: {
+      ...defaultCutoutProductEffect,
+      outlineWidth: 8,
+      shadowOpacity: 0.55,
+      shadowColor: "rgba(0,0,0,0.55)",
+      shadowBlur: 34,
+      shadowOffsetY: 16,
+      glowBaseColor: "#ffdc96",
+      glowOpacity: 0.35,
+      glowColor: "rgba(255,220,150,0.35)",
+      glowBlur: 26,
+      productScale: 1.05,
+    },
+  },
+];
 
 type SystemFontOption = {
   id: string;
@@ -405,6 +499,35 @@ function copyVisibleLength(value: string) {
   return [...String(value || "").replace(/\s+/g, "").trim()].length;
 }
 
+function hexToRgba(hex: string, opacity: number) {
+  const normalized = hex.replace("#", "");
+  const sixDigit = normalized.length === 3
+    ? normalized.split("").map((char) => `${char}${char}`).join("")
+    : normalized.padEnd(6, "0").slice(0, 6);
+  const value = parseInt(sixDigit, 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  return `rgba(${red},${green},${blue},${Math.max(0, Math.min(1, opacity))})`;
+}
+
+function normalizeProductRenderEffect(effect: ProductImageRenderEffect): ProductImageRenderEffect {
+  const shadowBaseColor = effect.shadowBaseColor || "#000000";
+  const glowBaseColor = effect.glowBaseColor || "#ffffff";
+  const shadowOpacity = effect.shadowOpacity ?? 0.45;
+  const glowOpacity = effect.glowOpacity ?? 0.55;
+
+  return {
+    ...effect,
+    shadowBaseColor,
+    shadowOpacity,
+    shadowColor: hexToRgba(shadowBaseColor, shadowOpacity),
+    glowBaseColor,
+    glowOpacity,
+    glowColor: hexToRgba(glowBaseColor, glowOpacity),
+  };
+}
+
 function buildSourceImageCandidates(extracted: ExtractedProductInfo): SourceImageCandidate[] {
   const createdAt = new Date().toISOString();
   const heroImage = extracted.heroImage || extracted.mainImage || extracted.galleryImages?.[0] || "";
@@ -526,6 +649,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     finalPrompt: "",
   });
   const [productImageState, setProductImageState] = useState<ProductImageState>(emptyProductImageState);
+  const [cutoutProductEffect, setCutoutProductEffect] = useState<ProductImageRenderEffect>(defaultCutoutProductEffect);
   const [productImageProcessStatus, setProductImageProcessStatus] = useState<Status>({
     kind: "idle",
     message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
@@ -1613,21 +1737,39 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          imagePath: productImageState.originalImagePath,
           sourceImagePath: productImageState.originalImagePath,
-          effectPreset: productImageState.effectPreset || "none",
+          provider: "removebg",
+          effectPreset: productImageState.effectPreset || "outline-glow-shadow",
         }),
       });
       const result = await response.json();
 
-      if (!response.ok || !result.success) {
+      if (!response.ok) {
         throw new Error(result.error || "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
       }
 
+      if (!result.success) {
+        setProductImageState((current) => ({
+          ...current,
+          selectedImageMode: "original",
+          cutoutApplied: false,
+        }));
+        setProductImageProcessStatus({
+          kind: "error",
+          message: result.fallbackMessage || result.error || "Background removal failed. Keeping the original image.",
+        });
+        return;
+      }
+
+      const cutoutImagePath = result.cutoutImagePath || result.processedImagePath;
       setProductImageState((current) => ({
         ...current,
-        cutoutImagePath: result.cutoutImagePath,
-        selectedImageMode: "cutout",
+        cutoutImagePath,
+        styledCutoutImagePath: result.styledCutoutImagePath,
+        selectedImageMode: result.styledCutoutImagePath ? "styled-cutout" : "cutout",
         cutoutApplied: true,
+        effectPreset: current.effectPreset || "outline-glow-shadow",
       }));
       setProductImageProcessStatus({ kind: "success", message: "누끼본을 생성했습니다. 원본/누끼본 중 원하는 이미지를 선택할 수 있습니다." });
     } catch (error) {
@@ -1690,6 +1832,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         copyLimits: selectedTemplate.copyLimits,
       });
       setTemplateFittedCopy(copyForRender);
+      const productEffectForRender = productImageState.selectedImageMode === "original"
+        ? undefined
+        : normalizeProductRenderEffect(cutoutProductEffect);
       const response = await fetch("/api/render/template-ad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1708,6 +1853,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           secondaryProductImagePath: currentSecondaryProductImage,
           productImagePaths: currentProductImagePaths,
           productImageState,
+          productEffect: productEffectForRender,
           backgroundMode: productInfo.backgroundMode || "none",
           selectedBackgroundSource: currentBackgroundSource,
           backgroundStyle: {
@@ -1751,6 +1897,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   return (
     <main className="mvp-shell">
       <aside className="mvp-sidebar">
+        <a className="daywiz-brand" href="https://daywiz.ai/ko/" rel="noreferrer" target="_blank">
+          <img
+            alt="DAYWIZ"
+            src="https://framerusercontent.com/images/qf5jzCui73psKYbHJrIqtpXYQU.png"
+          />
+        </a>
         <div>
           <p className="eyebrow">AdAtlas MVP</p>
           <h1>광고 이미지 수집 생성기</h1>
@@ -1885,8 +2037,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             </div>
 
             <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
-            <div className="banner-builder">
-              <section className="strategy-form template-first-panel">
+            <div className="ad-generation-flow">
+              <div className="banner-builder">
+                <section className="strategy-form template-first-panel">
                 <p className="eyebrow">Template First</p>
                 <h4>먼저 템플릿 선택</h4>
                 <label>
@@ -1980,11 +2133,11 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                 <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
                 <p className="copy-generation-note">광고 문구는 선택한 템플릿의 문구 영역에 맞춰 생성됩니다. 먼저 템플릿을 선택하면 문구가 배너에서 잘릴 가능성이 줄어듭니다.</p>
                 <button disabled={copyStatus.kind === "loading"} onClick={generateBannerCopy} type="button">광고문구 생성</button>
-              </section>
-            </div>
+                </section>
+              </div>
 
-            <div className="banner-workspace">
-              <section className="copy-edit-panel">
+              <div className="banner-workspace">
+                <section className="copy-edit-panel">
                 <div>
                   <p className="eyebrow">Editable Copy</p>
                   <h4>생성 문구 수정</h4>
@@ -2802,6 +2955,51 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                         <span>효과본</span>
                       </button>
                     </div>
+                    {productImageState.cutoutImagePath ? (
+                      <details className="cutout-effect-controls" open={productImageState.selectedImageMode !== "original"}>
+                        <summary>누끼 이미지 효과</summary>
+                        <p className="strategy-empty">미리보기는 대략적인 효과이며, 최종 배너는 1200x1200 렌더링 결과를 기준으로 확인해주세요.</p>
+                        <div className="cutout-effect-presets">
+                          {cutoutProductEffectPresets.map((preset) => (
+                            <button key={preset.id} onClick={() => setCutoutProductEffect(preset.effect)} type="button">
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div
+                          className="cutout-effect-preview"
+                          style={{
+                            filter: `${cutoutProductEffect.shadow ? `drop-shadow(${cutoutProductEffect.shadowOffsetX}px ${cutoutProductEffect.shadowOffsetY}px ${cutoutProductEffect.shadowBlur}px ${normalizeProductRenderEffect(cutoutProductEffect).shadowColor})` : ""} ${cutoutProductEffect.glow ? `drop-shadow(0 0 ${cutoutProductEffect.glowBlur}px ${normalizeProductRenderEffect(cutoutProductEffect).glowColor})` : ""}`,
+                            transform: `translate(${cutoutProductEffect.productOffsetX / 8}px, ${cutoutProductEffect.productOffsetY / 8}px) rotate(${cutoutProductEffect.productRotation}deg) scale(${cutoutProductEffect.productScale})`,
+                          }}
+                        >
+                          <img
+                            alt="누끼 효과 미리보기"
+                            src={productImageState.cutoutImagePath}
+                            style={{ filter: cutoutProductEffect.outline ? `drop-shadow(0 0 ${Math.max(1, cutoutProductEffect.outlineWidth / 2)}px ${cutoutProductEffect.outlineColor})` : undefined }}
+                          />
+                        </div>
+                        <div className="cutout-effect-grid">
+                          <label className="inline-check"><input checked={cutoutProductEffect.outline} onChange={(event) => setCutoutProductEffect((current) => ({ ...current, outline: event.target.checked }))} type="checkbox" />테두리 사용</label>
+                          <label><span>테두리 색상</span><input onChange={(event) => setCutoutProductEffect((current) => ({ ...current, outlineColor: event.target.value }))} type="color" value={cutoutProductEffect.outlineColor} /></label>
+                          <label><span>테두리 두께 {cutoutProductEffect.outlineWidth}</span><input max="40" min="0" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, outlineWidth: Number(event.target.value) }))} type="range" value={cutoutProductEffect.outlineWidth} /></label>
+                          <label className="inline-check"><input checked={cutoutProductEffect.shadow} onChange={(event) => setCutoutProductEffect((current) => ({ ...current, shadow: event.target.checked }))} type="checkbox" />그림자 사용</label>
+                          <label><span>그림자 색상</span><input onChange={(event) => setCutoutProductEffect((current) => ({ ...current, shadowBaseColor: event.target.value }))} type="color" value={cutoutProductEffect.shadowBaseColor || "#000000"} /></label>
+                          <label><span>그림자 투명도 {cutoutProductEffect.shadowOpacity ?? 0.45}</span><input max="1" min="0" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, shadowOpacity: Number(event.target.value) }))} step="0.05" type="range" value={cutoutProductEffect.shadowOpacity ?? 0.45} /></label>
+                          <label><span>그림자 번짐 {cutoutProductEffect.shadowBlur}</span><input max="60" min="0" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, shadowBlur: Number(event.target.value) }))} type="range" value={cutoutProductEffect.shadowBlur} /></label>
+                          <label><span>그림자 X {cutoutProductEffect.shadowOffsetX}</span><input max="50" min="-50" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, shadowOffsetX: Number(event.target.value) }))} type="range" value={cutoutProductEffect.shadowOffsetX} /></label>
+                          <label><span>그림자 Y {cutoutProductEffect.shadowOffsetY}</span><input max="50" min="-50" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, shadowOffsetY: Number(event.target.value) }))} type="range" value={cutoutProductEffect.shadowOffsetY} /></label>
+                          <label className="inline-check"><input checked={cutoutProductEffect.glow} onChange={(event) => setCutoutProductEffect((current) => ({ ...current, glow: event.target.checked }))} type="checkbox" />글로우 사용</label>
+                          <label><span>글로우 색상</span><input onChange={(event) => setCutoutProductEffect((current) => ({ ...current, glowBaseColor: event.target.value }))} type="color" value={cutoutProductEffect.glowBaseColor || "#ffffff"} /></label>
+                          <label><span>글로우 투명도 {cutoutProductEffect.glowOpacity ?? 0.55}</span><input max="1" min="0" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, glowOpacity: Number(event.target.value) }))} step="0.05" type="range" value={cutoutProductEffect.glowOpacity ?? 0.55} /></label>
+                          <label><span>글로우 강도 {cutoutProductEffect.glowBlur}</span><input max="80" min="0" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, glowBlur: Number(event.target.value) }))} type="range" value={cutoutProductEffect.glowBlur} /></label>
+                          <label><span>상품 크기 {cutoutProductEffect.productScale}</span><input max="1.6" min="0.6" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, productScale: Number(event.target.value) }))} step="0.01" type="range" value={cutoutProductEffect.productScale} /></label>
+                          <label><span>좌우 위치 {cutoutProductEffect.productOffsetX}</span><input max="300" min="-300" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, productOffsetX: Number(event.target.value) }))} type="range" value={cutoutProductEffect.productOffsetX} /></label>
+                          <label><span>상하 위치 {cutoutProductEffect.productOffsetY}</span><input max="300" min="-300" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, productOffsetY: Number(event.target.value) }))} type="range" value={cutoutProductEffect.productOffsetY} /></label>
+                          <label><span>회전 {cutoutProductEffect.productRotation}</span><input max="20" min="-20" onChange={(event) => setCutoutProductEffect((current) => ({ ...current, productRotation: Number(event.target.value) }))} type="range" value={cutoutProductEffect.productRotation} /></label>
+                        </div>
+                      </details>
+                    ) : null}
                   </div>
                 </div>
                 <div className="background-settings render-settings">
@@ -2946,7 +3144,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <small>구성 보러가기 &gt;</small>
                   </div>
                 )}
-              </section>
+                </section>
+              </div>
             </div>
           </section>
         ) : null}
