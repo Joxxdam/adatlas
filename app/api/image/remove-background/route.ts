@@ -76,19 +76,28 @@ export async function POST(request: Request) {
       cutoutImagePath: result.processedImagePath,
       styledCutoutImagePath,
       provider,
+      sourceKind: result.sourceKind,
+      debug: result.debug,
       message: "Background removed successfully",
     });
   } catch (error) {
+    const errorMessage = error instanceof Error
+      ? error.message
+      : "Background removal failed.";
+
+    console.error("[remove-background] route failed", {
+      message: errorMessage,
+    });
+
     return NextResponse.json(
       {
         success: false,
         originalImagePath: null,
         processedImagePath: null,
         provider: "removebg",
-        error: error instanceof Error
-          ? error.message
-          : "Background removal failed.",
-        fallbackMessage: "Background removal failed. Keeping the original image.",
+        error: "REMOVE_BG_FAILED",
+        detail: process.env.NODE_ENV === "development" ? errorMessage : undefined,
+        fallbackMessage: "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요.",
       },
       { status: 500 },
     );

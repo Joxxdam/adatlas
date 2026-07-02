@@ -621,6 +621,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [showAdvancedHeadlineStyle, setShowAdvancedHeadlineStyle] = useState(false);
   const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyleState>({ blurLevel: "high", dimLevel: "high" });
   const [bannerTextColors, setBannerTextColors] = useState<BannerTextColorState>({ bodyColor: "#111111", bodyFontSize: 50 });
+  const [bannerAccentPhrase, setBannerAccentPhrase] = useState("");
+  const [bannerAccentColor, setBannerAccentColor] = useState("#fff200");
+  const [brandLogoPath, setBrandLogoPath] = useState("");
+  const [brandLogoStatus, setBrandLogoStatus] = useState<Status>({ kind: "idle", message: "로고 파일을 선택하면 템플릿 2 오른쪽 상단에 배치됩니다." });
+  const [showAiDisclosure, setShowAiDisclosure] = useState(false);
+  const [aiDisclosureText, setAiDisclosureText] = useState("AI 활용 콘텐츠입니다.");
   const [mainImageSourceMode, setMainImageSourceMode] = useState<MainImageSourceMode>("detail");
   const [uploadedMainImageDataUrl, setUploadedMainImageDataUrl] = useState("");
   const [gptMainImagePath, setGptMainImagePath] = useState("");
@@ -1350,6 +1356,31 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
   }
 
+  async function uploadBrandLogo(file: File | undefined) {
+    if (!file) return;
+    setBrandLogoStatus({ kind: "loading", message: "로고 파일을 업로드하는 중입니다." });
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/source-image", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "로고 파일 업로드에 실패했습니다.");
+      }
+
+      const candidate = result.candidate as SourceImageCandidate;
+      setBrandLogoPath(candidate.imagePath);
+      setBrandLogoStatus({ kind: "success", message: "로고를 추가했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다." });
+    } catch (error) {
+      setBrandLogoStatus({ kind: "error", message: error instanceof Error ? error.message : "로고 파일 업로드에 실패했습니다." });
+    }
+  }
+
   async function generateGptImage(imageGenerationMode: GptImageGenerationMode) {
     const hasProductContext = Boolean(productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription || bannerCopy.headline);
     const isTextInImage = imageGenerationMode === "text-in-image";
@@ -1835,25 +1866,40 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       const productEffectForRender = productImageState.selectedImageMode === "original"
         ? undefined
         : normalizeProductRenderEffect(cutoutProductEffect);
-      const response = await fetch("/api/render/template-ad", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateId: selectedTemplate.id,
-          canvasSize: { width: 1200, height: 1200 },
-          copy: {
+      const copyPayload = selectedTemplate.id === "food-template-002"
+        ? {
+            headline: bannerCopy.headline,
+            bodyCopy: bannerCopy.bodyCopy,
+            highlightCopy: bannerCopy.highlightCopy,
+            bottomBarCopy: bannerCopy.bottomBarCopy,
+            cta: showCta ? bannerCopy.cta : "",
+            price: bannerCopy.price || productInfo.price,
+          }
+        : {
             headline: copyForRender.headline,
             bodyCopy: copyForRender.bodyCopy,
             highlightCopy: copyForRender.highlightCopy,
             bottomBarCopy: copyForRender.bottomBarCopy,
             cta: showCta ? copyForRender.cta : "",
             price: copyForRender.price || bannerCopy.price || productInfo.price,
-          },
+          };
+      const response = await fetch("/api/render/template-ad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateId: selectedTemplate.id,
+          canvasSize: { width: 1200, height: 1200 },
+          copy: copyPayload,
           productImagePath: currentMainProductImage,
           secondaryProductImagePath: currentSecondaryProductImage,
           productImagePaths: currentProductImagePaths,
           productImageState,
           productEffect: productEffectForRender,
+          logoImagePath: brandLogoPath,
+          aiDisclosure: {
+            enabled: showAiDisclosure,
+            text: aiDisclosureText,
+          },
           backgroundMode: productInfo.backgroundMode || "none",
           selectedBackgroundSource: currentBackgroundSource,
           backgroundStyle: {
@@ -1872,7 +1918,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             ctaBarColor: "#e58585",
             ctaTextColor: "#ffffff",
             priceColor: "#ff1f1f",
-            accentColor: "#fff9a8",
+            accentPhrase: bannerAccentPhrase,
+            accentColor: bannerAccentColor,
             ...headlineStyleOverrides,
             fontFamily: selectedBodyFont.fontFamily,
             headlineFontFamily: selectedHeadlineFont.fontFamily.replace("AdAtlasSelectedFont", "AdAtlasHeadlineFont"),
@@ -2060,6 +2107,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                 ) : (
                   <p className="strategy-empty">먼저 사용할 템플릿을 선택해주세요.</p>
                 )}
+                <p className="copy-generation-note">상품 URL, 레퍼런스, 템플릿을 확인한 뒤 문구를 생성하세요.</p>
+                <button disabled={copyStatus.kind === "loading"} onClick={generateBannerCopy} type="button">광고문구 생성</button>
               </section>
               <section className="strategy-reference-panel">
                 <p className="eyebrow">Reference Labels</p>
@@ -2131,8 +2180,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   상품정보 불러오기
                 </button>
                 <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
-                <p className="copy-generation-note">광고 문구는 선택한 템플릿의 문구 영역에 맞춰 생성됩니다. 먼저 템플릿을 선택하면 문구가 배너에서 잘릴 가능성이 줄어듭니다.</p>
-                <button disabled={copyStatus.kind === "loading"} onClick={generateBannerCopy} type="button">광고문구 생성</button>
                 </section>
               </div>
 
@@ -2177,6 +2224,25 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <option value="ugc-bold-white">흰색 외곽선형</option>
                   </select>
                 </label>
+                <div className="copy-accent-controls">
+                  <label>
+                    <span>강조할 문구</span>
+                    <input
+                      onChange={(event) => setBannerAccentPhrase(event.target.value)}
+                      placeholder="예: 입안에서 육즙 폭발, 등심"
+                      value={bannerAccentPhrase}
+                    />
+                    <small>여러 문구는 쉼표로 구분하세요. 문구 안에서 직접 [[등심]]처럼 감싸도 강조됩니다.</small>
+                  </label>
+                  <label>
+                    <span>강조 색상</span>
+                    <input
+                      onChange={(event) => setBannerAccentColor(event.target.value)}
+                      type="color"
+                      value={bannerAccentColor}
+                    />
+                  </label>
+                </div>
                 <button className="secondary-tool-button" onClick={() => setShowAdvancedHeadlineStyle((current) => !current)} type="button">
                   제목 세부 조정 {showAdvancedHeadlineStyle ? "닫기" : "열기"}
                 </button>
@@ -3127,7 +3193,58 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     />
                   </label>
                 </div>
+                <div className="background-settings logo-settings">
+                  <div>
+                    <p className="eyebrow">Brand Logo</p>
+                    <h4>로고 설정</h4>
+                  </div>
+                  <label>
+                    <span>로고 파일 선택</span>
+                    <input
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) => {
+                        uploadBrandLogo(event.target.files?.[0]);
+                        event.currentTarget.value = "";
+                      }}
+                      type="file"
+                    />
+                  </label>
+                  {brandLogoPath ? (
+                    <div className="logo-preview-thumb">
+                      <img alt="선택한 로고" src={brandLogoPath} />
+                      <button onClick={() => setBrandLogoPath("")} type="button">로고 제거</button>
+                    </div>
+                  ) : (
+                    <p className="strategy-empty">로고를 선택하면 템플릿 2 오른쪽 상단에 배치됩니다.</p>
+                  )}
+                  <div className={`mvp-status ${brandLogoStatus.kind}`}>{brandLogoStatus.message}</div>
+                </div>
                 <button disabled={!bannerCopy.headline || !selectedTemplate} onClick={renderBanner} type="button">배너만 다시 생성</button>
+                <div className="background-settings ai-disclosure-settings">
+                  <div>
+                    <p className="eyebrow">Caption</p>
+                    <h4>AI 고지 자막</h4>
+                  </div>
+                  <label>
+                    <span>표시 여부</span>
+                    <select
+                      onChange={(event) => setShowAiDisclosure(event.target.value === "show")}
+                      value={showAiDisclosure ? "show" : "hide"}
+                    >
+                      <option value="hide">표시 안 함</option>
+                      <option value="show">가운데 하단에 표시</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>자막 문구</span>
+                    <input
+                      disabled={!showAiDisclosure}
+                      onChange={(event) => setAiDisclosureText(event.target.value)}
+                      value={aiDisclosureText}
+                    />
+                  </label>
+                  <p className="strategy-empty">선택한 경우에만 모든 템플릿의 가운데 하단에 아주 작게 들어갑니다.</p>
+                </div>
                 <div className={`mvp-status ${renderStatus.kind}`}>{renderStatus.message}</div>
                 {generatedBannerPath ? (
                   <>

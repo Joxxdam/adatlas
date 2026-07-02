@@ -1,1 +1,51 @@
-[]
+[
+  {
+    "id": "9f98bc5a-fe79-4209-87e5-9d708b9e7197",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16702536666458.jpg",
+    "processedImagePath": "/processed-products/removebg-1782977503116-dfd356e4.png",
+    "createdAt": "2026-07-02T07:31:43.120Z"
+  },
+  {
+    "id": "0c4d9cf3-5f01-44d0-b511-d00e627cfc37",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16702536666458.jpg",
+    "processedImagePath": "/processed-products/removebg-1782974156465-79e6bf32.png",
+    "createdAt": "2026-07-02T06:35:56.470Z"
+  },
+  {
+    "id": "2f285ab0-d8e0-4f5c-8202-c58ae3809e3b",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16702536666458.jpg",
+    "processedImagePath": "/processed-products/removebg-1782974150114-65b871f6.png",
+    "createdAt": "2026-07-02T06:35:50.119Z"
+  },
+  {
+    "id": "47ccf8a4-a98b-4acb-8e13-9f989ae3aaef",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16391503170008.jpg",
+    "processedImagePath": "/processed-products/removebg-1782973655279-1647a4ff.png",
+    "createdAt": "2026-07-02T06:27:35.286Z"
+  },
+  {
+    "id": "50bdaea6-6833-4774-96d8-1c3025105e4e",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16303097705039.jpg",
+    "processedImagePath": "/processed-products/removebg-1782973543947-9fae02f9.png",
+    "createdAt": "2026-07-02T06:25:43.952Z"
+  },
+  {
+    "id": "d60ff239-5759-4355-a382-e047ef470bd4",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16391680325493.jpg",
+    "processedImagePath": "/processed-products/removebg-1782973340087-294c1722.png",
+    "createdAt": "2026-07-02T06:22:20.093Z"
+  },
+  {
+    "id": "6d275e3e-48e0-40ec-b88f-8ef392fec447",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16042415541903.jpg",
+    "processedImagePath": "/processed-products/removebg-1782972186896-ceaeba35.png",
+    "createdAt": "2026-07-02T06:03:06.905Z"
+  }
+]

@@ -778,6 +778,8 @@ select {
 }
 
 .ad-generation-flow .banner-builder {
+  display: flex;
+  flex-direction: column;
   grid-template-columns: 1fr;
   gap: 12px;
 }
@@ -789,10 +791,16 @@ select {
 
 .ad-generation-flow .template-first-panel {
   grid-column: auto;
+  order: 3;
 }
 
 .ad-generation-flow .banner-product-form {
   grid-template-columns: 1fr;
+  order: 1;
+}
+
+.ad-generation-flow .strategy-reference-panel {
+  order: 2;
 }
 
 .ad-generation-flow .strategy-reference-list {
@@ -1854,6 +1862,48 @@ select {
   border-radius: 8px;
   padding: 10px;
   background: var(--soft);
+}
+
+.copy-accent-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--soft);
+}
+
+.copy-accent-controls small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.copy-accent-controls input[type="color"] {
+  min-height: 42px;
+  padding: 4px;
+}
+
+.logo-settings {
+  gap: 10px;
+}
+
+.logo-preview-thumb {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.logo-preview-thumb img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #111111;
+  padding: 6px;
 }
 
 .advanced-style-grid label {

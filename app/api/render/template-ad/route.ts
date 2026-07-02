@@ -16,6 +16,8 @@ type RenderStyle = Partial<typeof foodImpactHeroTemplate.style> & {
   bodyFontSize?: number;
   selectedFontFile?: string;
   headlineFontFile?: string;
+  accentPhrase?: string;
+  accentColor?: string;
 };
 
 type RenderBody = {
@@ -28,6 +30,11 @@ type RenderBody = {
   productImageState?: ProductImageState;
   backgroundMode?: "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
   selectedBackgroundSource?: string;
+  logoImagePath?: string;
+  aiDisclosure?: {
+    enabled?: boolean;
+    text?: string;
+  };
   backgroundStyle?: {
     blurLevel?: "low" | "medium" | "high";
     dimLevel?: "low" | "medium" | "high";
@@ -367,6 +374,87 @@ function textSvg(lines: TextLine[], fontFamily: string) {
     .join("");
 }
 
+function aiDisclosureSvg(disclosure: RenderBody["aiDisclosure"], fontFamily: string, width: number, height: number) {
+  if (!disclosure?.enabled) return "";
+  const text = (disclosure.text || "AI 활용 콘텐츠입니다.").trim();
+  if (!text) return "";
+
+  return `<text x="${width / 2}" y="${height - 28}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="18" font-weight="500" letter-spacing="0" fill="rgba(255,255,255,0.82)" stroke="rgba(0,0,0,0.36)" stroke-width="2" paint-order="stroke fill">${escapeXml(text)}</text>`;
+}
+
+function splitAccentSegments(text: string, accentPhrase: string | undefined, defaultFill: string, accentFill: string) {
+  const explicitSegments: { text: string; fill: string }[] = [];
+  const markerPattern = /\[\[([\s\S]+?)\]\]/g;
+  let lastIndex = 0;
+  let markerMatch: RegExpExecArray | null;
+
+  while ((markerMatch = markerPattern.exec(text)) !== null) {
+    if (markerMatch.index > lastIndex) {
+      explicitSegments.push({ text: text.slice(lastIndex, markerMatch.index), fill: defaultFill });
+    }
+    explicitSegments.push({ text: markerMatch[1], fill: accentFill });
+    lastIndex = markerMatch.index + markerMatch[0].length;
+  }
+
+  if (explicitSegments.length) {
+    if (lastIndex < text.length) explicitSegments.push({ text: text.slice(lastIndex), fill: defaultFill });
+    return explicitSegments.filter((segment) => segment.text);
+  }
+
+  const phrases = (accentPhrase || "")
+    .split(",")
+    .map((phrase) => phrase.trim())
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  if (!phrases.length) return [{ text, fill: defaultFill }];
+
+  const segments: { text: string; fill: string }[] = [];
+  let cursor = 0;
+  while (cursor < text.length) {
+    const matched = phrases.find((phrase) => text.slice(cursor).startsWith(phrase));
+    if (matched) {
+      segments.push({ text: matched, fill: accentFill });
+      cursor += matched.length;
+      continue;
+    }
+    const nextMatchIndex = phrases
+      .map((phrase) => text.indexOf(phrase, cursor + 1))
+      .filter((index) => index >= 0)
+      .sort((a, b) => a - b)[0];
+    const end = nextMatchIndex ?? text.length;
+    segments.push({ text: text.slice(cursor, end), fill: defaultFill });
+    cursor = end;
+  }
+
+  return segments.filter((segment) => segment.text);
+}
+
+function mixedTextSvg(options: {
+  text: string;
+  x: number;
+  y: number;
+  anchor?: "start" | "middle";
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: number;
+  defaultFill: string;
+  accentFill: string;
+  accentPhrase?: string;
+  letterSpacing?: number;
+  dominantBaseline?: "middle" | "auto";
+  strokeColor?: string;
+  strokeWidth?: number;
+}) {
+  const strokeAttrs = options.strokeWidth
+    ? ` stroke="${escapeXml(options.strokeColor || "#111111")}" stroke-width="${options.strokeWidth}" paint-order="stroke fill" stroke-linejoin="round"`
+    : "";
+  const segments = splitAccentSegments(options.text, options.accentPhrase, options.defaultFill, options.accentFill);
+  return `<text x="${options.x}" y="${options.y}" text-anchor="${options.anchor || "middle"}" dominant-baseline="${options.dominantBaseline || "auto"}" font-family="${escapeXml(options.fontFamily)}" font-size="${options.fontSize}" font-weight="${options.fontWeight}" letter-spacing="${options.letterSpacing ?? 0}"${strokeAttrs}>${segments
+    .map((segment) => `<tspan fill="${escapeXml(segment.fill)}">${escapeXml(segment.text)}</tspan>`)
+    .join("")}</text>`;
+}
+
 function lineText(lines: string[], options: { x: number; startY: number; fontSize: number; lineHeight: number; fill: string; weight: number; letterSpacing?: number }) {
   return lines.map((line, index) => ({
     text: line,
@@ -661,6 +749,7 @@ async function renderFoodImpactHero(body: RenderBody) {
   <rect x="0" y="${bottomBarY}" width="${width}" height="${bottomBarHeight}" fill="${style.bottomBarColor}" />
   ${hasCta ? `<rect x="178" y="${ctaY}" width="844" height="${ctaHeight}" rx="${ctaHeight / 2}" fill="${style.ctaBarColor}" />` : ""}
   ${textSvg(textLines, `AdAtlasKR, ${style.fontFamily}`)}
+  ${aiDisclosureSvg(body.aiDisclosure, `AdAtlasKR, ${style.fontFamily}`, width, height)}
 </svg>`;
 
   await fs.mkdir(outputDir, { recursive: true });
@@ -687,6 +776,12 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const selectedProductImagePath = body.productImageState
     ? getSelectedProductImagePath(body.productImageState)
     : body.productImagePath || "";
+  const originalProductImagePath = body.productImageState?.originalImagePath || body.productImagePath || selectedProductImagePath;
+  const isCutoutProductSelected = Boolean(
+    body.productImageState &&
+    body.productImageState.selectedImageMode !== "original" &&
+    selectedProductImagePath,
+  );
   const productEffect = resolveProductEffect(
     selectedProductImagePath,
     body.productEffect,
@@ -706,6 +801,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       ? body.selectedBackgroundSource || selectedProductImagePath || ""
       : "";
   const backgroundImageDataUrl = backgroundSource ? await imageToDataUrl(backgroundSource).catch(() => "") : "";
+  const logoImageDataUrl = body.logoImagePath ? await imageToDataUrl(body.logoImagePath).catch(() => "") : "";
   const selectedFontFile = safeWindowsFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
   const headlineFontFile = safeWindowsFontFile(styleOverrides.headlineFontFile || styleOverrides.selectedFontFile);
@@ -751,18 +847,137 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   }
 
   if (templateId === "food-template-002") {
-    shapes += `<rect width="1200" height="1200" fill="#fffdf2" />
-      <rect x="46" y="46" width="1108" height="1108" rx="42" fill="#ffffff" stroke="#111111" stroke-width="6" />
-      <rect x="774" y="124" width="316" height="116" rx="58" fill="${style.accentColor}" />
-      <rect x="78" y="306" width="680" height="540" rx="34" fill="#fff4d0" />
-      ${image(96, 328, 644, 500)}
-      <rect x="782" y="352" width="330" height="330" rx="165" fill="#ff1f1f" />
-      <rect x="0" y="1020" width="1200" height="128" fill="${style.bottomBarColor}" />
-      ${hasPrice ? `<text x="947" y="548" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${price.fontSize}" font-weight="900" fill="#ffffff" stroke="${String(styleRecord.priceStrokeColor || "#111111")}" stroke-width="${Number(styleRecord.priceStrokeWidth || 0)}" paint-order="stroke fill">${escapeXml(price.lines[0] || "")}</text>` : ""}`;
-    textLines.push(...lineText(h.lines, { x: 86, startY: 120, fontSize: h.fontSize, lineHeight: 0.98, fill: String(style.headlineColor), weight: 900, letterSpacing: -3 }).map((line) => ({ ...line, anchor: "start" as const, fontFamily: headlineFontFamily })));
-    textLines.push(...centeredLineText(hi.lines, { x: 932, centerY: 182, fontSize: hi.fontSize, lineHeight: 1.04, fill: "#111111", weight: 900 }));
-    textLines.push(...centeredLineText(b.lines, { x: 600, centerY: 905, fontSize: b.fontSize, lineHeight: 1.15, fill: "#111111", weight: 800 }));
-    textLines.push(...centeredLineText(bot.lines, { x: 600, centerY: 1084, fontSize: bot.fontSize, lineHeight: 1.1, fill: String(style.bottomBarTextColor), weight: 900 }));
+    const accentPhrase = String(styleRecord.accentPhrase || "");
+    const accentColor = String(styleRecord.accentColor || "#fff200");
+    const template2BackgroundSource =
+      body.selectedBackgroundSource ||
+      (body.backgroundMode === "selected-detail-blur-dark" ? body.selectedBackgroundSource : "") ||
+      originalProductImagePath ||
+      selectedProductImagePath ||
+      "";
+    const template2BackgroundDataUrl = backgroundImageDataUrl ||
+      (template2BackgroundSource ? await imageToDataUrl(template2BackgroundSource).catch(() => "") : "");
+    const backgroundDataUrl = template2BackgroundDataUrl || productImageDataUrl;
+    const backgroundScale = Math.min(1.25, Math.max(1, Number(body.backgroundStyle?.scale ?? 1)));
+    const backgroundRenderSize = 1200 * backgroundScale;
+    const backgroundOffset = (backgroundRenderSize - 1200) / -2;
+    const backgroundBlur = backgroundBlurValue(body.backgroundStyle?.blurLevel);
+    const backgroundDim = backgroundDimOpacity(body.backgroundStyle?.dimLevel);
+    const hasBackgroundBlur = backgroundBlur > 0;
+    backgroundBlurDef = `<filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%"><feGaussianBlur stdDeviation="${backgroundBlur}" edgeMode="duplicate"/></filter>`;
+    const reviewTop = fitLines(copy.headline || "한 입 먹자마자 입안에서 육즙 폭발해요", {
+      maxWidth: 760,
+      maxLines: 1,
+      initialSize: 32,
+      minSize: 16,
+      boxHeight: 54,
+      slot: "bodyCopy",
+    });
+    const reviewBottom = fitLines(copy.bodyCopy || "아웃백 갈 돈으로 집에서 등심 1kg 먹습니다", {
+      maxWidth: 760,
+      maxLines: 1,
+      initialSize: 31,
+      minSize: 16,
+      boxHeight: 54,
+      slot: "bodyCopy",
+    });
+    const main = fitLines(copy.highlightCopy || copy.headline || "", {
+      maxWidth: 1100,
+      maxLines: 2,
+      initialSize: 122,
+      minSize: 58,
+      letterSpacing: -5,
+      boxHeight: 230,
+      slot: "highlightCopy",
+    });
+    const oldPriceSource = [
+      (copy as Record<string, unknown>).oldPrice,
+      (copy as Record<string, unknown>).originalPrice,
+      (copy as Record<string, unknown>).compareAtPrice,
+      copy.bottomBarCopy?.match(/[\d,]+\s*원/)?.[0],
+    ].find((value) => typeof value === "string" && value.trim()) as string | undefined;
+    const oldPrice = oldPriceSource && oldPriceSource !== copy.price
+      ? fitLines(oldPriceSource, { maxWidth: 280, maxLines: 1, initialSize: 48, minSize: 28 })
+      : null;
+    const priceText = price.lines[0] || "";
+    const weightText = /\b\d+(?:\.\d+)?\s*(?:kg|KG|Kg|g)\b/.exec(
+      [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].join(" "),
+    )?.[0] || "";
+    const priceGroupWidth = oldPrice ? 720 : 520;
+    const priceStartX = 600 - priceGroupWidth / 2;
+    const reviewTopBox = {
+      x: 62,
+      y: 108,
+      width: Math.min(860, Math.max(520, (reviewTop.lines[0] || "").length * reviewTop.fontSize * 0.82 + 48)),
+      height: 62,
+    };
+    const reviewBottomBox = {
+      x: 116,
+      y: 168,
+      width: Math.min(900, Math.max(560, (reviewBottom.lines[0] || "").length * reviewBottom.fontSize * 0.82 + 48)),
+      height: 62,
+    };
+
+    backgroundLayer = backgroundDataUrl
+      ? `<image href="${backgroundDataUrl}" x="${backgroundOffset}" y="${backgroundOffset}" width="${backgroundRenderSize}" height="${backgroundRenderSize}" preserveAspectRatio="xMidYMid slice" ${hasBackgroundBlur ? `filter="url(#backgroundBlur)"` : ""} />
+        <rect width="1200" height="1200" fill="${escapeXml(body.backgroundStyle?.overlayColor || "#000000")}" opacity="${Math.max(0.04, backgroundDim * 0.42)}" />
+        <rect width="1200" height="1200" fill="url(#foodTemplate2Shade)" />`
+      : `<rect width="1200" height="1200" fill="#1b1712" />
+        <rect width="1200" height="1200" fill="#000000" opacity="0.38" />`;
+
+    shapes += `<rect x="${reviewTopBox.x}" y="${reviewTopBox.y}" width="${reviewTopBox.width}" height="${reviewTopBox.height}" fill="#ffffff" stroke="#e60000" stroke-width="4" />
+      <rect x="${reviewBottomBox.x}" y="${reviewBottomBox.y}" width="${reviewBottomBox.width}" height="${reviewBottomBox.height}" fill="#ffffff" stroke="#e60000" stroke-width="4" />
+      ${logoImageDataUrl ? `<image href="${logoImageDataUrl}" x="1012" y="38" width="136" height="136" preserveAspectRatio="xMidYMid meet" />` : ""}
+      ${isCutoutProductSelected && productImageDataUrl ? productImageSvg(productImageDataUrl, 210, 275, 780, 420, "meet", productEffect) : ""}
+      ${oldPrice ? `<text x="${priceStartX}" y="780" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="${oldPrice.fontSize}" font-weight="500" fill="rgba(255,255,255,0.82)">${escapeXml(oldPrice.lines[0] || "")}</text>
+      <line x1="${priceStartX - 6}" y1="780" x2="${priceStartX + 260}" y2="780" stroke="rgba(255,255,255,0.88)" stroke-width="5" />` : ""}
+      ${hasPrice ? `<text x="${oldPrice ? priceStartX + 294 : 600}" y="780" text-anchor="${oldPrice ? "start" : "middle"}" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${Math.max(76, price.fontSize)}" font-weight="900" fill="#e60000" stroke="#ffffff" stroke-width="10" paint-order="stroke fill">${escapeXml(priceText)}</text>` : ""}
+      ${weightText ? `<text x="${oldPrice ? priceStartX + 620 : 840}" y="784" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="42" font-weight="700" fill="#ffffff">${escapeXml(`(${weightText})`)}</text>` : ""}`;
+
+    shapes += mixedTextSvg({
+      text: reviewTop.lines[0] || "",
+      x: reviewTopBox.x + 22,
+      y: reviewTopBox.y + reviewTop.fontSize + 16,
+      anchor: "start",
+      fontFamily,
+      fontSize: reviewTop.fontSize,
+      fontWeight: 800,
+      defaultFill: "#111111",
+      accentFill: "#e60000",
+      accentPhrase,
+    });
+    shapes += mixedTextSvg({
+      text: reviewBottom.lines[0] || "",
+      x: reviewBottomBox.x + 22,
+      y: reviewBottomBox.y + reviewBottom.fontSize + 16,
+      anchor: "start",
+      fontFamily,
+      fontSize: reviewBottom.fontSize,
+      fontWeight: 800,
+      defaultFill: "#111111",
+      accentFill: "#e60000",
+      accentPhrase,
+    });
+    const mainStep = main.fontSize * 0.95;
+    const mainFirstY = 1004 - ((main.lines.length - 1) * mainStep) / 2;
+    main.lines.forEach((line, index) => {
+      shapes += mixedTextSvg({
+        text: line,
+        x: 600,
+        y: mainFirstY + index * mainStep,
+        anchor: "middle",
+        dominantBaseline: "middle",
+        fontFamily: headlineFontFamily,
+        fontSize: main.fontSize,
+        fontWeight: 900,
+        defaultFill: index === 0 ? "#ffffff" : "#e60000",
+        accentFill: accentColor,
+        accentPhrase,
+        letterSpacing: -5,
+        strokeColor: index === 0 ? "rgba(0,0,0,0.75)" : "#ffffff",
+        strokeWidth: index === 0 ? 5 : 10,
+      });
+    });
   } else if (templateId === "food-template-003") {
     const leftTitle = h.lines[0] || copy.headline || "PR pick";
     const rightTitle = h.lines[1] || copy.highlightCopy || "Social pick";
@@ -837,14 +1052,22 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     <style>
       @font-face { font-family: 'AdAtlasSelectedFont'; src: url('${selectedFontFileUrl}') format('${selectedFontFormat}'); font-weight: 400 900; font-style: normal; }
       @font-face { font-family: 'AdAtlasHeadlineFont'; src: url('${headlineFontFileUrl}') format('${headlineFontFormat}'); font-weight: 400 900; font-style: normal; }
+      text[y="956"][font-size="28"] { display: none; }
     </style>
     ${productEffectFilterDef(productEffect)}
     ${backgroundBlurDef}
+    <linearGradient id="foodTemplate2Shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="52%" stop-color="#000000" stop-opacity="0.04" />
+      <stop offset="70%" stop-color="#000000" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.88" />
+    </linearGradient>
     <filter id="headlineShadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000000"/></filter>
   </defs>
   ${backgroundLayer}
   ${shapes}
   ${textSvg(textLines, fontFamily)}
+  ${aiDisclosureSvg(body.aiDisclosure, fontFamily, width, height)}
 </svg>`;
 
   await fs.mkdir(outputDir, { recursive: true });
@@ -868,15 +1091,20 @@ export async function POST(request: Request) {
     const bodyWithFittedCopy: RenderBody = {
       ...body,
       templateId,
-      copy: {
-        ...body.copy,
-        headline: fittedCopy.headline,
-        bodyCopy: fittedCopy.bodyCopy,
-        highlightCopy: fittedCopy.highlightCopy,
-        bottomBarCopy: fittedCopy.bottomBarCopy,
-        cta: fittedCopy.cta,
-        price: fittedCopy.price || body.copy?.price,
-      },
+      copy: templateId === "food-template-002"
+        ? {
+            ...body.copy,
+            price: fittedCopy.price || body.copy?.price,
+          }
+        : {
+            ...body.copy,
+            headline: fittedCopy.headline,
+            bodyCopy: fittedCopy.bodyCopy,
+            highlightCopy: fittedCopy.highlightCopy,
+            bottomBarCopy: fittedCopy.bottomBarCopy,
+            cta: fittedCopy.cta,
+            price: fittedCopy.price || body.copy?.price,
+          },
     };
     const imagePath = foodCategoryTemplateIds.includes(templateId)
       ? await renderFoodCategoryTemplate(bodyWithFittedCopy, templateId)

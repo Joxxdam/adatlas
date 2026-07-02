@@ -447,6 +447,7 @@ export type GeneratedCopyReasoning = {
   referencePatternUsed?: string;
   consumerInsightUsed?: string;
   purchaseTriggerUsed?: string;
+  headlineQualityCheck?: string;
 };
 
 export type GeneratedAdCopy = GeneratedAdCopyVariant & {
