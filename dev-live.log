@@ -1,0 +1,16 @@
+
+> adatlas@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.150.96.13:3000
+- Environments: .env.local
+✓ Ready in 905ms
+
+ GET / 200 in 367ms (next.js: 160ms, application-code: 207ms)
+ GET / 200 in 67ms (next.js: 3ms, application-code: 63ms)
+ GET / 200 in 67ms (next.js: 4ms, application-code: 63ms)
+ GET /api/mvp/images 200 in 93ms (next.js: 68ms, application-code: 25ms)
+ POST /api/extract/product 200 in 2.7s (next.js: 150ms, application-code: 2.6s)
+ POST /api/strategy/generate-copy 200 in 11.7s (next.js: 94ms, application-code: 11.7s)

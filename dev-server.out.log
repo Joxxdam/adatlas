@@ -1,0 +1,15 @@
+
+> adatlas@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.150.96.13:3000
+- Environments: .env.local
+✓ Ready in 1090ms
+Creating turbopack project {
+  dir: 'C:\\Users\\daywiz_레노버\\OneDrive\\바탕 화면\\adatlas-1',
+  testMode: true
+}
+
+ GET / 200 in 304ms (next.js: 125ms, application-code: 179ms)

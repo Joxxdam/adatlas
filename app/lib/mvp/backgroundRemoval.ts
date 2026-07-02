@@ -177,7 +177,7 @@ export async function removeProductBackground(
       return failureResult(
         { ...input, imagePath, provider },
         "REMOVE_BG_API_KEY is not configured",
-        "REMOVE_BG_API_KEY is not configured. Keeping the original image.",
+        "remove.bg API 키가 설정되지 않았습니다. .env.local에 REMOVE_BG_API_KEY=... 를 추가한 뒤 서버를 재시작해 주세요.",
       );
     }
 
@@ -206,6 +206,7 @@ export async function removeProductBackground(
       return failureResult(
         { ...input, imagePath, provider },
         `remove.bg API failed: HTTP ${response.status}`,
+        `remove.bg API 호출 실패: HTTP ${response.status}. 서버 콘솔의 remove.bg 응답 내용을 확인해 주세요.`,
       );
     }
 
