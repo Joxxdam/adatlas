@@ -771,9 +771,47 @@ select {
   position: relative;
 }
 
+.ad-generation-flow > .banner-builder,
+.ad-generation-flow .banner-workspace > .copy-edit-panel,
+.ad-generation-flow .banner-workspace > .banner-preview-panel {
+  border-top: 4px solid rgba(21, 116, 209, 0.72);
+  padding-top: 42px;
+}
+
+.ad-generation-flow > .banner-builder::before,
+.ad-generation-flow .banner-workspace > .copy-edit-panel::before,
+.ad-generation-flow .banner-workspace > .banner-preview-panel::before {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(21, 116, 209, 0.1);
+  color: #0f58a8;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.ad-generation-flow > .banner-builder::before {
+  content: "1. 상품 정보 / 레퍼런스 / 템플릿";
+}
+
+.ad-generation-flow .banner-workspace > .copy-edit-panel::before {
+  content: "2. 문구 수정";
+}
+
+.ad-generation-flow .banner-workspace > .banner-preview-panel::before {
+  content: "3. 이미지 / 배너 설정";
+}
+
 .ad-generation-flow > .banner-workspace,
 .ad-generation-flow .banner-workspace > .banner-preview-panel {
-  border-left: 1px solid var(--brand-line);
+  border-left: 2px solid rgba(21, 116, 209, 0.18);
   padding-left: 16px;
 }
 
@@ -883,6 +921,7 @@ select {
 }
 
 .source-image-dropdown > summary {
+  position: relative;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -890,6 +929,28 @@ select {
   padding: 12px;
   cursor: pointer;
   list-style: none;
+}
+
+.source-image-dropdown > summary::after {
+  content: "펼치기 ▾";
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(21, 116, 209, 0.24);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eef8ff;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.source-image-dropdown[open] > summary::after {
+  content: "접기 ▴";
+  background: var(--brand);
+  color: #ffffff;
 }
 
 .source-image-dropdown > summary::-webkit-details-marker {
@@ -1116,11 +1177,11 @@ select {
 }
 
 .gpt-generator-dropdown > summary::after {
-  content: "v";
+  content: "펼치기 ▾";
   display: grid;
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 auto;
+  min-width: 72px;
+  min-height: 30px;
   place-items: center;
   border: 1px solid rgba(21, 116, 209, 0.24);
   border-radius: 999px;
@@ -1186,9 +1247,90 @@ select {
 }
 
 .gpt-generator-dropdown[open] > summary::after {
-  transform: rotate(180deg);
+  content: "접기 ▴";
   background: var(--brand);
   color: #ffffff;
+}
+
+.gpt-generator-dropdown > summary strong,
+.gpt-generator-dropdown > summary span,
+.gpt-generator-dropdown > summary b {
+  font-size: 0;
+}
+
+.gpt-generator-dropdown > summary strong::after,
+.gpt-generator-dropdown > summary span::after,
+.gpt-generator-dropdown > summary b::before,
+.gpt-generator-dropdown > summary b::after {
+  font-size: initial;
+}
+
+.gpt-generator-dropdown > summary b::before {
+  content: "" !important;
+}
+
+.gpt-generator-dropdown:not(.gpt-result-dropdown) > summary strong::after {
+  content: "GPT 이미지 생성";
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.gpt-generator-dropdown:not(.gpt-result-dropdown) > summary span::after {
+  content: "선택한 원본 기준 이미지로 광고용 이미지를 생성합니다.";
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.gpt-generator-dropdown:not(.gpt-result-dropdown) > summary b::after {
+  content: "선택 사항" !important;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.gpt-generator-dropdown.gpt-result-dropdown > summary strong::after {
+  content: "GPT 생성 결과";
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.gpt-generator-dropdown.gpt-result-dropdown > summary span::after {
+  content: "생성한 이미지는 필요할 때만 열어서 메인 이미지나 최종 광고안으로 채택하세요.";
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.gpt-generator-dropdown.gpt-result-dropdown > summary b::after {
+  content: "결과 확인" !important;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.gpt-image-generator > div:first-child h4,
+.gpt-image-generator > div:first-child .source-help {
+  font-size: 0;
+}
+
+.gpt-image-generator > div:first-child h4::after {
+  content: "GPT 이미지 생성";
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.gpt-image-generator > div:first-child .source-help::after {
+  content: "상품 원본을 최대한 유지하려면 선택 이미지 기준 생성과 상품 원본 최대 유지 옵션을 사용하세요.";
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .gpt-image-generator {
@@ -1887,6 +2029,45 @@ select {
 
 .logo-settings {
   gap: 10px;
+}
+
+.preset-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+}
+
+.preset-logo-grid button {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  color: var(--text);
+  text-align: center;
+}
+
+.preset-logo-grid button.selected {
+  border-color: var(--brand);
+  background: #eef8ff;
+  box-shadow: 0 0 0 2px rgba(21, 116, 209, 0.14);
+}
+
+.preset-logo-grid img {
+  justify-self: center;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #111111;
+  padding: 5px;
+}
+
+.preset-logo-grid span {
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .logo-preview-thumb {

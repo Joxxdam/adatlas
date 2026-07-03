@@ -331,12 +331,123 @@ function referencePatternUsage(reference?: AdImageLabel): ReferencePatternUsage 
   };
 }
 
+function normalizePriceToken(value: string) {
+  return String(value || "").replace(/\s+/g, "").trim();
+}
+
+function extractPriceTokens(...sources: string[]) {
+  return sources
+    .flatMap((source) => Array.from(String(source || "").matchAll(/[\d,]+\s*(?:원|만원|천원)/g)).map((match) => normalizePriceToken(match[0])))
+    .filter(Boolean);
+}
+
+function extractTemplate001PriceTokens(...sources: string[]) {
+  return sources
+    .flatMap((source) => Array.from(String(source || "").matchAll(/[\d,]+\s*(?:\uC6D0|\uB9CC\uC6D0|\uCC9C\uC6D0)/g)).map((match) => normalizePriceToken(match[0])))
+    .filter(Boolean);
+}
+
+function template001OriginalPrice(product: ProductInfoForPrompt, salePrice: string) {
+  const sale = normalizePriceToken(salePrice);
+  const prices = extractTemplate001PriceTokens(product.discountInfo || "", product.extractedDescription || "", product.mainBenefit || "");
+  return prices.find((price) => price !== sale) || "";
+}
+
+function compactProductName(product: ProductInfoForPrompt) {
+  return trimCopyToLimit(
+    cleanGeneratedText(product.productName || product.mainBenefit || product.category || "국내산 고기 특가 구성"),
+    22,
+  );
+}
+
+function normalizeFoodTemplate001Copy(
+  value: Partial<GeneratedAdCopy>,
+  product: ProductInfoForPrompt,
+  labels: AdImageLabel[],
+  template?: TemplateInfo,
+): GeneratedAdCopy {
+  const reference = labels[0];
+  const price = normalizePrice(product, value.price);
+  const oldPrice = template001OriginalPrice(product, price);
+  const headlineRepair = repairHeadline({
+    headline: value.headline || `${price || "이 가격"}에 이 구성, 반칙입니다`,
+    product,
+    reference,
+    maxChars: template?.copyLimits?.headline?.maxChars || 28,
+  });
+  const hookType = cleanGeneratedText(value.hookType || inferHookType(reference));
+  const appealPoint = cleanGeneratedText(value.appealPoint || inferAppealPoint(reference));
+
+  const copy: GeneratedAdCopy = {
+    headline: headlineRepair.headline,
+    bodyCopy: compactProductName(product),
+    highlightCopy: trimCopyToLimit(cleanGeneratedText(value.highlightCopy || "파격특가"), template?.copyLimits?.highlightCopy?.maxChars || 10),
+    bottomBarCopy: trimCopyToLimit(oldPrice || cleanGeneratedText(value.bottomBarCopy || product.discountInfo || ""), template?.copyLimits?.bottomBarCopy?.maxChars || 12),
+    cta: "",
+    price,
+    hookType,
+    appealPoint,
+    whyThisWorks: cleanGeneratedText(
+      value.whyThisWorks ||
+        "분할 상품 이미지와 기존가/특가/판매가를 한 화면에 나눠 보여 가격 대비 구성을 직관적으로 강조했습니다.",
+    ),
+    reasoning: {
+      ...(value.reasoning || {}),
+      headlineReason: value.reasoning?.headlineReason || "food-template-001 price impact headline",
+      referencePatternUsed:
+        value.reasoning?.referencePatternUsed ||
+        reference?.finalLabel?.reusableCopyPattern ||
+        reference?.finalLabel?.firstLineHook ||
+        "",
+      consumerInsightUsed: value.reasoning?.consumerInsightUsed || reference?.finalLabel?.consumerInsight || "",
+      purchaseTriggerUsed: value.reasoning?.purchaseTriggerUsed || reference?.finalLabel?.purchaseTrigger || "",
+      headlineQualityCheck: headlineRepair.repaired ? headlineRepair.reason : "passed",
+    },
+    templateFit: {
+      templateId: template?.templateId,
+      templateName: template?.templateName,
+      usedCopyLimits: copyLimitCharSummary(template?.copyLimits),
+      fitNotes: "food-template-001 슬롯 구조에 맞춰 상품명/기존가/특가 배지/판매가로 매핑했습니다.",
+    },
+    referencePatternUsage: {
+      ...referencePatternUsage(reference),
+      ...(value.referencePatternUsage || {}),
+    },
+    copyValidation: {
+      bodyCopy: {
+        ok: true,
+        reasons: [],
+        original: value.bodyCopy || "",
+        normalized: compactProductName(product),
+        finalLength: visibleCopyLength(compactProductName(product)),
+      },
+    },
+    copyVariants: undefined,
+  };
+
+  const cleaned = removeForbiddenCopy(copy);
+  cleaned.copyVariants = buildCopyVariants(
+    {
+      ...cleaned,
+      copyVariants: value.copyVariants,
+    },
+    product,
+    reference,
+    template?.copyLimits,
+  );
+  return cleaned;
+}
+
 function normalizeCopy(
   value: Partial<GeneratedAdCopy>,
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
   template?: TemplateInfo,
 ): GeneratedAdCopy {
+  if (template?.templateId === "food-template-001") {
+    return normalizeFoodTemplate001Copy(value, product, labels, template);
+  }
+
   const reference = labels[0];
   const headlineRepair = repairHeadline({
     headline: value.headline || "",
@@ -563,7 +674,7 @@ export async function POST(request: Request) {
             bodyCopy: fitted.bodyCopy,
             highlightCopy: fitted.highlightCopy,
             bottomBarCopy: fitted.bottomBarCopy,
-            cta: fitted.cta,
+            cta: body.templateId === "food-template-001" ? "" : fitted.cta,
             price: fitted.price || variantCopy.price,
           }
         : {}),

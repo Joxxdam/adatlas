@@ -130,6 +130,16 @@ export type SourceImageCandidate = {
   createdAt: string;
 };
 
+export type ProductImageCandidate = {
+  url: string;
+  type: "main" | "gallery" | "detail" | "content" | "unknown";
+  score: number;
+  reason?: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+};
+
 export type SourceImageSelectionState = {
   candidates: SourceImageCandidate[];
   selectedSourceImageId?: string;
@@ -346,13 +356,21 @@ export type ExtractedProductInfo = {
   productName: string;
   category: string;
   price: string;
+  originalPrice?: string;
+  oldPrice?: string;
   discountInfo: string;
+  brandName?: string;
+  productSubCategory?: string;
+  detectedProductType?: string;
+  categoryKeywords?: string[];
   mainImage: string;
   galleryImages: string[];
   description: string;
+  extractedDescription?: string;
   landingUrl: string;
   heroImage?: string;
   detailImages?: string[];
+  imageCandidates?: ProductImageCandidate[];
   sourceImageCandidates?: SourceImageCandidate[];
 };
 

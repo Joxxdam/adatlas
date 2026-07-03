@@ -58,12 +58,41 @@ function referencePayload(reference?: AdImageLabel) {
   };
 }
 
+function templateSpecificRules(templateId?: string) {
+  if (templateId === "food-template-001") {
+    return `
+[food-template-001 전용 슬롯 규칙]
+- 이 템플릿은 "분할고기특가형 템플릿"이다. 일반 배너 문장이 아니라 레퍼런스처럼 상단 후킹 + 하단 가격 블록에 맞춰 쓴다.
+- headline: 상단 1~2줄 후킹 문구. 가격/선물/가성비/구성 충격을 강하게 쓴다. 예: "4만원대로 생색 제대로 내는 선물 찾았습니다"
+- bodyCopy: 상품명 또는 상품 특징명만 짧게 쓴다. 설명문 금지. 예: "국내산 설록우 찰진 등심"
+- highlightCopy: 빨간 배지 라벨만 쓴다. 예: "파격특가", "한정특가", "실속특가"
+- bottomBarCopy: 기존가 숫자만 쓴다. 기존가 정보가 없으면 빈 문자열로 둔다. 문장 금지.
+- price: 최종 판매가 숫자만 쓴다. 예: "49,800원"
+- cta: 이 템플릿에서는 빈 문자열로 둔다.
+- 금지: bodyCopy에 긴 설명문, bottomBarCopy에 혜택 문장, highlightCopy에 긴 문장을 넣지 않는다.
+`;
+    return `
+[food-template-001 전용 슬롯 규칙]
+- 이 템플릿은 "분할고기특가형 템플릿"이다.
+- headline: 상단 2줄 가격/구성 충격 후킹. 예: "4만원대로 생색 제대로 내는 선물 찾았습니다"
+- bodyCopy: 상품명 또는 핵심 상품명만 짧게. 예: "국내산 설록우 찰진 등심"
+- highlightCopy: 빨간 배지 문구. 예: "파격특가", "한정특가", "실속특가"
+- bottomBarCopy: 기존가 숫자. 예: "148,000원"
+- price: 최종 판매가 숫자. 예: "49,800원"
+- cta는 비워도 된다. 설명문, 긴 혜택 문장, 리뷰 문장을 bodyCopy에 넣지 않는다.
+`;
+  }
+
+  return "";
+}
+
 function templateStrategy(templateId?: string) {
   if (!templateId) {
     return "템플릿 미선택: headline은 짧은 후킹, bodyCopy는 존댓말 보조 설명, highlightCopy는 핵심 혜택, bottomBarCopy는 구매 명분으로 분리한다.";
   }
 
   if (/food-template-001/.test(templateId)) {
+    return "분할고기특가형: headline은 가격/선물/가성비 후킹 1~2줄, bodyCopy는 상품명만, highlightCopy는 파격특가 같은 배지 라벨, bottomBarCopy는 기존가 숫자, price는 판매가 숫자로 분리한다.";
     return "좌우 이미지 분할형: headline은 2줄 이내 강한 후킹, highlightCopy는 가격/구성 명분, bottomBarCopy는 추가 혜택이나 구매 이유를 짧게 둔다.";
   }
 
@@ -130,6 +159,7 @@ templateId: ${template?.templateId || ""}
 templateName: ${template?.templateName || ""}
 copyLimits: ${JSON.stringify(copyLimitSummary, null, 2)}
 templateStrategy: ${templateStrategy(template?.templateId)}
+${templateSpecificRules(template?.templateId)}
 
 [Reference Copy Pattern 추출]
 아래 reference 1개에서 다음 항목을 먼저 분석한 뒤 문구에 반영한다.

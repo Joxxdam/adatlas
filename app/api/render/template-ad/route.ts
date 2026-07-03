@@ -14,6 +14,9 @@ export const runtime = "nodejs";
 
 type RenderStyle = Partial<typeof foodImpactHeroTemplate.style> & {
   bodyFontSize?: number;
+  bodyFontWeight?: number;
+  selectedFontWeight?: number;
+  headlineFontWeight?: number;
   selectedFontFile?: string;
   headlineFontFile?: string;
   accentPhrase?: string;
@@ -192,7 +195,8 @@ function productImageSvg(
   const transform = effect
     ? ` transform="translate(${effect.productOffsetX} ${effect.productOffsetY}) rotate(${effect.productRotation} ${cx} ${cy}) translate(${cx} ${cy}) scale(${effect.productScale}) translate(${-cx} ${-cy})"`
     : "";
-  return `<g${transform}><image href="${dataUrl}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid ${mode}" filter="url(#productShadow)" /></g>`;
+  const preserveMode = mode === "cover" ? "slice" : "meet";
+  return `<g${transform}><image href="${dataUrl}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid ${preserveMode}" filter="url(#productShadow)" /></g>`;
 }
 
 function isHttpUrl(value: string) {
@@ -227,6 +231,37 @@ function fontFormatFromFile(filePath: string) {
 
 function fontFileToFileUrl(filePath: string) {
   return pathToFileURL(safeWindowsFontFile(filePath)).href;
+}
+
+function getFoodTemplate001ImageFrames(count: number): Array<{ x: number; y: number; width: number; height: number; mode: "cover" | "meet" }> {
+  const normalizedCount = Math.max(1, Math.min(4, count || 1));
+  const gap = 0;
+
+  if (normalizedCount === 1) {
+    return [{ x: 0, y: 0, width: 1200, height: 1200, mode: "cover" }];
+  }
+
+  if (normalizedCount === 2) {
+    return [
+      { x: 0, y: 0, width: 600 - gap / 2, height: 1200, mode: "cover" },
+      { x: 600 + gap / 2, y: 0, width: 600 - gap / 2, height: 1200, mode: "cover" },
+    ];
+  }
+
+  if (normalizedCount === 3) {
+    return [
+      { x: 0, y: 0, width: 1200, height: 600, mode: "cover" },
+      { x: 0, y: 600, width: 600 - gap / 2, height: 600, mode: "cover" },
+      { x: 600 + gap / 2, y: 600, width: 600 - gap / 2, height: 600, mode: "cover" },
+    ];
+  }
+
+  return [
+    { x: 0, y: 0, width: 600 - gap / 2, height: 600, mode: "cover" },
+    { x: 600 + gap / 2, y: 0, width: 600 - gap / 2, height: 600, mode: "cover" },
+    { x: 0, y: 600, width: 600 - gap / 2, height: 600, mode: "cover" },
+    { x: 600 + gap / 2, y: 600, width: 600 - gap / 2, height: 600, mode: "cover" },
+  ];
 }
 
 async function imageToDataUrl(imagePathOrUrl: string) {
@@ -430,6 +465,42 @@ function splitAccentSegments(text: string, accentPhrase: string | undefined, def
   return segments.filter((segment) => segment.text);
 }
 
+function inferAccentPhraseFromCopy(copy: Partial<GeneratedAdCopy>) {
+  const source = [
+    copy.headline,
+    copy.bodyCopy,
+    copy.highlightCopy,
+    copy.bottomBarCopy,
+  ].filter(Boolean).join(" ");
+  const explicit = Array.from(source.matchAll(/\[\[([\s\S]+?)\]\]/g)).map((match) => match[1].trim()).filter(Boolean);
+  if (explicit.length) return explicit.slice(0, 4).join(",");
+
+  const candidates = [
+    ...Array.from(source.matchAll(/[0-9][0-9,]*(?:원|만원|kg|KG|g|%)/g)).map((match) => match[0]),
+    ...Array.from(source.matchAll(/[가-힣A-Za-z0-9]{2,}(?:등심|갈비|한우|설록우|특가|무료배송|폭락가|육즙|선물|구성|할인|반칙)/g)).map((match) => match[0]),
+    ...Array.from(source.matchAll(/(?:국내산|역대급|파격|특별|무료|첫출시|고급|대용량)\s*[가-힣A-Za-z0-9]{2,}/g)).map((match) => match[0].trim()),
+  ];
+
+  return Array.from(new Set(candidates))
+    .filter((phrase) => phrase.length >= 2 && phrase.length <= 16)
+    .slice(0, 4)
+    .join(",");
+}
+
+function inferSplitMeatDealHeadlineAccents(headline: string, explicitAccent?: string) {
+  if (explicitAccent?.trim()) return explicitAccent;
+
+  const candidates = [
+    ...Array.from(headline.matchAll(/[0-9][0-9,]*(?:원|만원|만\s*원|%)/g)).map((match) => match[0]),
+    ...Array.from(headline.matchAll(/(?:선물|생색|특가|구성|가격|가성비|등심|갈비|한우|설록우)/g)).map((match) => match[0]),
+  ];
+
+  return Array.from(new Set(candidates))
+    .filter((phrase) => phrase.length >= 2 && phrase.length <= 12)
+    .slice(0, 4)
+    .join(",");
+}
+
 function mixedTextSvg(options: {
   text: string;
   x: number;
@@ -552,6 +623,9 @@ async function renderFoodImpactHero(body: RenderBody) {
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
   const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
+  const selectedFontWeight = Number(styleOverrides.selectedFontWeight ?? styleOverrides.bodyFontWeight ?? 800);
+  const bodyFontWeight = Number(styleOverrides.bodyFontWeight ?? 800);
+  const headlineFontFaceWeight = Number(styleOverrides.headlineFontWeight ?? headlineStyle.fontWeight ?? 900);
   const hasCta = Boolean(copy.cta?.trim());
   const hasPrice = Boolean(copy.price?.trim());
 
@@ -660,7 +734,7 @@ async function renderFoodImpactHero(body: RenderBody) {
       fontSize: bodyCopy.fontSize,
       lineHeight: type.bodyLineHeight,
       fill: style.bodyColor,
-      weight: 800,
+      weight: bodyFontWeight,
     }),
     ...centeredLineText(highlight.lines, {
       x: 600,
@@ -714,13 +788,13 @@ async function renderFoodImpactHero(body: RenderBody) {
       @font-face {
         font-family: 'AdAtlasSelectedFont';
         src: url('${selectedFontFileUrl}') format('${selectedFontFormat}');
-        font-weight: 400 900;
+        font-weight: ${selectedFontWeight};
         font-style: normal;
       }
       @font-face {
         font-family: 'AdAtlasHeadlineFont';
         src: url('${headlineFontFileUrl}') format('${headlineFontFormat}');
-        font-weight: 400 900;
+        font-weight: ${headlineFontFaceWeight};
         font-style: normal;
       }
     </style>
@@ -788,8 +862,10 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     (template as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect,
   );
   const requestedProductImagePaths = (body.productImagePaths?.length
-    ? [selectedProductImagePath || body.productImagePaths[0], ...body.productImagePaths.slice(1)]
-    : [selectedProductImagePath, body.secondaryProductImagePath]).filter(Boolean).slice(0, 4) as string[];
+    ? body.productImagePaths
+    : templateId === "food-template-001"
+      ? [selectedProductImagePath || body.productImagePath]
+      : [selectedProductImagePath, body.secondaryProductImagePath]).filter(Boolean).slice(0, 4) as string[];
   const productImageDataUrls = await Promise.all(requestedProductImagePaths.map((imagePath) => imageToDataUrl(imagePath).catch(() => "")));
   const productImageDataUrl = productImageDataUrls[0] || await imageToDataUrl(selectedProductImagePath || "").catch(() => "");
   const secondaryProductImageDataUrl = productImageDataUrls[1] || await imageToDataUrl(body.secondaryProductImagePath || selectedProductImagePath || "").catch(() => productImageDataUrl);
@@ -808,6 +884,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
   const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
+  const selectedFontWeight = Number(style.selectedFontWeight ?? style.bodyFontWeight ?? 800);
+  const bodyFontWeight = Number(style.bodyFontWeight ?? 800);
+  const headlineFontFaceWeight = Number(style.headlineFontWeight ?? headlineStyle.fontWeight ?? 900);
   const fontFamily = `AdAtlasSelectedFont, ${String(style.fontFamily || foodImpactHeroTemplate.style.fontFamily)}`;
   const headlineFontFamily = String(style.headlineFontFamily || headlineStyle.fontFamily).replace("AdAtlasSelectedFont", "AdAtlasHeadlineFont");
   const hasCta = Boolean(copy.cta?.trim());
@@ -846,8 +925,124 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   <rect width="${width}" height="${height}" fill="#000000" opacity="${dim}" />`;
   }
 
-  if (templateId === "food-template-002") {
-    const accentPhrase = String(styleRecord.accentPhrase || "");
+  if (templateId === "food-template-001") {
+    const selectedImages = templateProductImages.length ? templateProductImages.slice(0, 4) : [productImageDataUrl].filter(Boolean);
+    const frames = getFoodTemplate001ImageFrames(selectedImages.length || 1);
+    const headlineAccentPhrase = inferSplitMeatDealHeadlineAccents(copy.headline || "", String(styleRecord.accentPhrase || ""));
+    const headline = fitLines(copy.headline || "이 가격에 이런 구성이라니!", {
+      maxWidth: 1160,
+      maxLines: 2,
+      initialSize: Number(styleOverrides.headlineFontSize ?? 66),
+      minSize: 34,
+      letterSpacing: -4,
+      lineHeight: 0.98,
+      boxHeight: 164,
+      slot: "headline",
+    });
+    const productName = fitLines(copy.bodyCopy || "국내산 설록우 찰진 등심", {
+      maxWidth: 500,
+      maxLines: 1,
+      initialSize: Number(styleOverrides.bodyFontSize ?? 31),
+      minSize: 22,
+      boxHeight: 48,
+      slot: "bodyCopy",
+    });
+    const badge = fitLines(copy.highlightCopy || "파격특가", {
+      maxWidth: 140,
+      maxLines: 1,
+      initialSize: 23,
+      minSize: 18,
+      boxHeight: 54,
+      slot: "highlightCopy",
+    });
+    const oldPriceText = (copy.bottomBarCopy || "").trim();
+    const oldPrice = fitLines(oldPriceText || "148,000원", {
+      maxWidth: 230,
+      maxLines: 1,
+      initialSize: 31,
+      minSize: 24,
+      boxHeight: 54,
+      slot: "bottomBarCopy",
+    });
+    const salePrice = fitLines(copy.price || "", {
+      maxWidth: 350,
+      maxLines: 1,
+      initialSize: 56,
+      minSize: 36,
+      boxHeight: 88,
+      slot: "price",
+    });
+    const headlineStep = headline.fontSize * 0.92;
+    const headlineFirstY = 84 + ((2 - headline.lines.length) * 12);
+
+    backgroundLayer = `<rect width="1200" height="1200" fill="#100c09" />`;
+
+    shapes += frames.map((frame, index) => {
+      const imageDataUrl = selectedImages[index] || selectedImages[0] || productImageDataUrl;
+      return imageFromDataUrl(imageDataUrl, frame.x, frame.y, frame.width, frame.height, frame.mode);
+    }).join("");
+
+    const productNameBoxWidth = Math.min(560, Math.max(330, estimateWidth(productName.lines[0] || "", productName.fontSize) + 34));
+    const oldPriceWidth = oldPrice.lines[0] ? estimateWidth(oldPrice.lines[0], oldPrice.fontSize) : 0;
+
+    shapes += `<rect width="1200" height="1200" fill="url(#foodTemplate1Shade)" />
+      ${frames.length === 2 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
+      ${frames.length === 3 ? `<line x1="0" y1="600" x2="1200" y2="600" stroke="#050505" stroke-width="8" opacity="0.55" /><line x1="600" y1="600" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
+      ${frames.length === 4 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" /><line x1="0" y1="600" x2="1200" y2="600" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
+      ${logoImageDataUrl ? `<image href="${logoImageDataUrl}" x="1012" y="42" width="134" height="134" preserveAspectRatio="xMidYMid meet" />` : ""}
+      <rect x="16" y="800" width="${productNameBoxWidth}" height="48" rx="4" fill="#060606" opacity="0.94" />
+      <rect x="16" y="894" width="132" height="40" rx="4" fill="#ff1f1f" />
+      ${salePrice.lines[0] ? `<text x="158" y="907" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff238" stroke="#111111" stroke-width="5" paint-order="stroke fill">${escapeXml(salePrice.lines[0])}</text>` : ""}`;
+
+    headline.lines.forEach((line, index) => {
+      shapes += mixedTextSvg({
+        text: line,
+        x: 600,
+        y: headlineFirstY + index * headlineStep,
+        fontSize: headline.fontSize,
+        defaultFill: "#ffffff",
+        accentFill: "#fff238",
+        accentPhrase: headlineAccentPhrase,
+        fontWeight: 900,
+        anchor: "middle",
+        fontFamily: headlineFontFamily,
+        letterSpacing: -3,
+        strokeColor: "#111111",
+        strokeWidth: 6,
+      });
+    });
+    textLines.push(...lineText(productName.lines, {
+      x: 26,
+      startY: 831,
+      fontSize: productName.fontSize,
+      lineHeight: 1,
+      fill: "#ffffff",
+      weight: 900,
+    }).map((line) => ({ ...line, anchor: "start" as const, fontFamily })));
+    textLines.push({ text: "기존가", x: 18, y: 878, fontSize: 24, fill: "#ffffff", weight: 700, anchor: "start", fontFamily });
+    textLines.push(...centeredLineText(badge.lines, {
+      x: 82,
+      centerY: 915,
+      fontSize: badge.fontSize,
+      lineHeight: 1,
+      fill: "#ffffff",
+      weight: 900,
+    }));
+    textLines.push({
+      text: oldPrice.lines[0] || "",
+      x: 112,
+      y: 878,
+      fontSize: oldPrice.fontSize,
+      fill: "rgba(255,255,255,0.86)",
+      weight: 700,
+      anchor: "start",
+      fontFamily,
+    });
+    if (oldPrice.lines[0]) {
+      shapes += `<line x1="110" y1="868" x2="${Math.min(390, 110 + oldPriceWidth)}" y2="868" stroke="rgba(255,255,255,0.9)" stroke-width="4" />`;
+    }
+  } else if (templateId === "food-template-002") {
+    const accentPhrase = String(styleRecord.accentPhrase || "").trim() || inferAccentPhraseFromCopy(copy);
     const accentColor = String(styleRecord.accentColor || "#fff200");
     const template2BackgroundSource =
       body.selectedBackgroundSource ||
@@ -943,7 +1138,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       fontSize: reviewTop.fontSize,
       fontWeight: 800,
       defaultFill: "#111111",
-      accentFill: "#e60000",
+      accentFill: accentColor,
       accentPhrase,
     });
     shapes += mixedTextSvg({
@@ -955,7 +1150,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       fontSize: reviewBottom.fontSize,
       fontWeight: 800,
       defaultFill: "#111111",
-      accentFill: "#e60000",
+      accentFill: accentColor,
       accentPhrase,
     });
     const mainStep = main.fontSize * 0.95;
@@ -990,8 +1185,8 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       <text x="900" y="312" text-anchor="middle" font-family="${escapeXml(fontFamily)}" font-size="46" font-weight="800" fill="#ff595e">♥  ✦  🍀</text>`;
     textLines.push({ text: leftTitle, x: 300, y: 142, fontSize: 44, fill: "#111111", weight: 900, fontFamily: headlineFontFamily });
     textLines.push({ text: rightTitle, x: 900, y: 142, fontSize: 44, fill: "#111111", weight: 900, fontFamily: headlineFontFamily });
-    textLines.push(...lineText(leftBody.lines, { x: 300, startY: 560, fontSize: leftBody.fontSize, lineHeight: 1.34, fill: "#111111", weight: 600 }));
-    textLines.push(...centeredLineText(rightBody.lines, { x: 900, centerY: 646, fontSize: rightBody.fontSize, lineHeight: 1.28, fill: "#111111", weight: 900 }));
+    textLines.push(...lineText(leftBody.lines, { x: 300, startY: 560, fontSize: leftBody.fontSize, lineHeight: 1.34, fill: "#111111", weight: Math.min(bodyFontWeight, 700) }));
+    textLines.push(...centeredLineText(rightBody.lines, { x: 900, centerY: 646, fontSize: rightBody.fontSize, lineHeight: 1.28, fill: "#111111", weight: Math.max(bodyFontWeight, 800) }));
     textLines.push(...centeredLineText(bot.lines, { x: 600, centerY: 1116, fontSize: 34, lineHeight: 1.1, fill: "#111111", weight: 800 }));
   } else if (templateId === "food-template-004") {
     backgroundLayer = productImageDataUrl
@@ -1050,8 +1245,8 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
-      @font-face { font-family: 'AdAtlasSelectedFont'; src: url('${selectedFontFileUrl}') format('${selectedFontFormat}'); font-weight: 400 900; font-style: normal; }
-      @font-face { font-family: 'AdAtlasHeadlineFont'; src: url('${headlineFontFileUrl}') format('${headlineFontFormat}'); font-weight: 400 900; font-style: normal; }
+      @font-face { font-family: 'AdAtlasSelectedFont'; src: url('${selectedFontFileUrl}') format('${selectedFontFormat}'); font-weight: ${selectedFontWeight}; font-style: normal; }
+      @font-face { font-family: 'AdAtlasHeadlineFont'; src: url('${headlineFontFileUrl}') format('${headlineFontFormat}'); font-weight: ${headlineFontFaceWeight}; font-style: normal; }
       text[y="956"][font-size="28"] { display: none; }
     </style>
     ${productEffectFilterDef(productEffect)}
@@ -1061,6 +1256,17 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       <stop offset="52%" stop-color="#000000" stop-opacity="0.04" />
       <stop offset="70%" stop-color="#000000" stop-opacity="0.42" />
       <stop offset="100%" stop-color="#000000" stop-opacity="0.88" />
+    </linearGradient>
+    <linearGradient id="foodTemplate1Bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#20130c" />
+      <stop offset="46%" stop-color="#080604" />
+      <stop offset="100%" stop-color="#120c08" />
+    </linearGradient>
+    <linearGradient id="foodTemplate1Shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.18" />
+      <stop offset="45%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="68%" stop-color="#000000" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.82" />
     </linearGradient>
     <filter id="headlineShadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000000"/></filter>
   </defs>

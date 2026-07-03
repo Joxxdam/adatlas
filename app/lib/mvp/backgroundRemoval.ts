@@ -44,6 +44,7 @@ export type RemoveBackgroundResult = {
     contentType?: string;
     byteLength?: number;
     fileName?: string;
+    foregroundType?: "product" | "auto";
     normalizedContentType?: string;
     normalizedByteLength?: number;
     removeBgStatus?: number;
@@ -231,7 +232,7 @@ async function readLocalPublicImageAsBlob(imagePath: string): Promise<PreparedIm
   };
 }
 
-async function buildRemoveBgFormData(imagePath: string) {
+async function buildRemoveBgFormData(imagePath: string, foregroundType?: "product" | "auto") {
   const isRemote = isRemoteUrl(imagePath);
   const imageFile = isRemote
     ? await downloadRemoteImageAsBlob(imagePath)
@@ -250,7 +251,9 @@ async function buildRemoveBgFormData(imagePath: string) {
   );
   formData.append("size", "auto");
   formData.append("format", "png");
-  formData.append("type", "product");
+  if (foregroundType && foregroundType !== "auto") {
+    formData.append("type", foregroundType);
+  }
 
   return {
     formData,
@@ -259,6 +262,7 @@ async function buildRemoveBgFormData(imagePath: string) {
       contentType: imageFile.contentType,
       byteLength: imageFile.byteLength,
       fileName: pngFileName,
+      foregroundType,
       normalizedContentType: "image/png",
       normalizedByteLength: normalizedPngBuffer.byteLength,
     },
@@ -355,7 +359,7 @@ export async function removeProductBackground(
       );
     }
 
-    const { formData, sourceKind, debug } = await buildRemoveBgFormData(imagePath);
+    const { formData, sourceKind, debug } = await buildRemoveBgFormData(imagePath, "product");
     const response = await fetch("https://api.remove.bg/v1.0/removebg", {
       method: "POST",
       headers: { "X-Api-Key": apiKey },
@@ -365,6 +369,57 @@ export async function removeProductBackground(
     if (!response.ok) {
       const contentType = response.headers.get("content-type") || "";
       const errorText = truncateForLog(await response.text().catch(() => ""));
+      if (response.status === 400 && /unknown_foreground|Could not identify foreground/i.test(errorText)) {
+        const retry = await buildRemoveBgFormData(imagePath, "auto");
+        const retryResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
+          method: "POST",
+          headers: { "X-Api-Key": apiKey },
+          body: retry.formData,
+        });
+
+        if (retryResponse.ok) {
+          const processedBuffer = Buffer.from(await retryResponse.arrayBuffer());
+          const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
+          return {
+            success: true,
+            originalImagePath: imagePath,
+            processedImagePath,
+            provider,
+            sourceKind: retry.sourceKind,
+            debug: retry.debug,
+          };
+        }
+
+        const retryContentType = retryResponse.headers.get("content-type") || "";
+        const retryErrorText = truncateForLog(await retryResponse.text().catch(() => ""));
+        console.error("[remove-background] remove.bg API retry failed", {
+          status: retryResponse.status,
+          statusText: retryResponse.statusText,
+          contentType: retryContentType,
+          responseText: retryErrorText,
+          sourceKind: retry.sourceKind,
+          foregroundType: "auto",
+          debug: retry.debug,
+        });
+
+        return failureResult(
+          { ...input, imagePath, provider },
+          `remove.bg API failed: HTTP ${retryResponse.status}`,
+          "remove.bg가 이 이미지에서 상품 전경을 찾지 못했습니다. 배경과 상품 경계가 더 뚜렷한 상품 사진을 선택하거나 다른 상세 이미지를 선택해 주세요.",
+          {
+            detail: process.env.NODE_ENV === "development"
+              ? retryErrorText || retryResponse.statusText
+              : undefined,
+            sourceKind: retry.sourceKind,
+            debug: {
+              ...retry.debug,
+              removeBgStatus: retryResponse.status,
+              removeBgStatusText: retryResponse.statusText,
+              removeBgResponseText: process.env.NODE_ENV === "development" ? retryErrorText : undefined,
+            },
+          },
+        );
+      }
       console.error("[remove-background] remove.bg API failed", {
         status: response.status,
         statusText: response.statusText,

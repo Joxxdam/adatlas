@@ -240,6 +240,7 @@ type SystemFontOption = {
   label: string;
   fontFamily: string;
   fontFile: string;
+  fontWeight?: number;
 };
 
 type MetaCrawlItem = {
@@ -249,6 +250,14 @@ type MetaCrawlItem = {
   originalAdUrl: string;
   collectedAt: string;
 };
+
+const presetBrandLogos = [
+  {
+    id: "gukdae-hanwoo",
+    label: "국대한우 로고",
+    imagePath: "/brand-logos/gukdae-hanwoo-logo.png",
+  },
+];
 
 const systemFontOptions: SystemFontOption[] = [
   {
@@ -316,6 +325,69 @@ const systemFontOptions: SystemFontOption[] = [
     label: "Gmarket Sans Light",
     fontFamily: "AdAtlasSelectedFont, \"Gmarket Sans TTF\", \"Noto Sans KR\", sans-serif",
     fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFLight.ttf",
+  },
+  {
+    id: "scdream-1",
+    label: "S-Core Dream 1",
+    fontWeight: 100,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream1.otf",
+  },
+  {
+    id: "scdream-2",
+    label: "S-Core Dream 2",
+    fontWeight: 200,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream2.otf",
+  },
+  {
+    id: "scdream-3",
+    label: "S-Core Dream 3",
+    fontWeight: 300,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream3.otf",
+  },
+  {
+    id: "scdream-4",
+    label: "S-Core Dream 4",
+    fontWeight: 400,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream4.otf",
+  },
+  {
+    id: "scdream-5",
+    label: "S-Core Dream 5",
+    fontWeight: 500,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream5.otf",
+  },
+  {
+    id: "scdream-6",
+    label: "S-Core Dream 6",
+    fontWeight: 600,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream6.otf",
+  },
+  {
+    id: "scdream-7",
+    label: "S-Core Dream 7",
+    fontWeight: 700,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream7.otf",
+  },
+  {
+    id: "scdream-8",
+    label: "S-Core Dream 8",
+    fontWeight: 800,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream8.otf",
+  },
+  {
+    id: "scdream-9",
+    label: "S-Core Dream 9",
+    fontWeight: 900,
+    fontFamily: "AdAtlasSelectedFont, \"S-Core Dream\", \"Noto Sans KR\", sans-serif",
+    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream9.otf",
   },
   {
     id: "noto-sans-kr",
@@ -661,7 +733,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
   });
   const [selectedHeadlineFontId, setSelectedHeadlineFontId] = useState(systemFontOptions[0].id);
-  const [selectedBodyFontId, setSelectedBodyFontId] = useState(systemFontOptions[11].id);
+  const [selectedBodyFontId, setSelectedBodyFontId] = useState("noto-sans-kr");
   const [selectedTemplateId, setSelectedTemplateId] = useState("food-template-001");
   const [generatedBannerPath, setGeneratedBannerPath] = useState("");
   const [renderStatus, setRenderStatus] = useState<Status>({ kind: "idle", message: "문구 생성 후 배너를 만들 수 있습니다." });
@@ -760,7 +832,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     return [currentMainProductImage || originals[0], ...originals.slice(1)].filter(Boolean).slice(0, 4);
   }, [backgroundImageOptions, currentMainProductImage, mainImageSourceMode, productInfo.productImagePath, productInfo.productImagePaths, productInfo.secondaryProductImagePath]);
   const selectedHeadlineFont = systemFontOptions.find((option) => option.id === selectedHeadlineFontId) ?? systemFontOptions[0];
-  const selectedBodyFont = systemFontOptions.find((option) => option.id === selectedBodyFontId) ?? systemFontOptions[11];
+  const selectedBodyFont = systemFontOptions.find((option) => option.id === selectedBodyFontId) ?? systemFontOptions.find((option) => option.id === "noto-sans-kr") ?? systemFontOptions[0];
   const categoryTemplates = useMemo(() => {
     const category = productInfo.category || "";
     const isFoodGiftCategory =
@@ -1053,6 +1125,22 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     });
   }
 
+  function updateProductInfoField(fieldKey: keyof ProductInfoForPrompt, value: string) {
+    setProductInfo((current) => ({ ...current, [fieldKey]: value }));
+
+    if (fieldKey === "landingUrl" && value.trim() !== productInfo.landingUrl.trim()) {
+      setSourceImageSelection(emptySourceImageSelection);
+      setSourceImageStatus({ kind: "idle", message: "새 상품 URL입니다. 상품정보를 불러오면 GPT 원본 기준 이미지 후보가 교체됩니다." });
+      setProductImageState(emptyProductImageState);
+      setGptMainImagePath("");
+      setGptTextAdImagePath("");
+      setGptVisualAsset(null);
+      setGptTextAdAsset(null);
+      setGptImageCandidates([]);
+      setSelectedGptImageCandidateId(null);
+    }
+  }
+
   function mergeExtractedProductInfo(current: ProductInfoForPrompt, extracted: ExtractedProductInfo, replaceExtractedFields: boolean): ProductInfoForPrompt {
     const extractedCategory = normalizeProductCategory(
       extracted.category,
@@ -1072,6 +1160,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       ? extracted.mainImage || galleryImages[0] || ""
       : current.selectedBackgroundSource;
     const nextProductImagePaths = galleryImages.slice(0, 4);
+    const defaultSelectedProductImagePaths = (extracted.mainImage || nextProductImagePaths[0])
+      ? [extracted.mainImage || nextProductImagePaths[0]]
+      : [];
 
     return {
       ...current,
@@ -1080,10 +1171,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       price: replaceExtractedFields ? extracted.price || "" : current.price || extracted.price || "",
       discountInfo: replaceExtractedFields ? extracted.discountInfo || "" : extracted.discountInfo || current.discountInfo || "",
       mainBenefit: replaceExtractedFields ? extracted.description || "" : current.mainBenefit || extracted.description || "",
-      landingUrl: current.landingUrl || extracted.landingUrl || "",
+      landingUrl: replaceExtractedFields ? extracted.landingUrl || current.landingUrl || "" : current.landingUrl || extracted.landingUrl || "",
       productImagePath: replaceExtractedFields ? extracted.mainImage || nextProductImagePaths[0] || "" : extracted.mainImage || current.productImagePath || "",
       secondaryProductImagePath: replaceExtractedFields ? nextProductImagePaths.find((image) => image !== extracted.mainImage) || "" : current.secondaryProductImagePath || galleryImages.find((image) => image !== extracted.mainImage) || "",
-      productImagePaths: replaceExtractedFields ? nextProductImagePaths : current.productImagePaths?.length ? current.productImagePaths : nextProductImagePaths,
+      productImagePaths: replaceExtractedFields ? defaultSelectedProductImagePaths : current.productImagePaths?.length ? current.productImagePaths : defaultSelectedProductImagePaths,
       backgroundImagePath: replaceExtractedFields ? "" : current.backgroundImagePath || "",
       extractedDescription: replaceExtractedFields ? extracted.description || "" : extracted.description || current.extractedDescription || "",
       extractedMainImage: replaceExtractedFields ? extracted.mainImage || "" : extracted.mainImage || current.extractedMainImage || "",
@@ -1130,6 +1221,11 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         candidates: mergedProductInfo.sourceImageCandidates ?? [],
         selectedSourceImageId: mergedProductInfo.selectedSourceImageId,
         selectedSourceImagePath: mergedProductInfo.selectedSourceImagePath,
+      });
+      setProductImageState({
+        ...emptyProductImageState,
+        originalImagePath: mergedProductInfo.productImagePath || mergedProductInfo.extractedMainImage || "",
+        selectedImageMode: "original",
       });
       setSourceImageStatus({ kind: "success", message: "원본 기준 이미지 후보를 불러왔습니다. GPT 생성 기준 이미지를 선택할 수 있습니다." });
       setLastLoadedProductUrl(productUrl);
@@ -1920,6 +2016,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             priceColor: "#ff1f1f",
             accentPhrase: bannerAccentPhrase,
             accentColor: bannerAccentColor,
+            selectedFontWeight: selectedBodyFont.fontWeight,
+            bodyFontWeight: selectedBodyFont.fontWeight,
+            headlineFontWeight: selectedHeadlineFont.fontWeight,
             ...headlineStyleOverrides,
             fontFamily: selectedBodyFont.fontFamily,
             headlineFontFamily: selectedHeadlineFont.fontFamily.replace("AdAtlasSelectedFont", "AdAtlasHeadlineFont"),
@@ -2169,7 +2268,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </select>
                     ) : (
                       <input
-                        onChange={(event) => setProductInfo((current) => ({ ...current, [field.key]: event.target.value }))}
+                        onChange={(event) => updateProductInfoField(field.key, event.target.value)}
                         placeholder={field.placeholder}
                         value={String(productInfo[field.key] || "")}
                       />
@@ -2229,10 +2328,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <span>강조할 문구</span>
                     <input
                       onChange={(event) => setBannerAccentPhrase(event.target.value)}
-                      placeholder="예: 입안에서 육즙 폭발, 등심"
+                      placeholder="비워두면 자동 선택. 예: 입안에서 육즙 폭발, 등심"
                       value={bannerAccentPhrase}
                     />
-                    <small>여러 문구는 쉼표로 구분하세요. 문구 안에서 직접 [[등심]]처럼 감싸도 강조됩니다.</small>
+                    <small>비워두면 가격/상품명/혜택 표현을 자동 강조합니다. 수동 입력은 쉼표로 구분하고, 문구 안에서 [[등심]]처럼 감싸도 됩니다.</small>
                   </label>
                   <label>
                     <span>강조 색상</span>
@@ -2377,7 +2476,15 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   <p className="eyebrow">PNG Preview</p>
                   <h4>{selectedTemplate?.id || "템플릿 없음"}</h4>
                 </div>
-                <div className="template-picker">
+                <details className="template-picker source-image-dropdown" open>
+                  <summary>
+                    <div>
+                      <p className="eyebrow">Template</p>
+                      <strong>템플릿 선택</strong>
+                      <span>{selectedTemplate?.name || "선택 필요"}</span>
+                    </div>
+                    <b>{selectedTemplate ? "선택됨" : "선택 필요"}</b>
+                  </summary>
                   <div>
                     <p className="eyebrow">Template</p>
                     <h4>템플릿 선택</h4>
@@ -2408,7 +2515,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   ) : (
                     <p className="strategy-empty">아직 해당 카테고리 전용 템플릿이 없습니다. 식품/선물 템플릿부터 먼저 지원합니다.</p>
                   )}
-                </div>
+                </details>
                 <details className="background-settings source-image-settings source-image-dropdown">
                   <summary>
                     <div>
@@ -2866,7 +2973,15 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   </details>
                   </div>
                 </details>
-                <div className="background-settings render-settings">
+                <details className="background-settings render-settings source-image-dropdown">
+                  <summary>
+                    <div>
+                      <p className="eyebrow">Render Background</p>
+                      <strong>메인 이미지 / 누끼 설정</strong>
+                      <span>{currentMainProductImage ? productImageModeLabel(productImageState.selectedImageMode) : "이미지 선택 필요"}</span>
+                    </div>
+                    <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
+                  </summary>
                   <div>
                     <p className="eyebrow">Render Image</p>
                     <h4>메인 상품 이미지 설정</h4>
@@ -2898,7 +3013,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </label>
                       <label>
                         <span>선택 이미지 수</span>
-                        <small>1개만 선택하면 같은 이미지가 반복되고, 최대 4개까지 배치됩니다.</small>
+                        <small>선택한 이미지 개수만 배치합니다. 1개면 1장, 2개면 2장, 최대 4장까지 들어갑니다.</small>
                       </label>
                       {[1, 2, 3].map((slotIndex) => (
                         <label key={`product-image-slot-${slotIndex}`}>
@@ -3067,8 +3182,16 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </details>
                     ) : null}
                   </div>
-                </div>
-                <div className="background-settings render-settings">
+                </details>
+                <details className="background-settings render-settings source-image-dropdown">
+                  <summary>
+                    <div>
+                      <p className="eyebrow">Render Image</p>
+                      <strong>메인 이미지 / 누끼 설정</strong>
+                      <span>{currentMainProductImage ? productImageModeLabel(productImageState.selectedImageMode) : "이미지 선택 필요"}</span>
+                    </div>
+                    <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
+                  </summary>
                   <div>
                     <p className="eyebrow">Render Background</p>
                     <h4>배경 이미지 설정</h4>
@@ -3192,8 +3315,16 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       value={bannerTextColors.bodyFontSize}
                     />
                   </label>
-                </div>
-                <div className="background-settings logo-settings">
+                </details>
+                <details className="background-settings logo-settings source-image-dropdown">
+                  <summary>
+                    <div>
+                      <p className="eyebrow">Brand Logo</p>
+                      <strong>로고 설정</strong>
+                      <span>{brandLogoPath ? "로고 선택됨" : "선택 안 함"}</span>
+                    </div>
+                    <b>{brandLogoPath ? "사용" : "미사용"}</b>
+                  </summary>
                   <div>
                     <p className="eyebrow">Brand Logo</p>
                     <h4>로고 설정</h4>
@@ -3209,6 +3340,40 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       type="file"
                     />
                   </label>
+                  <label>
+                    <span>기본 로고 선택</span>
+                    <select
+                      onChange={(event) => {
+                        const logo = presetBrandLogos.find((item) => item.imagePath === event.target.value);
+                        setBrandLogoPath(event.target.value);
+                        setBrandLogoStatus(event.target.value
+                          ? { kind: "success", message: `${logo?.label || "로고"}를 적용했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다.` }
+                          : { kind: "idle", message: "로고를 선택하지 않았습니다." });
+                      }}
+                      value={presetBrandLogos.some((item) => item.imagePath === brandLogoPath) ? brandLogoPath : ""}
+                    >
+                      <option value="">선택 안 함</option>
+                      {presetBrandLogos.map((logo) => (
+                        <option key={logo.id} value={logo.imagePath}>{logo.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="preset-logo-grid">
+                    {presetBrandLogos.map((logo) => (
+                      <button
+                        className={brandLogoPath === logo.imagePath ? "selected" : ""}
+                        key={logo.id}
+                        onClick={() => {
+                          setBrandLogoPath(logo.imagePath);
+                          setBrandLogoStatus({ kind: "success", message: `${logo.label}를 적용했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다.` });
+                        }}
+                        type="button"
+                      >
+                        <img alt={logo.label} src={logo.imagePath} />
+                        <span>{logo.label}</span>
+                      </button>
+                    ))}
+                  </div>
                   {brandLogoPath ? (
                     <div className="logo-preview-thumb">
                       <img alt="선택한 로고" src={brandLogoPath} />
@@ -3218,9 +3383,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <p className="strategy-empty">로고를 선택하면 템플릿 2 오른쪽 상단에 배치됩니다.</p>
                   )}
                   <div className={`mvp-status ${brandLogoStatus.kind}`}>{brandLogoStatus.message}</div>
-                </div>
+                </details>
                 <button disabled={!bannerCopy.headline || !selectedTemplate} onClick={renderBanner} type="button">배너만 다시 생성</button>
-                <div className="background-settings ai-disclosure-settings">
+                <details className="background-settings ai-disclosure-settings source-image-dropdown">
+                  <summary>
+                    <div>
+                      <p className="eyebrow">Caption</p>
+                      <strong>AI 고지 자막</strong>
+                      <span>{showAiDisclosure ? aiDisclosureText : "표시 안 함"}</span>
+                    </div>
+                    <b>{showAiDisclosure ? "표시" : "숨김"}</b>
+                  </summary>
                   <div>
                     <p className="eyebrow">Caption</p>
                     <h4>AI 고지 자막</h4>
@@ -3244,7 +3417,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     />
                   </label>
                   <p className="strategy-empty">선택한 경우에만 모든 템플릿의 가운데 하단에 아주 작게 들어갑니다.</p>
-                </div>
+                </details>
                 <div className={`mvp-status ${renderStatus.kind}`}>{renderStatus.message}</div>
                 {generatedBannerPath ? (
                   <>

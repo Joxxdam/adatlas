@@ -1,5 +1,19 @@
 [
   {
+    "id": "49088af5-acd5-40ad-92c5-e24c3ddd2832",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16391503170008.jpg",
+    "processedImagePath": "/processed-products/removebg-1782989311801-b4a52dae.png",
+    "createdAt": "2026-07-02T10:48:31.809Z"
+  },
+  {
+    "id": "26895198-3f81-4c20-a8ac-a2ac6072fe1d",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16391680325493.jpg",
+    "processedImagePath": "/processed-products/removebg-1782989161273-10d17044.png",
+    "createdAt": "2026-07-02T10:46:01.276Z"
+  },
+  {
     "id": "9f98bc5a-fe79-4209-87e5-9d708b9e7197",
     "provider": "removebg",
     "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16702536666458.jpg",

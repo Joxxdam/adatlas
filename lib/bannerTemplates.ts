@@ -97,12 +97,12 @@ export type BannerTemplateDefinition = {
 
 export const foodTemplateCopyLimits: Record<string, TemplateCopyLimits> = {
   "food-template-001": {
-    headline: { maxChars: 14, maxLines: 2, minFontSize: 58, maxFontSize: 112, overflowStrategy: "shrink-wrap-ellipsis" },
-    bodyCopy: { maxChars: 40, maxLines: 2, minFontSize: 28, maxFontSize: 42, overflowStrategy: "shrink-wrap-ellipsis" },
-    highlightCopy: { maxChars: 26, maxLines: 2, minFontSize: 28, maxFontSize: 38, overflowStrategy: "shrink-wrap-ellipsis" },
-    bottomBarCopy: { maxChars: 30, maxLines: 1, minFontSize: 24, maxFontSize: 36, overflowStrategy: "shrink-ellipsis" },
-    cta: { maxChars: 10, maxLines: 1, minFontSize: 22, maxFontSize: 32, overflowStrategy: "shrink-ellipsis" },
-    price: { maxChars: 12, maxLines: 1, minFontSize: 42, maxFontSize: 70, overflowStrategy: "shrink-ellipsis" },
+    headline: { maxChars: 28, maxLines: 2, minFontSize: 52, maxFontSize: 86, overflowStrategy: "shrink-wrap-ellipsis" },
+    bodyCopy: { maxChars: 22, maxLines: 1, minFontSize: 26, maxFontSize: 40, overflowStrategy: "shrink-ellipsis" },
+    highlightCopy: { maxChars: 10, maxLines: 1, minFontSize: 24, maxFontSize: 34, overflowStrategy: "shrink-ellipsis" },
+    bottomBarCopy: { maxChars: 12, maxLines: 1, minFontSize: 26, maxFontSize: 42, overflowStrategy: "shrink-ellipsis" },
+    cta: { maxChars: 8, maxLines: 1, minFontSize: 18, maxFontSize: 28, overflowStrategy: "shrink-ellipsis" },
+    price: { maxChars: 12, maxLines: 1, minFontSize: 52, maxFontSize: 86, overflowStrategy: "shrink-ellipsis" },
   },
   "food-template-002": {
     headline: { maxChars: 12, maxLines: 2, minFontSize: 52, maxFontSize: 92, overflowStrategy: "shrink-wrap-ellipsis" },
@@ -301,6 +301,52 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     copyLimits: foodTemplateCopyLimits["food-template-005"],
   },
 ];
+
+const splitMeatDealTemplate = foodCategoryTemplates.find((template) => template.id === "food-template-001");
+
+if (splitMeatDealTemplate) {
+  Object.assign(splitMeatDealTemplate, {
+    name: "분할고기특가형 템플릿",
+    category: "식품/선물",
+    description:
+      "여러 컷의 고기/상품 이미지를 분할 배치하고, 상단 헤드라인과 하단 상품명·기존가·배지·판매가를 강하게 보여주는 식품 특가형 템플릿입니다.",
+    recommendedHookTypes: ["가격정당화형", "가격충격형", "긴급/한정형", "선물명분형"],
+    recommendedAppealPoints: ["가성비", "대용량", "특가", "선물 명분"],
+    typography: {
+      headlineFontSize: 86,
+      bodyFontSize: 36,
+      highlightFontSize: 30,
+      bottomBarFontSize: 36,
+      ctaFontSize: 24,
+    },
+    style: {
+      ...splitMeatDealTemplate.style,
+      backgroundColor: "#111111",
+      headlineColor: "#ffffff",
+      bodyColor: "#ffffff",
+      highlightBackground: "#ff1f1f",
+      highlightTextColor: "#ffffff",
+      bottomBarColor: "#111111",
+      bottomBarTextColor: "#ffffff",
+      priceColor: "#fff238",
+      accentColor: "#fff238",
+      headlineFontPreset: "impact-korean-red",
+      headlineFontWeight: 900,
+      headlineLetterSpacing: -3,
+      headlineLineHeight: 0.98,
+    },
+    zones: {
+      headline: "top-impact-headline",
+      product: "middle-split-product-images-1-to-4",
+      body: "bottom-left-product-name",
+      bottom: "bottom-left-original-price",
+      highlight: "bottom-left-red-special-badge",
+      price: "bottom-right-sale-price",
+      cta: "optional-hidden",
+    },
+    copyLimits: foodTemplateCopyLimits["food-template-001"],
+  });
+}
 
 export const templatesById = new Map(foodCategoryTemplates.map((template) => [template.id, template]));
 export const foodCategoryTemplateIds = foodCategoryTemplates.map((template) => template.id);
