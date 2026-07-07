@@ -276,10 +276,13 @@ function isDetailContext(context: string) {
   return /(상세\s*정보|상세정보|상품\s*정보|상품정보|판매\s*공지|구매\s*후기|실제|조리컷|상세컷|제품\s*상세|product\s*detail|detail\s*view|goods\s*view)/i.test(context);
 }
 
-const maxGalleryImages = 30;
+const maxGalleryImages = 80;
+const maxDetailImages = 60;
 
 const blockedImageKeywordPattern = /(logo|icon|ico|favicon|sprite|btn|button|arrow|close|kakao|naver|facebook|instagram|youtube|share|sns|review-star|star|badge|footer|header|common|loading|blank|spacer|noimage|no-image|coupon|app|qr|cs|delivery-icon|profile|avatar|reward|insertreview|qna|alarm_customer|stockchild)/i;
 const recommendationKeywordPattern = /(recommend|related|bestitem|best-item|recent|today|newarrival|new-arrival|other|also|ranking|popular|viewed|오늘의\s*추천|추천\s*상품|최근\s*본\s*상품|관련\s*상품|베스트\s*상품|인기\s*상품)/i;
+const readableRecommendationPattern = /(오늘의\s*추천상품|오늘의\s*추천|추천\s*상품|관련\s*상품|최근\s*본\s*상품|함께\s*구매|많이\s*본\s*상품|베스트\s*상품|인기\s*상품|다른\s*고객|recommend(?:ed|ation)?|related\s*products?|recently\s*viewed|best\s*item|popular\s*item)/i;
+const textHeavyKeywordPattern = /(notice|guide|info|description|desc|delivery|return|exchange|refund|event|coupon|banner|benefit|membership|review|qna|faq|공지|안내|배송|교환|반품|환불|이벤트|쿠폰|혜택|리뷰|후기|문의)/i;
 const detailKeywordPattern = /(goods|detail|product|item|upload|editor|contents?|image|goodsimg|view|viewarea|detailview|userfiles|thumfull|thumbpc|상세|상품|제품|본문|설명|실제|조리|구성)/i;
 const cacheParamPattern = /^(w|width|h|height|q|quality|format|resize|cache|t|v|ver|_t|thumb)$/i;
 
@@ -331,6 +334,21 @@ function normalizeImageUrlForDedup(value: string) {
   } catch {
     return value.replace(/[?#].*$/, "").replace(/^http:/, "https:");
   }
+}
+
+function mergeImageUrls(values: string[]) {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+
+  for (const value of values) {
+    if (!value || !looksLikeUsableProductImage(value)) continue;
+    const key = normalizeImageUrlForDedup(value);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(value);
+  }
+
+  return merged;
 }
 
 function getTagAttribute(tag: string, name: string) {
@@ -419,9 +437,13 @@ function scoreEnhancedImageCandidate(params: {
     score -= 80;
     reasons.push("blocked ui/logo keyword");
   }
-  if (recommendationKeywordPattern.test(text)) {
+  if (recommendationKeywordPattern.test(text) || readableRecommendationPattern.test(text)) {
     score -= 42;
     reasons.push("recommendation/related context");
+  }
+  if (textHeavyKeywordPattern.test(text) && !/\/userfiles\/[^?]+\/(?:thumfull|thumbpc|thumb)\//i.test(params.url)) {
+    score -= 22;
+    reasons.push("text-heavy/info keyword");
   }
   if (/\/data\/goods\/[^?]+\/small\/thum2\//i.test(params.url)) {
     score -= params.source === "main" ? 18 : 58;
@@ -590,6 +612,7 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
     const nearbyText = textContextFromHtml(html.slice(Math.max(0, index - 900), Math.min(html.length, index + 900)));
     const context = `${[...tag.matchAll(contextPattern)].map((item) => item[1]).join(" ")} ${nearbyText}`;
     const inDetail = indexInRanges(index, detailRanges) || isProductDetailContext(context) || isDetailContext(context);
+    if (readableRecommendationPattern.test(context)) continue;
     if (!inDetail && (isProductRecommendationContext(context) || isRecommendationContext(context))) continue;
     if (productImageCandidateScore("", context) <= -4) continue;
 
@@ -714,7 +737,7 @@ function meatPhotoScore(imageUrl: string, metadata: { width: number; height: num
 async function filterProductPhotoImages(images: string[]) {
   const scored: { image: string; score: number; order: number }[] = [];
 
-  for (const [order, image] of images.slice(0, 40).entries()) {
+  for (const [order, image] of images.slice(0, 120).entries()) {
     const metadata = await remoteImageMetadata(image);
     if (!metadata) continue;
     const score = meatPhotoScore(image, metadata);
@@ -771,12 +794,6 @@ export async function POST(request: Request) {
     const fallbackMainImage = jsonLd.image || absoluteUrl(metaContent(html, "og:image") || metaContent(html, "twitter:image"), url.toString());
     const rawGalleryImages = collectGalleryImages(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
     const enhancedCandidates = extractEnhancedImageCandidates(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
-    const candidateUrls = enhancedCandidates.map((candidate) => candidate.url);
-    const galleryImages = candidateUrls.length ? candidateUrls.slice(0, maxGalleryImages) : rawGalleryImages.slice(0, maxGalleryImages);
-    const mainCandidate = enhancedCandidates.find((candidate) => candidate.type === "main") || enhancedCandidates[0];
-    const mainImage = mainCandidate?.url || galleryImages[0] || rawGalleryImages[0] || fallbackMainImage;
-    const createdAt = new Date().toISOString();
-    const detailImages = galleryImages.filter((image) => image && image !== mainImage).slice(0, 30);
     const productTextForType = [
       jsonLd.name,
       jsonLd.description,
@@ -785,6 +802,15 @@ export async function POST(request: Request) {
       metaContent(html, "og:description"),
     ].join(" ");
     const detected = classifyProductType(productTextForType);
+    const candidateUrls = enhancedCandidates.map((candidate) => candidate.url);
+    const mergedGalleryCandidates = mergeImageUrls([...candidateUrls, ...rawGalleryImages]);
+    const galleryImages = detected.type === "meat"
+      ? (await filterProductPhotoImages(mergedGalleryCandidates)).slice(0, maxGalleryImages)
+      : mergedGalleryCandidates.slice(0, maxGalleryImages);
+    const mainCandidate = enhancedCandidates.find((candidate) => candidate.type === "main") || enhancedCandidates[0];
+    const mainImage = mainCandidate?.url || galleryImages[0] || rawGalleryImages[0] || fallbackMainImage;
+    const createdAt = new Date().toISOString();
+    const detailImages = galleryImages.filter((image) => image && image !== mainImage).slice(0, maxDetailImages);
     const sourceImageCandidates: SourceImageCandidate[] = [];
     if (mainImage) {
       sourceImageCandidates.push({
@@ -825,7 +851,7 @@ export async function POST(request: Request) {
       landingUrl: url.toString(),
       heroImage: mainImage,
       detailImages,
-      imageCandidates: enhancedCandidates.slice(0, 12),
+      imageCandidates: enhancedCandidates.slice(0, 30),
       sourceImageCandidates,
     };
 
@@ -842,7 +868,7 @@ export async function POST(request: Request) {
       debug: {
         totalImageUrlsFound: enhancedCandidates.length || rawGalleryImages.length,
         imageCandidatesReturned: productInfo.imageCandidates?.length || 0,
-        rejectedImageCount: Math.max(0, rawGalleryImages.length - galleryImages.length),
+        rejectedImageCount: Math.max(0, mergedGalleryCandidates.length - galleryImages.length),
         mainImageSource: mainCandidate?.type === "main" ? "og" : mainCandidate ? "html" : fallbackMainImage ? "og" : "none",
         detectedProductType: detected.type,
       },

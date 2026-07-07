@@ -77,8 +77,9 @@ export async function POST(request: Request) {
       styledCutoutImagePath,
       provider,
       sourceKind: result.sourceKind,
+      fallbackMessage: result.fallbackMessage,
       debug: result.debug,
-      message: "Background removed successfully",
+      message: result.fallbackMessage || "Background removed successfully",
     });
   } catch (error) {
     const errorMessage = error instanceof Error

@@ -31,6 +31,8 @@ type RenderBody = {
   secondaryProductImagePath?: string;
   productImagePaths?: string[];
   productImageState?: ProductImageState;
+  productOriginalPrice?: string;
+  productOldPrice?: string;
   backgroundMode?: "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
   selectedBackgroundSource?: string;
   logoImagePath?: string;
@@ -417,6 +419,18 @@ function aiDisclosureSvg(disclosure: RenderBody["aiDisclosure"], fontFamily: str
   return `<text x="${width / 2}" y="${height - 28}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="18" font-weight="500" letter-spacing="0" fill="rgba(255,255,255,0.82)" stroke="rgba(0,0,0,0.36)" stroke-width="2" paint-order="stroke fill">${escapeXml(text)}</text>`;
 }
 
+function logoOverlaySvg(
+  logoImageDataUrl: string,
+  options: { x?: number; y?: number; size?: number; opacity?: number } = {},
+) {
+  if (!logoImageDataUrl) return "";
+  const x = options.x ?? 1012;
+  const y = options.y ?? 38;
+  const size = options.size ?? 136;
+  const opacity = options.opacity ?? 1;
+  return `<image href="${logoImageDataUrl}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet" opacity="${opacity}" />`;
+}
+
 function splitAccentSegments(text: string, accentPhrase: string | undefined, defaultFill: string, accentFill: string) {
   const explicitSegments: { text: string; fill: string }[] = [];
   const markerPattern = /\[\[([\s\S]+?)\]\]/g;
@@ -594,9 +608,10 @@ async function renderFoodImpactHero(body: RenderBody) {
   const headlineStyle = resolveHeadlineStyle(templateId, styleOverrides);
   const hasManualBodyFontSize = styleOverrides.bodyFontSize !== undefined;
   const bodyFontSize = Number(styleOverrides.bodyFontSize ?? type.bodyFontSize);
-  const selectedProductImagePath = body.productImageState
+  const selectedProductImagePath = body.productImageState?.selectedImageMode &&
+    body.productImageState.selectedImageMode !== "original"
     ? getSelectedProductImagePath(body.productImageState)
-    : body.productImagePath || "";
+    : body.productImagePath || body.productImageState?.originalImagePath || "";
   const productEffect = resolveProductEffect(
     selectedProductImagePath,
     body.productEffect,
@@ -613,6 +628,7 @@ async function renderFoodImpactHero(body: RenderBody) {
   const backgroundImageDataUrl = backgroundSource
     ? await imageToDataUrl(backgroundSource).catch(() => "")
     : "";
+  const logoImageDataUrl = body.logoImagePath ? await imageToDataUrl(body.logoImagePath).catch(() => "") : "";
   const hasBackgroundImage = Boolean(backgroundImageDataUrl && backgroundMode !== "none");
   const backgroundScale = Math.min(1.18, Math.max(1, Number(body.backgroundStyle?.scale ?? 1.08)));
   const backgroundBlur = backgroundBlurValue(body.backgroundStyle?.blurLevel);
@@ -823,6 +839,7 @@ async function renderFoodImpactHero(body: RenderBody) {
   <rect x="0" y="${bottomBarY}" width="${width}" height="${bottomBarHeight}" fill="${style.bottomBarColor}" />
   ${hasCta ? `<rect x="178" y="${ctaY}" width="844" height="${ctaHeight}" rx="${ctaHeight / 2}" fill="${style.ctaBarColor}" />` : ""}
   ${textSvg(textLines, `AdAtlasKR, ${style.fontFamily}`)}
+  ${logoOverlaySvg(logoImageDataUrl, { x: width - 168, y: 42, size: 126 })}
   ${aiDisclosureSvg(body.aiDisclosure, `AdAtlasKR, ${style.fontFamily}`, width, height)}
 </svg>`;
 
@@ -847,9 +864,10 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const styleRecord = style as Record<string, unknown>;
   const type = { ...foodImpactHeroTemplate.typography, ...template.typography };
   const headlineStyle = resolveHeadlineStyle(templateId, style as RenderStyle);
-  const selectedProductImagePath = body.productImageState
+  const selectedProductImagePath = body.productImageState?.selectedImageMode &&
+    body.productImageState.selectedImageMode !== "original"
     ? getSelectedProductImagePath(body.productImageState)
-    : body.productImagePath || "";
+    : body.productImagePath || body.productImageState?.originalImagePath || "";
   const originalProductImagePath = body.productImageState?.originalImagePath || body.productImagePath || selectedProductImagePath;
   const isCutoutProductSelected = Boolean(
     body.productImageState &&
@@ -891,6 +909,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const headlineFontFamily = String(style.headlineFontFamily || headlineStyle.fontFamily).replace("AdAtlasSelectedFont", "AdAtlasHeadlineFont");
   const hasCta = Boolean(copy.cta?.trim());
   const hasPrice = Boolean(copy.price?.trim());
+  const globalLogoOverlay = templateId === "food-template-001" || templateId === "food-template-002"
+    ? ""
+    : logoOverlaySvg(logoImageDataUrl, { x: 1012, y: 38, size: 136 });
 
   const h = fitLines(copy.headline || "", { maxWidth: 1040, maxLines: 2, initialSize: Number(styleOverrides.headlineFontSize ?? type.headlineFontSize), minSize: 22, letterSpacing: headlineStyle.letterSpacing });
   const b = fitLines(copy.bodyCopy || "", { maxWidth: 980, maxLines: 3, initialSize: Number(styleOverrides.bodyFontSize ?? type.bodyFontSize), minSize: 18, allowBelowMin: false });
@@ -924,6 +945,8 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     backgroundLayer = `<image href="${backgroundImageDataUrl}" x="-60" y="-60" width="1320" height="1320" preserveAspectRatio="xMidYMid slice" filter="url(#backgroundBlur)" opacity="0.95" />
   <rect width="${width}" height="${height}" fill="#000000" opacity="${dim}" />`;
   }
+  const selectedBackgroundLayer = backgroundLayer;
+  const hasSelectedBackgroundLayer = Boolean(backgroundImageDataUrl);
 
   if (templateId === "food-template-001") {
     const selectedImages = templateProductImages.length ? templateProductImages.slice(0, 4) : [productImageDataUrl].filter(Boolean);
@@ -955,15 +978,15 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       boxHeight: 54,
       slot: "highlightCopy",
     });
-    const oldPriceText = (copy.bottomBarCopy || "").trim();
-    const oldPrice = fitLines(oldPriceText || "148,000원", {
+    const oldPriceText = (body.productOriginalPrice || body.productOldPrice || "").trim();
+    const oldPrice = oldPriceText ? fitLines(oldPriceText, {
       maxWidth: 230,
       maxLines: 1,
       initialSize: 31,
       minSize: 24,
       boxHeight: 54,
       slot: "bottomBarCopy",
-    });
+    }) : null;
     const salePrice = fitLines(copy.price || "", {
       maxWidth: 350,
       maxLines: 1,
@@ -983,7 +1006,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     }).join("");
 
     const productNameBoxWidth = Math.min(560, Math.max(330, estimateWidth(productName.lines[0] || "", productName.fontSize) + 34));
-    const oldPriceWidth = oldPrice.lines[0] ? estimateWidth(oldPrice.lines[0], oldPrice.fontSize) : 0;
+    const oldPriceWidth = oldPrice?.lines[0] ? estimateWidth(oldPrice.lines[0], oldPrice.fontSize) : 0;
 
     shapes += `<rect width="1200" height="1200" fill="url(#foodTemplate1Shade)" />
       ${frames.length === 2 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
@@ -1019,7 +1042,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       fill: "#ffffff",
       weight: 900,
     }).map((line) => ({ ...line, anchor: "start" as const, fontFamily })));
-    textLines.push({ text: "기존가", x: 18, y: 878, fontSize: 24, fill: "#ffffff", weight: 700, anchor: "start", fontFamily });
+    if (oldPrice?.lines[0]) {
+          textLines.push({ text: "기존가", x: 18, y: 878, fontSize: 24, fill: "#ffffff", weight: 700, anchor: "start", fontFamily });
+    }
     textLines.push(...centeredLineText(badge.lines, {
       x: 82,
       centerY: 915,
@@ -1028,17 +1053,17 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       fill: "#ffffff",
       weight: 900,
     }));
-    textLines.push({
-      text: oldPrice.lines[0] || "",
-      x: 112,
-      y: 878,
-      fontSize: oldPrice.fontSize,
-      fill: "rgba(255,255,255,0.86)",
-      weight: 700,
-      anchor: "start",
-      fontFamily,
-    });
-    if (oldPrice.lines[0]) {
+    if (oldPrice?.lines[0]) {
+      textLines.push({
+        text: oldPrice.lines[0],
+        x: 112,
+        y: 878,
+        fontSize: oldPrice.fontSize,
+        fill: "rgba(255,255,255,0.86)",
+        weight: 700,
+        anchor: "start",
+        fontFamily,
+      });
       shapes += `<line x1="110" y1="868" x2="${Math.min(390, 110 + oldPriceWidth)}" y2="868" stroke="rgba(255,255,255,0.9)" stroke-width="4" />`;
     }
   } else if (templateId === "food-template-002") {
@@ -1178,7 +1203,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     const rightTitle = h.lines[1] || copy.highlightCopy || "Social pick";
     const leftBody = fitLines(copy.bodyCopy || "", { maxWidth: 380, maxLines: 7, initialSize: Math.min(30, b.fontSize), minSize: 16 });
     const rightBody = fitLines(copy.highlightCopy || "", { maxWidth: 380, maxLines: 4, initialSize: Math.min(34, hi.fontSize), minSize: 18 });
-    shapes += `<rect width="1200" height="1200" fill="#ffffff" />
+    shapes += `<rect width="1200" height="1200" fill="#ffffff" opacity="${hasSelectedBackgroundLayer ? "0.88" : "1"}" />
       <line x1="600" y1="112" x2="600" y2="1088" stroke="#111111" stroke-width="4" />
       ${image(150, 214, 300, 280)}
       ${image(750, 214, 300, 280)}
@@ -1189,20 +1214,45 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     textLines.push(...centeredLineText(rightBody.lines, { x: 900, centerY: 646, fontSize: rightBody.fontSize, lineHeight: 1.28, fill: "#111111", weight: Math.max(bodyFontWeight, 800) }));
     textLines.push(...centeredLineText(bot.lines, { x: 600, centerY: 1116, fontSize: 34, lineHeight: 1.1, fill: "#111111", weight: 800 }));
   } else if (templateId === "food-template-004") {
-    backgroundLayer = productImageDataUrl
+    backgroundLayer = hasSelectedBackgroundLayer
+      ? selectedBackgroundLayer
+      : productImageDataUrl
       ? `<image href="${productImageDataUrl}" x="0" y="0" width="1200" height="780" preserveAspectRatio="xMidYMid slice" />
         <rect width="1200" height="780" fill="#000000" opacity="0.18" />`
       : `<rect width="1200" height="780" fill="#dfc8a5" />`;
+    const centerProductImage = productImageDataUrl
+      ? `<rect x="504" y="418" width="330" height="250" rx="20" fill="#ffffff" opacity="0.92" />
+      <rect x="504" y="418" width="330" height="250" rx="20" fill="none" stroke="#ffffff" stroke-width="8" opacity="0.92" />
+      ${productImageSvg(productImageDataUrl, 520, 434, 298, 218, "cover", productEffect)}
+      <rect x="504" y="418" width="330" height="250" rx="20" fill="none" stroke="rgba(17,24,39,0.34)" stroke-width="3" />`
+      : "";
+    const priceBadge = fitLines(hasPrice ? `${price.lines[0]} 인기` : "월 평균 판매량 1000개", {
+      maxWidth: 300,
+      maxLines: 1,
+      initialSize: 36,
+      minSize: 24,
+      boxHeight: 64,
+      slot: "price",
+    });
+    const priceBadgeText = priceBadge.lines[0] || "";
+    const priceBadgeFontSize = priceBadge.fontSize;
+    const priceBadgeWidth = Math.min(360, Math.max(190, estimateWidth(priceBadgeText, priceBadgeFontSize) + 54));
+    const priceBadgeHeight = Math.max(62, priceBadgeFontSize + 28);
+    const priceBadgeX = 1130 - priceBadgeWidth;
+    const priceBadgeY = 758;
+    const priceBadgeCenterX = priceBadgeX + priceBadgeWidth / 2;
+    const priceBadgeCenterY = priceBadgeY + priceBadgeHeight / 2;
     shapes += `<rect x="96" y="80" width="440" height="72" rx="36" fill="#30240d" opacity="0.95" />
       <ellipse cx="876" cy="314" rx="210" ry="82" fill="#ffffff" stroke="#111111" stroke-width="3" />
       <ellipse cx="272" cy="612" rx="220" ry="86" fill="#ffffff" stroke="#111111" stroke-width="3" />
+      ${centerProductImage}
       <rect x="0" y="780" width="1200" height="420" fill="#241a0d" />
-      <rect x="736" y="730" width="394" height="118" rx="8" fill="#ff3939" stroke="#ffffff" stroke-width="4" />`;
+      <rect x="${priceBadgeX}" y="${priceBadgeY}" width="${priceBadgeWidth}" height="${priceBadgeHeight}" rx="${priceBadgeHeight / 2}" fill="#ff3939" stroke="#ffffff" stroke-width="4" />`;
     textLines.push(...centeredLineText(hi.lines, { x: 316, centerY: 116, fontSize: Math.min(hi.fontSize, 30), lineHeight: 1, fill: "#ffffff", weight: 800 }));
     textLines.push(...lineText(h.lines, { x: 96, startY: 248, fontSize: h.fontSize, lineHeight: 1.02, fill: "#ffffff", weight: 900, letterSpacing: -2 }).map((line) => ({ ...line, anchor: "start" as const, fontFamily: headlineFontFamily, stroke: true, strokeColor: "rgba(0,0,0,0.55)", strokeWidth: 3 })));
     textLines.push(...centeredLineText(b.lines.slice(0, 2), { x: 876, centerY: 314, fontSize: Math.min(b.fontSize, 28), lineHeight: 1.16, fill: "#111111", weight: 700 }));
     textLines.push(...centeredLineText(bot.lines, { x: 272, centerY: 612, fontSize: Math.min(bot.fontSize, 30), lineHeight: 1.12, fill: "#111111", weight: 800 }));
-    textLines.push({ text: hasPrice ? `${price.lines[0]} 인기` : "월 평균 판매량 1000개!", x: 933, y: 790, fontSize: 42, fill: "#ffffff", weight: 900 });
+    textLines.push({ text: priceBadgeText, x: priceBadgeCenterX, y: priceBadgeCenterY, fontSize: priceBadgeFontSize, fill: "#ffffff", weight: 900, dominantBaseline: "middle" });
     textLines.push({ text: "평점 4.95  ★★★★★", x: 84, y: 854, fontSize: 35, fill: "#ffe762", weight: 900, anchor: "start" });
     textLines.push({ text: `● ${copy.bodyCopy || "한 번 먹으면 계속 찾는 구성"}`.slice(0, 44), x: 84, y: 926, fontSize: 27, fill: "#ffffff", weight: 700, anchor: "start" });
     textLines.push({ text: `● ${copy.highlightCopy || "선물용으로도 반응 좋은 구성"}`.slice(0, 44), x: 84, y: 990, fontSize: 27, fill: "#ffffff", weight: 700, anchor: "start" });
@@ -1210,7 +1260,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   } else if (templateId === "food-template-005") {
     shapes += `<rect x="0" y="0" width="1200" height="1200" fill="#050505" opacity="0.18" />
       <rect x="66" y="66" width="1068" height="1068" rx="0" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2" />
-      ${image(118, 650, 964, 330, "cover")}
+      ${image(142, 660, 284, 300, "cover")}
+      ${image(458, 660, 284, 300, "cover")}
+      ${image(774, 660, 284, 300, "cover")}
       ${hasPrice ? `<text x="600" y="1080" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${Math.max(86, price.fontSize)}" font-weight="900" fill="${style.priceColor}" stroke="#ffffff" stroke-width="12" paint-order="stroke fill">${escapeXml(price.lines[0] || "")}</text>` : ""}
       <text x="600" y="956" text-anchor="middle" font-family="${escapeXml(fontFamily)}" font-size="28" font-weight="800" fill="#ffffff">AI 활용 콘텐츠이며, 가상 인물을 포함할 수 있습니다</text>`;
     textLines.push(...centeredLineText([h.lines[0] || ""], { x: 600, centerY: 226, fontSize: Math.min(h.fontSize, 82), lineHeight: 1, fill: "#ff1f1f", weight: 900, letterSpacing: -3 }).map((line) => ({ ...line, fontFamily: headlineFontFamily, stroke: true, strokeColor: "#111111", strokeWidth: 5 })));
@@ -1228,7 +1280,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       ${imageFromDataUrl(selectedImages[1] || selectedImages[0] || productImageDataUrl, 600, 250, 600, 330, "cover")}
       ${imageFromDataUrl(selectedImages[2] || selectedImages[0] || productImageDataUrl, 0, 580, 600, 300, "cover")}
       ${selectedImages[3] ? imageFromDataUrl(selectedImages[3], 600, 580, 600, 300, "cover") : ""}`;
-    backgroundLayer = `<rect width="600" height="1200" fill="#24170f" />
+    backgroundLayer = hasSelectedBackgroundLayer
+      ? selectedBackgroundLayer
+      : `<rect width="600" height="1200" fill="#24170f" />
       <rect x="600" y="0" width="600" height="1200" fill="#16110e" />`;
     shapes += `${productGrid}
       <rect width="1200" height="1200" fill="#000000" opacity="0.22" />
@@ -1273,6 +1327,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   ${backgroundLayer}
   ${shapes}
   ${textSvg(textLines, fontFamily)}
+  ${globalLogoOverlay}
   ${aiDisclosureSvg(body.aiDisclosure, fontFamily, width, height)}
 </svg>`;
 

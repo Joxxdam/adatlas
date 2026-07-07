@@ -67,6 +67,7 @@ type BannerTextColorState = {
 };
 
 type MainImageSourceMode = "detail" | "upload" | "gpt";
+type ImageGenerationProvider = "openai" | "gemini";
 
 const gptImageFailureReasonOptions: { value: GptImageFailureReason; label: string }[] = [
   { value: "original-subject-changed", label: "원본 상품이 바뀜" },
@@ -256,6 +257,18 @@ const presetBrandLogos = [
     id: "gukdae-hanwoo",
     label: "국대한우 로고",
     imagePath: "/brand-logos/gukdae-hanwoo-logo.png",
+  },
+];
+
+const fixedSourceReferenceImages: SourceImageCandidate[] = [
+  {
+    id: "fixed-seolroku-logo-reference",
+    type: "detail",
+    imagePath: "/source-reference-images/seolroku-logo-reference.jpg",
+    originalUrl: "/source-reference-images/seolroku-logo-reference.jpg",
+    label: "설록우 로고 참고 이미지",
+    selected: false,
+    createdAt: "preset",
   },
 ];
 
@@ -507,6 +520,8 @@ const emptyProductInfo: ProductInfoForPrompt = {
   productName: "",
   category: "",
   price: "",
+  originalPrice: "",
+  oldPrice: "",
   discountInfo: "",
   mainBenefit: "",
   targetCustomer: "",
@@ -716,6 +731,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [gptImageStatus, setGptImageStatus] = useState<Status>({ kind: "idle", message: "이미지 생성 버튼을 누르면 상품 정보 기반 이미지를 생성합니다." });
   const [gptTextAdStatus, setGptTextAdStatus] = useState<Status>({ kind: "idle", message: "글씨 포함 광고 이미지를 따로 생성할 수 있습니다." });
   const [gptReferenceImageStatus, setGptReferenceImageStatus] = useState<Status>({ kind: "idle", message: "참고 이미지는 분위기/구도 참고용으로만 사용됩니다." });
+  const [imageGenerationProvider, setImageGenerationProvider] = useState<ImageGenerationProvider>("openai");
   const [gptImageSourceMode, setGptImageSourceMode] = useState<GptImageSourceMode>("image-edit");
   const [gptPreservationMode, setGptPreservationMode] = useState<GptImagePreservationMode>("preserve-product");
   const [gptPromptTemplateMode, setGptPromptTemplateMode] = useState<GptPromptTemplateMode>("visual-only");
@@ -732,6 +748,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     kind: "idle",
     message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
   });
+  const [hoveredDetailImage, setHoveredDetailImage] = useState<{ src: string; label: string; x: number; y: number } | null>(null);
   const [selectedHeadlineFontId, setSelectedHeadlineFontId] = useState(systemFontOptions[0].id);
   const [selectedBodyFontId, setSelectedBodyFontId] = useState("noto-sans-kr");
   const [selectedTemplateId, setSelectedTemplateId] = useState("food-template-001");
@@ -782,10 +799,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       ? sourceImageSelection.candidates
       : productInfo.sourceImageCandidates ?? [];
 
-    if (existing.length) return existing;
+    if (existing.length) {
+      const seen = new Set(existing.map((candidate) => candidate.imagePath));
+      return [
+        ...existing,
+        ...fixedSourceReferenceImages.filter((candidate) => !seen.has(candidate.imagePath)),
+      ];
+    }
 
     const createdAt = new Date().toISOString();
-    return backgroundImageOptions.map((option, index): SourceImageCandidate => ({
+    return [
+      ...backgroundImageOptions.map((option, index): SourceImageCandidate => ({
       id: index === 0 ? "hero-001" : `detail-${String(index).padStart(3, "0")}`,
       type: index === 0 ? "hero" : "detail",
       imagePath: option.value,
@@ -793,7 +817,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       label: option.label,
       selected: index === 0,
       createdAt,
-    }));
+      })),
+      ...fixedSourceReferenceImages,
+    ];
   }, [backgroundImageOptions, productInfo.sourceImageCandidates, sourceImageSelection.candidates]);
   const selectedSourceImage =
     sourceImageCandidatesForDisplay.find((candidate) => candidate.id === sourceImageSelection.selectedSourceImageId) ||
@@ -809,7 +835,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     "";
   const currentBackgroundSource =
     productInfo.backgroundMode === "auto-detail-blur-dark"
-      ? productInfo.extractedMainImage || productInfo.productImagePath || productInfo.selectedBackgroundSource || ""
+      ? productInfo.productImagePath || productInfo.selectedBackgroundSource || productInfo.extractedMainImage || ""
       : productInfo.backgroundMode === "selected-detail-blur-dark"
         ? productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value || ""
         : "";
@@ -819,7 +845,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       : mainImageSourceMode === "gpt"
         ? gptMainImagePath
         : productInfo.productImagePath;
-  const currentMainProductImage = getSelectedProductImagePath(productImageState);
+  const currentMainProductImage = productImageState.selectedImageMode === "original"
+    ? originalMainProductImage
+    : getSelectedProductImagePath(productImageState) || originalMainProductImage;
   const currentSecondaryProductImage =
     productInfo.secondaryProductImagePath || backgroundImageOptions.find((option) => option.value !== originalMainProductImage)?.value || currentMainProductImage;
   const currentProductImagePaths = useMemo(() => {
@@ -1169,6 +1197,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       productName: replaceExtractedFields ? extracted.productName || "" : current.productName || extracted.productName || "",
       category: replaceExtractedFields ? extractedCategory : current.category || extractedCategory,
       price: replaceExtractedFields ? extracted.price || "" : current.price || extracted.price || "",
+      originalPrice: replaceExtractedFields ? extracted.originalPrice || extracted.oldPrice || "" : current.originalPrice || current.oldPrice || extracted.originalPrice || extracted.oldPrice || "",
+      oldPrice: replaceExtractedFields ? extracted.oldPrice || extracted.originalPrice || "" : current.oldPrice || current.originalPrice || extracted.oldPrice || extracted.originalPrice || "",
       discountInfo: replaceExtractedFields ? extracted.discountInfo || "" : extracted.discountInfo || current.discountInfo || "",
       mainBenefit: replaceExtractedFields ? extracted.description || "" : current.mainBenefit || extracted.description || "",
       landingUrl: replaceExtractedFields ? extracted.landingUrl || current.landingUrl || "" : current.landingUrl || extracted.landingUrl || "",
@@ -1502,6 +1532,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          imageProvider: imageGenerationProvider,
           imageGenerationMode,
           imageSourceMode: gptImageSourceMode,
           preservationMode: gptPreservationMode,
@@ -1547,6 +1578,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         : [{
           id: `legacy-${Date.now()}`,
           imagePath: result.imagePath,
+          imageProvider: result.imageProvider || imageGenerationProvider,
           imageGenerationMode: result.imageGenerationMode || imageGenerationMode,
           imageSourceMode: result.imageSourceMode || gptImageSourceMode,
           preservationMode: result.preservationMode || gptPreservationMode,
@@ -1741,6 +1773,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          imageProvider: candidate.imageProvider || imageGenerationProvider,
           imageGenerationMode: candidate.imageGenerationMode || "visual-only",
           imageSourceMode: "image-edit",
           preservationMode: "preserve-product",
@@ -1789,6 +1822,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         : [{
           id: `revision-${Date.now()}`,
           imagePath: result.imagePath,
+          imageProvider: result.imageProvider || candidate.imageProvider || imageGenerationProvider,
           imageGenerationMode: candidate.imageGenerationMode,
           imageSourceMode: "image-edit",
           preservationMode: "preserve-product",
@@ -1845,6 +1879,16 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         productImagePaths: compact,
       };
     });
+    if (index === 0) {
+      setProductImageState((current) => ({
+        ...current,
+        originalImagePath: value,
+        selectedImageMode: "original",
+        cutoutApplied: false,
+        cutoutImagePath: undefined,
+        styledCutoutImagePath: undefined,
+      }));
+    }
   }
 
   function selectProductImageMode(selectedImageMode: ProductImageMode) {
@@ -1898,7 +1942,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         cutoutApplied: true,
         effectPreset: current.effectPreset || "outline-glow-shadow",
       }));
-      setProductImageProcessStatus({ kind: "success", message: "누끼본을 생성했습니다. 원본/누끼본 중 원하는 이미지를 선택할 수 있습니다." });
+      setProductImageProcessStatus({
+        kind: "success",
+        message: result.message || result.fallbackMessage || "Cutout image created. You can choose the original or cutout image.",
+      });
     } catch (error) {
       setProductImageProcessStatus({
         kind: "error",
@@ -1991,6 +2038,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           productImagePaths: currentProductImagePaths,
           productImageState,
           productEffect: productEffectForRender,
+          productOriginalPrice: productInfo.originalPrice || productInfo.oldPrice || "",
           logoImagePath: brandLogoPath,
           aiDisclosure: {
             enabled: showAiDisclosure,
@@ -2619,6 +2667,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </div>
                       <div className="gpt-compact-controls">
                         <label>
+                          <span>이미지 생성 엔진</span>
+                          <select
+                            onChange={(event) => setImageGenerationProvider(event.target.value as ImageGenerationProvider)}
+                            value={imageGenerationProvider}
+                          >
+                            <option value="openai">GPT 이미지 생성</option>
+                            <option value="gemini">나노바나나</option>
+                          </select>
+                          <small>{imageGenerationProvider === "gemini" ? "Gemini API Key로 나노바나나 이미지 생성을 사용합니다." : "OpenAI 이미지 생성 API를 사용합니다."}</small>
+                        </label>
+                        <label>
                           <span>생성 방식</span>
                           <select
                             onChange={(event) => setGptImageSourceMode(event.target.value as GptImageSourceMode)}
@@ -3041,6 +3100,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                           >
                             <img alt={option.label} src={option.value} />
                             <span>{option.label}</span>
+                            <img alt={`${option.label} 크게 보기`} className="detail-image-hover-preview" src={option.value} />
                           </button>
                         ))}
                       </div>
@@ -3231,6 +3291,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                         >
                           <img alt={option.label} src={option.value} />
                           <span>{option.label}</span>
+                          <img alt={`${option.label} 크게 보기`} className="detail-image-hover-preview" src={option.value} />
                         </button>
                       ))}
                     </div>

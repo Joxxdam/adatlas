@@ -59,6 +59,8 @@ export type ProductInfoForPrompt = {
   productName: string;
   category: string;
   price: string;
+  originalPrice?: string;
+  oldPrice?: string;
   discountInfo: string;
   mainBenefit: string;
   targetCustomer: string;
@@ -216,6 +218,7 @@ export type GptImageFeedbackState = {
 export type GptImageCandidate = {
   id: string;
   imagePath: string;
+  imageProvider?: ImageGenerationProvider;
   sourceImagePath?: string;
   promptUsed: string;
   autoPrompt?: string;
@@ -237,6 +240,10 @@ export type GptImageCandidate = {
   createdAt: string;
   evaluation?: GptImageEvaluation;
 };
+
+export type ImageGenerationProvider =
+  | "openai"
+  | "gemini";
 
 export type GptImageSourceMode =
   | "text-to-image"

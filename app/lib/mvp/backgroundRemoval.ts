@@ -127,6 +127,39 @@ function truncateForLog(value: string, maxLength = 1600) {
   return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
 }
 
+function isUnknownForegroundError(status: number, responseText: string) {
+  if (status !== 400) return false;
+  return /unknown_foreground|foreground|identify.*foreground|could not identify|can't identify|cannot identify|not find.*foreground|find.*foreground/i.test(responseText);
+}
+
+async function createLocalFallbackCutout(
+  imagePath: string,
+  provider: BackgroundRemovalProvider,
+  debug?: RemoveBackgroundResult["debug"],
+): Promise<RemoveBackgroundResult | null> {
+  try {
+    const sourceBuffer = await imageSourceToBuffer(imagePath);
+    const processedBuffer = await removeBackgroundToPng(sourceBuffer);
+    const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
+    return {
+      success: true,
+      originalImagePath: imagePath,
+      processedImagePath,
+      provider,
+      sourceKind: "mock",
+      fallbackMessage:
+        "remove.bg가 상품 전경을 찾지 못해 로컬 간이 누끼로 처리했습니다. 결과가 어색하면 상품만 크게 나온 다른 이미지를 선택해주세요.",
+      debug: {
+        ...debug,
+        foregroundType: "auto",
+      },
+    };
+  } catch (error) {
+    console.error("[remove-background] local fallback cutout failed", error);
+    return null;
+  }
+}
+
 async function validateImagePath(imagePath: string) {
   if (/^(data|blob|file):/i.test(imagePath)) {
     return "data:, blob:, and file: image URLs are not allowed for background removal.";
@@ -369,7 +402,7 @@ export async function removeProductBackground(
     if (!response.ok) {
       const contentType = response.headers.get("content-type") || "";
       const errorText = truncateForLog(await response.text().catch(() => ""));
-      if (response.status === 400 && /unknown_foreground|Could not identify foreground/i.test(errorText)) {
+      if (isUnknownForegroundError(response.status, errorText)) {
         const retry = await buildRemoveBgFormData(imagePath, "auto");
         const retryResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
           method: "POST",
@@ -402,10 +435,21 @@ export async function removeProductBackground(
           debug: retry.debug,
         });
 
+        if (isUnknownForegroundError(retryResponse.status, retryErrorText)) {
+          const localFallback = await createLocalFallbackCutout(imagePath, provider, {
+            ...retry.debug,
+            removeBgStatus: retryResponse.status,
+            removeBgStatusText: retryResponse.statusText,
+            removeBgResponseText: process.env.NODE_ENV === "development" ? retryErrorText : undefined,
+          });
+
+          if (localFallback) return localFallback;
+        }
+
         return failureResult(
           { ...input, imagePath, provider },
           `remove.bg API failed: HTTP ${retryResponse.status}`,
-          "remove.bg가 이 이미지에서 상품 전경을 찾지 못했습니다. 배경과 상품 경계가 더 뚜렷한 상품 사진을 선택하거나 다른 상세 이미지를 선택해 주세요.",
+          "remove.bg could not identify a clear product foreground in this image. Please choose another image with a larger product and clearer background separation, or keep using the original image.",
           {
             detail: process.env.NODE_ENV === "development"
               ? retryErrorText || retryResponse.statusText
@@ -432,7 +476,7 @@ export async function removeProductBackground(
       return failureResult(
         { ...input, imagePath, provider },
         `remove.bg API failed: HTTP ${response.status}`,
-        `remove.bg API 호출 실패: HTTP ${response.status}. 이미지 파일 형식 또는 원격 이미지 접근 상태를 확인해 주세요.`,
+        `remove.bg API request failed: HTTP ${response.status}. Please check the image format or remote image access.`,
         {
           detail: process.env.NODE_ENV === "development"
             ? errorText || response.statusText

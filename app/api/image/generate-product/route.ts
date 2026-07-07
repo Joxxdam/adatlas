@@ -7,6 +7,7 @@ import { appendGptImageCandidates } from "../../../lib/mvp/gptImageFeedbackStore
 import { buildImagePreservationLockPrompt } from "../../../lib/mvp/gptImagePromptLocks";
 import { buildImageGenerationPrompt } from "../../../lib/mvp/imagePromptBuilder";
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
+import { editGeminiImageFromSource, generateGeminiImageFromText } from "../../../lib/mvp/geminiImageClient";
 import { editImageFromSource, generateImageFromText } from "../../../lib/mvp/openaiImageClient";
 import type {
   AdImageLabel,
@@ -18,6 +19,7 @@ import type {
   GptImageSourceMode,
   GptOutputCanvasPreset,
   GptPromptTemplateMode,
+  ImageGenerationProvider,
   ProductImageState,
   ProductInfoForPrompt,
 } from "../../../lib/mvp/types";
@@ -62,6 +64,7 @@ type Body = {
   parentCandidateId?: string;
   attempt?: number;
   numCandidates?: number;
+  imageProvider?: ImageGenerationProvider;
 };
 
 const outputDir = path.join(process.cwd(), "public", "generated-product-images");
@@ -115,6 +118,10 @@ function outputPrefix(imageSourceMode: GptImageSourceMode, imageGenerationMode: 
   return imageGenerationMode === "text-in-image" ? "gpt-text-ad" : "gpt-text-visual";
 }
 
+function normalizeImageProvider(value?: string): ImageGenerationProvider {
+  return value === "gemini" ? "gemini" : "openai";
+}
+
 function normalizeCandidateCount(value?: number) {
   const count = Number.isFinite(value) ? Number(value) : 1;
   return Math.max(1, Math.min(4, Math.floor(count)));
@@ -129,6 +136,7 @@ function normalizePromptTemplateMode(value?: string, imageGenerationMode?: GptIm
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Body;
+    const imageProvider = normalizeImageProvider(body.imageProvider);
     const promptTemplateMode = normalizePromptTemplateMode(body.promptTemplateMode, normalizeMode(body.imageGenerationMode));
     const canvasPreset: GptOutputCanvasPreset = "sns-square-1200";
     const imageGenerationMode = normalizeMode(
@@ -160,10 +168,16 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-
-    if (!process.env.OPENAI_API_KEY) {
+    if (imageProvider === "openai" && !process.env.OPENAI_API_KEY) {
       return NextResponse.json(
-        { success: false, error: "OpenAI API 키를 확인해 주세요." },
+        { success: false, error: "OpenAI API 키를 확인해주세요." },
+        { status: 500 },
+      );
+    }
+
+    if (imageProvider === "gemini" && !(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY)) {
+      return NextResponse.json(
+        { success: false, error: "GEMINI_API_KEY를 확인해주세요." },
         { status: 500 },
       );
     }
@@ -223,23 +237,33 @@ export async function POST(request: Request) {
     const promptUsed = [basePrompt, additionalDirection, lockPrompt, revisionDirection].filter(Boolean).join("\n\n");
 
     await fs.mkdir(outputDir, { recursive: true });
-    const prefix = outputPrefix(imageSourceMode, imageGenerationMode);
+    const prefix = `${imageProvider}-${outputPrefix(imageSourceMode, imageGenerationMode)}`;
     const numCandidates = normalizeCandidateCount(body.numCandidates);
     const createdAt = new Date().toISOString();
     const candidates = await Promise.all(Array.from({ length: numCandidates }, async (_, index): Promise<GptImageCandidate> => {
-      const { imageBuffer, promptUsed: apiPromptUsed } = imageSourceMode === "image-edit"
-        ? await editImageFromSource({
-          sourceImagePath: fallbackSourceImagePath,
-          referenceImagePaths: body.referenceImagePaths,
-          prompt: promptUsed,
-        })
-        : await generateImageFromText({ prompt: promptUsed });
+      const imageResult = imageProvider === "gemini"
+        ? imageSourceMode === "image-edit"
+          ? await editGeminiImageFromSource({
+            sourceImagePath: fallbackSourceImagePath,
+            referenceImagePaths: body.referenceImagePaths,
+            prompt: promptUsed,
+          })
+          : await generateGeminiImageFromText({ prompt: promptUsed })
+        : imageSourceMode === "image-edit"
+          ? await editImageFromSource({
+            sourceImagePath: fallbackSourceImagePath,
+            referenceImagePaths: body.referenceImagePaths,
+            prompt: promptUsed,
+          })
+          : await generateImageFromText({ prompt: promptUsed });
+      const { imageBuffer, promptUsed: apiPromptUsed } = imageResult;
       const fileName = `${prefix}-${Date.now()}-${index + 1}-${crypto.randomBytes(4).toString("hex")}.png`;
       const filePath = path.join(outputDir, fileName);
       await fs.writeFile(filePath, imageBuffer);
       return {
         id: crypto.randomUUID(),
         imagePath: `/generated-product-images/${fileName}`,
+        imageProvider,
         sourceImagePath: fallbackSourceImagePath,
         imageGenerationMode,
         imageSourceMode,
@@ -276,6 +300,7 @@ export async function POST(request: Request) {
       imagePath: firstCandidate.imagePath,
       images: candidates,
       candidates,
+      imageProvider,
       imageGenerationMode,
       imageSourceMode,
       preservationMode,
@@ -293,7 +318,9 @@ export async function POST(request: Request) {
       selectedSourceImagePath: fallbackSourceImagePath,
       parentCandidateId: body.parentCandidateId,
       attempt: Math.max(1, Math.floor(body.attempt || 1)),
-      model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
+      model: imageProvider === "gemini"
+        ? process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview"
+        : process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
       savedTo: {
         candidates: "data/gpt-image-candidates.json",
       },

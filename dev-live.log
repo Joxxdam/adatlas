@@ -12577,3 +12577,423 @@ Import trace:
  POST /api/extract/product 200 in 325ms (next.js: 51ms, application-code: 275ms)
   Reload env: .env.local
  GET / 200 in 159ms (next.js: 111ms, application-code: 48ms)
+ GET / 200 in 198ms (next.js: 4ms, application-code: 194ms)
+ GET /api/mvp/images 200 in 57ms (next.js: 42ms, application-code: 16ms)
+ POST /api/extract/product 200 in 289ms (next.js: 31ms, application-code: 258ms)
+ POST /api/strategy/generate-copy 200 in 37.8s (next.js: 66ms, application-code: 37.7s)
+ POST /api/render/template-ad 200 in 727ms (next.js: 53ms, application-code: 674ms)
+ POST /api/render/template-ad 200 in 704ms (next.js: 5ms, application-code: 699ms)
+ POST /api/render/template-ad 200 in 562ms (next.js: 1980µs, application-code: 560ms)
+ POST /api/render/template-ad 200 in 622ms (next.js: 3ms, application-code: 619ms)
+[remove-background] remove.bg API retry failed {
+  status: 400,
+  statusText: 'Bad Request',
+  contentType: 'application/json; charset=utf-8',
+  responseText: '{"errors":[{"title":"Could not identify foreground in image. For details and recommendations see https://www.remove.bg/supported-images.","code":"unknown_foreground"}]}',
+  sourceKind: 'remote-url-downloaded',
+  foregroundType: 'auto',
+  debug: {
+    contentType: 'image/jpeg',
+    byteLength: 218608,
+    fileName: 'remote-product-1783059650614.png',
+    foregroundType: 'auto',
+    normalizedContentType: 'image/png',
+    normalizedByteLength: 1006652
+  }
+}
+ POST /api/image/remove-background 200 in 4.9s (next.js: 44ms, application-code: 4.9s)
+ POST /api/render/template-ad 200 in 582ms (next.js: 1724µs, application-code: 581ms)
+ POST /api/render/template-ad 200 in 610ms (next.js: 5ms, application-code: 605ms)
+ POST /api/render/template-ad 200 in 518ms (next.js: 3ms, application-code: 515ms)
+[remove-background] remove.bg API retry failed {
+  status: 400,
+  statusText: 'Bad Request',
+  contentType: 'application/json; charset=utf-8',
+  responseText: '{"errors":[{"title":"Could not identify foreground in image. For details and recommendations see https://www.remove.bg/supported-images.","code":"unknown_foreground"}]}',
+  sourceKind: 'remote-url-downloaded',
+  foregroundType: 'auto',
+  debug: {
+    contentType: 'image/jpeg',
+    byteLength: 218608,
+    fileName: 'remote-product-1783059709425.png',
+    foregroundType: 'auto',
+    normalizedContentType: 'image/png',
+    normalizedByteLength: 1006652
+  }
+}
+ POST /api/image/remove-background 200 in 6.6s (next.js: 1938µs, application-code: 6.6s)
+ POST /api/render/template-ad 200 in 668ms (next.js: 1981µs, application-code: 667ms)
+ GET / 200 in 198ms (next.js: 141ms, application-code: 57ms)
+ GET / 200 in 298ms (next.js: 121ms, application-code: 177ms)
+ GET / 200 in 147ms (next.js: 109ms, application-code: 38ms)
+✓ Compiled in 170ms
+ GET / 200 in 166ms (next.js: 127ms, application-code: 39ms)
+✓ Compiled in 140ms
+ GET /api/mvp/images 200 in 60ms (next.js: 35ms, application-code: 24ms)
+ GET / 200 in 205ms (next.js: 109ms, application-code: 96ms)
+✓ Compiled in 136ms
+ GET / 200 in 142ms (next.js: 97ms, application-code: 45ms)
+✓ Compiled in 127ms
+ GET / 200 in 152ms (next.js: 109ms, application-code: 42ms)
+✓ Compiled in 100ms
+ GET / 200 in 173ms (next.js: 125ms, application-code: 48ms)
+✓ Compiled in 133ms
+ GET / 200 in 142ms (next.js: 104ms, application-code: 38ms)
+✓ Compiled in 143ms
+ GET / 200 in 165ms (next.js: 115ms, application-code: 49ms)
+ GET / 200 in 204ms (next.js: 105ms, application-code: 100ms)
+ GET / 200 in 67ms (next.js: 3ms, application-code: 64ms)
+ GET / 200 in 45ms (next.js: 4ms, application-code: 41ms)
+ GET / 200 in 183ms (next.js: 133ms, application-code: 50ms)
+ GET / 200 in 202ms (next.js: 149ms, application-code: 53ms)
+ GET / 200 in 145ms (next.js: 97ms, application-code: 48ms)
+ GET / 200 in 164ms (next.js: 112ms, application-code: 52ms)
+✓ Compiled in 115ms
+⨯ ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  [90m71 |[0m
+  [90m72 |[0m [36mconst[0m gptImageFailureReasonOptions: { value: [33mGptImageFailureReason[0m; label: string }[] = [
+[31m[1m>[0m [90m73 |[0m   { value: [32m"original-subject-changed"[0m, label: [32m"?먮낯 ?곹뭹??諛붾? },[0m
+  [90m   |[0m                                               [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m74 |[0m [32m  { value: "[0mturned-into-packaged-product[32m", label: "[0m?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  [90m75 |[0m   { value: [32m"cooked-food-turned-raw"[0m, label: [32m"議곕━/?먮Ъ ?곹깭媛 諛붾? },[0m
+  [90m76 |[0m [32m  { value: "[0mproduct-too-small[32m", label: "[0m?곹뭹???덈Т ?묒쓬[32m" },[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+ GET / 500 in 111ms (next.js: 97ms, application-code: 13ms)
+⨯ ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  [90m71 |[0m
+  [90m72 |[0m [36mconst[0m gptImageFailureReasonOptions: { value: [33mGptImageFailureReason[0m; label: string }[] = [
+[31m[1m>[0m [90m73 |[0m   { value: [32m"original-subject-changed"[0m, label: [32m"?먮낯 ?곹뭹??諛붾? },[0m
+  [90m   |[0m                                               [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m74 |[0m [32m  { value: "[0mturned-into-packaged-product[32m", label: "[0m?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  [90m75 |[0m   { value: [32m"cooked-food-turned-raw"[0m, label: [32m"議곕━/?먮Ъ ?곹깭媛 諛붾? },[0m
+  [90m76 |[0m [32m  { value: "[0mproduct-too-small[32m", label: "[0m?곹뭹???덈Т ?묒쓬[32m" },[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+ GET / 500 in 19ms (next.js: 9ms, application-code: 10ms)
+⨯ ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  [90m71 |[0m
+  [90m72 |[0m [36mconst[0m gptImageFailureReasonOptions: { value: [33mGptImageFailureReason[0m; label: string }[] = [
+[31m[1m>[0m [90m73 |[0m   { value: [32m"original-subject-changed"[0m, label: [32m"?먮낯 ?곹뭹??諛붾? },[0m
+  [90m   |[0m                                               [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m74 |[0m [32m  { value: "[0mturned-into-packaged-product[32m", label: "[0m?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  [90m75 |[0m   { value: [32m"cooked-food-turned-raw"[0m, label: [32m"議곕━/?먮Ъ ?곹깭媛 諛붾? },[0m
+  [90m76 |[0m [32m  { value: "[0mproduct-too-small[32m", label: "[0m?곹뭹???덈Т ?묒쓬[32m" },[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+ GET / 500 in 15ms (next.js: 9ms, application-code: 7ms)
+⨯ ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  [90m71 |[0m
+  [90m72 |[0m [36mconst[0m gptImageFailureReasonOptions: { value: [33mGptImageFailureReason[0m; label: string }[] = [
+[31m[1m>[0m [90m73 |[0m   { value: [32m"original-subject-changed"[0m, label: [32m"?먮낯 ?곹뭹??諛붾? },[0m
+  [90m   |[0m                                               [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m74 |[0m [32m  { value: "[0mturned-into-packaged-product[32m", label: "[0m?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  [90m75 |[0m   { value: [32m"cooked-food-turned-raw"[0m, label: [32m"議곕━/?먮Ъ ?곹깭媛 諛붾? },[0m
+  [90m76 |[0m [32m  { value: "[0mproduct-too-small[32m", label: "[0m?곹뭹???덈Т ?묒쓬[32m" },[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+ GET / 500 in 16ms (next.js: 7ms, application-code: 9ms)
+⨯ ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  [90m71 |[0m
+  [90m72 |[0m [36mconst[0m gptImageFailureReasonOptions: { value: [33mGptImageFailureReason[0m; label: string }[] = [
+[31m[1m>[0m [90m73 |[0m   { value: [32m"original-subject-changed"[0m, label: [32m"?먮낯 ?곹뭹??諛붾? },[0m
+  [90m   |[0m                                               [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m74 |[0m [32m  { value: "[0mturned-into-packaged-product[32m", label: "[0m?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  [90m75 |[0m   { value: [32m"cooked-food-turned-raw"[0m, label: [32m"議곕━/?먮Ъ ?곹깭媛 諛붾? },[0m
+  [90m76 |[0m [32m  { value: "[0mproduct-too-small[32m", label: "[0m?곹뭹???덈Т ?묒쓬[32m" },[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+ GET / 500 in 16ms (next.js: 7ms, application-code: 9ms)
+⨯ ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  [90m71 |[0m
+  [90m72 |[0m [36mconst[0m gptImageFailureReasonOptions: { value: [33mGptImageFailureReason[0m; label: string }[] = [
+[31m[1m>[0m [90m73 |[0m   { value: [32m"original-subject-changed"[0m, label: [32m"?먮낯 ?곹뭹??諛붾? },[0m
+  [90m   |[0m                                               [31m[1m^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m74 |[0m [32m  { value: "[0mturned-into-packaged-product[32m", label: "[0m?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  [90m75 |[0m   { value: [32m"cooked-food-turned-raw"[0m, label: [32m"議곕━/?먮Ъ ?곹깭媛 諛붾? },[0m
+  [90m76 |[0m [32m  { value: "[0mproduct-too-small[32m", label: "[0m?곹뭹???덈Т ?묒쓬[32m" },[0m
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+ GET / 500 in 15ms (next.js: 6ms, application-code: 9ms)
+[browser] Uncaught Error: ./app/components/MvpDashboard.tsx:73:47
+Unterminated string constant
+  71 |
+  72 | const gptImageFailureReasonOptions: { value: GptImageFailureReason; label: string }[] = [
+> 73 |   { value: "original-subject-changed", label: "?먮낯 ?곹뭹??諛붾? },
+     |                                               ^^^^^^^^^^^^^^^^^^^^^^
+  74 |   { value: "turned-into-packaged-product", label: "?ъ옣 ?곹뭹泥섎읆 諛붾? },
+  75 |   { value: "cooked-food-turned-raw", label: "議곕━/?먮Ъ ?곹깭媛 諛붾? },
+  76 |   { value: "product-too-small", label: "?곹뭹???덈Т ?묒쓬" },
+
+Parsing ecmascript source code failed
+
+Import trace:
+  Server Component:
+    ./app/components/MvpDashboard.tsx
+    ./app/page.tsx
+
+
+    at <unknown> (Error: ./app/components/MvpDashboard.tsx:73:47)
+    at <unknown> (Error: (./app/components/MvpDashboard.tsx:73:47)
+✓ Compiled in 342ms
+ GET / 200 in 306ms (next.js: 164ms, application-code: 142ms)
+ GET /api/mvp/images 200 in 46ms (next.js: 30ms, application-code: 16ms)
+✓ Compiled in 63ms
+ GET / 200 in 178ms (next.js: 134ms, application-code: 44ms)
+✓ Compiled in 141ms
+ GET /api/mvp/images 200 in 84ms (next.js: 32ms, application-code: 51ms)
+ GET / 200 in 253ms (next.js: 127ms, application-code: 126ms)
+ GET / 200 in 92ms (next.js: 47ms, application-code: 45ms)
+✓ Compiled in 125ms
+ GET /api/mvp/images 200 in 146ms (next.js: 82ms, application-code: 64ms)
+ GET / 200 in 295ms (next.js: 106ms, application-code: 189ms)
+ GET / 200 in 187ms (next.js: 130ms, application-code: 56ms)
+✓ Compiled in 139ms
+ GET / 200 in 441ms (next.js: 232ms, application-code: 208ms)
+ GET / 200 in 140ms (next.js: 93ms, application-code: 46ms)
+ POST /api/extract/product 200 in 357ms (next.js: 48ms, application-code: 310ms)
+ POST /api/strategy/generate-copy 200 in 17.1s (next.js: 34ms, application-code: 17.1s)
+ POST /api/render/template-ad 200 in 968ms (next.js: 58ms, application-code: 910ms)
+ POST /api/render/template-ad 200 in 871ms (next.js: 4ms, application-code: 867ms)
+ POST /api/strategy/generate-copy 200 in 28.3s (next.js: 4ms, application-code: 28.3s)
+ GET / 200 in 210ms (next.js: 150ms, application-code: 60ms)
+ GET / 200 in 159ms (next.js: 107ms, application-code: 52ms)
+ GET / 200 in 176ms (next.js: 126ms, application-code: 50ms)
+ GET / 200 in 168ms (next.js: 114ms, application-code: 55ms)
+ GET / 200 in 156ms (next.js: 106ms, application-code: 51ms)
+ GET / 200 in 148ms (next.js: 104ms, application-code: 44ms)
+ GET / 200 in 160ms (next.js: 118ms, application-code: 42ms)
+ POST /api/extract/product 200 in 363ms (next.js: 60ms, application-code: 303ms)
+ POST /api/extract/product 200 in 4.0s (next.js: 3ms, application-code: 4.0s)
+✓ Compiled in 425ms
+✓ Compiled in 208ms
+ POST /api/extract/product 200 in 4.1s (next.js: 20ms, application-code: 4.1s)
+ POST /api/extract/product 200 in 322ms (next.js: 3ms, application-code: 319ms)
+[remove-background] remove.bg API retry failed {
+  status: 400,
+  statusText: 'Bad Request',
+  contentType: 'application/json; charset=utf-8',
+  responseText: '{"errors":[{"title":"Could not identify foreground in image. For details and recommendations see https://www.remove.bg/supported-images.","code":"unknown_foreground"}]}',
+  sourceKind: 'remote-url-downloaded',
+  foregroundType: 'auto',
+  debug: {
+    contentType: 'image/jpeg',
+    byteLength: 176560,
+    fileName: 'remote-product-1783071448546.png',
+    foregroundType: 'auto',
+    normalizedContentType: 'image/png',
+    normalizedByteLength: 992981
+  }
+}
+ POST /api/render/template-ad 200 in 898ms (next.js: 62ms, application-code: 836ms)
+ POST /api/image/remove-background 200 in 6.7s (next.js: 85ms, application-code: 6.6s)
+ POST /api/strategy/generate-copy 200 in 17.2s (next.js: 44ms, application-code: 17.2s)
+ POST /api/render/template-ad 200 in 1166ms (next.js: 6ms, application-code: 1161ms)
+ POST /api/render/template-ad 200 in 453ms (next.js: 2ms, application-code: 451ms)
+ POST /api/render/template-ad 200 in 384ms (next.js: 6ms, application-code: 379ms)
+ POST /api/render/template-ad 200 in 290ms (next.js: 2ms, application-code: 288ms)
+ POST /api/render/template-ad 200 in 383ms (next.js: 4ms, application-code: 379ms)
+ POST /api/render/template-ad 200 in 236ms (next.js: 1725µs, application-code: 234ms)
+ POST /api/render/template-ad 200 in 361ms (next.js: 7ms, application-code: 354ms)
+ POST /api/render/template-ad 200 in 417ms (next.js: 4ms, application-code: 413ms)
+ GET / 200 in 508ms (next.js: 459ms, application-code: 49ms)
+ POST /api/extract/product 200 in 341ms (next.js: 60ms, application-code: 280ms)
+ GET / 200 in 149ms (next.js: 108ms, application-code: 40ms)
+ POST /api/image/remove-background 200 in 4.8s (next.js: 74ms, application-code: 4.7s)
+ POST /api/render/template-ad 200 in 5.6s (next.js: 52ms, application-code: 5.5s)
+ POST /api/render/template-ad 200 in 406ms (next.js: 2ms, application-code: 404ms)
+ POST /api/extract/product 200 in 5.4s (next.js: 101ms, application-code: 5.3s)
+ POST /api/strategy/generate-copy 200 in 18.6s (next.js: 52ms, application-code: 18.5s)
+ POST /api/render/template-ad 200 in 746ms (next.js: 9ms, application-code: 737ms)
+✓ Compiled in 168ms
+ GET / 200 in 553ms (next.js: 495ms, application-code: 59ms)
+ GET / 200 in 171ms (next.js: 124ms, application-code: 47ms)
+✓ Compiled in 123ms
+ GET / 200 in 180ms (next.js: 129ms, application-code: 51ms)
+ POST /api/render/template-ad 200 in 451ms (next.js: 71ms, application-code: 379ms)
+ POST /api/render/template-ad 200 in 715ms (next.js: 2ms, application-code: 713ms)
+ POST /api/render/template-ad 200 in 1092ms (next.js: 3ms, application-code: 1089ms)
+ POST /api/render/template-ad 200 in 915ms (next.js: 4ms, application-code: 910ms)
+ POST /api/render/template-ad 200 in 1004ms (next.js: 2ms, application-code: 1002ms)
+ POST /api/render/template-ad 200 in 1968ms (next.js: 5ms, application-code: 1963ms)
+ POST /api/render/template-ad 200 in 987ms (next.js: 4ms, application-code: 983ms)
+ POST /api/render/template-ad 200 in 1599ms (next.js: 4ms, application-code: 1595ms)
+ POST /api/render/template-ad 200 in 800ms (next.js: 2ms, application-code: 798ms)
+ POST /api/render/template-ad 200 in 895ms (next.js: 2ms, application-code: 892ms)
+ POST /api/render/template-ad 200 in 1284ms (next.js: 5ms, application-code: 1279ms)
+ POST /api/render/template-ad 200 in 3.6s (next.js: 4ms, application-code: 3.6s)
+ POST /api/render/template-ad 200 in 1190ms (next.js: 1897µs, application-code: 1188ms)
+ GET / 200 in 216ms (next.js: 167ms, application-code: 49ms)
+ GET / 200 in 170ms (next.js: 120ms, application-code: 50ms)
+ GET / 200 in 151ms (next.js: 99ms, application-code: 52ms)
+ GET / 200 in 144ms (next.js: 102ms, application-code: 43ms)
+ GET / 200 in 166ms (next.js: 111ms, application-code: 55ms)
+ POST /api/render/template-ad 200 in 679ms (next.js: 64ms, application-code: 615ms)
+ POST /api/render/template-ad 200 in 642ms (next.js: 2ms, application-code: 639ms)
+ POST /api/render/template-ad 200 in 2.4s (next.js: 4ms, application-code: 2.4s)
+ POST /api/render/template-ad 200 in 664ms (next.js: 5ms, application-code: 659ms)
+ POST /api/image/remove-background 200 in 6.1s (next.js: 85ms, application-code: 6.0s)
+ POST /api/render/template-ad 200 in 217ms (next.js: 3ms, application-code: 214ms)
+ POST /api/render/template-ad 200 in 7.2s (next.js: 2ms, application-code: 7.2s)
+ POST /api/render/template-ad 200 in 387ms (next.js: 5ms, application-code: 382ms)
+ POST /api/render/template-ad 200 in 364ms (next.js: 1943µs, application-code: 362ms)
+ POST /api/render/template-ad 200 in 16.4s (next.js: 6ms, application-code: 16.4s)
+ POST /api/render/template-ad 200 in 13.1s (next.js: 3ms, application-code: 13.1s)
+ POST /api/render/template-ad 200 in 7.7s (next.js: 6ms, application-code: 7.7s)
+ POST /api/render/template-ad 200 in 4.2s (next.js: 2ms, application-code: 4.2s)
+ POST /api/render/template-ad 200 in 802ms (next.js: 3ms, application-code: 799ms)
+ POST /api/render/template-ad 200 in 6.2s (next.js: 5ms, application-code: 6.1s)
+ POST /api/render/template-ad 200 in 7.9s (next.js: 3ms, application-code: 7.9s)
+✓ Compiled in 218ms
+ POST /api/image/generate-product 200 in 28.4s (next.js: 105ms, application-code: 28.3s)
+✓ Compiled in 206ms
+ POST /api/render/template-ad 200 in 964ms (next.js: 4ms, application-code: 960ms)
+ POST /api/render/template-ad 200 in 1376ms (next.js: 3ms, application-code: 1373ms)
+ POST /api/render/template-ad 200 in 903ms (next.js: 5ms, application-code: 898ms)
+ POST /api/render/template-ad 200 in 977ms (next.js: 4ms, application-code: 973ms)
+ POST /api/render/template-ad 200 in 1009ms (next.js: 3ms, application-code: 1005ms)
+ POST /api/render/template-ad 200 in 576ms (next.js: 2ms, application-code: 574ms)
+ POST /api/render/template-ad 200 in 983ms (next.js: 2ms, application-code: 981ms)
+ POST /api/render/template-ad 200 in 838ms (next.js: 3ms, application-code: 835ms)
+ POST /api/render/template-ad 200 in 990ms (next.js: 3ms, application-code: 987ms)
+ POST /api/image/remove-background 200 in 6.1s (next.js: 6ms, application-code: 6.1s)
+ POST /api/render/template-ad 200 in 5.8s (next.js: 4ms, application-code: 5.8s)
+ POST /api/render/template-ad 200 in 7.0s (next.js: 6ms, application-code: 6.9s)
+ POST /api/render/template-ad 200 in 6.4s (next.js: 1928µs, application-code: 6.4s)
+ POST /api/render/template-ad 200 in 879ms (next.js: 5ms, application-code: 874ms)
+ POST /api/render/template-ad 200 in 6.1s (next.js: 6ms, application-code: 6.1s)
+ POST /api/render/template-ad 200 in 6.2s (next.js: 3ms, application-code: 6.2s)
+ POST /api/render/template-ad 200 in 779ms (next.js: 6ms, application-code: 772ms)
+ GET / 200 in 311ms (next.js: 261ms, application-code: 49ms)
+ POST /api/render/template-ad 200 in 379ms (next.js: 2ms, application-code: 377ms)
+ POST /api/render/template-ad 200 in 7.2s (next.js: 102ms, application-code: 7.1s)
+ POST /api/render/template-ad 200 in 7.5s (next.js: 1928µs, application-code: 7.5s)
+ POST /api/render/template-ad 200 in 8.7s (next.js: 3ms, application-code: 8.7s)
+ POST /api/render/template-ad 200 in 6.6s (next.js: 1745µs, application-code: 6.6s)
+ POST /api/render/template-ad 200 in 7.1s (next.js: 3ms, application-code: 7.1s)
+ POST /api/render/template-ad 200 in 8.3s (next.js: 2ms, application-code: 8.3s)
+ POST /api/render/template-ad 200 in 2.5s (next.js: 3ms, application-code: 2.5s)
+ POST /api/render/template-ad 200 in 5.9s (next.js: 3ms, application-code: 5.9s)
+ POST /api/render/template-ad 200 in 7.5s (next.js: 4ms, application-code: 7.5s)
+ GET / 200 in 213ms (next.js: 147ms, application-code: 67ms)
+ GET / 200 in 145ms (next.js: 96ms, application-code: 49ms)
+ GET / 200 in 191ms (next.js: 136ms, application-code: 55ms)
+ POST /api/render/template-ad 200 in 493ms (next.js: 59ms, application-code: 434ms)
+ POST /api/render/template-ad 200 in 5.1s (next.js: 15ms, application-code: 5.1s)
+ POST /api/render/template-ad 200 in 1932ms (next.js: 3ms, application-code: 1929ms)
+ POST /api/render/template-ad 200 in 6.7s (next.js: 6ms, application-code: 6.7s)
+ GET / 200 in 210ms (next.js: 147ms, application-code: 64ms)
+ POST /api/render/template-ad 200 in 476ms (next.js: 53ms, application-code: 423ms)
+ POST /api/render/template-ad 200 in 2.0s (next.js: 6ms, application-code: 2.0s)
+ POST /api/render/template-ad 200 in 14.2s (next.js: 5ms, application-code: 14.2s)
+ POST /api/render/template-ad 200 in 12.5s (next.js: 1772µs, application-code: 12.5s)
+ POST /api/render/template-ad 200 in 12.5s (next.js: 2ms, application-code: 12.5s)
+ POST /api/render/template-ad 200 in 12.5s (next.js: 4ms, application-code: 12.5s)
+ POST /api/render/template-ad 200 in 6.5s (next.js: 1787µs, application-code: 6.5s)
+ POST /api/render/template-ad 200 in 5.2s (next.js: 5ms, application-code: 5.2s)
+ POST /api/render/template-ad 200 in 6.4s (next.js: 3ms, application-code: 6.4s)
+ POST /api/render/template-ad 200 in 2.1s (next.js: 6ms, application-code: 2.1s)
+ POST /api/render/template-ad 200 in 5.2s (next.js: 5ms, application-code: 5.1s)
+ GET / 200 in 379ms (next.js: 213ms, application-code: 166ms)
+ POST /api/render/template-ad 200 in 4.9s (next.js: 6ms, application-code: 4.9s)
+ POST /api/render/template-ad 200 in 4.5s (next.js: 1709µs, application-code: 4.5s)
+ POST /api/render/template-ad 200 in 5.8s (next.js: 85ms, application-code: 5.7s)
+ POST /api/render/template-ad 200 in 385ms (next.js: 3ms, application-code: 382ms)
+ POST /api/render/template-ad 200 in 3.7s (next.js: 2ms, application-code: 3.7s)
+ POST /api/render/template-ad 200 in 4.2s (next.js: 3ms, application-code: 4.2s)
+ GET / 200 in 217ms (next.js: 150ms, application-code: 67ms)
+ POST /api/render/template-ad 200 in 451ms (next.js: 51ms, application-code: 400ms)
+ POST /api/render/template-ad 200 in 4.2s (next.js: 3ms, application-code: 4.2s)
+ GET / 200 in 217ms (next.js: 174ms, application-code: 43ms)
+ POST /api/render/template-ad 200 in 506ms (next.js: 84ms, application-code: 422ms)
+ POST /api/render/template-ad 200 in 4.4s (next.js: 2ms, application-code: 4.4s)
+ GET / 200 in 177ms (next.js: 128ms, application-code: 48ms)
+ POST /api/render/template-ad 200 in 554ms (next.js: 55ms, application-code: 499ms)
+ POST /api/render/template-ad 200 in 5.4s (next.js: 2ms, application-code: 5.4s)
+ GET / 200 in 221ms (next.js: 170ms, application-code: 50ms)
+ GET / 200 in 166ms (next.js: 121ms, application-code: 45ms)
+ POST /api/render/template-ad 200 in 619ms (next.js: 71ms, application-code: 548ms)
+ POST /api/render/template-ad 200 in 5.9s (next.js: 3ms, application-code: 5.9s)
+ POST /api/render/template-ad 200 in 16.7s (next.js: 3ms, application-code: 16.7s)
+ POST /api/render/template-ad 200 in 8.6s (next.js: 5ms, application-code: 8.6s)
+ POST /api/render/template-ad 200 in 6.8s (next.js: 5ms, application-code: 6.8s)
+ POST /api/render/template-ad 200 in 7.3s (next.js: 1975µs, application-code: 7.3s)
+ POST /api/render/template-ad 200 in 6.2s (next.js: 1899µs, application-code: 6.2s)
+ POST /api/render/template-ad 200 in 7.6s (next.js: 3ms, application-code: 7.6s)
+ POST /api/render/template-ad 200 in 6.9s (next.js: 2ms, application-code: 6.9s)
+ POST /api/render/template-ad 200 in 5.5s (next.js: 5ms, application-code: 5.5s)
+ POST /api/render/template-ad 200 in 6.4s (next.js: 6ms, application-code: 6.4s)
+ POST /api/render/template-ad 200 in 5.9s (next.js: 3ms, application-code: 5.9s)
+ POST /api/render/template-ad 200 in 6.0s (next.js: 4ms, application-code: 6.0s)
+ POST /api/render/template-ad 200 in 6.1s (next.js: 2ms, application-code: 6.1s)
+ POST /api/render/template-ad 200 in 7.4s (next.js: 4ms, application-code: 7.4s)
+ POST /api/render/template-ad 200 in 7.3s (next.js: 2ms, application-code: 7.3s)
+ POST /api/render/template-ad 200 in 17.2s (next.js: 4ms, application-code: 17.2s)
+✓ Compiled in 151ms
+ GET / 200 in 294ms (next.js: 249ms, application-code: 45ms)
+✓ Compiled in 123ms
+ GET / 200 in 156ms (next.js: 109ms, application-code: 48ms)
+✓ Compiled in 124ms
+ GET / 200 in 169ms (next.js: 122ms, application-code: 47ms)
+ GET / 200 in 232ms (next.js: 158ms, application-code: 75ms)
+ GET / 200 in 298ms (next.js: 207ms, application-code: 92ms)
+ POST /api/render/template-ad 200 in 1242ms (next.js: 140ms, application-code: 1102ms)
+ POST /api/render/template-ad 200 in 1041ms (next.js: 4ms, application-code: 1037ms)
+ POST /api/render/template-ad 200 in 9.8s (next.js: 18ms, application-code: 9.8s)
+ GET / 200 in 329ms (next.js: 8ms, application-code: 322ms)
+ GET /api/mvp/images 200 in 104ms (next.js: 47ms, application-code: 57ms)
+ POST /api/extract/product 200 in 2.4s (next.js: 61ms, application-code: 2.3s)
+ POST /api/strategy/generate-copy 200 in 47s (next.js: 53ms, application-code: 46s)
+✓ Compiled in 215ms
+ GET / 200 in 664ms (next.js: 613ms, application-code: 51ms)
+✓ Compiled in 134ms
+ GET / 200 in 193ms (next.js: 123ms, application-code: 70ms)
+✓ Compiled in 395ms
