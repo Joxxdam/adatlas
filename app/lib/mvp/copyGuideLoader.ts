@@ -37,7 +37,9 @@ const INDEX_PATH = path.join(ROOT, "data", "copy-guides", "index.json");
 const MAX_GUIDE_CHARS = 12000;
 
 function normalize(value?: string) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function includesNormalized(source: string | undefined, target: string | undefined) {
@@ -57,6 +59,7 @@ function domainFromUrl(value?: string) {
 function scoreGuide(guide: CopyGuideIndexItem, input: CopyGuideMatchInput) {
   const matchedBy: LoadedCopyGuide["matchedBy"] = [];
   let score = guide.priority || 0;
+  let priorityRank = 0;
   const aliases = guide.aliases || [];
   const categories = guide.categories || [];
   const domains = guide.domains || [];
@@ -68,35 +71,47 @@ function scoreGuide(guide: CopyGuideIndexItem, input: CopyGuideMatchInput) {
 
   if (input.copyGuideId && input.copyGuideId === guide.id) {
     score += 1000;
+    priorityRank = Math.max(priorityRank, 5);
+    matchedBy.push("copyGuideId");
+  }
+
+  if (
+    aliases.some((alias) => normalize(alias) === normalize(brand)) ||
+    normalize(guide.brandName) === normalize(brand)
+  ) {
+    score += 500;
+    priorityRank = Math.max(priorityRank, 4);
     matchedBy.push("brandName");
   }
 
-  if (aliases.some((alias) => normalize(alias) === normalize(brand)) || normalize(guide.brandName) === normalize(brand)) {
+  if (
+    aliases.some((alias) => normalize(alias) === normalize(advertiser)) ||
+    normalize(guide.brandName) === normalize(advertiser)
+  ) {
     score += 500;
-    matchedBy.push("brandName");
-  }
-
-  if (aliases.some((alias) => normalize(alias) === normalize(advertiser)) || normalize(guide.brandName) === normalize(advertiser)) {
-    score += 500;
+    priorityRank = Math.max(priorityRank, 4);
     matchedBy.push("advertiserName");
   }
 
   if (productDomain && domains.some((domain) => normalize(domain) === productDomain)) {
     score += 400;
+    priorityRank = Math.max(priorityRank, 3);
     matchedBy.push("domain");
   }
 
   if (aliases.some((alias) => includesNormalized(productName, alias))) {
     score += 250;
+    priorityRank = Math.max(priorityRank, 2);
     matchedBy.push("productName");
   }
 
   if (categories.some((candidate) => includesNormalized(category, candidate))) {
     score += 100;
+    priorityRank = Math.max(priorityRank, 1);
     matchedBy.push("category");
   }
 
-  return { score, matchedBy: Array.from(new Set(matchedBy)) };
+  return { score, priorityRank, matchedBy: Array.from(new Set(matchedBy)) };
 }
 
 async function readIndex(): Promise<CopyGuideIndex> {
@@ -115,13 +130,20 @@ function safeGuidePath(filePath: string) {
   return resolved;
 }
 
-export async function loadCopyGuideForProduct(input: CopyGuideMatchInput): Promise<LoadedCopyGuide | null> {
+export async function loadCopyGuideForProduct(
+  input: CopyGuideMatchInput
+): Promise<LoadedCopyGuide | null> {
   try {
     const index = await readIndex();
     const matches = index.guides
       .map((guide) => ({ guide, ...scoreGuide(guide, input) }))
-      .filter((item) => item.score > (item.guide.priority || 0) || item.guide.id === index.defaultGuideId)
-      .sort((a, b) => b.score - a.score);
+      .filter(
+        (item) =>
+          item.priorityRank >= 2 ||
+          item.matchedBy.includes("copyGuideId") ||
+          item.guide.id === index.defaultGuideId
+      )
+      .sort((a, b) => b.priorityRank - a.priorityRank || b.score - a.score);
     const selected = matches[0];
 
     if (!selected) return null;

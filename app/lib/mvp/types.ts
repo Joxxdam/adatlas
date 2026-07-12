@@ -90,17 +90,10 @@ export type CopyGuideContext = {
   matchedBy: string[];
 };
 
-export type ProductImageMode =
-  | "original"
-  | "cutout"
-  | "styled-cutout";
+export type ProductImageMode = "original" | "cutout" | "styled-cutout";
 
 export type ProductImageEffectPreset =
-  | "none"
-  | "clean-outline"
-  | "soft-glow"
-  | "commerce-shadow"
-  | "outline-glow-shadow";
+  "none" | "clean-outline" | "soft-glow" | "commerce-shadow" | "outline-glow-shadow";
 
 export type ProductImageRenderEffect = {
   outline: boolean;
@@ -133,6 +126,17 @@ export type ProductImageState = {
   effectPreset?: ProductImageEffectPreset;
 };
 
+export type SelectedAdImageSource =
+  "detail" | "upload" | "gpt" | "background" | "product" | "unknown";
+
+export type SelectedAdImageState = {
+  selectedImagePaths: string[];
+  primaryImagePath: string;
+  secondaryImagePath?: string;
+  source: SelectedAdImageSource;
+  updatedAt: string;
+};
+
 export type SourceImageCandidate = {
   id: string;
   type: "hero" | "detail" | "upload";
@@ -159,9 +163,7 @@ export type SourceImageSelectionState = {
   selectedSourceImagePath?: string;
 };
 
-export type GptImageGenerationMode =
-  | "visual-only"
-  | "text-in-image";
+export type GptImageGenerationMode = "visual-only" | "text-in-image";
 
 export type ImageCreativeDirection = {
   visualTone: string;
@@ -252,24 +254,15 @@ export type GptImageCandidate = {
   evaluation?: GptImageEvaluation;
 };
 
-export type ImageGenerationProvider =
-  | "openai"
-  | "gemini";
+export type ImageGenerationProvider = "openai" | "gemini";
 
-export type GptImageSourceMode =
-  | "text-to-image"
-  | "image-edit";
+export type GptImageSourceMode = "text-to-image" | "image-edit";
 
-export type GptImagePreservationMode =
-  | "free-generate"
-  | "preserve-product";
+export type GptImagePreservationMode = "free-generate" | "preserve-product";
 
-export type GptPromptTemplateMode =
-  | "ad-image-with-copy"
-  | "visual-only";
+export type GptPromptTemplateMode = "ad-image-with-copy" | "visual-only";
 
-export type GptOutputCanvasPreset =
-  | "sns-square-1200";
+export type GptOutputCanvasPreset = "sns-square-1200";
 
 export type GptPromptTemplateInput = {
   templateMode: GptPromptTemplateMode;
@@ -341,9 +334,7 @@ export type GptImageGenerationRequest = {
   templateId?: string;
 };
 
-export type GptPromptMode =
-  | "auto"
-  | "custom";
+export type GptPromptMode = "auto" | "custom";
 
 export type GptCustomPromptState = {
   promptMode: GptPromptMode;
@@ -393,20 +384,10 @@ export type ExtractedProductInfo = {
 };
 
 export type CopySlotKey =
-  | "headline"
-  | "bodyCopy"
-  | "highlightCopy"
-  | "bottomBarCopy"
-  | "cta"
-  | "price";
+  "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price";
 
 export type CopyOverflowStrategy =
-  | "shrink"
-  | "wrap"
-  | "ellipsis"
-  | "shrink-wrap"
-  | "shrink-ellipsis"
-  | "shrink-wrap-ellipsis";
+  "shrink" | "wrap" | "ellipsis" | "shrink-wrap" | "shrink-ellipsis" | "shrink-wrap-ellipsis";
 
 export type CopyLimit = {
   maxChars: number;
@@ -505,16 +486,13 @@ export type GeneratedAdCopy = GeneratedAdCopyVariant & {
   referencePatternUsage?: ReferencePatternUsage;
   copyValidation?: GeneratedCopyValidation;
   copyVariants?: {
-    short: GeneratedAdCopyVariant;
-    medium: GeneratedAdCopyVariant;
-    long: GeneratedAdCopyVariant;
+    short?: GeneratedAdCopyVariant;
+    medium?: GeneratedAdCopyVariant;
+    long?: GeneratedAdCopyVariant;
   };
 };
 
-export type TemplateCopyApplyMode =
-  | "original"
-  | "auto-variant"
-  | "force-fit";
+export type TemplateCopyApplyMode = "original" | "auto-variant" | "force-fit";
 
 export type CopyVariantKey = "short" | "medium" | "long" | "base";
 

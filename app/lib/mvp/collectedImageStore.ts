@@ -39,7 +39,9 @@ export async function readCollectedAdImages() {
   await ensureFiles();
   const raw = await fs.readFile(dataPath, "utf8");
   const existing = JSON.parse(raw.replace(/^\uFEFF/, "")) as CollectedAdImage[];
-  const byPath = new Map(existing.map((item) => [item.localImagePath || item.imageUrl || "", item]));
+  const byPath = new Map(
+    existing.map((item) => [item.localImagePath || item.imageUrl || "", item])
+  );
   const now = new Date().toISOString();
   let changed = false;
 

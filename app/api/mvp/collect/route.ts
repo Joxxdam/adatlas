@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "이미지 수집 실패" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

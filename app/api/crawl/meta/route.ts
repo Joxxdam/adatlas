@@ -35,7 +35,8 @@ async function downloadImage(imageUrl: string, id: string) {
 
   const response = await fetch(imageUrl, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36",
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36",
       Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
     },
   });
@@ -46,7 +47,9 @@ async function downloadImage(imageUrl: string, id: string) {
 
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.startsWith("image/")) {
-    throw new Error(`이미지 다운로드 실패: 이미지 응답이 아닙니다 (${contentType || "content-type 없음"})`);
+    throw new Error(
+      `이미지 다운로드 실패: 이미지 응답이 아닙니다 (${contentType || "content-type 없음"})`
+    );
   }
 
   const ext = extensionFromContentType(contentType);
@@ -86,12 +89,16 @@ async function mergeCollectedImages(items: CollectedAdImage[]) {
       byImageUrl.set(item.imageUrl, { ...byImageUrl.get(item.imageUrl), ...item });
     }
 
-    const next = [...byImageUrl.values()].sort((a, b) => b.collectedAt.localeCompare(a.collectedAt));
+    const next = [...byImageUrl.values()].sort((a, b) =>
+      b.collectedAt.localeCompare(a.collectedAt)
+    );
     await fs.writeFile(collectedDataPath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
 
     return { added, total: next.length, images: next };
   } catch (error) {
-    throw new Error(`data JSON 저장 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
+    throw new Error(
+      `data JSON 저장 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`
+    );
   }
 }
 
@@ -119,7 +126,7 @@ export async function POST(request: Request) {
           error: "이미지 후보 0개: Meta 페이지에서 저장 가능한 광고 이미지를 찾지 못했습니다.",
           warnings: result.warnings,
         },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -141,7 +148,9 @@ export async function POST(request: Request) {
           collectedAt: item.collectedAt,
         });
       } catch (error) {
-        failures.push(`${item.imageUrl}: ${error instanceof Error ? error.message : "이미지 다운로드 실패"}`);
+        failures.push(
+          `${item.imageUrl}: ${error instanceof Error ? error.message : "이미지 다운로드 실패"}`
+        );
       }
     }
 
@@ -152,7 +161,7 @@ export async function POST(request: Request) {
           error: `이미지 다운로드 실패: ${failures.join(" / ") || "다운로드 가능한 이미지가 없습니다."}`,
           warnings: result.warnings,
         },
-        { status: 502 },
+        { status: 502 }
       );
     }
 
@@ -175,7 +184,7 @@ export async function POST(request: Request) {
         success: false,
         error: error instanceof Error ? error.message : "Meta Ad Library crawl failed.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -48,7 +48,9 @@ function extractImages(html: string, baseUrl: string) {
   const urls = [
     metaContent(html, "og:image"),
     metaContent(html, "twitter:image"),
-    ...[...html.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi)].map((match) => match[1]),
+    ...[...html.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi)].map(
+      (match) => match[1]
+    ),
   ]
     .map((src) => absoluteUrl(src, baseUrl))
     .filter((src) => /\.(png|jpe?g|webp|avif)(\?|$)/i.test(src))
@@ -57,7 +59,11 @@ function extractImages(html: string, baseUrl: string) {
   return [...new Set(urls)].slice(0, 8);
 }
 
-async function fetchContent(brand: WatchlistBrand, source: CrawledContent["source"], url?: string): Promise<CrawledContent> {
+async function fetchContent(
+  brand: WatchlistBrand,
+  source: CrawledContent["source"],
+  url?: string
+): Promise<CrawledContent> {
   if (!url) {
     return {
       brandId: brand.id,

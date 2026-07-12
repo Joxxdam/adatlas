@@ -1,0 +1,13 @@
+.next
+node_modules
+public/generated-ads
+public/generated-product-images
+public/processed-products
+public/collected-images
+public/uploaded-source-images
+public/background-images
+public/extracted
+*.log
+.next-dev.stdout.log
+.next-dev.stderr.log
+package-lock.json

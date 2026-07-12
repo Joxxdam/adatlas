@@ -14,5 +14,5 @@ if (!response.ok) {
 }
 
 console.log(
-  `watchlist brands=${result.brands} analyses=${result.analyses} added=${result.added} total=${result.total}`,
+  `watchlist brands=${result.brands} analyses=${result.analyses} added=${result.added} total=${result.total}`
 );

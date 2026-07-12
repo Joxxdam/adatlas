@@ -83,7 +83,7 @@ export function buildRevisionPromptFromFeedback(params: BuildRevisionPromptParam
   if (params.category && /(식품|푸드|고기|한우|갈비|정육|food|meat)/i.test(params.category)) {
     chunks.push(
       "Food category reminder: preserve the food's actual state, texture, moisture, doneness, cut, plate or serving context from the source image.",
-      "For meat images, do not accidentally convert cooked meat into raw packaged meat, or raw meat into cooked food.",
+      "For meat images, do not accidentally convert cooked meat into raw packaged meat, or raw meat into cooked food."
     );
   }
 
@@ -94,9 +94,8 @@ export function buildRevisionPromptFromFeedback(params: BuildRevisionPromptParam
 
   chunks.push(
     "Generate a revised image that fixes the selected issues.",
-    "Do not add text unless the request explicitly asks for a text-in-image advertisement.",
+    "Do not add text unless the request explicitly asks for a text-in-image advertisement."
   );
 
   return chunks.filter(Boolean).join("\n");
 }
-

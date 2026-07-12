@@ -32,7 +32,7 @@ export async function PATCH(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "이미지 메타데이터 저장 실패" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

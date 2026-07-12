@@ -3,7 +3,10 @@ import type { GptPromptTemplateInput, GptPromptTemplateResult } from "./types";
 const emojiRegex = /[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]/gu;
 
 function clean(value?: string) {
-  return String(value ?? "").replace(emojiRegex, "").replace(/\s{2,}/g, " ").trim();
+  return String(value ?? "")
+    .replace(emojiRegex, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function line(label: string, value?: string) {
@@ -39,7 +42,8 @@ export function buildVisualOnlyPrompt(input: GptPromptTemplateInput): string {
   const productName = clean(input.productName) || "selected ecommerce product";
   const category = clean(input.category) || "consumer product";
   const preservationMode = input.preservationMode || "preserve-product";
-  const shouldPreserve = preservationMode === "preserve-product" && Boolean(input.selectedSourceImagePath);
+  const shouldPreserve =
+    preservationMode === "preserve-product" && Boolean(input.selectedSourceImagePath);
 
   const common = [
     "Purpose: create an SNS ecommerce advertising image for a Korean performance marketing banner.",
@@ -62,7 +66,9 @@ export function buildVisualOnlyPrompt(input: GptPromptTemplateInput): string {
     input.referenceImagePaths?.length
       ? "Use additional reference images only for visual mood, lighting, composition, and advertising style. Do not copy their product."
       : "",
-    input.selectedSourceImagePath ? `Selected source image path: ${input.selectedSourceImagePath}` : "",
+    input.selectedSourceImagePath
+      ? `Selected source image path: ${input.selectedSourceImagePath}`
+      : "",
     shouldPreserve
       ? "Use the selected source image as the primary product reference. Preserve the original subject, food/product state, shape, color, texture, packaging only if already present, quantity, scale cues, and visible identity."
       : "",
@@ -86,14 +92,17 @@ export function buildVisualOnlyPrompt(input: GptPromptTemplateInput): string {
     "Leave clean negative space for future Korean headline and promotional copy overlays.",
     "Use realistic commercial lighting, strong product separation, appetizing or premium texture, and clean composition.",
     "Output: Generate a polished 1200x1200 Korean ecommerce advertising visual without text.",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildAdImageWithCopyPrompt(input: GptPromptTemplateInput): string {
   const productName = clean(input.productName) || "selected ecommerce product";
   const category = clean(input.category) || "consumer product";
   const preservationMode = input.preservationMode || "preserve-product";
-  const shouldPreserve = preservationMode === "preserve-product" && Boolean(input.selectedSourceImagePath);
+  const shouldPreserve =
+    preservationMode === "preserve-product" && Boolean(input.selectedSourceImagePath);
 
   const common = [
     "[Goal]",
@@ -113,8 +122,14 @@ export function buildAdImageWithCopyPrompt(input: GptPromptTemplateInput): strin
     line("Price", input.price),
     "",
     "[Visual direction]",
-    line("Reference visual tone", input.referenceVisualTone || "high-converting Korean ecommerce advertising visual tone"),
-    line("Reference layout pattern", input.referenceLayoutPattern || "clear hero product layout with strong promotional hierarchy"),
+    line(
+      "Reference visual tone",
+      input.referenceVisualTone || "high-converting Korean ecommerce advertising visual tone"
+    ),
+    line(
+      "Reference layout pattern",
+      input.referenceLayoutPattern || "clear hero product layout with strong promotional hierarchy"
+    ),
     line("Reference appeal point", input.referenceAppealPoint || "clear purchase reason"),
     line("Reference hook type", input.referenceHookType || "commerce hook suited to the product"),
     line("Reference copy nuance", input.referenceCopyNuance || "direct Korean ecommerce copy tone"),
@@ -124,15 +139,29 @@ export function buildAdImageWithCopyPrompt(input: GptPromptTemplateInput): strin
     "Create a strong Korean ecommerce advertising banner with clear promotional hierarchy.",
     "",
     "[Source image role]",
-    input.selectedSourceImagePath ? `Selected source image path: ${input.selectedSourceImagePath}` : "",
-    input.referenceImagePaths?.length ? `Additional reference image paths: ${input.referenceImagePaths.join(", ")}` : "",
-    input.referenceImagePaths?.length ? "Use additional reference images only for mood, lighting, layout, and ad styling. Do not copy their product or brand." : "",
+    input.selectedSourceImagePath
+      ? `Selected source image path: ${input.selectedSourceImagePath}`
+      : "",
+    input.referenceImagePaths?.length
+      ? `Additional reference image paths: ${input.referenceImagePaths.join(", ")}`
+      : "",
+    input.referenceImagePaths?.length
+      ? "Use additional reference images only for mood, lighting, layout, and ad styling. Do not copy their product or brand."
+      : "",
     shouldPreserve ? "Use the provided source image as the primary visual reference." : "",
-    shouldPreserve ? "Preserve the original subject, shape, silhouette, texture, color tone, composition, and visual identity." : "",
-    shouldPreserve ? "Do not redesign the product. Do not replace the product with a different item." : "",
-    shouldPreserve ? "Edit only the background, lighting, color grading, shadows, composition, and commercial advertising mood." : "",
+    shouldPreserve
+      ? "Preserve the original subject, shape, silhouette, texture, color tone, composition, and visual identity."
+      : "",
+    shouldPreserve
+      ? "Do not redesign the product. Do not replace the product with a different item."
+      : "",
+    shouldPreserve
+      ? "Edit only the background, lighting, color grading, shadows, composition, and commercial advertising mood."
+      : "",
     shouldPreserve ? "선택한 원본 기준 이미지를 가장 중요한 시각 기준으로 사용해주세요." : "",
-    shouldPreserve ? "원본 상품의 형태, 실루엣, 질감, 색감, 구도, 전체 인상을 최대한 유지해주세요." : "",
+    shouldPreserve
+      ? "원본 상품의 형태, 실루엣, 질감, 색감, 구도, 전체 인상을 최대한 유지해주세요."
+      : "",
     buildFoodMeatPreservationPrompt(input),
   ];
 
@@ -182,7 +211,9 @@ export function buildAdImageWithCopyPrompt(input: GptPromptTemplateInput): strin
     "",
     "[Output]",
     "Generate a polished 1200x1200 Korean ecommerce SNS advertising banner with text included.",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildAutoImagePrompt(input: GptPromptTemplateInput): GptPromptTemplateResult {
@@ -200,11 +231,9 @@ export function buildAutoImagePrompt(input: GptPromptTemplateInput): GptPromptTe
   return {
     mode: input.templateMode,
     canvasPreset,
-    promptText: [
-      promptText,
-      customNote ? "[Additional user direction]" : "",
-      customNote,
-    ].filter(Boolean).join("\n\n"),
+    promptText: [promptText, customNote ? "[Additional user direction]" : "", customNote]
+      .filter(Boolean)
+      .join("\n\n"),
   };
 }
 

@@ -1,7 +1,5 @@
 export function normalizeBodyCopy(input: string): string {
-  return input
-    .replace(/\s+/g, " ")
-    .trim();
+  return input.replace(/\s+/g, " ").trim();
 }
 
 export function bodyCopyLength(input: string): number {

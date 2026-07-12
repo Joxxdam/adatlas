@@ -6,7 +6,10 @@ export type ProductInfo = {
 };
 
 function metaContent(html: string, key: string) {
-  const pattern = new RegExp(`<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["']([^"']+)["']`, "i");
+  const pattern = new RegExp(
+    `<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["']([^"']+)["']`,
+    "i"
+  );
   return pattern.exec(html)?.[1]?.replace(/&amp;/g, "&").trim() ?? "";
 }
 
@@ -18,10 +21,17 @@ export async function extractProductInfo(websiteUrl: string): Promise<ProductInf
     },
   });
   const html = await response.text();
-  const title = metaContent(html, "og:title") || html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() || "상품명";
-  const description = metaContent(html, "og:description") || metaContent(html, "description") || "상품 상세 설명을 추출하지 못했습니다.";
+  const title =
+    metaContent(html, "og:title") ||
+    html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ||
+    "상품명";
+  const description =
+    metaContent(html, "og:description") ||
+    metaContent(html, "description") ||
+    "상품 상세 설명을 추출하지 못했습니다.";
   const imageUrl = metaContent(html, "og:image");
-  const price = metaContent(html, "product:price:amount") || metaContent(html, "og:price:amount") || "";
+  const price =
+    metaContent(html, "product:price:amount") || metaContent(html, "og:price:amount") || "";
 
   return {
     productName: title.replace(/\s+/g, " ").slice(0, 80),

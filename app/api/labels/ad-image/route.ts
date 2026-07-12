@@ -25,7 +25,10 @@ const emptyAnalysisDraft = {
   visualCopyRelation: "",
 };
 
-function normalizeAnalysisDraft(value: Partial<AdImageLabel["finalLabel"]> | undefined, category = "") {
+function normalizeAnalysisDraft(
+  value: Partial<AdImageLabel["finalLabel"]> | undefined,
+  category = ""
+) {
   return {
     ...emptyAnalysisDraft,
     ...(value ?? {}),
@@ -50,7 +53,10 @@ export async function POST(request: Request) {
     const body = (await request.json()) as Partial<AdImageLabel>;
 
     if (!body.imageId || !body.aiDraft || !body.finalLabel) {
-      return NextResponse.json({ ok: false, error: "imageId, aiDraft, finalLabel이 필요합니다." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "imageId, aiDraft, finalLabel이 필요합니다." },
+        { status: 400 }
+      );
     }
 
     const label = await upsertAdImageLabel({
@@ -59,8 +65,14 @@ export async function POST(request: Request) {
       brandName: body.brandName ?? "",
       sourcePlatform: body.sourcePlatform ?? "",
       localImagePath: body.localImagePath,
-      aiDraft: normalizeAnalysisDraft(body.aiDraft, body.category ?? body.finalLabel.category ?? ""),
-      finalLabel: normalizeAnalysisDraft(body.finalLabel, body.category ?? body.finalLabel.category ?? ""),
+      aiDraft: normalizeAnalysisDraft(
+        body.aiDraft,
+        body.category ?? body.finalLabel.category ?? ""
+      ),
+      finalLabel: normalizeAnalysisDraft(
+        body.finalLabel,
+        body.category ?? body.finalLabel.category ?? ""
+      ),
       labeledAt: new Date().toISOString(),
     });
 
@@ -69,7 +81,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "라벨 저장 실패" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -55,11 +55,18 @@ const informalBodyEndings = [
 ];
 
 export function stripEmoji(value: string): string {
-  return String(value || "").replace(emojiRegex, "").replace(/\s{2,}/g, " ").trim();
+  return String(value || "")
+    .replace(emojiRegex, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 export function visibleCopyLength(value: string): number {
-  return [...String(value || "").replace(/\s+/g, "").trim()].length;
+  return [
+    ...String(value || "")
+      .replace(/\s+/g, "")
+      .trim(),
+  ].length;
 }
 
 export function cleanGeneratedText(value: string): string {
@@ -225,7 +232,7 @@ export function repairHeadline(params: {
       product: params.product,
       reference: params.reference,
     }),
-    maxChars,
+    maxChars
   );
 
   return {
@@ -264,18 +271,30 @@ export function normalizeBodyCopyPolite(value: string, fallback: string, maxChar
 export function normalizeCopyVariant(
   variant: Partial<GeneratedAdCopyVariant> | undefined,
   fallback: GeneratedAdCopyVariant,
-  copyLimits?: Partial<Record<CopySlotKey, { maxChars?: number }>>,
+  copyLimits?: Partial<Record<CopySlotKey, { maxChars?: number }>>
 ): GeneratedAdCopyVariant {
   return {
-    headline: trimCopyToLimit(variant?.headline || fallback.headline, copyLimits?.headline?.maxChars || 18),
+    headline: trimCopyToLimit(
+      variant?.headline || fallback.headline,
+      copyLimits?.headline?.maxChars || 18
+    ),
     bodyCopy: normalizeBodyCopyPolite(
       variant?.bodyCopy || fallback.bodyCopy,
       fallback.bodyCopy,
-      copyLimits?.bodyCopy?.maxChars || 36,
+      copyLimits?.bodyCopy?.maxChars || 36
     ),
-    highlightCopy: trimCopyToLimit(variant?.highlightCopy || fallback.highlightCopy, copyLimits?.highlightCopy?.maxChars || 28),
-    bottomBarCopy: trimCopyToLimit(variant?.bottomBarCopy || fallback.bottomBarCopy, copyLimits?.bottomBarCopy?.maxChars || 32),
-    cta: trimCopyToLimit(variant?.cta || fallback.cta || "구성 보러가기", copyLimits?.cta?.maxChars || 10),
+    highlightCopy: trimCopyToLimit(
+      variant?.highlightCopy || fallback.highlightCopy,
+      copyLimits?.highlightCopy?.maxChars || 28
+    ),
+    bottomBarCopy: trimCopyToLimit(
+      variant?.bottomBarCopy || fallback.bottomBarCopy,
+      copyLimits?.bottomBarCopy?.maxChars || 32
+    ),
+    cta: trimCopyToLimit(
+      variant?.cta || fallback.cta || "구성 보러가기",
+      copyLimits?.cta?.maxChars || 10
+    ),
     price: cleanGeneratedText(variant?.price || fallback.price || ""),
   };
 }

@@ -80,7 +80,10 @@ async function extractCard(card: Locator, brandName: string, pageUrl: string): P
   const imageUrl = absoluteUrl(await safeAttr(card.locator("img").first(), "src"), pageUrl);
   const videoThumbnailUrl =
     absoluteUrl(await safeAttr(card.locator("video").first(), "poster"), pageUrl) ??
-    imageFromStyle(await safeAttr(card.locator("[style*='background-image']").first(), "style"), pageUrl);
+    imageFromStyle(
+      await safeAttr(card.locator("[style*='background-image']").first(), "style"),
+      pageUrl
+    );
   const rawSnapshotHref =
     (await safeAttr(card.locator("a[href*='ads/library/?id=']").first(), "href")) ??
     (await safeAttr(card.locator("a[href*='ad_archive_id']").first(), "href")) ??
@@ -136,7 +139,11 @@ async function scrollToLoad(page: Page, limit: number) {
   }
 }
 
-async function collectImageCandidates(page: Page, brandName: string, limit: number): Promise<MetaAdCard[]> {
+async function collectImageCandidates(
+  page: Page,
+  brandName: string,
+  limit: number
+): Promise<MetaAdCard[]> {
   const pageUrl = page.url();
   const crawledAt = new Date().toISOString();
   const candidates = await page.evaluate(() => {
@@ -220,7 +227,9 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
     try {
       await page.goto(metaLibraryUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     } catch (error) {
-      throw new Error(`Meta 페이지 접속 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
+      throw new Error(
+        `Meta 페이지 접속 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`
+      );
     }
     await page.waitForTimeout(2500);
     await scrollToLoad(page, limit);
@@ -240,7 +249,9 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
 
     const cards = await collectCandidateCards(page);
     const count = Math.min(await cards.count(), limit * 3);
-    const byKey = new Map<string, MetaAdCard>(imageCandidates.map((ad) => [ad.imageUrl ?? ad.adSnapshotUrl ?? ad.adText, ad]));
+    const byKey = new Map<string, MetaAdCard>(
+      imageCandidates.map((ad) => [ad.imageUrl ?? ad.adSnapshotUrl ?? ad.adText, ad])
+    );
 
     for (let index = 0; index < count && byKey.size < limit; index += 1) {
       try {
@@ -255,7 +266,9 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
           byKey.set(dedupeKey, ad);
         }
       } catch (error) {
-        warnings.push(error instanceof Error ? error.message : `Card ${index + 1} extraction failed.`);
+        warnings.push(
+          error instanceof Error ? error.message : `Card ${index + 1} extraction failed.`
+        );
       }
     }
 

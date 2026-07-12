@@ -1,7 +1,32 @@
 import { ContentAnalysis, CrawledContent, WatchlistBrand } from "./types";
 
-const hookKeywords = ["?", "왜", "혹시", "지금", "단독", "특가", "랭킹", "베스트", "BEST", "한정", "무료", "할인"];
-const ctaKeywords = ["보기", "구매", "확인", "받기", "신청", "예약", "만나", "shop", "buy", "learn", "discover"];
+const hookKeywords = [
+  "?",
+  "왜",
+  "혹시",
+  "지금",
+  "단독",
+  "특가",
+  "랭킹",
+  "베스트",
+  "BEST",
+  "한정",
+  "무료",
+  "할인",
+];
+const ctaKeywords = [
+  "보기",
+  "구매",
+  "확인",
+  "받기",
+  "신청",
+  "예약",
+  "만나",
+  "shop",
+  "buy",
+  "learn",
+  "discover",
+];
 
 function splitPhrases(text: string) {
   return text
@@ -16,7 +41,9 @@ function unique(values: string[]) {
 }
 
 function scoreBySignals(text: string, signals: string[]) {
-  const found = signals.filter((signal) => text.toLowerCase().includes(signal.toLowerCase())).length;
+  const found = signals.filter((signal) =>
+    text.toLowerCase().includes(signal.toLowerCase())
+  ).length;
   return Math.min(98, 55 + found * 9 + Math.min(20, Math.round(text.length / 180)));
 }
 
@@ -48,25 +75,37 @@ function detectEmotion(text: string) {
 
 function extractHook(text: string, fallback: string) {
   const phrases = splitPhrases(text);
-  return phrases.find((phrase) => hookKeywords.some((keyword) => phrase.includes(keyword))) ?? phrases[0] ?? fallback;
+  return (
+    phrases.find((phrase) => hookKeywords.some((keyword) => phrase.includes(keyword))) ??
+    phrases[0] ??
+    fallback
+  );
 }
 
 function extractCta(text: string) {
   return unique(
-    splitPhrases(text).filter((phrase) => ctaKeywords.some((keyword) => phrase.toLowerCase().includes(keyword))),
+    splitPhrases(text).filter((phrase) =>
+      ctaKeywords.some((keyword) => phrase.toLowerCase().includes(keyword))
+    )
   ).slice(0, 4);
 }
 
 function extractUsp(brand: WatchlistBrand, text: string) {
   const base = [brand.referenceStrength, brand.hookPattern, brand.category];
   const phrases = splitPhrases(text).filter((phrase) =>
-    /(단독|무료|프리미엄|편안|빠른|공식|랭킹|후기|특가|고급|기능|효과)/.test(phrase),
+    /(단독|무료|프리미엄|편안|빠른|공식|랭킹|후기|특가|고급|기능|효과)/.test(phrase)
   );
   return unique([...base, ...phrases]).slice(0, 6);
 }
 
 export function analyzeContent(brand: WatchlistBrand, content: CrawledContent): ContentAnalysis {
-  const text = [content.title, content.description, content.text, brand.referenceStrength, brand.hookPattern]
+  const text = [
+    content.title,
+    content.description,
+    content.text,
+    brand.referenceStrength,
+    brand.hookPattern,
+  ]
     .filter(Boolean)
     .join("\n")
     .slice(0, 6000);
@@ -91,10 +130,22 @@ export function analyzeContent(brand: WatchlistBrand, content: CrawledContent): 
     cta: cta.length ? cta : ["상세 보기", "지금 확인"],
     frames,
     emotion: detectEmotion(text),
-    contentType: frames.includes("가격/할인") ? "프로모션" : frames.includes("UGC") ? "UGC" : "브랜드 콘텐츠",
+    contentType: frames.includes("가격/할인")
+      ? "프로모션"
+      : frames.includes("UGC")
+        ? "UGC"
+        : "브랜드 콘텐츠",
     copyScore: scoreBySignals(text, hookKeywords),
     uspScore: scoreBySignals(usp.join(" "), ["단독", "프리미엄", "효과", "고급", "편안", "공식"]),
-    trendScore: scoreBySignals(text, ["트렌드", "랭킹", "베스트", "챌린지", "시즌", "여름", "겨울"]),
+    trendScore: scoreBySignals(text, [
+      "트렌드",
+      "랭킹",
+      "베스트",
+      "챌린지",
+      "시즌",
+      "여름",
+      "겨울",
+    ]),
     improvementSuggestions: [
       "첫 문장에 문제 상황이나 숫자 근거를 더 명확히 배치하세요.",
       "USP는 기능보다 고객이 얻는 변화 중심으로 다시 쓰면 전환성이 높아집니다.",

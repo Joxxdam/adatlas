@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     if (!cutoutImagePath) {
       return NextResponse.json(
         { success: false, error: "cutoutImagePath is required." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const styledBuffer = await applyProductEffectToPng(cutoutBuffer, effectPreset);
     const styledCutoutImagePath = await saveProcessedProductImage(
       styledBuffer,
-      `cutout-effect-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`,
+      `cutout-effect-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`
     );
 
     return NextResponse.json({
@@ -56,11 +56,12 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : "효과 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
+        error:
+          error instanceof Error
+            ? error.message
+            : "효과 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

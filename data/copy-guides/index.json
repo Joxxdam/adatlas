@@ -3,7 +3,7 @@
     {
       "id": "kookdae-hanwoo",
       "brandName": "국대한우",
-      "aliases": ["국대한우", "국대 한우", "kookdae", "kookdae.co.kr", "국대한우 설록한우"],
+      "aliases": ["국대한우", "국대 한우", "설록우", "국대한우 설록우", "kookdae", "kookdae.co.kr"],
       "categories": ["식품", "고기", "한우", "정육", "등심", "갈비", "스테이크", "선물세트"],
       "domains": ["kookdae.co.kr", "www.kookdae.co.kr"],
       "filePath": "data/copy-guides/kookdae-hanwoo.md",

@@ -8,7 +8,11 @@ export function analyzeCollectedImage(image: CollectedAdImage): ImageAnalysis {
 
   return {
     extractedText: image.brandName,
-    hookType: hasSaleSignal ? "가격/혜택 후킹" : hasReviewSignal ? "리뷰/UGC 후킹" : "브랜드 인지 후킹",
+    hookType: hasSaleSignal
+      ? "가격/혜택 후킹"
+      : hasReviewSignal
+        ? "리뷰/UGC 후킹"
+        : "브랜드 인지 후킹",
     appealPoint: hasSaleSignal ? "할인과 즉시 행동 유도" : "브랜드 이미지와 상품 분위기 전달",
     designTone: "이미지 기반 레퍼런스",
     hasCta,

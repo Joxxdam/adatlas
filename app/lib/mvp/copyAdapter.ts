@@ -50,7 +50,14 @@ export const DEFAULT_COPY_LIMITS: Required<TemplateCopyLimits> = {
   },
 };
 
-const slotKeys: CopySlotKey[] = ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"];
+const slotKeys: CopySlotKey[] = [
+  "headline",
+  "bodyCopy",
+  "highlightCopy",
+  "bottomBarCopy",
+  "cta",
+  "price",
+];
 
 function normalizeVariant(copy: GeneratedAdCopy | GeneratedAdCopyVariant): GeneratedAdCopyVariant {
   return {
@@ -163,12 +170,13 @@ export function adaptCopyToTemplate(params: {
     long: fallbackMedium,
   };
   const order: Array<"short" | "medium" | "long"> = params.preferredVariant
-    ? ([params.preferredVariant, "medium", "short", "long"] as Array<"short" | "medium" | "long">)
-        .filter((value, index, array) => array.indexOf(value) === index)
+    ? (
+        [params.preferredVariant, "medium", "short", "long"] as Array<"short" | "medium" | "long">
+      ).filter((value, index, array) => array.indexOf(value) === index)
     : ["long", "medium", "short"];
 
   for (const key of order) {
-    const variant = normalizeVariant(variants[key]);
+    const variant = normalizeVariant(variants[key] || fallbackMedium);
     if (fitsVariant(variant, limits)) {
       return { fittedCopy: variant, selectedVariant: key, warnings: [] };
     }

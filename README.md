@@ -126,7 +126,7 @@ http://localhost:3000
 OpenAI API를 사용하려면 프로젝트 루트에 `.env.local` 파일을 만들고 아래 값을 넣습니다.
 
 ```env
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=<your_openai_api_key>
 ```
 
 주의:

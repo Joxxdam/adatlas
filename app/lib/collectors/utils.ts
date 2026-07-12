@@ -30,7 +30,10 @@ export async function fetchJson(url: URL | string, init?: RequestInit) {
 
   if (!response.ok) {
     const error = asRecord(body);
-    const message = asString(error.message) || asString(asRecord(error.error).message) || `API 요청 실패: ${response.status}`;
+    const message =
+      asString(error.message) ||
+      asString(asRecord(error.error).message) ||
+      `API 요청 실패: ${response.status}`;
     throw new Error(message);
   }
 

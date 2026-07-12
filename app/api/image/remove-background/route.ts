@@ -46,7 +46,7 @@ export async function POST(request: Request) {
           error: "imagePath is required.",
           fallbackMessage: "Select a source product image before removing the background.",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       const styledBuffer = await applyProductEffectToPng(cutoutBuffer, effectPreset);
       styledCutoutImagePath = await saveProcessedProductImage(
         styledBuffer,
-        `removebg-effect-${Date.now()}-${Math.random().toString(16).slice(2, 10)}.png`,
+        `removebg-effect-${Date.now()}-${Math.random().toString(16).slice(2, 10)}.png`
       );
     }
 
@@ -82,9 +82,7 @@ export async function POST(request: Request) {
       message: result.fallbackMessage || "Background removed successfully",
     });
   } catch (error) {
-    const errorMessage = error instanceof Error
-      ? error.message
-      : "Background removal failed.";
+    const errorMessage = error instanceof Error ? error.message : "Background removal failed.";
 
     console.error("[remove-background] route failed", {
       message: errorMessage,
@@ -98,9 +96,10 @@ export async function POST(request: Request) {
         provider: "removebg",
         error: "REMOVE_BG_FAILED",
         detail: process.env.NODE_ENV === "development" ? errorMessage : undefined,
-        fallbackMessage: "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요.",
+        fallbackMessage:
+          "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

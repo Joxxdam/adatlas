@@ -21,16 +21,25 @@ export async function POST(request: Request) {
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
-      return NextResponse.json({ success: false, error: "업로드할 이미지 파일을 선택해주세요." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "업로드할 이미지 파일을 선택해주세요." },
+        { status: 400 }
+      );
     }
 
     if (!allowedTypes.has(file.type)) {
-      return NextResponse.json({ success: false, error: "PNG, JPG, WEBP 이미지만 업로드할 수 있습니다." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "PNG, JPG, WEBP 이미지만 업로드할 수 있습니다." },
+        { status: 400 }
+      );
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     if (buffer.length > 12 * 1024 * 1024) {
-      return NextResponse.json({ success: false, error: "이미지 파일은 12MB 이하만 업로드할 수 있습니다." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "이미지 파일은 12MB 이하만 업로드할 수 있습니다." },
+        { status: 400 }
+      );
     }
 
     await fs.mkdir(outputDir, { recursive: true });
@@ -53,8 +62,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, imagePath, candidate });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "업로드 이미지 추가에 실패했습니다." },
-      { status: 500 },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "업로드 이미지 추가에 실패했습니다.",
+      },
+      { status: 500 }
     );
   }
 }

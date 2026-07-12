@@ -28,7 +28,9 @@ for (const source of sources) {
       throw new Error(result.error ?? `HTTP ${response.status}`);
     }
 
-    console.log(`[${source}] fetched=${result.fetched} added=${result.added} total=${result.total}`);
+    console.log(
+      `[${source}] fetched=${result.fetched} added=${result.added} total=${result.total}`
+    );
   } catch (error) {
     console.error(`[${source}] ${error instanceof Error ? error.message : "unknown error"}`);
   }

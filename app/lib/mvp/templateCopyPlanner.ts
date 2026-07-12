@@ -28,7 +28,10 @@ function baseVariant(copy: GeneratedAdCopy): GeneratedAdCopyVariant {
   };
 }
 
-function copyWithVariant(masterCopy: GeneratedAdCopy, variant: GeneratedAdCopyVariant): GeneratedAdCopy {
+function copyWithVariant(
+  masterCopy: GeneratedAdCopy,
+  variant: GeneratedAdCopyVariant
+): GeneratedAdCopy {
   return {
     ...masterCopy,
     headline: variant.headline || masterCopy.headline,
@@ -40,7 +43,9 @@ function copyWithVariant(masterCopy: GeneratedAdCopy, variant: GeneratedAdCopyVa
   };
 }
 
-function variantCandidates(masterCopy: GeneratedAdCopy): Record<CopyVariantKey, GeneratedAdCopyVariant> {
+function variantCandidates(
+  masterCopy: GeneratedAdCopy
+): Record<CopyVariantKey, GeneratedAdCopyVariant> {
   const base = baseVariant(masterCopy);
   return {
     short: masterCopy.copyVariants?.short || base,
@@ -51,14 +56,20 @@ function variantCandidates(masterCopy: GeneratedAdCopy): Record<CopyVariantKey, 
 }
 
 function informationLength(copy: GeneratedAdCopyVariant) {
-  return (["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"] as CopySlotKey[])
-    .reduce((total, slot) => total + visibleTemplateCopyLength(String(copy[slot] || "")), 0);
+  return (
+    ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"] as CopySlotKey[]
+  ).reduce((total, slot) => total + visibleTemplateCopyLength(String(copy[slot] || "")), 0);
+}
+
+function candidatePriorityIndex(key: CopyVariantKey) {
+  return variantPriority.indexOf(key);
 }
 
 function scoreVariant(copy: GeneratedAdCopyVariant, copyLimits?: TemplateCopyLimits) {
   const overflowSlots = getCopySlotOverflow(copy, copyLimits);
-  const missingSlots = (["headline", "bodyCopy", "highlightCopy", "bottomBarCopy"] as CopySlotKey[])
-    .filter((slot) => !String(copy[slot] || "").trim());
+  const missingSlots = (
+    ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy"] as CopySlotKey[]
+  ).filter((slot) => !String(copy[slot] || "").trim());
 
   return {
     overflowSlots,
@@ -83,8 +94,23 @@ export function selectBestCopyVariantForTemplate(params: {
       if (a.overflowSlots.length !== b.overflowSlots.length) {
         return a.overflowSlots.length - b.overflowSlots.length;
       }
-      if (a.score !== b.score) return a.score - b.score;
-      return variantPriority.indexOf(a.key) - variantPriority.indexOf(b.key);
+
+      const aHasOverflow = a.overflowSlots.length > 0;
+      const bHasOverflow = b.overflowSlots.length > 0;
+
+      if (!aHasOverflow && !bHasOverflow) {
+        return candidatePriorityIndex(a.key) - candidatePriorityIndex(b.key);
+      }
+
+      if (a.missingSlots.length !== b.missingSlots.length) {
+        return a.missingSlots.length - b.missingSlots.length;
+      }
+
+      const aLength = informationLength(a.copy);
+      const bLength = informationLength(b.copy);
+      if (aLength !== bLength) return aLength - bLength;
+
+      return candidatePriorityIndex(a.key) - candidatePriorityIndex(b.key);
     });
 
   const selected = ranked[0];
@@ -94,7 +120,9 @@ export function selectBestCopyVariantForTemplate(params: {
     copyLimits: params.copyLimits,
   });
   const overflowSlots = getCopySlotOverflow(selected.copy, params.copyLimits);
-  const hasOverflow = overflowSlots.length > 0 || fittedCopy.slotFits.some((slot) => slot.status === "trimmed" || slot.status === "too-long");
+  const hasOverflow =
+    overflowSlots.length > 0 ||
+    fittedCopy.slotFits.some((slot) => slot.status === "trimmed" || slot.status === "too-long");
   const reason = overflowSlots.length
     ? `${selected.key} 문구가 가장 적게 넘쳐 최종 자동축약을 적용합니다.`
     : `${selected.key} 문구가 템플릿 길이에 가장 자연스럽게 맞습니다.`;
@@ -197,11 +225,14 @@ export function buildTemplateCopyPreviews(params: {
   templates: BannerTemplateDefinition[];
   mode: TemplateCopyApplyMode;
 }): TemplateCopyPreview[] {
-  return params.templates.map((template) => resolveCopyForTemplate({
-    masterCopy: params.masterCopy,
-    templateId: template.id,
-    templateName: template.name,
-    copyLimits: template.copyLimits,
-    mode: params.mode,
-  }).preview);
+  return params.templates.map(
+    (template) =>
+      resolveCopyForTemplate({
+        masterCopy: params.masterCopy,
+        templateId: template.id,
+        templateName: template.name,
+        copyLimits: template.copyLimits,
+        mode: params.mode,
+      }).preview
+  );
 }

@@ -12,7 +12,11 @@ async function readJsonArray<T>(filePath: string): Promise<T[]> {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
       return [];
     }
     throw error;
@@ -50,4 +54,3 @@ export const gptImageFeedbackFilePaths = {
   feedbacks: "data/gpt-image-feedbacks.json",
   candidates: "data/gpt-image-candidates.json",
 };
-

@@ -13,10 +13,7 @@ export function getSelectedProductImagePath(productImageState: ProductImageState
     return productImageState.styledCutoutImagePath;
   }
 
-  if (
-    productImageState.selectedImageMode === "cutout" &&
-    productImageState.cutoutImagePath
-  ) {
+  if (productImageState.selectedImageMode === "cutout" && productImageState.cutoutImagePath) {
     return productImageState.cutoutImagePath;
   }
 
@@ -56,11 +53,7 @@ export async function imageSourceToBuffer(sourceImagePath: string) {
 }
 
 function colorDistance(a: number[], b: number[]) {
-  return Math.sqrt(
-    (a[0] - b[0]) ** 2 +
-    (a[1] - b[1]) ** 2 +
-    (a[2] - b[2]) ** 2,
-  );
+  return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
 }
 
 function sampleBackgroundColor(data: Buffer, width: number, height: number) {
@@ -165,14 +158,21 @@ export async function removeBackgroundToPng(sourceImageBuffer: Buffer) {
 }
 
 function effectConfig(effectPreset: ProductImageEffectPreset) {
-  if (effectPreset === "clean-outline") return { outlineWidth: 8, glowBlur: 0, shadowBlur: 0, shadowY: 0 };
-  if (effectPreset === "soft-glow") return { outlineWidth: 0, glowBlur: 18, shadowBlur: 0, shadowY: 0 };
-  if (effectPreset === "commerce-shadow") return { outlineWidth: 0, glowBlur: 0, shadowBlur: 22, shadowY: 16 };
-  if (effectPreset === "outline-glow-shadow") return { outlineWidth: 8, glowBlur: 18, shadowBlur: 22, shadowY: 16 };
+  if (effectPreset === "clean-outline")
+    return { outlineWidth: 8, glowBlur: 0, shadowBlur: 0, shadowY: 0 };
+  if (effectPreset === "soft-glow")
+    return { outlineWidth: 0, glowBlur: 18, shadowBlur: 0, shadowY: 0 };
+  if (effectPreset === "commerce-shadow")
+    return { outlineWidth: 0, glowBlur: 0, shadowBlur: 22, shadowY: 16 };
+  if (effectPreset === "outline-glow-shadow")
+    return { outlineWidth: 8, glowBlur: 18, shadowBlur: 22, shadowY: 16 };
   return { outlineWidth: 0, glowBlur: 0, shadowBlur: 0, shadowY: 0 };
 }
 
-export async function applyProductEffectToPng(cutoutImageBuffer: Buffer, effectPreset: ProductImageEffectPreset) {
+export async function applyProductEffectToPng(
+  cutoutImageBuffer: Buffer,
+  effectPreset: ProductImageEffectPreset
+) {
   const image = sharp(cutoutImageBuffer).rotate().ensureAlpha();
   const metadata = await image.metadata();
   const width = metadata.width || 1;
@@ -184,12 +184,20 @@ export async function applyProductEffectToPng(cutoutImageBuffer: Buffer, effectP
 <svg width="${width + padding * 2}" height="${height + padding * 2}" viewBox="0 0 ${width + padding * 2} ${height + padding * 2}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="productEffect" x="-30%" y="-30%" width="160%" height="170%">
-      ${config.outlineWidth ? `<feMorphology in="SourceAlpha" operator="dilate" radius="${config.outlineWidth}" result="outline" />
+      ${
+        config.outlineWidth
+          ? `<feMorphology in="SourceAlpha" operator="dilate" radius="${config.outlineWidth}" result="outline" />
       <feFlood flood-color="#ffffff" flood-opacity="0.96" result="outlineColor" />
-      <feComposite in="outlineColor" in2="outline" operator="in" result="outlineLayer" />` : ""}
-      ${config.glowBlur ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${config.glowBlur}" result="glow" />
+      <feComposite in="outlineColor" in2="outline" operator="in" result="outlineLayer" />`
+          : ""
+      }
+      ${
+        config.glowBlur
+          ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${config.glowBlur}" result="glow" />
       <feFlood flood-color="#fff4a8" flood-opacity="0.52" result="glowColor" />
-      <feComposite in="glowColor" in2="glow" operator="in" result="glowLayer" />` : ""}
+      <feComposite in="glowColor" in2="glow" operator="in" result="glowLayer" />`
+          : ""
+      }
       ${config.shadowBlur ? `<feDropShadow dx="0" dy="${config.shadowY}" stdDeviation="${config.shadowBlur}" flood-color="#000000" flood-opacity="0.34" result="shadowLayer" />` : ""}
       <feMerge>
         ${config.shadowBlur ? `<feMergeNode in="shadowLayer" />` : ""}

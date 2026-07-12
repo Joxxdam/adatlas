@@ -1,5 +1,13 @@
 import { CollectRequest, CollectedReference } from "./types";
-import { asArray, asRecord, asString, fetchJson, requireEnv, stableId, withCollectedAt } from "./utils";
+import {
+  asArray,
+  asRecord,
+  asString,
+  fetchJson,
+  requireEnv,
+  stableId,
+  withCollectedAt,
+} from "./utils";
 
 export async function collectMeta(request: CollectRequest): Promise<CollectedReference[]> {
   const token = requireEnv("META_ACCESS_TOKEN");
@@ -26,7 +34,7 @@ export async function collectMeta(request: CollectRequest): Promise<CollectedRef
       "ad_creative_link_descriptions",
       "ad_snapshot_url",
       "publisher_platforms",
-    ].join(","),
+    ].join(",")
   );
 
   const result = asRecord(await fetchJson(url));
@@ -34,8 +42,12 @@ export async function collectMeta(request: CollectRequest): Promise<CollectedRef
   return asArray(result.data).map((value) => {
     const item = asRecord(value);
     const externalId = asString(item.id, crypto.randomUUID());
-    const titles = asArray(item.ad_creative_link_titles).map((title) => asString(title)).filter(Boolean);
-    const bodies = asArray(item.ad_creative_bodies).map((body) => asString(body)).filter(Boolean);
+    const titles = asArray(item.ad_creative_link_titles)
+      .map((title) => asString(title))
+      .filter(Boolean);
+    const bodies = asArray(item.ad_creative_bodies)
+      .map((body) => asString(body))
+      .filter(Boolean);
 
     return withCollectedAt({
       id: stableId("meta", externalId),

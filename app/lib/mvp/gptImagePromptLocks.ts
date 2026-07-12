@@ -15,7 +15,7 @@ export function buildImagePreservationLockPrompt(params: BuildImagePreservationL
       "SOURCE IMAGE LOCK:",
       "Use the selected source image as the main visual reference.",
       "Preserve the original subject, product shape, food state, texture, color, count, angle, and core identity.",
-      "Do not replace it with a different product.",
+      "Do not replace it with a different product."
     );
   }
 
@@ -24,7 +24,7 @@ export function buildImagePreservationLockPrompt(params: BuildImagePreservationL
       "PRODUCT PRESERVATION LOCK:",
       "Do not redesign the product.",
       "Do not invent new packaging, labels, logos, stickers, containers, seals, or brand marks.",
-      "Only adjust background, lighting, color grading, sharpness, shadows, and advertising mood.",
+      "Only adjust background, lighting, color grading, sharpness, shadows, and advertising mood."
     );
   }
 
@@ -34,7 +34,7 @@ export function buildImagePreservationLockPrompt(params: BuildImagePreservationL
       "Keep the original food category and cooked/raw state.",
       "Do not turn cooked food into raw packaged meat.",
       "Do not turn a real dish or detail-page food photo into a plastic tray product.",
-      "Prioritize realistic food texture, moisture, appetite appeal, and natural color.",
+      "Prioritize realistic food texture, moisture, appetite appeal, and natural color."
     );
   }
 
@@ -45,10 +45,9 @@ export function buildImagePreservationLockPrompt(params: BuildImagePreservationL
       "No typography.",
       "No letters.",
       "No numbers.",
-      "No price, CTA, badges, stickers, captions, or logos in the generated image.",
+      "No price, CTA, badges, stickers, captions, or logos in the generated image."
     );
   }
 
   return chunks.join("\n");
 }
-

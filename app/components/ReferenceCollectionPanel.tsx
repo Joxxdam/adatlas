@@ -44,7 +44,10 @@ export function ReferenceCollectionPanel() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setState({ status: "loading", message: "브랜드 워치리스트 콘텐츠를 크롤링하고 분석하는 중입니다." });
+    setState({
+      status: "loading",
+      message: "브랜드 워치리스트 콘텐츠를 크롤링하고 분석하는 중입니다.",
+    });
 
     try {
       const response = await fetch("/api/watchlist/crawl", {

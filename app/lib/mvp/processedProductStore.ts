@@ -16,7 +16,7 @@ export async function readProcessedProducts() {
   try {
     const raw = await fs.readFile(storePath, "utf8");
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed as ProcessedProductImageRecord[] : [];
+    return Array.isArray(parsed) ? (parsed as ProcessedProductImageRecord[]) : [];
   } catch {
     return [];
   }

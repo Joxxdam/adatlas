@@ -90,13 +90,15 @@ export async function editImageFromSource(params: {
   formData.append("quality", "medium");
   formData.append("image[]", new Blob([sourceBuffer], { type: contentType }), fileName);
 
-  const referenceImagePaths = Array.from(new Set(params.referenceImagePaths ?? [])).filter(Boolean).slice(0, 3);
+  const referenceImagePaths = Array.from(new Set(params.referenceImagePaths ?? []))
+    .filter(Boolean)
+    .slice(0, 3);
   for (const referenceImagePath of referenceImagePaths) {
     const referenceBuffer = await imageSourceToBuffer(referenceImagePath);
     formData.append(
       "image[]",
       new Blob([referenceBuffer], { type: contentTypeFromSource(referenceImagePath) }),
-      fileNameFromSource(referenceImagePath),
+      fileNameFromSource(referenceImagePath)
     );
   }
 
@@ -109,7 +111,9 @@ export async function editImageFromSource(params: {
   });
 
   if (!response.ok) {
-    throw new Error(`선택된 기준 이미지를 사용한 GPT 이미지 생성에 실패했습니다. ${await response.text()}`);
+    throw new Error(
+      `선택된 기준 이미지를 사용한 GPT 이미지 생성에 실패했습니다. ${await response.text()}`
+    );
   }
 
   return {

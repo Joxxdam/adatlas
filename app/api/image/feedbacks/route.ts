@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { appendGptImageFeedback, readGptImageFeedbacks } from "../../../lib/mvp/gptImageFeedbackStore";
+import {
+  appendGptImageFeedback,
+  readGptImageFeedbacks,
+} from "../../../lib/mvp/gptImageFeedbackStore";
 import type {
   GptImageFailureReason,
   GptImageFeedbackRecord,
@@ -39,8 +42,11 @@ export async function GET() {
     return NextResponse.json({ success: true, feedbacks });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "GPT 이미지 피드백을 불러오지 못했습니다." },
-      { status: 500 },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "GPT 이미지 피드백을 불러오지 못했습니다.",
+      },
+      { status: 500 }
     );
   }
 }
@@ -83,9 +89,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "GPT 이미지 피드백 저장에 실패했습니다." },
-      { status: 500 },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "GPT 이미지 피드백 저장에 실패했습니다.",
+      },
+      { status: 500 }
     );
   }
 }
-

@@ -40,7 +40,11 @@ export const references: Reference[] = [
     cta: "지금 여름 한정으로 만나보기",
     aiScore: 96,
     compatibility: [
-      { brandName: "Original Source", score: 94, reason: "쿨링 USP와 여름 시즌 메시지가 직접 연결됩니다." },
+      {
+        brandName: "Original Source",
+        score: 94,
+        reason: "쿨링 USP와 여름 시즌 메시지가 직접 연결됩니다.",
+      },
       { brandName: "Storynine", score: 31, reason: "업종과 구매 맥락이 다릅니다." },
       { brandName: "Kookdae Hanwoo", score: 12, reason: "식품 카테고리와 전환성이 낮습니다." },
       { brandName: "Bebetailor", score: 76, reason: "사용 장면 중심 구조는 참고할 수 있습니다." },
@@ -64,7 +68,11 @@ export const references: Reference[] = [
       { brandName: "Original Source", score: 28, reason: "시즌 구조만 참고 가능합니다." },
       { brandName: "Storynine", score: 96, reason: "브랜드 톤과 타깃이 정확히 맞습니다." },
       { brandName: "Kookdae Hanwoo", score: 18, reason: "상품 맥락이 다릅니다." },
-      { brandName: "Bebetailor", score: 69, reason: "상황별 코디 프레임은 키즈 패션에도 적용 가능합니다." },
+      {
+        brandName: "Bebetailor",
+        score: 69,
+        reason: "상황별 코디 프레임은 키즈 패션에도 적용 가능합니다.",
+      },
     ],
     boards: ["Storynine", "패션", "장마", "시즌 기획"],
     palette: ["#93c5fd", "#1f2937", "#e5e7eb"],
@@ -100,8 +108,16 @@ export const trendNotes = [
 ];
 
 export const crawlSources = [
-  { name: "Meta Ad Library", status: "API 연결 필요", data: "Facebook/Instagram 광고, 문구, 광고주, 시작일, 국가" },
-  { name: "TikTok Creative Center", status: "API 엔드포인트 필요", data: "Top Ads, 업종, 국가, 좋아요, 영상" },
+  {
+    name: "Meta Ad Library",
+    status: "API 연결 필요",
+    data: "Facebook/Instagram 광고, 문구, 광고주, 시작일, 국가",
+  },
+  {
+    name: "TikTok Creative Center",
+    status: "API 엔드포인트 필요",
+    data: "Top Ads, 업종, 국가, 좋아요, 영상",
+  },
   { name: "Pinterest", status: "API 토큰 필요", data: "이미지, 키워드, 스타일, 보드" },
   { name: "직접 업로드", status: "수동 수집", data: "이미지, 영상, PDF, 랜딩 URL" },
 ];

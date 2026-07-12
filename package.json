@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
     "collect:daily": "node scripts/daily-collector.mjs",
     "collect:schedule": "node scripts/schedule-daily-collector.mjs",
     "crawl:watchlist": "node scripts/watchlist-crawler.mjs",
@@ -27,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "prettier": "^3.9.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

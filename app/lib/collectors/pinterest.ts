@@ -1,5 +1,13 @@
 import { CollectRequest, CollectedReference } from "./types";
-import { asArray, asRecord, asString, fetchJson, requireEnv, stableId, withCollectedAt } from "./utils";
+import {
+  asArray,
+  asRecord,
+  asString,
+  fetchJson,
+  requireEnv,
+  stableId,
+  withCollectedAt,
+} from "./utils";
 
 export async function collectPinterest(request: CollectRequest): Promise<CollectedReference[]> {
   const token = requireEnv("PINTEREST_ACCESS_TOKEN");
@@ -13,7 +21,7 @@ export async function collectPinterest(request: CollectRequest): Promise<Collect
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    }),
+    })
   );
 
   return asArray(result.items).map((value) => {

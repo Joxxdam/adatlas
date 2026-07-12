@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "워치리스트 크롤링 실패" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

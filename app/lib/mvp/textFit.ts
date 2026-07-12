@@ -71,7 +71,13 @@ function wrapText(text: string, maxWidth: number, fontSize: number, letterSpacin
   return lines.length ? lines : [""];
 }
 
-function truncateLines(lines: string[], maxLines: number, maxWidth: number, fontSize: number, letterSpacing: number) {
+function truncateLines(
+  lines: string[],
+  maxLines: number,
+  maxWidth: number,
+  fontSize: number,
+  letterSpacing: number
+) {
   const next = lines.slice(0, Math.max(1, maxLines));
   let last = next[next.length - 1] || "";
   const ellipsis = "...";
@@ -96,7 +102,9 @@ export function fitTextToBox(params: {
   letterSpacing?: number;
   lineHeight?: number;
 }): TextFitResult {
-  const text = String(params.text || "").replace(/\s+/g, " ").trim();
+  const text = String(params.text || "")
+    .replace(/\s+/g, " ")
+    .trim();
   const letterSpacing = params.letterSpacing ?? 0;
   const lineHeight = params.lineHeight ?? 1.1;
   const maxLines = Math.max(1, params.maxLines);
@@ -105,7 +113,9 @@ export function fitTextToBox(params: {
 
   for (let fontSize = maxFontSize; fontSize >= minFontSize; fontSize -= 2) {
     const lines = wrapText(text, params.boxWidth, fontSize, letterSpacing);
-    const fitsWidth = lines.every((line) => estimateTextWidth(line, fontSize, letterSpacing) <= params.boxWidth);
+    const fitsWidth = lines.every(
+      (line) => estimateTextWidth(line, fontSize, letterSpacing) <= params.boxWidth
+    );
     const fitsHeight = Math.min(lines.length, maxLines) * fontSize * lineHeight <= params.boxHeight;
 
     if (fitsWidth && lines.length <= maxLines && fitsHeight) {
@@ -119,10 +129,14 @@ export function fitTextToBox(params: {
   }
 
   const lines = wrapText(text, params.boxWidth, minFontSize, letterSpacing);
-  const didTruncate = lines.length > maxLines || lines.some((line) => estimateTextWidth(line, minFontSize, letterSpacing) > params.boxWidth);
+  const didTruncate =
+    lines.length > maxLines ||
+    lines.some((line) => estimateTextWidth(line, minFontSize, letterSpacing) > params.boxWidth);
 
   return {
-    lines: didTruncate ? truncateLines(lines, maxLines, params.boxWidth, minFontSize, letterSpacing) : lines.slice(0, maxLines),
+    lines: didTruncate
+      ? truncateLines(lines, maxLines, params.boxWidth, minFontSize, letterSpacing)
+      : lines.slice(0, maxLines),
     fontSize: minFontSize,
     didShrink: maxFontSize > minFontSize,
     didTruncate,

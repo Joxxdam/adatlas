@@ -15,10 +15,21 @@ export const DEFAULT_TEMPLATE_COPY_LIMIT_CHARS: Record<CopySlotKey, number> = {
   price: 12,
 };
 
-const slotKeys: CopySlotKey[] = ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"];
+const slotKeys: CopySlotKey[] = [
+  "headline",
+  "bodyCopy",
+  "highlightCopy",
+  "bottomBarCopy",
+  "cta",
+  "price",
+];
 
 export function visibleTemplateCopyLength(value: string) {
-  return [...String(value || "").replace(/\s+/g, "").trim()].length;
+  return [
+    ...String(value || "")
+      .replace(/\s+/g, "")
+      .trim(),
+  ].length;
 }
 
 export function maxCharsForCopySlot(copyLimits: TemplateCopyLimits | undefined, slot: CopySlotKey) {
@@ -33,15 +44,27 @@ function compactCta(value: string) {
 }
 
 function isBadFittedCopy(value: string, slot: CopySlotKey) {
-  const normalized = String(value || "").replace(/\s+/g, "").trim();
+  const normalized = String(value || "")
+    .replace(/\s+/g, "")
+    .trim();
   if (!normalized && slot !== "price") return true;
-  if (slot === "headline" && (/^\d+$/.test(normalized) || /^[\d,]+(?:원|만원|천원)?$/.test(normalized) || normalized.length < 4)) return true;
-  return /소비자|심리|반영|제시|자극|유도|레퍼런스|패턴|분석|구조|구매욕구|클릭욕구|상품이미지|고급스러운상품|대폭인하|인하된점|욕구를자극|부각시켜|강조합니다/.test(normalized);
+  if (
+    slot === "headline" &&
+    (/^\d+$/.test(normalized) ||
+      /^[\d,]+(?:원|만원|천원)?$/.test(normalized) ||
+      normalized.length < 4)
+  )
+    return true;
+  return /소비자|심리|반영|제시|자극|유도|레퍼런스|패턴|분석|구조|구매욕구|클릭욕구|상품이미지|고급스러운상품|대폭인하|인하된점|욕구를자극|부각시켜|강조합니다/.test(
+    normalized
+  );
 }
 
 function slotFallback(slot: CopySlotKey, value: string) {
   if (slot === "headline") {
-    const price = String(value || "").match(/[\d,]+\s*(?:원|만원|천원)?/)?.[0]?.replace(/\s+/g, "");
+    const price = String(value || "")
+      .match(/[\d,]+\s*(?:원|만원|천원)?/)?.[0]
+      ?.replace(/\s+/g, "");
     return price ? `${price}이면 볼만함` : "이건 좀 볼만함";
   }
   if (slot === "bodyCopy") return "부담 없이 준비하세요";
@@ -52,10 +75,14 @@ function slotFallback(slot: CopySlotKey, value: string) {
 }
 
 function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): string {
-  const normalized = String(value || "").replace(/\s+/g, " ").trim();
+  const normalized = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (isBadFittedCopy(normalized, slot)) {
     const fallback = slotFallback(slot, normalized);
-    return visibleTemplateCopyLength(fallback) <= maxChars ? fallback : shortenToLimit(fallback, maxChars, slot);
+    return visibleTemplateCopyLength(fallback) <= maxChars
+      ? fallback
+      : shortenToLimit(fallback, maxChars, slot);
   }
   if (!normalized || visibleTemplateCopyLength(normalized) <= maxChars) return normalized;
   if (slot === "cta") return compactCta(normalized).slice(0, maxChars);
@@ -84,7 +111,9 @@ function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): str
   return output;
 }
 
-export function copyLimitCharSummary(copyLimits?: TemplateCopyLimits): Partial<Record<CopySlotKey, number>> {
+export function copyLimitCharSummary(
+  copyLimits?: TemplateCopyLimits
+): Partial<Record<CopySlotKey, number>> {
   return slotKeys.reduce<Partial<Record<CopySlotKey, number>>>((summary, slot) => {
     summary[slot] = maxCharsForCopySlot(copyLimits, slot);
     return summary;
@@ -93,7 +122,7 @@ export function copyLimitCharSummary(copyLimits?: TemplateCopyLimits): Partial<R
 
 export function getCopySlotOverflow(
   copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>,
-  copyLimits?: TemplateCopyLimits,
+  copyLimits?: TemplateCopyLimits
 ) {
   return slotKeys.filter((slot) => {
     const value = String(copy[slot] || "");
@@ -104,7 +133,7 @@ export function getCopySlotOverflow(
 
 export function hasCopyOverflow(
   copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>,
-  copyLimits?: TemplateCopyLimits,
+  copyLimits?: TemplateCopyLimits
 ) {
   return getCopySlotOverflow(copy, copyLimits).length > 0;
 }

@@ -1,5 +1,13 @@
 import { CollectRequest, CollectedReference } from "./types";
-import { asArray, asRecord, asString, fetchJson, requireEnv, stableId, withCollectedAt } from "./utils";
+import {
+  asArray,
+  asRecord,
+  asString,
+  fetchJson,
+  requireEnv,
+  stableId,
+  withCollectedAt,
+} from "./utils";
 
 export async function collectTikTok(request: CollectRequest): Promise<CollectedReference[]> {
   const endpoint = requireEnv("TIKTOK_AD_API_URL");
@@ -18,7 +26,7 @@ export async function collectTikTok(request: CollectRequest): Promise<CollectedR
         toDate: request.toDate,
         limit: request.limit ?? 25,
       }),
-    }),
+    })
   );
 
   const items = asArray(result.data).length ? asArray(result.data) : asArray(result.items);

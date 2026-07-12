@@ -21,10 +21,7 @@ const allowedPublicPrefixes = [
 
 const maxRemoteImageBytes = 12 * 1024 * 1024;
 
-export type BackgroundRemovalProvider =
-  | "removebg"
-  | "clipdrop"
-  | "mock";
+export type BackgroundRemovalProvider = "removebg" | "clipdrop" | "mock";
 
 export type RemoveBackgroundInput = {
   imagePath: string;
@@ -129,13 +126,15 @@ function truncateForLog(value: string, maxLength = 1600) {
 
 function isUnknownForegroundError(status: number, responseText: string) {
   if (status !== 400) return false;
-  return /unknown_foreground|foreground|identify.*foreground|could not identify|can't identify|cannot identify|not find.*foreground|find.*foreground/i.test(responseText);
+  return /unknown_foreground|foreground|identify.*foreground|could not identify|can't identify|cannot identify|not find.*foreground|find.*foreground/i.test(
+    responseText
+  );
 }
 
 async function createLocalFallbackCutout(
   imagePath: string,
   provider: BackgroundRemovalProvider,
-  debug?: RemoveBackgroundResult["debug"],
+  debug?: RemoveBackgroundResult["debug"]
 ): Promise<RemoveBackgroundResult | null> {
   try {
     const sourceBuffer = await imageSourceToBuffer(imagePath);
@@ -227,11 +226,10 @@ async function downloadRemoteImageAsBlob(imageUrl: string): Promise<PreparedImag
     throw new Error(`Remote image download failed: HTTP ${response.status}`);
   }
 
-  const contentType = response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() || "";
+  const contentType =
+    response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() || "";
   if (!contentType.startsWith("image/")) {
-    throw new Error(
-      `Remote URL is not an image file. content-type=${contentType || "unknown"}`,
-    );
+    throw new Error(`Remote URL is not an image file. content-type=${contentType || "unknown"}`);
   }
 
   const arrayBuffer = await response.arrayBuffer();
@@ -270,17 +268,14 @@ async function buildRemoveBgFormData(imagePath: string, foregroundType?: "produc
   const imageFile = isRemote
     ? await downloadRemoteImageAsBlob(imagePath)
     : await readLocalPublicImageAsBlob(imagePath);
-  const normalizedPngBuffer = await sharp(imageFile.buffer)
-    .rotate()
-    .png()
-    .toBuffer();
+  const normalizedPngBuffer = await sharp(imageFile.buffer).rotate().png().toBuffer();
   const pngFileName = imageFile.filename.replace(/\.[^.]+$/, "") + ".png";
   const formData = new FormData();
 
   formData.append(
     "image_file",
     new Blob([new Uint8Array(normalizedPngBuffer)], { type: "image/png" }),
-    pngFileName,
+    pngFileName
   );
   formData.append("size", "auto");
   formData.append("format", "png");
@@ -290,7 +285,7 @@ async function buildRemoveBgFormData(imagePath: string, foregroundType?: "produc
 
   return {
     formData,
-    sourceKind: isRemote ? "remote-url-downloaded" as const : "local-public-file" as const,
+    sourceKind: isRemote ? ("remote-url-downloaded" as const) : ("local-public-file" as const),
     debug: {
       contentType: imageFile.contentType,
       byteLength: imageFile.byteLength,
@@ -306,7 +301,7 @@ function failureResult(
   input: RemoveBackgroundInput,
   error: string,
   fallbackMessage = "Background removal failed. Keeping the original image.",
-  extra?: Pick<RemoveBackgroundResult, "detail" | "sourceKind" | "debug">,
+  extra?: Pick<RemoveBackgroundResult, "detail" | "sourceKind" | "debug">
 ): RemoveBackgroundResult {
   return {
     success: false,
@@ -322,11 +317,11 @@ function failureResult(
 async function saveResult(
   originalImagePath: string,
   provider: BackgroundRemovalProvider,
-  buffer: Buffer,
+  buffer: Buffer
 ) {
   const processedImagePath = await saveProcessedProductImage(
     buffer,
-    `${provider}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`,
+    `${provider}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`
   );
 
   await appendProcessedProductImage({
@@ -343,7 +338,7 @@ async function saveResult(
 }
 
 export async function removeProductBackground(
-  input: RemoveBackgroundInput,
+  input: RemoveBackgroundInput
 ): Promise<RemoveBackgroundResult> {
   const provider = input.provider || "removebg";
   const imagePath = String(input.imagePath || "").trim();
@@ -356,7 +351,7 @@ export async function removeProductBackground(
     return failureResult(
       { ...input, imagePath, provider },
       "Clipdrop provider is not implemented.",
-      "Clipdrop is not implemented yet. Keeping the original image.",
+      "Clipdrop is not implemented yet. Keeping the original image."
     );
   }
 
@@ -366,7 +361,7 @@ export async function removeProductBackground(
       return failureResult(
         { ...input, imagePath, provider },
         validationError,
-        "이미지 경로를 확인해 주세요. 원격 이미지는 공개 https 이미지 URL만 처리할 수 있습니다.",
+        "이미지 경로를 확인해 주세요. 원격 이미지는 공개 https 이미지 URL만 처리할 수 있습니다."
       );
     }
 
@@ -388,7 +383,7 @@ export async function removeProductBackground(
       return failureResult(
         { ...input, imagePath, provider },
         "REMOVE_BG_API_KEY is not configured",
-        "remove.bg API 키가 설정되지 않았습니다. .env.local에 REMOVE_BG_API_KEY를 추가한 뒤 서버를 재시작해 주세요.",
+        "remove.bg API 키가 설정되지 않았습니다. .env.local에 REMOVE_BG_API_KEY를 추가한 뒤 서버를 재시작해 주세요."
       );
     }
 
@@ -440,7 +435,8 @@ export async function removeProductBackground(
             ...retry.debug,
             removeBgStatus: retryResponse.status,
             removeBgStatusText: retryResponse.statusText,
-            removeBgResponseText: process.env.NODE_ENV === "development" ? retryErrorText : undefined,
+            removeBgResponseText:
+              process.env.NODE_ENV === "development" ? retryErrorText : undefined,
           });
 
           if (localFallback) return localFallback;
@@ -451,17 +447,19 @@ export async function removeProductBackground(
           `remove.bg API failed: HTTP ${retryResponse.status}`,
           "remove.bg could not identify a clear product foreground in this image. Please choose another image with a larger product and clearer background separation, or keep using the original image.",
           {
-            detail: process.env.NODE_ENV === "development"
-              ? retryErrorText || retryResponse.statusText
-              : undefined,
+            detail:
+              process.env.NODE_ENV === "development"
+                ? retryErrorText || retryResponse.statusText
+                : undefined,
             sourceKind: retry.sourceKind,
             debug: {
               ...retry.debug,
               removeBgStatus: retryResponse.status,
               removeBgStatusText: retryResponse.statusText,
-              removeBgResponseText: process.env.NODE_ENV === "development" ? retryErrorText : undefined,
+              removeBgResponseText:
+                process.env.NODE_ENV === "development" ? retryErrorText : undefined,
             },
-          },
+          }
         );
       }
       console.error("[remove-background] remove.bg API failed", {
@@ -478,9 +476,8 @@ export async function removeProductBackground(
         `remove.bg API failed: HTTP ${response.status}`,
         `remove.bg API request failed: HTTP ${response.status}. Please check the image format or remote image access.`,
         {
-          detail: process.env.NODE_ENV === "development"
-            ? errorText || response.statusText
-            : undefined,
+          detail:
+            process.env.NODE_ENV === "development" ? errorText || response.statusText : undefined,
           sourceKind,
           debug: {
             ...debug,
@@ -488,7 +485,7 @@ export async function removeProductBackground(
             removeBgStatusText: response.statusText,
             removeBgResponseText: process.env.NODE_ENV === "development" ? errorText : undefined,
           },
-        },
+        }
       );
     }
 
@@ -507,7 +504,7 @@ export async function removeProductBackground(
     return failureResult(
       { ...input, imagePath, provider },
       error instanceof Error ? error.message : "Background removal failed.",
-      "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요.",
+      "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요."
     );
   }
 }
