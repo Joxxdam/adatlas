@@ -12,14 +12,14 @@ import {
   visibleCopyLength,
 } from "../../../lib/mvp/copyQuality";
 import { buildGenerateCopyPrompt } from "../../../lib/mvp/copyPromptBuilder";
+import { loadCopyGuideForProduct } from "../../../lib/mvp/copyGuideLoader";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
 import {
   copyLimitCharSummary,
-  DEFAULT_TEMPLATE_COPY_LIMIT_CHARS,
-  fitCopyToTemplate,
 } from "../../../lib/mvp/templateCopyFitter";
 import type {
   AdImageLabel,
+  CopyGuideContext,
   GeneratedAdCopy,
   GeneratedAdCopyVariant,
   ProductInfoForPrompt,
@@ -33,6 +33,11 @@ type Body = {
   templateId?: string;
   templateName?: string;
   copyLimits?: TemplateCopyLimits;
+  advertiserName?: string;
+  brandName?: string;
+  copyGuideId?: string;
+  productUrl?: string;
+  category?: string;
 };
 
 type TemplateInfo = {
@@ -54,6 +59,10 @@ function normalizeProduct(productInfo: Partial<ProductInfoForPrompt> = {}): Prod
     productName: productInfo.productName || "",
     category: productInfo.category || "",
     price: productInfo.price || "",
+    advertiserName: productInfo.advertiserName || "",
+    brandName: productInfo.brandName || "",
+    copyGuideId: productInfo.copyGuideId || "",
+    copyGuideContext: productInfo.copyGuideContext,
     discountInfo: productInfo.discountInfo || "",
     mainBenefit: productInfo.mainBenefit || "",
     targetCustomer: productInfo.targetCustomer || "",
@@ -291,36 +300,19 @@ function buildCopyVariants(
   };
 }
 
-function preferredVariantForTemplate(copyLimits?: TemplateCopyLimits): "short" | "medium" | "long" {
-  const headlineMax = copyLimits?.headline?.maxChars || DEFAULT_TEMPLATE_COPY_LIMIT_CHARS.headline;
-  const bodyMax = copyLimits?.bodyCopy?.maxChars || DEFAULT_TEMPLATE_COPY_LIMIT_CHARS.bodyCopy;
-  const highlightMax = copyLimits?.highlightCopy?.maxChars || DEFAULT_TEMPLATE_COPY_LIMIT_CHARS.highlightCopy;
-
-  if (headlineMax <= 14 || bodyMax <= 28 || highlightMax <= 22) return "short";
-  if (headlineMax <= 18 || bodyMax <= 40 || highlightMax <= 26) return "medium";
-  return "long";
-}
-
-function applyPreferredVariant(copy: GeneratedAdCopy, copyLimits?: TemplateCopyLimits): GeneratedAdCopy {
-  const variantKey = preferredVariantForTemplate(copyLimits);
-  const variant = copy.copyVariants?.[variantKey];
-  if (!variant) return copy;
-
-  return {
-    ...copy,
-    headline: variant.headline || copy.headline,
-    bodyCopy: variant.bodyCopy || copy.bodyCopy,
-    highlightCopy: variant.highlightCopy || copy.highlightCopy,
-    bottomBarCopy: variant.bottomBarCopy || copy.bottomBarCopy,
-    cta: variant.cta || copy.cta,
-    price: variant.price || copy.price,
-  };
-}
-
 function referencePatternUsage(reference?: AdImageLabel): ReferencePatternUsage {
   const finalLabel = reference?.finalLabel;
 
   return {
+    usedReferenceIds: reference?.imageId ? [reference.imageId] : [],
+    appliedPatterns: [
+      finalLabel?.reusableCopyPattern,
+      finalLabel?.firstLineHook,
+      finalLabel?.copyStructure,
+      finalLabel?.toneOfVoice || finalLabel?.copyNuance,
+      finalLabel?.purchaseTrigger,
+    ].filter(Boolean) as string[],
+    avoidedDirectCopy: true,
     usedHookPattern: finalLabel?.firstLineHook || finalLabel?.hookType || "",
     usedCopyStructure: finalLabel?.copyStructure || "",
     usedToneOfVoice: finalLabel?.toneOfVoice || finalLabel?.copyNuance || "",
@@ -328,6 +320,21 @@ function referencePatternUsage(reference?: AdImageLabel): ReferencePatternUsage 
     usedPurchaseTrigger: finalLabel?.purchaseTrigger || "",
     usedReusablePattern: finalLabel?.reusableCopyPattern || "",
     usedVisualCopyRelation: finalLabel?.visualCopyRelation || "",
+  };
+}
+
+function copyGuideUsage(guide?: CopyGuideContext | null): GeneratedAdCopy["copyGuideUsage"] | undefined {
+  if (!guide) return undefined;
+
+  const usedSections = Array.from(guide.content.matchAll(/^##\s+(.+)$/gm))
+    .map((match) => match[1].trim())
+    .slice(0, 5);
+
+  return {
+    guideId: guide.guideId,
+    brandName: guide.brandName,
+    usedSections: usedSections.length ? usedSections : ["Brand Copy Guide"],
+    toneApplied: ["브랜드 고정 톤", "가격 소구", "선물/모임 명분", "후기/사회적 증거"],
   };
 }
 
@@ -365,6 +372,7 @@ function normalizeFoodTemplate001Copy(
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
   template?: TemplateInfo,
+  copyGuide?: CopyGuideContext | null,
 ): GeneratedAdCopy {
   const reference = labels[0];
   const price = normalizePrice(product, value.price);
@@ -413,6 +421,7 @@ function normalizeFoodTemplate001Copy(
       ...referencePatternUsage(reference),
       ...(value.referencePatternUsage || {}),
     },
+    copyGuideUsage: value.copyGuideUsage || copyGuideUsage(copyGuide),
     copyValidation: {
       bodyCopy: {
         ok: true,
@@ -443,9 +452,10 @@ function normalizeCopy(
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
   template?: TemplateInfo,
+  copyGuide?: CopyGuideContext | null,
 ): GeneratedAdCopy {
   if (template?.templateId === "food-template-001") {
-    return normalizeFoodTemplate001Copy(value, product, labels, template);
+    return normalizeFoodTemplate001Copy(value, product, labels, template, copyGuide);
   }
 
   const reference = labels[0];
@@ -512,6 +522,7 @@ function normalizeCopy(
       ...referencePatternUsage(reference),
       ...(value.referencePatternUsage || {}),
     },
+    copyGuideUsage: value.copyGuideUsage || copyGuideUsage(copyGuide),
     copyValidation: {
       bodyCopy: {
         ok: true,
@@ -567,7 +578,12 @@ function repairAfterTemplateFit(
   };
 }
 
-function mockCopy(product: ProductInfoForPrompt, labels: AdImageLabel[], template?: TemplateInfo): GeneratedAdCopy {
+function mockCopy(
+  product: ProductInfoForPrompt,
+  labels: AdImageLabel[],
+  template?: TemplateInfo,
+  copyGuide?: CopyGuideContext | null,
+): GeneratedAdCopy {
   const reference = labels[0];
   const headline = buildSafeHeadlineFallback({ product, reference });
   const hookType = inferHookType(reference);
@@ -591,10 +607,12 @@ function mockCopy(product: ProductInfoForPrompt, labels: AdImageLabel[], templat
       appealPoint,
       whyThisWorks: `reference의 ${reference?.finalLabel?.reusableCopyPattern || "카피 패턴"}을 상품 정보에 맞게 보수적으로 변형했습니다.`,
       referencePatternUsage: referencePatternUsage(reference),
+      copyGuideUsage: copyGuideUsage(copyGuide),
     },
     product,
     labels,
     template,
+    copyGuide,
   );
 }
 
@@ -602,6 +620,7 @@ async function generateWithOpenAI(
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
   template?: TemplateInfo,
+  copyGuide?: CopyGuideContext | null,
 ): Promise<GeneratedAdCopy> {
   const prompt = buildGenerateCopyPrompt({
     product: {
@@ -610,6 +629,7 @@ async function generateWithOpenAI(
     },
     reference: labels[0],
     template,
+    copyGuide,
   });
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -633,22 +653,36 @@ async function generateWithOpenAI(
   const text = getResponseText(data);
   const parsed = parseJsonObject(text);
 
-  return normalizeCopy(parsed, product, labels, template);
+  return normalizeCopy(parsed, product, labels, template, copyGuide);
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Body;
     const product = normalizeProduct(body.productInfo);
+    const advertiserName = body.advertiserName || body.brandName || product.advertiserName || product.brandName || "";
+    const brandName = body.brandName || product.brandName || advertiserName;
+    const copyGuide = await loadCopyGuideForProduct({
+      advertiserName,
+      brandName,
+      copyGuideId: body.copyGuideId || product.copyGuideId,
+      productUrl: body.productUrl || product.landingUrl,
+      category: body.category || product.category,
+      productName: product.productName,
+    });
+
+    product.advertiserName = advertiserName;
+    product.brandName = brandName || copyGuide?.brandName || "";
+    product.copyGuideId = copyGuide?.guideId || body.copyGuideId || product.copyGuideId || "";
+    product.copyGuideContext = copyGuide || undefined;
     const template: TemplateInfo = {
       templateId: body.templateId,
       templateName: body.templateName,
-      copyLimits: body.copyLimits,
     };
     const allLabels = await readAdImageLabels();
     const selectedLabels = selectSingleReferenceLabel(product, allLabels, body.referenceLabels ?? []);
 
-    if (!selectedLabels.length) {
+    if (!selectedLabels.length && !copyGuide) {
       return NextResponse.json(
         { ok: false, error: "참고할 레퍼런스 라벨이 없습니다. 먼저 이미지 라벨을 저장해 주세요." },
         { status: 400 },
@@ -656,57 +690,38 @@ export async function POST(request: Request) {
     }
 
     const rawCopy = process.env.OPENAI_API_KEY
-      ? await generateWithOpenAI(product, selectedLabels, template)
-      : mockCopy(product, selectedLabels, template);
-    const variantCopy = applyPreferredVariant(rawCopy, body.copyLimits);
-    const fitted = body.templateId
-      ? fitCopyToTemplate({
-          copy: variantCopy,
-          templateId: body.templateId,
-          copyLimits: body.copyLimits,
-        })
-      : null;
+      ? await generateWithOpenAI(product, selectedLabels, template, copyGuide)
+      : mockCopy(product, selectedLabels, template, copyGuide);
     const copyBeforeRepair = {
-      ...variantCopy,
-      ...(fitted
-        ? {
-            headline: fitted.headline,
-            bodyCopy: fitted.bodyCopy,
-            highlightCopy: fitted.highlightCopy,
-            bottomBarCopy: fitted.bottomBarCopy,
-            cta: body.templateId === "food-template-001" ? "" : fitted.cta,
-            price: fitted.price || variantCopy.price,
-          }
-        : {}),
+      ...rawCopy,
       templateFit: {
-        ...variantCopy.templateFit,
-        templateId: body.templateId || variantCopy.templateFit?.templateId,
-        templateName: body.templateName || variantCopy.templateFit?.templateName,
+        ...rawCopy.templateFit,
+        templateId: body.templateId || rawCopy.templateFit?.templateId,
+        templateName: body.templateName || rawCopy.templateFit?.templateName,
         usedCopyLimits: copyLimitCharSummary(body.copyLimits),
-        fitNotes: fitted?.slotFits.some((slot) => slot.status === "trimmed")
-          ? `${variantCopy.templateFit?.fitNotes || ""} 선택 템플릿의 문구 영역에 맞춰 일부 문구를 줄였습니다.`.trim()
-          : `${variantCopy.templateFit?.fitNotes || ""} 선택 템플릿의 문구 영역에 맞춰 작성했습니다.`.trim(),
+        fitNotes: "masterCopy로 생성했습니다. 템플릿별 길이 적용은 templateCopyPlanner에서 처리합니다.",
       },
-      copyVariants: variantCopy.copyVariants || buildCopyVariants(variantCopy, product, selectedLabels[0], body.copyLimits),
+      copyVariants: rawCopy.copyVariants || buildCopyVariants(rawCopy, product, selectedLabels[0]),
+      copyGuideUsage: rawCopy.copyGuideUsage || copyGuideUsage(copyGuide),
     } satisfies GeneratedAdCopy;
     const copy = repairAfterTemplateFit(
       copyBeforeRepair,
       product,
       selectedLabels[0],
-      body.copyLimits,
+      undefined,
     );
 
     if (isBadHeadline(copy.headline)) {
       copy.headline = trimCopyToLimit(
         buildSafeHeadlineFallback({ product, reference: selectedLabels[0] }),
-        body.copyLimits?.headline?.maxChars || 22,
+        34,
       );
     }
-
     return NextResponse.json({
       ok: true,
       copy,
       referenceLabels: selectedLabels,
+      copyGuide,
       isMock: !process.env.OPENAI_API_KEY,
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { copyLimitCharSummary } from "./templateCopyFitter";
 import type {
   AdImageLabel,
+  CopyGuideContext,
   ProductInfoForPrompt,
   TemplateCopyLimits,
 } from "./types";
@@ -131,10 +132,27 @@ export function buildGenerateCopyPrompt(params: {
   product: ProductInfoForPrompt;
   reference?: AdImageLabel;
   template?: TemplateInfo;
+  copyGuide?: CopyGuideContext | null;
 }) {
-  const { product, reference, template } = params;
+  const { product, reference, template, copyGuide } = params;
   const copyLimitSummary = copyLimitCharSummary(template?.copyLimits);
   const referenceJson = referencePayload(reference);
+  const copyGuideBlock = copyGuide
+    ? `
+[Brand Copy Guide]
+guideId: ${copyGuide.guideId}
+brandName: ${copyGuide.brandName}
+matchedBy: ${copyGuide.matchedBy.join(", ")}
+
+This guide contains the advertiser's preferred tone, repeatable copy structures, price framing, gift framing, proof cues, and CTA style.
+Do not copy example lines verbatim. Recompose the style for the current product and selected reference label.
+
+${copyGuide.content}
+`
+    : `
+[Brand Copy Guide]
+No advertiser-specific copy guide matched. Use the product information and the selected reference label.
+`;
 
   return `
 너는 일반 브랜드 카피라이터가 아니라 한국 이커머스 퍼포먼스 광고의 후킹 문구를 만드는 마케터다.
@@ -153,6 +171,17 @@ export function buildGenerateCopyPrompt(params: {
 
 [상품 정보]
 ${JSON.stringify(product, null, 2)}
+
+${copyGuideBlock}
+
+[Brand Guide + Reference Integration Rules]
+- Brand Copy Guide is the advertiser's fixed tone, preferred expression style, and repeatable persuasion grammar.
+- The selected reference label is the current creative's hook pattern, appeal point, copy nuance, and visual-copy relation.
+- If the two conflict, preserve the brand guide's tone and use the reference label as an angle/structure.
+- Do not copy guide examples or OCR text verbatim.
+- Generate copyVariants.short, copyVariants.medium, copyVariants.long with the same appeal but different lengths.
+- Fill copyGuideUsage with guideId, brandName, usedSections, and toneApplied.
+- Fill referencePatternUsage.usedReferenceIds, appliedPatterns, and avoidedDirectCopy.
 
 [선택 템플릿]
 templateId: ${template?.templateId || ""}
@@ -233,6 +262,9 @@ JSON만 반환한다. 모든 문자열에는 이모티콘을 넣지 않는다.
     "headlineQualityCheck": ""
   },
   "referencePatternUsage": {
+    "usedReferenceIds": [],
+    "appliedPatterns": [],
+    "avoidedDirectCopy": true,
     "usedHookPattern": "",
     "usedCopyStructure": "",
     "usedToneOfVoice": "",
@@ -240,6 +272,12 @@ JSON만 반환한다. 모든 문자열에는 이모티콘을 넣지 않는다.
     "usedPurchaseTrigger": "",
     "usedReusablePattern": "",
     "usedVisualCopyRelation": ""
+  },
+  "copyGuideUsage": {
+    "guideId": "",
+    "brandName": "",
+    "usedSections": [],
+    "toneApplied": []
   },
   "copyVariants": {
     "short": {

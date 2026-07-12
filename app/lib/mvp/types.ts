@@ -61,6 +61,10 @@ export type ProductInfoForPrompt = {
   price: string;
   originalPrice?: string;
   oldPrice?: string;
+  advertiserName?: string;
+  brandName?: string;
+  copyGuideId?: string;
+  copyGuideContext?: CopyGuideContext;
   discountInfo: string;
   mainBenefit: string;
   targetCustomer: string;
@@ -77,6 +81,13 @@ export type ProductInfoForPrompt = {
   sourceImageCandidates?: SourceImageCandidate[];
   selectedSourceImageId?: string;
   selectedSourceImagePath?: string;
+};
+
+export type CopyGuideContext = {
+  guideId: string;
+  brandName: string;
+  content: string;
+  matchedBy: string[];
 };
 
 export type ProductImageMode =
@@ -446,6 +457,9 @@ export type GeneratedAdCopyVariant = {
 };
 
 export type ReferencePatternUsage = {
+  usedReferenceIds?: string[];
+  appliedPatterns?: string[];
+  avoidedDirectCopy?: boolean;
   usedHookPattern?: string;
   usedCopyStructure?: string;
   usedToneOfVoice?: string;
@@ -480,6 +494,12 @@ export type GeneratedAdCopy = GeneratedAdCopyVariant & {
   hookType: string;
   appealPoint: string;
   whyThisWorks: string;
+  copyGuideUsage?: {
+    guideId: string;
+    brandName: string;
+    usedSections: string[];
+    toneApplied: string[];
+  };
   reasoning?: GeneratedCopyReasoning;
   templateFit?: TemplateFitInfo;
   referencePatternUsage?: ReferencePatternUsage;
@@ -489,6 +509,38 @@ export type GeneratedAdCopy = GeneratedAdCopyVariant & {
     medium: GeneratedAdCopyVariant;
     long: GeneratedAdCopyVariant;
   };
+};
+
+export type TemplateCopyApplyMode =
+  | "original"
+  | "auto-variant"
+  | "force-fit";
+
+export type CopyVariantKey = "short" | "medium" | "long" | "base";
+
+export type TemplateCopyVariantSelection = {
+  templateId: string;
+  templateName: string;
+  selectedVariant: CopyVariantKey;
+  reason: string;
+  beforeFitCopy: GeneratedAdCopyVariant;
+  fittedCopy: TemplateFittedCopy;
+  hasOverflow: boolean;
+  overflowSlots: CopySlotKey[];
+  slotFits: TemplateCopySlotFit[];
+};
+
+export type TemplateCopyPreview = {
+  templateId: string;
+  templateName: string;
+  mode: TemplateCopyApplyMode;
+  selectedVariant: CopyVariantKey;
+  originalCopy: GeneratedAdCopy;
+  selectedCopy: GeneratedAdCopyVariant;
+  fittedCopy: TemplateFittedCopy;
+  hasOverflow: boolean;
+  overflowSlots: CopySlotKey[];
+  slotFits: TemplateCopySlotFit[];
 };
 
 export type ImageAnalysis = {

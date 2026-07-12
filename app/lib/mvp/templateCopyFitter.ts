@@ -17,11 +17,11 @@ export const DEFAULT_TEMPLATE_COPY_LIMIT_CHARS: Record<CopySlotKey, number> = {
 
 const slotKeys: CopySlotKey[] = ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"];
 
-function visibleLength(value: string) {
+export function visibleTemplateCopyLength(value: string) {
   return [...String(value || "").replace(/\s+/g, "").trim()].length;
 }
 
-function maxCharsForSlot(copyLimits: TemplateCopyLimits | undefined, slot: CopySlotKey) {
+export function maxCharsForCopySlot(copyLimits: TemplateCopyLimits | undefined, slot: CopySlotKey) {
   return copyLimits?.[slot]?.maxChars || DEFAULT_TEMPLATE_COPY_LIMIT_CHARS[slot];
 }
 
@@ -55,22 +55,22 @@ function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): str
   const normalized = String(value || "").replace(/\s+/g, " ").trim();
   if (isBadFittedCopy(normalized, slot)) {
     const fallback = slotFallback(slot, normalized);
-    return visibleLength(fallback) <= maxChars ? fallback : shortenToLimit(fallback, maxChars, slot);
+    return visibleTemplateCopyLength(fallback) <= maxChars ? fallback : shortenToLimit(fallback, maxChars, slot);
   }
-  if (!normalized || visibleLength(normalized) <= maxChars) return normalized;
+  if (!normalized || visibleTemplateCopyLength(normalized) <= maxChars) return normalized;
   if (slot === "cta") return compactCta(normalized).slice(0, maxChars);
 
   const phrase = normalized
     .split(/[,.!?\n。！？]/)
     .map((part) => part.trim())
-    .find((part) => part && visibleLength(part) <= maxChars);
+    .find((part) => part && visibleTemplateCopyLength(part) <= maxChars);
   if (phrase) return phrase;
 
   const words = normalized.split(/\s+/).filter(Boolean);
   let current = "";
   for (const word of words) {
     const candidate = current ? `${current} ${word}` : word;
-    if (visibleLength(candidate) > maxChars) break;
+    if (visibleTemplateCopyLength(candidate) > maxChars) break;
     current = candidate;
   }
   if (current) return current;
@@ -78,7 +78,7 @@ function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): str
   let output = "";
   for (const char of normalized) {
     if (/\s/.test(char)) continue;
-    if (visibleLength(output + char) > Math.max(1, maxChars - 1)) break;
+    if (visibleTemplateCopyLength(output + char) > Math.max(1, maxChars - 1)) break;
     output += char;
   }
   return output;
@@ -86,9 +86,27 @@ function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): str
 
 export function copyLimitCharSummary(copyLimits?: TemplateCopyLimits): Partial<Record<CopySlotKey, number>> {
   return slotKeys.reduce<Partial<Record<CopySlotKey, number>>>((summary, slot) => {
-    summary[slot] = maxCharsForSlot(copyLimits, slot);
+    summary[slot] = maxCharsForCopySlot(copyLimits, slot);
     return summary;
   }, {});
+}
+
+export function getCopySlotOverflow(
+  copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>,
+  copyLimits?: TemplateCopyLimits,
+) {
+  return slotKeys.filter((slot) => {
+    const value = String(copy[slot] || "");
+    if (!value && slot !== "price") return true;
+    return visibleTemplateCopyLength(value) > maxCharsForCopySlot(copyLimits, slot);
+  });
+}
+
+export function hasCopyOverflow(
+  copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>,
+  copyLimits?: TemplateCopyLimits,
+) {
+  return getCopySlotOverflow(copy, copyLimits).length > 0;
 }
 
 export function fitCopyToTemplate(params: {
@@ -99,10 +117,10 @@ export function fitCopyToTemplate(params: {
   const fitted = {} as Record<CopySlotKey, string>;
   const slotFits = slotKeys.map((key) => {
     const originalText = String(params.copy[key] || "");
-    const maxChars = maxCharsForSlot(params.copyLimits, key);
+    const maxChars = maxCharsForCopySlot(params.copyLimits, key);
     const fittedText = shortenToLimit(originalText, maxChars, key);
-    const currentChars = visibleLength(fittedText);
-    const originalChars = visibleLength(originalText);
+    const currentChars = visibleTemplateCopyLength(fittedText);
+    const originalChars = visibleTemplateCopyLength(originalText);
     const status: "ok" | "trimmed" | "too-long" | "empty" | "needs-review" =
       !fittedText && key !== "price"
         ? "empty"

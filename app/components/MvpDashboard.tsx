@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AdImageAnalysisDraft,
   AdImageLabel,
@@ -24,12 +24,14 @@ import type {
   ProductInfoForPrompt,
   SourceImageCandidate,
   SourceImageSelectionState,
+  TemplateCopyApplyMode,
+  TemplateCopyPreview,
   TemplateFittedCopy,
 } from "../lib/mvp/types";
 import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
 import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
 import { buildImageGenerationPrompt } from "../lib/mvp/imagePromptBuilder";
-import { fitCopyToTemplate } from "../lib/mvp/templateCopyFitter";
+import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
 import { foodCategoryTemplates, foodImpactHeroTemplate, type BannerTemplateDefinition } from "../../lib/bannerTemplates";
 
 type Props = {
@@ -522,6 +524,10 @@ const emptyProductInfo: ProductInfoForPrompt = {
   price: "",
   originalPrice: "",
   oldPrice: "",
+  advertiserName: "",
+  brandName: "",
+  copyGuideId: "",
+  copyGuideContext: undefined,
   discountInfo: "",
   mainBenefit: "",
   targetCustomer: "",
@@ -550,20 +556,26 @@ const productFields: { key: keyof ProductInfoForPrompt; label: string; placehold
   { key: "landingUrl", label: "landingUrl", placeholder: "https://..." },
 ];
 
+const advertiserOptions = [
+  { label: "선택 안 함", value: "", guideId: "" },
+  { label: "국대한우", value: "국대한우", guideId: "kookdae-hanwoo" },
+];
+
 function normalizeProductCategory(...values: string[]) {
-  const text = values.join(" ").toLowerCase();
+  const text = values.filter(Boolean).join(" ").toLowerCase();
+  const firstCategory = values.find((value) => categoryOptions.includes(value));
+  if (firstCategory) return firstCategory;
 
-  if (/식품|한우|고기|과일|농산|수산|간식|선물|명절|추석|설/.test(text)) return "식품/선물";
-  if (/뷰티|화장품|스킨|케어|크림|세럼|샴푸|향수|메이크업/.test(text)) return "뷰티/스킨케어";
-  if (/패션|의류|옷|룩|원피스|팬츠|셔츠|신발|가방|주얼리|헤어밴드/.test(text)) return "패션/의류";
-  if (/생활|용품|주방|청소|욕실|세제|수납/.test(text)) return "생활용품";
-  if (/건강|영양|비타민|유산균|홍삼|단백질|기능식품|건기식/.test(text)) return "건강기능식품";
-  if (/디지털|앱|어플|소프트웨어|전자|가전|모바일/.test(text)) return "디지털/앱";
-  if (/인테리어|리빙|가구|침구|조명|홈데코/.test(text)) return "인테리어/리빙";
+  if (/(식품|선물|한우|고기|소고기|돼지고기|갈비|등심|안심|스테이크|정육|육류|과일|농산|수산|간식|명절|추석|설날|푸드|food|meat|beef|gift)/i.test(text)) return "식품/선물";
+  if (/(뷰티|화장품|스킨|케어|크림|앰플|향수|메이크업|beauty|cosmetic|skin)/i.test(text)) return "뷰티/스킨케어";
+  if (/(패션|의류|옷|룩|자켓|셔츠|신발|가방|주얼리|웨어|fashion|apparel)/i.test(text)) return "패션/의류";
+  if (/(생활|용품|주방|청소|정리|세제|수납|daily|household)/i.test(text)) return "생활용품";
+  if (/(건강|영양|비타민|유산균|홍삼|오메가|기능식품|health|supplement)/i.test(text)) return "건강기능식품";
+  if (/(디지털|앱|어플|소프트웨어|전자|가전|모바일|digital|app|software)/i.test(text)) return "디지털/앱";
+  if (/(인테리어|리빙|가구|침구|조명|홈데코|interior|living|furniture)/i.test(text)) return "인테리어/리빙";
 
-  return categoryOptions.includes(values[0]) ? values[0] : "기타";
+  return "기타";
 }
-
 function getSelectedProductImagePath(state: ProductImageState) {
   if (state.selectedImageMode === "styled-cutout" && state.styledCutoutImagePath) {
     return state.styledCutoutImagePath;
@@ -693,6 +705,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [labelStatus, setLabelStatus] = useState<Status>({ kind: "idle", message: "이미지를 선택하면 라벨 편집 패널이 열립니다." });
   const [selectedReferenceLabelIds, setSelectedReferenceLabelIds] = useState<string[]>([]);
   const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(emptyProductInfo);
+  const [selectedAdvertiserName, setSelectedAdvertiserName] = useState("");
   const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState("");
   const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(emptySourceImageSelection);
   const [sourceImageStatus, setSourceImageStatus] = useState<Status>({ kind: "idle", message: "GPT 이미지 생성 기준이 될 원본 이미지를 선택해주세요." });
@@ -702,6 +715,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [copyReferenceLabels, setCopyReferenceLabels] = useState<AdImageLabel[]>([]);
   const [copyStatus, setCopyStatus] = useState<Status>({ kind: "idle", message: "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다." });
   const [templateFittedCopy, setTemplateFittedCopy] = useState<TemplateFittedCopy | null>(null);
+  const [masterCopy, setMasterCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
+  const [templateCopyMode, setTemplateCopyMode] = useState<TemplateCopyApplyMode>("auto-variant");
+  const [templateCopyPreviews, setTemplateCopyPreviews] = useState<TemplateCopyPreview[]>([]);
   const [bannerCopy, setBannerCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
   const [showCta, setShowCta] = useState(true);
   const [headlineStyleOverrides, setHeadlineStyleOverrides] = useState<HeadlineStyleOverrides>({});
@@ -749,6 +765,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
   });
   const [hoveredDetailImage, setHoveredDetailImage] = useState<{ src: string; label: string; x: number; y: number } | null>(null);
+  const mainDetailCandidatesRef = useRef<HTMLDivElement | null>(null);
+  const [mainDetailScrollPercent, setMainDetailScrollPercent] = useState(0);
   const [selectedHeadlineFontId, setSelectedHeadlineFontId] = useState(systemFontOptions[0].id);
   const [selectedBodyFontId, setSelectedBodyFontId] = useState("noto-sans-kr");
   const [selectedTemplateId, setSelectedTemplateId] = useState("food-template-001");
@@ -794,6 +812,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       return true;
     });
   }, [productInfo.extractedGalleryImages, productInfo.extractedMainImage, productInfo.productImagePath]);
+  useEffect(() => {
+    setMainDetailScrollPercent(0);
+    mainDetailCandidatesRef.current?.scrollTo({ left: 0 });
+  }, [backgroundImageOptions.length, mainImageSourceMode]);
   const sourceImageCandidatesForDisplay = useMemo(() => {
     const existing = sourceImageSelection.candidates.length
       ? sourceImageSelection.candidates
@@ -872,6 +894,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   }, [productInfo.category]);
   const selectedTemplate = categoryTemplates.find((template) => template.id === selectedTemplateId) ?? categoryTemplates[0];
   const selectedCopyLimits = selectedTemplate?.copyLimits;
+  const hasMasterCopy = Boolean(masterCopy.headline || masterCopy.bodyCopy || masterCopy.highlightCopy || masterCopy.bottomBarCopy);
+  const selectedTemplateCopyPreview = templateCopyPreviews.find((preview) => preview.templateId === selectedTemplate?.id);
+  const selectedAdvertiserOption = advertiserOptions.find((option) => option.value === selectedAdvertiserName) ?? advertiserOptions[0];
   const slotMaxChars = (key: "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price") => selectedCopyLimits?.[key]?.maxChars || (key === "headline" ? 14 : key === "bodyCopy" ? 32 : key === "highlightCopy" ? 24 : key === "bottomBarCopy" ? 28 : key === "cta" ? 8 : 12);
   const autoGptImagePrompt = useMemo(() => {
     const reference = selectedReferenceLabels[0]?.finalLabel;
@@ -959,6 +984,34 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       setSelectedTemplateId(categoryTemplates[0].id);
     }
   }, [categoryTemplates, selectedTemplateId]);
+
+  useEffect(() => {
+    if (selectedAdvertiserName) return;
+    if (/kookdae\.co\.kr/i.test(productInfo.landingUrl || "")) {
+      setSelectedAdvertiserName("국대한우");
+    }
+  }, [productInfo.landingUrl, selectedAdvertiserName]);
+
+  useEffect(() => {
+    if (!hasMasterCopy || !selectedTemplate) return;
+
+    const previews = buildTemplateCopyPreviews({
+      masterCopy,
+      templates: categoryTemplates,
+      mode: templateCopyMode,
+    });
+    const { activeRenderCopy, preview } = resolveCopyForTemplate({
+      masterCopy,
+      templateId: selectedTemplate.id,
+      templateName: selectedTemplate.name,
+      copyLimits: selectedTemplate.copyLimits,
+      mode: templateCopyMode,
+    });
+
+    setTemplateCopyPreviews(previews);
+    setTemplateFittedCopy(preview.fittedCopy);
+    setBannerCopy(activeRenderCopy);
+  }, [categoryTemplates, hasMasterCopy, masterCopy, selectedTemplate, templateCopyMode]);
 
   useEffect(() => {
     setProductImageState({
@@ -1277,15 +1330,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   }
 
   async function generateBannerCopy() {
-    if (!selectedTemplate) {
-      setCopyStatus({
-        kind: "error",
-        message: "먼저 사용할 템플릿을 선택해주세요. 템플릿의 문구 영역에 맞춰 광고 문구를 생성합니다.",
-      });
-      return;
-    }
-
-    setCopyStatus({ kind: "loading", message: "선택한 라벨 레퍼런스를 참고해 광고문구를 생성 중입니다." });
+    setCopyStatus({ kind: "loading", message: "선택한 레퍼런스와 상품 정보를 기준으로 masterCopy를 생성 중입니다." });
     setGeneratedBannerPath("");
 
     try {
@@ -1303,11 +1348,18 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productInfo: productInfoForCopy,
+          productInfo: {
+            ...productInfoForCopy,
+            advertiserName: selectedAdvertiserName,
+            brandName: selectedAdvertiserName,
+            copyGuideId: selectedAdvertiserOption.guideId,
+          },
           referenceLabels: selectedReferenceLabels,
-          templateId: selectedTemplate.id,
-          templateName: selectedTemplate.name,
-          copyLimits: selectedTemplate.copyLimits,
+          advertiserName: selectedAdvertiserName,
+          brandName: selectedAdvertiserName,
+          copyGuideId: selectedAdvertiserOption.guideId,
+          productUrl: productInfoForCopy.landingUrl,
+          category: productInfoForCopy.category,
         }),
       });
       const result = await response.json();
@@ -1317,42 +1369,27 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       }
 
       const generatedCopy = result.copy as GeneratedAdCopy;
-      const fitted = generatedCopy.templateFit?.templateId === selectedTemplate.id
-        ? {
-          headline: generatedCopy.headline,
-          bodyCopy: generatedCopy.bodyCopy,
-          highlightCopy: generatedCopy.highlightCopy,
-          bottomBarCopy: generatedCopy.bottomBarCopy,
-          cta: generatedCopy.cta,
-          price: generatedCopy.price,
+      const copyResolution = selectedTemplate
+        ? resolveCopyForTemplate({
+          masterCopy: generatedCopy,
           templateId: selectedTemplate.id,
-          slotFits: fitCopyToTemplate({
-            copy: generatedCopy,
-            templateId: selectedTemplate.id,
-            copyLimits: selectedTemplate.copyLimits,
-          }).slotFits,
-          createdAt: new Date().toISOString(),
-        }
-        : fitCopyToTemplate({
-          copy: generatedCopy,
-          templateId: selectedTemplate.id,
+          templateName: selectedTemplate.name,
           copyLimits: selectedTemplate.copyLimits,
-        });
+          mode: templateCopyMode,
+        })
+        : null;
+
       setCopyResult(generatedCopy);
-      setTemplateFittedCopy(fitted);
-      setBannerCopy({
-        ...generatedCopy,
-        headline: fitted.headline,
-        bodyCopy: fitted.bodyCopy,
-        highlightCopy: fitted.highlightCopy,
-        bottomBarCopy: fitted.bottomBarCopy,
-        cta: fitted.cta,
-        price: fitted.price || generatedCopy.price,
-      });
+      setMasterCopy(generatedCopy);
+      setTemplateCopyPreviews(categoryTemplates.length
+        ? buildTemplateCopyPreviews({ masterCopy: generatedCopy, templates: categoryTemplates, mode: templateCopyMode })
+        : []);
+      setTemplateFittedCopy(copyResolution?.preview.fittedCopy ?? null);
+      setBannerCopy(copyResolution?.activeRenderCopy ?? generatedCopy);
       setCopyReferenceLabels(result.referenceLabels ?? selectedReferenceLabels);
       setCopyStatus({
         kind: "success",
-        message: result.isMock ? "OPENAI_API_KEY가 없어 mock 광고문구를 생성했습니다." : "광고문구를 생성했습니다.",
+        message: result.isMock ? "OPENAI_API_KEY가 없어 mock masterCopy를 생성했습니다." : "masterCopy와 길이별 문구 세트를 생성했습니다.",
       });
     } catch (error) {
       setCopyStatus({ kind: "error", message: error instanceof Error ? error.message : "광고문구 생성 중 오류가 발생했습니다." });
@@ -2000,32 +2037,34 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     setRenderStatus({ kind: "loading", message: "SVG 템플릿을 1200x1200 PNG로 렌더링 중입니다." });
 
     try {
-      const copyForRender = fitCopyToTemplate({
-        copy: bannerCopy,
-        templateId: selectedTemplate.id,
-        copyLimits: selectedTemplate.copyLimits,
-      });
-      setTemplateFittedCopy(copyForRender);
+      const copyResolution = hasMasterCopy
+        ? resolveCopyForTemplate({
+          masterCopy,
+          templateId: selectedTemplate.id,
+          templateName: selectedTemplate.name,
+          copyLimits: selectedTemplate.copyLimits,
+          mode: templateCopyMode,
+        })
+        : resolveCopyForTemplate({
+          masterCopy: bannerCopy,
+          templateId: selectedTemplate.id,
+          templateName: selectedTemplate.name,
+          copyLimits: selectedTemplate.copyLimits,
+          mode: "force-fit",
+        });
+      const copyForRender = copyResolution.activeRenderCopy;
+      setTemplateFittedCopy(copyResolution.preview.fittedCopy);
       const productEffectForRender = productImageState.selectedImageMode === "original"
         ? undefined
         : normalizeProductRenderEffect(cutoutProductEffect);
-      const copyPayload = selectedTemplate.id === "food-template-002"
-        ? {
-            headline: bannerCopy.headline,
-            bodyCopy: bannerCopy.bodyCopy,
-            highlightCopy: bannerCopy.highlightCopy,
-            bottomBarCopy: bannerCopy.bottomBarCopy,
-            cta: showCta ? bannerCopy.cta : "",
-            price: bannerCopy.price || productInfo.price,
-          }
-        : {
-            headline: copyForRender.headline,
-            bodyCopy: copyForRender.bodyCopy,
-            highlightCopy: copyForRender.highlightCopy,
-            bottomBarCopy: copyForRender.bottomBarCopy,
-            cta: showCta ? copyForRender.cta : "",
-            price: copyForRender.price || bannerCopy.price || productInfo.price,
-          };
+      const copyPayload = {
+        headline: copyForRender.headline,
+        bodyCopy: copyForRender.bodyCopy,
+        highlightCopy: copyForRender.highlightCopy,
+        bottomBarCopy: copyForRender.bottomBarCopy,
+        cta: showCta ? copyForRender.cta : "",
+        price: copyForRender.price || productInfo.price,
+      };
       const response = await fetch("/api/render/template-ad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2088,8 +2127,32 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
   }
 
+  function updateMainDetailScrollPercent() {
+    const candidates = mainDetailCandidatesRef.current;
+    if (!candidates) return;
+    const maxScroll = candidates.scrollWidth - candidates.clientWidth;
+    setMainDetailScrollPercent(maxScroll > 0 ? Math.round((candidates.scrollLeft / maxScroll) * 100) : 0);
+  }
+
+  function scrollMainDetailCandidates(percent: number) {
+    const candidates = mainDetailCandidatesRef.current;
+    setMainDetailScrollPercent(percent);
+    if (!candidates) return;
+    const maxScroll = candidates.scrollWidth - candidates.clientWidth;
+    candidates.scrollLeft = maxScroll > 0 ? (maxScroll * percent) / 100 : 0;
+  }
+
   return (
     <main className="mvp-shell">
+      {hoveredDetailImage ? (
+        <div
+          className="floating-detail-preview"
+          style={{ left: hoveredDetailImage.x, top: hoveredDetailImage.y }}
+        >
+          <img alt={`${hoveredDetailImage.label} 크게 보기`} src={hoveredDetailImage.src} />
+          <span>{hoveredDetailImage.label}</span>
+        </div>
+      ) : null}
       <aside className="mvp-sidebar">
         <a className="daywiz-brand" href="https://daywiz.ai/ko/" rel="noreferrer" target="_blank">
           <img
@@ -2233,8 +2296,40 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
             <div className="ad-generation-flow">
               <div className="banner-builder">
+                <section className="strategy-form landing-url-panel">
+                  <p className="eyebrow">Landing URL</p>
+                  <h4>상품 상세페이지 URL</h4>
+                  <label>
+                    <span>landingUrl</span>
+                    <input
+                      onChange={(event) => updateProductInfoField("landingUrl", event.target.value)}
+                      placeholder="https://..."
+                      value={productInfo.landingUrl}
+                    />
+                  </label>
+                  <button disabled={productExtractStatus.kind === "loading"} onClick={() => loadProductInfoFromUrl()} type="button">
+                    상품정보 불러오기
+                  </button>
+                  <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
+                </section>
                 <section className="strategy-form template-first-panel">
                 <p className="eyebrow">Template First</p>
+                <label>
+                  <span>업체별 카피 가이드</span>
+                  <select
+                    onChange={(event) => setSelectedAdvertiserName(event.target.value)}
+                    value={selectedAdvertiserName}
+                  >
+                    {advertiserOptions.map((option) => (
+                      <option key={option.value || "none"} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <small>
+                    {selectedAdvertiserOption.guideId
+                      ? `${selectedAdvertiserOption.label} 카피 가이드 적용 예정`
+                      : "업체별 카피 가이드 미적용"}
+                  </small>
+                </label>
                 <h4>먼저 템플릿 선택</h4>
                 <label>
                   <span>사용할 템플릿</span>
@@ -2304,7 +2399,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
 
               <section className="strategy-form banner-product-form">
                 <p className="eyebrow">Product Info</p>
-                {productFields.map((field) => (
+                {productFields.filter((field) => field.key !== "landingUrl").map((field) => (
                   <label key={field.key}>
                     <span>{field.label}</span>
                     {field.key === "category" ? (
@@ -2323,10 +2418,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     )}
                   </label>
                 ))}
-                <button disabled={productExtractStatus.kind === "loading"} onClick={() => loadProductInfoFromUrl()} type="button">
-                  상품정보 불러오기
-                </button>
-                <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
+
                 </section>
               </div>
 
@@ -2493,6 +2585,25 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   <p className="copy-validation-note">선택한 템플릿 제한에 맞춰 일부 문구가 자동 압축되었습니다.</p>
                 ) : null}
                 {copyResult ? <p className="strategy-empty">{copyResult.whyThisWorks}</p> : null}
+                {copyResult?.copyGuideUsage ? (
+                  <details className="reference-pattern-usage">
+                    <summary>적용된 업체별 카피 가이드</summary>
+                    <dl>
+                      <div>
+                        <dt>가이드</dt>
+                        <dd>{copyResult.copyGuideUsage.brandName} / {copyResult.copyGuideUsage.guideId}</dd>
+                      </div>
+                      <div>
+                        <dt>참고 섹션</dt>
+                        <dd>{copyResult.copyGuideUsage.usedSections.join(", ")}</dd>
+                      </div>
+                      <div>
+                        <dt>적용 톤</dt>
+                        <dd>{copyResult.copyGuideUsage.toneApplied.join(", ")}</dd>
+                      </div>
+                    </dl>
+                  </details>
+                ) : null}
                 {copyResult?.copyValidation?.bodyCopy && (!copyResult.copyValidation.bodyCopy.ok || copyResult.copyValidation.bodyCopy.original !== copyResult.copyValidation.bodyCopy.normalized) ? (
                   <p className="copy-validation-note">바디카피의 반말/비격식 표현이 존댓말형으로 보정되었습니다.</p>
                 ) : null}
@@ -2537,6 +2648,22 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <p className="eyebrow">Template</p>
                     <h4>템플릿 선택</h4>
                   </div>
+                  <label className="copy-mode-selector">
+                    <span>문구 적용 방식</span>
+                    <select
+                      onChange={(event) => setTemplateCopyMode(event.target.value as TemplateCopyApplyMode)}
+                      value={templateCopyMode}
+                    >
+                      <option value="auto-variant">길이별 자동 선택</option>
+                      <option value="original">원문 그대로</option>
+                      <option value="force-fit">강제 자동축약</option>
+                    </select>
+                    <small>
+                      {selectedTemplateCopyPreview
+                        ? `선택 variant: ${selectedTemplateCopyPreview.selectedVariant}${selectedTemplateCopyPreview.hasOverflow ? " / 일부 자동축약" : " / 맞음"}`
+                        : "문구 생성 후 템플릿별 적용 결과가 표시됩니다."}
+                    </small>
+                  </label>
                   {categoryTemplates.length ? (
                     <div className="template-card-list">
                       {categoryTemplates.map((template, index) => (
@@ -3089,13 +3216,30 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                           </select>
                         </label>
                       ))}
-                      <div className="detail-image-strip">
+                      <div
+                        className="source-image-candidates main-detail-candidates"
+                        onScroll={updateMainDetailScrollPercent}
+                        ref={mainDetailCandidatesRef}
+                      >
                         {backgroundImageOptions.map((option) => (
                           <button
                             aria-label={`${option.label} 메인 이미지로 선택`}
                             className={(currentProductImagePaths[0] || backgroundImageOptions[0]?.value) === option.value ? "selected" : ""}
                             key={`main-${option.value}`}
                             onClick={() => setProductImageSlot(0, option.value)}
+                            onMouseEnter={(event) => setHoveredDetailImage({
+                              src: option.value,
+                              label: option.label,
+                              x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                              y: Math.max(20, event.clientY - 80),
+                            })}
+                            onMouseLeave={() => setHoveredDetailImage(null)}
+                            onMouseMove={(event) => setHoveredDetailImage({
+                              src: option.value,
+                              label: option.label,
+                              x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                              y: Math.max(20, event.clientY - 80),
+                            })}
                             type="button"
                           >
                             <img alt={option.label} src={option.value} />
@@ -3104,6 +3248,15 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                           </button>
                         ))}
                       </div>
+                      <input
+                        aria-label="메인 이미지 후보 가로 스크롤"
+                        className="main-detail-scroll-range"
+                        max={100}
+                        min={0}
+                        onChange={(event) => scrollMainDetailCandidates(Number(event.target.value))}
+                        type="range"
+                        value={mainDetailScrollPercent}
+                      />
                     </>
                   ) : null}
                   {mainImageSourceMode === "upload" ? (
@@ -3280,13 +3433,26 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     </select>
                   </label>
                   {productInfo.backgroundMode === "selected-detail-blur-dark" ? (
-                    <div className="detail-image-strip">
+                    <div className="detail-image-strip background-detail-strip">
                       {backgroundImageOptions.map((option) => (
                         <button
                           aria-label={`${option.label} 배경 이미지로 선택`}
                           className={(productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value) === option.value ? "selected" : ""}
                           key={`background-${option.value}`}
                           onClick={() => setProductInfo((current) => ({ ...current, selectedBackgroundSource: option.value }))}
+                          onMouseEnter={(event) => setHoveredDetailImage({
+                            src: option.value,
+                            label: option.label,
+                            x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                            y: Math.max(20, event.clientY - 80),
+                          })}
+                          onMouseLeave={() => setHoveredDetailImage(null)}
+                          onMouseMove={(event) => setHoveredDetailImage({
+                            src: option.value,
+                            label: option.label,
+                            x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                            y: Math.max(20, event.clientY - 80),
+                          })}
                           type="button"
                         >
                           <img alt={option.label} src={option.value} />
