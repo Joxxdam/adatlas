@@ -10,13 +10,21 @@ import {
   headlineFontPresets,
   templateHeadlinePresetMap,
   templatesById,
+  type BannerTemplateDefinition,
 } from "@/lib/bannerTemplates";
+import {
+  prepareBannerRender,
+  type PreparedBannerRender,
+} from "../../../lib/mvp/bannerRenderPipeline";
+import { buildOptimizedTemplateSvg } from "../../../lib/mvp/optimizedTemplateSvg";
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
 import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
 import type {
   GeneratedAdCopy,
   GeneratedAdCopyVariant,
+  CopyVariantKey,
+  ProductInfoForPrompt,
   ProductImageRenderEffect,
   ProductImageState,
   TemplateCopyLimits,
@@ -39,6 +47,9 @@ type RenderBody = {
   templateId?: string;
   canvasSize?: { width?: number; height?: number };
   copy?: Partial<GeneratedAdCopy>;
+  productInfo?: ProductInfoForPrompt;
+  copyVariants?: Partial<Record<"short" | "medium" | "long", GeneratedAdCopyVariant>>;
+  selectedVariant?: CopyVariantKey;
   productImagePath?: string;
   secondaryProductImagePath?: string;
   selectedProductImagePath?: string;
@@ -712,6 +723,23 @@ function resolveHeadlineStyle(templateId: string, style: NonNullable<RenderBody[
   };
 }
 
+const foodImpactFallbackCopy = {
+  headline: "와 진심 미쳤다",
+  bodyCopy: "캠핑용 고기로 샀어요..입에서 살살 녹고\n양도 많은데 가격이 진짜 말도 안 됩니다",
+  highlightCopy: "4만원대로 온가족이서 배터지게 먹었네요",
+  bottomBarCopy: "잡내 없이 부드러운 찰진 등심 도매가 판매",
+  cta: "지금 구매하기",
+};
+
+const genericFoodImpactCopyPattern =
+  /(?:정말\s*저렴|특별한\s*가격|만나는\s*기회|만나보세요|합리적인\s*가격|고품질\s*상품|한정가에|제공합니다|뛰어난\s*한우)/;
+
+function foodImpactCopyValue(value: string | undefined, fallback: string) {
+  const trimmed = value?.trim() || "";
+  if (!trimmed || genericFoodImpactCopyPattern.test(trimmed)) return fallback;
+  return trimmed;
+}
+
 async function renderFoodImpactHero(body: RenderBody) {
   const width = body.canvasSize?.width || 1200;
   const height = body.canvasSize?.height || 1200;
@@ -720,6 +748,14 @@ async function renderFoodImpactHero(body: RenderBody) {
   }
 
   const copy = body.copy ?? {};
+  const foodCopy = {
+    ...copy,
+    headline: foodImpactCopyValue(copy.headline, foodImpactFallbackCopy.headline),
+    bodyCopy: foodImpactCopyValue(copy.bodyCopy, foodImpactFallbackCopy.bodyCopy),
+    highlightCopy: foodImpactCopyValue(copy.highlightCopy, foodImpactFallbackCopy.highlightCopy),
+    bottomBarCopy: foodImpactCopyValue(copy.bottomBarCopy, foodImpactFallbackCopy.bottomBarCopy),
+    cta: foodImpactCopyValue(copy.cta, foodImpactFallbackCopy.cta),
+  };
   const preset = foodImpactHeroTemplate;
   const templateId = body.templateId || preset.id;
   const styleOverrides = body.style ?? {};
@@ -745,24 +781,21 @@ async function renderFoodImpactHero(body: RenderBody) {
     body.productEffect,
     (preset as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect
   );
-  const productImageDataUrl = await imageToDataUrl(selectedProductImagePath || "");
-  const backgroundMode = body.backgroundMode || "none";
-  const backgroundSource =
-    backgroundMode === "auto-detail-blur-dark"
-      ? body.selectedBackgroundSource || selectedProductImagePath || ""
-      : backgroundMode === "selected-detail-blur-dark"
-        ? body.selectedBackgroundSource || ""
-        : "";
-  const backgroundImageDataUrl = backgroundSource
-    ? await imageToDataUrl(backgroundSource).catch(() => "")
-    : "";
+  const imageLayoutPaths = requestedProductImagePaths.length
+    ? requestedProductImagePaths
+    : selectedProductImagePath
+      ? [selectedProductImagePath]
+      : [];
+  const productImageDataUrls = await Promise.all(
+    imageLayoutPaths.slice(0, 2).map((imagePath) => imageToDataUrl(imagePath).catch(() => ""))
+  );
+  const heroImageUrls =
+    productImageDataUrls.length === 1
+      ? [productImageDataUrls[0], productImageDataUrls[0]]
+      : productImageDataUrls.slice(0, 2);
   const logoImageDataUrl = body.logoImagePath
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
-  const hasBackgroundImage = Boolean(backgroundImageDataUrl && backgroundMode !== "none");
-  const backgroundScale = Math.min(1.18, Math.max(1, Number(body.backgroundStyle?.scale ?? 1.08)));
-  const backgroundBlur = backgroundBlurValue(body.backgroundStyle?.blurLevel);
-  const backgroundDim = backgroundDimOpacity(body.backgroundStyle?.dimLevel);
   const selectedFontFile = safeWindowsFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
   const headlineFontFile = safeWindowsFontFile(
@@ -778,104 +811,120 @@ async function renderFoodImpactHero(body: RenderBody) {
   const headlineFontFaceWeight = Number(
     styleOverrides.headlineFontWeight ?? headlineStyle.fontWeight ?? 900
   );
-  const hasCta = Boolean(copy.cta?.trim());
-  const hasPrice = Boolean(copy.price?.trim());
+  const hasCta = Boolean(foodCopy.cta?.trim());
+  const hasPrice = Boolean(foodCopy.price?.trim());
 
-  const headline = fitLines(copy.headline || "", {
-    maxWidth: 1060,
+  const headline = fitLines(foodCopy.headline || "", {
+    maxWidth: 1100,
     maxLines: 2,
     initialSize: headlineStyle.fontSize,
-    minSize: 18,
+    minSize: 78,
     letterSpacing: headlineStyle.letterSpacing,
     lineHeight: headlineStyle.lineHeight,
-    boxHeight: 210,
+    boxHeight: 176,
     slot: "headline",
   });
-  const headlineStartY = headline.lines.length > 1 ? 124 : 148;
+  const headlineStartY = headline.lines.length > 1 ? 68 : 96;
   const headlineBottom =
     headlineStartY +
     (headline.lines.length - 1) * headline.fontSize * headlineStyle.lineHeight +
     headline.fontSize * 0.9;
 
-  const bodyCopy = fitLines(copy.bodyCopy || "", {
-    maxWidth: 950,
-    maxLines: hasManualBodyFontSize ? 3 : 2,
-    initialSize: bodyFontSize,
-    minSize: hasManualBodyFontSize ? Math.max(18, bodyFontSize) : 18,
+  const bodyCopy = fitLines(foodCopy.bodyCopy || "", {
+    maxWidth: 980,
+    maxLines: 2,
+    initialSize: Math.min(bodyFontSize, 48),
+    minSize: hasManualBodyFontSize ? Math.max(30, Math.min(bodyFontSize, 48)) : 30,
     allowBelowMin: !hasManualBodyFontSize,
     lineHeight: type.bodyLineHeight,
-    boxHeight: 126,
+    boxHeight: 116,
     slot: "bodyCopy",
   });
-  const bodyStartY = Math.max(250, headlineBottom + 42);
+  const bodyStartY = Math.max(178, headlineBottom + 24);
   const bodyBottom =
     bodyStartY + (bodyCopy.lines.length - 1) * bodyCopy.fontSize * type.bodyLineHeight;
 
-  const highlight = fitLines(copy.highlightCopy || "", {
-    maxWidth: 1120,
+  const highlight = fitLines(foodCopy.highlightCopy || "", {
+    maxWidth: 1100,
     maxLines: 1,
-    initialSize: type.highlightFontSize,
-    minSize: 14,
+    initialSize: Math.min(type.highlightFontSize, 38),
+    minSize: 28,
     lineHeight: type.highlightLineHeight,
-    boxHeight: 54,
+    boxHeight: 52,
     slot: "highlightCopy",
   });
-  const highlightPaddingX = 4;
-  const highlightPaddingY = 2;
+  const highlightPaddingX = 12;
+  const highlightPaddingY = 4;
   const highlightLineStep = highlight.fontSize * type.highlightLineHeight;
   const highlightTextWidth = Math.max(
     ...highlight.lines.map((line) => estimateWidth(line, highlight.fontSize))
   );
-  const highlightBoxWidth = Math.min(1152, Math.max(1, highlightTextWidth + highlightPaddingX * 2));
+  const highlightBoxWidth = Math.min(
+    1120,
+    Math.max(760, highlightTextWidth + highlightPaddingX * 2)
+  );
   const highlightBoxHeight = Math.max(
-    22,
+    42,
     highlight.lines.length * highlightLineStep + highlightPaddingY * 2
   );
   const highlightBoxX = (width - highlightBoxWidth) / 2;
-  const highlightBoxY = Math.max(318, bodyBottom + 20);
+  const highlightBoxY = Math.min(332, Math.max(296, bodyBottom + 18));
   const highlightCenterY = highlightBoxY + highlightBoxHeight / 2;
-  const imageTop = highlightBoxY + highlightBoxHeight + 18;
 
-  const ctaHeight = hasCta ? 72 : 0;
-  const ctaY = hasCta ? 1092 : 1200;
-  const bottomBarY = hasCta ? 974 : 1104;
-  const bottomBarHeight = hasCta ? 82 : 96;
-  const imageBottom = bottomBarY - 18;
-  const imageHeight = Math.max(320, imageBottom - imageTop);
+  const ctaHeight = hasCta ? 130 : 0;
+  const ctaY = hasCta ? 1070 : 1200;
+  const bottomBarY = hasCta ? 965 : 1095;
+  const bottomBarHeight = hasCta ? 105 : 105;
+  const imageTop = 355;
+  const imageBottom = bottomBarY;
+  const imageHeight = imageBottom - imageTop;
 
-  const bottom = fitLines(copy.bottomBarCopy || "", {
+  const bottom = fitLines(foodCopy.bottomBarCopy || "", {
     maxWidth: 1040,
-    maxLines: 2,
-    initialSize: type.bottomBarFontSize,
-    minSize: 18,
+    maxLines: 1,
+    initialSize: 44,
+    minSize: 30,
     lineHeight: 1.16,
     boxHeight: bottomBarHeight - 12,
     slot: "bottomBarCopy",
   });
-  const cta = fitLines(`${copy.cta || "구성 보러가기"}  >`, {
-    maxWidth: 800,
+  const cta = fitLines(foodCopy.cta || foodImpactFallbackCopy.cta, {
+    maxWidth: 860,
     maxLines: 1,
-    initialSize: type.ctaFontSize,
-    minSize: 18,
+    initialSize: 40,
+    minSize: 28,
     lineHeight: 1,
     boxHeight: ctaHeight || 72,
     slot: "cta",
   });
-  const priceBadge = {
-    x: 810,
-    y: Math.min(imageTop + imageHeight - 108, bottomBarY - 110),
-    width: 350,
-    height: 86,
-  };
-  const price = fitLines(copy.price || "", {
-    maxWidth: priceBadge.width - 56,
+  const salePriceText = (foodCopy.price || "").trim();
+  const oldPriceText = (body.productOriginalPrice || body.productOldPrice || "").trim();
+  const salePrice = fitLines(salePriceText, {
+    maxWidth: 340,
     maxLines: 1,
-    initialSize: 40,
-    minSize: 20,
+    initialSize: 58,
+    minSize: 36,
     lineHeight: 1,
-    boxHeight: priceBadge.height,
+    boxHeight: 66,
     slot: "price",
   });
+  const oldPrice = fitLines(oldPriceText, {
+    maxWidth: 230,
+    maxLines: 1,
+    initialSize: 32,
+    minSize: 20,
+    lineHeight: 1,
+    boxHeight: 42,
+    slot: "price",
+  });
+  const priceBlockX = 86;
+  const priceBlockY = imageBottom - 126;
+  const dealBadgeWidth = 120;
+  const dealBadgeHeight = 42;
+  const salePriceX = priceBlockX + dealBadgeWidth + 24;
+  const salePriceY = priceBlockY + 80;
+  const oldPriceX = priceBlockX + 205;
+  const oldPriceY = priceBlockY + 28;
 
   const textLines: TextLine[] = [
     ...lineText(headline.lines, {
@@ -923,26 +972,13 @@ async function renderFoodImpactHero(body: RenderBody) {
   if (hasCta) {
     textLines.push(
       ...centeredLineText(cta.lines, {
-        x: 600,
+        x: 56,
         centerY: ctaY + ctaHeight / 2,
         fontSize: cta.fontSize,
         lineHeight: 1,
         fill: style.ctaTextColor,
-        weight: 800,
-      })
-    );
-  }
-
-  if (hasPrice) {
-    textLines.push(
-      ...centeredLineText(price.lines, {
-        x: priceBadge.x + priceBadge.width / 2,
-        centerY: priceBadge.y + priceBadge.height / 2,
-        fontSize: price.fontSize,
-        lineHeight: 1,
-        fill: "#ffffff",
-        weight: 900,
-      })
+        weight: 700,
+      }).map((line) => ({ ...line, anchor: "start" as const }))
     );
   }
 
@@ -972,27 +1008,39 @@ async function renderFoodImpactHero(body: RenderBody) {
     <filter id="headlineShadow" x="-10%" y="-10%" width="120%" height="130%">
       <feDropShadow dx="${headlineStyle.shadowOffsetX}" dy="${headlineStyle.shadowOffsetY}" stdDeviation="${headlineStyle.shadowBlur}" flood-color="${escapeXml(headlineStyle.shadowColor)}"/>
     </filter>
-    <filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%">
-      <feGaussianBlur stdDeviation="${backgroundBlur}" edgeMode="duplicate"/>
-    </filter>
   </defs>
   <rect width="${width}" height="${height}" fill="${style.backgroundColor}" />
-  ${
-    hasBackgroundImage
-      ? `<image href="${backgroundImageDataUrl}" x="${(width - width * backgroundScale) / 2}" y="${(height - height * backgroundScale) / 2}" width="${width * backgroundScale}" height="${height * backgroundScale}" preserveAspectRatio="xMidYMid slice" filter="url(#backgroundBlur)" opacity="0.92" />
-  <rect width="${width}" height="${height}" fill="${escapeXml(body.backgroundStyle?.overlayColor || "#000000")}" opacity="${backgroundDim}" />`
-      : ""
-  }
+  <rect x="0" y="0" width="${width}" height="385" fill="#ffffff" />
+  <rect x="0" y="${imageTop}" width="${width}" height="${imageHeight}" fill="#ffffff" />
   <rect x="${highlightBoxX}" y="${highlightBoxY}" width="${highlightBoxWidth}" height="${highlightBoxHeight}" rx="0" fill="${style.highlightBackground}" />
   ${
-    productImageDataUrl
-      ? productImageSvg(productImageDataUrl, 42, imageTop, 1116, imageHeight, "meet", productEffect)
-      : `<rect x="70" y="${imageTop + 30}" width="1060" height="${Math.max(300, imageHeight - 60)}" rx="28" fill="#ffffff" />`
+    heroImageUrls.length
+      ? heroImageUrls
+          .map((dataUrl, index) =>
+            productImageSvg(
+              dataUrl,
+              index === 0 ? 42 : 596,
+              imageTop + 18,
+              562,
+              imageHeight - 24,
+              "cover",
+              productEffect
+            )
+          )
+          .join("\n  ")
+      : `<rect x="0" y="${imageTop}" width="${width}" height="${imageHeight}" fill="#f4f4f4" />
+  <text x="600" y="${imageTop + imageHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="34" font-weight="800" fill="#777777">PRODUCT IMAGE</text>`
   }
-  ${hasPrice ? `<rect x="${priceBadge.x}" y="${priceBadge.y}" width="${priceBadge.width}" height="${priceBadge.height}" rx="${priceBadge.height / 2}" fill="${style.priceColor}" />` : ""}
+  ${oldPriceText ? `<text x="${priceBlockX + 8}" y="${oldPriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">기존가</text>
+  <text x="${oldPriceX}" y="${oldPriceY}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">${escapeXml(oldPrice.lines[0] || "")}</text>
+  <line x1="${oldPriceX - 130}" y1="${oldPriceY}" x2="${oldPriceX + 130}" y2="${oldPriceY}" stroke="#ffffff" stroke-width="5" />` : ""}
+  <rect x="${priceBlockX}" y="${priceBlockY + 78}" width="${dealBadgeWidth}" height="${dealBadgeHeight}" rx="10" fill="${style.priceColor}" />
+  <text x="${priceBlockX + dealBadgeWidth / 2}" y="${priceBlockY + 99}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="26" font-weight="900" fill="#ffffff">파격특가</text>
+  ${hasPrice ? `<text x="${salePriceX}" y="${salePriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(headlineStyle.fontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff238" stroke="#111111" stroke-width="7" paint-order="stroke fill">${escapeXml(salePrice.lines[0] || "")}</text>` : ""}
   <rect x="0" y="${bottomBarY}" width="${width}" height="${bottomBarHeight}" fill="${style.bottomBarColor}" />
-  ${hasCta ? `<rect x="178" y="${ctaY}" width="844" height="${ctaHeight}" rx="${ctaHeight / 2}" fill="${style.ctaBarColor}" />` : ""}
+  ${hasCta ? `<rect x="0" y="${ctaY}" width="${width}" height="${ctaHeight}" rx="0" fill="${style.ctaBarColor}" />` : ""}
   ${textSvg(textLines, `AdAtlasKR, ${style.fontFamily}`)}
+  ${hasCta ? `<text x="1132" y="${ctaY + ctaHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="68" font-weight="700" fill="${style.ctaTextColor}">›</text>` : ""}
   ${logoOverlaySvg(logoImageDataUrl, { x: width - 168, y: 42, size: 126 })}
   ${aiDisclosureSvg(body.aiDisclosure, `AdAtlasKR, ${style.fontFamily}`, width, height)}
 </svg>`;
@@ -1754,6 +1802,374 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
         strokeWidth: 4,
       }))
     );
+  } else if (templateId === "camping-popularity-impact") {
+    const topCopy = fitLines(copy.bodyCopy || copy.bottomBarCopy || "", {
+      maxWidth: 1060,
+      maxLines: 1,
+      initialSize: 58,
+      minSize: 34,
+      boxHeight: 76,
+      slot: "bodyCopy",
+    });
+    const mainHeadline = fitLines(copy.headline || "", {
+      maxWidth: 1080,
+      maxLines: 2,
+      initialSize: 126,
+      minSize: 58,
+      letterSpacing: -4,
+      lineHeight: 0.94,
+      boxHeight: 180,
+      slot: "headline",
+    });
+    const productNameLine = fitLines(
+      body.productOriginalPrice
+        ? copy.bodyCopy || ""
+        : copy.bodyCopy || body.productOriginalPrice || copy.bottomBarCopy || "",
+      {
+        maxWidth: 560,
+        maxLines: 1,
+        initialSize: 48,
+        minSize: 26,
+        slot: "bodyCopy",
+      }
+    );
+    const oldPrice = fitLines(body.productOriginalPrice || body.productOldPrice || "", {
+      maxWidth: 250,
+      maxLines: 1,
+      initialSize: 46,
+      minSize: 24,
+    });
+    const salePrice = fitLines(copy.price || "", {
+      maxWidth: 300,
+      maxLines: 1,
+      initialSize: 72,
+      minSize: 42,
+      slot: "price",
+    });
+    const ctaLine = fitLines(copy.cta || copy.bottomBarCopy || "구성 보러가기 >>", {
+      maxWidth: 1040,
+      maxLines: 1,
+      initialSize: 52,
+      minSize: 30,
+      slot: "cta",
+    });
+
+    shapes += `<rect width="1200" height="1200" fill="#ffffff" />
+      ${image(0, 410, 1200, 640, "cover")}
+      <rect x="0" y="410" width="1200" height="640" fill="url(#foodTemplate2Shade)" opacity="0.38" />
+      <rect x="0" y="300" width="1200" height="116" fill="#e60000" />
+      <rect x="0" y="1050" width="1200" height="150" fill="#e60000" />
+      ${
+        oldPrice.lines[0]
+          ? `<text x="680" y="362" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="${oldPrice.fontSize}" font-weight="700" fill="rgba(255,255,255,0.76)">${escapeXml(oldPrice.lines[0])}</text>
+      <line x1="672" y1="362" x2="880" y2="362" stroke="rgba(255,255,255,0.82)" stroke-width="5" />`
+          : ""
+      }
+      ${
+        salePrice.lines[0]
+          ? `<text x="920" y="362" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff200">${escapeXml(salePrice.lines[0])}</text>`
+          : ""
+      }`;
+    textLines.push(
+      ...centeredLineText(topCopy.lines, {
+        x: 600,
+        centerY: 84,
+        fontSize: topCopy.fontSize,
+        lineHeight: 1,
+        fill: "#111111",
+        weight: 800,
+        letterSpacing: -1,
+      })
+    );
+    textLines.push(
+      ...centeredLineText(mainHeadline.lines, {
+        x: 600,
+        centerY: 210,
+        fontSize: mainHeadline.fontSize,
+        lineHeight: 0.94,
+        fill: "#e60000",
+        weight: 900,
+        letterSpacing: -4,
+      }).map((line) => ({ ...line, fontFamily: headlineFontFamily }))
+    );
+    textLines.push(
+      ...centeredLineText(productNameLine.lines, {
+        x: 330,
+        centerY: 362,
+        fontSize: productNameLine.fontSize,
+        lineHeight: 1,
+        fill: "#ffffff",
+        weight: 800,
+      })
+    );
+    textLines.push(
+      ...centeredLineText(ctaLine.lines, {
+        x: 600,
+        centerY: 1128,
+        fontSize: ctaLine.fontSize,
+        lineHeight: 1,
+        fill: "#ffffff",
+        weight: 900,
+      })
+    );
+  } else if (templateId === "circle-focus-review") {
+    const reviewCopy = fitLines(copy.headline || copy.bodyCopy || "", {
+      maxWidth: 1080,
+      maxLines: 3,
+      initialSize: 74,
+      minSize: 42,
+      lineHeight: 1.15,
+      boxHeight: 300,
+      slot: "headline",
+    });
+    const priceBadge = fitLines(copy.price || copy.highlightCopy || "", {
+      maxWidth: 260,
+      maxLines: 1,
+      initialSize: 30,
+      minSize: 20,
+      slot: "price",
+    });
+    shapes += `<rect width="1200" height="1200" fill="#ffffff" />
+      ${image(0, 0, 1200, 790, "cover")}
+      <circle cx="600" cy="382" r="300" fill="none" stroke="#e60000" stroke-width="7" opacity="0.96" />
+      <rect x="0" y="790" width="1200" height="410" fill="#ffffff" />
+      ${
+        priceBadge.lines[0]
+          ? `<rect x="824" y="1060" width="280" height="64" rx="32" fill="#e60000" />
+      <text x="964" y="1093" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="${priceBadge.fontSize}" font-weight="900" fill="#ffffff">${escapeXml(priceBadge.lines[0])}</text>`
+          : ""
+      }`;
+    textLines.push(
+      ...centeredLineText(reviewCopy.lines, {
+        x: 600,
+        centerY: 992,
+        fontSize: reviewCopy.fontSize,
+        lineHeight: 1.16,
+        fill: "#111111",
+        weight: 900,
+        letterSpacing: -2,
+      }).map((line, index) => ({
+        ...line,
+        fill: index === reviewCopy.lines.length - 1 ? "#000000" : "#111111",
+        fontFamily: headlineFontFamily,
+      }))
+    );
+  } else if (templateId === "black-repeat-product") {
+    const topScript = fitLines(copy.bodyCopy || copy.bottomBarCopy || "", {
+      maxWidth: 1060,
+      maxLines: 1,
+      initialSize: 48,
+      minSize: 28,
+      slot: "bodyCopy",
+    });
+    const blackHeadline = fitLines(copy.headline || "", {
+      maxWidth: 1100,
+      maxLines: 2,
+      initialSize: 106,
+      minSize: 58,
+      letterSpacing: -3,
+      lineHeight: 0.98,
+      boxHeight: 220,
+      slot: "headline",
+    });
+    const infoBar = fitLines(
+      [copy.highlightCopy, copy.price, copy.bottomBarCopy].filter(Boolean).join(" · "),
+      {
+        maxWidth: 980,
+        maxLines: 2,
+        initialSize: 40,
+        minSize: 26,
+        lineHeight: 1.1,
+        boxHeight: 86,
+        slot: "highlightCopy",
+      }
+    );
+    const repeatImages = [0, 1, 2, 3].map(
+      (index) =>
+        templateProductImages[index] ||
+        templateProductImages[index % templateProductImages.length] ||
+        productImageDataUrl
+    );
+    shapes += `<rect width="1200" height="1200" fill="#050505" />
+      <rect x="0" y="0" width="1200" height="1200" fill="url(#foodTemplate1Shade)" opacity="0.35" />
+      ${repeatImages
+        .map((dataUrl, index) => {
+          const x = 82 + index * 260;
+          const rotation = [-5, -2, 2, 5][index];
+          return `<g transform="rotate(${rotation} ${x + 140} 690)">${imageFromDataUrl(dataUrl, x, 380, 280, 620, "meet")}</g>`;
+        })
+        .join("")}
+      <rect x="50" y="1018" width="1100" height="112" rx="40" fill="#18ead8" />`;
+    textLines.push(
+      ...centeredLineText(topScript.lines, {
+        x: 600,
+        centerY: 78,
+        fontSize: topScript.fontSize,
+        lineHeight: 1,
+        fill: "#ffffff",
+        weight: 700,
+      })
+    );
+    blackHeadline.lines.forEach((line, index) => {
+      shapes += mixedTextSvg({
+        text: line,
+        x: 600,
+        y: 174 + index * blackHeadline.fontSize * 0.98,
+        anchor: "middle",
+        dominantBaseline: "middle",
+        fontFamily: headlineFontFamily,
+        fontSize: blackHeadline.fontSize,
+        fontWeight: 900,
+        defaultFill: "#ffffff",
+        accentFill: "#18ead8",
+        accentPhrase: styleOverrides.accentPhrase || inferAccentPhraseFromCopy(copy),
+        letterSpacing: -3,
+      });
+    });
+    textLines.push(
+      ...centeredLineText(infoBar.lines, {
+        x: 600,
+        centerY: 1074,
+        fontSize: infoBar.fontSize,
+        lineHeight: 1.08,
+        fill: "#001111",
+        weight: 900,
+      })
+    );
+  } else if (templateId === "sports-benefit-chip") {
+    backgroundLayer = secondaryProductImageDataUrl
+      ? `<image href="${secondaryProductImageDataUrl}" x="-40" y="-40" width="1280" height="1280" preserveAspectRatio="xMidYMid slice" filter="url(#backgroundBlur)" />
+      <rect width="1200" height="1200" fill="#000000" opacity="0.64" />`
+      : backgroundLayer;
+    const sportsHeadline = fitLines(copy.headline || "", {
+      maxWidth: 560,
+      maxLines: 5,
+      initialSize: 72,
+      minSize: 38,
+      lineHeight: 1.06,
+      boxHeight: 430,
+      slot: "headline",
+    });
+    const chipTexts = [
+      copy.highlightCopy || "핵심 성분",
+      copy.bodyCopy || "체감 포인트",
+      copy.bottomBarCopy || "데일리 케어",
+    ];
+    const ctaSmall = fitLines([copy.cta, copy.price].filter(Boolean).join(" "), {
+      maxWidth: 780,
+      maxLines: 1,
+      initialSize: 32,
+      minSize: 22,
+      slot: "cta",
+    });
+    shapes += `<rect width="1200" height="1200" fill="#050b0f" opacity="${secondaryProductImageDataUrl ? "0" : "1"}" />
+      <circle cx="885" cy="612" r="285" fill="#ffffff" opacity="0.16" />
+      ${image(665, 270, 465, 760, "meet")}
+      ${chipTexts
+        .map((text, index) => {
+          const y = 535 + index * 100;
+          const fill = index === 1 ? "#ffffff" : "#18e6c5";
+          const textFill = index === 1 ? "#111111" : "#001111";
+          return `<rect x="65" y="${y}" width="520" height="74" rx="37" fill="${fill}" />
+          <text x="325" y="${y + 38}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="34" font-weight="900" fill="${textFill}">${escapeXml(text.slice(0, 18))}</text>`;
+        })
+        .join("")}`;
+    sportsHeadline.lines.forEach((line, index) => {
+      shapes += mixedTextSvg({
+        text: line,
+        x: 55,
+        y: 112 + index * sportsHeadline.fontSize * 1.06,
+        anchor: "start",
+        fontFamily: headlineFontFamily,
+        fontSize: sportsHeadline.fontSize,
+        fontWeight: 900,
+        defaultFill: "#ffffff",
+        accentFill: "#18e6c5",
+        accentPhrase: styleOverrides.accentPhrase || inferAccentPhraseFromCopy(copy),
+        letterSpacing: -3,
+        strokeColor: "rgba(0,0,0,0.5)",
+        strokeWidth: 3,
+      });
+    });
+    textLines.push(
+      ...lineText(ctaSmall.lines, {
+        x: 60,
+        startY: 1130,
+        fontSize: ctaSmall.fontSize,
+        lineHeight: 1,
+        fill: "#ffffff",
+        weight: 800,
+      }).map((line) => ({ ...line, anchor: "start" as const }))
+    );
+  } else if (templateId === "before-after-split-review") {
+    const leftImage = secondaryProductImageDataUrl || productImageDataUrl;
+    const rightHeadline = fitLines(copy.headline || "", {
+      maxWidth: 500,
+      maxLines: 5,
+      initialSize: 66,
+      minSize: 36,
+      lineHeight: 1.08,
+      boxHeight: 360,
+      slot: "headline",
+    });
+    const topNote = fitLines(copy.bodyCopy || "", {
+      maxWidth: 500,
+      maxLines: 1,
+      initialSize: 32,
+      minSize: 22,
+      slot: "bodyCopy",
+    });
+    const sideNotes = [copy.highlightCopy, copy.bottomBarCopy, copy.cta].filter(
+      (note): note is string => Boolean(note)
+    );
+    const smallPrice = fitLines(copy.price || "", {
+      maxWidth: 360,
+      maxLines: 1,
+      initialSize: 38,
+      minSize: 24,
+      slot: "price",
+    });
+    shapes += `<rect width="1200" height="1200" fill="#ffffff" />
+      ${imageFromDataUrl(leftImage, 0, 0, 600, 1200, "cover")}
+      <rect x="0" y="780" width="600" height="420" fill="url(#foodTemplate1Shade)" opacity="0.65" />
+      <rect x="600" y="0" width="600" height="1200" fill="#ffffff" />
+      ${image(790, 620, 310, 450, "meet")}
+      ${
+        smallPrice.lines[0]
+          ? `<text x="900" y="1110" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${smallPrice.fontSize}" font-weight="900" fill="#00afa5">${escapeXml(smallPrice.lines[0])}</text>`
+          : ""
+      }`;
+    textLines.push(
+      ...lineText(topNote.lines, {
+        x: 660,
+        startY: 110,
+        fontSize: topNote.fontSize,
+        lineHeight: 1,
+        fill: "#111111",
+        weight: 700,
+      }).map((line) => ({ ...line, anchor: "start" as const }))
+    );
+    rightHeadline.lines.forEach((line, index) => {
+      shapes += mixedTextSvg({
+        text: line,
+        x: 660,
+        y: 190 + index * rightHeadline.fontSize * 1.08,
+        anchor: "start",
+        fontFamily: headlineFontFamily,
+        fontSize: rightHeadline.fontSize,
+        fontWeight: 900,
+        defaultFill: "#111111",
+        accentFill: "#00afa5",
+        accentPhrase: styleOverrides.accentPhrase || inferAccentPhraseFromCopy(copy),
+        letterSpacing: -2,
+      });
+    });
+    sideNotes.slice(0, 3).forEach((note, index) => {
+      const x = [660, 1000, 720][index] ?? 660;
+      const y = [610, 690, 1028][index] ?? 610;
+      const rotation = [-4, 4, -2][index] ?? 0;
+      shapes += `<text x="${x}" y="${y}" text-anchor="${index === 1 ? "end" : "start"}" transform="rotate(${rotation} ${x} ${y})" font-family="${escapeXml(fontFamily)}" font-size="32" font-weight="800" fill="#111111">${escapeXml(note.slice(0, 18))}</text>`;
+    });
   } else {
     const selectedImages =
       templateProductImages.length === 1
@@ -1875,6 +2291,76 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   return `/generated-ads/${fileName}`;
 }
 
+async function renderOptimizedTemplate(
+  body: RenderBody,
+  template: BannerTemplateDefinition,
+  plan: PreparedBannerRender
+) {
+  const styleOverrides = body.style || {};
+  const selectedFontFile = safeWindowsFontFile(styleOverrides.selectedFontFile);
+  const selectedFontFormat = fontFormatFromFile(selectedFontFile);
+  const headlineFontFile = safeWindowsFontFile(
+    styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
+  );
+  const headlineFontFormat = fontFormatFromFile(headlineFontFile);
+  const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
+  const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
+  const selectedFontWeight = Number(styleOverrides.selectedFontWeight || 800);
+  const headlineFontWeight = Number(styleOverrides.headlineFontWeight || 900);
+  const frameData = await Promise.all(
+    plan.imageFrames.map(async (frame) => {
+      try {
+        return { dataUrl: await imageToDataUrl(frame.imagePath) };
+      } catch {
+        return { dataUrl: "" };
+      }
+    })
+  );
+  const logoDataUrl = body.logoImagePath
+    ? await imageToDataUrl(body.logoImagePath).catch(() => "")
+    : "";
+  const fontFaceCss =
+    "@font-face { font-family: 'AdAtlasSelectedFont'; src: url('" +
+    selectedFontFileUrl +
+    "') format('" +
+    selectedFontFormat +
+    "'); font-weight: " +
+    selectedFontWeight +
+    "; font-style: normal; }" +
+    "@font-face { font-family: 'AdAtlasHeadlineFont'; src: url('" +
+    headlineFontFileUrl +
+    "') format('" +
+    headlineFontFormat +
+    "'); font-weight: " +
+    headlineFontWeight +
+    "; font-style: normal; }";
+  const svg = buildOptimizedTemplateSvg({
+    template,
+    plan,
+    productInfo: body.productInfo,
+    productOriginalPrice: body.productOriginalPrice,
+    productOldPrice: body.productOldPrice,
+    frameData,
+    logoDataUrl,
+    aiDisclosureText: body.aiDisclosure?.enabled
+      ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다."
+      : "",
+    fontFaceCss,
+  });
+  await fs.mkdir(outputDir, { recursive: true });
+  const fileName =
+    "generated-" +
+    Date.now() +
+    "-" +
+    crypto.randomBytes(4).toString("hex") +
+    "-" +
+    template.id +
+    ".png";
+  const outputPath = path.join(outputDir, fileName);
+  await sharp(Buffer.from(svg)).png().toFile(outputPath);
+  return "/generated-ads/" + fileName;
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RenderBody;
@@ -1882,9 +2368,40 @@ export async function POST(request: Request) {
     const templateId = supportedTemplateIds.has(requestedTemplateId)
       ? requestedTemplateId
       : "food-template-001";
+    const registeredTemplate = templatesById.get(templateId);
     const template =
-      templatesById.get(templateId) ??
+      registeredTemplate ??
       (templateId === foodImpactHeroTemplate.id ? foodImpactHeroTemplate : undefined);
+    if (registeredTemplate?.renderMode === "slot-engine") {
+      const activeCopy: GeneratedAdCopyVariant = {
+        headline: String(body.copy?.headline || ""),
+        bodyCopy: String(body.copy?.bodyCopy || ""),
+        highlightCopy: String(body.copy?.highlightCopy || ""),
+        bottomBarCopy: String(body.copy?.bottomBarCopy || ""),
+        cta: String(body.copy?.cta || ""),
+        price: String(body.copy?.price || body.productInfo?.price || ""),
+      };
+      const plan = await prepareBannerRender({
+        template: registeredTemplate,
+        activeCopy,
+        selectedVariant: body.selectedVariant,
+        copyVariants: body.copyVariants,
+        productInfo: body.productInfo,
+        imagePaths: compactRequestedProductImagePaths(body),
+        originalPrice:
+          body.productOriginalPrice ||
+          body.productOldPrice ||
+          body.productInfo?.originalPrice ||
+          body.productInfo?.oldPrice,
+      });
+      const imagePath = await renderOptimizedTemplate(body, registeredTemplate, plan);
+      return NextResponse.json({
+        success: true,
+        imagePath,
+        templateId,
+        diagnostics: plan.diagnostics,
+      });
+    }
     const fittedCopy = fitCopyToTemplate({
       copy: body.copy ?? {},
       templateId,

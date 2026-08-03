@@ -1,9 +1,12 @@
 "use client";
 
+import JSZip from "jszip";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AdImageAnalysisDraft,
   AdImageLabel,
+  BatchRenderResult,
+  BatchRenderStatus,
   CollectedAdImage,
   GeneratedAdImage,
   GeneratedAdCopy,
@@ -22,6 +25,7 @@ import type {
   ProductImageRenderEffect,
   ProductImageState,
   ProductInfoForPrompt,
+  RenderDiagnostics,
   SelectedAdImageSource,
   SelectedAdImageState,
   SourceImageCandidate,
@@ -39,8 +43,10 @@ import {
 } from "../lib/mvp/imageSelectionResolver";
 import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
 import {
+  beautyCategoryTemplates,
   foodCategoryTemplates,
   foodImpactHeroTemplate,
+  qualityFoodTemplates,
   type BannerTemplateDefinition,
 } from "../../lib/bannerTemplates";
 
@@ -81,6 +87,29 @@ type BannerTextColorState = {
 
 type MainImageSourceMode = "detail" | "upload" | "gpt";
 type ImageGenerationProvider = "openai" | "gemini";
+
+function sanitizeFileName(name: string) {
+  return name
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "_")
+    .slice(0, 60);
+}
+
+function batchZipTimestamp(date = new Date()) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return (
+    String(date.getFullYear()) +
+    pad(date.getMonth() + 1) +
+    pad(date.getDate()) +
+    "-" +
+    pad(date.getHours()) +
+    pad(date.getMinutes())
+  );
+}
+
+function batchResultImageUrl(result: BatchRenderResult) {
+  return result.downloadUrl || result.imagePath || "";
+}
 
 const gptImageFailureReasonOptions: { value: GptImageFailureReason; label: string }[] = [
   { value: "original-subject-changed", label: "원본 상품이 바뀜" },
@@ -599,6 +628,8 @@ const productFields: { key: keyof ProductInfoForPrompt; label: string; placehold
 const advertiserOptions = [
   { label: "선택 안 함", value: "", guideId: "" },
   { label: "국대한우", value: "국대한우", guideId: "kookdae-hanwoo" },
+  { label: "대한한우", value: "대한한우", guideId: "daehan-hanwoo" },
+  { label: "힘내라농가", value: "힘내라농가", guideId: "fighting-farm" },
 ];
 
 function normalizeProductCategory(...values: string[]) {
@@ -721,6 +752,19 @@ function buildSourceImageCandidates(extracted: ExtractedProductInfo): SourceImag
   });
 
   return candidates;
+}
+
+function extractedProductImagePaths(
+  extracted: ExtractedProductInfo,
+  sourceCandidates: SourceImageCandidate[] = []
+) {
+  return compactUniqueImagePaths([
+    extracted.mainImage,
+    extracted.heroImage,
+    ...(extracted.galleryImages ?? []),
+    ...(extracted.detailImages ?? []),
+    ...sourceCandidates.map((candidate) => candidate.imagePath),
+  ]);
 }
 
 const emptyBannerCopy: GeneratedAdCopy = {
@@ -887,6 +931,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [selectedBodyFontId, setSelectedBodyFontId] = useState("noto-sans-kr");
   const [selectedTemplateId, setSelectedTemplateId] = useState("food-template-001");
   const [generatedBannerPath, setGeneratedBannerPath] = useState("");
+  const [renderDiagnostics, setRenderDiagnostics] = useState<RenderDiagnostics | null>(null);
+  const [selectedBatchTemplateIds, setSelectedBatchTemplateIds] = useState<string[]>([]);
+  const [batchRenderStatus, setBatchRenderStatus] = useState<BatchRenderStatus>("idle");
+  const [batchRenderResults, setBatchRenderResults] = useState<BatchRenderResult[]>([]);
+  const [batchProgressMessage, setBatchProgressMessage] = useState("");
+  const [isZipDownloading, setIsZipDownloading] = useState(false);
   const [renderStatus, setRenderStatus] = useState<Status>({
     kind: "idle",
     message: "문구 생성 후 배너를 만들 수 있습니다.",
@@ -1056,12 +1106,28 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     systemFontOptions[0];
   const categoryTemplates = useMemo(() => {
     const category = productInfo.category || "";
+    const normalizedCategory = category.toLowerCase();
     const isFoodGiftCategory =
       category === "식품/선물" ||
       category.includes("식품") ||
       category.includes("선물") ||
-      category.includes("food");
-    return isFoodGiftCategory ? [...foodCategoryTemplates, legacyFoodImpactTemplateOption] : [];
+      normalizedCategory.includes("food") ||
+      category.includes("농산") ||
+      category.includes("축산");
+    const isBeautyCategory =
+      category.includes("뷰티") ||
+      category.includes("화장품") ||
+      category.includes("바디") ||
+      normalizedCategory.includes("beauty");
+    if (isBeautyCategory) return beautyCategoryTemplates;
+    if (isFoodGiftCategory) {
+      return [
+        ...qualityFoodTemplates,
+        ...foodCategoryTemplates,
+        legacyFoodImpactTemplateOption,
+      ];
+    }
+    return [];
   }, [productInfo.category]);
   const selectedTemplate =
     categoryTemplates.find((template) => template.id === selectedTemplateId) ??
@@ -1193,9 +1259,16 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
 
   useEffect(() => {
     if (selectedAdvertiserName) return;
-    if (/kookdae\.co\.kr/i.test(productInfo.landingUrl || "")) {
-      setSelectedAdvertiserName("국대한우");
-    }
+    const landingUrl = productInfo.landingUrl || "";
+    const matchedAdvertiser = /kookdae\.co\.kr/i.test(landingUrl)
+      ? "국대한우"
+      : /koreakoreanbeef\.com/i.test(landingUrl)
+        ? "대한한우"
+        : /fightingfarm\.com/i.test(landingUrl)
+          ? "힘내라농가"
+          : "";
+
+    if (matchedAdvertiser) setSelectedAdvertiserName(matchedAdvertiser);
   }, [productInfo.landingUrl, selectedAdvertiserName]);
 
   useEffect(() => {
@@ -1446,12 +1519,14 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     setProductInfo((current) => ({ ...current, [fieldKey]: value }));
 
     if (fieldKey === "landingUrl" && value.trim() !== productInfo.landingUrl.trim()) {
+      setSelectedAdImages(emptySelectedAdImages);
       setSourceImageSelection(emptySourceImageSelection);
       setSourceImageStatus({
         kind: "idle",
         message: "새 상품 URL입니다. 상품정보를 불러오면 GPT 원본 기준 이미지 후보가 교체됩니다.",
       });
       setProductImageState(emptyProductImageState);
+      setGeneratedBannerPath("");
       setGptMainImagePath("");
       setGptTextAdImagePath("");
       setGptVisualAsset(null);
@@ -1472,7 +1547,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       extracted.description
     );
 
-    const galleryImages = [extracted.mainImage, ...(extracted.galleryImages ?? [])].filter(Boolean);
     const sourceCandidates = (
       extracted.sourceImageCandidates?.length
         ? extracted.sourceImageCandidates
@@ -1482,6 +1556,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         candidate.imagePath &&
         candidates.findIndex((item) => item.imagePath === candidate.imagePath) === index
     );
+    const galleryImages = extractedProductImagePaths(extracted, sourceCandidates);
     const selectedCandidate =
       sourceCandidates.find((candidate) => candidate.selected) || sourceCandidates[0];
     const shouldRefreshSelectedBackground =
@@ -1493,9 +1568,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       : current.selectedBackgroundSource;
     const nextProductImagePaths = galleryImages.slice(0, 4);
     const defaultSelectedProductImagePaths =
-      extracted.mainImage || nextProductImagePaths[0]
-        ? [extracted.mainImage || nextProductImagePaths[0]]
-        : [];
+      nextProductImagePaths.length > 0 ? [nextProductImagePaths[0]] : [];
 
     return {
       ...current,
@@ -1530,15 +1603,13 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         ? extracted.landingUrl || current.landingUrl || ""
         : current.landingUrl || extracted.landingUrl || "",
       productImagePath: replaceExtractedFields
-        ? extracted.mainImage || nextProductImagePaths[0] || ""
-        : extracted.mainImage || current.productImagePath || "",
+        ? nextProductImagePaths[0] || ""
+        : nextProductImagePaths[0] || current.productImagePath || "",
       secondaryProductImagePath: replaceExtractedFields
-        ? nextProductImagePaths.find((image) => image !== extracted.mainImage) || ""
-        : current.secondaryProductImagePath ||
-          galleryImages.find((image) => image !== extracted.mainImage) ||
-          "",
+        ? nextProductImagePaths[1] || ""
+        : current.secondaryProductImagePath || nextProductImagePaths[1] || "",
       productImagePaths: replaceExtractedFields
-        ? defaultSelectedProductImagePaths
+        ? nextProductImagePaths
         : current.productImagePaths?.length
           ? current.productImagePaths
           : defaultSelectedProductImagePaths,
@@ -1547,15 +1618,15 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         ? extracted.description || ""
         : extracted.description || current.extractedDescription || "",
       extractedMainImage: replaceExtractedFields
-        ? extracted.mainImage || ""
-        : extracted.mainImage || current.extractedMainImage || "",
+        ? nextProductImagePaths[0] || ""
+        : nextProductImagePaths[0] || current.extractedMainImage || "",
       extractedGalleryImages: replaceExtractedFields
         ? galleryImages
         : galleryImages.length
           ? galleryImages
           : current.extractedGalleryImages || [],
       selectedBackgroundSource: replaceExtractedFields
-        ? extracted.mainImage || nextProductImagePaths[0] || ""
+        ? nextProductImagePaths[0] || ""
         : selectedBackgroundSource,
       backgroundMode:
         current.backgroundMode === "none"
@@ -1653,9 +1724,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       });
       return mergedProductInfo;
     } catch (error) {
+      const extractErrorMessage =
+        error instanceof Error
+          ? error.message
+          : "상품 정보를 불러오지 못했습니다. 직접 입력해주세요.";
       setProductExtractStatus({
         kind: "error",
         message: "상품 정보를 불러오지 못했습니다. 직접 입력해주세요.",
+      });
+      setProductExtractStatus({
+        kind: "error",
+        message: extractErrorMessage,
       });
       if (!options.silent) {
         setCopyStatus({
@@ -2613,6 +2692,250 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
   }
 
+  function updateBatchResult(id: string, patch: Partial<BatchRenderResult>) {
+    setBatchRenderResults((current) =>
+      current.map((result) => (result.id === id ? { ...result, ...patch } : result))
+    );
+  }
+
+  function triggerDownload(url: string, filename: string) {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  async function renderSelectedTemplatesBatch() {
+    if (!selectedBatchTemplateIds.length) {
+      setBatchProgressMessage("일괄 생성할 템플릿을 선택해 주세요.");
+      setBatchRenderStatus("idle");
+      return;
+    }
+
+    if (!hasMasterCopy) {
+      setBatchProgressMessage("먼저 상품 기준 문구를 생성해 주세요.");
+      setBatchRenderStatus("idle");
+      return;
+    }
+
+    const selectedTemplates = categoryTemplates.filter((template) =>
+      selectedBatchTemplateIds.includes(template.id)
+    );
+
+    if (!selectedTemplates.length) {
+      setBatchProgressMessage("일괄 생성할 템플릿을 선택해 주세요.");
+      setBatchRenderStatus("idle");
+      return;
+    }
+
+    const startedAt = new Date().toISOString();
+    const initialResults: BatchRenderResult[] = selectedTemplates.map((template) => ({
+      id: template.id + "-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+      templateId: template.id,
+      templateName: template.name,
+      status: "pending",
+      createdAt: startedAt,
+    }));
+
+    setBatchRenderStatus("running");
+    setBatchRenderResults(initialResults);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const [index, template] of selectedTemplates.entries()) {
+      const resultId = initialResults[index].id;
+      setBatchProgressMessage(
+        index + 1 + "/" + selectedTemplates.length + " 생성 중: " + template.name
+      );
+      updateBatchResult(resultId, { status: "running" });
+
+      try {
+        const copyResolution = resolveCopyForTemplate({
+          masterCopy,
+          templateId: template.id,
+          templateName: template.name,
+          copyLimits: template.copyLimits,
+          mode: templateCopyMode,
+        });
+        const copyForRender = copyResolution.activeRenderCopy;
+        const resolvedImages = resolveCurrentProductImagePaths({
+          selectedAdImages,
+          productInfo,
+          sourceImageSelection,
+          selectedSourceImagePath,
+          productImageState,
+          uploadedMainImageDataUrl,
+          gptMainImagePath,
+          backgroundImagePath: currentBackgroundSource,
+        });
+        const productEffectForRender =
+          productImageState.selectedImageMode === "original"
+            ? undefined
+            : normalizeProductRenderEffect(cutoutProductEffect);
+        const copyPayload = {
+          headline: copyForRender.headline,
+          bodyCopy: copyForRender.bodyCopy,
+          highlightCopy: copyForRender.highlightCopy,
+          bottomBarCopy: copyForRender.bottomBarCopy,
+          cta: showCta ? copyForRender.cta : "",
+          price: copyForRender.price || productInfo.price,
+        };
+
+        const response = await fetch("/api/render/template-ad", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            templateId: template.id,
+            templateName: template.name,
+            canvasSize: { width: 1200, height: 1200 },
+            productInfo,
+            copy: copyPayload,
+            copyVariants: masterCopy.copyVariants,
+            selectedVariant: copyResolution.preview.selectedVariant,
+            productImagePath: resolvedImages.productImagePath || currentMainProductImage,
+            secondaryProductImagePath:
+              resolvedImages.secondaryProductImagePath || currentSecondaryProductImage,
+            productImagePaths: resolvedImages.productImagePaths,
+            selectedProductImagePath: resolvedImages.productImagePath,
+            imageSource: resolvedImages.source,
+            productImageState,
+            productEffect: productEffectForRender,
+            productOriginalPrice: productInfo.originalPrice || productInfo.oldPrice || "",
+            logoImagePath: brandLogoPath,
+            aiDisclosure: {
+              enabled: showAiDisclosure,
+              text: aiDisclosureText,
+            },
+            backgroundMode: productInfo.backgroundMode || "none",
+            selectedBackgroundSource: currentBackgroundSource,
+            backgroundStyle: {
+              blurLevel: backgroundStyle.blurLevel,
+              dimLevel: backgroundStyle.dimLevel,
+              scale: 1.08,
+            },
+            style: {
+              backgroundColor: "#ffffff",
+              bodyColor: bannerTextColors.bodyColor,
+              bodyFontSize: bannerTextColors.bodyFontSize,
+              highlightBackground: "#fff9a8",
+              highlightTextColor: "#111111",
+              bottomBarColor: "#ff1f1f",
+              bottomBarTextColor: "#ffffff",
+              ctaBarColor: "#e58585",
+              ctaTextColor: "#ffffff",
+              priceColor: "#ff1f1f",
+              accentPhrase: bannerAccentPhrase,
+              accentColor: bannerAccentColor,
+              selectedFontWeight: selectedBodyFont.fontWeight,
+              bodyFontWeight: selectedBodyFont.fontWeight,
+              headlineFontWeight: selectedHeadlineFont.fontWeight,
+              ...headlineStyleOverrides,
+              fontFamily: selectedBodyFont.fontFamily,
+              headlineFontFamily: selectedHeadlineFont.fontFamily.replace(
+                "AdAtlasSelectedFont",
+                "AdAtlasHeadlineFont"
+              ),
+              selectedFontFile: selectedBodyFont.fontFile,
+              headlineFontFile: selectedHeadlineFont.fontFile,
+            },
+          }),
+        });
+        const renderResult = await response.json();
+
+        if (!response.ok || !renderResult.success) {
+          throw new Error(renderResult.error || "렌더링 실패");
+        }
+
+        successCount += 1;
+        updateBatchResult(resultId, {
+          status: "success",
+          imagePath: renderResult.imagePath || renderResult.path || "",
+          downloadUrl:
+            renderResult.downloadUrl || renderResult.imagePath || renderResult.path || "",
+          selectedVariant: copyResolution.preview.selectedVariant,
+          hasOverflow: copyResolution.preview.hasOverflow,
+          overflowSlots: copyResolution.preview.overflowSlots,
+          copyPreview: copyResolution.preview,
+          diagnostics: renderResult.diagnostics,
+        });
+        setBatchProgressMessage(index + 1 + "/" + selectedTemplates.length + " 생성 완료");
+      } catch (error) {
+        errorCount += 1;
+        updateBatchResult(resultId, {
+          status: "error",
+          errorMessage: error instanceof Error ? error.message : "렌더링 실패",
+        });
+      }
+    }
+
+    const finalStatus: BatchRenderStatus =
+      successCount === selectedTemplates.length
+        ? "success"
+        : successCount > 0
+          ? "partial-success"
+          : "error";
+    setBatchRenderStatus(finalStatus);
+    setBatchProgressMessage(
+      selectedTemplates.length + "개 중 " + successCount + "개 성공, " + errorCount + "개 실패"
+    );
+  }
+
+  async function downloadBatchResultsAsZip() {
+    const successResults = batchRenderResults.filter(
+      (result) => result.status === "success" && batchResultImageUrl(result)
+    );
+
+    if (!successResults.length) {
+      setBatchProgressMessage("다운로드할 생성 결과가 없습니다.");
+      return;
+    }
+
+    setIsZipDownloading(true);
+    try {
+      const zip = new JSZip();
+      let addedCount = 0;
+
+      for (const [index, result] of successResults.entries()) {
+        const url = batchResultImageUrl(result);
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          const filename =
+            String(index + 1).padStart(2, "0") +
+            "_" +
+            sanitizeFileName(result.templateName || result.templateId) +
+            ".png";
+          zip.file(filename, blob);
+          addedCount += 1;
+        } catch {
+          // Skip failed images and keep the rest of the ZIP useful.
+        }
+      }
+
+      if (!addedCount) {
+        setBatchProgressMessage("다운로드할 생성 결과가 없습니다.");
+        return;
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      triggerDownload(url, "adatlas-banners-" + batchZipTimestamp() + ".zip");
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsZipDownloading(false);
+    }
+  }
+
+  function resetBatchRenderResults() {
+    setBatchRenderResults([]);
+    setBatchRenderStatus("idle");
+    setBatchProgressMessage("");
+  }
+
   async function renderBanner() {
     if (!selectedTemplate) {
       setRenderStatus({
@@ -2672,7 +2995,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         body: JSON.stringify({
           templateId: selectedTemplate.id,
           canvasSize: { width: 1200, height: 1200 },
+          productInfo,
           copy: copyPayload,
+          copyVariants: masterCopy.copyVariants,
+          selectedVariant: copyResolution.preview.selectedVariant,
           productImagePath: resolvedProductImages.productImagePath || currentMainProductImage,
           secondaryProductImagePath:
             resolvedProductImages.secondaryProductImagePath || currentSecondaryProductImage,
@@ -2728,8 +3054,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       }
 
       setGeneratedBannerPath(result.imagePath);
+      setRenderDiagnostics(result.diagnostics || null);
       setRenderStatus({ kind: "success", message: "1200x1200 PNG 배너를 생성했습니다." });
     } catch (error) {
+      setRenderDiagnostics(null);
       setRenderStatus({
         kind: "error",
         message: error instanceof Error ? error.message : "배너 생성 중 오류가 발생했습니다.",
@@ -2751,7 +3079,16 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     setMainDetailScrollPercent(percent);
     if (!candidates) return;
     const maxScroll = candidates.scrollWidth - candidates.clientWidth;
-    candidates.scrollLeft = maxScroll > 0 ? (maxScroll * percent) / 100 : 0;
+    candidates.scrollTo({ left: maxScroll > 0 ? (maxScroll * percent) / 100 : 0 });
+  }
+
+  function moveMainDetailCandidates(direction: -1 | 1) {
+    const candidates = mainDetailCandidatesRef.current;
+    if (!candidates) return;
+
+    const distance = Math.max(220, Math.round(candidates.clientWidth * 0.75));
+    candidates.scrollBy({ left: distance * direction, behavior: "smooth" });
+    window.requestAnimationFrame(updateMainDetailScrollPercent);
   }
 
   return (
@@ -3506,6 +3843,179 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </p>
                     )}
                   </details>
+
+                  <section className="batch-render-panel reference-pattern-usage">
+                    <div className="section-heading-row">
+                      <div>
+                        <p className="eyebrow">Batch Render</p>
+                        <h4>일괄 생성할 템플릿 선택</h4>
+                      </div>
+                      <strong>선택된 템플릿 {selectedBatchTemplateIds.length}개</strong>
+                    </div>
+                    <div className="batch-actions">
+                      <button
+                        disabled={!categoryTemplates.length || batchRenderStatus === "running"}
+                        onClick={() =>
+                          setSelectedBatchTemplateIds(
+                            categoryTemplates.map((template) => template.id)
+                          )
+                        }
+                        type="button"
+                      >
+                        전체 선택
+                      </button>
+                      <button
+                        disabled={batchRenderStatus === "running"}
+                        onClick={() => setSelectedBatchTemplateIds([])}
+                        type="button"
+                      >
+                        전체 해제
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={
+                          batchRenderStatus === "running" || !selectedBatchTemplateIds.length
+                        }
+                        onClick={renderSelectedTemplatesBatch}
+                        type="button"
+                      >
+                        선택 템플릿 일괄 생성
+                      </button>
+                      <button
+                        disabled={batchRenderStatus === "running" && !batchRenderResults.length}
+                        onClick={resetBatchRenderResults}
+                        type="button"
+                      >
+                        일괄 생성 결과 초기화
+                      </button>
+                    </div>
+                    {categoryTemplates.length ? (
+                      <div className="template-card-list batch-template-list">
+                        {categoryTemplates.map((template, index) => {
+                          const checked = selectedBatchTemplateIds.includes(template.id);
+                          return (
+                            <label className={checked ? "selected" : ""} key={template.id}>
+                              <input
+                                checked={checked}
+                                onChange={(event) => {
+                                  event.stopPropagation();
+                                  setSelectedBatchTemplateIds((current) =>
+                                    event.target.checked
+                                      ? Array.from(new Set([...current, template.id]))
+                                      : current.filter((id) => id !== template.id)
+                                  );
+                                }}
+                                onClick={(event) => event.stopPropagation()}
+                                type="checkbox"
+                              />
+                              <span>
+                                {index + 1}. {template.name}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                    <div
+                      className={
+                        "mvp-status " +
+                        (batchRenderStatus === "error"
+                          ? "error"
+                          : batchRenderStatus === "running"
+                            ? "loading"
+                            : batchRenderStatus === "success" ||
+                                batchRenderStatus === "partial-success"
+                              ? "success"
+                              : "idle")
+                      }
+                    >
+                      {batchProgressMessage || "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}
+                    </div>
+                    <section className="batch-result-panel">
+                      <div className="section-heading-row">
+                        <div>
+                          <p className="eyebrow">Batch Results</p>
+                          <h4>일괄 생성 결과</h4>
+                        </div>
+                        <strong>
+                          성공{" "}
+                          {
+                            batchRenderResults.filter((result) => result.status === "success")
+                              .length
+                          }
+                          개 / 실패{" "}
+                          {batchRenderResults.filter((result) => result.status === "error").length}
+                          개
+                        </strong>
+                      </div>
+                      <button
+                        className="download-button"
+                        disabled={
+                          isZipDownloading ||
+                          !batchRenderResults.some((result) => result.status === "success")
+                        }
+                        onClick={downloadBatchResultsAsZip}
+                        type="button"
+                      >
+                        {isZipDownloading ? "ZIP 생성 중" : "ZIP 다운로드"}
+                      </button>
+                      {batchRenderResults.length ? (
+                        <div className="batch-result-grid">
+                          {batchRenderResults.map((result, index) => {
+                            const imageUrl = batchResultImageUrl(result);
+                            return (
+                              <article
+                                className={"batch-result-card " + result.status}
+                                key={result.id}
+                              >
+                                <div>
+                                  <strong>{result.templateName}</strong>
+                                  <span>
+                                    {result.status === "pending"
+                                      ? "대기"
+                                      : result.status === "running"
+                                        ? "생성 중"
+                                        : result.status === "success"
+                                          ? "생성 완료"
+                                          : "실패"}
+                                  </span>
+                                </div>
+                                {imageUrl ? (
+                                  <img alt={result.templateName + " 배너"} src={imageUrl} />
+                                ) : null}
+                                {result.status === "success" ? (
+                                  <p>
+                                    적용 문구: {result.selectedVariant || "base"}
+                                    {result.hasOverflow ? " / 일부 자동축약" : ""}
+                                  </p>
+                                ) : null}
+                                {result.errorMessage ? (
+                                  <p className="copy-warning">{result.errorMessage}</p>
+                                ) : null}
+                                <button
+                                  disabled={result.status !== "success" || !imageUrl}
+                                  onClick={() =>
+                                    triggerDownload(
+                                      imageUrl,
+                                      String(index + 1).padStart(2, "0") +
+                                        "_" +
+                                        sanitizeFileName(result.templateName || result.templateId) +
+                                        ".png"
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  개별 다운로드
+                                </button>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="strategy-empty">아직 일괄 생성 결과가 없습니다.</p>
+                      )}
+                    </section>
+                  </section>
                   <details className="background-settings source-image-settings source-image-dropdown">
                     <summary>
                       <div>
@@ -4223,11 +4733,20 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                             </select>
                           </label>
                         ))}
-                        <div
-                          className="source-image-candidates main-detail-candidates"
-                          onScroll={updateMainDetailScrollPercent}
-                          ref={mainDetailCandidatesRef}
-                        >
+                        <div className="main-detail-scroll-shell">
+                          <button
+                            aria-label="Scroll image candidates left"
+                            className="main-detail-scroll-button"
+                            onClick={() => moveMainDetailCandidates(-1)}
+                            type="button"
+                          >
+                            ‹
+                          </button>
+                          <div
+                            className="source-image-candidates main-detail-candidates"
+                            onScroll={updateMainDetailScrollPercent}
+                            ref={mainDetailCandidatesRef}
+                          >
                           {backgroundImageOptions.map((option) => {
                             const selectedOrder = selectedAdImages.selectedImagePaths.indexOf(
                               option.value
@@ -4271,6 +4790,15 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                               </button>
                             );
                           })}
+                          </div>
+                          <button
+                            aria-label="Scroll image candidates right"
+                            className="main-detail-scroll-button"
+                            onClick={() => moveMainDetailCandidates(1)}
+                            type="button"
+                          >
+                            ›
+                          </button>
                         </div>
                         <input
                           aria-label="메인 이미지 후보 가로 스크롤"
@@ -4279,6 +4807,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                           min={0}
                           onChange={(event) =>
                             scrollMainDetailCandidates(Number(event.target.value))
+                          }
+                          onInput={(event) =>
+                            scrollMainDetailCandidates(Number(event.currentTarget.value))
                           }
                           type="range"
                           value={mainDetailScrollPercent}
@@ -5091,6 +5622,75 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     </p>
                   </details>
                   <div className={`mvp-status ${renderStatus.kind}`}>{renderStatus.message}</div>
+                  {renderDiagnostics ? (
+                    <details className="render-diagnostics" open>
+                      <summary>
+                        <div>
+                          <p className="eyebrow">AUTO DESIGN QA</p>
+                          <strong>자동 디자인 최적화</strong>
+                        </div>
+                        <span className={`diagnostic-grade ${renderDiagnostics.qualityStatus}`}>
+                          {renderDiagnostics.qualityStatus === "stable"
+                            ? "안정"
+                            : renderDiagnostics.qualityStatus === "review"
+                              ? "검토 권장"
+                              : "수정 필요"}{" "}
+                          {renderDiagnostics.qualityScore}점
+                        </span>
+                      </summary>
+                      <div className="diagnostic-palette" aria-label="자동 추출 색상">
+                        {[
+                          renderDiagnostics.palette.primaryColor,
+                          renderDiagnostics.palette.secondaryColor,
+                          renderDiagnostics.palette.accentColor,
+                          renderDiagnostics.palette.highlightColor,
+                          renderDiagnostics.palette.backgroundColor,
+                        ].map((color, index) => (
+                          <span
+                            key={color + index}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          />
+                        ))}
+                      </div>
+                      <dl className="diagnostic-grid">
+                        <div>
+                          <dt>팔레트 정책</dt>
+                          <dd>{renderDiagnostics.palettePolicy || "fixed"}</dd>
+                        </div>
+                        <div>
+                          <dt>선택 문구</dt>
+                          <dd>{renderDiagnostics.selectedVariant || "base"}</dd>
+                        </div>
+                        <div>
+                          <dt>텍스트 맞춤</dt>
+                          <dd>
+                            {renderDiagnostics.fitResults.filter(
+                              (item) => item.status !== "exact"
+                            ).length}
+                            개 조정
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>사용 이미지</dt>
+                          <dd>{renderDiagnostics.imagePathsUsed.length}장</dd>
+                        </div>
+                      </dl>
+                      <div className="diagnostic-fit-list">
+                        {renderDiagnostics.fitResults.map((item) => (
+                          <span className={item.status} key={item.slotId}>
+                            {item.slotId}: {item.status}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="diagnostic-reason">{renderDiagnostics.variantReason}</p>
+                      {renderDiagnostics.warnings.length ? (
+                        <p className="diagnostic-warning">
+                          {renderDiagnostics.warnings.join(" / ")}
+                        </p>
+                      ) : null}
+                    </details>
+                  ) : null}
                   {generatedBannerPath ? (
                     <>
                       <img alt="생성된 광고 배너" src={generatedBannerPath} />

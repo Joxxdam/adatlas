@@ -8,6 +8,24 @@
       "domains": ["kookdae.co.kr", "www.kookdae.co.kr"],
       "filePath": "data/copy-guides/kookdae-hanwoo.md",
       "priority": 100
+    },
+    {
+      "id": "daehan-hanwoo",
+      "brandName": "대한한우",
+      "aliases": ["대한한우", "황궁한우", "황궁우", "황록우", "대한pick", "대한특선", "대한 시그니처", "koreakoreanbeef"],
+      "categories": ["식품", "고기", "한우", "정육", "등심", "갈비", "스테이크", "선물세트"],
+      "domains": ["koreakoreanbeef.com", "www.koreakoreanbeef.com"],
+      "filePath": "data/copy-guides/daehan-hanwoo.md",
+      "priority": 100
+    },
+    {
+      "id": "fighting-farm",
+      "brandName": "힘내라농가",
+      "aliases": ["힘내라농가", "힘농", "힘농 식구님", "fightingfarm"],
+      "categories": ["식품", "농산물", "과일", "채소", "수산", "축산", "반찬", "고기", "선물세트"],
+      "domains": ["fightingfarm.com", "www.fightingfarm.com"],
+      "filePath": "data/copy-guides/fighting-farm.md",
+      "priority": 100
     }
   ],
   "defaultGuideId": null

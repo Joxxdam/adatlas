@@ -399,6 +399,168 @@ export type CopyLimit = {
 
 export type TemplateCopyLimits = Partial<Record<CopySlotKey, CopyLimit>>;
 
+export type PalettePolicy = "full-auto" | "accent-only" | "protected-palette" | "fixed";
+
+export type ExtractedPalette = {
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  surfaceColor: string;
+  textDarkColor: string;
+  textLightColor: string;
+  mutedColor: string;
+  highlightColor: string;
+  dangerColor: string;
+  sourceImagePath?: string;
+  confidence?: number;
+};
+
+export type TemplateSlotType =
+  | "text"
+  | "image"
+  | "price"
+  | "cta"
+  | "badge"
+  | "background"
+  | "chip"
+  | "decoration";
+
+export type TemplateSlot = {
+  id: string;
+  type: TemplateSlotType;
+  role?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex?: number;
+  safePadding?: number;
+  allowAutoFit?: boolean;
+  allowMultiLine?: boolean;
+  allowShrink?: boolean;
+  allowMove?: boolean;
+  allowHide?: boolean;
+  maxLines?: number;
+  priority?: number;
+  anchor?:
+    | "top-left"
+    | "top-center"
+    | "top-right"
+    | "center"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right";
+  preferredVariant?: "short" | "medium" | "long";
+  fallbackVariants?: Array<"short" | "medium" | "long">;
+  imageFit?:
+    | "cover"
+    | "contain"
+    | "smart-cover"
+    | "transparent-product"
+    | "background-image"
+    | "split-image"
+    | "repeat-product";
+  intentionalOverlapWith?: string[];
+  requiresDistinctImage?: boolean;
+};
+
+export type TemplateVariantPreference = {
+  preferred: "short" | "medium" | "long";
+  fallbackOrder: Array<"short" | "medium" | "long">;
+  allowBaseCopy?: boolean;
+};
+
+export type BoundingBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type RenderFitStatus =
+  | "exact"
+  | "wrapped"
+  | "shrunk"
+  | "variant-changed"
+  | "ellipsis"
+  | "failed";
+
+export type BannerFitResult = {
+  slotId: string;
+  status: RenderFitStatus;
+  originalText: string;
+  finalText: string;
+  fontSize: number;
+  lineHeight: number;
+  lines: string[];
+  usedVariant?: "short" | "medium" | "long" | "base";
+  boundingBox: BoundingBox;
+  overflowX: boolean;
+  overflowY: boolean;
+  warnings: string[];
+};
+
+export type CollisionResolutionAction =
+  | "none"
+  | "wrap-text"
+  | "shrink-text"
+  | "change-variant"
+  | "move"
+  | "reduce-decoration"
+  | "hide-low-priority"
+  | "failed";
+
+export type CollisionItem = {
+  id: string;
+  type: TemplateSlotType;
+  boundingBox: BoundingBox;
+  priority: number;
+  allowMove?: boolean;
+  allowShrink?: boolean;
+  allowHide?: boolean;
+  intentionalOverlapWith?: string[];
+};
+
+export type CollisionResult = {
+  hasCollision: boolean;
+  collisions: Array<{
+    firstId: string;
+    secondId: string;
+    overlapArea: number;
+  }>;
+  actions: Array<{
+    targetId: string;
+    action: CollisionResolutionAction;
+    reason: string;
+  }>;
+  finalItems: CollisionItem[];
+  warnings: string[];
+};
+
+export type RenderDiagnostics = {
+  templateId: string;
+  paletteApplied: boolean;
+  palettePolicy?: PalettePolicy;
+  palette: ExtractedPalette;
+  preferredVariant?: CopyVariantKey;
+  selectedVariant?: CopyVariantKey;
+  variantReason?: string;
+  fitResults: BannerFitResult[];
+  collisionResult: CollisionResult;
+  imagePathsUsed: string[];
+  hiddenElements: string[];
+  optimizationFlags: {
+    autoPaletteApplied: boolean;
+    textFittingApplied: boolean;
+    collisionResolved: boolean;
+    lowPriorityElementsHidden: boolean;
+  };
+  warnings: string[];
+  qualityScore: number;
+  qualityStatus: "stable" | "review" | "risk";
+};
+
 export type TemplateFitInfo = {
   templateId?: string;
   templateName?: string;
@@ -468,6 +630,9 @@ export type GeneratedCopyReasoning = {
   consumerInsightUsed?: string;
   purchaseTriggerUsed?: string;
   headlineQualityCheck?: string;
+  selectedKookdaePattern?: string;
+  rejectedGenericExpressions?: string[];
+  productFactsUsed?: string[];
 };
 
 export type GeneratedAdCopy = GeneratedAdCopyVariant & {
@@ -480,6 +645,12 @@ export type GeneratedAdCopy = GeneratedAdCopyVariant & {
     brandName: string;
     usedSections: string[];
     toneApplied: string[];
+    selectedPatterns?: Array<{
+      variant: "short" | "medium" | "long";
+      patternGroup: string;
+      sourcePattern: string;
+      tone: string;
+    }>;
   };
   reasoning?: GeneratedCopyReasoning;
   templateFit?: TemplateFitInfo;
@@ -521,6 +692,35 @@ export type TemplateCopyPreview = {
   slotFits: TemplateCopySlotFit[];
 };
 
+export type BatchRenderStatus = "idle" | "running" | "success" | "partial-success" | "error";
+
+export type BatchRenderItemStatus = "pending" | "running" | "success" | "error";
+
+export type BatchRenderResult = {
+  id: string;
+  templateId: string;
+  templateName: string;
+  status: BatchRenderItemStatus;
+  imagePath?: string;
+  downloadUrl?: string;
+  errorMessage?: string;
+  selectedVariant?: CopyVariantKey;
+  hasOverflow?: boolean;
+  overflowSlots?: CopySlotKey[];
+  copyPreview?: TemplateCopyPreview;
+  diagnostics?: RenderDiagnostics;
+  createdAt: string;
+};
+
+export type BatchRenderSummary = {
+  status: BatchRenderStatus;
+  total: number;
+  successCount: number;
+  errorCount: number;
+  results: BatchRenderResult[];
+  startedAt?: string;
+  finishedAt?: string;
+};
 export type ImageAnalysis = {
   extractedText: string;
   hookType: string;

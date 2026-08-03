@@ -6,8 +6,23 @@ import {
   SourceImageCandidate,
 } from "../../../lib/mvp/types";
 
+function countHangul(value: string) {
+  return (value.match(/[가-힣]/g) ?? []).length;
+}
+
+function repairMojibake(value: string) {
+  if (!/[\u0080-\u00ff]/.test(value)) return value;
+
+  try {
+    const repaired = Buffer.from(value, "latin1").toString("utf8");
+    return countHangul(repaired) > countHangul(value) ? repaired : value;
+  } catch {
+    return value;
+  }
+}
+
 function decodeHtml(value: string) {
-  return value
+  const decoded = value
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#34;/g, '"')
@@ -18,6 +33,7 @@ function decodeHtml(value: string) {
     .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  return repairMojibake(decoded);
 }
 
 function metaContent(html: string, key: string) {
@@ -44,6 +60,18 @@ function metaContent(html: string, key: string) {
 function titleContent(html: string) {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   return match?.[1] ? decodeHtml(match[1]) : "";
+}
+
+function invalidProductPageMessage(html: string, url: URL) {
+  if (/상품이\s*삭제되었거나|잘못된\s*상품코드|document\.location=['"]\/['"]/i.test(html)) {
+    return "상품이 삭제되었거나 잘못된 상품코드입니다. 실제 상품 상세페이지 URL을 다시 확인해주세요.";
+  }
+
+  if (/kookdae\.co\.kr$/i.test(url.hostname) && !/\/Goods\/Detail\//i.test(url.pathname)) {
+    return "국대한우 상품은 /Goods/Detail/... 형태의 상품 상세페이지 URL을 입력해주세요.";
+  }
+
+  return "";
 }
 
 function absoluteUrl(value: string, baseUrl: string) {
@@ -381,6 +409,42 @@ function isSafeHttpUrl(value: string) {
   }
 }
 
+function normalizeCharset(value: string) {
+  const normalized = value.trim().toLowerCase().replace(/["']/g, "");
+  if (["euc-kr", "ks_c_5601-1987", "ks_c_5601", "cp949", "x-windows-949"].includes(normalized)) {
+    return "euc-kr";
+  }
+  if (["utf8", "utf-8"].includes(normalized)) return "utf-8";
+  return normalized || "utf-8";
+}
+
+function charsetFromContentType(contentType: string | null) {
+  const match = contentType?.match(/charset\s*=\s*([^;\s]+)/i);
+  return match?.[1] ? normalizeCharset(match[1]) : "";
+}
+
+function charsetFromHtmlSample(html: string) {
+  const match = html.match(/<meta[^>]+charset=["']?\s*([^"'\s/>]+)/i);
+  if (match?.[1]) return normalizeCharset(match[1]);
+
+  const httpEquivMatch = html.match(
+    /<meta[^>]+http-equiv=["']content-type["'][^>]+content=["'][^"']*charset=([^"'\s;]+)/i
+  );
+  return httpEquivMatch?.[1] ? normalizeCharset(httpEquivMatch[1]) : "";
+}
+
+function decodeHtmlResponse(buffer: ArrayBuffer, contentType: string | null) {
+  const bytes = new Uint8Array(buffer);
+  const utf8Sample = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, 4096));
+  const charset = charsetFromContentType(contentType) || charsetFromHtmlSample(utf8Sample) || "utf-8";
+
+  try {
+    return new TextDecoder(charset, { fatal: false }).decode(bytes);
+  } catch {
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  }
+}
+
 function toAbsoluteImageUrl(src: string, baseUrl: string): string | null {
   const decoded = decodeHtml(String(src || "").trim());
   if (!decoded || /^(data|blob|javascript|file):/i.test(decoded)) return null;
@@ -424,6 +488,34 @@ function mergeImageUrls(values: string[]) {
   }
 
   return merged;
+}
+
+function isRecommendedThumbnailUrl(value: string) {
+  return /\/data\/goods\/[^?]+\/small\/thum2\//i.test(value);
+}
+
+function selectMainProductImage(
+  candidates: ProductImageCandidate[],
+  galleryImages: string[],
+  fallbackMainImage: string
+) {
+  const preferredCandidate = candidates.find(
+    (candidate) =>
+      !isRecommendedThumbnailUrl(candidate.url) &&
+      !/\/(?:data\/reviewimg|review)\//i.test(candidate.url)
+  );
+  const preferredGalleryImage = galleryImages.find(
+    (image) =>
+      !isRecommendedThumbnailUrl(image) && !/\/(?:data\/reviewimg|review)\//i.test(image)
+  );
+
+  return (
+    preferredCandidate?.url ||
+    preferredGalleryImage ||
+    candidates[0]?.url ||
+    galleryImages[0] ||
+    fallbackMainImage
+  );
 }
 
 function getTagAttribute(tag: string, name: string) {
@@ -997,7 +1089,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const html = (await response.text()).slice(0, 2_000_000);
+    const html = decodeHtmlResponse(
+      await response.arrayBuffer(),
+      response.headers.get("content-type")
+    ).slice(0, 2_000_000);
+    const invalidPageMessage = invalidProductPageMessage(html, url);
+    if (invalidPageMessage) {
+      return NextResponse.json({ ok: false, error: invalidPageMessage }, { status: 422 });
+    }
+
     const jsonLd = extractJsonLd(html, url.toString());
     const price = extractPrice(html, jsonLd.price);
     const originalPrice = extractOriginalPrice(html, price);
@@ -1029,10 +1129,11 @@ export async function POST(request: Request) {
       detected.type === "meat"
         ? (await filterProductPhotoImages(mergedGalleryCandidates)).slice(0, maxGalleryImages)
         : mergedGalleryCandidates.slice(0, maxGalleryImages);
-    const mainCandidate =
-      enhancedCandidates.find((candidate) => candidate.type === "main") || enhancedCandidates[0];
-    const mainImage =
-      mainCandidate?.url || galleryImages[0] || rawGalleryImages[0] || fallbackMainImage;
+    const mainImage = selectMainProductImage(
+      enhancedCandidates,
+      galleryImages,
+      fallbackMainImage
+    );
     const createdAt = new Date().toISOString();
     const detailImages = galleryImages
       .filter((image) => image && image !== mainImage)
@@ -1093,6 +1194,17 @@ export async function POST(request: Request) {
       sourceImageCandidates,
     };
 
+    if (!productInfo.productName && !productInfo.price && !productInfo.mainImage) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "상품 상세 정보를 찾지 못했습니다. 상품 목록이 아닌 실제 상품 상세페이지 URL인지 확인해주세요.",
+        },
+        { status: 422 }
+      );
+    }
+
     return NextResponse.json({
       ok: true,
       success: true,
@@ -1107,11 +1219,12 @@ export async function POST(request: Request) {
         totalImageUrlsFound: enhancedCandidates.length || rawGalleryImages.length,
         imageCandidatesReturned: productInfo.imageCandidates?.length || 0,
         rejectedImageCount: Math.max(0, mergedGalleryCandidates.length - galleryImages.length),
-        mainImageSource:
-          mainCandidate?.type === "main"
-            ? "og"
-            : mainCandidate
-              ? "html"
+        mainImageSource: isRecommendedThumbnailUrl(mainImage)
+          ? "fallback-thumbnail"
+          : enhancedCandidates.some((candidate) => candidate.url === mainImage)
+            ? "html"
+            : galleryImages.includes(mainImage)
+              ? "gallery"
               : fallbackMainImage
                 ? "og"
                 : "none",

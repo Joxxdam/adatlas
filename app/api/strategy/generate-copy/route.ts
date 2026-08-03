@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 
 import { buildGenerateCopyPrompt } from "../../../lib/mvp/copyPromptBuilder";
 import { loadCopyGuideForProduct } from "../../../lib/mvp/copyGuideLoader";
+import {
+  buildKookdaeCopyVariantsFromPatterns,
+  chooseKookdaePatternNames,
+  kookdaeFallbackCopy,
+  kookdaeGenericForbiddenPhrases,
+  kookdaeGenericReplacements,
+  normalizeKookdaePunctuation,
+  kookdaeProductFacts,
+} from "../../../lib/mvp/kookdaeCopyPatterns";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
 import { copyLimitCharSummary } from "../../../lib/mvp/templateCopyFitter";
 import type {
@@ -30,6 +39,16 @@ type TemplateInfo = {
 };
 
 const forbiddenPhrases = [
+  "만나보세요",
+  "기다립니다",
+  "필수 아이템",
+  "특별한 선택",
+  "자세한 정보",
+  "여기를 클릭",
+  "새로워진 즐거움",
+  "만족을 줄 수 있음",
+  "여러분을 기다립니다",
+  "지금 바로 확인하기",
   "meet",
   "waiting",
   "must-have",
@@ -189,11 +208,36 @@ function hasForbidden(value: string) {
   return forbiddenPhrases.some((phrase) => text.includes(phrase));
 }
 
-function isBadHeadline(value: string) {
+function isKookdaeGuide(copyGuide?: CopyGuideContext | null) {
+  return copyGuide?.guideId === "kookdae-hanwoo";
+}
+
+function rejectedKookdaeGenericExpressions(copy: Partial<GeneratedAdCopy>) {
+  const source = copySlots
+    .filter((key) => key !== "price")
+    .map((key) => String(copy[key] || ""))
+    .join(" ");
+  return kookdaeGenericForbiddenPhrases.filter((phrase) => source.includes(phrase));
+}
+
+function applyKookdaeGenericReplacements(value: string) {
+  let text = normalizeKookdaePunctuation(cleanText(value));
+  for (const [pattern, replacement] of kookdaeGenericReplacements) {
+    text = text.replace(pattern, replacement);
+  }
+  return normalizeKookdaePunctuation(text);
+}
+
+function hasKookdaeForbidden(value: string) {
+  return kookdaeGenericForbiddenPhrases.some((phrase) => cleanText(value).includes(phrase));
+}
+
+function isBadHeadline(value: string, copyGuide?: CopyGuideContext | null) {
   const text = cleanText(value);
   if (!text || text.length < 4) return true;
   if (/^[\d,]+[^\s\d,]*$/.test(text)) return true;
   if (hasForbidden(text)) return true;
+  if (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(text)) return true;
   return false;
 }
 
@@ -205,7 +249,15 @@ function inferAppealPoint(reference?: AdImageLabel) {
   return cleanText(reference?.finalLabel?.appealPoint || "price-value");
 }
 
-function safeHeadlineFallback(product: ProductInfoForPrompt, reference?: AdImageLabel) {
+function safeHeadlineFallback(
+  product: ProductInfoForPrompt,
+  reference?: AdImageLabel,
+  copyGuide?: CopyGuideContext | null
+) {
+  if (isKookdaeGuide(copyGuide)) {
+    return kookdaeFallbackCopy(product, reference).headline;
+  }
+
   const price = normalizePrice(product);
   const source = cleanText(
     reference?.finalLabel?.firstLineHook ||
@@ -218,7 +270,15 @@ function safeHeadlineFallback(product: ProductInfoForPrompt, reference?: AdImage
   return trimToLimit(source ? `${source} proof` : "value proof deal", 34);
 }
 
-function bodyFallback(product: ProductInfoForPrompt, reference?: AdImageLabel) {
+function bodyFallback(
+  product: ProductInfoForPrompt,
+  reference?: AdImageLabel,
+  copyGuide?: CopyGuideContext | null
+) {
+  if (isKookdaeGuide(copyGuide)) {
+    return kookdaeFallbackCopy(product, reference).bodyCopy;
+  }
+
   const source = cleanText(
     product.mainBenefit ||
       reference?.finalLabel?.consumerInsight ||
@@ -228,13 +288,19 @@ function bodyFallback(product: ProductInfoForPrompt, reference?: AdImageLabel) {
   return trimToLimit(source ? `${source} ready.` : "Prepared for easier choice.", 36);
 }
 
-function normalizeBody(value: string, fallback: string) {
-  return trimToLimit(cleanText(value || fallback), 36);
+function normalizeBody(value: string, fallback: string, copyGuide?: CopyGuideContext | null) {
+  const source = isKookdaeGuide(copyGuide) ? applyKookdaeGenericReplacements(value) : value;
+  const normalized = trimToLimit(cleanText(source || fallback), 42);
+  if (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(normalized)) return trimToLimit(fallback, 42);
+  return trimToLimit(normalized, 36);
 }
 
-function normalizeCta(value?: string) {
-  const text = cleanText(value);
-  if (text && !hasForbidden(text)) return trimToLimit(text, 10);
+function normalizeCta(value?: string, copyGuide?: CopyGuideContext | null) {
+  const text = isKookdaeGuide(copyGuide)
+    ? applyKookdaeGenericReplacements(value || "")
+    : cleanText(value);
+  if (text && !hasForbidden(text) && !hasKookdaeForbidden(text)) return trimToLimit(text, 10);
+  if (isKookdaeGuide(copyGuide)) return "특가 확인하기";
   return "view deal";
 }
 
@@ -311,26 +377,104 @@ function copyGuideUsage(guide?: CopyGuideContext | null): GeneratedAdCopy["copyG
 function variantFrom(
   copy: Partial<GeneratedAdCopyVariant> | undefined,
   fallback: GeneratedAdCopyVariant,
-  limits: Record<keyof GeneratedAdCopyVariant, number>
+  limits: Record<keyof GeneratedAdCopyVariant, number>,
+  copyGuide?: CopyGuideContext | null
+): GeneratedAdCopyVariant {
+  const sanitize = (value: string) =>
+    isKookdaeGuide(copyGuide) ? applyKookdaeGenericReplacements(value) : value;
+
+  return {
+    headline: trimToLimit(sanitize(copy?.headline || fallback.headline), limits.headline),
+    bodyCopy: trimToLimit(sanitize(copy?.bodyCopy || fallback.bodyCopy), limits.bodyCopy),
+    highlightCopy: trimToLimit(sanitize(copy?.highlightCopy || fallback.highlightCopy), limits.highlightCopy),
+    bottomBarCopy: trimToLimit(sanitize(copy?.bottomBarCopy || fallback.bottomBarCopy), limits.bottomBarCopy),
+    cta: trimToLimit(sanitize(copy?.cta || fallback.cta), limits.cta),
+    price: trimToLimit(copy?.price || fallback.price || "", limits.price),
+  };
+}
+
+function kookdaeVariantSlotValue(
+  slot: keyof GeneratedAdCopyVariant,
+  value: string | undefined,
+  fallback: string
+) {
+  const raw = cleanText(value);
+  if (!raw || hasForbidden(raw) || hasKookdaeForbidden(raw)) {
+    return fallback;
+  }
+
+  return normalizeKookdaePunctuation(applyKookdaeGenericReplacements(raw), {
+    cta: slot === "cta",
+  });
+}
+
+function mergeKookdaeVariant(
+  incoming: Partial<GeneratedAdCopyVariant> | undefined,
+  fallback: GeneratedAdCopyVariant
 ): GeneratedAdCopyVariant {
   return {
-    headline: trimToLimit(copy?.headline || fallback.headline, limits.headline),
-    bodyCopy: trimToLimit(copy?.bodyCopy || fallback.bodyCopy, limits.bodyCopy),
-    highlightCopy: trimToLimit(copy?.highlightCopy || fallback.highlightCopy, limits.highlightCopy),
-    bottomBarCopy: trimToLimit(copy?.bottomBarCopy || fallback.bottomBarCopy, limits.bottomBarCopy),
-    cta: trimToLimit(copy?.cta || fallback.cta, limits.cta),
-    price: trimToLimit(copy?.price || fallback.price || "", limits.price),
+    headline: kookdaeVariantSlotValue("headline", incoming?.headline, fallback.headline),
+    bodyCopy: kookdaeVariantSlotValue("bodyCopy", incoming?.bodyCopy, fallback.bodyCopy),
+    highlightCopy: kookdaeVariantSlotValue(
+      "highlightCopy",
+      incoming?.highlightCopy,
+      fallback.highlightCopy
+    ),
+    bottomBarCopy: kookdaeVariantSlotValue(
+      "bottomBarCopy",
+      incoming?.bottomBarCopy,
+      fallback.bottomBarCopy
+    ),
+    cta: kookdaeVariantSlotValue("cta", incoming?.cta, fallback.cta),
+    price: cleanText(incoming?.price || fallback.price || ""),
   };
 }
 
 function buildCopyVariants(
   copy: Partial<GeneratedAdCopy>,
   product: ProductInfoForPrompt,
-  reference?: AdImageLabel
+  reference?: AdImageLabel,
+  copyGuide?: CopyGuideContext | null
 ): GeneratedAdCopy["copyVariants"] {
+  if (isKookdaeGuide(copyGuide)) {
+    const fallbackVariants = buildKookdaeCopyVariantsFromPatterns(product, reference).variants;
+    const preferred = {
+      short: mergeKookdaeVariant(copy.copyVariants?.short, fallbackVariants.short),
+      medium: mergeKookdaeVariant(copy.copyVariants?.medium, fallbackVariants.medium),
+      long: mergeKookdaeVariant(copy.copyVariants?.long, fallbackVariants.long),
+    };
+
+    return {
+      short: variantFrom(preferred.short, fallbackVariants.short, {
+        headline: 14,
+        bodyCopy: 18,
+        highlightCopy: 12,
+        bottomBarCopy: 18,
+        cta: 6,
+        price: 12,
+      }, copyGuide),
+      medium: variantFrom(preferred.medium, fallbackVariants.medium, {
+        headline: 22,
+        bodyCopy: 28,
+        highlightCopy: 18,
+        bottomBarCopy: 24,
+        cta: 8,
+        price: 12,
+      }, copyGuide),
+      long: variantFrom(preferred.long, fallbackVariants.long, {
+        headline: 34,
+        bodyCopy: 42,
+        highlightCopy: 28,
+        bottomBarCopy: 36,
+        cta: 10,
+        price: 12,
+      }, copyGuide),
+    };
+  }
+
   const fallback: GeneratedAdCopyVariant = {
-    headline: copy.headline || safeHeadlineFallback(product, reference),
-    bodyCopy: copy.bodyCopy || bodyFallback(product, reference),
+    headline: copy.headline || safeHeadlineFallback(product, reference, copyGuide),
+    bodyCopy: copy.bodyCopy || bodyFallback(product, reference, copyGuide),
     highlightCopy: copy.highlightCopy || product.discountInfo || product.mainBenefit || "deal",
     bottomBarCopy:
       copy.bottomBarCopy ||
@@ -349,7 +493,7 @@ function buildCopyVariants(
       bottomBarCopy: 18,
       cta: 6,
       price: 12,
-    }),
+    }, copyGuide),
     medium: variantFrom(copy.copyVariants?.medium, fallback, {
       headline: 22,
       bodyCopy: 28,
@@ -357,7 +501,7 @@ function buildCopyVariants(
       bottomBarCopy: 24,
       cta: 8,
       price: 12,
-    }),
+    }, copyGuide),
     long: variantFrom(copy.copyVariants?.long, fallback, {
       headline: 34,
       bodyCopy: 42,
@@ -365,23 +509,37 @@ function buildCopyVariants(
       bottomBarCopy: 36,
       cta: 10,
       price: 12,
-    }),
+    }, copyGuide),
   };
 }
 
-function removeForbidden(copy: GeneratedAdCopy): GeneratedAdCopy {
-  const replacements: Partial<Record<keyof GeneratedAdCopyVariant, string>> = {
-    headline: "value proof deal",
-    bodyCopy: "Prepared for easier choice.",
-    highlightCopy: "deal check",
-    bottomBarCopy: "check bundle",
-    cta: "view deal",
-  };
+function removeForbidden(
+  copy: GeneratedAdCopy,
+  product: ProductInfoForPrompt,
+  reference?: AdImageLabel,
+  copyGuide?: CopyGuideContext | null
+): GeneratedAdCopy {
+  const kookdaeFallback = kookdaeFallbackCopy(product, reference);
+  const replacements: Partial<Record<keyof GeneratedAdCopyVariant, string>> = isKookdaeGuide(copyGuide)
+    ? kookdaeFallback
+    : {
+        headline: "value proof deal",
+        bodyCopy: "Prepared for easier choice.",
+        highlightCopy: "deal check",
+        bottomBarCopy: "check bundle",
+        cta: "view deal",
+      };
 
   const next = { ...copy };
   copySlots.forEach((key) => {
-    if (key !== "price" && hasForbidden(String(next[key] || ""))) {
+    if (
+      key !== "price" &&
+      (hasForbidden(String(next[key] || "")) ||
+        (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(String(next[key] || ""))))
+    ) {
       next[key] = replacements[key] || "";
+    } else if (key !== "price" && isKookdaeGuide(copyGuide)) {
+      next[key] = applyKookdaeGenericReplacements(String(next[key] || ""));
     }
   });
   return next;
@@ -395,36 +553,86 @@ function normalizeGeneratedCopy(
 ): GeneratedAdCopy {
   const reference = labels[0];
   const price = normalizePrice(product, value.price);
-  const headline = isBadHeadline(value.headline || "")
-    ? safeHeadlineFallback(product, reference)
-    : cleanText(value.headline);
+  const kookdaeFallback = kookdaeFallbackCopy(product, reference);
+  const rejectedGenericExpressions = isKookdaeGuide(copyGuide)
+    ? rejectedKookdaeGenericExpressions(value)
+    : [];
+  const headlineSource = isKookdaeGuide(copyGuide)
+    ? applyKookdaeGenericReplacements(value.headline || "")
+    : value.headline || "";
+  const headline = isBadHeadline(headlineSource, copyGuide)
+    ? safeHeadlineFallback(product, reference, copyGuide)
+    : cleanText(headlineSource);
+  const productFacts = kookdaeProductFacts(product, reference);
+  const selectedKookdaePattern = isKookdaeGuide(copyGuide)
+    ? chooseKookdaePatternNames(product, reference).join(", ")
+    : "";
+  const kookdaeVariantPatternPlan = isKookdaeGuide(copyGuide)
+    ? buildKookdaeCopyVariantsFromPatterns(product, reference).selectedPatterns
+    : undefined;
+  const baseCopyGuideUsage = copyGuideUsage(copyGuide);
 
   const normalized: GeneratedAdCopy = {
     headline,
-    bodyCopy: normalizeBody(value.bodyCopy || "", bodyFallback(product, reference)),
+    bodyCopy: normalizeBody(
+      value.bodyCopy || "",
+      bodyFallback(product, reference, copyGuide),
+      copyGuide
+    ),
     highlightCopy: trimToLimit(
-      cleanText(value.highlightCopy || product.discountInfo || product.mainBenefit || "deal"),
+      cleanText(
+        isKookdaeGuide(copyGuide)
+          ? applyKookdaeGenericReplacements(
+              value.highlightCopy ||
+                product.discountInfo ||
+                product.mainBenefit ||
+                kookdaeFallback.highlightCopy
+            )
+          : value.highlightCopy || product.discountInfo || product.mainBenefit || "deal"
+      ),
       28
     ),
     bottomBarCopy: trimToLimit(
       cleanText(
-        value.bottomBarCopy ||
-          reference?.finalLabel?.purchaseTrigger ||
-          reference?.finalLabel?.whyItWorks ||
-          "check bundle"
+        isKookdaeGuide(copyGuide)
+          ? applyKookdaeGenericReplacements(value.bottomBarCopy || kookdaeFallback.bottomBarCopy)
+          : value.bottomBarCopy ||
+              reference?.finalLabel?.purchaseTrigger ||
+              reference?.finalLabel?.whyItWorks ||
+              "check bundle"
       ),
       36
     ),
-    cta: normalizeCta(value.cta),
+    cta: normalizeCta(value.cta, copyGuide),
     price,
     hookType: cleanText(value.hookType || inferHookType(reference)),
     appealPoint: cleanText(value.appealPoint || inferAppealPoint(reference)),
     whyThisWorks: cleanText(
-      value.whyThisWorks || "Combined reference copy pattern with product value proof."
+      value.whyThisWorks ||
+        (isKookdaeGuide(copyGuide)
+          ? "국대한우 카피 가이드의 가격 충격/구어체 패턴을 상품 사실에 맞게 변형했습니다."
+          : "Combined reference copy pattern with product value proof.")
     ),
     reasoning: {
       ...(value.reasoning || {}),
-      headlineQualityCheck: isBadHeadline(value.headline || "") ? "repaired" : "passed",
+      headlineQualityCheck: isBadHeadline(headlineSource, copyGuide) ? "repaired" : "passed",
+      selectedKookdaePattern:
+        value.reasoning?.selectedKookdaePattern || selectedKookdaePattern || undefined,
+      rejectedGenericExpressions:
+        value.reasoning?.rejectedGenericExpressions || rejectedGenericExpressions,
+      productFactsUsed:
+        value.reasoning?.productFactsUsed ||
+        (isKookdaeGuide(copyGuide)
+          ? [
+              productFacts.productName,
+              productFacts.cut,
+              productFacts.price,
+              productFacts.originalPrice,
+              productFacts.discountInfo,
+              productFacts.useCase,
+              productFacts.benefit,
+            ].filter(Boolean)
+          : undefined),
     },
     templateFit: {
       templateId: undefined,
@@ -436,26 +644,44 @@ function normalizeGeneratedCopy(
       ...referencePatternUsage(reference),
       ...(value.referencePatternUsage || {}),
     },
-    copyGuideUsage: value.copyGuideUsage || copyGuideUsage(copyGuide),
+    copyGuideUsage: value.copyGuideUsage
+      ? {
+          ...value.copyGuideUsage,
+          selectedPatterns:
+            kookdaeVariantPatternPlan ||
+            value.copyGuideUsage.selectedPatterns ||
+            baseCopyGuideUsage?.selectedPatterns,
+        }
+      : baseCopyGuideUsage
+        ? {
+            ...baseCopyGuideUsage,
+            selectedPatterns: kookdaeVariantPatternPlan || baseCopyGuideUsage.selectedPatterns,
+          }
+        : undefined,
     copyValidation: {
       bodyCopy: {
         ok: true,
         reasons: [],
         original: value.bodyCopy || "",
-        normalized: normalizeBody(value.bodyCopy || "", bodyFallback(product, reference)),
+        normalized: normalizeBody(
+          value.bodyCopy || "",
+          bodyFallback(product, reference, copyGuide),
+          copyGuide
+        ),
         finalLength: visibleLength(
-          normalizeBody(value.bodyCopy || "", bodyFallback(product, reference))
+          normalizeBody(value.bodyCopy || "", bodyFallback(product, reference, copyGuide), copyGuide)
         ),
       },
     },
     copyVariants: undefined,
   };
 
-  const cleaned = removeForbidden(normalized);
+  const cleaned = removeForbidden(normalized, product, reference, copyGuide);
   cleaned.copyVariants = buildCopyVariants(
     { ...cleaned, copyVariants: value.copyVariants },
     product,
-    reference
+    reference,
+    copyGuide
   );
   return cleaned;
 }
@@ -490,13 +716,17 @@ function mockCopy(
   return normalizeGeneratedCopy(
     {
       headline: safeHeadlineFallback(product, reference),
-      bodyCopy: bodyFallback(product, reference),
-      highlightCopy: product.discountInfo || product.mainBenefit || "deal",
+      bodyCopy: bodyFallback(product, reference, copyGuide),
+      highlightCopy: isKookdaeGuide(copyGuide)
+        ? kookdaeFallbackCopy(product, reference).highlightCopy
+        : product.discountInfo || product.mainBenefit || "deal",
       bottomBarCopy:
-        reference?.finalLabel?.purchaseTrigger ||
-        reference?.finalLabel?.whyItWorks ||
-        "check bundle",
-      cta: "view deal",
+        (isKookdaeGuide(copyGuide)
+          ? kookdaeFallbackCopy(product, reference).bottomBarCopy
+          : reference?.finalLabel?.purchaseTrigger ||
+            reference?.finalLabel?.whyItWorks ||
+            "check bundle"),
+      cta: isKookdaeGuide(copyGuide) ? "특가 확인하기" : "view deal",
       price: normalizePrice(product),
       hookType: inferHookType(reference),
       appealPoint: inferAppealPoint(reference),

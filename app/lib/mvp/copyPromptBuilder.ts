@@ -1,4 +1,5 @@
 import { copyLimitCharSummary } from "./templateCopyFitter";
+import { kookdaePatternPromptBlock } from "./kookdaeCopyPatterns";
 import type {
   AdImageLabel,
   CopyGuideContext,
@@ -104,7 +105,7 @@ function templateStrategy(templateId?: string) {
   if (
     /food-impact-hero-001|bold-commerce-001|price-proof-002|home-shopping-max-010/.test(templateId)
   ) {
-    return "식품/특가 히어로형: headline은 강하고 짧게, bodyCopy는 존댓말 1문장, highlightCopy는 가격/구성 혜택, bottomBarCopy는 마지막 구매 명분으로 쓴다.";
+    return "식품/특가 히어로형: headline은 강하고 짧게, bodyCopy는 존댓말 1문장, highlightCopy는 가격/구성 혜택, bottomBarCopy는 빨간 정보 바용 짧은 소구, price는 판매가만 쓴다.";
   }
 
   if (/premium-gift-006/.test(templateId)) {
@@ -124,7 +125,10 @@ function guideSpecificRules(copyGuide?: CopyGuideContext | null) {
   if (copyGuide.guideId === "kookdae-hanwoo") {
     return `
 [국대한우 가이드 적용 규칙]
-- 국대한우 가이드는 고정 브랜드 톤입니다. reference label은 현재 소재의 후킹 방향과 소구점입니다.
+- 국대한우 가이드는 단순 참고자료가 아니라 문구 생성의 1차 스타일 기준입니다.
+- productInfo의 사실 정보는 반드시 지키되, 말투/문장 구조/후킹 방식은 국대한우 가이드 예문을 강하게 따릅니다.
+- 예문을 그대로 복사하지 말라는 말은 상품 정보와 맞지 않는 문장을 맹목적으로 쓰지 말라는 뜻입니다.
+- 국대한우 문구는 가이드 예문과 문장 결, 감탄 구조, 가격 충격 표현, 내부자 고백형 문법이 가까워야 합니다.
 - 1-A/1-B/1-C/1-D는 모두 headline 후보군입니다. 반드시 headline과 headlineVariants에 우선 반영합니다.
 - 1-B 내부 고백/사장님 결단형, 1-C 전문가/권위 인용형, 1-D 반전/반신반의형은 bodyCopy, bottomBarCopy, cta에 긴 문장으로 넣지 않습니다.
 - bodyCopy는 상품 설명, 맛, 부위, 구성, 사용 상황을 존댓말 1문장으로 씁니다.
@@ -134,6 +138,40 @@ function guideSpecificRules(copyGuide?: CopyGuideContext | null) {
 - copyGuideUsage.usedSections에는 실제로 쓴 섹션명을 넣습니다. 예: ["1-A 기본 가격/선물 후킹형", "1-B 내부 고백/사장님 결단형", "2 서브카피"].
 - copyGuideUsage.toneApplied에는 적용한 톤을 구체적으로 씁니다. 예: ["가격 충격", "선물 명분", "내부 고백 톤", "존댓말 bodyCopy"].
 - headlineVariants.short/medium/long은 단순 축약이 아니라 1-A~1-D 중 서로 다른 후보 스타일을 자연스럽게 변형합니다.
+- copyVariants.short / medium / long은 서로 독립적으로 생성합니다. short는 long을 줄인 문장이 아니고, medium도 long의 요약본이 아닙니다.
+- short는 짧고 강한 후킹 문구입니다. 예: "와 진심 미쳤다", "이 가격 실화냐", "사장님 결심가,,", "가격보고 두번 봄;;".
+- medium은 자연스러운 광고 헤드라인/후기형 문구입니다. 예: "이 가격 보고 두 번 놀랐습니다", "사장님이 결심한 가격입니다", "이 가격 진짜 맞습니다;;".
+- long은 국대한우 문구 파일의 말투와 구조를 가장 풍부하게 살립니다. 예: "사장님이 미쳤어요.. 이 가격 진짜 손해 보고 파는 겁니다".
+- short / medium에는 필요 시 ",, / .. / ;; / ?!" 같은 말끝 처리와 구어체 압축을 자연스럽게 사용합니다.
+- 단, 모든 문구에 기호를 붙이지 말고 CTA에는 과한 기호를 붙이지 않습니다.
+- copyGuideUsage.selectedPatterns에는 short/medium/long 각각 어떤 길이별 패턴을 선택했는지 기록합니다.
+${kookdaePatternPromptBlock()}
+`;
+  }
+
+  if (copyGuide.guideId === "daehan-hanwoo") {
+    return `
+[대한한우 가이드 적용 규칙]
+- 대한한우는 왕도매가, 노마진, 물량/숫자 임팩트와 궁중 프리미엄의 결합이 핵심이다.
+- headline은 가격 충격 또는 왕도매가 명분을 짧고 강하게 쓴다. 상품 정보에 없는 수량, 등급, 기간, 할인율은 만들지 않는다.
+- bodyCopy는 품질, 마블링, 선별, 구성, 선물 용도를 존댓말 한 문장으로 설명한다.
+- 내부 고백과 반전은 headline에만 짧게 사용하며, 확인되지 않은 결재/납품/회의 상황을 사실처럼 말하지 않는다.
+- 국대한우의 사장님 개인 서사, 힘내라농가의 산지 농민 서사와 단가 착시를 섞지 않는다.
+- 이모지와 그림문자는 절대 쓰지 않는다.
+- copyGuideUsage.usedSections와 toneApplied에는 실제 선택한 대한한우 가이드 섹션과 왕도매가/물량/프리미엄 등 적용 톤을 구체적으로 기록한다.
+`;
+  }
+
+  if (copyGuide.guideId === "fighting-farm") {
+    return `
+[힘내라농가 가이드 적용 규칙]
+- 힘내라농가는 산지직송, 산지 물량, 유통 단계 축소와 단가 착시로 가격을 납득시키는 브랜드다.
+- headline은 가격 반전 또는 산지 특가를 짧고 강하게 쓴다. 단가 표현은 실제 가격과 수량/중량으로 계산 가능한 경우에만 사용한다.
+- bodyCopy는 산지, 품질, 제철, 구성, 활용도를 존댓말 한 문장으로 설명한다.
+- 힘농/힘농 식구님, 단골 추천, 후기 표현은 실제 상품 정보나 확인된 근거가 있을 때만 사용한다.
+- 대한한우의 왕도매가/궁중 세계관과 국대한우의 사장님 개인 서사를 섞지 않는다.
+- 이모지와 그림문자는 절대 쓰지 않는다.
+- copyGuideUsage.usedSections와 toneApplied에는 실제 선택한 힘내라농가 가이드 섹션과 산지/농민 서사/단가 프레이밍 등 적용 톤을 구체적으로 기록한다.
 `;
   }
 
@@ -163,7 +201,14 @@ brandName: ${copyGuide.brandName}
 matchedBy: ${copyGuide.matchedBy.join(", ")}
 
 This guide contains the advertiser's preferred tone, repeatable copy structures, price framing, gift framing, proof cues, and CTA style.
-Do not copy example lines verbatim. Recompose the style for the current product and selected reference label.
+${
+  copyGuide.guideId === "kookdae-hanwoo"
+    ? `Do not blindly copy guide examples when product facts do not match.
+However, for 국대한우, actively reuse the guide's sentence rhythm, colloquial hooks, price-shock grammar, and insider-confession structure.
+It is allowed to closely paraphrase guide examples if the product facts match.
+Replace variables such as productName, cut, price, use case, quantity, and benefit with current productInfo.`
+    : "Do not copy guide examples verbatim. Recompose the style for the current product and selected reference label."
+}
 
 ${copyGuide.content}
 `
@@ -201,6 +246,7 @@ ${copyGuideBlock}
 - If neither guide nor reference exists, generate a conservative default performance ad copy from product information.
 - Do not copy guide examples or OCR text verbatim.
 - Generate copyVariants.short, copyVariants.medium, copyVariants.long with the same appeal but different natural lengths.
+- For 국대한우, copyVariants.short/medium/long must be independently generated from length-specific patterns. Never make short/medium by trimming long.
 - Fill copyGuideUsage with guideId, brandName, usedSections, and toneApplied when a guide exists.
 - Fill referencePatternUsage.usedReferenceIds, appliedPatterns, and avoidedDirectCopy when a reference exists.
 
@@ -268,7 +314,10 @@ reference가 고급형이면 고급스럽게, 가격형이면 가격정당화형
 - short.headline: 8~14자
 - medium.headline: 12~22자
 - long.headline: 18~34자
-- short/medium/long은 같은 소구를 기계적으로 자른 문구가 아니라, 자연스러운 길이별 대안이어야 한다.
+- short/medium/long은 같은 소구를 기계적으로 자른 문구가 아니라, 길이별 전용 패턴에서 고른 자연스러운 대안이어야 한다.
+- short는 짧은 말맛과 강한 후킹을 우선한다.
+- medium은 자연스러운 후기/가격충격 문장으로 쓴다.
+- long은 가장 국대한우 가이드 말투가 풍부하게 살아야 한다.
 - 국대한우 가이드가 적용되면 1-A/1-B/1-C/1-D 스타일 중 최소 2개 이상을 headlineVariants에 반영한다.
 
 [출력 JSON]
@@ -290,7 +339,10 @@ JSON만 반환한다. 모든 문자열에는 이모지를 넣지 않는다.
     "referencePatternUsed": "",
     "consumerInsightUsed": "",
     "purchaseTriggerUsed": "",
-    "headlineQualityCheck": ""
+    "headlineQualityCheck": "",
+    "selectedKookdaePattern": "",
+    "rejectedGenericExpressions": [],
+    "productFactsUsed": []
   },
   "referencePatternUsage": {
     "usedReferenceIds": [],
@@ -308,7 +360,27 @@ JSON만 반환한다. 모든 문자열에는 이모지를 넣지 않는다.
     "guideId": "",
     "brandName": "",
     "usedSections": [],
-    "toneApplied": []
+    "toneApplied": [],
+    "selectedPatterns": [
+      {
+        "variant": "short",
+        "patternGroup": "",
+        "sourcePattern": "",
+        "tone": ""
+      },
+      {
+        "variant": "medium",
+        "patternGroup": "",
+        "sourcePattern": "",
+        "tone": ""
+      },
+      {
+        "variant": "long",
+        "patternGroup": "",
+        "sourcePattern": "",
+        "tone": ""
+      }
+    ]
   },
   "copyVariants": {
     "short": {
