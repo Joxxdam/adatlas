@@ -275,17 +275,22 @@ function contentTypeFromPath(filePath: string) {
   return "image/jpeg";
 }
 
-function safeWindowsFontFile(value?: string) {
-  if (!value) return "C:/Windows/Fonts/malgun.ttf";
-  const normalized = value.replace(/\\/g, "/");
-  if (
-    !/^C:\/(?:Windows\/Fonts|Users\/[^/]+\/AppData\/Local\/Microsoft\/Windows\/Fonts)\/[^/]+\.(?:ttf|ttc|otf)$/i.test(
-      normalized
-    )
-  ) {
-    return "C:/Windows/Fonts/malgun.ttf";
+function resolveOptionalFontFile(value?: string) {
+  if (!value) return "";
+  const normalized = value.replace(/\\/g, "/").trim();
+  const fileName = path.basename(normalized);
+  if (!/^[^/]+\.(?:ttf|ttc|otf)$/i.test(fileName)) return "";
+
+  if (normalized.startsWith("/fonts/") || normalized.startsWith("fonts/")) {
+    return path.join(process.cwd(), "public", "fonts", fileName);
   }
-  return normalized;
+
+  const configuredFontDir = process.env.ADATLAS_FONT_DIR;
+  if (configuredFontDir && !path.isAbsolute(normalized)) {
+    return path.join(configuredFontDir, fileName);
+  }
+
+  return "";
 }
 
 function fontFormatFromFile(filePath: string) {
@@ -293,7 +298,18 @@ function fontFormatFromFile(filePath: string) {
 }
 
 function fontFileToFileUrl(filePath: string) {
-  return pathToFileURL(safeWindowsFontFile(filePath)).href;
+  const safeFilePath = resolveOptionalFontFile(filePath);
+  return safeFilePath ? pathToFileURL(safeFilePath).href : "";
+}
+
+function buildFontFaceCss(
+  family: string,
+  fileUrl: string,
+  format: string,
+  weight: number | string
+) {
+  if (!fileUrl) return "";
+  return `@font-face { font-family: '${family}'; src: url('${fileUrl}') format('${format}'); font-weight: ${weight}; font-style: normal; }`;
 }
 
 function getFoodTemplate001ImageFrames(
@@ -796,9 +812,9 @@ async function renderFoodImpactHero(body: RenderBody) {
   const logoImageDataUrl = body.logoImagePath
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
-  const selectedFontFile = safeWindowsFontFile(styleOverrides.selectedFontFile);
+  const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
-  const headlineFontFile = safeWindowsFontFile(
+  const headlineFontFile = resolveOptionalFontFile(
     styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
   );
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
@@ -986,23 +1002,8 @@ async function renderFoodImpactHero(body: RenderBody) {
 <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
-      @font-face {
-        font-family: 'AdAtlasKR';
-        src: url('file:///C:/Windows/Fonts/malgun.ttf') format('truetype');
-        font-weight: 400 900;
-      }
-      @font-face {
-        font-family: 'AdAtlasSelectedFont';
-        src: url('${selectedFontFileUrl}') format('${selectedFontFormat}');
-        font-weight: ${selectedFontWeight};
-        font-style: normal;
-      }
-      @font-face {
-        font-family: 'AdAtlasHeadlineFont';
-        src: url('${headlineFontFileUrl}') format('${headlineFontFormat}');
-        font-weight: ${headlineFontFaceWeight};
-        font-style: normal;
-      }
+      ${buildFontFaceCss("AdAtlasSelectedFont", selectedFontFileUrl, selectedFontFormat, selectedFontWeight)}
+      ${buildFontFaceCss("AdAtlasHeadlineFont", headlineFontFileUrl, headlineFontFormat, headlineFontFaceWeight)}
     </style>
     ${productEffectFilterDef(productEffect)}
     <filter id="headlineShadow" x="-10%" y="-10%" width="120%" height="130%">
@@ -1122,9 +1123,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const logoImageDataUrl = body.logoImagePath
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
-  const selectedFontFile = safeWindowsFontFile(styleOverrides.selectedFontFile);
+  const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
-  const headlineFontFile = safeWindowsFontFile(
+  const headlineFontFile = resolveOptionalFontFile(
     styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
   );
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
@@ -2252,8 +2253,8 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
-      @font-face { font-family: 'AdAtlasSelectedFont'; src: url('${selectedFontFileUrl}') format('${selectedFontFormat}'); font-weight: ${selectedFontWeight}; font-style: normal; }
-      @font-face { font-family: 'AdAtlasHeadlineFont'; src: url('${headlineFontFileUrl}') format('${headlineFontFormat}'); font-weight: ${headlineFontFaceWeight}; font-style: normal; }
+      ${buildFontFaceCss("AdAtlasSelectedFont", selectedFontFileUrl, selectedFontFormat, selectedFontWeight)}
+      ${buildFontFaceCss("AdAtlasHeadlineFont", headlineFontFileUrl, headlineFontFormat, headlineFontFaceWeight)}
       text[y="956"][font-size="28"] { display: none; }
     </style>
     ${productEffectFilterDef(productEffect)}
@@ -2297,9 +2298,9 @@ async function renderOptimizedTemplate(
   plan: PreparedBannerRender
 ) {
   const styleOverrides = body.style || {};
-  const selectedFontFile = safeWindowsFontFile(styleOverrides.selectedFontFile);
+  const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
-  const headlineFontFile = safeWindowsFontFile(
+  const headlineFontFile = resolveOptionalFontFile(
     styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
   );
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
@@ -2320,20 +2321,18 @@ async function renderOptimizedTemplate(
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
   const fontFaceCss =
-    "@font-face { font-family: 'AdAtlasSelectedFont'; src: url('" +
-    selectedFontFileUrl +
-    "') format('" +
-    selectedFontFormat +
-    "'); font-weight: " +
-    selectedFontWeight +
-    "; font-style: normal; }" +
-    "@font-face { font-family: 'AdAtlasHeadlineFont'; src: url('" +
-    headlineFontFileUrl +
-    "') format('" +
-    headlineFontFormat +
-    "'); font-weight: " +
-    headlineFontWeight +
-    "; font-style: normal; }";
+    buildFontFaceCss(
+      "AdAtlasSelectedFont",
+      selectedFontFileUrl,
+      selectedFontFormat,
+      selectedFontWeight
+    ) +
+    buildFontFaceCss(
+      "AdAtlasHeadlineFont",
+      headlineFontFileUrl,
+      headlineFontFormat,
+      headlineFontWeight
+    );
   const svg = buildOptimizedTemplateSvg({
     template,
     plan,

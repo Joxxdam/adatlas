@@ -30,6 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.log
+*.zip
+*.tmp
+*.bak
 .next-dev.stdout.log
 .next-dev.stderr.log
 

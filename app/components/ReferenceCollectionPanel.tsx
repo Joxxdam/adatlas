@@ -39,7 +39,10 @@ export function ReferenceCollectionPanel() {
   }
 
   useEffect(() => {
-    loadSummary().catch(() => undefined);
+    const timeout = window.setTimeout(() => {
+      loadSummary().catch(() => undefined);
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

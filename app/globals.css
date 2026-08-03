@@ -854,6 +854,46 @@ select {
   padding-right: 2px;
 }
 
+.workflow-primary-action {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid rgba(21, 116, 209, 0.28);
+  border-radius: 6px;
+  background: #f4f9ff;
+}
+
+.workflow-primary-action button {
+  width: 100%;
+  color: #ffffff;
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.workflow-primary-action span,
+.preview-context {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.ad-generation-flow .banner-preview-panel {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sticky-live-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 320px;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  background: #f7f9fc;
+}
+
 .banner-product-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
@@ -2884,6 +2924,12 @@ select {
   .ad-generation-flow .banner-workspace > .banner-preview-panel {
     border-left: 0;
     padding-left: 0;
+  }
+
+  .ad-generation-flow .banner-preview-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 

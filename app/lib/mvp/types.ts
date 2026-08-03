@@ -52,6 +52,11 @@ export type AdImageLabel = {
   localImagePath?: string;
   aiDraft: AdImageAnalysisDraft;
   finalLabel: AdImageAnalysisDraft;
+  structuredLabels?: {
+    hookTypes: string[];
+    appealPoints: string[];
+    weights?: Partial<Record<"hook" | "appeal" | "tone" | "visual", number>>;
+  };
   labeledAt: string;
 };
 
@@ -81,6 +86,113 @@ export type ProductInfoForPrompt = {
   sourceImageCandidates?: SourceImageCandidate[];
   selectedSourceImageId?: string;
   selectedSourceImagePath?: string;
+};
+
+export type AdObjective = "purchase" | "signup" | "awareness";
+
+export type TargetPlatform = "meta-feed" | "instagram-feed" | "naver-gfa";
+
+export type AwarenessStage =
+  | "unaware"
+  | "problem-aware"
+  | "solution-aware"
+  | "comparing";
+
+export type CreativeIntensity = "brand" | "balanced" | "performance";
+
+export type AdBrief = {
+  productName: string;
+  category: string;
+  price: string;
+  originalPrice?: string;
+  discountInfo: string;
+  mainBenefit: string;
+  targetCustomer: string;
+  landingUrl: string;
+  adObjective: AdObjective;
+  targetPlatform: TargetPlatform;
+  awarenessStage: AwarenessStage;
+  customerProblem: string;
+  purchaseBarrier: string;
+  proofElements: string[];
+  mandatoryInfo: string[];
+  prohibitedClaims: string[];
+  creativeIntensity: CreativeIntensity;
+  desiredHookType: string;
+  offerType: string;
+  tonePreference: string;
+};
+
+export type ReferenceUsageAspect =
+  | "headline-structure"
+  | "hook-style"
+  | "appeal-point"
+  | "tone"
+  | "information-hierarchy"
+  | "price-emphasis"
+  | "product-layout"
+  | "color-mood"
+  | "background-mood"
+  | "cta-style";
+
+export type ReferenceUsageSelection = {
+  imageId: string;
+  aspects: ReferenceUsageAspect[];
+  weight: number;
+};
+
+export type CreativeStrategy = {
+  id: string;
+  title: string;
+  explanation: string;
+  mainHookAngle: string;
+  coreAppealPoint: string;
+  audienceFit: string;
+  referenceFit: string;
+  suggestedVisualEmphasis: string;
+  risk: string;
+};
+
+export type MessageHierarchy = {
+  primaryMessage: string;
+  secondaryMessage: string;
+  proofMessage: string;
+  offerMessage: string;
+  actionMessage: string;
+};
+
+export type CreationStepId =
+  | "brief"
+  | "references"
+  | "strategy"
+  | "copy"
+  | "visual"
+  | "edit"
+  | "export";
+
+export type CopyQualityDimension =
+  | "specificity"
+  | "benefitClarity"
+  | "differentiation"
+  | "priceClarity"
+  | "targetFit"
+  | "naturalKoreanTone"
+  | "overclaimSafety"
+  | "repetitionSafety";
+
+export type CopyQualityFinding = {
+  id: string;
+  severity: "info" | "warning" | "error";
+  slot?: CopySlotKey;
+  message: string;
+  suggestion?: string;
+};
+
+export type CopyQualityReport = {
+  totalScore: number;
+  scores: Record<CopyQualityDimension, number>;
+  findings: CopyQualityFinding[];
+  checkedAt: string;
 };
 
 export type CopyGuideContext = {
@@ -640,6 +752,7 @@ export type GeneratedAdCopy = GeneratedAdCopyVariant & {
   hookType: string;
   appealPoint: string;
   whyThisWorks: string;
+  messageHierarchy?: MessageHierarchy;
   copyGuideUsage?: {
     guideId: string;
     brandName: string;

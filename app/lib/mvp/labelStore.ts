@@ -1,24 +1,9 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { AdImageLabel } from "./types";
+import { JsonArrayRepository } from "./jsonRepository";
 
-const labelsPath = path.join(process.cwd(), "data", "ad-image-labels.json");
-
-async function ensureLabelsFile() {
-  await fs.mkdir(path.dirname(labelsPath), { recursive: true });
-
-  try {
-    await fs.access(labelsPath);
-  } catch {
-    await fs.writeFile(labelsPath, "[]\n", "utf8");
-  }
-}
-
-export async function readAdImageLabels() {
-  await ensureLabelsFile();
-  const raw = await fs.readFile(labelsPath, "utf8");
-  const labels = JSON.parse(raw.replace(/^\uFEFF/, "")) as AdImageLabel[];
-  return labels.map((label) => ({
+const labelRepository = new JsonArrayRepository<AdImageLabel>(
+  "data/ad-image-labels.json",
+  (label) => ({
     ...label,
     category: label.category ?? label.finalLabel?.category ?? "",
     aiDraft: {
@@ -29,7 +14,15 @@ export async function readAdImageLabels() {
       ...label.finalLabel,
       category: label.finalLabel?.category ?? label.category ?? "",
     },
-  }));
+    structuredLabels: label.structuredLabels || {
+      hookTypes: label.finalLabel?.hookType ? [label.finalLabel.hookType] : [],
+      appealPoints: label.finalLabel?.appealPoint ? [label.finalLabel.appealPoint] : [],
+    },
+  })
+);
+
+export async function readAdImageLabels() {
+  return labelRepository.read();
 }
 
 export async function upsertAdImageLabel(label: AdImageLabel) {
@@ -43,6 +36,6 @@ export async function upsertAdImageLabel(label: AdImageLabel) {
     labels.unshift(nextLabel);
   }
 
-  await fs.writeFile(labelsPath, `${JSON.stringify(labels, null, 2)}\n`, "utf8");
+  await labelRepository.write(labels);
   return nextLabel;
 }

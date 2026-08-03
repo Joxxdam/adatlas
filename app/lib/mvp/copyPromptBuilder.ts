@@ -1,9 +1,12 @@
 import { copyLimitCharSummary } from "./templateCopyFitter";
 import { kookdaePatternPromptBlock } from "./kookdaeCopyPatterns";
 import type {
+  AdBrief,
   AdImageLabel,
   CopyGuideContext,
+  CreativeStrategy,
   ProductInfoForPrompt,
+  ReferenceUsageSelection,
   TemplateCopyLimits,
 } from "./types";
 
@@ -187,10 +190,23 @@ ${kookdaePatternPromptBlock()}
 export function buildGenerateCopyPrompt(params: {
   product: ProductInfoForPrompt;
   reference?: AdImageLabel;
+  referenceContext?: AdImageLabel[];
+  referenceUsages?: ReferenceUsageSelection[];
   template?: TemplateInfo;
   copyGuide?: CopyGuideContext | null;
+  adBrief?: AdBrief;
+  creativeStrategy?: CreativeStrategy | null;
 }) {
-  const { product, reference, template, copyGuide } = params;
+  const {
+    product,
+    reference,
+    referenceContext = reference ? [reference] : [],
+    referenceUsages = [],
+    template,
+    copyGuide,
+    adBrief,
+    creativeStrategy,
+  } = params;
   const copyLimitSummary = copyLimitCharSummary(template?.copyLimits);
   const referenceJson = referencePayload(reference);
   const copyGuideBlock = copyGuide
@@ -234,6 +250,30 @@ No advertiser-specific copy guide matched. Use the product information and the s
 
 [상품 정보]
 ${JSON.stringify(product, null, 2)}
+
+[광고 브리프]
+${JSON.stringify(adBrief || {}, null, 2)}
+
+[사용자가 선택한 광고 전략]
+${JSON.stringify(creativeStrategy || {}, null, 2)}
+
+[레퍼런스별 사용 범위]
+${JSON.stringify(
+  referenceUsages.map((usage) => ({
+    ...usage,
+    reference: referenceContext.find((item) => item.imageId === usage.imageId)?.finalLabel || null,
+  })),
+  null,
+  2
+)}
+
+[메시지 계층 생성 규칙]
+- 먼저 primaryMessage, secondaryMessage, proofMessage, offerMessage, actionMessage의 역할을 분리한다.
+- primaryMessage는 첫 시선을 잡는 핵심 후킹, secondaryMessage는 상품 설명, proofMessage는 확인된 근거, offerMessage는 혜택과 구매 명분, actionMessage는 다음 행동이다.
+- 같은 의미를 여러 계층에서 반복하지 않는다.
+- 이 메시지 계층을 현재 renderer 호환 필드 headline, bodyCopy, highlightCopy, bottomBarCopy, cta에 각각 매핑한다.
+- 광고 브리프의 mandatoryInfo는 누락하지 않고 prohibitedClaims는 절대 사용하지 않는다.
+- 선택한 광고 전략의 후킹과 소구 방향을 우선하되 상품 정보에 없는 사실은 만들지 않는다.
 
 ${copyGuideBlock}
 
@@ -323,6 +363,13 @@ reference가 고급형이면 고급스럽게, 가격형이면 가격정당화형
 [출력 JSON]
 JSON만 반환한다. 모든 문자열에는 이모지를 넣지 않는다.
 {
+  "messageHierarchy": {
+    "primaryMessage": "",
+    "secondaryMessage": "",
+    "proofMessage": "",
+    "offerMessage": "",
+    "actionMessage": ""
+  },
   "headline": "",
   "bodyCopy": "",
   "highlightCopy": "",

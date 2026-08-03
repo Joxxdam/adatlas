@@ -14,11 +14,14 @@ import {
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
 import { copyLimitCharSummary } from "../../../lib/mvp/templateCopyFitter";
 import type {
+  AdBrief,
   AdImageLabel,
   CopyGuideContext,
+  CreativeStrategy,
   GeneratedAdCopy,
   GeneratedAdCopyVariant,
   ProductInfoForPrompt,
+  ReferenceUsageSelection,
 } from "../../../lib/mvp/types";
 
 type Body = {
@@ -31,6 +34,9 @@ type Body = {
   copyGuideId?: string;
   productUrl?: string;
   category?: string;
+  adBrief?: AdBrief;
+  creativeStrategy?: CreativeStrategy | null;
+  referenceUsages?: ReferenceUsageSelection[];
 };
 
 type TemplateInfo = {
@@ -613,6 +619,19 @@ function normalizeGeneratedCopy(
           ? "국대한우 카피 가이드의 가격 충격/구어체 패턴을 상품 사실에 맞게 변형했습니다."
           : "Combined reference copy pattern with product value proof.")
     ),
+    messageHierarchy: {
+      primaryMessage: cleanText(value.messageHierarchy?.primaryMessage || headline),
+      secondaryMessage: cleanText(
+        value.messageHierarchy?.secondaryMessage || value.bodyCopy || bodyFallback(product, reference, copyGuide)
+      ),
+      proofMessage: cleanText(
+        value.messageHierarchy?.proofMessage || value.highlightCopy || product.mainBenefit
+      ),
+      offerMessage: cleanText(
+        value.messageHierarchy?.offerMessage || value.bottomBarCopy || product.discountInfo
+      ),
+      actionMessage: cleanText(value.messageHierarchy?.actionMessage || value.cta || "구성 보기"),
+    },
     reasoning: {
       ...(value.reasoning || {}),
       headlineQualityCheck: isBadHeadline(headlineSource, copyGuide) ? "repaired" : "passed",
@@ -744,13 +763,18 @@ async function generateWithOpenAI(
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
   template: TemplateInfo,
-  copyGuide?: CopyGuideContext | null
+  copyGuide?: CopyGuideContext | null,
+  context?: Pick<Body, "adBrief" | "creativeStrategy" | "referenceUsages" | "referenceLabels">
 ) {
   const prompt = buildGenerateCopyPrompt({
     product,
     reference: labels[0],
+    referenceContext: context?.referenceLabels,
+    referenceUsages: context?.referenceUsages,
     template,
     copyGuide,
+    adBrief: context?.adBrief,
+    creativeStrategy: context?.creativeStrategy,
   });
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -806,7 +830,7 @@ export async function POST(request: Request) {
       templateName: body.templateName,
     };
     const copy = process.env.OPENAI_API_KEY
-      ? await generateWithOpenAI(product, selectedLabels, template, copyGuide)
+      ? await generateWithOpenAI(product, selectedLabels, template, copyGuide, body)
       : mockCopy(product, selectedLabels, copyGuide);
 
     return NextResponse.json({

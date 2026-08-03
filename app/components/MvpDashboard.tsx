@@ -1,8 +1,9 @@
 "use client";
 
 import JSZip from "jszip";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
+  AdBrief,
   AdImageAnalysisDraft,
   AdImageLabel,
   BatchRenderResult,
@@ -34,6 +35,10 @@ import type {
   TemplateCopyPreview,
   TemplateFittedCopy,
 } from "../lib/mvp/types";
+import { applyAdBriefToProductInfo } from "../lib/mvp/adBrief";
+import { evaluateCopyQuality, tightenCopyToTemplate } from "../lib/mvp/copyQualityEvaluator";
+import { systemFontOptions } from "../lib/mvp/fontCatalog";
+import { copyToMessageHierarchy, messageHierarchyToCopy } from "../lib/mvp/messageHierarchy";
 import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
 import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
 import { buildImageGenerationPrompt } from "../lib/mvp/imagePromptBuilder";
@@ -42,6 +47,15 @@ import {
   resolveCurrentProductImagePaths,
 } from "../lib/mvp/imageSelectionResolver";
 import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
+import { StepHeader } from "./dashboard/StepHeader";
+import { BasicStyleControls, type BasicEditorSettings } from "./features/banner-editor/BasicStyleControls";
+import { CanvasPreview } from "./features/banner-editor/CanvasPreview";
+import { CopyQualityPanel } from "./features/copy-generator/CopyQualityPanel";
+import { MessageHierarchyEditor } from "./features/copy-generator/MessageHierarchyEditor";
+import { useCreativeWorkflow } from "./features/creative-workflow/useCreativeWorkflow";
+import { ProductBriefForm } from "./features/product-brief/ProductBriefForm";
+import { ReferenceUsageSelector } from "./features/reference-library/ReferenceUsageSelector";
+import { StrategySelector } from "./features/strategy/StrategySelector";
 import {
   beautyCategoryTemplates,
   foodCategoryTemplates,
@@ -290,14 +304,6 @@ const cutoutProductEffectPresets: {
   },
 ];
 
-type SystemFontOption = {
-  id: string;
-  label: string;
-  fontFamily: string;
-  fontFile: string;
-  fontWeight?: number;
-};
-
 type MetaCrawlItem = {
   brandName: string;
   imageUrl: string;
@@ -323,176 +329,6 @@ const fixedSourceReferenceImages: SourceImageCandidate[] = [
     label: "설록우 로고 참고 이미지",
     selected: false,
     createdAt: "preset",
-  },
-];
-
-const systemFontOptions: SystemFontOption[] = [
-  {
-    id: "black-han-sans",
-    label: "Black Han Sans",
-    fontFamily: 'AdAtlasSelectedFont, "Black Han Sans", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/BlackHanSans-Regular.ttf",
-  },
-  {
-    id: "cafe24-ohsquare",
-    label: "Cafe24 Ohsquare",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 Ohsquare OTF", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Ohsquare-v2.0.otf",
-  },
-  {
-    id: "cafe24-dangdanghae",
-    label: "Cafe24 Dangdanghae",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 Dangdanghae OTF", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Dangdanghae-v2.0.otf",
-  },
-  {
-    id: "cafe24-supermagic",
-    label: "Cafe24 Supermagic",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 Supermagic OTF", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Supermagic-Regular-v1.0.otf",
-  },
-  {
-    id: "cafe24-nyangi",
-    label: "Cafe24 Nyangi",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 Nyangi B", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Nyangi-B-v1.0.ttf",
-  },
-  {
-    id: "cafe24-ssukssuk",
-    label: "Cafe24 Ssukssuk",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 Ssukssuk", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24SsukssukRegular.ttf",
-  },
-  {
-    id: "cafe24-behappy",
-    label: "Cafe24 Behappy",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 Behappy", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24Behappy.ttf",
-  },
-  {
-    id: "cafe24-pro-slim-max",
-    label: "Cafe24 PRO Slim Max",
-    fontFamily: 'AdAtlasSelectedFont, "Cafe24 PRO Slim Max", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/Cafe24PROSlimMax.otf",
-  },
-  {
-    id: "gmarket-bold",
-    label: "Gmarket Sans Bold",
-    fontFamily: 'AdAtlasSelectedFont, "Gmarket Sans TTF", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFBold.ttf",
-  },
-  {
-    id: "gmarket-medium",
-    label: "Gmarket Sans Medium",
-    fontFamily: 'AdAtlasSelectedFont, "Gmarket Sans TTF", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFMedium.ttf",
-  },
-  {
-    id: "gmarket-light",
-    label: "Gmarket Sans Light",
-    fontFamily: 'AdAtlasSelectedFont, "Gmarket Sans TTF", "Noto Sans KR", sans-serif',
-    fontFile:
-      "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/GmarketSansTTFLight.ttf",
-  },
-  {
-    id: "scdream-1",
-    label: "S-Core Dream 1",
-    fontWeight: 100,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream1.otf",
-  },
-  {
-    id: "scdream-2",
-    label: "S-Core Dream 2",
-    fontWeight: 200,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream2.otf",
-  },
-  {
-    id: "scdream-3",
-    label: "S-Core Dream 3",
-    fontWeight: 300,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream3.otf",
-  },
-  {
-    id: "scdream-4",
-    label: "S-Core Dream 4",
-    fontWeight: 400,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream4.otf",
-  },
-  {
-    id: "scdream-5",
-    label: "S-Core Dream 5",
-    fontWeight: 500,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream5.otf",
-  },
-  {
-    id: "scdream-6",
-    label: "S-Core Dream 6",
-    fontWeight: 600,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream6.otf",
-  },
-  {
-    id: "scdream-7",
-    label: "S-Core Dream 7",
-    fontWeight: 700,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream7.otf",
-  },
-  {
-    id: "scdream-8",
-    label: "S-Core Dream 8",
-    fontWeight: 800,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream8.otf",
-  },
-  {
-    id: "scdream-9",
-    label: "S-Core Dream 9",
-    fontWeight: 900,
-    fontFamily: 'AdAtlasSelectedFont, "S-Core Dream", "Noto Sans KR", sans-serif',
-    fontFile: "C:/Users/daywiz_레노버/AppData/Local/Microsoft/Windows/Fonts/SCDream9.otf",
-  },
-  {
-    id: "noto-sans-kr",
-    label: "Noto Sans KR",
-    fontFamily: 'AdAtlasSelectedFont, "Noto Sans KR", "Malgun Gothic", sans-serif',
-    fontFile: "C:/Windows/Fonts/NotoSansKR-VF.ttf",
-  },
-  {
-    id: "malgun-bold",
-    label: "맑은 고딕 Bold",
-    fontFamily: 'AdAtlasSelectedFont, "Malgun Gothic", sans-serif',
-    fontFile: "C:/Windows/Fonts/malgunbd.ttf",
-  },
-  {
-    id: "malgun",
-    label: "맑은 고딕",
-    fontFamily: 'AdAtlasSelectedFont, "Malgun Gothic", sans-serif',
-    fontFile: "C:/Windows/Fonts/malgun.ttf",
-  },
-  {
-    id: "noto-serif-kr",
-    label: "Noto Serif KR",
-    fontFamily: 'AdAtlasSelectedFont, "Noto Serif KR", serif',
-    fontFile: "C:/Windows/Fonts/NotoSerifKR-VF.ttf",
-  },
-  {
-    id: "gulim",
-    label: "굴림",
-    fontFamily: "AdAtlasSelectedFont, Gulim, sans-serif",
-    fontFile: "C:/Windows/Fonts/gulim.ttc",
   },
 ];
 
@@ -833,7 +669,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     message: "라벨 완료 레퍼런스 1~3개와 새 상품 정보를 입력하세요.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
-  const [copyReferenceLabels, setCopyReferenceLabels] = useState<AdImageLabel[]>([]);
   const [copyStatus, setCopyStatus] = useState<Status>({
     kind: "idle",
     message: "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
@@ -857,6 +692,14 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   });
   const [bannerAccentPhrase, setBannerAccentPhrase] = useState("");
   const [bannerAccentColor, setBannerAccentColor] = useState("#fff200");
+  const [basicEditorSettings, setBasicEditorSettings] = useState<BasicEditorSettings>({
+    creativeIntensity: "balanced",
+    accentColor: "#fff200",
+    textSizeLevel: "medium",
+    productSizeLevel: "medium",
+    backgroundBrightness: "balanced",
+    overallMood: "선명한 퍼포먼스 광고",
+  });
   const [brandLogoPath, setBrandLogoPath] = useState("");
   const [brandLogoStatus, setBrandLogoStatus] = useState<Status>({
     kind: "idle",
@@ -961,6 +804,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
         .filter((label): label is AdImageLabel => Boolean(label)),
     [labelsByImageId, selectedReferenceLabelIds]
   );
+  const creativeWorkflow = useCreativeWorkflow({
+    productInfo,
+    references: selectedReferenceLabels,
+  });
   const referenceCategoryOptions = useMemo(() => {
     const categories = labels
       .map((label) => label.finalLabel?.category || label.category || "기타")
@@ -999,8 +846,11 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     productInfo.productImagePath,
   ]);
   useEffect(() => {
-    setMainDetailScrollPercent(0);
-    mainDetailCandidatesRef.current?.scrollTo({ left: 0 });
+    const frame = window.requestAnimationFrame(() => {
+      setMainDetailScrollPercent(0);
+      mainDetailCandidatesRef.current?.scrollTo({ left: 0 });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [backgroundImageOptions.length, mainImageSourceMode]);
   const sourceImageCandidatesForDisplay = useMemo(() => {
     const existing = sourceImageSelection.candidates.length
@@ -1133,6 +983,15 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     categoryTemplates.find((template) => template.id === selectedTemplateId) ??
     categoryTemplates[0];
   const selectedCopyLimits = selectedTemplate?.copyLimits;
+  const copyQualityReport = useMemo(
+    () =>
+      evaluateCopyQuality({
+        copy: bannerCopy,
+        brief: creativeWorkflow.adBrief,
+        copyLimits: selectedCopyLimits,
+      }),
+    [bannerCopy, creativeWorkflow.adBrief, selectedCopyLimits]
+  );
   const hasMasterCopy = Boolean(
     masterCopy.headline ||
     masterCopy.bodyCopy ||
@@ -1198,6 +1057,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     productInfo.price,
     productInfo.productName,
     productInfo.targetCustomer,
+    copyResult?.hookType,
     selectedReferenceLabels,
     selectedSourceImagePath,
   ]);
@@ -1253,7 +1113,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   useEffect(() => {
     if (!categoryTemplates.length) return;
     if (!categoryTemplates.some((template) => template.id === selectedTemplateId)) {
-      setSelectedTemplateId(categoryTemplates[0].id);
+      const frame = window.requestAnimationFrame(() => {
+        setSelectedTemplateId(categoryTemplates[0].id);
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
   }, [categoryTemplates, selectedTemplateId]);
 
@@ -1268,7 +1131,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           ? "힘내라농가"
           : "";
 
-    if (matchedAdvertiser) setSelectedAdvertiserName(matchedAdvertiser);
+    if (matchedAdvertiser) {
+      const frame = window.requestAnimationFrame(() => {
+        setSelectedAdvertiserName(matchedAdvertiser);
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
   }, [productInfo.landingUrl, selectedAdvertiserName]);
 
   useEffect(() => {
@@ -1287,32 +1155,41 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       mode: templateCopyMode,
     });
 
-    setTemplateCopyPreviews(previews);
-    setTemplateFittedCopy(preview.fittedCopy);
-    setActiveRenderCopy(activeRenderCopy);
-    setBannerCopy(activeRenderCopy);
+    const frame = window.requestAnimationFrame(() => {
+      setTemplateCopyPreviews(previews);
+      setTemplateFittedCopy(preview.fittedCopy);
+      setActiveRenderCopy(activeRenderCopy);
+      setBannerCopy(activeRenderCopy);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [categoryTemplates, hasMasterCopy, masterCopy, selectedTemplate, templateCopyMode]);
 
   useEffect(() => {
-    setProductImageState({
-      ...emptyProductImageState,
-      originalImagePath: originalMainProductImage || "",
+    const frame = window.requestAnimationFrame(() => {
+      setProductImageState({
+        ...emptyProductImageState,
+        originalImagePath: originalMainProductImage || "",
+      });
+      setProductImageProcessStatus({
+        kind: "idle",
+        message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
+      });
     });
-    setProductImageProcessStatus({
-      kind: "idle",
-      message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
-    });
+    return () => window.cancelAnimationFrame(frame);
   }, [originalMainProductImage]);
 
   useEffect(() => {
-    setGptPromptState((current) => ({
-      ...current,
-      autoPrompt: autoGptImagePrompt,
-      finalPrompt:
-        current.promptMode === "custom" && current.customPrompt.trim()
-          ? current.customPrompt.trim()
-          : autoGptImagePrompt,
-    }));
+    const frame = window.requestAnimationFrame(() => {
+      setGptPromptState((current) => ({
+        ...current,
+        autoPrompt: autoGptImagePrompt,
+        finalPrompt:
+          current.promptMode === "custom" && current.customPrompt.trim()
+            ? current.customPrompt.trim()
+            : autoGptImagePrompt,
+      }));
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [autoGptImagePrompt]);
 
   function buildPromptForImageMode(imageGenerationMode: GptImageGenerationMode) {
@@ -1536,6 +1413,53 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
   }
 
+  function updateAdBrief(nextBrief: AdBrief) {
+    creativeWorkflow.setAdBrief(nextBrief);
+    setProductInfo((current) => applyAdBriefToProductInfo(nextBrief, current));
+  }
+
+  function updateMessageHierarchy(nextHierarchy: typeof creativeWorkflow.messageHierarchy) {
+    creativeWorkflow.setMessageHierarchy(nextHierarchy);
+    const mapped = messageHierarchyToCopy(nextHierarchy, bannerCopy);
+    setBannerCopy(mapped);
+    setActiveRenderCopy(mapped);
+  }
+
+  function updateBasicEditor(next: BasicEditorSettings) {
+    setBasicEditorSettings(next);
+    setBannerAccentColor(next.accentColor);
+    creativeWorkflow.setAdBrief((current) => ({
+      ...current,
+      creativeIntensity: next.creativeIntensity,
+      tonePreference: next.overallMood || current.tonePreference,
+    }));
+    setBannerTextColors((current) => ({
+      ...current,
+      bodyFontSize: next.textSizeLevel === "small" ? 42 : next.textSizeLevel === "large" ? 58 : 50,
+    }));
+    setCutoutProductEffect((current) => ({
+      ...current,
+      productScale:
+        next.productSizeLevel === "small" ? 0.86 : next.productSizeLevel === "large" ? 1.16 : 1,
+    }));
+    setBackgroundStyle((current) => ({
+      ...current,
+      dimLevel:
+        next.backgroundBrightness === "dark"
+          ? "high"
+          : next.backgroundBrightness === "bright"
+            ? "low"
+            : "medium",
+    }));
+  }
+
+  function applyTemplateTightCopy() {
+    const tightened = tightenCopyToTemplate(bannerCopy, selectedCopyLimits);
+    setBannerCopy(tightened);
+    setActiveRenderCopy(tightened);
+    creativeWorkflow.setMessageHierarchy(copyToMessageHierarchy(tightened));
+  }
+
   function mergeExtractedProductInfo(
     current: ProductInfoForPrompt,
     extracted: ExtractedProductInfo,
@@ -1748,6 +1672,14 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   }
 
   async function generateBannerCopy() {
+    if (!creativeWorkflow.selectedStrategy) {
+      setCopyStatus({
+        kind: "error",
+        message: "광고 전략 3안을 만든 뒤 사용할 전략 하나를 선택해주세요.",
+      });
+      creativeWorkflow.setActiveStep("strategy");
+      return;
+    }
     setCopyStatus({
       kind: "loading",
       message: "선택한 레퍼런스와 상품 정보를 기준으로 masterCopy를 생성 중입니다.",
@@ -1786,6 +1718,21 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           copyGuideId: selectedAdvertiserOption.guideId,
           productUrl: productInfoForCopy.landingUrl,
           category: productInfoForCopy.category,
+          templateId: selectedTemplate?.id,
+          templateName: selectedTemplate?.name,
+          adBrief: {
+            ...creativeWorkflow.adBrief,
+            productName: productInfoForCopy.productName,
+            category: productInfoForCopy.category,
+            price: productInfoForCopy.price,
+            originalPrice: productInfoForCopy.originalPrice || productInfoForCopy.oldPrice,
+            discountInfo: productInfoForCopy.discountInfo,
+            mainBenefit: productInfoForCopy.mainBenefit,
+            targetCustomer: productInfoForCopy.targetCustomer,
+            landingUrl: productInfoForCopy.landingUrl,
+          },
+          creativeStrategy: creativeWorkflow.selectedStrategy,
+          referenceUsages: creativeWorkflow.referenceUsages,
         }),
       });
       const result = await response.json();
@@ -1795,9 +1742,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       }
 
       const generatedCopy = result.copy as GeneratedAdCopy;
+      const generatedHierarchy =
+        generatedCopy.messageHierarchy || copyToMessageHierarchy(generatedCopy);
+      const mappedGeneratedCopy = messageHierarchyToCopy(generatedHierarchy, generatedCopy);
       const copyResolution = selectedTemplate
         ? resolveCopyForTemplate({
-            masterCopy: generatedCopy,
+            masterCopy: mappedGeneratedCopy,
             templateId: selectedTemplate.id,
             templateName: selectedTemplate.name,
             copyLimits: selectedTemplate.copyLimits,
@@ -1805,27 +1755,28 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           })
         : null;
 
-      setCopyResult(generatedCopy);
-      setMasterCopy(generatedCopy);
+      setCopyResult(mappedGeneratedCopy);
+      setMasterCopy(mappedGeneratedCopy);
+      creativeWorkflow.setMessageHierarchy(generatedHierarchy);
       setTemplateCopyPreviews(
         categoryTemplates.length
           ? buildTemplateCopyPreviews({
-              masterCopy: generatedCopy,
+              masterCopy: mappedGeneratedCopy,
               templates: categoryTemplates,
               mode: templateCopyMode,
             })
           : []
       );
       setTemplateFittedCopy(copyResolution?.preview.fittedCopy ?? null);
-      setActiveRenderCopy(copyResolution?.activeRenderCopy ?? generatedCopy);
-      setBannerCopy(copyResolution?.activeRenderCopy ?? generatedCopy);
-      setCopyReferenceLabels(result.referenceLabels ?? selectedReferenceLabels);
+      setActiveRenderCopy(copyResolution?.activeRenderCopy ?? mappedGeneratedCopy);
+      setBannerCopy(copyResolution?.activeRenderCopy ?? mappedGeneratedCopy);
       setCopyStatus({
         kind: "success",
         message: result.isMock
           ? "OPENAI_API_KEY가 없어 mock masterCopy를 생성했습니다."
           : "masterCopy와 길이별 문구 세트를 생성했습니다.",
       });
+      creativeWorkflow.setActiveStep("copy");
     } catch (error) {
       setCopyStatus({
         kind: "error",
@@ -2834,12 +2785,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
               headlineFontWeight: selectedHeadlineFont.fontWeight,
               ...headlineStyleOverrides,
               fontFamily: selectedBodyFont.fontFamily,
-              headlineFontFamily: selectedHeadlineFont.fontFamily.replace(
-                "AdAtlasSelectedFont",
-                "AdAtlasHeadlineFont"
-              ),
-              selectedFontFile: selectedBodyFont.fontFile,
-              headlineFontFile: selectedHeadlineFont.fontFile,
+              headlineFontFamily: selectedHeadlineFont.fontFamily,
             },
           }),
         });
@@ -3038,12 +2984,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             headlineFontWeight: selectedHeadlineFont.fontWeight,
             ...headlineStyleOverrides,
             fontFamily: selectedBodyFont.fontFamily,
-            headlineFontFamily: selectedHeadlineFont.fontFamily.replace(
-              "AdAtlasSelectedFont",
-              "AdAtlasHeadlineFont"
-            ),
-            selectedFontFile: selectedBodyFont.fontFile,
-            headlineFontFile: selectedHeadlineFont.fontFile,
+            headlineFontFamily: selectedHeadlineFont.fontFamily,
           },
         }),
       });
@@ -3259,6 +3200,11 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
               </span>
             </div>
 
+            <StepHeader
+              activeStep={creativeWorkflow.activeStep}
+              onStepChange={creativeWorkflow.setActiveStep}
+            />
+
             <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
             <div className="ad-generation-flow">
               <div className="banner-builder">
@@ -3332,15 +3278,9 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     <p className="strategy-empty">먼저 사용할 템플릿을 선택해주세요.</p>
                   )}
                   <p className="copy-generation-note">
-                    상품 URL, 레퍼런스, 템플릿을 확인한 뒤 문구를 생성하세요.
+                    템플릿은 문구 길이와 배치에만 사용합니다. 아래에서 광고 전략을 먼저
+                    선택해주세요.
                   </p>
-                  <button
-                    disabled={copyStatus.kind === "loading"}
-                    onClick={generateBannerCopy}
-                    type="button"
-                  >
-                    광고문구 생성
-                  </button>
                 </section>
                 <section className="strategy-reference-panel">
                   <p className="eyebrow">Reference Labels</p>
@@ -3442,6 +3382,53 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </label>
                     ))}
                 </section>
+                <ProductBriefForm brief={creativeWorkflow.adBrief} onChange={updateAdBrief} />
+                <ReferenceUsageSelector
+                  onChange={creativeWorkflow.setReferenceUsages}
+                  references={selectedReferenceLabels}
+                  usages={creativeWorkflow.referenceUsages}
+                />
+                <div className={`mvp-status ${strategyStatus.kind}`}>{strategyStatus.message}</div>
+                <StrategySelector
+                  onGenerate={() => {
+                    creativeWorkflow.generateStrategies();
+                    setStrategyStatus({
+                      kind: "success",
+                      message: "브리프와 레퍼런스 사용 범위로 전략 3안을 만들었습니다.",
+                    });
+                  }}
+                  onGenerateMore={() => {
+                    creativeWorkflow.generateMoreStrategies();
+                    setStrategyStatus({
+                      kind: "success",
+                      message: "다른 관점의 전략 3안으로 교체했습니다.",
+                    });
+                  }}
+                  onSelect={(id) => {
+                    creativeWorkflow.setSelectedStrategyId(id);
+                    creativeWorkflow.setActiveStep("copy");
+                    setStrategyStatus({
+                      kind: "success",
+                      message: "전략을 선택했습니다. 이제 이 방향으로 광고문구를 생성할 수 있습니다.",
+                    });
+                  }}
+                  selectedStrategyId={creativeWorkflow.selectedStrategyId}
+                  strategies={creativeWorkflow.strategies}
+                />
+                <div className="workflow-primary-action">
+                  <button
+                    disabled={copyStatus.kind === "loading" || !creativeWorkflow.selectedStrategy}
+                    onClick={generateBannerCopy}
+                    type="button"
+                  >
+                    선택 전략으로 광고문구 생성
+                  </button>
+                  {!creativeWorkflow.selectedStrategy ? (
+                    <span>전략 하나를 선택하면 문구 생성 버튼이 활성화됩니다.</span>
+                  ) : (
+                    <span>{creativeWorkflow.selectedStrategy.title}</span>
+                  )}
+                </div>
               </div>
 
               <div className="banner-workspace">
@@ -3462,6 +3449,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                             const value = event.target.value;
                             setBannerCopy((current) => ({ ...current, [key]: value }));
                             setActiveRenderCopy((current) => ({ ...current, [key]: value }));
+                            const hierarchyKey = {
+                              headline: "primaryMessage",
+                              bodyCopy: "secondaryMessage",
+                              highlightCopy: "proofMessage",
+                              bottomBarCopy: "offerMessage",
+                              cta: "actionMessage",
+                            }[key] as keyof typeof creativeWorkflow.messageHierarchy;
+                            creativeWorkflow.setMessageHierarchy((current) => ({
+                              ...current,
+                              [hierarchyKey]: value,
+                            }));
                           }}
                           rows={key === "headline" ? 2 : 3}
                           value={bannerCopy[key]}
@@ -3472,6 +3470,22 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       </label>
                     )
                   )}
+                  {hasMasterCopy ? (
+                    <>
+                      <MessageHierarchyEditor
+                        onChange={updateMessageHierarchy}
+                        value={creativeWorkflow.messageHierarchy}
+                      />
+                      <CopyQualityPanel
+                        onTighten={applyTemplateTightCopy}
+                        report={copyQualityReport}
+                      />
+                    </>
+                  ) : null}
+                  <BasicStyleControls
+                    onChange={updateBasicEditor}
+                    value={basicEditorSettings}
+                  />
                   <label>
                     <span>CTA 표시</span>
                     <select
@@ -3766,7 +3780,17 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   <div>
                     <p className="eyebrow">PNG Preview</p>
                     <h4>{selectedTemplate?.id || "템플릿 없음"}</h4>
+                    <small className="preview-context">
+                      1200×1200 · {creativeWorkflow.selectedStrategy?.title || "전략 미선택"}
+                    </small>
                   </div>
+                  {generatedBannerPath ? (
+                    <img
+                      alt="현재 1200x1200 배너 미리보기"
+                      className="sticky-live-preview"
+                      src={generatedBannerPath}
+                    />
+                  ) : null}
                   <details className="template-picker source-image-dropdown" open>
                     <summary>
                       <div>
@@ -5693,7 +5717,18 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                   ) : null}
                   {generatedBannerPath ? (
                     <>
-                      <img alt="생성된 광고 배너" src={generatedBannerPath} />
+                      <CanvasPreview
+                        copy={bannerCopy}
+                        imagePath={generatedBannerPath}
+                        onCopyChange={(nextCopy) => {
+                          setBannerCopy(nextCopy);
+                          setActiveRenderCopy(nextCopy);
+                          creativeWorkflow.setMessageHierarchy(copyToMessageHierarchy(nextCopy));
+                        }}
+                        onProductEffectChange={setCutoutProductEffect}
+                        onRender={renderBanner}
+                        productEffect={cutoutProductEffect}
+                      />
                       <a className="download-button" download href={generatedBannerPath}>
                         PNG 다운로드
                       </a>

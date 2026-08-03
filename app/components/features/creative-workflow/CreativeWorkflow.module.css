@@ -1,0 +1,432 @@
+.stepNav {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 18px;
+  overflow: hidden;
+  border: 1px solid #d8e2ef;
+  border-radius: 6px;
+  background: #d8e2ef;
+}
+
+.stepButton {
+  min-height: 58px;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  color: #5b6778;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.stepButtonActive {
+  background: #eaf4ff;
+  color: #075fb7;
+  box-shadow: inset 0 -3px 0 #1677d2;
+}
+
+.stepNumber {
+  display: block;
+  margin-bottom: 3px;
+  color: #1677d2;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.section {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sectionHeader h4,
+.sectionHeader p {
+  margin: 0;
+}
+
+.sectionHeader p {
+  margin-top: 4px;
+  color: #6b7788;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.formGrid label,
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #465267;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.formGrid input,
+.formGrid select,
+.formGrid textarea,
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #ccd7e5;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #162034;
+}
+
+.formGrid textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.referenceList,
+.strategyGrid,
+.scoreGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.referenceCard,
+.strategyCard,
+.qualityCard {
+  border: 1px solid #d8e2ed;
+  border-radius: 6px;
+  background: #f9fbfd;
+}
+
+.referenceCard {
+  padding: 12px;
+}
+
+.referenceTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.referenceTitle img {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  object-fit: cover;
+  border: 1px solid #d8e2ed;
+  border-radius: 4px;
+}
+
+.referenceTitle strong,
+.referenceTitle span {
+  display: block;
+}
+
+.referenceTitle span {
+  margin-top: 2px;
+  color: #687487;
+  font-size: 11px;
+}
+
+.aspectGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+}
+
+.aspectLabel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.aspectLabel input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+.strategyGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.strategyCard {
+  position: relative;
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.strategyCardSelected {
+  border-color: #1677d2;
+  background: #edf6ff;
+  box-shadow: inset 0 0 0 1px #1677d2;
+}
+
+.strategyCard input {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.strategyCard h5 {
+  margin: 0 24px 8px 0;
+  color: #14233b;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.strategyCard p {
+  margin: 0 0 9px;
+  color: #536176;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.strategyMeta {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  color: #25344c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.strategyMeta dt {
+  color: #1677d2;
+  font-weight: 900;
+}
+
+.strategyMeta dd {
+  margin: 0;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.secondaryButton {
+  border: 1px solid #b9c8d9;
+  background: #ffffff;
+  color: #24415f;
+}
+
+.hierarchyGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.hierarchyGrid label {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: #465267;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.hierarchyGrid input {
+  min-width: 0;
+}
+
+.qualityTop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.qualityScore {
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  flex: 0 0 70px;
+  border-radius: 50%;
+  background: #eaf4ff;
+  color: #075fb7;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.scoreGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.scoreItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 7px 9px;
+  border-bottom: 1px solid #e5ebf2;
+  font-size: 11px;
+}
+
+.findingList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finding {
+  padding: 8px 10px;
+  border-left: 3px solid #f0a000;
+  background: #fff9e8;
+  color: #4e4430;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.findingError {
+  border-left-color: #d92d20;
+  background: #fff0ef;
+}
+
+.controlGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.advancedDetails {
+  margin-top: 12px;
+  border-top: 1px solid #dfe7f0;
+  padding-top: 10px;
+}
+
+.advancedDetails summary {
+  cursor: pointer;
+  color: #24415f;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.canvasShell {
+  display: grid;
+  gap: 10px;
+}
+
+.canvasStage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #ccd8e6;
+  background: #f4f7fa;
+}
+
+.canvasStage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.canvasRegion {
+  position: absolute;
+  left: 3%;
+  width: 94%;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+}
+
+.canvasRegion:hover,
+.canvasRegionSelected {
+  border-color: #2c93ec;
+  background: rgba(44, 147, 236, 0.08);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+}
+
+.canvasRegion span {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: #1677d2;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.canvasToolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #d8e2ed;
+  background: #f8fafc;
+}
+
+.canvasToolbar input {
+  min-width: 0;
+  flex: 1;
+}
+
+.canvasToolbar button {
+  min-width: 34px;
+  padding: 7px;
+}
+
+@media (max-width: 1100px) {
+  .stepNav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .strategyGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .stepNav,
+  .formGrid,
+  .scoreGrid,
+  .controlGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullWidth {
+    grid-column: auto;
+  }
+
+  .aspectGrid {
+    grid-template-columns: 1fr;
+  }
+}
