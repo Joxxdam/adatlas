@@ -10,17 +10,10 @@ export const defaultAdBrief: AdBrief = {
   targetCustomer: "",
   landingUrl: "",
   adObjective: "purchase",
-  targetPlatform: "meta-feed",
-  awarenessStage: "problem-aware",
-  customerProblem: "",
-  purchaseBarrier: "",
-  proofElements: [],
+  additionalEmphasis: "",
   mandatoryInfo: [],
   prohibitedClaims: [],
   creativeIntensity: "balanced",
-  desiredHookType: "",
-  offerType: "",
-  tonePreference: "",
 };
 
 export function productInfoToAdBrief(
@@ -65,6 +58,6 @@ export function parseBriefList(value: string): string[] {
     .filter(Boolean);
 }
 
-export function formatBriefList(value: string[]): string {
+export function formatBriefList(value: string[] = []): string {
   return value.join(", ");
 }

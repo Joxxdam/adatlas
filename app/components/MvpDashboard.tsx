@@ -3,6 +3,14 @@
 import JSZip from "jszip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
+  CreativeQualityScore,
+  SceneCandidate,
+  SceneGenerationProviderId,
+  VisualDirection,
+} from "../lib/creative/types";
+import { evaluateCreativeQuality } from "../lib/creative/creativeQualityEvaluator";
+import { getCreativeTextStylePreset } from "../lib/creative/textStylePresets";
+import type {
   AdBrief,
   AdImageAnalysisDraft,
   AdImageLabel,
@@ -41,21 +49,26 @@ import { systemFontOptions } from "../lib/mvp/fontCatalog";
 import { copyToMessageHierarchy, messageHierarchyToCopy } from "../lib/mvp/messageHierarchy";
 import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
 import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
-import { buildImageGenerationPrompt } from "../lib/mvp/imagePromptBuilder";
 import {
   compactUniqueImagePaths,
   resolveCurrentProductImagePaths,
 } from "../lib/mvp/imageSelectionResolver";
 import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
 import { StepHeader } from "./dashboard/StepHeader";
-import { BasicStyleControls, type BasicEditorSettings } from "./features/banner-editor/BasicStyleControls";
+import {
+  BasicStyleControls,
+  type BasicEditorSettings,
+} from "./features/banner-editor/BasicStyleControls";
 import { CanvasPreview } from "./features/banner-editor/CanvasPreview";
+import { CreativeQualityPanel } from "./features/banner-editor/CreativeQualityPanel";
 import { CopyQualityPanel } from "./features/copy-generator/CopyQualityPanel";
 import { MessageHierarchyEditor } from "./features/copy-generator/MessageHierarchyEditor";
 import { useCreativeWorkflow } from "./features/creative-workflow/useCreativeWorkflow";
+import { ProductAnalysisSummary } from "./features/product-brief/ProductAnalysisSummary";
 import { ProductBriefForm } from "./features/product-brief/ProductBriefForm";
-import { ReferenceUsageSelector } from "./features/reference-library/ReferenceUsageSelector";
 import { StrategySelector } from "./features/strategy/StrategySelector";
+import { SceneGenerationPanel } from "./features/scene-generator/SceneGenerationPanel";
+import { VisualDirectionPanel } from "./features/visual-direction/VisualDirectionPanel";
 import {
   beautyCategoryTemplates,
   foodCategoryTemplates,
@@ -92,6 +105,8 @@ type BackgroundLevel = "low" | "medium" | "high";
 type BackgroundStyleState = {
   blurLevel: BackgroundLevel;
   dimLevel: BackgroundLevel;
+  brightness: number;
+  overlayOpacity: number;
 };
 
 type BannerTextColorState = {
@@ -474,7 +489,7 @@ function normalizeProductCategory(...values: string[]) {
   if (firstCategory) return firstCategory;
 
   if (
-    /(식품|선물|한우|고기|소고기|돼지고기|갈비|등심|안심|스테이크|정육|육류|과일|농산|수산|간식|명절|추석|설날|푸드|food|meat|beef|gift)/i.test(
+    /(식품|선물|한우|고기|소고기|돼지고기|갈비|등심|안심|스테이크|정육|육류|과일|복숭아|사과|배|포도|감귤|귤|딸기|수박|참외|멜론|토마토|채소|야채|쌀|잡곡|고구마|감자|옥수수|농산|농가|수산|간식|명절|추석|설날|푸드|food|meat|beef|gift)/i.test(
       text
     )
   )
@@ -636,7 +651,7 @@ const legacyFoodImpactTemplateOption: BannerTemplateDefinition = {
   },
 };
 
-export function MvpDashboard({ initialBrands, initialGenerated, initialImages }: Props) {
+export function MvpDashboard({ initialGenerated, initialImages }: Props) {
   const [activeMenu, setActiveMenu] = useState(menus[0]);
   const [images, setImages] = useState(initialImages);
   const [generated, setGenerated] = useState(initialGenerated);
@@ -650,7 +665,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     kind: "idle",
     message: "이미지를 선택하면 라벨 편집 패널이 열립니다.",
   });
-  const [selectedReferenceLabelIds, setSelectedReferenceLabelIds] = useState<string[]>([]);
   const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(emptyProductInfo);
   const [selectedAdvertiserName, setSelectedAdvertiserName] = useState("");
   const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState("");
@@ -666,7 +680,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   });
   const [strategyStatus, setStrategyStatus] = useState<Status>({
     kind: "idle",
-    message: "라벨 완료 레퍼런스 1~3개와 새 상품 정보를 입력하세요.",
+    message: "상품 정보를 불러오면 관련 레퍼런스를 자동으로 찾아 전략을 제안합니다.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
   const [copyStatus, setCopyStatus] = useState<Status>({
@@ -685,6 +699,27 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyleState>({
     blurLevel: "high",
     dimLevel: "high",
+    brightness: 1,
+    overlayOpacity: 0.08,
+  });
+  const [visualDirections, setVisualDirections] = useState<VisualDirection[]>([]);
+  const [selectedVisualDirectionId, setSelectedVisualDirectionId] = useState("");
+  const [visualDirectionQualityScores, setVisualDirectionQualityScores] = useState<
+    Record<string, CreativeQualityScore>
+  >({});
+  const [matchedAdvertiserProfileName, setMatchedAdvertiserProfileName] = useState("");
+  const [visualDirectionStatus, setVisualDirectionStatus] = useState<Status>({
+    kind: "idle",
+    message: "문구를 만든 뒤 상품과 광고 전략에 맞는 비주얼 방향 3개를 추천합니다.",
+  });
+  const [sceneCandidates, setSceneCandidates] = useState<SceneCandidate[]>([]);
+  const [selectedSceneCandidateId, setSelectedSceneCandidateId] = useState("");
+  const [sceneGenerationProvider, setSceneGenerationProvider] =
+    useState<SceneGenerationProviderId>("openai");
+  const [sceneCandidateCount, setSceneCandidateCount] = useState(2);
+  const [sceneGenerationStatus, setSceneGenerationStatus] = useState<Status>({
+    kind: "idle",
+    message: "비주얼 방향을 선택하면 글씨와 가상 상품이 없는 광고 장면을 만들 수 있습니다.",
   });
   const [bannerTextColors, setBannerTextColors] = useState<BannerTextColorState>({
     bodyColor: "#111111",
@@ -693,12 +728,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   const [bannerAccentPhrase, setBannerAccentPhrase] = useState("");
   const [bannerAccentColor, setBannerAccentColor] = useState("#fff200");
   const [basicEditorSettings, setBasicEditorSettings] = useState<BasicEditorSettings>({
-    creativeIntensity: "balanced",
     accentColor: "#fff200",
     textSizeLevel: "medium",
     productSizeLevel: "medium",
     backgroundBrightness: "balanced",
-    overallMood: "선명한 퍼포먼스 광고",
   });
   const [brandLogoPath, setBrandLogoPath] = useState("");
   const [brandLogoStatus, setBrandLogoStatus] = useState<Status>({
@@ -784,43 +817,29 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     kind: "idle",
     message: "문구 생성 후 배너를 만들 수 있습니다.",
   });
-  const [crawledItems, setCrawledItems] = useState<MetaCrawlItem[]>([]);
+  const [crawledItems] = useState<MetaCrawlItem[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "idle", message: "MVP 작업을 선택하세요." });
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [appealPointFilter, setAppealPointFilter] = useState("all");
   const [hookTypeFilter, setHookTypeFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [labelStateFilter, setLabelStateFilter] = useState("all");
-  const [referenceCategoryFilter, setReferenceCategoryFilter] = useState("all");
-
   const labelsByImageId = useMemo(
     () => new Map(labels.map((label) => [label.imageId, label])),
     [labels]
   );
-  const selectedReferenceLabels = useMemo(
-    () =>
-      selectedReferenceLabelIds
-        .map((id) => labelsByImageId.get(id))
-        .filter((label): label is AdImageLabel => Boolean(label)),
-    [labelsByImageId, selectedReferenceLabelIds]
-  );
   const creativeWorkflow = useCreativeWorkflow({
     productInfo,
-    references: selectedReferenceLabels,
+    allReferences: labels,
   });
-  const referenceCategoryOptions = useMemo(() => {
-    const categories = labels
-      .map((label) => label.finalLabel?.category || label.category || "기타")
-      .filter(Boolean);
-    return Array.from(new Set(categories));
-  }, [labels]);
-  const filteredReferenceLabels = useMemo(
+  const autoMatchedReferenceLabels = creativeWorkflow.references;
+  const gptGenerationReferenceImagePaths = useMemo(
     () =>
-      labels.filter((label) => {
-        const category = label.finalLabel?.category || label.category || "기타";
-        return referenceCategoryFilter === "all" || category === referenceCategoryFilter;
-      }),
-    [labels, referenceCategoryFilter]
+      compactUniqueImagePaths([
+        ...gptReferenceImages.map((image) => image.imagePath),
+        ...autoMatchedReferenceLabels.map((label) => label.localImagePath),
+      ]).slice(0, 5),
+    [autoMatchedReferenceLabels, gptReferenceImages]
   );
   const backgroundImageOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -947,6 +966,35 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     productInfo.secondaryProductImagePath ||
     backgroundImageOptions.find((option) => option.value !== originalMainProductImage)?.value ||
     currentMainProductImage;
+  const selectedVisualDirection = useMemo(
+    () =>
+      visualDirections.find((direction) => direction.id === selectedVisualDirectionId) || null,
+    [selectedVisualDirectionId, visualDirections]
+  );
+  const selectedSceneCandidate = useMemo(
+    () =>
+      sceneCandidates.find((candidate) => candidate.id === selectedSceneCandidateId) || null,
+    [sceneCandidates, selectedSceneCandidateId]
+  );
+  const creativeQualityScore = useMemo(
+    () =>
+      selectedVisualDirection
+        ? evaluateCreativeQuality({
+            direction: selectedVisualDirection,
+            product: productInfo,
+            copy: bannerCopy,
+            productImagePaths: currentProductImagePaths,
+            sceneCandidate: selectedSceneCandidate,
+          })
+        : null,
+    [
+      bannerCopy,
+      currentProductImagePaths,
+      productInfo,
+      selectedSceneCandidate,
+      selectedVisualDirection,
+    ]
+  );
   const selectedHeadlineFont =
     systemFontOptions.find((option) => option.id === selectedHeadlineFontId) ??
     systemFontOptions[0];
@@ -971,11 +1019,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       normalizedCategory.includes("beauty");
     if (isBeautyCategory) return beautyCategoryTemplates;
     if (isFoodGiftCategory) {
-      return [
-        ...qualityFoodTemplates,
-        ...foodCategoryTemplates,
-        legacyFoodImpactTemplateOption,
-      ];
+      return [...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption];
     }
     return [];
   }, [productInfo.category]);
@@ -1020,7 +1064,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
               ? 8
               : 12);
   const autoGptImagePrompt = useMemo(() => {
-    const reference = selectedReferenceLabels[0]?.finalLabel;
+    const reference = autoMatchedReferenceLabels[0]?.finalLabel;
     return buildAutoImagePrompt({
       templateMode: gptPromptTemplateMode,
       outputCanvasPreset: "sns-square-1200",
@@ -1041,14 +1085,14 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       referenceHookType: copyResult?.hookType || bannerCopy.hookType || reference?.hookType,
       referenceCopyNuance: reference?.copyNuance || reference?.toneOfVoice,
       selectedSourceImagePath,
-      referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+      referenceImagePaths: gptGenerationReferenceImagePaths,
       preservationMode: gptPreservationMode,
       customPromptNote: gptPromptState.customPromptNote,
     }).promptText;
   }, [
     bannerCopy,
     gptPreservationMode,
-    gptReferenceImages,
+    gptGenerationReferenceImagePaths,
     gptPromptState.customPromptNote,
     gptPromptTemplateMode,
     productInfo.category,
@@ -1058,7 +1102,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     productInfo.productName,
     productInfo.targetCustomer,
     copyResult?.hookType,
-    selectedReferenceLabels,
+    autoMatchedReferenceLabels,
     selectedSourceImagePath,
   ]);
   const finalGptImagePrompt =
@@ -1195,7 +1239,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   function buildPromptForImageMode(imageGenerationMode: GptImageGenerationMode) {
     const templateMode: GptPromptTemplateMode =
       imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only";
-    const reference = selectedReferenceLabels[0]?.finalLabel;
+    const reference = autoMatchedReferenceLabels[0]?.finalLabel;
     return buildAutoImagePrompt({
       templateMode,
       outputCanvasPreset: "sns-square-1200",
@@ -1216,7 +1260,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       referenceHookType: copyResult?.hookType || bannerCopy.hookType || reference?.hookType,
       referenceCopyNuance: reference?.copyNuance || reference?.toneOfVoice,
       selectedSourceImagePath,
-      referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+      referenceImagePaths: gptGenerationReferenceImagePaths,
       preservationMode: gptPreservationMode,
       customPromptNote: gptPromptState.customPromptNote,
     }).promptText;
@@ -1368,30 +1412,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
   }
 
-  function toggleReferenceSelection(imageId: string) {
-    if (!labelsByImageId.has(imageId)) {
-      setStrategyStatus({
-        kind: "error",
-        message: "라벨 완료된 이미지만 레퍼런스로 선택할 수 있습니다.",
-      });
-      return;
-    }
-
-    setSelectedReferenceLabelIds((current) => {
-      if (current.includes(imageId)) {
-        return current.filter((id) => id !== imageId);
-      }
-      if (current.length >= 3) {
-        setStrategyStatus({
-          kind: "error",
-          message: "레퍼런스는 최대 3개까지 선택할 수 있습니다.",
-        });
-        return current;
-      }
-      return [...current, imageId];
-    });
-  }
-
   function updateProductInfoField(fieldKey: keyof ProductInfoForPrompt, value: string) {
     setProductInfo((current) => ({ ...current, [fieldKey]: value }));
 
@@ -1410,6 +1430,12 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       setGptTextAdAsset(null);
       setGptImageCandidates([]);
       setSelectedGptImageCandidateId(null);
+      setVisualDirections([]);
+      setSelectedVisualDirectionId("");
+      setVisualDirectionQualityScores({});
+      setMatchedAdvertiserProfileName("");
+      setSceneCandidates([]);
+      setSelectedSceneCandidateId("");
     }
   }
 
@@ -1428,11 +1454,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
   function updateBasicEditor(next: BasicEditorSettings) {
     setBasicEditorSettings(next);
     setBannerAccentColor(next.accentColor);
-    creativeWorkflow.setAdBrief((current) => ({
-      ...current,
-      creativeIntensity: next.creativeIntensity,
-      tonePreference: next.overallMood || current.tonePreference,
-    }));
     setBannerTextColors((current) => ({
       ...current,
       bodyFontSize: next.textSizeLevel === "small" ? 42 : next.textSizeLevel === "large" ? 58 : 50,
@@ -1630,6 +1651,20 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           source: initialImagePaths.length ? "detail" : "unknown",
           updatedAt: initialImagePaths.length ? new Date().toISOString() : "",
         });
+        setVisualDirections([]);
+        setSelectedVisualDirectionId("");
+        setVisualDirectionQualityScores({});
+        setMatchedAdvertiserProfileName("");
+        setSceneCandidates([]);
+        setSelectedSceneCandidateId("");
+        setVisualDirectionStatus({
+          kind: "idle",
+          message: "새 상품의 문구를 만든 뒤 비주얼 방향 3개를 추천합니다.",
+        });
+        setSceneGenerationStatus({
+          kind: "idle",
+          message: "새 상품에 맞는 비주얼 방향을 먼저 선택해주세요.",
+        });
       }
       setSourceImageStatus({
         kind: "success",
@@ -1642,9 +1677,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       setGptVisualAsset(null);
       setGptTextAdAsset(null);
       setLatestImagePrompt("");
+      creativeWorkflow.resetStrategies();
       setProductExtractStatus({
         kind: "success",
-        message: "상품 정보를 불러왔습니다. 필요한 부분은 직접 수정할 수 있습니다.",
+        message: "상품 분석을 완료했습니다. 핵심 정보를 확인하고 광고 방향을 선택해주세요.",
       });
       return mergedProductInfo;
     } catch (error) {
@@ -1671,6 +1707,233 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
   }
 
+  function selectVisualDirection(direction: VisualDirection) {
+    const textPreset = getCreativeTextStylePreset(direction.textStylePresetId);
+    const headlinePreset: HeadlineStyleOverrides["headlineFontPreset"] =
+      direction.textStylePresetId === "premium-food"
+        ? "commerce-heavy-black"
+        : direction.textStylePresetId === "community-review"
+          ? "ugc-bold-white"
+          : "impact-korean-red";
+
+    setSelectedVisualDirectionId(direction.id);
+    setSceneCandidates([]);
+    setSelectedSceneCandidateId("");
+    setSceneGenerationStatus({
+      kind: "idle",
+      message: "선택한 방향에 맞는 글씨 없는 광고 장면을 생성할 수 있습니다.",
+    });
+    setCutoutProductEffect(direction.productTreatment);
+    setBannerAccentColor(textPreset.highlightColors[0] || "#fff200");
+    setBannerTextColors((current) => ({
+      ...current,
+      bodyFontSize: textPreset.secondaryScale >= 0.94 ? 54 : 48,
+    }));
+    setBasicEditorSettings((current) => ({
+      ...current,
+      accentColor: textPreset.highlightColors[0] || current.accentColor,
+      textSizeLevel: textPreset.headlineScale >= 1.12 ? "large" : "medium",
+      productSizeLevel:
+        direction.productArrangement.scale === "hero" ||
+        direction.productArrangement.scale === "large"
+          ? "large"
+          : "medium",
+    }));
+    setHeadlineStyleOverrides((current) => ({
+      ...current,
+      headlineFontPreset: headlinePreset,
+      headlineFontWeight: textPreset.fontWeight,
+      headlineLetterSpacing: textPreset.letterSpacing,
+      headlineLineHeight: textPreset.lineHeight,
+      headlineColor: textPreset.foregroundColor,
+      headlineTextStroke: Boolean(textPreset.outline),
+      headlineTextStrokeColor: textPreset.outline?.color || "#111111",
+      headlineTextStrokeWidth: textPreset.outline?.width || 0,
+      headlineShadow: Boolean(textPreset.shadow),
+    }));
+    setBackgroundStyle((current) => ({
+      ...current,
+      blurLevel: "low",
+      dimLevel: "low",
+      brightness: 1,
+      overlayOpacity: 0.08,
+    }));
+    setProductInfo((current) => {
+      const generatedSceneSelected = String(current.selectedBackgroundSource || "").startsWith(
+        "/background-images/scene-"
+      );
+      if (!generatedSceneSelected) return current;
+      return {
+        ...current,
+        backgroundMode: "none",
+        backgroundImagePath: "",
+        selectedBackgroundSource: "",
+      };
+    });
+    if (
+      direction.recommendedTemplateId &&
+      categoryTemplates.some((template) => template.id === direction.recommendedTemplateId)
+    ) {
+      setSelectedTemplateId(direction.recommendedTemplateId);
+    }
+    setGeneratedBannerPath("");
+  }
+
+  async function generateVisualDirections(
+    copyOverride: Partial<GeneratedAdCopy> = bannerCopy,
+    productOverride: ProductInfoForPrompt = productInfo
+  ) {
+    if (!productOverride.productName && !productOverride.category && !productOverride.mainBenefit) {
+      setVisualDirectionStatus({
+        kind: "error",
+        message: "먼저 상품 정보를 불러오거나 입력해주세요.",
+      });
+      return;
+    }
+
+    setVisualDirectionStatus({
+      kind: "loading",
+      message: "상품, 전략, 자동 매칭 레퍼런스로 비주얼 방향 3개를 구성 중입니다.",
+    });
+
+    try {
+      const productImagesForDirection = compactUniqueImagePaths([
+        ...selectedAdImages.selectedImagePaths,
+        ...currentProductImagePaths,
+        ...(productOverride.productImagePaths || []),
+        productOverride.productImagePath,
+      ]).slice(0, 4);
+      const response = await fetch("/api/strategy/generate-visual-directions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productInfo: {
+            ...productOverride,
+            advertiserName: selectedAdvertiserName,
+            brandName: selectedAdvertiserName,
+          },
+          adBrief: creativeWorkflow.adBrief,
+          strategy: creativeWorkflow.selectedStrategy,
+          copy: copyOverride,
+          productImagePaths: productImagesForDirection,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        directions?: VisualDirection[];
+        qualityScores?: Record<string, CreativeQualityScore>;
+        advertiserProfile?: { name?: string };
+        usedProductOnlyFallback?: boolean;
+      };
+      if (!response.ok || !result.ok || !result.directions?.length) {
+        throw new Error(result.error || "비주얼 방향 생성에 실패했습니다.");
+      }
+
+      setVisualDirections(result.directions);
+      setVisualDirectionQualityScores(result.qualityScores || {});
+      setMatchedAdvertiserProfileName(result.advertiserProfile?.name || "카테고리 기본 프로필");
+      selectVisualDirection(result.directions[0]);
+      setVisualDirectionStatus({
+        kind: "success",
+        message: result.usedProductOnlyFallback
+          ? "관련 레퍼런스가 없어 상품 정보와 광고주 프로필만으로 3개 방향을 구성했습니다."
+          : "자동 매칭 레퍼런스의 구조를 반영한 비주얼 방향 3개를 구성했습니다.",
+      });
+      creativeWorkflow.setActiveStep("visual");
+    } catch (error) {
+      setVisualDirectionStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "비주얼 방향 생성에 실패했습니다.",
+      });
+    }
+  }
+
+  function selectSceneCandidate(candidate: SceneCandidate) {
+    setSelectedSceneCandidateId(candidate.id);
+    setProductInfo((current) => ({
+      ...current,
+      backgroundMode: "selected-detail-blur-dark",
+      backgroundImagePath: candidate.imagePath,
+      selectedBackgroundSource: candidate.imagePath,
+    }));
+    setBackgroundStyle((current) => ({
+      ...current,
+      blurLevel: "low",
+      dimLevel: "low",
+      brightness: 1,
+      overlayOpacity: 0.08,
+    }));
+    setGeneratedBannerPath("");
+  }
+
+  async function generateSceneCandidates() {
+    if (!selectedVisualDirection) {
+      setSceneGenerationStatus({
+        kind: "error",
+        message: "먼저 비주얼 방향을 선택해주세요.",
+      });
+      return;
+    }
+
+    setSceneGenerationStatus({
+      kind: "loading",
+      message: "상품과 문구를 제외한 1200x1200 광고 장면을 생성 중입니다.",
+    });
+    try {
+      const response = await fetch("/api/image/generate-scene", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          direction: selectedVisualDirection,
+          provider: sceneGenerationProvider,
+          candidateCount: sceneCandidateCount,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        candidates?: SceneCandidate[];
+        fallbackUsed?: boolean;
+        message?: string;
+      };
+      if (!response.ok || !result.ok || !result.candidates?.length) {
+        throw new Error(result.error || "광고 장면 생성에 실패했습니다.");
+      }
+
+      setSceneCandidates(result.candidates);
+      selectSceneCandidate(result.candidates[0]);
+      setSceneGenerationStatus({
+        kind: result.fallbackUsed ? "error" : "success",
+        message:
+          result.message ||
+          (result.fallbackUsed
+            ? "AI 연결 대신 카테고리 안전 배경을 사용했습니다."
+            : "광고 장면 후보를 생성했습니다."),
+      });
+    } catch (error) {
+      setSceneGenerationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "광고 장면 생성에 실패했습니다.",
+      });
+    }
+  }
+
+  function resolveProductEffectForRender() {
+    const normalized = normalizeProductRenderEffect(cutoutProductEffect);
+    if (selectedVisualDirection && productImageState.selectedImageMode === "original") {
+      return {
+        ...normalized,
+        outline: false,
+        outlineWidth: 0,
+        glow: false,
+        glowBlur: 0,
+        shadow: true,
+      };
+    }
+    return productImageState.selectedImageMode === "original" ? undefined : normalized;
+  }
+
   async function generateBannerCopy() {
     if (!creativeWorkflow.selectedStrategy) {
       setCopyStatus({
@@ -1682,7 +1945,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
     }
     setCopyStatus({
       kind: "loading",
-      message: "선택한 레퍼런스와 상품 정보를 기준으로 masterCopy를 생성 중입니다.",
+      message: "상품 정보와 자동 매칭된 레퍼런스 패턴으로 masterCopy를 생성 중입니다.",
     });
     setGeneratedBannerPath("");
 
@@ -1712,7 +1975,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             brandName: selectedAdvertiserName,
             copyGuideId: selectedAdvertiserOption.guideId,
           },
-          referenceLabels: selectedReferenceLabels,
           advertiserName: selectedAdvertiserName,
           brandName: selectedAdvertiserName,
           copyGuideId: selectedAdvertiserOption.guideId,
@@ -1777,6 +2039,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           : "masterCopy와 길이별 문구 세트를 생성했습니다.",
       });
       creativeWorkflow.setActiveStep("copy");
+      await generateVisualDirections(mappedGeneratedCopy, productInfoForCopy);
     } catch (error) {
       setCopyStatus({
         kind: "error",
@@ -2131,10 +2394,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           productImagePaths: currentProductImagePaths,
           productImageState,
           selectedSourceImagePath,
-          referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+          referenceImagePaths: gptGenerationReferenceImagePaths,
           selectedSourceImageType: selectedSourceImage?.type,
           selectedSourceImageLabel: selectedSourceImage?.label,
-          selectedReferenceLabels,
+          selectedReferenceLabels: autoMatchedReferenceLabels,
           generatedCopy: bannerCopy,
           templateId: selectedTemplate?.id,
           templateSummary: selectedTemplate?.description || "",
@@ -2412,10 +2675,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           productImagePaths: currentProductImagePaths,
           productImageState,
           selectedSourceImagePath: sourcePath,
-          referenceImagePaths: gptReferenceImages.map((image) => image.imagePath),
+          referenceImagePaths: gptGenerationReferenceImagePaths,
           selectedSourceImageType: selectedSourceImage?.type,
           selectedSourceImageLabel: selectedSourceImage?.label,
-          selectedReferenceLabels,
+          selectedReferenceLabels: autoMatchedReferenceLabels,
           generatedCopy: bannerCopy,
           templateId: selectedTemplate?.id,
           templateSummary: selectedTemplate?.description || "",
@@ -2722,10 +2985,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           gptMainImagePath,
           backgroundImagePath: currentBackgroundSource,
         });
-        const productEffectForRender =
-          productImageState.selectedImageMode === "original"
-            ? undefined
-            : normalizeProductRenderEffect(cutoutProductEffect);
+        const productEffectForRender = resolveProductEffectForRender();
         const copyPayload = {
           headline: copyForRender.headline,
           bodyCopy: copyForRender.bodyCopy,
@@ -2765,6 +3025,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             backgroundStyle: {
               blurLevel: backgroundStyle.blurLevel,
               dimLevel: backgroundStyle.dimLevel,
+              brightness: backgroundStyle.brightness,
+              overlayOpacity: backgroundStyle.overlayOpacity,
               scale: 1.08,
             },
             style: {
@@ -2783,6 +3045,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
               selectedFontWeight: selectedBodyFont.fontWeight,
               bodyFontWeight: selectedBodyFont.fontWeight,
               headlineFontWeight: selectedHeadlineFont.fontWeight,
+              creativeTextStylePresetId: selectedVisualDirection?.textStylePresetId || "",
               ...headlineStyleOverrides,
               fontFamily: selectedBodyFont.fontFamily,
               headlineFontFamily: selectedHeadlineFont.fontFamily,
@@ -2923,10 +3186,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
       setActiveRenderCopy(copyForRender);
       setBannerCopy(copyForRender);
       setTemplateFittedCopy(copyResolution.preview.fittedCopy);
-      const productEffectForRender =
-        productImageState.selectedImageMode === "original"
-          ? undefined
-          : normalizeProductRenderEffect(cutoutProductEffect);
+      const productEffectForRender = resolveProductEffectForRender();
       const copyPayload = {
         headline: copyForRender.headline,
         bodyCopy: copyForRender.bodyCopy,
@@ -2964,6 +3224,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
           backgroundStyle: {
             blurLevel: backgroundStyle.blurLevel,
             dimLevel: backgroundStyle.dimLevel,
+            brightness: backgroundStyle.brightness,
+            overlayOpacity: backgroundStyle.overlayOpacity,
             scale: 1.08,
           },
           style: {
@@ -2982,6 +3244,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
             selectedFontWeight: selectedBodyFont.fontWeight,
             bodyFontWeight: selectedBodyFont.fontWeight,
             headlineFontWeight: selectedHeadlineFont.fontWeight,
+            creativeTextStylePresetId: selectedVisualDirection?.textStylePresetId || "",
             ...headlineStyleOverrides,
             fontFamily: selectedBodyFont.fontFamily,
             headlineFontFamily: selectedHeadlineFont.fontFamily,
@@ -3139,8 +3402,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                 onAnalyze={analyzeImage}
                 onMetadataSave={saveImageMetadata}
                 onSelect={openLabelPanel}
-                onToggleReference={toggleReferenceSelection}
-                selectedReferenceIds={selectedReferenceLabelIds}
                 selectedImageId={selectedImage?.id}
               />
               <LabelPanel
@@ -3172,8 +3433,6 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                 onAnalyze={analyzeImage}
                 onMetadataSave={saveImageMetadata}
                 onSelect={openLabelPanel}
-                onToggleReference={toggleReferenceSelection}
-                selectedReferenceIds={selectedReferenceLabelIds}
                 selectedImageId={selectedImage?.id}
                 showAnalysis
               />
@@ -3230,6 +3489,53 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     {productExtractStatus.message}
                   </div>
                 </section>
+                <ProductAnalysisSummary
+                  brief={creativeWorkflow.adBrief}
+                  loaded={Boolean(
+                    lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
+                  )}
+                  product={productInfo}
+                  references={autoMatchedReferenceLabels}
+                />
+                <details className="product-info-details">
+                  <summary>불러온 상품 정보 확인·수정</summary>
+                  <section className="strategy-form banner-product-form">
+                    <p className="eyebrow">Product Info</p>
+                    {productFields
+                      .filter((field) => field.key !== "landingUrl")
+                      .map((field) => (
+                        <label key={field.key}>
+                          <span>{field.label}</span>
+                          {field.key === "category" ? (
+                            <select
+                              onChange={(event) =>
+                                setProductInfo((current) => ({
+                                  ...current,
+                                  category: event.target.value,
+                                }))
+                              }
+                              value={productInfo.category || "기타"}
+                            >
+                              {categoryOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              onChange={(event) =>
+                                updateProductInfoField(field.key, event.target.value)
+                              }
+                              placeholder={field.placeholder}
+                              value={String(productInfo[field.key] || "")}
+                            />
+                          )}
+                        </label>
+                      ))}
+                  </section>
+                </details>
+                <ProductBriefForm brief={creativeWorkflow.adBrief} onChange={updateAdBrief} />
                 <section className="strategy-form template-first-panel">
                   <p className="eyebrow">Template First</p>
                   <label>
@@ -3282,126 +3588,31 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     선택해주세요.
                   </p>
                 </section>
-                <section className="strategy-reference-panel">
-                  <p className="eyebrow">Reference Labels</p>
-                  <h4>선택한 레퍼런스 {selectedReferenceLabels.length}/3</h4>
-                  {labels.length ? (
-                    <>
-                      <label className="reference-category-select">
-                        <span>카테고리 먼저 선택</span>
-                        <select
-                          onChange={(event) => setReferenceCategoryFilter(event.target.value)}
-                          value={referenceCategoryFilter}
-                        >
-                          <option value="all">전체 카테고리</option>
-                          {referenceCategoryOptions.map((category) => (
-                            <option key={category} value={category}>
-                              {category}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <div className="strategy-reference-list">
-                        {filteredReferenceLabels.map((label) => (
-                          <article
-                            className={
-                              selectedReferenceLabelIds.includes(label.imageId) ? "selected" : ""
-                            }
-                            key={label.imageId}
-                          >
-                            {label.localImagePath ? (
-                              <img
-                                alt={`${label.category || label.brandName} 레퍼런스`}
-                                src={label.localImagePath}
-                              />
-                            ) : null}
-                            <div>
-                              <strong>
-                                {label.finalLabel.category || label.category || "기타"}
-                              </strong>
-                              <span>{label.finalLabel.hookType || "후킹 미입력"}</span>
-                              <small>{label.finalLabel.appealPoint || "소구점 미입력"}</small>
-                              <small>{label.finalLabel.copyNuance || "카피 뉘앙스 미입력"}</small>
-                              <label className="inline-check">
-                                <input
-                                  checked={selectedReferenceLabelIds.includes(label.imageId)}
-                                  onChange={() => toggleReferenceSelection(label.imageId)}
-                                  type="checkbox"
-                                />
-                                레퍼런스로 선택
-                              </label>
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                      {!filteredReferenceLabels.length ? (
-                        <p className="strategy-empty">
-                          선택한 카테고리에 저장된 레퍼런스가 없습니다.
-                        </p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p className="strategy-empty">
-                      라벨 저장이 완료된 이미지가 없습니다. 먼저 이미지 라벨을 저장해주세요.
-                    </p>
-                  )}
-                </section>
-
-                <section className="strategy-form banner-product-form">
-                  <p className="eyebrow">Product Info</p>
-                  {productFields
-                    .filter((field) => field.key !== "landingUrl")
-                    .map((field) => (
-                      <label key={field.key}>
-                        <span>{field.label}</span>
-                        {field.key === "category" ? (
-                          <select
-                            onChange={(event) =>
-                              setProductInfo((current) => ({
-                                ...current,
-                                category: event.target.value,
-                              }))
-                            }
-                            value={productInfo.category || "기타"}
-                          >
-                            {categoryOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            onChange={(event) =>
-                              updateProductInfoField(field.key, event.target.value)
-                            }
-                            placeholder={field.placeholder}
-                            value={String(productInfo[field.key] || "")}
-                          />
-                        )}
-                      </label>
-                    ))}
-                </section>
-                <ProductBriefForm brief={creativeWorkflow.adBrief} onChange={updateAdBrief} />
-                <ReferenceUsageSelector
-                  onChange={creativeWorkflow.setReferenceUsages}
-                  references={selectedReferenceLabels}
-                  usages={creativeWorkflow.referenceUsages}
-                />
                 <div className={`mvp-status ${strategyStatus.kind}`}>{strategyStatus.message}</div>
                 <StrategySelector
-                  onGenerate={() => {
-                    creativeWorkflow.generateStrategies();
+                  isGenerating={creativeWorkflow.isGeneratingStrategies}
+                  onGenerate={async () => {
+                    setStrategyStatus({
+                      kind: "loading",
+                      message: "상품과 관련된 레퍼런스 패턴을 자동 분석하고 있습니다.",
+                    });
+                    await creativeWorkflow.generateStrategies();
                     setStrategyStatus({
                       kind: "success",
-                      message: "브리프와 레퍼런스 사용 범위로 전략 3안을 만들었습니다.",
+                      message: creativeWorkflow.referenceMatches.length
+                        ? `관련 레퍼런스 ${creativeWorkflow.referenceMatches.length}개를 자동 매칭해 전략 3안을 만들었습니다.`
+                        : "적합한 레퍼런스가 없어 상품 정보 기준으로 전략 3안을 만들었습니다.",
                     });
                   }}
-                  onGenerateMore={() => {
-                    creativeWorkflow.generateMoreStrategies();
+                  onGenerateMore={async () => {
+                    setStrategyStatus({
+                      kind: "loading",
+                      message: "다른 각도의 전략을 구성하고 있습니다.",
+                    });
+                    await creativeWorkflow.generateMoreStrategies();
                     setStrategyStatus({
                       kind: "success",
-                      message: "다른 관점의 전략 3안으로 교체했습니다.",
+                      message: "자동 매칭 패턴을 바탕으로 다른 관점의 전략 3안을 만들었습니다.",
                     });
                   }}
                   onSelect={(id) => {
@@ -3409,7 +3620,8 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                     creativeWorkflow.setActiveStep("copy");
                     setStrategyStatus({
                       kind: "success",
-                      message: "전략을 선택했습니다. 이제 이 방향으로 광고문구를 생성할 수 있습니다.",
+                      message:
+                        "전략을 선택했습니다. 이제 이 방향으로 광고문구를 생성할 수 있습니다.",
                     });
                   }}
                   selectedStrategyId={creativeWorkflow.selectedStrategyId}
@@ -3482,10 +3694,7 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       />
                     </>
                   ) : null}
-                  <BasicStyleControls
-                    onChange={updateBasicEditor}
-                    value={basicEditorSettings}
-                  />
+                  <BasicStyleControls onChange={updateBasicEditor} value={basicEditorSettings} />
                   <label>
                     <span>CTA 표시</span>
                     <select
@@ -4040,6 +4249,44 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                       )}
                     </section>
                   </section>
+                  <div className="hybrid-creative-flow">
+                    <VisualDirectionPanel
+                      advertiserName={matchedAdvertiserProfileName}
+                      directions={visualDirections}
+                      loading={visualDirectionStatus.kind === "loading"}
+                      onGenerate={() => void generateVisualDirections()}
+                      onSelect={selectVisualDirection}
+                      qualityScores={visualDirectionQualityScores}
+                      selectedDirectionId={selectedVisualDirectionId}
+                      status={visualDirectionStatus.message}
+                    />
+                    <SceneGenerationPanel
+                      blurLevel={backgroundStyle.blurLevel}
+                      brightness={backgroundStyle.brightness}
+                      candidateCount={sceneCandidateCount}
+                      candidates={sceneCandidates}
+                      direction={selectedVisualDirection}
+                      loading={sceneGenerationStatus.kind === "loading"}
+                      onBlurChange={(blurLevel) =>
+                        setBackgroundStyle((current) => ({ ...current, blurLevel }))
+                      }
+                      onBrightnessChange={(brightness) =>
+                        setBackgroundStyle((current) => ({ ...current, brightness }))
+                      }
+                      onCandidateCountChange={setSceneCandidateCount}
+                      onGenerate={() => void generateSceneCandidates()}
+                      onOverlayChange={(overlayOpacity) =>
+                        setBackgroundStyle((current) => ({ ...current, overlayOpacity }))
+                      }
+                      onProviderChange={setSceneGenerationProvider}
+                      onSelect={selectSceneCandidate}
+                      overlayOpacity={backgroundStyle.overlayOpacity}
+                      provider={sceneGenerationProvider}
+                      selectedCandidateId={selectedSceneCandidateId}
+                      status={sceneGenerationStatus.message}
+                    />
+                    <CreativeQualityPanel score={creativeQualityScore} />
+                  </div>
                   <details className="background-settings source-image-settings source-image-dropdown">
                     <summary>
                       <div>
@@ -4771,49 +5018,49 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                             onScroll={updateMainDetailScrollPercent}
                             ref={mainDetailCandidatesRef}
                           >
-                          {backgroundImageOptions.map((option) => {
-                            const selectedOrder = selectedAdImages.selectedImagePaths.indexOf(
-                              option.value
-                            );
-                            return (
-                              <button
-                                aria-label={`${option.label} 광고 이미지 선택 토글`}
-                                className={selectedOrder >= 0 ? "selected" : ""}
-                                key={`main-${option.value}`}
-                                onClick={() => toggleSelectedAdImage(option.value)}
-                                onMouseEnter={(event) =>
-                                  setHoveredDetailImage({
-                                    src: option.value,
-                                    label: option.label,
-                                    x: Math.min(event.clientX + 20, window.innerWidth - 300),
-                                    y: Math.max(20, event.clientY - 80),
-                                  })
-                                }
-                                onMouseLeave={() => setHoveredDetailImage(null)}
-                                onMouseMove={(event) =>
-                                  setHoveredDetailImage({
-                                    src: option.value,
-                                    label: option.label,
-                                    x: Math.min(event.clientX + 20, window.innerWidth - 300),
-                                    y: Math.max(20, event.clientY - 80),
-                                  })
-                                }
-                                type="button"
-                              >
-                                <img alt={option.label} src={option.value} />
-                                <span>
-                                  {selectedOrder >= 0
-                                    ? `${selectedOrder + 1}. ${option.label}`
-                                    : option.label}
-                                </span>
-                                <img
-                                  alt={`${option.label} 크게 보기`}
-                                  className="detail-image-hover-preview"
-                                  src={option.value}
-                                />
-                              </button>
-                            );
-                          })}
+                            {backgroundImageOptions.map((option) => {
+                              const selectedOrder = selectedAdImages.selectedImagePaths.indexOf(
+                                option.value
+                              );
+                              return (
+                                <button
+                                  aria-label={`${option.label} 광고 이미지 선택 토글`}
+                                  className={selectedOrder >= 0 ? "selected" : ""}
+                                  key={`main-${option.value}`}
+                                  onClick={() => toggleSelectedAdImage(option.value)}
+                                  onMouseEnter={(event) =>
+                                    setHoveredDetailImage({
+                                      src: option.value,
+                                      label: option.label,
+                                      x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                                      y: Math.max(20, event.clientY - 80),
+                                    })
+                                  }
+                                  onMouseLeave={() => setHoveredDetailImage(null)}
+                                  onMouseMove={(event) =>
+                                    setHoveredDetailImage({
+                                      src: option.value,
+                                      label: option.label,
+                                      x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                                      y: Math.max(20, event.clientY - 80),
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  <img alt={option.label} src={option.value} />
+                                  <span>
+                                    {selectedOrder >= 0
+                                      ? `${selectedOrder + 1}. ${option.label}`
+                                      : option.label}
+                                  </span>
+                                  <img
+                                    alt={`${option.label} 크게 보기`}
+                                    className="detail-image-hover-preview"
+                                    src={option.value}
+                                  />
+                                </button>
+                              );
+                            })}
                           </div>
                           <button
                             aria-label="Scroll image candidates right"
@@ -5689,9 +5936,10 @@ export function MvpDashboard({ initialBrands, initialGenerated, initialImages }:
                         <div>
                           <dt>텍스트 맞춤</dt>
                           <dd>
-                            {renderDiagnostics.fitResults.filter(
-                              (item) => item.status !== "exact"
-                            ).length}
+                            {
+                              renderDiagnostics.fitResults.filter((item) => item.status !== "exact")
+                                .length
+                            }
                             개 조정
                           </dd>
                         </div>
@@ -5904,8 +6152,6 @@ function ImageGrid({
   onAnalyze,
   onMetadataSave,
   onSelect,
-  onToggleReference,
-  selectedReferenceIds,
   selectedImageId,
   showAnalysis = false,
 }: {
@@ -5914,8 +6160,6 @@ function ImageGrid({
   onAnalyze: (image: CollectedAdImage) => void;
   onMetadataSave: (image: CollectedAdImage, updates: Partial<CollectedAdImage>) => void;
   onSelect: (image: CollectedAdImage) => void;
-  onToggleReference: (imageId: string) => void;
-  selectedReferenceIds: string[];
   selectedImageId?: string;
   showAnalysis?: boolean;
 }) {
@@ -5939,16 +6183,6 @@ function ImageGrid({
                 <div className={`label-badge ${existingLabel ? "done" : "needed"}`}>
                   {existingLabel ? "라벨 완료" : "라벨 필요"}
                 </div>
-                {existingLabel ? (
-                  <label className="reference-check" onClick={(event) => event.stopPropagation()}>
-                    <input
-                      checked={selectedReferenceIds.includes(image.id)}
-                      onChange={() => onToggleReference(image.id)}
-                      type="checkbox"
-                    />
-                    레퍼런스로 선택
-                  </label>
-                ) : null}
                 <img
                   alt={`${image.category || "광고"} 이미지`}
                   src={image.localImagePath || image.imageUrl}

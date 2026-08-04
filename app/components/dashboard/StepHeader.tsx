@@ -5,7 +5,6 @@ import styles from "../features/creative-workflow/CreativeWorkflow.module.css";
 
 const steps: Array<{ id: CreationStepId; label: string }> = [
   { id: "brief", label: "상품·브리프" },
-  { id: "references", label: "레퍼런스" },
   { id: "strategy", label: "광고 전략" },
   { id: "copy", label: "카피" },
   { id: "visual", label: "비주얼" },

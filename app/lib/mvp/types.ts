@@ -92,11 +92,7 @@ export type AdObjective = "purchase" | "signup" | "awareness";
 
 export type TargetPlatform = "meta-feed" | "instagram-feed" | "naver-gfa";
 
-export type AwarenessStage =
-  | "unaware"
-  | "problem-aware"
-  | "solution-aware"
-  | "comparing";
+export type AwarenessStage = "unaware" | "problem-aware" | "solution-aware" | "comparing";
 
 export type CreativeIntensity = "brand" | "balanced" | "performance";
 
@@ -110,17 +106,41 @@ export type AdBrief = {
   targetCustomer: string;
   landingUrl: string;
   adObjective: AdObjective;
-  targetPlatform: TargetPlatform;
-  awarenessStage: AwarenessStage;
-  customerProblem: string;
-  purchaseBarrier: string;
-  proofElements: string[];
+  creativeIntensity: CreativeIntensity;
+  additionalEmphasis?: string;
   mandatoryInfo: string[];
   prohibitedClaims: string[];
-  creativeIntensity: CreativeIntensity;
-  desiredHookType: string;
-  offerType: string;
-  tonePreference: string;
+
+  // Backward-compatible fields. New briefs infer these values automatically.
+  targetPlatform?: TargetPlatform;
+  awarenessStage?: AwarenessStage;
+  customerProblem?: string;
+  purchaseBarrier?: string;
+  proofElements?: string[];
+  desiredHookType?: string;
+  offerType?: string;
+  tonePreference?: string;
+};
+
+export type AutoReferenceContext = {
+  referenceId: string;
+  category?: string;
+  hookTypes?: string[];
+  appealPoints?: string[];
+  copyNuance?: string;
+  consumerInsight?: string;
+  purchaseTrigger?: string;
+  reusablePattern?: string;
+  visualTone?: string;
+  layoutPattern?: string;
+  ocrText?: string;
+};
+
+export type ReferenceMatchResult = {
+  referenceId: string;
+  score: number;
+  matchedReasons: string[];
+  context: AutoReferenceContext;
 };
 
 export type ReferenceUsageAspect =
@@ -151,6 +171,12 @@ export type CreativeStrategy = {
   referenceFit: string;
   suggestedVisualEmphasis: string;
   risk: string;
+  expectedCustomerProblem: string;
+  purchaseBarrierResponse: string;
+  recommendedTone: string;
+  inferredEvidence: string[];
+  matchedReferenceIds: string[];
+  matchedReferencePatterns: string[];
 };
 
 export type MessageHierarchy = {
@@ -161,14 +187,7 @@ export type MessageHierarchy = {
   actionMessage: string;
 };
 
-export type CreationStepId =
-  | "brief"
-  | "references"
-  | "strategy"
-  | "copy"
-  | "visual"
-  | "edit"
-  | "export";
+export type CreationStepId = "brief" | "strategy" | "copy" | "visual" | "edit" | "export";
 
 export type CopyQualityDimension =
   | "specificity"
@@ -529,14 +548,7 @@ export type ExtractedPalette = {
 };
 
 export type TemplateSlotType =
-  | "text"
-  | "image"
-  | "price"
-  | "cta"
-  | "badge"
-  | "background"
-  | "chip"
-  | "decoration";
+  "text" | "image" | "price" | "cta" | "badge" | "background" | "chip" | "decoration";
 
 export type TemplateSlot = {
   id: string;
@@ -591,12 +603,7 @@ export type BoundingBox = {
 };
 
 export type RenderFitStatus =
-  | "exact"
-  | "wrapped"
-  | "shrunk"
-  | "variant-changed"
-  | "ellipsis"
-  | "failed";
+  "exact" | "wrapped" | "shrunk" | "variant-changed" | "ellipsis" | "failed";
 
 export type BannerFitResult = {
   slotId: string;

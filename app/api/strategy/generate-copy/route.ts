@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { defaultAdBrief, productInfoToAdBrief } from "../../../lib/mvp/adBrief";
 import { buildGenerateCopyPrompt } from "../../../lib/mvp/copyPromptBuilder";
 import { loadCopyGuideForProduct } from "../../../lib/mvp/copyGuideLoader";
 import {
@@ -12,6 +13,8 @@ import {
   kookdaeProductFacts,
 } from "../../../lib/mvp/kookdaeCopyPatterns";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
+import { labelsForReferenceMatches, matchReferences } from "../../../lib/mvp/referenceMatcher";
+import { normalizeReferenceUsages } from "../../../lib/mvp/referenceUsage";
 import { copyLimitCharSummary } from "../../../lib/mvp/templateCopyFitter";
 import type {
   AdBrief,
@@ -135,71 +138,6 @@ function normalizeProduct(productInfo?: Partial<ProductInfoForPrompt>): ProductI
   };
 }
 
-function tokenize(value: string) {
-  return new Set(
-    cleanText(value)
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}\s]/gu, " ")
-      .split(/\s+/)
-      .filter((token) => token.length >= 2)
-  );
-}
-
-function labelHasFinalData(label?: AdImageLabel) {
-  return Boolean(label?.finalLabel && Object.values(label.finalLabel).some(Boolean));
-}
-
-function scoreLabel(product: ProductInfoForPrompt, label: AdImageLabel) {
-  const productTokens = tokenize(
-    [
-      product.productName,
-      product.category,
-      product.mainBenefit,
-      product.discountInfo,
-      product.targetCustomer,
-    ].join(" ")
-  );
-  const labelTokens = tokenize(
-    [
-      label.category,
-      label.brandName,
-      label.finalLabel?.category,
-      label.finalLabel?.hookType,
-      label.finalLabel?.appealPoint,
-      label.finalLabel?.copyNuance,
-      label.finalLabel?.consumerInsight,
-      label.finalLabel?.purchaseTrigger,
-    ].join(" ")
-  );
-
-  let score = 0;
-  productTokens.forEach((token) => {
-    if (labelTokens.has(token)) score += 2;
-  });
-  if (
-    product.category &&
-    cleanText(label.finalLabel?.category || label.category) === product.category
-  ) {
-    score += 10;
-  }
-  return score;
-}
-
-function selectSingleReferenceLabel(
-  product: ProductInfoForPrompt,
-  allLabels: AdImageLabel[],
-  requestedLabels: AdImageLabel[] = []
-) {
-  const requestedValid = requestedLabels.filter(labelHasFinalData);
-  if (requestedValid.length) return [requestedValid[0]];
-
-  const autoSelected = [...allLabels]
-    .filter(labelHasFinalData)
-    .sort((a, b) => scoreLabel(product, b) - scoreLabel(product, a));
-
-  return autoSelected[0] ? [autoSelected[0]] : [];
-}
-
 function normalizePrice(product: ProductInfoForPrompt, value?: string) {
   const sources = [value, product.price, product.discountInfo, product.mainBenefit].filter(Boolean);
   for (const source of sources) {
@@ -297,7 +235,8 @@ function bodyFallback(
 function normalizeBody(value: string, fallback: string, copyGuide?: CopyGuideContext | null) {
   const source = isKookdaeGuide(copyGuide) ? applyKookdaeGenericReplacements(value) : value;
   const normalized = trimToLimit(cleanText(source || fallback), 42);
-  if (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(normalized)) return trimToLimit(fallback, 42);
+  if (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(normalized))
+    return trimToLimit(fallback, 42);
   return trimToLimit(normalized, 36);
 }
 
@@ -392,8 +331,14 @@ function variantFrom(
   return {
     headline: trimToLimit(sanitize(copy?.headline || fallback.headline), limits.headline),
     bodyCopy: trimToLimit(sanitize(copy?.bodyCopy || fallback.bodyCopy), limits.bodyCopy),
-    highlightCopy: trimToLimit(sanitize(copy?.highlightCopy || fallback.highlightCopy), limits.highlightCopy),
-    bottomBarCopy: trimToLimit(sanitize(copy?.bottomBarCopy || fallback.bottomBarCopy), limits.bottomBarCopy),
+    highlightCopy: trimToLimit(
+      sanitize(copy?.highlightCopy || fallback.highlightCopy),
+      limits.highlightCopy
+    ),
+    bottomBarCopy: trimToLimit(
+      sanitize(copy?.bottomBarCopy || fallback.bottomBarCopy),
+      limits.bottomBarCopy
+    ),
     cta: trimToLimit(sanitize(copy?.cta || fallback.cta), limits.cta),
     price: trimToLimit(copy?.price || fallback.price || "", limits.price),
   };
@@ -451,30 +396,45 @@ function buildCopyVariants(
     };
 
     return {
-      short: variantFrom(preferred.short, fallbackVariants.short, {
-        headline: 14,
-        bodyCopy: 18,
-        highlightCopy: 12,
-        bottomBarCopy: 18,
-        cta: 6,
-        price: 12,
-      }, copyGuide),
-      medium: variantFrom(preferred.medium, fallbackVariants.medium, {
-        headline: 22,
-        bodyCopy: 28,
-        highlightCopy: 18,
-        bottomBarCopy: 24,
-        cta: 8,
-        price: 12,
-      }, copyGuide),
-      long: variantFrom(preferred.long, fallbackVariants.long, {
-        headline: 34,
-        bodyCopy: 42,
-        highlightCopy: 28,
-        bottomBarCopy: 36,
-        cta: 10,
-        price: 12,
-      }, copyGuide),
+      short: variantFrom(
+        preferred.short,
+        fallbackVariants.short,
+        {
+          headline: 14,
+          bodyCopy: 18,
+          highlightCopy: 12,
+          bottomBarCopy: 18,
+          cta: 6,
+          price: 12,
+        },
+        copyGuide
+      ),
+      medium: variantFrom(
+        preferred.medium,
+        fallbackVariants.medium,
+        {
+          headline: 22,
+          bodyCopy: 28,
+          highlightCopy: 18,
+          bottomBarCopy: 24,
+          cta: 8,
+          price: 12,
+        },
+        copyGuide
+      ),
+      long: variantFrom(
+        preferred.long,
+        fallbackVariants.long,
+        {
+          headline: 34,
+          bodyCopy: 42,
+          highlightCopy: 28,
+          bottomBarCopy: 36,
+          cta: 10,
+          price: 12,
+        },
+        copyGuide
+      ),
     };
   }
 
@@ -492,30 +452,45 @@ function buildCopyVariants(
   };
 
   return {
-    short: variantFrom(copy.copyVariants?.short, fallback, {
-      headline: 14,
-      bodyCopy: 18,
-      highlightCopy: 12,
-      bottomBarCopy: 18,
-      cta: 6,
-      price: 12,
-    }, copyGuide),
-    medium: variantFrom(copy.copyVariants?.medium, fallback, {
-      headline: 22,
-      bodyCopy: 28,
-      highlightCopy: 18,
-      bottomBarCopy: 24,
-      cta: 8,
-      price: 12,
-    }, copyGuide),
-    long: variantFrom(copy.copyVariants?.long, fallback, {
-      headline: 34,
-      bodyCopy: 42,
-      highlightCopy: 28,
-      bottomBarCopy: 36,
-      cta: 10,
-      price: 12,
-    }, copyGuide),
+    short: variantFrom(
+      copy.copyVariants?.short,
+      fallback,
+      {
+        headline: 14,
+        bodyCopy: 18,
+        highlightCopy: 12,
+        bottomBarCopy: 18,
+        cta: 6,
+        price: 12,
+      },
+      copyGuide
+    ),
+    medium: variantFrom(
+      copy.copyVariants?.medium,
+      fallback,
+      {
+        headline: 22,
+        bodyCopy: 28,
+        highlightCopy: 18,
+        bottomBarCopy: 24,
+        cta: 8,
+        price: 12,
+      },
+      copyGuide
+    ),
+    long: variantFrom(
+      copy.copyVariants?.long,
+      fallback,
+      {
+        headline: 34,
+        bodyCopy: 42,
+        highlightCopy: 28,
+        bottomBarCopy: 36,
+        cta: 10,
+        price: 12,
+      },
+      copyGuide
+    ),
   };
 }
 
@@ -526,7 +501,9 @@ function removeForbidden(
   copyGuide?: CopyGuideContext | null
 ): GeneratedAdCopy {
   const kookdaeFallback = kookdaeFallbackCopy(product, reference);
-  const replacements: Partial<Record<keyof GeneratedAdCopyVariant, string>> = isKookdaeGuide(copyGuide)
+  const replacements: Partial<Record<keyof GeneratedAdCopyVariant, string>> = isKookdaeGuide(
+    copyGuide
+  )
     ? kookdaeFallback
     : {
         headline: "value proof deal",
@@ -549,6 +526,72 @@ function removeForbidden(
     }
   });
   return next;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function stripUserProhibitedClaims(value: string, prohibitedClaims: string[]) {
+  let result = value;
+  for (const claim of prohibitedClaims.map(cleanText).filter(Boolean)) {
+    result = result.replace(new RegExp(escapeRegExp(claim), "gi"), "");
+  }
+  return cleanText(result.replace(/\s+([,.!?])/g, "$1").replace(/([,.!?]){2,}/g, "$1"));
+}
+
+function applyBriefConstraints(
+  copy: GeneratedAdCopy,
+  brief: AdBrief,
+  product: ProductInfoForPrompt,
+  labels: AdImageLabel[],
+  copyGuide?: CopyGuideContext | null
+) {
+  const prohibitedClaims = brief.prohibitedClaims || [];
+  const normalizedProhibited = new Set(
+    prohibitedClaims.map((claim) => cleanText(claim).toLowerCase())
+  );
+  const mandatoryInfo = (brief.mandatoryInfo || [])
+    .map(cleanText)
+    .filter((item) => item && !normalizedProhibited.has(item.toLowerCase()));
+  const mandatoryText = Array.from(new Set(mandatoryInfo)).join(" · ");
+  const reference = labels[0];
+
+  const constrainVariant = <Variant extends GeneratedAdCopyVariant>(variant: Variant): Variant => {
+    const next = { ...variant };
+    copySlots.forEach((key) => {
+      if (key !== "price") {
+        next[key] = stripUserProhibitedClaims(String(next[key] || ""), prohibitedClaims);
+      }
+    });
+    if (!next.headline) next.headline = safeHeadlineFallback(product, reference, copyGuide);
+    if (!next.bodyCopy) next.bodyCopy = bodyFallback(product, reference, copyGuide);
+    if (!next.cta) next.cta = normalizeCta(undefined, copyGuide);
+
+    const currentText = copySlots.map((key) => String(next[key] || "")).join(" ");
+    const hasAllMandatory = mandatoryInfo.every((item) => currentText.includes(item));
+    if (mandatoryText && !hasAllMandatory) {
+      next.highlightCopy = mandatoryText;
+    }
+    return next;
+  };
+
+  const constrained = constrainVariant(copy);
+  constrained.copyVariants = copy.copyVariants
+    ? {
+        short: copy.copyVariants.short ? constrainVariant(copy.copyVariants.short) : undefined,
+        medium: copy.copyVariants.medium ? constrainVariant(copy.copyVariants.medium) : undefined,
+        long: copy.copyVariants.long ? constrainVariant(copy.copyVariants.long) : undefined,
+      }
+    : undefined;
+  constrained.messageHierarchy = {
+    primaryMessage: constrained.headline,
+    secondaryMessage: constrained.bodyCopy,
+    proofMessage: constrained.highlightCopy,
+    offerMessage: constrained.bottomBarCopy,
+    actionMessage: constrained.cta,
+  };
+  return constrained;
 }
 
 function normalizeGeneratedCopy(
@@ -577,6 +620,12 @@ function normalizeGeneratedCopy(
     ? buildKookdaeCopyVariantsFromPatterns(product, reference).selectedPatterns
     : undefined;
   const baseCopyGuideUsage = copyGuideUsage(copyGuide);
+  const usedReferenceIds = Array.from(
+    new Set([
+      ...labels.map((label) => label.imageId),
+      ...(value.referencePatternUsage?.usedReferenceIds || []),
+    ])
+  );
 
   const normalized: GeneratedAdCopy = {
     headline,
@@ -622,7 +671,9 @@ function normalizeGeneratedCopy(
     messageHierarchy: {
       primaryMessage: cleanText(value.messageHierarchy?.primaryMessage || headline),
       secondaryMessage: cleanText(
-        value.messageHierarchy?.secondaryMessage || value.bodyCopy || bodyFallback(product, reference, copyGuide)
+        value.messageHierarchy?.secondaryMessage ||
+          value.bodyCopy ||
+          bodyFallback(product, reference, copyGuide)
       ),
       proofMessage: cleanText(
         value.messageHierarchy?.proofMessage || value.highlightCopy || product.mainBenefit
@@ -662,6 +713,8 @@ function normalizeGeneratedCopy(
     referencePatternUsage: {
       ...referencePatternUsage(reference),
       ...(value.referencePatternUsage || {}),
+      usedReferenceIds,
+      avoidedDirectCopy: true,
     },
     copyGuideUsage: value.copyGuideUsage
       ? {
@@ -688,7 +741,11 @@ function normalizeGeneratedCopy(
           copyGuide
         ),
         finalLength: visibleLength(
-          normalizeBody(value.bodyCopy || "", bodyFallback(product, reference, copyGuide), copyGuide)
+          normalizeBody(
+            value.bodyCopy || "",
+            bodyFallback(product, reference, copyGuide),
+            copyGuide
+          )
         ),
       },
     },
@@ -739,12 +796,11 @@ function mockCopy(
       highlightCopy: isKookdaeGuide(copyGuide)
         ? kookdaeFallbackCopy(product, reference).highlightCopy
         : product.discountInfo || product.mainBenefit || "deal",
-      bottomBarCopy:
-        (isKookdaeGuide(copyGuide)
-          ? kookdaeFallbackCopy(product, reference).bottomBarCopy
-          : reference?.finalLabel?.purchaseTrigger ||
-            reference?.finalLabel?.whyItWorks ||
-            "check bundle"),
+      bottomBarCopy: isKookdaeGuide(copyGuide)
+        ? kookdaeFallbackCopy(product, reference).bottomBarCopy
+        : reference?.finalLabel?.purchaseTrigger ||
+          reference?.finalLabel?.whyItWorks ||
+          "check bundle",
       cta: isKookdaeGuide(copyGuide) ? "특가 확인하기" : "view deal",
       price: normalizePrice(product),
       hookType: inferHookType(reference),
@@ -819,24 +875,40 @@ export async function POST(request: Request) {
     product.copyGuideId = copyGuide?.guideId || body.copyGuideId || product.copyGuideId || "";
     product.copyGuideContext = copyGuide || undefined;
 
-    const allLabels = await readAdImageLabels();
-    const selectedLabels = selectSingleReferenceLabel(
+    const storedLabels = await readAdImageLabels();
+    const labelsById = new Map(storedLabels.map((label) => [label.imageId, label]));
+    for (const legacyLabel of body.referenceLabels || []) {
+      if (!labelsById.has(legacyLabel.imageId)) labelsById.set(legacyLabel.imageId, legacyLabel);
+    }
+    const allLabels = Array.from(labelsById.values());
+    const adBrief = productInfoToAdBrief(product, body.adBrief || defaultAdBrief);
+    const referenceMatches = matchReferences({
       product,
-      allLabels,
-      body.referenceLabels ?? []
-    );
+      brief: adBrief,
+      labels: allLabels,
+      limit: 5,
+    });
+    const selectedLabels = labelsForReferenceMatches(allLabels, referenceMatches);
+    const referenceUsages = normalizeReferenceUsages(selectedLabels, []);
     const template: TemplateInfo = {
       templateId: body.templateId,
       templateName: body.templateName,
     };
-    const copy = process.env.OPENAI_API_KEY
-      ? await generateWithOpenAI(product, selectedLabels, template, copyGuide, body)
+    const generatedCopy = process.env.OPENAI_API_KEY
+      ? await generateWithOpenAI(product, selectedLabels, template, copyGuide, {
+          ...body,
+          adBrief,
+          referenceLabels: selectedLabels,
+          referenceUsages,
+        })
       : mockCopy(product, selectedLabels, copyGuide);
+    const copy = applyBriefConstraints(generatedCopy, adBrief, product, selectedLabels, copyGuide);
 
     return NextResponse.json({
       ok: true,
       copy,
       referenceLabels: selectedLabels,
+      referenceMatches,
       copyGuide,
       isMock: !process.env.OPENAI_API_KEY,
     });

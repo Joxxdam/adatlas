@@ -16,6 +16,7 @@ import {
   prepareBannerRender,
   type PreparedBannerRender,
 } from "../../../lib/mvp/bannerRenderPipeline";
+import { getCreativeTextStylePreset } from "../../../lib/creative/textStylePresets";
 import { buildOptimizedTemplateSvg } from "../../../lib/mvp/optimizedTemplateSvg";
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
 import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
@@ -33,6 +34,7 @@ import type {
 export const runtime = "nodejs";
 
 type RenderStyle = Partial<typeof foodImpactHeroTemplate.style> & {
+  creativeTextStylePresetId?: string;
   bodyFontSize?: number;
   bodyFontWeight?: number;
   selectedFontWeight?: number;
@@ -69,6 +71,8 @@ type RenderBody = {
     blurLevel?: "low" | "medium" | "high";
     dimLevel?: "low" | "medium" | "high";
     overlayColor?: string;
+    overlayOpacity?: number;
+    brightness?: number;
     scale?: number;
   };
   style?: RenderStyle;
@@ -2308,6 +2312,13 @@ async function renderOptimizedTemplate(
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
   const selectedFontWeight = Number(styleOverrides.selectedFontWeight || 800);
   const headlineFontWeight = Number(styleOverrides.headlineFontWeight || 900);
+  const creativeTextStylePresetId =
+    typeof styleOverrides.creativeTextStylePresetId === "string"
+      ? styleOverrides.creativeTextStylePresetId.trim()
+      : "";
+  const creativeTextStylePreset = creativeTextStylePresetId
+    ? getCreativeTextStylePreset(creativeTextStylePresetId)
+    : undefined;
   const frameData = await Promise.all(
     plan.imageFrames.map(async (frame) => {
       try {
@@ -2345,6 +2356,81 @@ async function renderOptimizedTemplate(
       ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다."
       : "",
     fontFaceCss,
+    productEffect: body.productEffect,
+    textOverrides: {
+      creativePreset: creativeTextStylePreset,
+      fontFamily:
+        typeof styleOverrides.fontFamily === "string" ? styleOverrides.fontFamily : undefined,
+      headlineFontFamily:
+        typeof styleOverrides.headlineFontFamily === "string"
+          ? styleOverrides.headlineFontFamily
+          : undefined,
+      headlineFontSize:
+        typeof styleOverrides.headlineFontSize === "number"
+          ? styleOverrides.headlineFontSize
+          : undefined,
+      headlineColor:
+        typeof styleOverrides.headlineColor === "string"
+          ? styleOverrides.headlineColor
+          : undefined,
+      headlineFontWeight:
+        typeof styleOverrides.headlineFontWeight === "number"
+          ? styleOverrides.headlineFontWeight
+          : undefined,
+      headlineLetterSpacing:
+        typeof styleOverrides.headlineLetterSpacing === "number"
+          ? styleOverrides.headlineLetterSpacing
+          : undefined,
+      headlineLineHeight:
+        typeof styleOverrides.headlineLineHeight === "number"
+          ? styleOverrides.headlineLineHeight
+          : undefined,
+      headlineTextStroke:
+        typeof styleOverrides.headlineTextStroke === "boolean"
+          ? styleOverrides.headlineTextStroke
+          : undefined,
+      headlineTextStrokeColor:
+        typeof styleOverrides.headlineTextStrokeColor === "string"
+          ? styleOverrides.headlineTextStrokeColor
+          : undefined,
+      headlineTextStrokeWidth:
+        typeof styleOverrides.headlineTextStrokeWidth === "number"
+          ? styleOverrides.headlineTextStrokeWidth
+          : undefined,
+      headlineShadow:
+        typeof styleOverrides.headlineShadow === "boolean"
+          ? styleOverrides.headlineShadow
+          : undefined,
+      bodyColor:
+        typeof styleOverrides.bodyColor === "string" ? styleOverrides.bodyColor : undefined,
+      bodyFontSize:
+        typeof styleOverrides.bodyFontSize === "number"
+          ? styleOverrides.bodyFontSize
+          : undefined,
+      bodyFontWeight:
+        typeof styleOverrides.bodyFontWeight === "number"
+          ? styleOverrides.bodyFontWeight
+          : undefined,
+    },
+    backgroundTreatment: {
+      blur: body.selectedBackgroundSource
+        ? backgroundBlurValue(body.backgroundStyle?.blurLevel)
+        : 0,
+      brightness: Math.max(0.55, Math.min(1.35, Number(body.backgroundStyle?.brightness ?? 1))),
+      overlayColor: body.backgroundStyle?.overlayColor || "#000000",
+      overlayOpacity: Math.max(
+        0,
+        Math.min(
+          0.72,
+          Number(
+            body.backgroundStyle?.overlayOpacity ??
+              (body.selectedBackgroundSource
+                ? backgroundDimOpacity(body.backgroundStyle?.dimLevel) * 0.34
+                : 0)
+          )
+        )
+      ),
+    },
   });
   await fs.mkdir(outputDir, { recursive: true });
   const fileName =
@@ -2387,6 +2473,8 @@ export async function POST(request: Request) {
         copyVariants: body.copyVariants,
         productInfo: body.productInfo,
         imagePaths: compactRequestedProductImagePaths(body),
+        backgroundImagePath:
+          body.backgroundMode === "none" ? undefined : body.selectedBackgroundSource,
         originalPrice:
           body.productOriginalPrice ||
           body.productOldPrice ||

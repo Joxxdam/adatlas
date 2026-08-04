@@ -223,14 +223,14 @@ ${
 However, for 국대한우, actively reuse the guide's sentence rhythm, colloquial hooks, price-shock grammar, and insider-confession structure.
 It is allowed to closely paraphrase guide examples if the product facts match.
 Replace variables such as productName, cut, price, use case, quantity, and benefit with current productInfo.`
-    : "Do not copy guide examples verbatim. Recompose the style for the current product and selected reference label."
+    : "Do not copy guide examples verbatim. Recompose the style for the current product and automatically matched reference patterns."
 }
 
 ${copyGuide.content}
 `
     : `
 [Brand Copy Guide]
-No advertiser-specific copy guide matched. Use the product information and the selected reference label.
+No advertiser-specific copy guide matched. Use the product information and automatically matched reference patterns.
 `;
 
   return `
@@ -239,16 +239,18 @@ No advertiser-specific copy guide matched. Use the product information and the s
 단, 모든 문구를 밈처럼 만들지 말고 reference label과 브랜드 가이드의 실제 톤에 맞춰야 한다.
 
 [중요 원칙]
-- reference label은 최대 1개만 참고한다.
-- reference OCR을 그대로 복사하지 않는다.
-- reference의 문장 구조, 말투, 후킹 방식, 감정 유도 방식, 밈성, 가격 소구, CTA 구조만 추출해 현재 상품에 맞게 변형한다.
+- 첫 번째 자동 매칭 레퍼런스를 주 패턴으로 삼고, 나머지 레퍼런스는 보조 패턴으로만 사용한다.
+- reference OCR과 고유 문구를 그대로 복사하지 않는다.
+- reference의 상품명, 브랜드명, 가격, 할인율, 인증, 후기 수, 판매량은 현재 상품의 사실로 사용하지 않는다.
+- reference의 문장 구조, 말투, 후킹 방식, 감정 유도 방식, 소구 순서, 레이아웃 패턴만 추출해 현재 상품에 맞게 변형한다.
+- 최종 문구의 제품 사실은 오직 [현재 광고 대상 상품의 사실 정보]에서만 가져온다.
 - 가격/혜택/상품명을 코드처럼 붙인 비문을 만들지 않는다.
 - headline에는 숫자만 넣지 않는다.
 - headline 후보 5개를 내부적으로 만든 뒤, 비문/generic/상품 정보 결여 후보를 제거하고 가장 좋은 1개만 JSON에 출력한다.
 - 이모지와 그림문자는 절대 출력하지 않는다.
 - bodyCopy는 headline을 반복하지 말고 존댓말 1문장으로 쓴다.
 
-[상품 정보]
+[현재 광고 대상 상품의 사실 정보]
 ${JSON.stringify(product, null, 2)}
 
 [광고 브리프]
@@ -257,7 +259,30 @@ ${JSON.stringify(adBrief || {}, null, 2)}
 [사용자가 선택한 광고 전략]
 ${JSON.stringify(creativeStrategy || {}, null, 2)}
 
-[레퍼런스별 사용 범위]
+[자동 매칭된 광고 레퍼런스 패턴]
+${JSON.stringify(
+  referenceContext.map((item) => ({
+    referenceId: item.imageId,
+    category: item.finalLabel?.category || item.category,
+    hookTypes: item.structuredLabels?.hookTypes || [item.finalLabel?.hookType].filter(Boolean),
+    appealPoints:
+      item.structuredLabels?.appealPoints || [item.finalLabel?.appealPoint].filter(Boolean),
+    ocrText: item.finalLabel?.ocrText,
+    firstLineHook: item.finalLabel?.firstLineHook,
+    copyStructure: item.finalLabel?.copyStructure,
+    copyNuance: item.finalLabel?.copyNuance || item.finalLabel?.toneOfVoice,
+    consumerInsight: item.finalLabel?.consumerInsight,
+    purchaseTrigger: item.finalLabel?.purchaseTrigger,
+    reusableCopyPattern: item.finalLabel?.reusableCopyPattern,
+    visualTone: item.finalLabel?.visualTone,
+    layoutPattern: item.finalLabel?.layoutPattern || item.finalLabel?.visualCopyRelation,
+    whyItWorks: item.finalLabel?.whyItWorks,
+  })),
+  null,
+  2
+)}
+
+[자동 적용된 레퍼런스 사용 범위]
 ${JSON.stringify(
   referenceUsages.map((usage) => ({
     ...usage,
@@ -273,15 +298,16 @@ ${JSON.stringify(
 - 같은 의미를 여러 계층에서 반복하지 않는다.
 - 이 메시지 계층을 현재 renderer 호환 필드 headline, bodyCopy, highlightCopy, bottomBarCopy, cta에 각각 매핑한다.
 - 광고 브리프의 mandatoryInfo는 누락하지 않고 prohibitedClaims는 절대 사용하지 않는다.
+- additionalEmphasis가 있으면 상세페이지 사실과 충돌하지 않는 범위에서 우선 반영한다.
 - 선택한 광고 전략의 후킹과 소구 방향을 우선하되 상품 정보에 없는 사실은 만들지 않는다.
 
 ${copyGuideBlock}
 
 [Brand Guide + Reference Integration Rules]
 - Brand Copy Guide is the advertiser's fixed tone, preferred expression style, and repeatable persuasion grammar.
-- The selected reference label is the current creative's hook pattern, appeal point, copy nuance, and visual-copy relation.
-- If the two conflict, preserve the brand guide's tone and use the reference label as an angle/structure.
-- If no Brand Copy Guide matched, use only product information and reference label.
+- Automatically matched reference labels provide hook patterns, appeal points, copy nuance, consumer insight, and visual-copy relations.
+- If they conflict, preserve the brand guide's tone and use the highest-ranked reference as the primary angle.
+- If no Brand Copy Guide matched, use only product information and the automatically matched patterns.
 - If no reference label exists, use product information and matched Brand Copy Guide only.
 - If neither guide nor reference exists, generate a conservative default performance ad copy from product information.
 - Do not copy guide examples or OCR text verbatim.
@@ -299,8 +325,8 @@ copyLimits: ${JSON.stringify(copyLimitSummary, null, 2)}
 templateStrategy: ${templateStrategy(template?.templateId)}
 ${templateSpecificRules(template?.templateId)}
 
-[Reference Copy Pattern 추출]
-아래 reference 1개에서 다음 항목을 먼저 분석한 뒤 문구에 반영한다.
+[Primary Reference Copy Pattern 추출]
+아래 자동 매칭 1순위 reference에서 다음 항목을 먼저 분석한 뒤, 보조 레퍼런스의 공통 패턴으로 검증한다.
 우선순위는 ${referenceFieldPriority.join(" > ")} 순서다.
 
 referenceLabel:

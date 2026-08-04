@@ -64,3 +64,6 @@ public/background-images/*
 !public/background-images/.gitkeep
 public/extracted/*
 !public/extracted/.gitkeep
+
+# local creative quality benchmark source images
+data/creative-benchmarks/desired-quality/

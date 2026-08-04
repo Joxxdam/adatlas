@@ -22,7 +22,7 @@ function contentTypeFromSource(source: string) {
   return "image/jpeg";
 }
 
-function imageBufferFromGeminiResponse(result: Record<string, unknown>) {
+function imageBufferFromLegacyGeminiResponse(result: Record<string, unknown>) {
   const candidates = Array.isArray(result.candidates) ? result.candidates : [];
   for (const candidate of candidates) {
     const content = (candidate as Record<string, unknown>).content as
@@ -38,7 +38,64 @@ function imageBufferFromGeminiResponse(result: Record<string, unknown>) {
       }
     }
   }
+  return null;
+}
+
+function imageBufferFromInteractionResponse(result: Record<string, unknown>) {
+  const visited = new Set<object>();
+
+  function visit(value: unknown): Buffer | null {
+    if (!value || typeof value !== "object") return null;
+    if (visited.has(value)) return null;
+    visited.add(value);
+
+    const record = value as Record<string, unknown>;
+    const mimeType = record.mime_type || record.mimeType;
+    const type = record.type;
+    if (
+      typeof record.data === "string" &&
+      record.data &&
+      ((typeof mimeType === "string" && mimeType.startsWith("image/")) || type === "image")
+    ) {
+      return Buffer.from(record.data, "base64");
+    }
+
+    for (const child of Object.values(record)) {
+      if (Array.isArray(child)) {
+        for (const item of child) {
+          const found = visit(item);
+          if (found) return found;
+        }
+      } else {
+        const found = visit(child);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  return visit(result);
+}
+
+function imageBufferFromGeminiResponse(result: Record<string, unknown>) {
+  const buffer =
+    imageBufferFromInteractionResponse(result) || imageBufferFromLegacyGeminiResponse(result);
+  if (buffer) return buffer;
   throw new Error("Gemini 이미지 응답에서 이미지 데이터를 찾지 못했습니다.");
+}
+
+function interactionInputFromParts(parts: Array<Record<string, unknown>>) {
+  return parts.map((part) => {
+    if (typeof part.text === "string") {
+      return { type: "text", text: part.text };
+    }
+    const inlineData = part.inlineData as Record<string, unknown> | undefined;
+    return {
+      type: "image",
+      mime_type: inlineData?.mimeType || "image/png",
+      data: inlineData?.data,
+    };
+  });
 }
 
 async function callGeminiImageModel(
@@ -48,18 +105,30 @@ async function callGeminiImageModel(
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error("GEMINI_API_KEY를 확인해주세요.");
 
-  const model = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview";
+  const model = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image";
+  const imageSize = model.includes("2.5-flash-image") ? "1K" : "2K";
+  const requestBody: Record<string, unknown> = {
+    model,
+    input: interactionInputFromParts(parts),
+    response_format: {
+      type: "image",
+      mime_type: "image/jpeg",
+      aspect_ratio: "1:1",
+      image_size: imageSize,
+    },
+  };
+  if (model.includes("3.1-flash-image")) {
+    requestBody.generation_config = { thinking_level: "high" };
+  }
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    "https://generativelanguage.googleapis.com/v1beta/interactions",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: {
-          responseModalities: ["IMAGE"],
-        },
-      }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify(requestBody),
     }
   );
 

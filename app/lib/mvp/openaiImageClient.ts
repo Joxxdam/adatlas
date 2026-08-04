@@ -1,12 +1,23 @@
 import path from "path";
 import { imageSourceToBuffer } from "./imageEffects";
 
-type ImageSize = "1024x1024" | "1536x1024" | "1024x1536";
+type ImageSize =
+  | "1024x1024"
+  | "1200x1200"
+  | "1536x1024"
+  | "1024x1536";
+type ImageQuality = "low" | "medium" | "high";
+type ImageBackground = "transparent" | "opaque" | "auto";
+type ImageOutputFormat = "png" | "jpeg" | "webp";
 
 type ImageClientResult = {
   imageBuffer: Buffer;
   promptUsed: string;
 };
+
+export function getOpenAIImageModel() {
+  return process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
+}
 
 function contentTypeFromSource(source: string) {
   const lower = source.toLowerCase();
@@ -44,20 +55,27 @@ async function imageBufferFromOpenAIResponse(response: Response) {
 export async function generateImageFromText(params: {
   prompt: string;
   size?: ImageSize;
+  quality?: ImageQuality;
+  background?: ImageBackground;
+  outputFormat?: ImageOutputFormat;
 }): Promise<ImageClientResult> {
+  const body: Record<string, unknown> = {
+    model: getOpenAIImageModel(),
+    prompt: params.prompt,
+    size: params.size || "1024x1024",
+    quality: params.quality || "medium",
+    n: 1,
+  };
+  if (params.background) body.background = params.background;
+  if (params.outputFormat) body.output_format = params.outputFormat;
+
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
-      prompt: params.prompt,
-      size: params.size || "1024x1024",
-      quality: "medium",
-      n: 1,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -75,6 +93,7 @@ export async function editImageFromSource(params: {
   referenceImagePaths?: string[];
   prompt: string;
   size?: ImageSize;
+  quality?: ImageQuality;
 }): Promise<ImageClientResult> {
   if (!params.sourceImagePath) {
     throw new Error("선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다.");
@@ -84,10 +103,10 @@ export async function editImageFromSource(params: {
   const contentType = contentTypeFromSource(params.sourceImagePath);
   const fileName = fileNameFromSource(params.sourceImagePath);
   const formData = new FormData();
-  formData.append("model", process.env.OPENAI_IMAGE_MODEL || "gpt-image-1");
+  formData.append("model", getOpenAIImageModel());
   formData.append("prompt", params.prompt);
   formData.append("size", params.size || "1024x1024");
-  formData.append("quality", "medium");
+  formData.append("quality", params.quality || "medium");
   formData.append("image[]", new Blob([sourceBuffer], { type: contentType }), fileName);
 
   const referenceImagePaths = Array.from(new Set(params.referenceImagePaths ?? []))

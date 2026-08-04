@@ -168,9 +168,9 @@ export async function POST(request: Request) {
         (promptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only")
     );
     const selectedReferenceLabels = Array.isArray(body.selectedReferenceLabels)
-      ? body.selectedReferenceLabels.slice(0, 3)
+      ? body.selectedReferenceLabels.slice(0, 5)
       : Array.isArray(body.referenceLabels)
-        ? body.referenceLabels.slice(0, 3)
+        ? body.referenceLabels.slice(0, 5)
         : [];
     const selectedProductImagePath = body.productImageState
       ? getSelectedProductImagePath(body.productImageState)

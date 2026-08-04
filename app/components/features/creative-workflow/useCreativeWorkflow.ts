@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, type SetStateAction } from "react";
 import { defaultAdBrief, productInfoToAdBrief } from "../../../lib/mvp/adBrief";
 import { buildCreativeStrategies } from "../../../lib/mvp/creativeStrategy";
+import { labelsForReferenceMatches, matchReferences } from "../../../lib/mvp/referenceMatcher";
 import { normalizeReferenceUsages } from "../../../lib/mvp/referenceUsage";
 import type {
   AdBrief,
@@ -11,7 +12,6 @@ import type {
   CreativeStrategy,
   MessageHierarchy,
   ProductInfoForPrompt,
-  ReferenceUsageSelection,
 } from "../../../lib/mvp/types";
 
 const emptyHierarchy: MessageHierarchy = {
@@ -24,16 +24,16 @@ const emptyHierarchy: MessageHierarchy = {
 
 export function useCreativeWorkflow(params: {
   productInfo: ProductInfoForPrompt;
-  references: AdImageLabel[];
+  allReferences: AdImageLabel[];
 }) {
   const [activeStep, setActiveStep] = useState<CreationStepId>("brief");
   const [adBriefDraft, setAdBriefDraft] = useState<AdBrief>(() =>
     productInfoToAdBrief(params.productInfo, defaultAdBrief)
   );
-  const [referenceUsageDrafts, setReferenceUsageDrafts] = useState<ReferenceUsageSelection[]>([]);
   const [strategies, setStrategies] = useState<CreativeStrategy[]>([]);
   const [selectedStrategyId, setSelectedStrategyId] = useState("");
   const [strategyBatch, setStrategyBatch] = useState(0);
+  const [isGeneratingStrategies, setIsGeneratingStrategies] = useState(false);
   const [messageHierarchy, setMessageHierarchy] = useState<MessageHierarchy>(emptyHierarchy);
 
   const adBrief = useMemo(
@@ -49,29 +49,61 @@ export function useCreativeWorkflow(params: {
     },
     [params.productInfo]
   );
-  const referenceUsages = useMemo(
-    () => normalizeReferenceUsages(params.references, referenceUsageDrafts),
-    [params.references, referenceUsageDrafts]
+  const referenceMatches = useMemo(
+    () =>
+      matchReferences({
+        product: params.productInfo,
+        brief: adBrief,
+        labels: params.allReferences,
+        limit: 5,
+      }),
+    [adBrief, params.allReferences, params.productInfo]
   );
-  const setReferenceUsages = useCallback((next: ReferenceUsageSelection[]) => {
-    setReferenceUsageDrafts(next);
-  }, []);
+  const references = useMemo(
+    () => labelsForReferenceMatches(params.allReferences, referenceMatches),
+    [params.allReferences, referenceMatches]
+  );
+  const referenceUsages = useMemo(() => normalizeReferenceUsages(references, []), [references]);
 
   const generateStrategies = useCallback(
-    (nextBatch = strategyBatch) => {
-      const generated = buildCreativeStrategies({
-        brief: adBrief,
-        references: params.references,
-        usages: referenceUsages,
-        batch: nextBatch,
-      });
-      setStrategies(generated);
-      setSelectedStrategyId("");
-      setStrategyBatch(nextBatch);
-      setActiveStep("strategy");
-      return generated;
+    async (nextBatch = strategyBatch) => {
+      setIsGeneratingStrategies(true);
+      try {
+        const response = await fetch("/api/strategy/generate-directions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productInfo: params.productInfo,
+            adBrief,
+            batch: nextBatch,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok || !Array.isArray(result.strategies)) {
+          throw new Error(result.error || "광고 전략 생성 실패");
+        }
+        setStrategies(result.strategies);
+        setSelectedStrategyId("");
+        setStrategyBatch(nextBatch);
+        setActiveStep("strategy");
+        return result.strategies as CreativeStrategy[];
+      } catch {
+        const fallback = buildCreativeStrategies({
+          brief: adBrief,
+          references,
+          usages: referenceUsages,
+          batch: nextBatch,
+        });
+        setStrategies(fallback);
+        setSelectedStrategyId("");
+        setStrategyBatch(nextBatch);
+        setActiveStep("strategy");
+        return fallback;
+      } finally {
+        setIsGeneratingStrategies(false);
+      }
     },
-    [adBrief, params.references, referenceUsages, strategyBatch]
+    [adBrief, params.productInfo, referenceUsages, references, strategyBatch]
   );
 
   const selectedStrategy = useMemo(
@@ -79,19 +111,30 @@ export function useCreativeWorkflow(params: {
     [selectedStrategyId, strategies]
   );
 
+  const resetStrategies = useCallback(() => {
+    setStrategies([]);
+    setSelectedStrategyId("");
+    setStrategyBatch(0);
+    setMessageHierarchy(emptyHierarchy);
+    setActiveStep("brief");
+  }, []);
+
   return {
     activeStep,
     setActiveStep,
     adBrief,
     setAdBrief,
+    referenceMatches,
+    references,
     referenceUsages,
-    setReferenceUsages,
     strategies,
     selectedStrategy,
     selectedStrategyId,
     setSelectedStrategyId,
+    isGeneratingStrategies,
     generateStrategies,
     generateMoreStrategies: () => generateStrategies(strategyBatch + 1),
+    resetStrategies,
     messageHierarchy,
     setMessageHierarchy,
   };

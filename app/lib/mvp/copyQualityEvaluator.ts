@@ -110,7 +110,7 @@ export function evaluateCopyQuality(params: {
       suggestion: "상품 상세페이지에서 확인된 사실 범위로 낮추세요.",
     });
   }
-  for (const required of brief.mandatoryInfo) {
+  for (const required of brief.mandatoryInfo || []) {
     if (required && !allText.includes(required) && !String(copy.price).includes(required)) {
       addFinding(findings, {
         severity: "warning",
@@ -119,7 +119,7 @@ export function evaluateCopyQuality(params: {
       });
     }
   }
-  for (const prohibited of brief.prohibitedClaims) {
+  for (const prohibited of brief.prohibitedClaims || []) {
     if (prohibited && allText.includes(prohibited)) {
       addFinding(findings, {
         severity: "error",

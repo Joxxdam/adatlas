@@ -1,4 +1,5 @@
 import type { AdBrief, AdImageLabel, CreativeStrategy, ReferenceUsageSelection } from "./types";
+import { inferAdBriefContext } from "./adBriefInference";
 
 type StrategySeed = {
   key: string;
@@ -78,7 +79,7 @@ function referenceText(labels: AdImageLabel[]) {
 }
 
 function scoreSeed(seed: StrategySeed, brief: AdBrief, labels: AdImageLabel[]) {
-  const pool = `${brief.desiredHookType} ${brief.offerType} ${brief.customerProblem} ${brief.mainBenefit} ${referenceText(labels)}`;
+  const pool = `${brief.desiredHookType || ""} ${brief.offerType || ""} ${brief.customerProblem || ""} ${brief.mainBenefit} ${brief.additionalEmphasis || ""} ${referenceText(labels)}`;
   let score = 0;
   if (seed.key === "value-proof" && /가격|할인|구성|가성비|특가|선물/.test(pool)) score += 5;
   if (seed.key === "problem-solution" && /문제|불편|고민|장벽|귀찮|해결/.test(pool)) score += 5;
@@ -117,6 +118,35 @@ export function buildCreativeStrategies(params: {
   const usedAspects = Array.from(new Set(params.usages.flatMap((usage) => usage.aspects))).join(
     ", "
   );
+  const inferred = inferAdBriefContext({
+    product: {
+      productName: params.brief.productName,
+      category: params.brief.category,
+      price: params.brief.price,
+      originalPrice: params.brief.originalPrice,
+      discountInfo: params.brief.discountInfo,
+      mainBenefit: params.brief.mainBenefit,
+      targetCustomer: params.brief.targetCustomer,
+      landingUrl: params.brief.landingUrl,
+      productImagePath: "",
+      backgroundImagePath: "",
+    },
+    brief: params.brief,
+    references: params.references,
+  });
+  const matchedReferenceIds = params.references.map((label) => label.imageId);
+  const matchedReferencePatterns = Array.from(
+    new Set(
+      params.references
+        .flatMap((label) => [
+          label.finalLabel?.hookType,
+          label.finalLabel?.appealPoint,
+          label.finalLabel?.reusableCopyPattern,
+          label.finalLabel?.layoutPattern,
+        ])
+        .filter(Boolean) as string[]
+    )
+  ).slice(0, 5);
 
   return unique.map((seed, index) => ({
     id: `${seed.key}-${batch}-${index}`,
@@ -124,11 +154,17 @@ export function buildCreativeStrategies(params: {
     explanation: `${params.brief.targetCustomer || "핵심 고객"}이 구매 결정을 빠르게 내리도록 ${seed.appeal}을 중심으로 설계합니다.`,
     mainHookAngle: seed.hook,
     coreAppealPoint: params.brief.mainBenefit || seed.appeal,
-    audienceFit: `${params.brief.awarenessStage} 단계의 ${params.brief.targetCustomer || "잠재 고객"}`,
+    audienceFit: `${inferred.awarenessStage} 단계의 ${params.brief.targetCustomer || "잠재 고객"}`,
     referenceFit: referenceNames
-      ? `${referenceNames}의 ${usedAspects || "후킹 구조"}만 참고하고 원문은 복제하지 않습니다.`
-      : "선택된 레퍼런스가 없어 광고 브리프의 사실 정보만 사용합니다.",
-    suggestedVisualEmphasis: seed.visual,
+      ? `자동 매칭된 ${params.references.length}개 레퍼런스의 ${usedAspects || "후킹·소구·레이아웃 패턴"}만 참고하고 원문은 복제하지 않습니다.`
+      : "관련 레퍼런스가 없어 상품 상세페이지의 사실 정보만 사용합니다.",
+    suggestedVisualEmphasis: `${inferred.visualEmphasis}. ${seed.visual}`,
     risk: seed.risk,
+    expectedCustomerProblem: inferred.customerProblem,
+    purchaseBarrierResponse: `${inferred.purchaseBarrier}에 대해 ${seed.appeal}을 구매 근거로 제시합니다.`,
+    recommendedTone: inferred.tone,
+    inferredEvidence: inferred.proofElements,
+    matchedReferenceIds,
+    matchedReferencePatterns,
   }));
 }

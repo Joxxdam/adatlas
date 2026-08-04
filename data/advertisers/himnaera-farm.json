@@ -1,0 +1,17 @@
+{
+  "id": "himnaera-farm",
+  "name": "힘내라농가",
+  "aliases": ["힘내라농가", "힘내라 농가", "fightingfarm"],
+  "domains": ["fightingfarm.com"],
+  "categories": ["농산물", "산지직송", "신선식품", "식품/선물"],
+  "brandKeywords": ["산지", "제철", "수확", "신선함", "생산자", "푸짐함"],
+  "visualKeywords": ["농장", "수확", "햇빛", "신선함", "정직함", "제철", "합리적인 가격"],
+  "preferredTones": ["솔직한 산지직송", "신선한 식탁", "실속 구성"],
+  "preferredColorHints": ["#2f7f42", "#f3bd36", "#fffdf7", "#da3c31"],
+  "prohibitedVisuals": ["확인되지 않은 특정 산지", "실제와 다른 품종", "백화점식 과도한 고급 연출", "가짜 인증 마크"],
+  "prohibitedClaims": ["확인되지 않은 무농약", "확인되지 않은 유기농", "확인되지 않은 당도", "확인되지 않은 인증"],
+  "productDisplayRules": ["실제 농산물 색과 형태를 유지", "신선함을 보이되 비현실적 물방울은 피함", "생산자나 농장은 실제 정보가 있을 때만 특정"],
+  "scenePreferences": ["agriculture-farm-fresh", "agriculture-harvest", "agriculture-direct-value", "agriculture-clean-commerce"],
+  "defaultTextStylePreset": "honest-farm-direct",
+  "defaultSceneProfile": "agriculture-farm-fresh"
+}

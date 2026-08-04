@@ -1,16 +1,13 @@
 "use client";
 
-import type { CreativeIntensity } from "../../../lib/mvp/types";
 import type { ReactNode } from "react";
 import styles from "../creative-workflow/CreativeWorkflow.module.css";
 
 export type BasicEditorSettings = {
-  creativeIntensity: CreativeIntensity;
   accentColor: string;
   textSizeLevel: "small" | "medium" | "large";
   productSizeLevel: "small" | "medium" | "large";
   backgroundBrightness: "dark" | "balanced" | "bright";
-  overallMood: string;
 };
 
 export function BasicStyleControls(props: {
@@ -29,17 +26,6 @@ export function BasicStyleControls(props: {
         </div>
       </div>
       <div className={styles.controlGrid}>
-        <label className={styles.field}>
-          광고 강도
-          <select
-            value={props.value.creativeIntensity}
-            onChange={(event) => set("creativeIntensity", event.target.value as CreativeIntensity)}
-          >
-            <option value="brand">브랜드 중심</option>
-            <option value="balanced">균형형</option>
-            <option value="performance">성과 중심</option>
-          </select>
-        </label>
         <label className={styles.field}>
           강조 색상
           <input
@@ -89,14 +75,6 @@ export function BasicStyleControls(props: {
             <option value="balanced">보통</option>
             <option value="bright">밝게</option>
           </select>
-        </label>
-        <label className={styles.field}>
-          전체 분위기
-          <input
-            value={props.value.overallMood}
-            onChange={(event) => set("overallMood", event.target.value)}
-            placeholder="예: 선명한 특가형"
-          />
         </label>
       </div>
       {props.children ? (

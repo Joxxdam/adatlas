@@ -184,6 +184,8 @@ export function buildImageGenerationPrompt(params: BuildImagePromptParams): {
     `Reference layout pattern: ${references.layoutPattern}.`,
     `Reference appeal point: ${references.appealPoint}.`,
     `Reference hook/copy nuance to adapt: ${references.hookType}; ${references.copyNuance}.`,
+    "Treat all reference labels and reference images as style, hook, mood, and layout guidance only.",
+    "Use current product information as the only source of product identity, price, discount, quantity, composition, claims, and benefits. Never transfer factual details from a reference ad.",
     templateSummary ? `Template feeling: ${templateSummary}.` : "",
     selectedSourceImagePath
       ? `Selected source image: ${selectedSourceImagePath}. ${selectedSourceImageLabel ? `Label: ${selectedSourceImageLabel}.` : ""} ${selectedSourceImageType ? `Type: ${selectedSourceImageType}.` : ""}`

@@ -1,0 +1,17 @@
+{
+  "id": "kookdae-hanwoo",
+  "name": "국대한우",
+  "aliases": ["국대한우", "국대찬수", "kookdae", "koreakoreanbeef"],
+  "domains": ["koreakoreanbeef.com", "kookdae.co.kr"],
+  "categories": ["축산", "육류", "한우", "식품/선물"],
+  "brandKeywords": ["국내산", "한우", "설록우", "구성", "실속", "선물"],
+  "visualKeywords": ["육즙", "불판", "그릴", "캠핑", "식탁", "푸짐함", "프리미엄", "가성비"],
+  "preferredTones": ["강한 가격 후킹", "푸짐한 식품 임팩트", "신뢰감 있는 품질 소구"],
+  "preferredColorHints": ["#ff1818", "#fff000", "#111111", "#ffffff"],
+  "prohibitedVisuals": ["비위생적인 생고기", "과도하게 검거나 탁한 식품", "실제 판매 부위와 다른 고기", "가짜 포장 상품"],
+  "prohibitedClaims": ["확인되지 않은 등급", "확인되지 않은 중량", "확인되지 않은 원산지"],
+  "productDisplayRules": ["실제 포장육 또는 실제 고기 사진을 핵심 레이어로 사용", "조리 장면은 보조 배경으로만 사용", "고기 색을 지나치게 붉게 포화하지 않음"],
+  "scenePreferences": ["food-meat-grill", "food-meat-camping", "food-meat-family-meal", "food-meat-premium-table"],
+  "defaultTextStylePreset": "premium-food",
+  "defaultSceneProfile": "food-meat-grill"
+}

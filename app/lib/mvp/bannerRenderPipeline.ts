@@ -219,6 +219,7 @@ export async function prepareBannerRender(params: {
   copyVariants?: Partial<Record<"short" | "medium" | "long", GeneratedAdCopyVariant>>;
   productInfo?: ProductInfoForPrompt;
   imagePaths: string[];
+  backgroundImagePath?: string;
   originalPrice?: string;
 }): Promise<PreparedBannerRender> {
   const firstImage = params.imagePaths.find(Boolean) || "";
@@ -254,6 +255,7 @@ export async function prepareBannerRender(params: {
   const imageFrames = resolveImageLayout({
     slots: params.template.slots || [],
     imagePaths: params.imagePaths,
+    backgroundImagePath: params.backgroundImagePath,
   });
   const collisionItems: CollisionItem[] = [
     ...best.results.map((result) => {
@@ -271,6 +273,7 @@ export async function prepareBannerRender(params: {
     }),
     ...imageFrames
       .filter((frame) => {
+        if (frame.slotId === "__generatedSceneBackground") return false;
         const slot = params.template.slots?.find((item) => item.id === frame.slotId);
         return slot?.imageFit !== "background-image";
       })
@@ -308,6 +311,9 @@ export async function prepareBannerRender(params: {
   );
   const warnings = [...fitWarnings, ...collisionResult.warnings];
   if (!params.imagePaths.length) warnings.push("No product image was supplied to the renderer.");
+  if (params.backgroundImagePath && !imageFrames.some((frame) => frame.imagePath === params.backgroundImagePath)) {
+    warnings.push("The selected scene could not be mapped to a background or scene slot in this template.");
+  }
   if (best.candidate.key !== candidates[0]?.key) {
     warnings.push(
       `Copy variant changed from ${candidates[0]?.key || "base"} to ${best.candidate.key}.`
