@@ -2868,6 +2868,10 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .ad-generation-flow .banner-workspace {
+    grid-template-columns: 1fr;
+  }
+
   .ad-generation-flow > .banner-workspace,
   .ad-generation-flow .banner-workspace > .banner-preview-panel {
     border-left: 0;

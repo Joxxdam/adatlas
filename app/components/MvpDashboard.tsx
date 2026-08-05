@@ -10,6 +10,7 @@ import type {
 } from "../lib/creative/types";
 import { evaluateCreativeQuality } from "../lib/creative/creativeQualityEvaluator";
 import { getCreativeTextStylePreset } from "../lib/creative/textStylePresets";
+import type { BackgroundRecommendation } from "../lib/background-library/types";
 import type {
   AdBrief,
   AdImageAnalysisDraft,
@@ -17,6 +18,7 @@ import type {
   BatchRenderResult,
   BatchRenderStatus,
   CollectedAdImage,
+  CreativeStrategy,
   GeneratedAdImage,
   GeneratedAdCopy,
   GeneratedImageAsset,
@@ -67,8 +69,10 @@ import { useCreativeWorkflow } from "./features/creative-workflow/useCreativeWor
 import { ProductAnalysisSummary } from "./features/product-brief/ProductAnalysisSummary";
 import { ProductBriefForm } from "./features/product-brief/ProductBriefForm";
 import { StrategySelector } from "./features/strategy/StrategySelector";
-import { SceneGenerationPanel } from "./features/scene-generator/SceneGenerationPanel";
-import { VisualDirectionPanel } from "./features/visual-direction/VisualDirectionPanel";
+import {
+  BackgroundRecommendationPanel,
+  type BackgroundProductionMode,
+} from "./features/background-library/BackgroundRecommendationPanel";
 import {
   beautyCategoryTemplates,
   foodCategoryTemplates,
@@ -77,17 +81,9 @@ import {
   type BannerTemplateDefinition,
 } from "../../lib/bannerTemplates";
 import type { ProductCreationHandoff } from "../lib/store-analysis/types";
-import {
-  AppFeatureNavigation,
-  type AppFeatureKey,
-} from "./AppFeatureNavigation";
+import { AppFeatureNavigation, type AppFeatureKey } from "./AppFeatureNavigation";
 
-type MvpMenu =
-  | "카테고리 관리"
-  | "이미지 수집"
-  | "이미지 분석"
-  | "광고 생성"
-  | "결과 다운로드";
+type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
 
 type Props = {
   initialBrands: MvpBrand[];
@@ -131,6 +127,38 @@ type BannerTextColorState = {
 
 type MainImageSourceMode = "detail" | "upload" | "gpt";
 type ImageGenerationProvider = "openai" | "gemini";
+
+type ProductCutoutApiResult = {
+  success?: boolean;
+  error?: string;
+  fallbackMessage?: string;
+  message?: string;
+  processedImagePath?: string;
+  cutoutImagePath?: string;
+  styledCutoutImagePath?: string;
+  debug?: { cacheHit?: boolean };
+};
+
+async function requestProductCutout(
+  imagePath: string,
+  effectPreset: ProductImageEffectPreset
+): Promise<ProductCutoutApiResult> {
+  const response = await fetch("/api/image/remove-background", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      imagePath,
+      sourceImagePath: imagePath,
+      provider: "removebg",
+      effectPreset,
+    }),
+  });
+  const result = (await response.json()) as ProductCutoutApiResult;
+  if (!response.ok) {
+    throw new Error(result.error || "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
+  }
+  return result;
+}
 
 function sanitizeFileName(name: string) {
   return name
@@ -734,13 +762,13 @@ export function MvpDashboard({
     kind: initialCreationHandoff ? "success" : "idle",
     message: initialCreationHandoff?.selectedContentAngle
       ? `업체 분석 추천 전략 '${initialCreationHandoff.selectedContentAngle.name}'을 상품 브리프에 반영했습니다.`
-      : "상품 정보를 불러오면 관련 레퍼런스를 자동으로 찾아 전략을 제안합니다.",
+      : "상품 정보를 불러오면 관련 내부 신호를 자동으로 찾아 후킹을 제안합니다.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
   const [copyStatus, setCopyStatus] = useState<Status>({
     kind: "idle",
     message: initialCreationHandoff
-      ? "분석 추천 전략을 확인한 뒤 광고 전략을 생성하고 문구 제작을 시작하세요."
+      ? "분석 추천 방향을 확인한 뒤 광고 후킹을 생성하고 문구 제작을 시작하세요."
       : "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
   });
   const [templateFittedCopy, setTemplateFittedCopy] = useState<TemplateFittedCopy | null>(null);
@@ -760,11 +788,9 @@ export function MvpDashboard({
   });
   const [visualDirections, setVisualDirections] = useState<VisualDirection[]>([]);
   const [selectedVisualDirectionId, setSelectedVisualDirectionId] = useState("");
-  const [visualDirectionQualityScores, setVisualDirectionQualityScores] = useState<
-    Record<string, CreativeQualityScore>
-  >({});
-  const [matchedAdvertiserProfileName, setMatchedAdvertiserProfileName] = useState("");
-  const [visualDirectionStatus, setVisualDirectionStatus] = useState<Status>({
+  const [, setVisualDirectionQualityScores] = useState<Record<string, CreativeQualityScore>>({});
+  const [, setMatchedAdvertiserProfileName] = useState("");
+  const [, setVisualDirectionStatus] = useState<Status>({
     kind: "idle",
     message: "문구를 만든 뒤 상품과 광고 전략에 맞는 비주얼 방향 3개를 추천합니다.",
   });
@@ -772,11 +798,23 @@ export function MvpDashboard({
   const [selectedSceneCandidateId, setSelectedSceneCandidateId] = useState("");
   const [sceneGenerationProvider, setSceneGenerationProvider] =
     useState<SceneGenerationProviderId>("openai");
-  const [sceneCandidateCount, setSceneCandidateCount] = useState(2);
+  const sceneCandidateCount = 2;
   const [sceneGenerationStatus, setSceneGenerationStatus] = useState<Status>({
     kind: "idle",
     message: "비주얼 방향을 선택하면 글씨와 가상 상품이 없는 광고 장면을 만들 수 있습니다.",
   });
+  const [backgroundRecommendations, setBackgroundRecommendations] = useState<
+    BackgroundRecommendation[]
+  >([]);
+  const [selectedLibraryBackgroundId, setSelectedLibraryBackgroundId] = useState("");
+  const [backgroundProductionMode, setBackgroundProductionMode] =
+    useState<BackgroundProductionMode>("library");
+  const [backgroundRecommendationStatus, setBackgroundRecommendationStatus] = useState<Status>({
+    kind: "idle",
+    message: "후킹을 선택하면 합성하기 좋은 배경 3안을 추천합니다.",
+  });
+  const [aiBackgroundAvailable, setAiBackgroundAvailable] = useState(false);
+  const [savingAiCandidateId, setSavingAiCandidateId] = useState("");
   const [bannerTextColors, setBannerTextColors] = useState<BannerTextColorState>({
     bodyColor: "#111111",
     bodyFontSize: 50,
@@ -852,12 +890,16 @@ export function MvpDashboard({
     ...emptyProductImageState,
     originalImagePath: handoffImagePaths[0] || handoffProductInfo?.productImagePath || "",
   }));
+  const activeProductImagePathRef = useRef(
+    handoffImagePaths[0] || handoffProductInfo?.productImagePath || ""
+  );
+  const automaticCutoutInFlightRef = useRef(new Set<string>());
   const [cutoutProductEffect, setCutoutProductEffect] = useState<ProductImageRenderEffect>(
     defaultCutoutProductEffect
   );
   const [productImageProcessStatus, setProductImageProcessStatus] = useState<Status>({
     kind: "idle",
-    message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
+    message: "상품 이미지를 불러오면 배경을 자동으로 제거합니다.",
   });
   const [hoveredDetailImage, setHoveredDetailImage] = useState<{
     src: string;
@@ -898,6 +940,7 @@ export function MvpDashboard({
     productInfo,
     allReferences: labels,
     preferredReferenceIds: recommendedReferenceLabelIds,
+    advertiserName: selectedAdvertiserName,
   });
   const autoMatchedReferenceLabels = creativeWorkflow.references;
   const gptGenerationReferenceImagePaths = useMemo(
@@ -983,15 +1026,48 @@ export function MvpDashboard({
     productInfo.productImagePath ||
     backgroundImageOptions[0]?.value ||
     "";
+  const selectedLibraryBackground = useMemo(
+    () =>
+      backgroundRecommendations.find(
+        (recommendation) => recommendation.background.id === selectedLibraryBackgroundId
+      )?.background || null,
+    [backgroundRecommendations, selectedLibraryBackgroundId]
+  );
+  const selectedSceneCandidate = useMemo(
+    () => sceneCandidates.find((candidate) => candidate.id === selectedSceneCandidateId) || null,
+    [sceneCandidates, selectedSceneCandidateId]
+  );
   const currentBackgroundSource =
-    productInfo.backgroundMode === "auto-detail-blur-dark"
+    selectedLibraryBackground?.file ||
+    selectedSceneCandidate?.imagePath ||
+    (productInfo.backgroundMode === "auto-detail-blur-dark"
       ? productInfo.selectedBackgroundSource ||
         productInfo.productImagePath ||
         productInfo.extractedMainImage ||
         ""
       : productInfo.backgroundMode === "selected-detail-blur-dark"
         ? productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value || ""
-        : "";
+        : "");
+  const currentBackgroundMode: BackgroundMode = currentBackgroundSource
+    ? "selected-detail-blur-dark"
+    : productInfo.backgroundMode || "none";
+  const currentBackgroundComposition = {
+    sourceId:
+      selectedLibraryBackground?.id || selectedSceneCandidate?.id || "manual-or-auto-background",
+    sourceType: selectedLibraryBackground
+      ? selectedLibraryBackground.sourceType === "site_derived"
+        ? "site"
+        : "library"
+      : selectedSceneCandidate
+        ? "ai"
+        : "manual",
+    hookType: creativeWorkflow.selectedStrategy?.hookType,
+    productPosition:
+      selectedLibraryBackground?.productPosition ||
+      creativeWorkflow.selectedStrategy?.productPosition,
+    textSafeArea:
+      selectedLibraryBackground?.textSafeArea || creativeWorkflow.selectedStrategy?.textSafeArea,
+  };
   const originalMainProductImage =
     mainImageSourceMode === "upload"
       ? uploadedMainImageDataUrl
@@ -1036,10 +1112,6 @@ export function MvpDashboard({
   const selectedVisualDirection = useMemo(
     () => visualDirections.find((direction) => direction.id === selectedVisualDirectionId) || null,
     [selectedVisualDirectionId, visualDirections]
-  );
-  const selectedSceneCandidate = useMemo(
-    () => sceneCandidates.find((candidate) => candidate.id === selectedSceneCandidateId) || null,
-    [sceneCandidates, selectedSceneCandidateId]
   );
   const creativeQualityScore = useMemo(
     () =>
@@ -1274,18 +1346,107 @@ export function MvpDashboard({
   }, [categoryTemplates, hasMasterCopy, masterCopy, selectedTemplate, templateCopyMode]);
 
   useEffect(() => {
+    const imagePath = originalMainProductImage || "";
+    activeProductImagePathRef.current = imagePath;
     const frame = window.requestAnimationFrame(() => {
-      setProductImageState({
-        ...emptyProductImageState,
-        originalImagePath: originalMainProductImage || "",
-      });
-      setProductImageProcessStatus({
-        kind: "idle",
-        message: "기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을 눌러주세요.",
-      });
+      setProductImageState((current) =>
+        current.originalImagePath === imagePath
+          ? current
+          : {
+              ...emptyProductImageState,
+              originalImagePath: imagePath,
+            }
+      );
     });
     return () => window.cancelAnimationFrame(frame);
   }, [originalMainProductImage]);
+
+  useEffect(() => {
+    const imagePath = productImageState.originalImagePath;
+    if (imagePath !== (originalMainProductImage || "")) return;
+    const frame = window.requestAnimationFrame(() => {
+      activeProductImagePathRef.current = imagePath;
+
+      if (!imagePath) {
+        setProductImageProcessStatus({
+          kind: "idle",
+          message: "상품 이미지를 불러오면 배경을 자동으로 제거합니다.",
+        });
+        return;
+      }
+
+      if (mainImageSourceMode === "gpt") {
+        setProductImageProcessStatus({
+          kind: "idle",
+          message: "완성형 AI 비주얼은 원본 구성을 유지합니다.",
+        });
+        return;
+      }
+
+      if (automaticCutoutInFlightRef.current.has(imagePath)) return;
+      automaticCutoutInFlightRef.current.add(imagePath);
+      setProductImageProcessStatus({
+        kind: "loading",
+        message: "상품 이미지의 배경을 자동으로 제거하는 중입니다.",
+      });
+
+      void requestProductCutout(imagePath, "none")
+        .then((result) => {
+          if (activeProductImagePathRef.current !== imagePath) return;
+          if (!result.success) {
+            setProductImageProcessStatus({
+              kind: "error",
+              message:
+                result.fallbackMessage ||
+                result.error ||
+                "자동 누끼가 어려운 이미지라 원본을 유지했습니다.",
+            });
+            return;
+          }
+
+          const cutoutImagePath = result.cutoutImagePath || result.processedImagePath;
+          if (!cutoutImagePath) {
+            setProductImageProcessStatus({
+              kind: "error",
+              message: "자동 누끼 결과가 없어 원본 이미지를 유지했습니다.",
+            });
+            return;
+          }
+
+          setProductImageState((current) =>
+            current.originalImagePath === imagePath
+              ? {
+                  ...current,
+                  cutoutImagePath,
+                  styledCutoutImagePath: undefined,
+                  selectedImageMode: "cutout",
+                  cutoutApplied: true,
+                }
+              : current
+          );
+          setProductImageProcessStatus({
+            kind: "success",
+            message: result.debug?.cacheHit
+              ? "저장된 자동 누끼 이미지를 배너에 적용했습니다."
+              : result.fallbackMessage || "상품 누끼 이미지를 자동으로 배너에 적용했습니다.",
+          });
+        })
+        .catch((error) => {
+          if (activeProductImagePathRef.current !== imagePath) return;
+          setProductImageProcessStatus({
+            kind: "error",
+            message:
+              error instanceof Error
+                ? `${error.message} 원본 이미지를 유지합니다.`
+                : "자동 누끼에 실패해 원본 이미지를 유지했습니다.",
+          });
+        })
+        .finally(() => {
+          automaticCutoutInFlightRef.current.delete(imagePath);
+        });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [mainImageSourceMode, originalMainProductImage, productImageState.originalImagePath]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -1481,6 +1642,7 @@ export function MvpDashboard({
     setProductInfo((current) => ({ ...current, [fieldKey]: value }));
 
     if (fieldKey === "landingUrl" && value.trim() !== productInfo.landingUrl.trim()) {
+      activeProductImagePathRef.current = "";
       setSelectedAdImages(emptySelectedAdImages);
       setSourceImageSelection(emptySourceImageSelection);
       setSourceImageStatus({
@@ -1501,10 +1663,23 @@ export function MvpDashboard({
       setMatchedAdvertiserProfileName("");
       setSceneCandidates([]);
       setSelectedSceneCandidateId("");
+      setBackgroundRecommendations([]);
+      setSelectedLibraryBackgroundId("");
+      setBackgroundProductionMode("library");
     }
   }
 
   function updateAdBrief(nextBrief: AdBrief) {
+    const strategyInputsChanged =
+      nextBrief.adObjective !== creativeWorkflow.adBrief.adObjective ||
+      nextBrief.creativeIntensity !== creativeWorkflow.adBrief.creativeIntensity;
+    if (strategyInputsChanged) {
+      creativeWorkflow.resetStrategies();
+      setStrategyStatus({
+        kind: "idle",
+        message: "변경한 광고 목표와 강도로 후킹 3안을 다시 생성해주세요.",
+      });
+    }
     creativeWorkflow.setAdBrief(nextBrief);
     setProductInfo((current) => applyAdBriefToProductInfo(nextBrief, current));
   }
@@ -1586,6 +1761,9 @@ export function MvpDashboard({
         ? extracted.productName || ""
         : current.productName || extracted.productName || "",
       category: replaceExtractedFields ? extractedCategory : current.category || extractedCategory,
+      brandName: replaceExtractedFields
+        ? extracted.brandName || current.brandName || ""
+        : current.brandName || extracted.brandName || "",
       price: replaceExtractedFields
         ? extracted.price || ""
         : current.price || extracted.price || "",
@@ -1698,12 +1876,16 @@ export function MvpDashboard({
         selectedSourceImageId: mergedProductInfo.selectedSourceImageId,
         selectedSourceImagePath: mergedProductInfo.selectedSourceImagePath,
       });
-      setProductImageState({
-        ...emptyProductImageState,
-        originalImagePath:
-          mergedProductInfo.productImagePath || mergedProductInfo.extractedMainImage || "",
-        selectedImageMode: "original",
-      });
+      const nextMainProductImage =
+        mergedProductInfo.productImagePath || mergedProductInfo.extractedMainImage || "";
+      setProductImageState((current) =>
+        current.originalImagePath === nextMainProductImage
+          ? current
+          : {
+              ...emptyProductImageState,
+              originalImagePath: nextMainProductImage,
+            }
+      );
       if (replaceExtractedFieldsForUrl) {
         const initialImagePaths = compactUniqueImagePaths([
           mergedProductInfo.productImagePath,
@@ -1722,6 +1904,9 @@ export function MvpDashboard({
         setMatchedAdvertiserProfileName("");
         setSceneCandidates([]);
         setSelectedSceneCandidateId("");
+        setBackgroundRecommendations([]);
+        setSelectedLibraryBackgroundId("");
+        setBackgroundProductionMode("library");
         setVisualDirectionStatus({
           kind: "idle",
           message: "새 상품의 문구를 만든 뒤 비주얼 방향 3개를 추천합니다.",
@@ -1846,14 +2031,15 @@ export function MvpDashboard({
 
   async function generateVisualDirections(
     copyOverride: Partial<GeneratedAdCopy> = bannerCopy,
-    productOverride: ProductInfoForPrompt = productInfo
+    productOverride: ProductInfoForPrompt = productInfo,
+    strategyOverride: CreativeStrategy | null = creativeWorkflow.selectedStrategy
   ) {
     if (!productOverride.productName && !productOverride.category && !productOverride.mainBenefit) {
       setVisualDirectionStatus({
         kind: "error",
         message: "먼저 상품 정보를 불러오거나 입력해주세요.",
       });
-      return;
+      return [] as VisualDirection[];
     }
 
     setVisualDirectionStatus({
@@ -1878,7 +2064,7 @@ export function MvpDashboard({
             brandName: selectedAdvertiserName,
           },
           adBrief: creativeWorkflow.adBrief,
-          strategy: creativeWorkflow.selectedStrategy,
+          strategy: strategyOverride,
           copy: copyOverride,
           productImagePaths: productImagesForDirection,
         }),
@@ -1906,16 +2092,19 @@ export function MvpDashboard({
           : "자동 매칭 레퍼런스의 구조를 반영한 비주얼 방향 3개를 구성했습니다.",
       });
       creativeWorkflow.setActiveStep("visual");
+      return result.directions;
     } catch (error) {
       setVisualDirectionStatus({
         kind: "error",
         message: error instanceof Error ? error.message : "비주얼 방향 생성에 실패했습니다.",
       });
+      return [] as VisualDirection[];
     }
   }
 
   function selectSceneCandidate(candidate: SceneCandidate) {
     setSelectedSceneCandidateId(candidate.id);
+    setSelectedLibraryBackgroundId("");
     setProductInfo((current) => ({
       ...current,
       backgroundMode: "selected-detail-blur-dark",
@@ -1932,8 +2121,9 @@ export function MvpDashboard({
     setGeneratedBannerPath("");
   }
 
-  async function generateSceneCandidates() {
-    if (!selectedVisualDirection) {
+  async function generateSceneCandidates(directionOverride?: VisualDirection | null) {
+    const direction = directionOverride || selectedVisualDirection;
+    if (!direction) {
       setSceneGenerationStatus({
         kind: "error",
         message: "먼저 비주얼 방향을 선택해주세요.",
@@ -1950,7 +2140,7 @@ export function MvpDashboard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          direction: selectedVisualDirection,
+          direction,
           provider: sceneGenerationProvider,
           candidateCount: sceneCandidateCount,
         }),
@@ -1984,6 +2174,157 @@ export function MvpDashboard({
     }
   }
 
+  function selectLibraryBackground(recommendation: BackgroundRecommendation) {
+    const item = recommendation.background;
+    const isSiteDerived = item.sourceType === "site_derived";
+    setSelectedLibraryBackgroundId(item.id);
+    setSelectedSceneCandidateId("");
+    setProductInfo((current) => ({
+      ...current,
+      backgroundMode: "selected-detail-blur-dark",
+      backgroundImagePath: item.file,
+      selectedBackgroundSource: item.file,
+    }));
+    setBackgroundStyle((current) => ({
+      ...current,
+      blurLevel: isSiteDerived ? "high" : "low",
+      dimLevel: "low",
+      brightness: isSiteDerived ? 0.9 : 1,
+      overlayOpacity: isSiteDerived ? 0.22 : 0.06,
+    }));
+    setBackgroundRecommendationStatus({
+      kind: "success",
+      message: isSiteDerived
+        ? "입력한 상세페이지 이미지를 흐림·톤 보정해 상품과 연결되는 배경으로 사용합니다."
+        : "빠른 제작 배경을 선택했습니다. 기존 합성·렌더 단계에서 바로 사용됩니다.",
+    });
+    setGeneratedBannerPath("");
+  }
+
+  async function loadBackgroundRecommendations(strategy: CreativeStrategy) {
+    const shouldClearRecommendedBackground = Boolean(
+      selectedLibraryBackgroundId || selectedSceneCandidateId
+    );
+    setBackgroundProductionMode("library");
+    setBackgroundRecommendations([]);
+    setSelectedLibraryBackgroundId("");
+    setSelectedSceneCandidateId("");
+    setProductInfo((current) => {
+      const selectedSource = String(current.selectedBackgroundSource || "");
+      if (
+        !shouldClearRecommendedBackground &&
+        !selectedSource.startsWith("/background-library/") &&
+        !selectedSource.startsWith("/background-images/scene-")
+      ) {
+        return current;
+      }
+      return {
+        ...current,
+        backgroundMode: "none",
+        backgroundImagePath: "",
+        selectedBackgroundSource: "",
+      };
+    });
+    setBackgroundRecommendationStatus({
+      kind: "loading",
+      message: "상품과 선택한 후킹에 맞는 배경을 비교하고 있습니다.",
+    });
+    try {
+      const response = await fetch("/api/background-library/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product: productInfo, hook: strategy, limit: 3 }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        recommendations?: BackgroundRecommendation[];
+        aiGenerationAvailable?: boolean;
+        preferredAiProvider?: SceneGenerationProviderId | null;
+      };
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || "배경 추천에 실패했습니다.");
+      }
+      const nextRecommendations = result.recommendations || [];
+      setBackgroundRecommendations(nextRecommendations);
+      if (nextRecommendations[0]) selectLibraryBackground(nextRecommendations[0]);
+      setAiBackgroundAvailable(Boolean(result.aiGenerationAvailable));
+      if (result.preferredAiProvider) setSceneGenerationProvider(result.preferredAiProvider);
+      setBackgroundRecommendationStatus({
+        kind: "success",
+        message: nextRecommendations.length
+          ? "예시 품질의 후킹 기본 배경 1안을 자동 선택했습니다. 나머지 후보로 바꿀 수 있습니다."
+          : "사용 가능한 배경 파일이 없습니다. 라이브러리 설치 상태를 확인해주세요.",
+      });
+    } catch (error) {
+      setBackgroundRecommendationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "배경 추천에 실패했습니다.",
+      });
+    }
+  }
+
+  async function generateHookBackground() {
+    const strategy = creativeWorkflow.selectedStrategy;
+    if (!strategy || !aiBackgroundAvailable) return;
+    let direction = selectedVisualDirection;
+    if (!direction) {
+      const directions = await generateVisualDirections(bannerCopy, productInfo, strategy);
+      direction = directions[0] || null;
+    }
+    if (direction) await generateSceneCandidates(direction);
+  }
+
+  async function saveAiBackground(candidate: SceneCandidate) {
+    const strategy = creativeWorkflow.selectedStrategy;
+    if (!strategy) return;
+    setSavingAiCandidateId(candidate.id);
+    try {
+      const response = await fetch("/api/background-library/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imagePath: candidate.imagePath,
+          provider: candidate.provider,
+          product: productInfo,
+          hook: strategy,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        item?: BackgroundRecommendation["background"];
+      };
+      if (!response.ok || !result.ok || !result.item) {
+        throw new Error(result.error || "AI 배경 저장에 실패했습니다.");
+      }
+      const recommendation: BackgroundRecommendation = {
+        background: result.item,
+        score: 100,
+        reasons: ["선택한 후킹으로 직접 생성", "상품·문구 여백 확보"],
+      };
+      setBackgroundRecommendations((current) =>
+        [recommendation, ...current.filter((item) => item.background.id !== result.item?.id)].slice(
+          0,
+          3
+        )
+      );
+      setBackgroundProductionMode("library");
+      selectLibraryBackground(recommendation);
+      setBackgroundRecommendationStatus({
+        kind: "success",
+        message: "AI 배경을 WebP로 최적화해 재사용 라이브러리에 보관했습니다.",
+      });
+    } catch (error) {
+      setBackgroundRecommendationStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "AI 배경 저장에 실패했습니다.",
+      });
+    } finally {
+      setSavingAiCandidateId("");
+    }
+  }
+
   function resolveProductEffectForRender() {
     const normalized = normalizeProductRenderEffect(cutoutProductEffect);
     if (selectedVisualDirection && productImageState.selectedImageMode === "original") {
@@ -2003,7 +2344,7 @@ export function MvpDashboard({
     if (!creativeWorkflow.selectedStrategy) {
       setCopyStatus({
         kind: "error",
-        message: "광고 전략 3안을 만든 뒤 사용할 전략 하나를 선택해주세요.",
+        message: "광고 후킹 3안을 만든 뒤 사용할 후킹 하나를 선택해주세요.",
       });
       creativeWorkflow.setActiveStep("strategy");
       return;
@@ -2141,16 +2482,35 @@ export function MvpDashboard({
     }));
   }
 
-  function selectUploadedMainImage(file: File | undefined) {
+  async function selectUploadedMainImage(file: File | undefined) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const imagePath = typeof reader.result === "string" ? reader.result : "";
+    setProductImageProcessStatus({
+      kind: "loading",
+      message: "상품 이미지를 업로드하는 중입니다.",
+    });
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/source-image", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success || !result.imagePath) {
+        throw new Error(result.error || "상품 이미지 업로드에 실패했습니다.");
+      }
+
+      const imagePath = String(result.imagePath);
       setUploadedMainImageDataUrl(imagePath);
       setMainImageSourceMode("upload");
       applySelectedAdImagePaths([imagePath], "upload", { syncProductInfo: false });
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      setProductImageProcessStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "상품 이미지 업로드에 실패했습니다.",
+      });
+    }
   }
 
   function applySelectedAdImagePaths(
@@ -2179,14 +2539,14 @@ export function MvpDashboard({
     }
 
     if (compact[0]) {
-      setProductImageState((current) => ({
-        ...current,
-        originalImagePath: compact[0],
-        selectedImageMode: "original",
-        cutoutApplied: false,
-        cutoutImagePath: undefined,
-        styledCutoutImagePath: undefined,
-      }));
+      setProductImageState((current) =>
+        current.originalImagePath === compact[0]
+          ? current
+          : {
+              ...emptyProductImageState,
+              originalImagePath: compact[0],
+            }
+      );
     }
   }
 
@@ -2233,14 +2593,15 @@ export function MvpDashboard({
         productImagePaths: fallbackPrimary ? [fallbackPrimary] : [],
       };
     });
-    setProductImageState((current) => ({
-      ...current,
-      originalImagePath: fallbackPrimary || current.originalImagePath,
-      selectedImageMode: "original",
-      cutoutApplied: false,
-      cutoutImagePath: undefined,
-      styledCutoutImagePath: undefined,
-    }));
+    setProductImageState((current) => {
+      const nextPrimary = fallbackPrimary || current.originalImagePath;
+      return current.originalImagePath === nextPrimary
+        ? current
+        : {
+            ...emptyProductImageState,
+            originalImagePath: nextPrimary,
+          };
+    });
     setRenderStatus({
       kind: "idle",
       message: "선택 이미지 상태만 초기화했습니다. 상세 이미지 후보는 유지됩니다.",
@@ -2849,7 +3210,8 @@ export function MvpDashboard({
   }
 
   async function applyCutoutToProductImage() {
-    if (!productImageState.originalImagePath) {
+    const imagePath = productImageState.originalImagePath;
+    if (!imagePath) {
       setProductImageProcessStatus({
         kind: "error",
         message: "누끼를 적용할 원본 이미지를 먼저 선택해 주세요.",
@@ -2863,21 +3225,12 @@ export function MvpDashboard({
     });
 
     try {
-      const response = await fetch("/api/image/remove-background", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imagePath: productImageState.originalImagePath,
-          sourceImagePath: productImageState.originalImagePath,
-          provider: "removebg",
-          effectPreset: productImageState.effectPreset || "outline-glow-shadow",
-        }),
-      });
-      const result = await response.json();
+      const result = await requestProductCutout(
+        imagePath,
+        productImageState.effectPreset || "outline-glow-shadow"
+      );
 
-      if (!response.ok) {
-        throw new Error(result.error || "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
-      }
+      if (activeProductImagePathRef.current !== imagePath) return;
 
       if (!result.success) {
         setProductImageState((current) => ({
@@ -2896,14 +3249,18 @@ export function MvpDashboard({
       }
 
       const cutoutImagePath = result.cutoutImagePath || result.processedImagePath;
-      setProductImageState((current) => ({
-        ...current,
-        cutoutImagePath,
-        styledCutoutImagePath: result.styledCutoutImagePath,
-        selectedImageMode: result.styledCutoutImagePath ? "styled-cutout" : "cutout",
-        cutoutApplied: true,
-        effectPreset: current.effectPreset || "outline-glow-shadow",
-      }));
+      setProductImageState((current) =>
+        current.originalImagePath === imagePath
+          ? {
+              ...current,
+              cutoutImagePath,
+              styledCutoutImagePath: result.styledCutoutImagePath,
+              selectedImageMode: result.styledCutoutImagePath ? "styled-cutout" : "cutout",
+              cutoutApplied: true,
+              effectPreset: current.effectPreset || "outline-glow-shadow",
+            }
+          : current
+      );
       setProductImageProcessStatus({
         kind: "success",
         message:
@@ -3085,8 +3442,9 @@ export function MvpDashboard({
               enabled: showAiDisclosure,
               text: aiDisclosureText,
             },
-            backgroundMode: productInfo.backgroundMode || "none",
+            backgroundMode: currentBackgroundMode,
             selectedBackgroundSource: currentBackgroundSource,
+            backgroundComposition: currentBackgroundComposition,
             backgroundStyle: {
               blurLevel: backgroundStyle.blurLevel,
               dimLevel: backgroundStyle.dimLevel,
@@ -3284,8 +3642,9 @@ export function MvpDashboard({
             enabled: showAiDisclosure,
             text: aiDisclosureText,
           },
-          backgroundMode: productInfo.backgroundMode || "none",
+          backgroundMode: currentBackgroundMode,
           selectedBackgroundSource: currentBackgroundSource,
+          backgroundComposition: currentBackgroundComposition,
           backgroundStyle: {
             blurLevel: backgroundStyle.blurLevel,
             dimLevel: backgroundStyle.dimLevel,
@@ -3690,7 +4049,7 @@ export function MvpDashboard({
                     <p className="strategy-empty">먼저 사용할 템플릿을 선택해주세요.</p>
                   )}
                   <p className="copy-generation-note">
-                    템플릿은 문구 길이와 배치에만 사용합니다. 아래에서 광고 전략을 먼저
+                    템플릿은 문구 길이와 배치에만 사용합니다. 아래에서 광고 후킹을 먼저
                     선택해주세요.
                   </p>
                 </section>
@@ -3700,49 +4059,78 @@ export function MvpDashboard({
                   onGenerate={async () => {
                     setStrategyStatus({
                       kind: "loading",
-                      message: "상품과 관련된 레퍼런스 패턴을 자동 분석하고 있습니다.",
+                      message: "상품 사실과 내부 레퍼런스 신호로 후킹을 분석하고 있습니다.",
                     });
                     await creativeWorkflow.generateStrategies();
+                    setBackgroundRecommendations([]);
+                    setSelectedLibraryBackgroundId("");
                     setStrategyStatus({
                       kind: "success",
                       message: creativeWorkflow.referenceMatches.length
-                        ? `관련 레퍼런스 ${creativeWorkflow.referenceMatches.length}개를 자동 매칭해 전략 3안을 만들었습니다.`
-                        : "적합한 레퍼런스가 없어 상품 정보 기준으로 전략 3안을 만들었습니다.",
+                        ? `관련 레퍼런스 ${creativeWorkflow.referenceMatches.length}개를 내부 매칭해 후킹 3안을 만들었습니다.`
+                        : "상품 상세페이지의 사실 정보만으로 후킹 3안을 만들었습니다.",
                     });
                   }}
                   onGenerateMore={async () => {
                     setStrategyStatus({
                       kind: "loading",
-                      message: "다른 각도의 전략을 구성하고 있습니다.",
+                      message: "겹치지 않는 다른 후킹 각도를 구성하고 있습니다.",
                     });
                     await creativeWorkflow.generateMoreStrategies();
+                    setBackgroundRecommendations([]);
+                    setSelectedLibraryBackgroundId("");
                     setStrategyStatus({
                       kind: "success",
-                      message: "자동 매칭 패턴을 바탕으로 다른 관점의 전략 3안을 만들었습니다.",
+                      message: "상품 사실을 유지하면서 다른 관점의 후킹 3안을 만들었습니다.",
                     });
                   }}
                   onSelect={(id) => {
+                    const strategy = creativeWorkflow.strategies.find((item) => item.id === id);
                     creativeWorkflow.setSelectedStrategyId(id);
                     creativeWorkflow.setActiveStep("copy");
                     setStrategyStatus({
                       kind: "success",
                       message:
-                        "전략을 선택했습니다. 이제 이 방향으로 광고문구를 생성할 수 있습니다.",
+                        "후킹을 선택했습니다. 배경을 고른 뒤 이 방향으로 문구를 만들 수 있습니다.",
                     });
+                    if (strategy) void loadBackgroundRecommendations(strategy);
                   }}
                   selectedStrategyId={creativeWorkflow.selectedStrategyId}
                   strategies={creativeWorkflow.strategies}
                 />
+                {creativeWorkflow.selectedStrategy ? (
+                  <BackgroundRecommendationPanel
+                    aiAvailable={aiBackgroundAvailable}
+                    aiCandidates={sceneCandidates}
+                    isGeneratingAi={sceneGenerationStatus.kind === "loading"}
+                    loading={backgroundRecommendationStatus.kind === "loading"}
+                    mode={backgroundProductionMode}
+                    onGenerateAi={() => void generateHookBackground()}
+                    onModeChange={setBackgroundProductionMode}
+                    onSaveAi={(candidate) => void saveAiBackground(candidate)}
+                    onSelectAi={selectSceneCandidate}
+                    onSelectBackground={selectLibraryBackground}
+                    recommendations={backgroundRecommendations}
+                    savingAiCandidateId={savingAiCandidateId}
+                    selectedAiCandidateId={selectedSceneCandidateId}
+                    selectedBackgroundId={selectedLibraryBackgroundId}
+                    status={
+                      backgroundProductionMode === "ai"
+                        ? sceneGenerationStatus.message
+                        : backgroundRecommendationStatus.message
+                    }
+                  />
+                ) : null}
                 <div className="workflow-primary-action">
                   <button
                     disabled={copyStatus.kind === "loading" || !creativeWorkflow.selectedStrategy}
                     onClick={generateBannerCopy}
                     type="button"
                   >
-                    선택 전략으로 광고문구 생성
+                    선택 후킹으로 광고문구 생성
                   </button>
                   {!creativeWorkflow.selectedStrategy ? (
-                    <span>전략 하나를 선택하면 문구 생성 버튼이 활성화됩니다.</span>
+                    <span>후킹 하나를 선택하면 문구 생성 버튼이 활성화됩니다.</span>
                   ) : (
                     <span>{creativeWorkflow.selectedStrategy.title}</span>
                   )}
@@ -4096,7 +4484,7 @@ export function MvpDashboard({
                     <p className="eyebrow">PNG Preview</p>
                     <h4>{selectedTemplate?.id || "템플릿 없음"}</h4>
                     <small className="preview-context">
-                      1200×1200 · {creativeWorkflow.selectedStrategy?.title || "전략 미선택"}
+                      1200×1200 · {creativeWorkflow.selectedStrategy?.title || "후킹 미선택"}
                     </small>
                   </div>
                   {generatedBannerPath ? (
@@ -4363,41 +4751,6 @@ export function MvpDashboard({
                     </section>
                   </section>
                   <div className="hybrid-creative-flow">
-                    <VisualDirectionPanel
-                      advertiserName={matchedAdvertiserProfileName}
-                      directions={visualDirections}
-                      loading={visualDirectionStatus.kind === "loading"}
-                      onGenerate={() => void generateVisualDirections()}
-                      onSelect={selectVisualDirection}
-                      qualityScores={visualDirectionQualityScores}
-                      selectedDirectionId={selectedVisualDirectionId}
-                      status={visualDirectionStatus.message}
-                    />
-                    <SceneGenerationPanel
-                      blurLevel={backgroundStyle.blurLevel}
-                      brightness={backgroundStyle.brightness}
-                      candidateCount={sceneCandidateCount}
-                      candidates={sceneCandidates}
-                      direction={selectedVisualDirection}
-                      loading={sceneGenerationStatus.kind === "loading"}
-                      onBlurChange={(blurLevel) =>
-                        setBackgroundStyle((current) => ({ ...current, blurLevel }))
-                      }
-                      onBrightnessChange={(brightness) =>
-                        setBackgroundStyle((current) => ({ ...current, brightness }))
-                      }
-                      onCandidateCountChange={setSceneCandidateCount}
-                      onGenerate={() => void generateSceneCandidates()}
-                      onOverlayChange={(overlayOpacity) =>
-                        setBackgroundStyle((current) => ({ ...current, overlayOpacity }))
-                      }
-                      onProviderChange={setSceneGenerationProvider}
-                      onSelect={selectSceneCandidate}
-                      overlayOpacity={backgroundStyle.overlayOpacity}
-                      provider={sceneGenerationProvider}
-                      selectedCandidateId={selectedSceneCandidateId}
-                      status={sceneGenerationStatus.message}
-                    />
                     <CreativeQualityPanel score={creativeQualityScore} />
                   </div>
                   <details className="background-settings source-image-settings source-image-dropdown">
@@ -5247,8 +5600,8 @@ export function MvpDashboard({
                     )}
                     <div className="product-cutout-panel">
                       <p>
-                        기본은 원본 이미지를 사용합니다. 배경 제거가 필요하면 누끼 적용을
-                        눌러주세요.
+                        상품 이미지는 불러온 직후 자동으로 배경을 제거합니다. 경계를 찾지
+                        못하면 원본을 안전하게 유지합니다.
                       </p>
                       <div className="background-style-grid">
                         <button
@@ -5259,7 +5612,7 @@ export function MvpDashboard({
                           onClick={applyCutoutToProductImage}
                           type="button"
                         >
-                          누끼 적용
+                          누끼 다시 적용
                         </button>
                         <button
                           disabled={
@@ -5669,12 +6022,15 @@ export function MvpDashboard({
                     <label>
                       <span>배경 모드</span>
                       <select
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setSelectedLibraryBackgroundId("");
+                          setSelectedSceneCandidateId("");
                           setProductInfo((current) => ({
                             ...current,
                             backgroundMode: event.target.value as BackgroundMode,
-                          }))
-                        }
+                          }));
+                          setGeneratedBannerPath("");
+                        }}
                         value={productInfo.backgroundMode || "none"}
                       >
                         <option value="none">배경 없음</option>
@@ -5689,12 +6045,15 @@ export function MvpDashboard({
                           productInfo.backgroundMode !== "selected-detail-blur-dark" ||
                           !backgroundImageOptions.length
                         }
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setSelectedLibraryBackgroundId("");
+                          setSelectedSceneCandidateId("");
                           setProductInfo((current) => ({
                             ...current,
                             selectedBackgroundSource: event.target.value,
-                          }))
-                        }
+                          }));
+                          setGeneratedBannerPath("");
+                        }}
                         value={
                           productInfo.selectedBackgroundSource ||
                           backgroundImageOptions[0]?.value ||
@@ -5724,12 +6083,15 @@ export function MvpDashboard({
                                 : ""
                             }
                             key={`background-${option.value}`}
-                            onClick={() =>
+                            onClick={() => {
+                              setSelectedLibraryBackgroundId("");
+                              setSelectedSceneCandidateId("");
                               setProductInfo((current) => ({
                                 ...current,
                                 selectedBackgroundSource: option.value,
-                              }))
-                            }
+                              }));
+                              setGeneratedBannerPath("");
+                            }}
                             onMouseEnter={(event) =>
                               setHoveredDetailImage({
                                 src: option.value,

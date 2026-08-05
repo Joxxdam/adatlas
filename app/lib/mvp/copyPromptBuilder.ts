@@ -187,6 +187,29 @@ ${kookdaePatternPromptBlock()}
 `;
 }
 
+function adObjectiveInstruction(objective: AdBrief["adObjective"] | undefined) {
+  if (objective === "signup") {
+    return "신규 고객 확보: 처음 보는 고객도 상품의 차별점과 필요성을 빠르게 이해하도록 설명한다.";
+  }
+  if (objective === "awareness") {
+    return "브랜드 인지도: 브랜드 이미지와 대표 메시지가 기억되도록 상품과 브랜드의 핵심 차이를 선명하게 남긴다.";
+  }
+  if (objective === "retargeting") {
+    return "재구매·리타겟팅: 상품을 이미 본 고객에게 확인된 혜택과 다시 구매할 이유를 간결하게 환기한다.";
+  }
+  return "구매 전환: 확인된 가격·혜택·구매 이유를 우선해 즉시 행동으로 이어지도록 구성한다.";
+}
+
+function intensityInstruction(intensity: AdBrief["creativeIntensity"] | undefined) {
+  if (intensity === "brand") {
+    return "부드럽게: 감성적이고 자연스러운 문장을 사용하고 과도한 판매 표현과 압박형 CTA를 최소화한다.";
+  }
+  if (intensity === "performance") {
+    return "강하게: 상세페이지에서 확인된 가격·할인·한정 수량·기간과 즉시 행동 요소를 우선한다. 확인되지 않은 수치나 한정성은 절대 만들지 않는다.";
+  }
+  return "균형 있게: 상품의 USP와 상세페이지에서 확인된 구매 혜택을 균형 있게 전달한다.";
+}
+
 export function buildGenerateCopyPrompt(params: {
   product: ProductInfoForPrompt;
   reference?: AdImageLabel;
@@ -255,6 +278,14 @@ ${JSON.stringify(product, null, 2)}
 
 [광고 브리프]
 ${JSON.stringify(adBrief || {}, null, 2)}
+
+[광고 목표 적용]
+${adObjectiveInstruction(adBrief?.adObjective)}
+
+[광고 강도 적용]
+${intensityInstruction(adBrief?.creativeIntensity)}
+- 광고 강도와 무관하게 가격, 기존가, 할인율, 수량, 중량, 한정 수량, 종료일, 후기 수, 평점은 [현재 광고 대상 상품의 사실 정보]에 있는 값만 사용한다.
+- "강하게"에서도 확인되지 않은 할인, 기간, 수량, 품절 임박, 판매 실적을 임의로 만들지 않는다.
 
 [사용자가 선택한 광고 전략]
 ${JSON.stringify(creativeStrategy || {}, null, 2)}

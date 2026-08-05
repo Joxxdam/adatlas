@@ -7,7 +7,11 @@ import {
   removeBackgroundToPng,
   saveProcessedProductImage,
 } from "./imageEffects";
-import { appendProcessedProductImage } from "./processedProductStore";
+import {
+  appendProcessedProductImage,
+  readProcessedProducts,
+} from "./processedProductStore";
+import { inspectCutoutQuality } from "./cutoutQuality";
 
 const allowedPublicPrefixes = [
   "product-images/",
@@ -47,6 +51,7 @@ export type RemoveBackgroundResult = {
     removeBgStatus?: number;
     removeBgStatusText?: string;
     removeBgResponseText?: string;
+    cacheHit?: boolean;
   };
 };
 
@@ -139,6 +144,14 @@ async function createLocalFallbackCutout(
   try {
     const sourceBuffer = await imageSourceToBuffer(imagePath);
     const processedBuffer = await removeBackgroundToPng(sourceBuffer);
+    const quality = await inspectCutoutQuality(processedBuffer);
+    if (!quality.usable) {
+      console.warn("[remove-background] local fallback did not find a safe cutout", {
+        transparencyRatio: quality.transparencyRatio,
+        opaqueEdgeRatio: quality.opaqueEdgeRatio,
+      });
+      return null;
+    }
     const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
     return {
       success: true,
@@ -147,7 +160,7 @@ async function createLocalFallbackCutout(
       provider,
       sourceKind: "mock",
       fallbackMessage:
-        "remove.bg가 상품 전경을 찾지 못해 로컬 간이 누끼로 처리했습니다. 결과가 어색하면 상품만 크게 나온 다른 이미지를 선택해주세요.",
+        "자동 배경 제거를 로컬 방식으로 완료했습니다. 결과가 어색하면 상품만 크게 나온 다른 이미지를 선택해주세요.",
       debug: {
         ...debug,
         foregroundType: "auto",
@@ -157,6 +170,33 @@ async function createLocalFallbackCutout(
     console.error("[remove-background] local fallback cutout failed", error);
     return null;
   }
+}
+
+async function findCachedProcessedImage(
+  originalImagePath: string,
+  provider: BackgroundRemovalProvider
+) {
+  const records = await readProcessedProducts().catch(() => []);
+  const publicDir = path.join(process.cwd(), "public");
+
+  for (const record of records) {
+    if (record.originalImagePath !== originalImagePath || record.provider !== provider) continue;
+    const relativePath = record.processedImagePath.replace(/^\/+/, "").replace(/\\/g, "/");
+    if (!relativePath.startsWith("processed-products/") || relativePath.includes("..")) continue;
+    const absolutePath = path.resolve(publicDir, relativePath);
+    if (!absolutePath.startsWith(publicDir)) continue;
+
+    try {
+      const stat = await fs.stat(absolutePath);
+      if (!stat.isFile() || stat.size <= 0) continue;
+      const quality = await inspectCutoutQuality(await fs.readFile(absolutePath));
+      if (quality.usable) return record.processedImagePath;
+    } catch {
+      // Ignore stale cache records and continue with a fresh background removal.
+    }
+  }
+
+  return "";
 }
 
 async function validateImagePath(imagePath: string) {
@@ -365,6 +405,18 @@ export async function removeProductBackground(
       );
     }
 
+    const cachedProcessedImagePath = await findCachedProcessedImage(imagePath, provider);
+    if (cachedProcessedImagePath) {
+      return {
+        success: true,
+        originalImagePath: imagePath,
+        processedImagePath: cachedProcessedImagePath,
+        provider,
+        sourceKind: "local-public-file",
+        debug: { cacheHit: true },
+      };
+    }
+
     if (provider === "mock") {
       const sourceBuffer = await imageSourceToBuffer(imagePath);
       const processedBuffer = await removeBackgroundToPng(sourceBuffer);
@@ -380,10 +432,12 @@ export async function removeProductBackground(
 
     const apiKey = process.env.REMOVE_BG_API_KEY;
     if (!apiKey) {
+      const localFallback = await createLocalFallbackCutout(imagePath, provider);
+      if (localFallback) return localFallback;
       return failureResult(
         { ...input, imagePath, provider },
-        "REMOVE_BG_API_KEY is not configured",
-        "remove.bg API 키가 설정되지 않았습니다. .env.local에 REMOVE_BG_API_KEY를 추가한 뒤 서버를 재시작해 주세요."
+        "REMOVE_BG_API_KEY is not configured and local fallback could not isolate the product",
+        "자동으로 상품 경계를 찾지 못해 원본 이미지를 유지했습니다. 배경이 단순하고 상품이 크게 나온 이미지를 선택해주세요."
       );
     }
 
@@ -407,15 +461,27 @@ export async function removeProductBackground(
 
         if (retryResponse.ok) {
           const processedBuffer = Buffer.from(await retryResponse.arrayBuffer());
-          const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
-          return {
-            success: true,
-            originalImagePath: imagePath,
-            processedImagePath,
-            provider,
-            sourceKind: retry.sourceKind,
-            debug: retry.debug,
-          };
+          const quality = await inspectCutoutQuality(processedBuffer);
+          if (quality.usable) {
+            const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
+            return {
+              success: true,
+              originalImagePath: imagePath,
+              processedImagePath,
+              provider,
+              sourceKind: retry.sourceKind,
+              debug: retry.debug,
+            };
+          }
+
+          const localFallback = await createLocalFallbackCutout(imagePath, provider, retry.debug);
+          if (localFallback) return localFallback;
+          return failureResult(
+            { ...input, imagePath, provider },
+            "Background removal result did not isolate a usable foreground.",
+            "상품만 분리된 결과를 만들지 못해 원본 이미지를 유지했습니다. 상품이 크게 나온 단일 이미지를 선택해주세요.",
+            { sourceKind: retry.sourceKind, debug: retry.debug }
+          );
         }
 
         const retryContentType = retryResponse.headers.get("content-type") || "";
@@ -430,17 +496,15 @@ export async function removeProductBackground(
           debug: retry.debug,
         });
 
-        if (isUnknownForegroundError(retryResponse.status, retryErrorText)) {
-          const localFallback = await createLocalFallbackCutout(imagePath, provider, {
-            ...retry.debug,
-            removeBgStatus: retryResponse.status,
-            removeBgStatusText: retryResponse.statusText,
-            removeBgResponseText:
-              process.env.NODE_ENV === "development" ? retryErrorText : undefined,
-          });
+        const localFallback = await createLocalFallbackCutout(imagePath, provider, {
+          ...retry.debug,
+          removeBgStatus: retryResponse.status,
+          removeBgStatusText: retryResponse.statusText,
+          removeBgResponseText:
+            process.env.NODE_ENV === "development" ? retryErrorText : undefined,
+        });
 
-          if (localFallback) return localFallback;
-        }
+        if (localFallback) return localFallback;
 
         return failureResult(
           { ...input, imagePath, provider },
@@ -471,6 +535,14 @@ export async function removeProductBackground(
         debug,
       });
 
+      const localFallback = await createLocalFallbackCutout(imagePath, provider, {
+        ...debug,
+        removeBgStatus: response.status,
+        removeBgStatusText: response.statusText,
+        removeBgResponseText: process.env.NODE_ENV === "development" ? errorText : undefined,
+      });
+      if (localFallback) return localFallback;
+
       return failureResult(
         { ...input, imagePath, provider },
         `remove.bg API failed: HTTP ${response.status}`,
@@ -490,6 +562,17 @@ export async function removeProductBackground(
     }
 
     const processedBuffer = Buffer.from(await response.arrayBuffer());
+    const quality = await inspectCutoutQuality(processedBuffer);
+    if (!quality.usable) {
+      const localFallback = await createLocalFallbackCutout(imagePath, provider, debug);
+      if (localFallback) return localFallback;
+      return failureResult(
+        { ...input, imagePath, provider },
+        "Background removal result did not isolate a usable foreground.",
+        "상품만 분리된 결과를 만들지 못해 원본 이미지를 유지했습니다. 상품이 크게 나온 단일 이미지를 선택해주세요.",
+        { sourceKind, debug }
+      );
+    }
     const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
     return {
       success: true,

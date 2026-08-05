@@ -1,4 +1,4 @@
-import type { ProductInfoForPrompt } from "../mvp/types";
+import type { CreativeStrategy, ProductInfoForPrompt } from "../mvp/types";
 import type {
   AdvertiserProfile,
   ProductSafeZone,
@@ -72,9 +72,21 @@ export function buildScenePrompt(params: {
   archetype: VisualArchetype;
   product: ProductInfoForPrompt;
   advertiserProfile: AdvertiserProfile;
+  strategy?: CreativeStrategy | null;
   variation?: number;
 }): ScenePromptPlan {
-  const zones = zonesForArchetype(params.archetype.id);
+  const baseZones = zonesForArchetype(params.archetype.id);
+  const zones = {
+    product: {
+      ...baseZones.product,
+      position: params.strategy?.productPosition || baseZones.product.position,
+    },
+    text: baseZones.text.map((zone, index) =>
+      index === 0 && params.strategy?.textSafeArea
+        ? { ...zone, position: params.strategy.textSafeArea }
+        : zone
+    ),
+  };
   const variation = params.variation || 0;
   const environment = [
     params.profile.environment[variation % params.profile.environment.length],
@@ -94,10 +106,18 @@ export function buildScenePrompt(params: {
   );
   const productCategory = params.product.category || "commerce product";
   const categoryPolicy = categoryObjectPolicy(params.profile.id, productCategory);
+  const hookScene = params.strategy?.sceneDescription;
+  const hookMood = params.strategy?.mood || [];
+  const hookBackgroundTags = params.strategy?.backgroundTags || [];
   const prompt = [
     "Create a high-end, photorealistic commercial photography SET PLATE for a 1200x1200 square Korean performance ad.",
     "The output must be a complete edge-to-edge OPAQUE scene. Render every pixel. Never use transparency, alpha, a cutout, a black void, or a missing-background area.",
     ...categoryPolicy,
+    hookScene ? `Selected ad hook scene: ${hookScene}.` : "",
+    hookMood.length ? `Selected hook mood: ${hookMood.join(", ")}.` : "",
+    hookBackgroundTags.length
+      ? `Background cues to interpret without adding a product: ${hookBackgroundTags.join(", ")}.`
+      : "",
     `Scene profile: ${params.profile.label}. Environment: ${environment.join(", ")}.`,
     `Mood: ${params.profile.visualMood.join(", ")}. Lighting: ${params.profile.lighting.join(", ")}.`,
     props.length ? `Supporting props, kept subtle and peripheral: ${props.join(", ")}.` : "Keep supporting props restrained.",
@@ -106,7 +126,7 @@ export function buildScenePrompt(params: {
     `Keep a LOW-DETAIL, FULLY RENDERED product placement area at ${zones.product.position}, approximately ${Math.round(zones.product.widthRatio * 100)}% canvas width by ${Math.round(zones.product.heightRatio * 100)}% canvas height. This area must continue the same floor, table, wall, light, and perspective as the rest of the scene. It is not empty, transparent, black, white, masked, boxed, or cut out. Include a believable ground/contact-shadow surface for a real product layer that will be composited later.`,
     `Keep fully rendered text-safe areas with restrained detail: ${zones.text.map((zone) => `${zone.position} ${Math.round(zone.widthRatio * 100)}%x${Math.round(zone.heightRatio * 100)}%, ${zone.contrastRequirement}`).join("; ")}. These areas must remain part of the same continuous photographic environment.`,
     "Use realistic depth, coherent perspective, natural material detail, one directional key light, soft fill, and enough advertising density around the safe areas. The result should look like a finished commercial location photograph before the real product and typography are composited.",
-    "FINAL CHECK: full-frame opaque square scene, no sold-category object, no substitute product, no readable text, no typography, no letters, no numbers, no logos, no watermark, no UI, no price card, and no CTA.",
+    "FINAL CHECK: full-frame opaque square scene, no product, no package, no substitute product, no readable text, no typography, no letters, no numbers, no price, no logos, no watermark, no UI, no price card, and no CTA. Preserve clean empty safe zones for the real product and ad text, with coherent light and believable contact shadow support.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -129,6 +149,6 @@ export function buildScenePrompt(params: {
     prohibitedElements,
     prompt,
     negativePrompt: prohibitedElements.join(", "),
-    reason: `${params.advertiserProfile.name}의 상품군과 ${params.archetype.name} 정보 위계에 맞춰 실제 상품과 한글 카피가 들어갈 자리를 먼저 비운 장면입니다.`,
+    reason: `${params.advertiserProfile.name}의 상품군과 선택한 ${params.strategy?.title || params.archetype.name} 후킹에 맞춰 실제 상품과 한글 카피가 들어갈 자리를 먼저 비운 장면입니다.`,
   };
 }

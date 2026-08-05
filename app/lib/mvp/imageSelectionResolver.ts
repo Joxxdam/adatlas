@@ -49,6 +49,18 @@ function output(paths: string[], source: SelectedAdImageSource): ResolvedProduct
   };
 }
 
+function outputWithoutSelectedBackground(
+  paths: string[],
+  source: SelectedAdImageSource,
+  backgroundImagePath?: string
+) {
+  const normalized = compactUniqueImagePaths(paths);
+  const productOnly = backgroundImagePath
+    ? normalized.filter((path) => path !== backgroundImagePath)
+    : normalized;
+  return output(productOnly.length ? productOnly : normalized, source);
+}
+
 function resolveProductImageStatePath(productImageState?: ProductImageState) {
   if (!productImageState) return "";
 
@@ -66,6 +78,11 @@ function resolveProductImageStatePath(productImageState?: ProductImageState) {
   return productImageState.originalImagePath || "";
 }
 
+function resolveSelectedProcessedProductPath(productImageState?: ProductImageState) {
+  if (!productImageState || productImageState.selectedImageMode === "original") return "";
+  return resolveProductImageStatePath(productImageState);
+}
+
 export function resolveCurrentProductImagePaths(
   input: ResolveCurrentProductImagePathsInput
 ): ResolvedProductImagePaths {
@@ -80,8 +97,25 @@ export function resolveCurrentProductImagePaths(
     backgroundImagePath,
   } = input;
 
+  const selectedProcessedProductPath = resolveSelectedProcessedProductPath(productImageState);
+  if (selectedProcessedProductPath) {
+    const selectedPaths = selectedAdImages?.selectedImagePaths || [];
+    const secondaryPaths = selectedPaths.filter(
+      (imagePath) => imagePath !== productImageState?.originalImagePath
+    );
+    return outputWithoutSelectedBackground(
+      [selectedProcessedProductPath, ...secondaryPaths],
+      selectedAdImages?.source || "product",
+      backgroundImagePath
+    );
+  }
+
   if (selectedAdImages?.selectedImagePaths.length) {
-    return output(selectedAdImages.selectedImagePaths, selectedAdImages.source || "detail");
+    return outputWithoutSelectedBackground(
+      selectedAdImages.selectedImagePaths,
+      selectedAdImages.source || "detail",
+      backgroundImagePath
+    );
   }
 
   if (uploadedMainImageDataUrl) {
@@ -99,7 +133,11 @@ export function resolveCurrentProductImagePaths(
   }
 
   if (productInfo.productImagePaths?.length) {
-    return output(productInfo.productImagePaths, "product");
+    return outputWithoutSelectedBackground(
+      productInfo.productImagePaths,
+      "product",
+      backgroundImagePath
+    );
   }
 
   const productInfoPaths = compactUniqueImagePaths([
@@ -114,10 +152,10 @@ export function resolveCurrentProductImagePaths(
     return output([productInfo.selectedSourceImagePath], "detail");
   }
 
-  const selectedProcessedProductPath = resolveProductImageStatePath(productImageState);
-  if (selectedProcessedProductPath || productImageState?.originalImagePath) {
+  const productStateImagePath = resolveProductImageStatePath(productImageState);
+  if (productStateImagePath || productImageState?.originalImagePath) {
     return output(
-      compactUniqueImagePaths([selectedProcessedProductPath, productImageState?.originalImagePath]),
+      compactUniqueImagePaths([productStateImagePath, productImageState?.originalImagePath]),
       "product"
     );
   }

@@ -7,9 +7,20 @@ const MAX_IMAGE_BYTES = 12_000_000;
 const MAX_REDIRECTS = 4;
 
 export class StoreAnalysisNetworkError extends Error {
+  readonly code:
+    | "INVALID_URL"
+    | "UNSAFE_URL"
+    | "DNS_FAILED"
+    | "TIMEOUT"
+    | "ACCESS_BLOCKED"
+    | "INVALID_CONTENT_TYPE"
+    | "RESPONSE_TOO_LARGE"
+    | "TOO_MANY_REDIRECTS"
+    | "REQUEST_FAILED";
+
   constructor(
     message: string,
-    readonly code:
+    code:
       | "INVALID_URL"
       | "UNSAFE_URL"
       | "DNS_FAILED"
@@ -22,6 +33,7 @@ export class StoreAnalysisNetworkError extends Error {
   ) {
     super(message);
     this.name = "StoreAnalysisNetworkError";
+    this.code = code;
   }
 }
 
@@ -398,8 +410,16 @@ export function robotsAllowsUrl(policy: RobotsPolicy, value: string) {
   const parsed = new URL(value);
   const path = `${parsed.pathname}${parsed.search}`;
   return !policy.disallowedPaths.some((rule) => {
-    if (rule === "/") return true;
-    const prefix = rule.replace(/\*.*$/, "");
-    return Boolean(prefix && path.startsWith(prefix));
+    const normalizedRule = rule.trim();
+    if (!normalizedRule) return false;
+
+    const anchoredAtEnd = normalizedRule.endsWith("$");
+    const source = anchoredAtEnd ? normalizedRule.slice(0, -1) : normalizedRule;
+    const pattern = source
+      .split("*")
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join(".*");
+
+    return new RegExp(`^${pattern}${anchoredAtEnd ? "$" : ""}`).test(path);
   });
 }

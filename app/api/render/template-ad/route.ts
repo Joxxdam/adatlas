@@ -22,6 +22,9 @@ import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
 import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
 import type {
+  AdHookType,
+  AdProductPosition,
+  AdTextSafeArea,
   GeneratedAdCopy,
   GeneratedAdCopyVariant,
   CopyVariantKey,
@@ -62,6 +65,13 @@ type RenderBody = {
   productOldPrice?: string;
   backgroundMode?: "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
   selectedBackgroundSource?: string;
+  backgroundComposition?: {
+    sourceId?: string;
+    sourceType?: "library" | "site" | "ai" | "manual";
+    hookType?: AdHookType;
+    productPosition?: AdProductPosition;
+    textSafeArea?: AdTextSafeArea;
+  };
   logoImagePath?: string;
   aiDisclosure?: {
     enabled?: boolean;
@@ -80,13 +90,19 @@ type RenderBody = {
 };
 
 function compactRequestedProductImagePaths(body: RenderBody): string[] {
+  const selectedProcessedProductPath =
+    body.productImageState?.selectedImageMode === "styled-cutout"
+      ? body.productImageState.styledCutoutImagePath
+      : body.productImageState?.selectedImageMode === "cutout"
+        ? body.productImageState.cutoutImagePath
+        : "";
+  const originalProductImagePath = body.productImageState?.originalImagePath?.trim() || "";
   const values = [
+    selectedProcessedProductPath,
     ...(body.productImagePaths || []),
     body.productImagePath,
     body.secondaryProductImagePath,
     body.selectedProductImagePath,
-    body.productImageState?.styledCutoutImagePath,
-    body.productImageState?.cutoutImagePath,
     body.productImageState?.originalImagePath,
   ];
   const seen = new Set<string>();
@@ -95,6 +111,13 @@ function compactRequestedProductImagePaths(body: RenderBody): string[] {
   for (const value of values) {
     const imagePath = value?.trim();
     if (!imagePath || seen.has(imagePath)) continue;
+    if (
+      selectedProcessedProductPath &&
+      originalProductImagePath &&
+      imagePath === originalProductImagePath
+    ) {
+      continue;
+    }
     seen.add(imagePath);
     paths.push(imagePath);
   }
@@ -357,13 +380,21 @@ async function imageToDataUrl(imagePathOrUrl: string) {
     const response = await fetch(imagePathOrUrl);
     if (!response.ok) throw new Error(`상품 이미지 다운로드 실패: HTTP ${response.status}`);
     const contentType = response.headers.get("content-type") || "image/jpeg";
-    const arrayBuffer = await response.arrayBuffer();
-    return `data:${contentType};base64,${Buffer.from(arrayBuffer).toString("base64")}`;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    if (/image\/(?:webp|avif)/i.test(contentType)) {
+      const png = await sharp(buffer).png().toBuffer();
+      return `data:image/png;base64,${png.toString("base64")}`;
+    }
+    return `data:${contentType};base64,${buffer.toString("base64")}`;
   }
 
   const publicRelativePath = imagePathOrUrl.replace(/^\/+/, "");
   const filePath = path.join(process.cwd(), "public", publicRelativePath);
   const buffer = await fs.readFile(filePath);
+  if (/\.(?:webp|avif)$/i.test(filePath)) {
+    const png = await sharp(buffer).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
   return `data:${contentTypeFromPath(filePath)};base64,${buffer.toString("base64")}`;
 }
 
@@ -377,6 +408,89 @@ function backgroundDimOpacity(level?: "low" | "medium" | "high") {
   if (level === "low") return 0.42;
   if (level === "medium") return 0.54;
   return 0.66;
+}
+
+function selectedBackgroundBlur(body: RenderBody) {
+  if (body.backgroundComposition?.sourceType === "library") return 0;
+  if (body.backgroundComposition?.sourceType === "site") return 24;
+  return backgroundBlurValue(body.backgroundStyle?.blurLevel);
+}
+
+function selectedBackgroundOverlay(body: RenderBody) {
+  const requested = Number(body.backgroundStyle?.overlayOpacity);
+  if (Number.isFinite(requested)) return Math.max(0, Math.min(0.72, requested));
+  return backgroundDimOpacity(body.backgroundStyle?.dimLevel);
+}
+
+function compositionProductFrame(
+  body: RenderBody,
+  options: { width: number; height: number; top: number; bottomTop?: number }
+) {
+  const position = body.backgroundComposition?.productPosition || "center-right";
+  const xRatio: Record<AdProductPosition, number> = {
+    left: 0.04,
+    "center-left": 0.16,
+    center: 0.5,
+    "center-right": 0.84,
+    right: 0.96,
+    "bottom-left": 0.04,
+    "bottom-center": 0.5,
+    "bottom-right": 0.96,
+  };
+  const centerX = xRatio[position] * 1200;
+  const x = Math.max(28, Math.min(1200 - options.width - 28, centerX - options.width / 2));
+  const y = position.startsWith("bottom-")
+    ? (options.bottomTop ?? Math.max(options.top, 500))
+    : options.top;
+  return { x, y, width: options.width, height: options.height };
+}
+
+function optimizedProductEffect(
+  body: RenderBody,
+  template: BannerTemplateDefinition
+): Partial<ProductImageRenderEffect> | undefined {
+  if (!body.selectedBackgroundSource || !body.backgroundComposition?.productPosition) {
+    return body.productEffect;
+  }
+  const productSlot = (template.slots || []).find(
+    (slot) =>
+      slot.type === "image" &&
+      slot.id !== "background" &&
+      slot.id !== "scene" &&
+      slot.role !== "background" &&
+      slot.role !== "scene"
+  );
+  if (!productSlot) return body.productEffect;
+
+  const position = body.backgroundComposition.productPosition;
+  const horizontalTarget: Record<AdProductPosition, number> = {
+    left: 260,
+    "center-left": 390,
+    center: 600,
+    "center-right": 830,
+    right: 940,
+    "bottom-left": 270,
+    "bottom-center": 600,
+    "bottom-right": 930,
+  };
+  const verticalTarget = position.startsWith("bottom-") ? 760 : 600;
+  const slotCenterX = productSlot.x + productSlot.width / 2;
+  const slotCenterY = productSlot.y + productSlot.height / 2;
+  const requested = body.productEffect || {};
+  return {
+    ...requested,
+    productOffsetX: Math.max(
+      -220,
+      Math.min(
+        220,
+        Number(requested.productOffsetX || 0) + horizontalTarget[position] - slotCenterX
+      )
+    ),
+    productOffsetY: Math.max(
+      -220,
+      Math.min(220, Number(requested.productOffsetY || 0) + verticalTarget - slotCenterY)
+    ),
+  };
 }
 
 function estimateWidth(text: string, fontSize: number, letterSpacing = 0) {
@@ -1036,9 +1150,13 @@ async function renderFoodImpactHero(body: RenderBody) {
       : `<rect x="0" y="${imageTop}" width="${width}" height="${imageHeight}" fill="#f4f4f4" />
   <text x="600" y="${imageTop + imageHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="34" font-weight="800" fill="#777777">PRODUCT IMAGE</text>`
   }
-  ${oldPriceText ? `<text x="${priceBlockX + 8}" y="${oldPriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">기존가</text>
+  ${
+    oldPriceText
+      ? `<text x="${priceBlockX + 8}" y="${oldPriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">기존가</text>
   <text x="${oldPriceX}" y="${oldPriceY}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">${escapeXml(oldPrice.lines[0] || "")}</text>
-  <line x1="${oldPriceX - 130}" y1="${oldPriceY}" x2="${oldPriceX + 130}" y2="${oldPriceY}" stroke="#ffffff" stroke-width="5" />` : ""}
+  <line x1="${oldPriceX - 130}" y1="${oldPriceY}" x2="${oldPriceX + 130}" y2="${oldPriceY}" stroke="#ffffff" stroke-width="5" />`
+      : ""
+  }
   <rect x="${priceBlockX}" y="${priceBlockY + 78}" width="${dealBadgeWidth}" height="${dealBadgeHeight}" rx="10" fill="${style.priceColor}" />
   <text x="${priceBlockX + dealBadgeWidth / 2}" y="${priceBlockY + 99}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="26" font-weight="900" fill="#ffffff">파격특가</text>
   ${hasPrice ? `<text x="${salePriceX}" y="${salePriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(headlineStyle.fontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff238" stroke="#111111" stroke-width="7" paint-order="stroke fill">${escapeXml(salePrice.lines[0] || "")}</text>` : ""}
@@ -1218,14 +1336,12 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   let backgroundLayer = `<rect width="${width}" height="${height}" fill="${style.backgroundColor}" />`;
   let backgroundBlurDef = `<filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%"><feGaussianBlur stdDeviation="9" edgeMode="duplicate"/></filter>`;
   if (backgroundImageDataUrl) {
-    const blur =
-      templateId === "food-template-005"
-        ? 12
-        : backgroundBlurValue(body.backgroundStyle?.blurLevel);
-    const dim =
-      templateId === "food-template-005"
-        ? 0.58
-        : backgroundDimOpacity(body.backgroundStyle?.dimLevel);
+    const forceLegacyFoodBackdrop =
+      templateId === "food-template-005" &&
+      body.backgroundComposition?.sourceType !== "library" &&
+      body.backgroundComposition?.sourceType !== "site";
+    const blur = forceLegacyFoodBackdrop ? 12 : selectedBackgroundBlur(body);
+    const dim = forceLegacyFoodBackdrop ? 0.58 : selectedBackgroundOverlay(body);
     backgroundBlurDef = `<filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%"><feGaussianBlur stdDeviation="${blur}" edgeMode="duplicate"/></filter>`;
     backgroundLayer = `<image href="${backgroundImageDataUrl}" x="-60" y="-60" width="1320" height="1320" preserveAspectRatio="xMidYMid slice" filter="url(#backgroundBlur)" opacity="0.95" />
   <rect width="${width}" height="${height}" fill="#000000" opacity="${dim}" />`;
@@ -1238,6 +1354,12 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       ? templateProductImages.slice(0, 4)
       : [productImageDataUrl].filter(Boolean);
     const frames = getFoodTemplate001ImageFrames(selectedImages.length || 1);
+    const compositionFrame = compositionProductFrame(body, {
+      width: 570,
+      height: 650,
+      top: 238,
+      bottomTop: 350,
+    });
     const headlineAccentPhrase = inferSplitMeatDealHeadlineAccents(
       copy.headline || "",
       String(styleRecord.accentPhrase || "")
@@ -1290,21 +1412,32 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     const headlineStep = headline.fontSize * 0.92;
     const headlineFirstY = 84 + (2 - headline.lines.length) * 12;
 
-    backgroundLayer = `<rect width="1200" height="1200" fill="#100c09" />`;
+    backgroundLayer = hasSelectedBackgroundLayer
+      ? selectedBackgroundLayer
+      : `<rect width="1200" height="1200" fill="#100c09" />`;
 
-    shapes += frames
-      .map((frame, index) => {
-        const imageDataUrl = selectedImages[index] || selectedImages[0] || productImageDataUrl;
-        return imageFromDataUrl(
-          imageDataUrl,
-          frame.x,
-          frame.y,
-          frame.width,
-          frame.height,
-          frame.mode
-        );
-      })
-      .join("");
+    shapes += hasSelectedBackgroundLayer
+      ? imageFromDataUrl(
+          selectedImages[0] || productImageDataUrl,
+          compositionFrame.x,
+          compositionFrame.y,
+          compositionFrame.width,
+          compositionFrame.height,
+          "meet"
+        )
+      : frames
+          .map((frame, index) => {
+            const imageDataUrl = selectedImages[index] || selectedImages[0] || productImageDataUrl;
+            return imageFromDataUrl(
+              imageDataUrl,
+              frame.x,
+              frame.y,
+              frame.width,
+              frame.height,
+              frame.mode
+            );
+          })
+          .join("");
 
     const productNameBoxWidth = Math.min(
       560,
@@ -1315,9 +1448,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       : 0;
 
     shapes += `<rect width="1200" height="1200" fill="url(#foodTemplate1Shade)" />
-      ${frames.length === 2 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
-      ${frames.length === 3 ? `<line x1="0" y1="600" x2="1200" y2="600" stroke="#050505" stroke-width="8" opacity="0.55" /><line x1="600" y1="600" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
-      ${frames.length === 4 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" /><line x1="0" y1="600" x2="1200" y2="600" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
+      ${!hasSelectedBackgroundLayer && frames.length === 2 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
+      ${!hasSelectedBackgroundLayer && frames.length === 3 ? `<line x1="0" y1="600" x2="1200" y2="600" stroke="#050505" stroke-width="8" opacity="0.55" /><line x1="600" y1="600" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
+      ${!hasSelectedBackgroundLayer && frames.length === 4 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" /><line x1="0" y1="600" x2="1200" y2="600" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
       ${logoImageDataUrl ? `<image href="${logoImageDataUrl}" x="1012" y="42" width="134" height="134" preserveAspectRatio="xMidYMid meet" />` : ""}
       <rect x="16" y="800" width="${productNameBoxWidth}" height="48" rx="4" fill="#060606" opacity="0.94" />
       <rect x="16" y="894" width="132" height="40" rx="4" fill="#ff1f1f" />
@@ -1404,8 +1537,8 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     const backgroundScale = Math.min(1.25, Math.max(1, Number(body.backgroundStyle?.scale ?? 1)));
     const backgroundRenderSize = 1200 * backgroundScale;
     const backgroundOffset = (backgroundRenderSize - 1200) / -2;
-    const backgroundBlur = backgroundBlurValue(body.backgroundStyle?.blurLevel);
-    const backgroundDim = backgroundDimOpacity(body.backgroundStyle?.dimLevel);
+    const backgroundBlur = selectedBackgroundBlur(body);
+    const backgroundDim = selectedBackgroundOverlay(body);
     const hasBackgroundBlur = backgroundBlur > 0;
     backgroundBlurDef = `<filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%"><feGaussianBlur stdDeviation="${backgroundBlur}" edgeMode="duplicate"/></filter>`;
     const reviewTop = fitLines(copy.headline || "한 입 먹자마자 입안에서 육즙 폭발해요", {
@@ -1808,6 +1941,12 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       }))
     );
   } else if (templateId === "camping-popularity-impact") {
+    const compositionFrame = compositionProductFrame(body, {
+      width: 540,
+      height: 570,
+      top: 430,
+      bottomTop: 470,
+    });
     const topCopy = fitLines(copy.bodyCopy || copy.bottomBarCopy || "", {
       maxWidth: 1060,
       maxLines: 1,
@@ -1859,8 +1998,8 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       slot: "cta",
     });
 
-    shapes += `<rect width="1200" height="1200" fill="#ffffff" />
-      ${image(0, 410, 1200, 640, "cover")}
+    shapes += `${hasSelectedBackgroundLayer ? `<rect x="0" y="0" width="1200" height="410" fill="#ffffff" opacity="0.9" />` : `<rect width="1200" height="1200" fill="#ffffff" />`}
+      ${hasSelectedBackgroundLayer ? image(compositionFrame.x, compositionFrame.y, compositionFrame.width, compositionFrame.height, "meet") : image(0, 410, 1200, 640, "cover")}
       <rect x="0" y="410" width="1200" height="640" fill="url(#foodTemplate2Shade)" opacity="0.38" />
       <rect x="0" y="300" width="1200" height="116" fill="#e60000" />
       <rect x="0" y="1050" width="1200" height="150" fill="#e60000" />
@@ -1918,6 +2057,14 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       })
     );
   } else if (templateId === "circle-focus-review") {
+    const compositionFrame = compositionProductFrame(body, {
+      width: 520,
+      height: 560,
+      top: 120,
+      bottomTop: 210,
+    });
+    const focusCenterX = compositionFrame.x + compositionFrame.width / 2;
+    const focusCenterY = compositionFrame.y + compositionFrame.height / 2;
     const reviewCopy = fitLines(copy.headline || copy.bodyCopy || "", {
       maxWidth: 1080,
       maxLines: 3,
@@ -1934,9 +2081,9 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       minSize: 20,
       slot: "price",
     });
-    shapes += `<rect width="1200" height="1200" fill="#ffffff" />
-      ${image(0, 0, 1200, 790, "cover")}
-      <circle cx="600" cy="382" r="300" fill="none" stroke="#e60000" stroke-width="7" opacity="0.96" />
+    shapes += `${hasSelectedBackgroundLayer ? "" : `<rect width="1200" height="1200" fill="#ffffff" />`}
+      ${hasSelectedBackgroundLayer ? image(compositionFrame.x, compositionFrame.y, compositionFrame.width, compositionFrame.height, "meet") : image(0, 0, 1200, 790, "cover")}
+      <circle cx="${hasSelectedBackgroundLayer ? focusCenterX : 600}" cy="${hasSelectedBackgroundLayer ? focusCenterY : 382}" r="${hasSelectedBackgroundLayer ? 255 : 300}" fill="none" stroke="#e60000" stroke-width="7" opacity="0.96" />
       <rect x="0" y="790" width="1200" height="410" fill="#ffffff" />
       ${
         priceBadge.lines[0]
@@ -1995,7 +2142,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
         templateProductImages[index % templateProductImages.length] ||
         productImageDataUrl
     );
-    shapes += `<rect width="1200" height="1200" fill="#050505" />
+    shapes += `<rect width="1200" height="1200" fill="#050505" opacity="${hasSelectedBackgroundLayer ? "0.5" : "1"}" />
       <rect x="0" y="0" width="1200" height="1200" fill="url(#foodTemplate1Shade)" opacity="0.35" />
       ${repeatImages
         .map((dataUrl, index) => {
@@ -2042,10 +2189,12 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       })
     );
   } else if (templateId === "sports-benefit-chip") {
-    backgroundLayer = secondaryProductImageDataUrl
-      ? `<image href="${secondaryProductImageDataUrl}" x="-40" y="-40" width="1280" height="1280" preserveAspectRatio="xMidYMid slice" filter="url(#backgroundBlur)" />
+    backgroundLayer = hasSelectedBackgroundLayer
+      ? selectedBackgroundLayer
+      : secondaryProductImageDataUrl
+        ? `<image href="${secondaryProductImageDataUrl}" x="-40" y="-40" width="1280" height="1280" preserveAspectRatio="xMidYMid slice" filter="url(#backgroundBlur)" />
       <rect width="1200" height="1200" fill="#000000" opacity="0.64" />`
-      : backgroundLayer;
+        : backgroundLayer;
     const sportsHeadline = fitLines(copy.headline || "", {
       maxWidth: 560,
       maxLines: 5,
@@ -2067,7 +2216,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       minSize: 22,
       slot: "cta",
     });
-    shapes += `<rect width="1200" height="1200" fill="#050b0f" opacity="${secondaryProductImageDataUrl ? "0" : "1"}" />
+    shapes += `<rect width="1200" height="1200" fill="#050b0f" opacity="${hasSelectedBackgroundLayer ? "0.48" : secondaryProductImageDataUrl ? "0" : "1"}" />
       <circle cx="885" cy="612" r="285" fill="#ffffff" opacity="0.16" />
       ${image(665, 270, 465, 760, "meet")}
       ${chipTexts
@@ -2107,7 +2256,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       }).map((line) => ({ ...line, anchor: "start" as const }))
     );
   } else if (templateId === "before-after-split-review") {
-    const leftImage = secondaryProductImageDataUrl || productImageDataUrl;
+    const leftImage = backgroundImageDataUrl || secondaryProductImageDataUrl || productImageDataUrl;
     const rightHeadline = fitLines(copy.headline || "", {
       maxWidth: 500,
       maxLines: 5,
@@ -2356,7 +2505,7 @@ async function renderOptimizedTemplate(
       ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다."
       : "",
     fontFaceCss,
-    productEffect: body.productEffect,
+    productEffect: optimizedProductEffect(body, template),
     textOverrides: {
       creativePreset: creativeTextStylePreset,
       fontFamily:
@@ -2370,9 +2519,7 @@ async function renderOptimizedTemplate(
           ? styleOverrides.headlineFontSize
           : undefined,
       headlineColor:
-        typeof styleOverrides.headlineColor === "string"
-          ? styleOverrides.headlineColor
-          : undefined,
+        typeof styleOverrides.headlineColor === "string" ? styleOverrides.headlineColor : undefined,
       headlineFontWeight:
         typeof styleOverrides.headlineFontWeight === "number"
           ? styleOverrides.headlineFontWeight
@@ -2404,31 +2551,19 @@ async function renderOptimizedTemplate(
       bodyColor:
         typeof styleOverrides.bodyColor === "string" ? styleOverrides.bodyColor : undefined,
       bodyFontSize:
-        typeof styleOverrides.bodyFontSize === "number"
-          ? styleOverrides.bodyFontSize
-          : undefined,
+        typeof styleOverrides.bodyFontSize === "number" ? styleOverrides.bodyFontSize : undefined,
       bodyFontWeight:
         typeof styleOverrides.bodyFontWeight === "number"
           ? styleOverrides.bodyFontWeight
           : undefined,
     },
     backgroundTreatment: {
-      blur: body.selectedBackgroundSource
-        ? backgroundBlurValue(body.backgroundStyle?.blurLevel)
-        : 0,
+      blur: body.selectedBackgroundSource ? selectedBackgroundBlur(body) : 0,
       brightness: Math.max(0.55, Math.min(1.35, Number(body.backgroundStyle?.brightness ?? 1))),
       overlayColor: body.backgroundStyle?.overlayColor || "#000000",
       overlayOpacity: Math.max(
         0,
-        Math.min(
-          0.72,
-          Number(
-            body.backgroundStyle?.overlayOpacity ??
-              (body.selectedBackgroundSource
-                ? backgroundDimOpacity(body.backgroundStyle?.dimLevel) * 0.34
-                : 0)
-          )
-        )
+        Math.min(0.72, Number(body.selectedBackgroundSource ? selectedBackgroundOverlay(body) : 0))
       ),
     },
   });

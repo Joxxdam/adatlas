@@ -200,10 +200,10 @@ export function matchReferences(params: {
       }
       if (
         params.brief.adObjective === "signup" &&
-        /회원|가입|체험|참여|시작|문제|해결/.test(referenceText)
+        /신규|첫|입문|체험|발견|차별|필요|문제|해결/.test(referenceText)
       ) {
         score += 6;
-        reasons.push("가입 목표 적합");
+        reasons.push("신규 고객 확보 목표 적합");
       }
       if (
         params.brief.adObjective === "awareness" &&
@@ -211,6 +211,13 @@ export function matchReferences(params: {
       ) {
         score += 6;
         reasons.push("인지 목표 적합");
+      }
+      if (
+        params.brief.adObjective === "retargeting" &&
+        /재구매|다시|혜택|가격|구성|후기|리뷰|한정|CTA|전환/.test(referenceText)
+      ) {
+        score += 6;
+        reasons.push("재구매·리타겟팅 목표 적합");
       }
 
       const completeness = analysisCompleteness(context);

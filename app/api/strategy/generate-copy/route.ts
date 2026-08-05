@@ -786,13 +786,37 @@ function getResponseText(data: unknown) {
 function mockCopy(
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
-  copyGuide?: CopyGuideContext | null
+  copyGuide?: CopyGuideContext | null,
+  adBrief?: AdBrief,
+  creativeStrategy?: CreativeStrategy | null
 ) {
   const reference = labels[0];
+  const objectiveHeadline =
+    adBrief?.adObjective === "awareness"
+      ? `${product.brandName || product.advertiserName || product.productName}, 기억할 이름`
+      : adBrief?.adObjective === "signup"
+        ? `${product.productName}, 처음이라면 여기부터`
+        : adBrief?.adObjective === "retargeting"
+          ? `${product.productName}, 다시 볼 이유`
+          : adBrief?.creativeIntensity === "performance" && (product.discountInfo || product.price)
+            ? `${product.discountInfo || product.price}, 지금 확인`
+            : safeHeadlineFallback(product, reference, copyGuide);
+  const mockHeadline = cleanText(creativeStrategy?.mainCopy || objectiveHeadline);
+  const mockBody = cleanText(
+    creativeStrategy?.appeal || bodyFallback(product, reference, copyGuide)
+  );
+  const mockCta =
+    adBrief?.creativeIntensity === "brand"
+      ? "상품 알아보기"
+      : adBrief?.adObjective === "awareness"
+        ? "브랜드 보기"
+        : adBrief?.adObjective === "retargeting"
+          ? "혜택 다시 보기"
+          : "구매 혜택 보기";
   return normalizeGeneratedCopy(
     {
-      headline: safeHeadlineFallback(product, reference),
-      bodyCopy: bodyFallback(product, reference, copyGuide),
+      headline: mockHeadline,
+      bodyCopy: mockBody,
       highlightCopy: isKookdaeGuide(copyGuide)
         ? kookdaeFallbackCopy(product, reference).highlightCopy
         : product.discountInfo || product.mainBenefit || "deal",
@@ -801,11 +825,11 @@ function mockCopy(
         : reference?.finalLabel?.purchaseTrigger ||
           reference?.finalLabel?.whyItWorks ||
           "check bundle",
-      cta: isKookdaeGuide(copyGuide) ? "특가 확인하기" : "view deal",
+      cta: isKookdaeGuide(copyGuide) ? "특가 확인하기" : mockCta,
       price: normalizePrice(product),
       hookType: inferHookType(reference),
       appealPoint: inferAppealPoint(reference),
-      whyThisWorks: "Mock masterCopy generated from product and reference inputs.",
+      whyThisWorks: "선택한 광고 목표·강도·전략과 상품 사실을 반영한 규칙 기반 masterCopy입니다.",
       referencePatternUsage: referencePatternUsage(reference),
       copyGuideUsage: copyGuideUsage(copyGuide),
     },
@@ -901,7 +925,7 @@ export async function POST(request: Request) {
           referenceLabels: selectedLabels,
           referenceUsages,
         })
-      : mockCopy(product, selectedLabels, copyGuide);
+      : mockCopy(product, selectedLabels, copyGuide, adBrief, body.creativeStrategy);
     const copy = applyBriefConstraints(generatedCopy, adBrief, product, selectedLabels, copyGuide);
 
     return NextResponse.json({

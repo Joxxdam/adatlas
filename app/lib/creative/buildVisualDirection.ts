@@ -16,7 +16,7 @@ function family(category: string, productName: string) {
 
 function archetypeChoices(params: BuildVisualDirectionsInput) {
   const categoryFamily = family(params.product.category, params.product.productName);
-  const angle = `${params.strategy?.mainHookAngle || ""} ${params.strategy?.coreAppealPoint || ""} ${params.brief.additionalEmphasis || ""}`;
+  const angle = `${params.strategy?.headline || params.strategy?.mainHookAngle || ""} ${params.strategy?.keyAppeal || params.strategy?.coreAppealPoint || ""} ${params.strategy?.sceneDescription || ""} ${(params.strategy?.backgroundTags || []).join(" ")} ${params.brief.additionalEmphasis || ""}`;
   const priceLed = /가격|특가|할인|가성비|구성|절약/.test(angle) || Boolean(params.product.discountInfo);
   const problemLed = /문제|불편|고민|냄새|체취|귀찮|부족/.test(angle);
   const premiumLed = /프리미엄|선물|품질|고급|신뢰/.test(angle);
@@ -125,6 +125,7 @@ export function buildVisualDirections(params: BuildVisualDirectionsInput): Visua
       archetype,
       product: params.product,
       advertiserProfile: params.advertiserProfile!,
+      strategy: params.strategy,
       variation: index,
     });
     const referencePatternsUsed = (params.referenceMatches || [])

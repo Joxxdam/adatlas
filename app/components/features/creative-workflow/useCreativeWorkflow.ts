@@ -26,6 +26,7 @@ export function useCreativeWorkflow(params: {
   productInfo: ProductInfoForPrompt;
   allReferences: AdImageLabel[];
   preferredReferenceIds?: string[];
+  advertiserName?: string;
 }) {
   const [activeStep, setActiveStep] = useState<CreationStepId>("brief");
   const [adBriefDraft, setAdBriefDraft] = useState<AdBrief>(() =>
@@ -83,20 +84,28 @@ export function useCreativeWorkflow(params: {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            productInfo: params.productInfo,
+            productInfo: {
+              ...params.productInfo,
+              advertiserName: params.advertiserName || params.productInfo.advertiserName,
+              brandName:
+                params.productInfo.brandName ||
+                params.advertiserName ||
+                params.productInfo.advertiserName,
+            },
             adBrief,
             batch: nextBatch,
           }),
         });
         const result = await response.json();
-        if (!response.ok || !result.ok || !Array.isArray(result.strategies)) {
-          throw new Error(result.error || "광고 전략 생성 실패");
+        const hooks = Array.isArray(result.hooks) ? result.hooks : result.strategies;
+        if (!response.ok || !result.ok || !Array.isArray(hooks) || hooks.length !== 3) {
+          throw new Error(result.error || "광고 후킹 생성 실패");
         }
-        setStrategies(result.strategies);
+        setStrategies(hooks);
         setSelectedStrategyId("");
         setStrategyBatch(nextBatch);
         setActiveStep("strategy");
-        return result.strategies as CreativeStrategy[];
+        return hooks as CreativeStrategy[];
       } catch {
         const fallback = buildCreativeStrategies({
           brief: adBrief,
@@ -113,7 +122,7 @@ export function useCreativeWorkflow(params: {
         setIsGeneratingStrategies(false);
       }
     },
-    [adBrief, params.productInfo, referenceUsages, references, strategyBatch]
+    [adBrief, params.advertiserName, params.productInfo, referenceUsages, references, strategyBatch]
   );
 
   const selectedStrategy = useMemo(

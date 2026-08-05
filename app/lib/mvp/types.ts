@@ -88,7 +88,7 @@ export type ProductInfoForPrompt = {
   selectedSourceImagePath?: string;
 };
 
-export type AdObjective = "purchase" | "signup" | "awareness";
+export type AdObjective = "purchase" | "signup" | "awareness" | "retargeting";
 
 export type TargetPlatform = "meta-feed" | "instagram-feed" | "naver-gfa";
 
@@ -161,9 +161,53 @@ export type ReferenceUsageSelection = {
   weight: number;
 };
 
+export type AdHookType =
+  | "price-benefit"
+  | "feature-usp"
+  | "lifestyle"
+  | "season-event"
+  | "problem-solution"
+  | "social-proof"
+  | "curiosity"
+  | "sensory"
+  | "gift"
+  | "brand-story";
+
+export type AdTextSafeArea =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "center-left"
+  | "center-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+
+export type AdProductPosition =
+  | "left"
+  | "center-left"
+  | "center"
+  | "center-right"
+  | "right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+
 export type CreativeStrategy = {
   id: string;
   title: string;
+  hookType: AdHookType;
+  headline: string;
+  subCopy: string;
+  keyAppeal: string;
+  sceneDescription: string;
+  mood: string[];
+  textSafeArea: AdTextSafeArea;
+  productPosition: AdProductPosition;
+  backgroundTags: string[];
+  appeal: string;
+  mainCopy: string;
+  audience: string;
   explanation: string;
   mainHookAngle: string;
   coreAppealPoint: string;

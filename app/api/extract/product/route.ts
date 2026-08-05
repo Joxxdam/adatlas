@@ -436,7 +436,8 @@ function charsetFromHtmlSample(html: string) {
 function decodeHtmlResponse(buffer: ArrayBuffer, contentType: string | null) {
   const bytes = new Uint8Array(buffer);
   const utf8Sample = new TextDecoder("utf-8", { fatal: false }).decode(bytes.slice(0, 4096));
-  const charset = charsetFromContentType(contentType) || charsetFromHtmlSample(utf8Sample) || "utf-8";
+  const charset =
+    charsetFromContentType(contentType) || charsetFromHtmlSample(utf8Sample) || "utf-8";
 
   try {
     return new TextDecoder(charset, { fatal: false }).decode(bytes);
@@ -497,7 +498,8 @@ function isRecommendedThumbnailUrl(value: string) {
 function selectMainProductImage(
   candidates: ProductImageCandidate[],
   galleryImages: string[],
-  fallbackMainImage: string
+  fallbackMainImage: string,
+  preferFilteredGallery = false
 ) {
   const preferredCandidate = candidates.find(
     (candidate) =>
@@ -505,13 +507,12 @@ function selectMainProductImage(
       !/\/(?:data\/reviewimg|review)\//i.test(candidate.url)
   );
   const preferredGalleryImage = galleryImages.find(
-    (image) =>
-      !isRecommendedThumbnailUrl(image) && !/\/(?:data\/reviewimg|review)\//i.test(image)
+    (image) => !isRecommendedThumbnailUrl(image) && !/\/(?:data\/reviewimg|review)\//i.test(image)
   );
 
   return (
-    preferredCandidate?.url ||
-    preferredGalleryImage ||
+    (preferFilteredGallery ? preferredGalleryImage : preferredCandidate?.url) ||
+    (preferFilteredGallery ? preferredCandidate?.url : preferredGalleryImage) ||
     candidates[0]?.url ||
     galleryImages[0] ||
     fallbackMainImage
@@ -1132,7 +1133,8 @@ export async function POST(request: Request) {
     const mainImage = selectMainProductImage(
       enhancedCandidates,
       galleryImages,
-      fallbackMainImage
+      fallbackMainImage,
+      detected.type === "meat"
     );
     const createdAt = new Date().toISOString();
     const detailImages = galleryImages

@@ -67,8 +67,17 @@ export function inferAdBriefContext(params: {
   const hasProofTone = /후기|리뷰|인증|판매량|평점|국내산|원산지/.test(text);
   const isPerformance = brief.creativeIntensity === "performance";
 
+  const objectiveAwarenessStage =
+    brief.adObjective === "awareness"
+      ? "unaware"
+      : brief.adObjective === "signup"
+        ? "problem-aware"
+        : brief.adObjective === "retargeting"
+          ? "comparing"
+          : undefined;
   const awarenessStage =
     brief.awarenessStage ||
+    objectiveAwarenessStage ||
     (hasPriceOffer ? "comparing" : product.mainBenefit ? "solution-aware" : "problem-aware");
   const customerProblem = brief.customerProblem || categoryProblem(product.category);
   const purchaseBarrier =
@@ -78,11 +87,19 @@ export function inferAdBriefContext(params: {
       : "상품을 선택할 구체적인 근거가 부족함");
   const hookType =
     brief.desiredHookType ||
-    (isPerformance && hasPriceOffer
-      ? "가격정당화형"
-      : hasProofTone
-        ? "후기/신뢰형"
-        : references[0]?.finalLabel?.hookType || "혜택선명형");
+    (brief.adObjective === "awareness"
+      ? "브랜드대표메시지형"
+      : brief.adObjective === "signup"
+        ? "차별점발견형"
+        : brief.adObjective === "retargeting"
+          ? hasPriceOffer
+            ? "혜택재강조형"
+            : "구매이유환기형"
+          : isPerformance && hasPriceOffer
+            ? "가격정당화형"
+            : hasProofTone
+              ? "후기/신뢰형"
+              : references[0]?.finalLabel?.hookType || "혜택선명형");
   const offerType =
     brief.offerType ||
     compact(product.discountInfo) ||
@@ -90,10 +107,10 @@ export function inferAdBriefContext(params: {
   const tone =
     brief.tonePreference ||
     (brief.creativeIntensity === "brand"
-      ? "차분하고 신뢰감 있는 브랜드 톤"
+      ? "감성적이고 자연스러운 문장으로 판매 압박을 줄인 부드러운 톤"
       : brief.creativeIntensity === "performance"
-        ? "짧고 직관적인 강전환 톤"
-        : "상품 신뢰와 구매 혜택을 함께 전달하는 균형 톤");
+        ? "확인된 가격·할인과 행동 유도를 우선하는 직접적인 전환 톤"
+        : "USP와 확인된 구매 혜택을 균형 있게 전달하는 톤");
 
   const proofElements = Array.from(
     new Set(
