@@ -76,11 +76,26 @@ import {
   qualityFoodTemplates,
   type BannerTemplateDefinition,
 } from "../../lib/bannerTemplates";
+import type { ProductCreationHandoff } from "../lib/store-analysis/types";
+import {
+  AppFeatureNavigation,
+  type AppFeatureKey,
+} from "./AppFeatureNavigation";
+
+type MvpMenu =
+  | "카테고리 관리"
+  | "이미지 수집"
+  | "이미지 분석"
+  | "광고 생성"
+  | "결과 다운로드";
 
 type Props = {
   initialBrands: MvpBrand[];
   initialImages: CollectedAdImage[];
   initialGenerated: GeneratedAdImage[];
+  initialCreationHandoff?: ProductCreationHandoff | null;
+  initialActiveMenu?: MvpMenu;
+  activeFeature?: AppFeatureKey;
 };
 
 type Status = { kind: "idle" | "loading" | "success" | "error"; message: string };
@@ -221,6 +236,8 @@ const emptySelectedAdImages: SelectedAdImageState = {
   source: "unknown",
   updatedAt: "",
 };
+
+const emptyRecommendationIds: string[] = [];
 
 const defaultCutoutProductEffect: ProductImageRenderEffect = {
   outline: true,
@@ -387,7 +404,13 @@ const appealPointOptions = [
   "사회적 인정",
 ];
 
-const menus = ["카테고리 관리", "이미지 수집", "이미지 분석", "광고 생성", "결과 다운로드"];
+const menus: MvpMenu[] = [
+  "카테고리 관리",
+  "이미지 수집",
+  "이미지 분석",
+  "광고 생성",
+  "결과 다운로드",
+];
 
 const labelFields: { key: keyof AdImageAnalysisDraft; label: string }[] = [
   { key: "ocrText", label: "이미지 문구" },
@@ -651,8 +674,24 @@ const legacyFoodImpactTemplateOption: BannerTemplateDefinition = {
   },
 };
 
-export function MvpDashboard({ initialGenerated, initialImages }: Props) {
-  const [activeMenu, setActiveMenu] = useState(menus[0]);
+export function MvpDashboard({
+  activeFeature = "product-creation",
+  initialActiveMenu = "광고 생성",
+  initialCreationHandoff,
+  initialGenerated,
+  initialImages,
+}: Props) {
+  const handoffProductInfo = initialCreationHandoff?.productInfo;
+  const handoffImagePaths = initialCreationHandoff?.productImagePaths ?? emptyRecommendationIds;
+  const recommendedTemplateIds =
+    initialCreationHandoff?.recommendedTemplateIds ?? emptyRecommendationIds;
+  const recommendedReferenceLabelIds =
+    initialCreationHandoff?.recommendedReferenceLabelIds ?? emptyRecommendationIds;
+  const initialAdvertiserName =
+    advertiserOptions.find(
+      (option) => option.guideId === initialCreationHandoff?.matchedCopyGuideId
+    )?.value || "";
+  const [activeMenu, setActiveMenu] = useState<MvpMenu>(initialActiveMenu);
   const [images, setImages] = useState(initialImages);
   const [generated, setGenerated] = useState(initialGenerated);
   const [labels, setLabels] = useState<AdImageLabel[]>([]);
@@ -665,27 +704,44 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
     kind: "idle",
     message: "이미지를 선택하면 라벨 편집 패널이 열립니다.",
   });
-  const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(emptyProductInfo);
-  const [selectedAdvertiserName, setSelectedAdvertiserName] = useState("");
-  const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState("");
-  const [sourceImageSelection, setSourceImageSelection] =
-    useState<SourceImageSelectionState>(emptySourceImageSelection);
+  const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(() => ({
+    ...emptyProductInfo,
+    ...(handoffProductInfo ?? {}),
+  }));
+  const [selectedAdvertiserName, setSelectedAdvertiserName] = useState(initialAdvertiserName);
+  const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState(
+    initialCreationHandoff?.productUrl || ""
+  );
+  const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(
+    () => ({
+      ...emptySourceImageSelection,
+      candidates: handoffProductInfo?.sourceImageCandidates ?? [],
+      selectedSourceImageId: handoffProductInfo?.selectedSourceImageId,
+      selectedSourceImagePath: handoffProductInfo?.selectedSourceImagePath,
+    })
+  );
   const [sourceImageStatus, setSourceImageStatus] = useState<Status>({
     kind: "idle",
     message: "GPT 이미지 생성 기준이 될 원본 이미지를 선택해주세요.",
   });
   const [productExtractStatus, setProductExtractStatus] = useState<Status>({
-    kind: "idle",
-    message: "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
+    kind: initialCreationHandoff ? "success" : "idle",
+    message: initialCreationHandoff
+      ? "업체 분석 결과에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다."
+      : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
   });
   const [strategyStatus, setStrategyStatus] = useState<Status>({
-    kind: "idle",
-    message: "상품 정보를 불러오면 관련 레퍼런스를 자동으로 찾아 전략을 제안합니다.",
+    kind: initialCreationHandoff ? "success" : "idle",
+    message: initialCreationHandoff?.selectedContentAngle
+      ? `업체 분석 추천 전략 '${initialCreationHandoff.selectedContentAngle.name}'을 상품 브리프에 반영했습니다.`
+      : "상품 정보를 불러오면 관련 레퍼런스를 자동으로 찾아 전략을 제안합니다.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
   const [copyStatus, setCopyStatus] = useState<Status>({
     kind: "idle",
-    message: "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
+    message: initialCreationHandoff
+      ? "분석 추천 전략을 확인한 뒤 광고 전략을 생성하고 문구 제작을 시작하세요."
+      : "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
   });
   const [templateFittedCopy, setTemplateFittedCopy] = useState<TemplateFittedCopy | null>(null);
   const [masterCopy, setMasterCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
@@ -784,10 +840,18 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
     customPromptNote: "",
     finalPrompt: "",
   });
-  const [selectedAdImages, setSelectedAdImages] =
-    useState<SelectedAdImageState>(emptySelectedAdImages);
-  const [productImageState, setProductImageState] =
-    useState<ProductImageState>(emptyProductImageState);
+  const [selectedAdImages, setSelectedAdImages] = useState<SelectedAdImageState>(() => ({
+    ...emptySelectedAdImages,
+    selectedImagePaths: handoffImagePaths,
+    primaryImagePath: handoffImagePaths[0] || "",
+    secondaryImagePath: handoffImagePaths[1] || "",
+    source: handoffImagePaths.length ? "detail" : "unknown",
+    updatedAt: handoffImagePaths.length ? new Date().toISOString() : "",
+  }));
+  const [productImageState, setProductImageState] = useState<ProductImageState>(() => ({
+    ...emptyProductImageState,
+    originalImagePath: handoffImagePaths[0] || handoffProductInfo?.productImagePath || "",
+  }));
   const [cutoutProductEffect, setCutoutProductEffect] = useState<ProductImageRenderEffect>(
     defaultCutoutProductEffect
   );
@@ -805,7 +869,9 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
   const [mainDetailScrollPercent, setMainDetailScrollPercent] = useState(0);
   const [selectedHeadlineFontId, setSelectedHeadlineFontId] = useState(systemFontOptions[0].id);
   const [selectedBodyFontId, setSelectedBodyFontId] = useState("noto-sans-kr");
-  const [selectedTemplateId, setSelectedTemplateId] = useState("food-template-001");
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    recommendedTemplateIds[0] || "food-template-001"
+  );
   const [generatedBannerPath, setGeneratedBannerPath] = useState("");
   const [renderDiagnostics, setRenderDiagnostics] = useState<RenderDiagnostics | null>(null);
   const [selectedBatchTemplateIds, setSelectedBatchTemplateIds] = useState<string[]>([]);
@@ -831,6 +897,7 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
   const creativeWorkflow = useCreativeWorkflow({
     productInfo,
     allReferences: labels,
+    preferredReferenceIds: recommendedReferenceLabelIds,
   });
   const autoMatchedReferenceLabels = creativeWorkflow.references;
   const gptGenerationReferenceImagePaths = useMemo(
@@ -967,13 +1034,11 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
     backgroundImageOptions.find((option) => option.value !== originalMainProductImage)?.value ||
     currentMainProductImage;
   const selectedVisualDirection = useMemo(
-    () =>
-      visualDirections.find((direction) => direction.id === selectedVisualDirectionId) || null,
+    () => visualDirections.find((direction) => direction.id === selectedVisualDirectionId) || null,
     [selectedVisualDirectionId, visualDirections]
   );
   const selectedSceneCandidate = useMemo(
-    () =>
-      sceneCandidates.find((candidate) => candidate.id === selectedSceneCandidateId) || null,
+    () => sceneCandidates.find((candidate) => candidate.id === selectedSceneCandidateId) || null,
     [sceneCandidates, selectedSceneCandidateId]
   );
   const creativeQualityScore = useMemo(
@@ -3317,7 +3382,8 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
           <p className="eyebrow">AdAtlas MVP</p>
           <h1>광고 이미지 수집 생성기</h1>
         </div>
-        <nav>
+        <AppFeatureNavigation activeFeature={activeFeature} />
+        <nav className="mvp-workflow-navigation" aria-label="현재 작업 세부 메뉴">
           {menus.map((menu) => (
             <button
               className={activeMenu === menu ? "active" : ""}
@@ -3459,6 +3525,45 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
               </span>
             </div>
 
+            {initialCreationHandoff ? (
+              <section className="analysis-handoff-banner">
+                <div className="analysis-handoff-score">
+                  <span>업체 분석 추천</span>
+                  <strong>{initialCreationHandoff.advertisingScore}</strong>
+                  <small>
+                    광고 적합도 · confidence {Math.round(initialCreationHandoff.confidence * 100)}%
+                  </small>
+                </div>
+                <div className="analysis-handoff-copy">
+                  <p className="eyebrow">SELECTED CONTENT ANGLE</p>
+                  <h4>{initialCreationHandoff.selectedContentAngle?.name || "추천 상품 제작"}</h4>
+                  <p>
+                    {initialCreationHandoff.selectedContentAngle?.reason ||
+                      "분석 결과의 상품정보와 이미지 후보를 기존 제작 엔진에 연결했습니다."}
+                  </p>
+                  {initialCreationHandoff.selectedContentAngle?.evidence.length ? (
+                    <ul>
+                      {initialCreationHandoff.selectedContentAngle.evidence.map((evidence) => (
+                        <li key={evidence}>{evidence}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+                <div className="analysis-handoff-meta">
+                  <span>추천 템플릿 {recommendedTemplateIds.length}개</span>
+                  <span>추천 레퍼런스 {recommendedReferenceLabelIds.length}개</span>
+                  <span>
+                    카피 가이드 {initialCreationHandoff.matchedCopyGuideId || "카테고리 기본"}
+                  </span>
+                  <a
+                    href={`/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`}
+                  >
+                    분석 결과로 돌아가기
+                  </a>
+                </div>
+              </section>
+            ) : null}
+
             <StepHeader
               activeStep={creativeWorkflow.activeStep}
               onStepChange={creativeWorkflow.setActiveStep}
@@ -3566,6 +3671,7 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
                       {categoryTemplates.length ? (
                         categoryTemplates.map((template) => (
                           <option key={template.id} value={template.id}>
+                            {recommendedTemplateIds.includes(template.id) ? "★ 추천 · " : ""}
                             {template.name}
                           </option>
                         ))
@@ -4035,7 +4141,7 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
                       <div className="template-card-list">
                         {categoryTemplates.map((template, index) => (
                           <button
-                            className={selectedTemplateId === template.id ? "selected" : ""}
+                            className={`${selectedTemplateId === template.id ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
                             key={template.id}
                             onClick={() => setSelectedTemplateId(template.id)}
                             type="button"
@@ -4052,6 +4158,9 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
                                 {template.copyLimits?.cta?.maxChars || 8}자
                               </small>
                             </div>
+                            {recommendedTemplateIds.includes(template.id) ? (
+                              <em className="analysis-template-badge">분석 추천</em>
+                            ) : null}
                             {selectedTemplateId === template.id ? <b>선택됨</b> : null}
                             <div className="template-palette" aria-hidden="true">
                               {[
@@ -4127,7 +4236,10 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
                         {categoryTemplates.map((template, index) => {
                           const checked = selectedBatchTemplateIds.includes(template.id);
                           return (
-                            <label className={checked ? "selected" : ""} key={template.id}>
+                            <label
+                              className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
+                              key={template.id}
+                            >
                               <input
                                 checked={checked}
                                 onChange={(event) => {
@@ -4143,6 +4255,7 @@ export function MvpDashboard({ initialGenerated, initialImages }: Props) {
                               />
                               <span>
                                 {index + 1}. {template.name}
+                                {recommendedTemplateIds.includes(template.id) ? " · 분석 추천" : ""}
                               </span>
                             </label>
                           );

@@ -67,3 +67,7 @@ public/extracted/*
 
 # local creative quality benchmark source images
 data/creative-benchmarks/desired-quality/
+
+# local store analysis results
+data/store-analysis/*
+!data/store-analysis/.gitkeep

@@ -25,6 +25,7 @@ const emptyHierarchy: MessageHierarchy = {
 export function useCreativeWorkflow(params: {
   productInfo: ProductInfoForPrompt;
   allReferences: AdImageLabel[];
+  preferredReferenceIds?: string[];
 }) {
   const [activeStep, setActiveStep] = useState<CreationStepId>("brief");
   const [adBriefDraft, setAdBriefDraft] = useState<AdBrief>(() =>
@@ -49,16 +50,25 @@ export function useCreativeWorkflow(params: {
     },
     [params.productInfo]
   );
-  const referenceMatches = useMemo(
-    () =>
-      matchReferences({
-        product: params.productInfo,
-        brief: adBrief,
-        labels: params.allReferences,
-        limit: 5,
-      }),
-    [adBrief, params.allReferences, params.productInfo]
-  );
+  const referenceMatches = useMemo(() => {
+    const matches = matchReferences({
+      product: params.productInfo,
+      brief: adBrief,
+      labels: params.allReferences,
+      limit: 5,
+    });
+    const preferredOrder = new Map(
+      (params.preferredReferenceIds || []).map((id, index) => [id, index])
+    );
+    return matches.sort((a, b) => {
+      const aOrder = preferredOrder.get(a.referenceId);
+      const bOrder = preferredOrder.get(b.referenceId);
+      if (aOrder !== undefined && bOrder !== undefined) return aOrder - bOrder;
+      if (aOrder !== undefined) return -1;
+      if (bOrder !== undefined) return 1;
+      return b.score - a.score;
+    });
+  }, [adBrief, params.allReferences, params.preferredReferenceIds, params.productInfo]);
   const references = useMemo(
     () => labelsForReferenceMatches(params.allReferences, referenceMatches),
     [params.allReferences, referenceMatches]
