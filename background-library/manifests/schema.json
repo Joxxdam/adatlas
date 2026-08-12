@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adatlas.local/background-library-manifest.schema.json",
+  "title": "AdAtlas background catalog manifest",
+  "type": "object",
+  "required": ["version", "updatedAt", "items"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "updatedAt": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "sourceType", "collectionIds", "primaryCategory", "licenseStatus", "status", "analysisStatus"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+          "sourceType": { "enum": ["local-import", "pexels", "local-generation"] },
+          "collectionIds": { "type": "array", "items": { "type": "string" } },
+          "primaryCategory": { "type": "string" },
+          "licenseStatus": { "enum": ["verified", "unverified", "rejected"] },
+          "status": { "enum": ["pending", "approved", "review", "rejected", "inactive"] },
+          "analysisStatus": { "enum": ["heuristic", "source-derived", "manually-reviewed", "local-vision", "pending"] }
+        }
+      }
+    }
+  }
+}

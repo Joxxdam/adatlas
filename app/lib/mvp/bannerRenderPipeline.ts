@@ -72,12 +72,12 @@ function applyPalettePolicy(
   if (policy === "protected-palette") {
     return {
       ...extracted,
-      primaryColor: accent,
-      accentColor: accent,
-      dangerColor: danger,
+      primaryColor: extracted.primaryColor,
+      accentColor: extracted.accentColor,
+      dangerColor: extracted.accentColor,
       backgroundColor: background,
       surfaceColor: stringStyle(template, "surfaceColor", extracted.surfaceColor),
-      highlightColor: stringStyle(template, "highlightBackground", fallback.highlightColor),
+      highlightColor: extracted.highlightColor,
       textDarkColor: ensureContrast("#151515", background, 4.5),
     };
   }
@@ -222,7 +222,11 @@ export async function prepareBannerRender(params: {
   backgroundImagePath?: string;
   originalPrice?: string;
 }): Promise<PreparedBannerRender> {
-  const firstImage = params.imagePaths.find(Boolean) || "";
+  const firstImage =
+    params.productInfo?.extractedMainImage ||
+    params.productInfo?.productImagePath ||
+    params.imagePaths.find(Boolean) ||
+    "";
   const extracted = await extractPaletteFromImage(
     firstImage,
     params.productInfo?.category || params.template.category

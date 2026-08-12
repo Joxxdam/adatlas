@@ -2,15 +2,18 @@
 
 import JSZip from "jszip";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  CreativeQualityScore,
-  SceneCandidate,
-  SceneGenerationProviderId,
-  VisualDirection,
-} from "../lib/creative/types";
+import type { CreativeQualityScore, VisualDirection } from "../lib/creative/types";
 import { evaluateCreativeQuality } from "../lib/creative/creativeQualityEvaluator";
 import { getCreativeTextStylePreset } from "../lib/creative/textStylePresets";
-import type { BackgroundRecommendation } from "../lib/background-library/types";
+import type {
+  AdaptiveCreativePlan,
+  AdaptiveCreativeRenderResult,
+  AudienceProfile,
+  BackgroundLibraryItem,
+  BackgroundRecommendation,
+  BackgroundRecommendationHistory,
+  CreativeGenerationMode,
+} from "../lib/background-library/types";
 import type {
   AdBrief,
   AdImageAnalysisDraft,
@@ -32,7 +35,11 @@ import type {
   ExtractedProductInfo,
   MvpBrand,
   ProductImageEffectPreset,
+  ProductCutoutQuality,
+  ProductExtractionScope,
   ProductImageMode,
+  ProductRepresentation,
+  ProductRepresentationType,
   ProductImageRenderEffect,
   ProductImageState,
   ProductInfoForPrompt,
@@ -45,9 +52,10 @@ import type {
   TemplateCopyPreview,
   TemplateFittedCopy,
 } from "../lib/mvp/types";
+import { inferProductRepresentation } from "../lib/mvp/productImagePipeline";
 import { applyAdBriefToProductInfo } from "../lib/mvp/adBrief";
 import { evaluateCopyQuality, tightenCopyToTemplate } from "../lib/mvp/copyQualityEvaluator";
-import { systemFontOptions } from "../lib/mvp/fontCatalog";
+import { resolveTemplateFontAssignment, systemFontOptions } from "../lib/mvp/fontCatalog";
 import { copyToMessageHierarchy, messageHierarchyToCopy } from "../lib/mvp/messageHierarchy";
 import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
 import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
@@ -56,7 +64,6 @@ import {
   resolveCurrentProductImagePaths,
 } from "../lib/mvp/imageSelectionResolver";
 import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
-import { StepHeader } from "./dashboard/StepHeader";
 import {
   BasicStyleControls,
   type BasicEditorSettings,
@@ -69,19 +76,27 @@ import { useCreativeWorkflow } from "./features/creative-workflow/useCreativeWor
 import { ProductAnalysisSummary } from "./features/product-brief/ProductAnalysisSummary";
 import { ProductBriefForm } from "./features/product-brief/ProductBriefForm";
 import { StrategySelector } from "./features/strategy/StrategySelector";
-import {
-  BackgroundRecommendationPanel,
-  type BackgroundProductionMode,
-} from "./features/background-library/BackgroundRecommendationPanel";
+import { BackgroundRecommendationPanel } from "./features/background-library/BackgroundRecommendationPanel";
+import { AdaptiveCreativePanel } from "./features/background-library/AdaptiveCreativePanel";
+import { BackgroundLibraryManager } from "./features/background-library/BackgroundLibraryManager";
+import { BackgroundCatalogPanel } from "./features/background-library/BackgroundCatalogPanel";
+import ProductImageWorkbench from "./features/product-image/ProductImageWorkbench";
+import ReviewCreativeWorkbench from "./features/review-creative/ReviewCreativeWorkbench";
+import { SixCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
+import { CreativeAssetActions, markCreativeAssetExported } from "./features/creative-assets/CreativeAssetActions";
+import { CreativeAssetLibrary } from "./features/creative-assets/CreativeAssetLibrary";
+import type { CreateCreativeAssetInput, CreativeAsset } from "../lib/creative-assets/types";
 import {
   beautyCategoryTemplates,
   foodCategoryTemplates,
   foodImpactHeroTemplate,
+  healthCategoryTemplates,
   qualityFoodTemplates,
   type BannerTemplateDefinition,
 } from "../../lib/bannerTemplates";
 import type { ProductCreationHandoff } from "../lib/store-analysis/types";
 import { AppFeatureNavigation, type AppFeatureKey } from "./AppFeatureNavigation";
+import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
 
 type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
 
@@ -118,6 +133,10 @@ type BackgroundStyleState = {
   dimLevel: BackgroundLevel;
   brightness: number;
   overlayOpacity: number;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  flipHorizontal: boolean;
 };
 
 type BannerTextColorState = {
@@ -136,12 +155,30 @@ type ProductCutoutApiResult = {
   processedImagePath?: string;
   cutoutImagePath?: string;
   styledCutoutImagePath?: string;
+  originalImagePath?: string;
+  requestedImagePath?: string;
+  autoSelectedAlternative?: boolean;
+  attemptedImageCount?: number;
   debug?: { cacheHit?: boolean };
+  quality?: ProductCutoutQuality;
+  retryCount?: number;
+  croppedImagePath?: string;
+};
+
+type ProductCutoutRequestOptions = {
+  representationType?: ProductRepresentationType;
+  extractionScope?: ProductExtractionScope;
+  selectedObjectIds?: string[];
+  selectedObjectBoxes?: Array<{ x: number; y: number; width: number; height: number }>;
+  cropBox?: { x: number; y: number; width: number; height: number };
+  expectedUnitCount?: number;
 };
 
 async function requestProductCutout(
   imagePath: string,
-  effectPreset: ProductImageEffectPreset
+  effectPreset: ProductImageEffectPreset,
+  candidateImagePaths: string[] = [],
+  options: ProductCutoutRequestOptions = {}
 ): Promise<ProductCutoutApiResult> {
   const response = await fetch("/api/image/remove-background", {
     method: "POST",
@@ -149,8 +186,10 @@ async function requestProductCutout(
     body: JSON.stringify({
       imagePath,
       sourceImagePath: imagePath,
+      candidateImagePaths,
       provider: "removebg",
       effectPreset,
+      ...options,
     }),
   });
   const result = (await response.json()) as ProductCutoutApiResult;
@@ -158,13 +197,6 @@ async function requestProductCutout(
     throw new Error(result.error || "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
   }
   return result;
-}
-
-function sanitizeFileName(name: string) {
-  return name
-    .replace(/[\\/:*?"<>|]/g, "")
-    .replace(/\s+/g, "_")
-    .slice(0, 60);
 }
 
 function batchZipTimestamp(date = new Date()) {
@@ -254,7 +286,7 @@ const emptyProductImageState: ProductImageState = {
   originalImagePath: "",
   selectedImageMode: "original",
   cutoutApplied: false,
-  effectPreset: "outline-glow-shadow",
+  effectPreset: "commerce-shadow",
 };
 
 const emptySelectedAdImages: SelectedAdImageState = {
@@ -268,9 +300,9 @@ const emptySelectedAdImages: SelectedAdImageState = {
 const emptyRecommendationIds: string[] = [];
 
 const defaultCutoutProductEffect: ProductImageRenderEffect = {
-  outline: true,
+  outline: false,
   outlineColor: "#ffffff",
-  outlineWidth: 14,
+  outlineWidth: 2,
   shadow: true,
   shadowBaseColor: "#000000",
   shadowOpacity: 0.45,
@@ -278,7 +310,7 @@ const defaultCutoutProductEffect: ProductImageRenderEffect = {
   shadowBlur: 24,
   shadowOffsetX: 0,
   shadowOffsetY: 10,
-  glow: true,
+  glow: false,
   glowBaseColor: "#ffffff",
   glowOpacity: 0.55,
   glowColor: "rgba(255,255,255,0.55)",
@@ -376,7 +408,17 @@ const presetBrandLogos = [
   {
     id: "gukdae-hanwoo",
     label: "국대한우 로고",
-    imagePath: "/brand-logos/gukdae-hanwoo-logo.png",
+    imagePath: "/brand-logos/gukdae-hanwoo-logo-exact.png",
+  },
+  {
+    id: "original-source",
+    label: "오리지널소스 로고",
+    imagePath: "/brand-logos/original-source-logo.png",
+  },
+  {
+    id: "ririnco",
+    label: "리리앤코 로고",
+    imagePath: "/brand-logos/ririnco-logo.png",
   },
 ];
 
@@ -513,6 +555,7 @@ const emptyProductInfo: ProductInfoForPrompt = {
   selectedBackgroundSource: "",
   backgroundMode: "none",
   sourceImageCandidates: [],
+  reviewSources: [],
   selectedSourceImageId: "",
   selectedSourceImagePath: "",
 };
@@ -532,6 +575,7 @@ const advertiserOptions = [
   { label: "국대한우", value: "국대한우", guideId: "kookdae-hanwoo" },
   { label: "대한한우", value: "대한한우", guideId: "daehan-hanwoo" },
   { label: "힘내라농가", value: "힘내라농가", guideId: "fighting-farm" },
+  { label: "오리지널소스", value: "오리지널소스", guideId: "original-source" },
 ];
 
 function normalizeProductCategory(...values: string[]) {
@@ -702,6 +746,18 @@ const legacyFoodImpactTemplateOption: BannerTemplateDefinition = {
   },
 };
 
+const allCreatableTemplates = Array.from(
+  new Map(
+    [
+      ...beautyCategoryTemplates,
+      ...healthCategoryTemplates,
+      ...qualityFoodTemplates,
+      ...foodCategoryTemplates,
+      legacyFoodImpactTemplateOption,
+    ].map((template) => [template.id, template])
+  ).values()
+);
+
 export function MvpDashboard({
   activeFeature = "product-creation",
   initialActiveMenu = "광고 생성",
@@ -740,6 +796,7 @@ export function MvpDashboard({
   const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState(
     initialCreationHandoff?.productUrl || ""
   );
+  const [generationPlanConfirmed, setGenerationPlanConfirmed] = useState(false);
   const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(
     () => ({
       ...emptySourceImageSelection,
@@ -765,10 +822,11 @@ export function MvpDashboard({
       : "상품 정보를 불러오면 관련 내부 신호를 자동으로 찾아 후킹을 제안합니다.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
+  const [automaticCopySet, setAutomaticCopySet] = useState<GeneratedAdCopy[]>([]);
   const [copyStatus, setCopyStatus] = useState<Status>({
     kind: "idle",
     message: initialCreationHandoff
-      ? "분석 추천 방향을 확인한 뒤 광고 후킹을 생성하고 문구 제작을 시작하세요."
+      ? "분석 추천 방향을 반영해 광고문구 6개를 자동 생성하세요."
       : "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
   });
   const [templateFittedCopy, setTemplateFittedCopy] = useState<TemplateFittedCopy | null>(null);
@@ -785,6 +843,10 @@ export function MvpDashboard({
     dimLevel: "high",
     brightness: 1,
     overlayOpacity: 0.08,
+    scale: 1.08,
+    offsetX: 0,
+    offsetY: 0,
+    flipHorizontal: false,
   });
   const [visualDirections, setVisualDirections] = useState<VisualDirection[]>([]);
   const [selectedVisualDirectionId, setSelectedVisualDirectionId] = useState("");
@@ -794,31 +856,50 @@ export function MvpDashboard({
     kind: "idle",
     message: "문구를 만든 뒤 상품과 광고 전략에 맞는 비주얼 방향 3개를 추천합니다.",
   });
-  const [sceneCandidates, setSceneCandidates] = useState<SceneCandidate[]>([]);
-  const [selectedSceneCandidateId, setSelectedSceneCandidateId] = useState("");
-  const [sceneGenerationProvider, setSceneGenerationProvider] =
-    useState<SceneGenerationProviderId>("openai");
-  const sceneCandidateCount = 2;
-  const [sceneGenerationStatus, setSceneGenerationStatus] = useState<Status>({
-    kind: "idle",
-    message: "비주얼 방향을 선택하면 글씨와 가상 상품이 없는 광고 장면을 만들 수 있습니다.",
-  });
   const [backgroundRecommendations, setBackgroundRecommendations] = useState<
     BackgroundRecommendation[]
   >([]);
+  const [recentBackgroundRecommendationIds, setRecentBackgroundRecommendationIds] = useState<
+    string[]
+  >([]);
+  const [backgroundAudienceProfile, setBackgroundAudienceProfile] =
+    useState<AudienceProfile | null>(null);
   const [selectedLibraryBackgroundId, setSelectedLibraryBackgroundId] = useState("");
-  const [backgroundProductionMode, setBackgroundProductionMode] =
-    useState<BackgroundProductionMode>("library");
   const [backgroundRecommendationStatus, setBackgroundRecommendationStatus] = useState<Status>({
     kind: "idle",
-    message: "후킹을 선택하면 합성하기 좋은 배경 3안을 추천합니다.",
+    message: "대표 광고문구가 적용되면 합성하기 좋은 배경을 자동 추천합니다.",
   });
-  const [aiBackgroundAvailable, setAiBackgroundAvailable] = useState(false);
-  const [savingAiCandidateId, setSavingAiCandidateId] = useState("");
+  const [backgroundRecommendationHistory, setBackgroundRecommendationHistory] = useState<
+    BackgroundRecommendationHistory[]
+  >(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = window.sessionStorage.getItem("adatlas-background-recommendation-history");
+      return saved ? (JSON.parse(saved) as BackgroundRecommendationHistory[]).slice(-12) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [adaptiveLayoutPlans, setAdaptiveLayoutPlans] = useState<AdaptiveCreativePlan[]>([]);
+  const [automaticAdaptiveLayoutPlans, setAutomaticAdaptiveLayoutPlans] = useState<
+    AdaptiveCreativePlan[]
+  >([]);
+  const [selectedAdaptivePlanId, setSelectedAdaptivePlanId] = useState("");
+  const [adaptiveLayoutStatus, setAdaptiveLayoutStatus] = useState<Status>({
+    kind: "idle",
+    message: "배경을 선택하면 서로 다른 위계의 레이아웃 3안을 만듭니다.",
+  });
+  const [creativeGenerationMode, setCreativeGenerationMode] =
+    useState<CreativeGenerationMode>("hook-based");
+  const [adaptiveCreativeResults, setAdaptiveCreativeResults] = useState<
+    AdaptiveCreativeRenderResult[]
+  >([]);
+  const [adaptiveCreativeGenerating, setAdaptiveCreativeGenerating] = useState(false);
   const [bannerTextColors, setBannerTextColors] = useState<BannerTextColorState>({
     bodyColor: "#111111",
     bodyFontSize: 50,
   });
+  const [manualTextColors, setManualTextColors] = useState(false);
   const [bannerAccentPhrase, setBannerAccentPhrase] = useState("");
   const [bannerAccentColor, setBannerAccentColor] = useState("#fff200");
   const [basicEditorSettings, setBasicEditorSettings] = useState<BasicEditorSettings>({
@@ -915,6 +996,7 @@ export function MvpDashboard({
     recommendedTemplateIds[0] || "food-template-001"
   );
   const [generatedBannerPath, setGeneratedBannerPath] = useState("");
+  const [generatedBannerAsset, setGeneratedBannerAsset] = useState<CreativeAsset | null>(null);
   const [renderDiagnostics, setRenderDiagnostics] = useState<RenderDiagnostics | null>(null);
   const [selectedBatchTemplateIds, setSelectedBatchTemplateIds] = useState<string[]>([]);
   const [batchRenderStatus, setBatchRenderStatus] = useState<BatchRenderStatus>("idle");
@@ -1026,20 +1108,42 @@ export function MvpDashboard({
     productInfo.productImagePath ||
     backgroundImageOptions[0]?.value ||
     "";
-  const selectedLibraryBackground = useMemo(
+  const activeProductRepresentation: ProductRepresentation = useMemo(
+    () =>
+      productImageState.representation ||
+      productInfo.productRepresentation ||
+      inferProductRepresentation({
+        productName: productInfo.productName,
+        description: productInfo.extractedDescription || productInfo.mainBenefit,
+        category: productInfo.category,
+        packageType: productInfo.packageType,
+        imageType: productInfo.imageType,
+      }),
+    [
+      productImageState.representation,
+      productInfo.category,
+      productInfo.extractedDescription,
+      productInfo.imageType,
+      productInfo.mainBenefit,
+      productInfo.packageType,
+      productInfo.productName,
+      productInfo.productRepresentation,
+    ]
+  );
+  const selectedBackgroundRecommendation = useMemo(
     () =>
       backgroundRecommendations.find(
         (recommendation) => recommendation.background.id === selectedLibraryBackgroundId
-      )?.background || null,
+      ) || null,
     [backgroundRecommendations, selectedLibraryBackgroundId]
   );
-  const selectedSceneCandidate = useMemo(
-    () => sceneCandidates.find((candidate) => candidate.id === selectedSceneCandidateId) || null,
-    [sceneCandidates, selectedSceneCandidateId]
-  );
+  const selectedLibraryBackground = selectedBackgroundRecommendation?.background || null;
+  const selectedAdaptivePlan =
+    adaptiveLayoutPlans.find((plan) => plan.id === selectedAdaptivePlanId) ||
+    adaptiveLayoutPlans[0] ||
+    null;
   const currentBackgroundSource =
     selectedLibraryBackground?.file ||
-    selectedSceneCandidate?.imagePath ||
     (productInfo.backgroundMode === "auto-detail-blur-dark"
       ? productInfo.selectedBackgroundSource ||
         productInfo.productImagePath ||
@@ -1052,16 +1156,11 @@ export function MvpDashboard({
     ? "selected-detail-blur-dark"
     : productInfo.backgroundMode || "none";
   const currentBackgroundComposition = {
-    sourceId:
-      selectedLibraryBackground?.id || selectedSceneCandidate?.id || "manual-or-auto-background",
-    sourceType: selectedLibraryBackground
-      ? selectedLibraryBackground.sourceType === "site_derived"
-        ? "site"
-        : "library"
-      : selectedSceneCandidate
-        ? "ai"
-        : "manual",
+    sourceId: selectedLibraryBackground?.id || "manual-or-auto-background",
+    sourceType: selectedLibraryBackground ? "library" : "manual",
     hookType: creativeWorkflow.selectedStrategy?.hookType,
+    layoutPreset:
+      selectedAdaptivePlan?.layoutType || selectedBackgroundRecommendation?.automaticLayout,
     productPosition:
       selectedLibraryBackground?.productPosition ||
       creativeWorkflow.selectedStrategy?.productPosition,
@@ -1074,6 +1173,21 @@ export function MvpDashboard({
       : mainImageSourceMode === "gpt"
         ? gptMainImagePath
         : productInfo.productImagePath;
+  const automaticCutoutCandidatePaths = useMemo(
+    () =>
+      compactUniqueImagePaths([
+        originalMainProductImage,
+        ...selectedAdImages.selectedImagePaths,
+        ...(productInfo.productImagePaths ?? []),
+        ...(productInfo.sourceImageCandidates ?? []).map((candidate) => candidate.imagePath),
+      ]).slice(0, 8),
+    [
+      originalMainProductImage,
+      productInfo.productImagePaths,
+      productInfo.sourceImageCandidates,
+      selectedAdImages.selectedImagePaths,
+    ]
+  );
   const baseCurrentMainProductImage =
     productImageState.selectedImageMode === "original"
       ? originalMainProductImage
@@ -1121,16 +1235,9 @@ export function MvpDashboard({
             product: productInfo,
             copy: bannerCopy,
             productImagePaths: currentProductImagePaths,
-            sceneCandidate: selectedSceneCandidate,
           })
         : null,
-    [
-      bannerCopy,
-      currentProductImagePaths,
-      productInfo,
-      selectedSceneCandidate,
-      selectedVisualDirection,
-    ]
+    [bannerCopy, currentProductImagePaths, productInfo, selectedVisualDirection]
   );
   const selectedHeadlineFont =
     systemFontOptions.find((option) => option.id === selectedHeadlineFontId) ??
@@ -1141,28 +1248,58 @@ export function MvpDashboard({
     systemFontOptions[0];
   const categoryTemplates = useMemo(() => {
     const category = productInfo.category || "";
-    const normalizedCategory = category.toLowerCase();
+    const productContext = [
+      category,
+      productInfo.productName,
+      productInfo.mainBenefit,
+      productInfo.extractedDescription,
+    ].join(" ");
+    const normalizedCategory = productContext.toLowerCase();
     const isFoodGiftCategory =
       category === "식품/선물" ||
-      category.includes("식품") ||
-      category.includes("선물") ||
+      /식품|선물|농산|축산|한우|정육|육류|과일|채소/.test(productContext) ||
       normalizedCategory.includes("food") ||
-      category.includes("농산") ||
-      category.includes("축산");
+      normalizedCategory.includes("beef");
     const isBeautyCategory =
-      category.includes("뷰티") ||
-      category.includes("화장품") ||
-      category.includes("바디") ||
-      normalizedCategory.includes("beauty");
-    if (isBeautyCategory) return beautyCategoryTemplates;
-    if (isFoodGiftCategory) {
-      return [...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption];
-    }
-    return [];
-  }, [productInfo.category]);
+      /뷰티|화장품|스킨|바디|샤워젤|바디워시|클렌징|퍼스널케어|멘톨|쿨링/.test(productContext) ||
+      /beauty|cosmetic|shower\s*gel|body\s*wash|personal\s*care/.test(normalizedCategory);
+    const isHealthCategory =
+      /건강기능|영양제|비타민|프로바이오틱스/.test(productContext) ||
+      normalizedCategory.includes("supplement") ||
+      normalizedCategory.includes("wellness");
+    const preferredTemplates = isHealthCategory
+      ? healthCategoryTemplates
+      : isBeautyCategory
+        ? beautyCategoryTemplates
+        : isFoodGiftCategory
+          ? [...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption]
+          : [];
+    const preferredIds = new Set(preferredTemplates.map((template) => template.id));
+    return [
+      ...preferredTemplates,
+      ...allCreatableTemplates.filter((template) => !preferredIds.has(template.id)),
+    ];
+  }, [
+    productInfo.category,
+    productInfo.extractedDescription,
+    productInfo.mainBenefit,
+    productInfo.productName,
+  ]);
   const selectedTemplate =
     categoryTemplates.find((template) => template.id === selectedTemplateId) ??
     categoryTemplates[0];
+  useEffect(() => {
+    if (!selectedTemplate?.id) return;
+    const recommendedFonts = resolveTemplateFontAssignment(
+      selectedTemplate.id,
+      headlineStyleOverrides.headlineFontPreset
+    );
+    const frame = window.requestAnimationFrame(() => {
+      setSelectedHeadlineFontId(recommendedFonts.headline.id);
+      setSelectedBodyFontId(recommendedFonts.body.id);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [headlineStyleOverrides.headlineFontPreset, selectedTemplate?.id]);
   const selectedCopyLimits = selectedTemplate?.copyLimits;
   const copyQualityReport = useMemo(
     () =>
@@ -1292,6 +1429,19 @@ export function MvpDashboard({
   }, []);
 
   useEffect(() => {
+    if (generatedBannerAsset && generatedBannerAsset.generatedImageUrl !== generatedBannerPath) {
+      setGeneratedBannerAsset(null);
+    }
+  }, [generatedBannerAsset, generatedBannerPath]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(
+      "adatlas-background-recommendation-history",
+      JSON.stringify(backgroundRecommendationHistory.slice(-12))
+    );
+  }, [backgroundRecommendationHistory]);
+
+  useEffect(() => {
     if (!categoryTemplates.length) return;
     if (!categoryTemplates.some((template) => template.id === selectedTemplateId)) {
       const frame = window.requestAnimationFrame(() => {
@@ -1300,6 +1450,16 @@ export function MvpDashboard({
       return () => window.cancelAnimationFrame(frame);
     }
   }, [categoryTemplates, selectedTemplateId]);
+
+  useEffect(() => {
+    if (!categoryTemplates.length) return;
+    const templateIds = categoryTemplates.map((template) => template.id);
+    const frame = window.requestAnimationFrame(() => {
+      setSelectedTemplateId(categoryTemplates[0].id);
+      setSelectedBatchTemplateIds(templateIds);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [categoryTemplates, productInfo.landingUrl]);
 
   useEffect(() => {
     if (selectedAdvertiserName) return;
@@ -1390,7 +1550,26 @@ export function MvpDashboard({
         message: "상품 이미지의 배경을 자동으로 제거하는 중입니다.",
       });
 
-      void requestProductCutout(imagePath, "none")
+      void requestProductCutout(
+        imagePath,
+        "none",
+        automaticCutoutCandidatePaths.filter((candidate) => candidate !== imagePath),
+        {
+          representationType: activeProductRepresentation.type,
+          extractionScope: activeProductRepresentation.selectedExtractionScope,
+          selectedObjectIds: selectedSourceImage?.detectedObjects
+            ?.filter((object) => object.selected)
+            .map((object) => object.id),
+          selectedObjectBoxes: selectedSourceImage?.detectedObjects
+            ?.filter((object) => object.selected)
+            .map((object) => object.box),
+          cropBox:
+            (selectedSourceImage?.recommendationScore || 0) >= 0.55
+              ? selectedSourceImage?.detectedGroupBox
+              : undefined,
+          expectedUnitCount: activeProductRepresentation.expectedUnitCount,
+        }
+      )
         .then((result) => {
           if (activeProductImagePathRef.current !== imagePath) return;
           if (!result.success) {
@@ -1421,14 +1600,21 @@ export function MvpDashboard({
                   styledCutoutImagePath: undefined,
                   selectedImageMode: "cutout",
                   cutoutApplied: true,
+                  representation: activeProductRepresentation,
+                  selectedExtractionScope: activeProductRepresentation.selectedExtractionScope,
+                  quality: result.quality,
+                  retryCount: result.retryCount,
+                  processingProvider: "removebg",
                 }
               : current
           );
           setProductImageProcessStatus({
             kind: "success",
-            message: result.debug?.cacheHit
-              ? "저장된 자동 누끼 이미지를 배너에 적용했습니다."
-              : result.fallbackMessage || "상품 누끼 이미지를 자동으로 배너에 적용했습니다.",
+            message: result.autoSelectedAlternative
+              ? "상세 이미지 중 누끼에 적합한 상품 컷을 찾아 배너에 자동 적용했습니다."
+              : result.debug?.cacheHit
+                ? "저장된 자동 누끼 이미지를 배너에 적용했습니다."
+                : result.fallbackMessage || "상품 누끼 이미지를 자동으로 배너에 적용했습니다.",
           });
         })
         .catch((error) => {
@@ -1446,7 +1632,14 @@ export function MvpDashboard({
         });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [mainImageSourceMode, originalMainProductImage, productImageState.originalImagePath]);
+  }, [
+    automaticCutoutCandidatePaths,
+    activeProductRepresentation,
+    mainImageSourceMode,
+    originalMainProductImage,
+    productImageState.originalImagePath,
+    selectedSourceImage,
+  ]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -1639,6 +1832,7 @@ export function MvpDashboard({
   }
 
   function updateProductInfoField(fieldKey: keyof ProductInfoForPrompt, value: string) {
+    setGenerationPlanConfirmed(false);
     setProductInfo((current) => ({ ...current, [fieldKey]: value }));
 
     if (fieldKey === "landingUrl" && value.trim() !== productInfo.landingUrl.trim()) {
@@ -1661,11 +1855,15 @@ export function MvpDashboard({
       setSelectedVisualDirectionId("");
       setVisualDirectionQualityScores({});
       setMatchedAdvertiserProfileName("");
-      setSceneCandidates([]);
-      setSelectedSceneCandidateId("");
       setBackgroundRecommendations([]);
+      setRecentBackgroundRecommendationIds([]);
       setSelectedLibraryBackgroundId("");
-      setBackgroundProductionMode("library");
+      setBackgroundRecommendationHistory([]);
+      setAdaptiveLayoutPlans([]);
+      setAutomaticAdaptiveLayoutPlans([]);
+      setSelectedAdaptivePlanId("");
+      setAdaptiveCreativeResults([]);
+      setAutomaticCopySet([]);
     }
   }
 
@@ -1675,11 +1873,13 @@ export function MvpDashboard({
       nextBrief.creativeIntensity !== creativeWorkflow.adBrief.creativeIntensity;
     if (strategyInputsChanged) {
       creativeWorkflow.resetStrategies();
+      setAutomaticCopySet([]);
       setStrategyStatus({
         kind: "idle",
-        message: "변경한 광고 목표와 강도로 후킹 3안을 다시 생성해주세요.",
+        message: "변경한 광고 목표와 강도로 광고문구 6개를 다시 생성해주세요.",
       });
     }
+    setGenerationPlanConfirmed(false);
     creativeWorkflow.setAdBrief(nextBrief);
     setProductInfo((current) => applyAdBriefToProductInfo(nextBrief, current));
   }
@@ -1761,6 +1961,12 @@ export function MvpDashboard({
         ? extracted.productName || ""
         : current.productName || extracted.productName || "",
       category: replaceExtractedFields ? extractedCategory : current.category || extractedCategory,
+      productSubCategory: replaceExtractedFields
+        ? extracted.productSubCategory || ""
+        : current.productSubCategory || extracted.productSubCategory || "",
+      detectedProductType: replaceExtractedFields
+        ? extracted.detectedProductType || ""
+        : current.detectedProductType || extracted.detectedProductType || "",
       brandName: replaceExtractedFields
         ? extracted.brandName || current.brandName || ""
         : current.brandName || extracted.brandName || "",
@@ -1785,8 +1991,8 @@ export function MvpDashboard({
         ? extracted.discountInfo || ""
         : extracted.discountInfo || current.discountInfo || "",
       mainBenefit: replaceExtractedFields
-        ? extracted.description || ""
-        : current.mainBenefit || extracted.description || "",
+        ? extracted.extractedDescription || extracted.description || ""
+        : current.mainBenefit || extracted.extractedDescription || extracted.description || "",
       landingUrl: replaceExtractedFields
         ? extracted.landingUrl || current.landingUrl || ""
         : current.landingUrl || extracted.landingUrl || "",
@@ -1803,8 +2009,11 @@ export function MvpDashboard({
           : defaultSelectedProductImagePaths,
       backgroundImagePath: replaceExtractedFields ? "" : current.backgroundImagePath || "",
       extractedDescription: replaceExtractedFields
-        ? extracted.description || ""
-        : extracted.description || current.extractedDescription || "",
+        ? extracted.extractedDescription || extracted.description || ""
+        : extracted.extractedDescription ||
+          extracted.description ||
+          current.extractedDescription ||
+          "",
       extractedMainImage: replaceExtractedFields
         ? nextProductImagePaths[0] || ""
         : nextProductImagePaths[0] || current.extractedMainImage || "",
@@ -1831,6 +2040,24 @@ export function MvpDashboard({
       selectedSourceImagePath: replaceExtractedFields
         ? selectedCandidate?.imagePath || ""
         : current.selectedSourceImagePath || selectedCandidate?.imagePath || "",
+      productRepresentation: replaceExtractedFields
+        ? extracted.productRepresentation
+        : current.productRepresentation || extracted.productRepresentation,
+      reviewSources: replaceExtractedFields
+        ? extracted.reviewSources || []
+        : current.reviewSources?.length
+          ? current.reviewSources
+          : extracted.reviewSources || [],
+      verifiedBenefits: replaceExtractedFields
+        ? extracted.verifiedBenefits || []
+        : current.verifiedBenefits?.length
+          ? current.verifiedBenefits
+          : extracted.verifiedBenefits || [],
+      ingredients: replaceExtractedFields
+        ? extracted.ingredients || []
+        : current.ingredients?.length
+          ? current.ingredients
+          : extracted.ingredients || [],
     };
   }
 
@@ -1884,6 +2111,14 @@ export function MvpDashboard({
           : {
               ...emptyProductImageState,
               originalImagePath: nextMainProductImage,
+              representation:
+                mergedProductInfo.productRepresentation ||
+                inferProductRepresentation({
+                  productName: mergedProductInfo.productName,
+                  description:
+                    mergedProductInfo.extractedDescription || mergedProductInfo.mainBenefit,
+                  category: mergedProductInfo.category,
+                }),
             }
       );
       if (replaceExtractedFieldsForUrl) {
@@ -1902,18 +2137,18 @@ export function MvpDashboard({
         setSelectedVisualDirectionId("");
         setVisualDirectionQualityScores({});
         setMatchedAdvertiserProfileName("");
-        setSceneCandidates([]);
-        setSelectedSceneCandidateId("");
         setBackgroundRecommendations([]);
+        setRecentBackgroundRecommendationIds([]);
         setSelectedLibraryBackgroundId("");
-        setBackgroundProductionMode("library");
+        setBackgroundRecommendationHistory([]);
+        setAdaptiveLayoutPlans([]);
+        setAutomaticAdaptiveLayoutPlans([]);
+        setSelectedAdaptivePlanId("");
+        setAdaptiveCreativeResults([]);
+        setAutomaticCopySet([]);
         setVisualDirectionStatus({
           kind: "idle",
           message: "새 상품의 문구를 만든 뒤 비주얼 방향 3개를 추천합니다.",
-        });
-        setSceneGenerationStatus({
-          kind: "idle",
-          message: "새 상품에 맞는 비주얼 방향을 먼저 선택해주세요.",
         });
       }
       setSourceImageStatus({
@@ -1928,9 +2163,10 @@ export function MvpDashboard({
       setGptTextAdAsset(null);
       setLatestImagePrompt("");
       creativeWorkflow.resetStrategies();
+      setAutomaticCopySet([]);
       setProductExtractStatus({
         kind: "success",
-        message: "상품 분석을 완료했습니다. 핵심 정보를 확인하고 광고 방향을 선택해주세요.",
+        message: "상품 분석을 완료했습니다. 광고문구 6개를 자동 생성할 수 있습니다.",
       });
       return mergedProductInfo;
     } catch (error) {
@@ -1967,13 +2203,17 @@ export function MvpDashboard({
           : "impact-korean-red";
 
     setSelectedVisualDirectionId(direction.id);
-    setSceneCandidates([]);
-    setSelectedSceneCandidateId("");
-    setSceneGenerationStatus({
-      kind: "idle",
-      message: "선택한 방향에 맞는 글씨 없는 광고 장면을 생성할 수 있습니다.",
-    });
     setCutoutProductEffect(direction.productTreatment);
+    setManualTextColors(false);
+    if (productImageState.cutoutApplied) {
+      setProductImageProcessStatus({
+        kind: "success",
+        message:
+          direction.productTreatment.outline || direction.productTreatment.glow
+            ? "대표 광고문구에 맞춰 누끼 상품에 테두리·광원·그림자 효과를 자동 적용합니다."
+            : "대표 광고문구에 맞춰 누끼 상품에 자연스러운 접지 그림자를 자동 적용합니다.",
+      });
+    }
     setBannerAccentColor(textPreset.highlightColors[0] || "#fff200");
     setBannerTextColors((current) => ({
       ...current,
@@ -1989,18 +2229,21 @@ export function MvpDashboard({
           ? "large"
           : "medium",
     }));
-    setHeadlineStyleOverrides((current) => ({
-      ...current,
-      headlineFontPreset: headlinePreset,
-      headlineFontWeight: textPreset.fontWeight,
-      headlineLetterSpacing: textPreset.letterSpacing,
-      headlineLineHeight: textPreset.lineHeight,
-      headlineColor: textPreset.foregroundColor,
-      headlineTextStroke: Boolean(textPreset.outline),
-      headlineTextStrokeColor: textPreset.outline?.color || "#111111",
-      headlineTextStrokeWidth: textPreset.outline?.width || 0,
-      headlineShadow: Boolean(textPreset.shadow),
-    }));
+    setHeadlineStyleOverrides((current) => {
+      const next = {
+        ...current,
+        headlineFontPreset: headlinePreset,
+        headlineFontWeight: textPreset.fontWeight,
+        headlineLetterSpacing: textPreset.letterSpacing,
+        headlineLineHeight: textPreset.lineHeight,
+        headlineTextStroke: Boolean(textPreset.outline),
+        headlineTextStrokeColor: textPreset.outline?.color || "#111111",
+        headlineTextStrokeWidth: textPreset.outline?.width || 0,
+        headlineShadow: Boolean(textPreset.shadow),
+      };
+      delete next.headlineColor;
+      return next;
+    });
     setBackgroundStyle((current) => ({
       ...current,
       blurLevel: "low",
@@ -2102,83 +2345,48 @@ export function MvpDashboard({
     }
   }
 
-  function selectSceneCandidate(candidate: SceneCandidate) {
-    setSelectedSceneCandidateId(candidate.id);
-    setSelectedLibraryBackgroundId("");
-    setProductInfo((current) => ({
-      ...current,
-      backgroundMode: "selected-detail-blur-dark",
-      backgroundImagePath: candidate.imagePath,
-      selectedBackgroundSource: candidate.imagePath,
-    }));
-    setBackgroundStyle((current) => ({
-      ...current,
-      blurLevel: "low",
-      dimLevel: "low",
-      brightness: 1,
-      overlayOpacity: 0.08,
-    }));
-    setGeneratedBannerPath("");
-  }
-
-  async function generateSceneCandidates(directionOverride?: VisualDirection | null) {
-    const direction = directionOverride || selectedVisualDirection;
-    if (!direction) {
-      setSceneGenerationStatus({
-        kind: "error",
-        message: "먼저 비주얼 방향을 선택해주세요.",
-      });
-      return;
-    }
-
-    setSceneGenerationStatus({
-      kind: "loading",
-      message: "상품과 문구를 제외한 1200x1200 광고 장면을 생성 중입니다.",
+  async function requestAdaptiveLayouts(
+    recommendation: BackgroundRecommendation,
+    strategy: CreativeStrategy,
+    selectionMode: "recommended" | "library" | "fixed" = "recommended",
+    copyOverride: GeneratedAdCopy = bannerCopy
+  ) {
+    const response = await fetch("/api/background-library/layouts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        backgroundId: recommendation.background.id,
+        background: recommendation.background,
+        product: productInfo,
+        hook: strategy,
+        copy: copyOverride,
+        productImagePath: currentMainProductImage,
+        backgroundSelectionMode: selectionMode,
+      }),
     });
-    try {
-      const response = await fetch("/api/image/generate-scene", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          direction,
-          provider: sceneGenerationProvider,
-          candidateCount: sceneCandidateCount,
-        }),
-      });
-      const result = (await response.json()) as {
-        ok?: boolean;
-        error?: string;
-        candidates?: SceneCandidate[];
-        fallbackUsed?: boolean;
-        message?: string;
-      };
-      if (!response.ok || !result.ok || !result.candidates?.length) {
-        throw new Error(result.error || "광고 장면 생성에 실패했습니다.");
-      }
-
-      setSceneCandidates(result.candidates);
-      selectSceneCandidate(result.candidates[0]);
-      setSceneGenerationStatus({
-        kind: result.fallbackUsed ? "error" : "success",
-        message:
-          result.message ||
-          (result.fallbackUsed
-            ? "AI 연결 대신 카테고리 안전 배경을 사용했습니다."
-            : "광고 장면 후보를 생성했습니다."),
-      });
-    } catch (error) {
-      setSceneGenerationStatus({
-        kind: "error",
-        message: error instanceof Error ? error.message : "광고 장면 생성에 실패했습니다.",
-      });
+    const result = (await response.json()) as {
+      ok?: boolean;
+      error?: string;
+      plans?: AdaptiveCreativePlan[];
+    };
+    if (!response.ok || !result.ok || !result.plans?.length) {
+      throw new Error(result.error || "적응형 레이아웃 생성에 실패했습니다.");
     }
+    return result.plans;
   }
 
-  function selectLibraryBackground(recommendation: BackgroundRecommendation) {
+  async function selectLibraryBackground(
+    recommendation: BackgroundRecommendation,
+    strategyOverride: CreativeStrategy | null = creativeWorkflow.selectedStrategy,
+    copyOverride: GeneratedAdCopy = bannerCopy
+  ) {
     const item = recommendation.background;
-    const isSiteDerived = item.sourceType === "site_derived";
+    setBackgroundRecommendations((current) =>
+      current.some((candidate) => candidate.background.id === item.id)
+        ? current
+        : [recommendation, ...current]
+    );
     setSelectedLibraryBackgroundId(item.id);
-    setSelectedSceneCandidateId("");
     setProductInfo((current) => ({
       ...current,
       backgroundMode: "selected-detail-blur-dark",
@@ -2187,28 +2395,121 @@ export function MvpDashboard({
     }));
     setBackgroundStyle((current) => ({
       ...current,
-      blurLevel: isSiteDerived ? "high" : "low",
+      blurLevel: "low",
       dimLevel: "low",
-      brightness: isSiteDerived ? 0.9 : 1,
-      overlayOpacity: isSiteDerived ? 0.22 : 0.06,
+      brightness: 1,
+      overlayOpacity: item.brightness === "dark" ? 0.12 : 0.04,
     }));
     setBackgroundRecommendationStatus({
       kind: "success",
-      message: isSiteDerived
-        ? "입력한 상세페이지 이미지를 흐림·톤 보정해 상품과 연결되는 배경으로 사용합니다."
-        : "빠른 제작 배경을 선택했습니다. 기존 합성·렌더 단계에서 바로 사용됩니다.",
+      message: "배경을 선택했습니다. 구도와 색상을 분석해 레이아웃 3안을 준비합니다.",
     });
     setGeneratedBannerPath("");
+    setAdaptiveCreativeResults([]);
+    setAdaptiveLayoutStatus({
+      kind: "loading",
+      message: "배경의 안전 영역과 상품 비율을 분석하고 있습니다.",
+    });
+    setBackgroundRecommendationHistory((current) => {
+      const next = current.map((history, index) =>
+        index === current.length - 1 ? { ...history, selectedBackgroundId: item.id } : history
+      );
+      return next.slice(-12);
+    });
+    try {
+      if (!strategyOverride) throw new Error("자동 템플릿을 만들 광고 방향이 없습니다.");
+      const plans = await requestAdaptiveLayouts(
+        recommendation,
+        strategyOverride,
+        recommendation.score > 0 ? "recommended" : "library",
+        copyOverride
+      );
+      setAdaptiveLayoutPlans(plans);
+      setAutomaticAdaptiveLayoutPlans(plans);
+      setSelectedAdaptivePlanId(plans[0]?.id || "");
+      setAdaptiveLayoutStatus({
+        kind: "success",
+        message: "카피 강조·상품 강조·콘텐츠 강조 레이아웃 3안을 준비했습니다.",
+      });
+    } catch (error) {
+      setAdaptiveLayoutPlans([]);
+      setAutomaticAdaptiveLayoutPlans([]);
+      setSelectedAdaptivePlanId("");
+      setAdaptiveLayoutStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "적응형 레이아웃 생성에 실패했습니다.",
+      });
+    }
   }
 
-  async function loadBackgroundRecommendations(strategy: CreativeStrategy) {
-    const shouldClearRecommendedBackground = Boolean(
-      selectedLibraryBackgroundId || selectedSceneCandidateId
-    );
-    setBackgroundProductionMode("library");
+  function selectFixedBackground(source: string, label: string) {
+    let labelHash = 0;
+    for (const character of label)
+      labelHash = ((labelHash << 5) - labelHash + character.charCodeAt(0)) | 0;
+    const id = `fixed-${Math.abs(labelHash) || 1}`;
+    const background: BackgroundLibraryItem = {
+      id,
+      file: source,
+      enabled: true,
+      category: "promotion",
+      subcategories: ["solid-gradient"],
+      industries: [String(productInfo.category || "promotion")],
+      assetType: "designed_asset",
+      hookTypes: ["price_offer", "usp_proof", "situation", "premium"],
+      ageGroups: ["no_people"],
+      peopleType: ["no_people"],
+      peopleCount: 0,
+      includesPerson: false,
+      personPosition: "none",
+      personGaze: "none",
+      personEmotion: "",
+      personAction: "",
+      scene: label,
+      mood: ["minimal", "clean"],
+      elements: ["gradient", "negative-space"],
+      colors: ["neutral"],
+      productPosition: "center-right",
+      textSafeArea: "top-left",
+      focalArea: "center",
+      brightness: label.includes("다크") ? "dark" : "bright",
+      contrast: "low",
+      orientation: "square",
+      recommendedLayouts: ["product-grounded", "premium-minimal"],
+      sourceType: "designed_asset",
+      sourceName: "AdAtlas 고정 배경",
+      sourcePageUrl: "",
+      originalImageUrl: "",
+      licenseUrl: "",
+      authorName: "AdAtlas",
+      width: 1600,
+      height: 1600,
+      fileSize: source.length,
+      hash: id,
+    };
+    void selectLibraryBackground({
+      background,
+      score: 1,
+      matchScore: 1,
+      diversityScore: 0,
+      reasons: ["상품과 문구를 위한 단순한 여백 배경입니다."],
+      connectionLabel: "단색·그라데이션",
+      automaticLayout: "product-grounded",
+    });
+  }
+
+  async function loadBackgroundRecommendations(
+    strategy: CreativeStrategy,
+    excludeIds: string[] = [],
+    copyOverride: GeneratedAdCopy = bannerCopy
+  ) {
+    const shouldClearRecommendedBackground = Boolean(selectedLibraryBackgroundId);
     setBackgroundRecommendations([]);
+    setBackgroundAudienceProfile(null);
     setSelectedLibraryBackgroundId("");
-    setSelectedSceneCandidateId("");
+    setAdaptiveLayoutPlans([]);
+    setAutomaticAdaptiveLayoutPlans([]);
+    setSelectedAdaptivePlanId("");
+    setAdaptiveCreativeResults([]);
     setProductInfo((current) => {
       const selectedSource = String(current.selectedBackgroundSource || "");
       if (
@@ -2227,35 +2528,62 @@ export function MvpDashboard({
     });
     setBackgroundRecommendationStatus({
       kind: "loading",
-      message: "상품과 선택한 후킹에 맞는 배경을 비교하고 있습니다.",
+      message: "상품과 자동 적용 문구에 맞는 배경을 비교하고 있습니다.",
     });
     try {
       const response = await fetch("/api/background-library/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product: productInfo, hook: strategy, limit: 3 }),
+        body: JSON.stringify({
+          product: productInfo,
+          hook: strategy,
+          limit: 12,
+          excludeIds,
+          selectedIds: backgroundRecommendationHistory
+            .map((history) => history.selectedBackgroundId)
+            .filter(Boolean),
+          recommendationPage: backgroundRecommendationHistory.length,
+        }),
       });
       const result = (await response.json()) as {
         ok?: boolean;
         error?: string;
         recommendations?: BackgroundRecommendation[];
-        aiGenerationAvailable?: boolean;
-        preferredAiProvider?: SceneGenerationProviderId | null;
+        audienceProfile?: AudienceProfile;
       };
       if (!response.ok || !result.ok) {
         throw new Error(result.error || "배경 추천에 실패했습니다.");
       }
       const nextRecommendations = result.recommendations || [];
       setBackgroundRecommendations(nextRecommendations);
-      if (nextRecommendations[0]) selectLibraryBackground(nextRecommendations[0]);
-      setAiBackgroundAvailable(Boolean(result.aiGenerationAvailable));
-      if (result.preferredAiProvider) setSceneGenerationProvider(result.preferredAiProvider);
+      setBackgroundAudienceProfile(result.audienceProfile || null);
+      setRecentBackgroundRecommendationIds((current) =>
+        Array.from(
+          new Set([...current, ...nextRecommendations.map((item) => item.background.id)])
+        ).slice(-72)
+      );
+      setBackgroundRecommendationHistory((current) =>
+        [
+          ...current,
+          {
+            recommendedBackgroundIds: nextRecommendations.map((item) => item.background.id),
+            excludedBackgroundIds: excludeIds,
+            recommendationPage: current.length,
+            hookId: strategy.id,
+            productCategory: productInfo.category,
+            createdAt: new Date().toISOString(),
+          },
+        ].slice(-12)
+      );
       setBackgroundRecommendationStatus({
         kind: "success",
         message: nextRecommendations.length
-          ? "예시 품질의 후킹 기본 배경 1안을 자동 선택했습니다. 나머지 후보로 바꿀 수 있습니다."
-          : "사용 가능한 배경 파일이 없습니다. 라이브러리 설치 상태를 확인해주세요.",
+          ? "상품과 후킹에 가장 잘 맞는 배경을 자동 선택하고 템플릿을 설계합니다."
+          : "다른 후보가 없습니다. 후킹을 다시 선택하면 추천 이력이 초기화됩니다.",
       });
+      if (nextRecommendations[0]) {
+        await selectLibraryBackground(nextRecommendations[0], strategy, copyOverride);
+      }
     } catch (error) {
       setBackgroundRecommendationStatus({
         kind: "error",
@@ -2264,94 +2592,43 @@ export function MvpDashboard({
     }
   }
 
-  async function generateHookBackground() {
-    const strategy = creativeWorkflow.selectedStrategy;
-    if (!strategy || !aiBackgroundAvailable) return;
-    let direction = selectedVisualDirection;
-    if (!direction) {
-      const directions = await generateVisualDirections(bannerCopy, productInfo, strategy);
-      direction = directions[0] || null;
-    }
-    if (direction) await generateSceneCandidates(direction);
-  }
-
-  async function saveAiBackground(candidate: SceneCandidate) {
-    const strategy = creativeWorkflow.selectedStrategy;
-    if (!strategy) return;
-    setSavingAiCandidateId(candidate.id);
-    try {
-      const response = await fetch("/api/background-library/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imagePath: candidate.imagePath,
-          provider: candidate.provider,
-          product: productInfo,
-          hook: strategy,
-        }),
-      });
-      const result = (await response.json()) as {
-        ok?: boolean;
-        error?: string;
-        item?: BackgroundRecommendation["background"];
-      };
-      if (!response.ok || !result.ok || !result.item) {
-        throw new Error(result.error || "AI 배경 저장에 실패했습니다.");
-      }
-      const recommendation: BackgroundRecommendation = {
-        background: result.item,
-        score: 100,
-        reasons: ["선택한 후킹으로 직접 생성", "상품·문구 여백 확보"],
-      };
-      setBackgroundRecommendations((current) =>
-        [recommendation, ...current.filter((item) => item.background.id !== result.item?.id)].slice(
-          0,
-          3
-        )
-      );
-      setBackgroundProductionMode("library");
-      selectLibraryBackground(recommendation);
-      setBackgroundRecommendationStatus({
-        kind: "success",
-        message: "AI 배경을 WebP로 최적화해 재사용 라이브러리에 보관했습니다.",
-      });
-    } catch (error) {
-      setBackgroundRecommendationStatus({
-        kind: "error",
-        message: error instanceof Error ? error.message : "AI 배경 저장에 실패했습니다.",
-      });
-    } finally {
-      setSavingAiCandidateId("");
-    }
-  }
-
-  function resolveProductEffectForRender() {
+  function resolveProductEffectForRender(backgroundOverride?: BackgroundLibraryItem | null) {
     const normalized = normalizeProductRenderEffect(cutoutProductEffect);
-    if (selectedVisualDirection && productImageState.selectedImageMode === "original") {
-      return {
-        ...normalized,
-        outline: false,
-        outlineWidth: 0,
-        glow: false,
-        glowBlur: 0,
-        shadow: true,
-      };
-    }
-    return productImageState.selectedImageMode === "original" ? undefined : normalized;
+    if (productImageState.selectedImageMode === "original") return undefined;
+    const renderBackground = backgroundOverride || selectedLibraryBackground;
+    if (!renderBackground) return normalized;
+    const promotionLike =
+      renderBackground.category === "promotion" ||
+      ["designed_asset", "pattern_texture"].includes(renderBackground.assetType);
+    return {
+      ...normalized,
+      outline: promotionLike,
+      outlineWidth: promotionLike ? Math.min(5, Math.max(2, normalized.outlineWidth)) : 0,
+      glow: renderBackground.brightness === "dark" && !promotionLike,
+      glowBlur: renderBackground.brightness === "dark" ? Math.min(14, normalized.glowBlur) : 0,
+      shadow: true,
+      shadowOpacity: Math.min(0.38, normalized.shadowOpacity ?? 0.32),
+      shadowBlur: Math.max(14, normalized.shadowBlur),
+      shadowOffsetY: Math.max(8, normalized.shadowOffsetY),
+    };
   }
 
-  async function generateBannerCopy() {
-    if (!creativeWorkflow.selectedStrategy) {
+  async function generateBannerCopy(
+    strategyOverride?: CreativeStrategy,
+    strategySet: CreativeStrategy[] = creativeWorkflow.strategies
+  ) {
+    const strategy = strategyOverride || creativeWorkflow.selectedStrategy;
+    if (!strategy) {
       setCopyStatus({
         kind: "error",
-        message: "광고 후킹 3안을 만든 뒤 사용할 후킹 하나를 선택해주세요.",
+        message: "먼저 자동 광고문구 6개를 생성해주세요.",
       });
       creativeWorkflow.setActiveStep("strategy");
-      return;
+      return null;
     }
     setCopyStatus({
       kind: "loading",
-      message: "상품 정보와 자동 매칭된 레퍼런스 패턴으로 masterCopy를 생성 중입니다.",
+      message: "상품 정보와 카피 가이드로 광고문구 6개를 완성하고 있습니다.",
     });
     setGeneratedBannerPath("");
 
@@ -2386,8 +2663,6 @@ export function MvpDashboard({
           copyGuideId: selectedAdvertiserOption.guideId,
           productUrl: productInfoForCopy.landingUrl,
           category: productInfoForCopy.category,
-          templateId: selectedTemplate?.id,
-          templateName: selectedTemplate?.name,
           adBrief: {
             ...creativeWorkflow.adBrief,
             productName: productInfoForCopy.productName,
@@ -2399,7 +2674,8 @@ export function MvpDashboard({
             targetCustomer: productInfoForCopy.targetCustomer,
             landingUrl: productInfoForCopy.landingUrl,
           },
-          creativeStrategy: creativeWorkflow.selectedStrategy,
+          creativeStrategy: strategy,
+          creativeStrategies: strategySet.slice(0, 6),
           referenceUsages: creativeWorkflow.referenceUsages,
         }),
       });
@@ -2410,20 +2686,14 @@ export function MvpDashboard({
       }
 
       const generatedCopy = result.copy as GeneratedAdCopy;
+      const generatedCopies = Array.isArray(result.copies)
+        ? (result.copies as GeneratedAdCopy[]).slice(0, 6)
+        : [generatedCopy];
       const generatedHierarchy =
         generatedCopy.messageHierarchy || copyToMessageHierarchy(generatedCopy);
       const mappedGeneratedCopy = messageHierarchyToCopy(generatedHierarchy, generatedCopy);
-      const copyResolution = selectedTemplate
-        ? resolveCopyForTemplate({
-            masterCopy: mappedGeneratedCopy,
-            templateId: selectedTemplate.id,
-            templateName: selectedTemplate.name,
-            copyLimits: selectedTemplate.copyLimits,
-            mode: templateCopyMode,
-          })
-        : null;
-
       setCopyResult(mappedGeneratedCopy);
+      setAutomaticCopySet(generatedCopies);
       setMasterCopy(mappedGeneratedCopy);
       creativeWorkflow.setMessageHierarchy(generatedHierarchy);
       setTemplateCopyPreviews(
@@ -2435,29 +2705,106 @@ export function MvpDashboard({
             })
           : []
       );
-      setTemplateFittedCopy(copyResolution?.preview.fittedCopy ?? null);
-      setActiveRenderCopy(copyResolution?.activeRenderCopy ?? mappedGeneratedCopy);
-      setBannerCopy(copyResolution?.activeRenderCopy ?? mappedGeneratedCopy);
+      setTemplateFittedCopy(null);
+      setActiveRenderCopy(mappedGeneratedCopy);
+      setBannerCopy(mappedGeneratedCopy);
+      setAdaptiveLayoutPlans((current) =>
+        current.map((plan) => ({
+          ...plan,
+          pricePlacement: {
+            ...plan.pricePlacement,
+            visible: Boolean(mappedGeneratedCopy.price || productInfoForCopy.price),
+          },
+          ctaPlacement: {
+            ...plan.ctaPlacement,
+            visible: Boolean(mappedGeneratedCopy.cta),
+          },
+          updatedAt: new Date().toISOString(),
+        }))
+      );
+      setAutomaticAdaptiveLayoutPlans((current) =>
+        current.map((plan) => ({
+          ...plan,
+          pricePlacement: {
+            ...plan.pricePlacement,
+            visible: Boolean(mappedGeneratedCopy.price || productInfoForCopy.price),
+          },
+          ctaPlacement: {
+            ...plan.ctaPlacement,
+            visible: Boolean(mappedGeneratedCopy.cta),
+          },
+          updatedAt: new Date().toISOString(),
+        }))
+      );
       setCopyStatus({
         kind: "success",
         message: result.isMock
-          ? "OPENAI_API_KEY가 없어 mock masterCopy를 생성했습니다."
-          : "masterCopy와 길이별 문구 세트를 생성했습니다.",
+          ? "OPENAI_API_KEY가 없어 규칙 기반 광고문구 6개를 생성했습니다."
+          : "광고문구 6개와 길이별 문구 세트를 생성했습니다.",
       });
       creativeWorkflow.setActiveStep("copy");
-      await generateVisualDirections(mappedGeneratedCopy, productInfoForCopy);
+      await generateVisualDirections(mappedGeneratedCopy, productInfoForCopy, strategy);
+      return mappedGeneratedCopy;
     } catch (error) {
       setCopyStatus({
         kind: "error",
         message: error instanceof Error ? error.message : "광고문구 생성 중 오류가 발생했습니다.",
       });
+      return null;
     }
+  }
+
+  async function generateAndApplyAutomaticCopies(
+    generator: () => Promise<CreativeStrategy[]>,
+    refresh = false
+  ) {
+    setStrategyStatus({
+      kind: "loading",
+      message: refresh
+        ? "상품 사실을 유지하면서 새로운 광고문구 6개를 만들고 있습니다."
+        : "상품 사실과 광고 목표를 분석해 광고문구 6개를 만들고 있습니다.",
+    });
+    setBackgroundRecommendations([]);
+    setSelectedLibraryBackgroundId("");
+    setAdaptiveLayoutPlans([]);
+    setAutomaticAdaptiveLayoutPlans([]);
+    setSelectedAdaptivePlanId("");
+    setAdaptiveCreativeResults([]);
+    setAutomaticCopySet([]);
+    setCreativeGenerationMode("hook-based");
+
+    const strategies = await generator();
+    const primaryStrategy = strategies[0];
+    if (!primaryStrategy || strategies.length !== 6) {
+      setStrategyStatus({
+        kind: "error",
+        message: "광고문구 6개를 준비하지 못했습니다. 다시 생성해주세요.",
+      });
+      return;
+    }
+
+    const appliedCopy = await generateBannerCopy(primaryStrategy, strategies);
+    if (!appliedCopy) {
+      setStrategyStatus({
+        kind: "error",
+        message: "광고문구는 생성했지만 대표 문구를 적용하지 못했습니다.",
+      });
+      return;
+    }
+    await loadBackgroundRecommendations(primaryStrategy, [], appliedCopy);
+    setStrategyStatus({
+      kind: "success",
+      message: creativeWorkflow.referenceMatches.length
+        ? `내부 레퍼런스 ${creativeWorkflow.referenceMatches.length}개와 상품 근거로 문구 6개를 만들고 1번 문구를 대표 소재에 자동 적용했습니다.`
+        : "상품 상세페이지 근거로 문구 6개를 만들고 1번 문구를 대표 소재에 자동 적용했습니다.",
+    });
   }
 
   function setHeadlineStyleOverride<Key extends keyof HeadlineStyleOverrides>(
     key: Key,
     value: HeadlineStyleOverrides[Key] | ""
   ) {
+    if (key === "headlineColor") setManualTextColors(true);
     setHeadlineStyleOverrides((current) => {
       const next = { ...current };
       if (value === "" || value === undefined) {
@@ -3209,6 +3556,148 @@ export function MvpDashboard({
     setProductImageState((current) => ({ ...current, selectedImageMode }));
   }
 
+  function updateProductRepresentationType(type: ProductRepresentationType) {
+    const nextRepresentation: ProductRepresentation = {
+      ...activeProductRepresentation,
+      type,
+      confidence: 1,
+      reason: "사용자가 상품 상세정보와 실제 판매 구성을 확인해 직접 수정했습니다.",
+    };
+    setProductInfo((current) => ({ ...current, productRepresentation: nextRepresentation }));
+    setProductImageState((current) => ({ ...current, representation: nextRepresentation }));
+  }
+
+  function updateProductExtractionScope(scope: ProductExtractionScope) {
+    const nextRepresentation: ProductRepresentation = {
+      ...activeProductRepresentation,
+      selectedExtractionScope: scope,
+    };
+    setProductInfo((current) => ({ ...current, productRepresentation: nextRepresentation }));
+    setProductImageState((current) => ({
+      ...current,
+      representation: nextRepresentation,
+      selectedExtractionScope: scope,
+    }));
+  }
+
+  function selectWorkbenchSource(candidate: SourceImageCandidate) {
+    selectSourceImage(candidate);
+    const nextPaths = compactUniqueImagePaths([
+      candidate.imagePath,
+      ...selectedAdImages.selectedImagePaths.filter(
+        (imagePath) => imagePath !== candidate.imagePath
+      ),
+    ]).slice(0, 4);
+    applySelectedAdImagePaths(nextPaths, candidate.type === "upload" ? "upload" : "detail", {
+      syncProductInfo: true,
+    });
+    activeProductImagePathRef.current = candidate.imagePath;
+    setProductImageState({
+      ...emptyProductImageState,
+      originalImagePath: candidate.imagePath,
+      representation: activeProductRepresentation,
+      selectedExtractionScope: activeProductRepresentation.selectedExtractionScope,
+      selectedObjectIds: candidate.detectedObjects
+        ?.filter((object) => object.selected)
+        .map((object) => object.id),
+      selectedGroupBox: candidate.detectedGroupBox,
+    });
+    setMainImageSourceMode(candidate.type === "upload" ? "upload" : "detail");
+  }
+
+  async function reprocessWorkbenchImage(options: {
+    imagePath: string;
+    representationType: ProductRepresentationType;
+    extractionScope: ProductExtractionScope;
+    selectedObjectIds: string[];
+    selectedObjectBoxes?: Array<{ x: number; y: number; width: number; height: number }>;
+    cropBox?: { x: number; y: number; width: number; height: number };
+  }) {
+    const candidate = sourceImageCandidatesForDisplay.find(
+      (item) => item.imagePath === options.imagePath
+    );
+    if (candidate && candidate.imagePath !== productImageState.originalImagePath) {
+      selectWorkbenchSource(candidate);
+    }
+    activeProductImagePathRef.current = options.imagePath;
+    setProductImageProcessStatus({
+      kind: "loading",
+      message: "선택한 판매 단위와 추출 범위로 상품 이미지를 처리하는 중입니다.",
+    });
+    try {
+      const result = await requestProductCutout(options.imagePath, "commerce-shadow", [], {
+        representationType: options.representationType,
+        extractionScope: options.extractionScope,
+        selectedObjectIds: options.selectedObjectIds,
+        selectedObjectBoxes: options.selectedObjectBoxes,
+        cropBox: options.cropBox,
+        expectedUnitCount: activeProductRepresentation.expectedUnitCount,
+      });
+      if (!result.success || !result.cutoutImagePath) {
+        setProductImageProcessStatus({
+          kind: "error",
+          message:
+            result.fallbackMessage ||
+            result.error ||
+            "품질 기준을 통과하지 못해 원본을 유지했습니다.",
+        });
+        return;
+      }
+      const representation = {
+        ...activeProductRepresentation,
+        type: options.representationType,
+        selectedExtractionScope: options.extractionScope,
+      };
+      setProductImageState((current) => ({
+        ...current,
+        originalImagePath: options.imagePath,
+        cutoutImagePath: result.cutoutImagePath,
+        styledCutoutImagePath: result.styledCutoutImagePath,
+        selectedImageMode: "cutout",
+        cutoutApplied: true,
+        effectPreset: "commerce-shadow",
+        representation,
+        selectedExtractionScope: options.extractionScope,
+        selectedObjectIds: options.selectedObjectIds,
+        selectedGroupBox: options.cropBox,
+        quality: result.quality,
+        retryCount: result.retryCount,
+        manualEdited: false,
+        processingProvider: "removebg",
+      }));
+      setProductInfo((current) => ({ ...current, productRepresentation: representation }));
+      setProductImageProcessStatus({
+        kind: "success",
+        message:
+          result.message ||
+          `품질 ${Math.round((result.quality?.score || 0) * 100)}점 누끼를 적용했습니다.`,
+      });
+    } catch (error) {
+      setProductImageProcessStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "누끼 처리에 실패했습니다.",
+      });
+    }
+  }
+
+  function applyManualMaskResult(imagePath: string, quality: ProductCutoutQuality) {
+    setProductImageState((current) => ({
+      ...current,
+      cutoutImagePath: imagePath,
+      styledCutoutImagePath: undefined,
+      selectedImageMode: "cutout",
+      cutoutApplied: true,
+      quality,
+      manualEdited: true,
+    }));
+    setProductImageProcessStatus({
+      kind: quality.usable ? "success" : "error",
+      message: quality.usable
+        ? "수동 마스크 수정 결과를 적용했습니다."
+        : "수동 수정 결과에 품질 경고가 있습니다. 배경별 미리보기를 확인해 주세요.",
+    });
+  }
+
   async function applyCutoutToProductImage() {
     const imagePath = productImageState.originalImagePath;
     if (!imagePath) {
@@ -3227,7 +3716,15 @@ export function MvpDashboard({
     try {
       const result = await requestProductCutout(
         imagePath,
-        productImageState.effectPreset || "outline-glow-shadow"
+        productImageState.effectPreset || "commerce-shadow",
+        [],
+        {
+          representationType: activeProductRepresentation.type,
+          extractionScope: activeProductRepresentation.selectedExtractionScope,
+          selectedObjectIds: productImageState.selectedObjectIds,
+          cropBox: productImageState.selectedGroupBox,
+          expectedUnitCount: activeProductRepresentation.expectedUnitCount,
+        }
       );
 
       if (activeProductImagePathRef.current !== imagePath) return;
@@ -3257,7 +3754,12 @@ export function MvpDashboard({
               styledCutoutImagePath: result.styledCutoutImagePath,
               selectedImageMode: result.styledCutoutImagePath ? "styled-cutout" : "cutout",
               cutoutApplied: true,
-              effectPreset: current.effectPreset || "outline-glow-shadow",
+              effectPreset: current.effectPreset || "commerce-shadow",
+              representation: activeProductRepresentation,
+              selectedExtractionScope: activeProductRepresentation.selectedExtractionScope,
+              quality: result.quality,
+              retryCount: result.retryCount,
+              processingProvider: "removebg",
             }
           : current
       );
@@ -3299,7 +3801,7 @@ export function MvpDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cutoutImagePath: productImageState.cutoutImagePath,
-          effectPreset: productImageState.effectPreset || "outline-glow-shadow",
+          effectPreset: productImageState.effectPreset || "commerce-shadow",
         }),
       });
       const result = await response.json();
@@ -3343,8 +3845,345 @@ export function MvpDashboard({
     anchor.remove();
   }
 
-  async function renderSelectedTemplatesBatch() {
-    if (!selectedBatchTemplateIds.length) {
+  async function registerFinalCreativeAsset(input: CreateCreativeAssetInput) {
+    const response = await fetch("/api/creative-assets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const payload = (await response.json()) as { asset?: CreativeAsset; error?: string };
+    if (!response.ok || !payload.asset) {
+      throw new Error(payload.error || "소재 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+    return payload.asset;
+  }
+
+  function opportunityAssetFields(): Partial<CreateCreativeAssetInput> {
+    const context = productInfo.creativeContext;
+    return context ? {
+      advertiserId: context.advertiserId,
+      productId: context.productId,
+      opportunityId: context.opportunityId,
+      analysisRunId: context.analysisRunId,
+      opportunityType: context.opportunityType,
+      recommendedHookType: context.recommendedHookTypes?.[0],
+      appliedContentNoteIds: context.appliedContentNotes?.map((note) => note.id),
+      reviewInsightIds: context.reviewInsightIds,
+    } : {};
+  }
+
+  async function issueCodeForExistingBanner() {
+    if (generatedBannerAsset) return generatedBannerAsset;
+    if (!generatedBannerPath) throw new Error("소재코드를 발급할 이미지가 없습니다.");
+    const asset = await registerFinalCreativeAsset({
+      ...opportunityAssetFields(),
+      brandId: productInfo.copyGuideId || selectedAdvertiserName || undefined,
+      brandName: productInfo.brandName || productInfo.advertiserName || selectedAdvertiserName,
+      productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
+      productName: productInfo.productName,
+      category: productInfo.category,
+      hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+      advertisingHypothesis:
+        creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
+      headline: bannerCopy.headline,
+      subCopy: bannerCopy.bodyCopy,
+      benefitCopy: [bannerCopy.highlightCopy, bannerCopy.bottomBarCopy].filter(Boolean).join(" · "),
+      templateId: renderDiagnostics?.templateId || selectedTemplate?.id || "existing-render",
+      layoutType: selectedAdaptivePlan?.layoutType || selectedTemplate?.templateGroup || "existing-render",
+      backgroundType: currentBackgroundComposition.sourceType,
+      backgroundId: currentBackgroundComposition.sourceId,
+      sourceProductImage: currentMainProductImage,
+      generatedImageUrl: generatedBannerPath,
+      objective: creativeWorkflow.adBrief.adObjective,
+      generationRequestKey: `mvp-existing:${generatedBannerPath}`,
+    });
+    setGeneratedBannerAsset(asset);
+    return asset;
+  }
+
+  async function renderAdaptiveVariant(params: {
+    recommendation: BackgroundRecommendation;
+    plan: AdaptiveCreativePlan;
+    strategy: CreativeStrategy;
+    copy: GeneratedAdCopy;
+  }) {
+    const resolvedImages = resolveCurrentProductImagePaths({
+      selectedAdImages,
+      productInfo,
+      sourceImageSelection,
+      selectedSourceImagePath,
+      productImageState,
+      uploadedMainImageDataUrl,
+      gptMainImagePath,
+      backgroundImagePath: params.recommendation.background.file,
+    });
+    const fontTemplateId =
+      selectedVisualDirection?.recommendedTemplateId ||
+      selectedTemplate?.id ||
+      categoryTemplates[0]?.id ||
+      "food-template-001";
+    const templateFonts = resolveTemplateFontAssignment(
+      fontTemplateId,
+      headlineStyleOverrides.headlineFontPreset
+    );
+    const response = await fetch("/api/render/template-ad", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        templateId: `auto-${params.plan.layoutType}`,
+        canvasSize: { width: 1200, height: 1200 },
+        productInfo,
+        copy: {
+          headline: params.copy.headline,
+          bodyCopy: params.copy.bodyCopy,
+          highlightCopy: params.copy.highlightCopy,
+          bottomBarCopy: params.copy.bottomBarCopy,
+          cta: params.copy.cta,
+          price: params.copy.price || productInfo.price,
+        },
+        productImagePath: resolvedImages.productImagePath || currentMainProductImage,
+        secondaryProductImagePath: resolvedImages.secondaryProductImagePath,
+        productImagePaths: resolvedImages.productImagePaths,
+        selectedProductImagePath: resolvedImages.productImagePath,
+        productImageState,
+        productEffect: resolveProductEffectForRender(params.recommendation.background),
+        productOriginalPrice: productInfo.originalPrice || productInfo.oldPrice || "",
+        logoImagePath: brandLogoPath,
+        aiDisclosure: {
+          enabled: showAiDisclosure,
+          text: aiDisclosureText,
+        },
+        selectedBackgroundSource: params.recommendation.background.file,
+        backgroundMode: "selected-detail-blur-dark",
+        backgroundComposition: {
+          sourceId: params.recommendation.background.id,
+          sourceType: "library",
+          hookType: params.strategy.hookType,
+          productPosition: params.recommendation.background.productPosition,
+          textSafeArea: params.recommendation.background.textSafeArea,
+          layoutPreset: params.plan.layoutType,
+        },
+        adaptiveCreativePlan: params.plan,
+        backgroundStyle: {
+          brightness: params.plan.backgroundAdjustments.brightness,
+          scale: params.plan.backgroundAdjustments.scale,
+          offsetX: params.plan.backgroundAdjustments.offsetX,
+          offsetY: params.plan.backgroundAdjustments.offsetY,
+          flipHorizontal: backgroundStyle.flipHorizontal,
+        },
+        style: {
+          selectedFontFile: templateFonts.body.file,
+          headlineFontFile: templateFonts.headline.file,
+          selectedFontWeight: templateFonts.body.fontWeight,
+          bodyFontWeight: templateFonts.body.fontWeight,
+          headlineFontWeight: templateFonts.headline.fontWeight,
+          fontFamily: templateFonts.body.fontFamily,
+          headlineFontFamily: templateFonts.headline.fontFamily,
+        },
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success || !result.imagePath) {
+      throw new Error(result.error || "적응형 광고 렌더링에 실패했습니다.");
+    }
+    return result as { imagePath: string; diagnostics?: RenderDiagnostics };
+  }
+
+  async function generateAdaptiveCreativeVariants() {
+    if (!hasMasterCopy || !creativeWorkflow.selectedStrategy) {
+      setAdaptiveLayoutStatus({ kind: "error", message: "먼저 광고 문구를 생성해 주세요." });
+      return;
+    }
+    if (!selectedBackgroundRecommendation || !selectedAdaptivePlan) {
+      setAdaptiveLayoutStatus({ kind: "error", message: "먼저 배경과 레이아웃을 선택해 주세요." });
+      return;
+    }
+    setAdaptiveCreativeGenerating(true);
+    setAdaptiveCreativeResults([]);
+    setAdaptiveLayoutStatus({
+      kind: "loading",
+      message:
+        creativeGenerationMode === "hook-based"
+          ? "자동 광고문구 6개를 각각 다른 배경·레이아웃에 적용하고 있습니다."
+          : "서로 다른 광고 시안 3개를 구성하고 있습니다.",
+    });
+    try {
+      const jobs: Array<{
+        recommendation: BackgroundRecommendation;
+        plan: AdaptiveCreativePlan;
+        strategy: CreativeStrategy;
+        copy: GeneratedAdCopy;
+      }> = [];
+
+      if (creativeGenerationMode === "selected-background") {
+        for (const plan of adaptiveLayoutPlans.slice(0, 3)) {
+          jobs.push({
+            recommendation: selectedBackgroundRecommendation,
+            plan: { ...plan, backgroundSelectionMode: "fixed" },
+            strategy: creativeWorkflow.selectedStrategy,
+            copy: bannerCopy,
+          });
+        }
+      } else if (creativeGenerationMode === "diverse-backgrounds") {
+        const candidates = [
+          selectedBackgroundRecommendation,
+          ...backgroundRecommendations.filter(
+            (item) => item.background.id !== selectedBackgroundRecommendation.background.id
+          ),
+        ].slice(0, 3);
+        for (const [index, recommendation] of candidates.entries()) {
+          const plans =
+            recommendation.background.id === selectedBackgroundRecommendation.background.id
+              ? adaptiveLayoutPlans
+              : await requestAdaptiveLayouts(
+                  recommendation,
+                  creativeWorkflow.selectedStrategy,
+                  "recommended",
+                  bannerCopy
+                );
+          jobs.push({
+            recommendation,
+            plan: plans[index % Math.max(1, plans.length)],
+            strategy: creativeWorkflow.selectedStrategy,
+            copy: bannerCopy,
+          });
+        }
+      } else {
+        const usedBackgroundIds: string[] = [];
+        for (const [index, strategy] of creativeWorkflow.strategies.slice(0, 6).entries()) {
+          const response = await fetch("/api/background-library/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product: productInfo,
+              hook: strategy,
+              limit: 6,
+              excludeIds: usedBackgroundIds,
+              selectedIds: backgroundRecommendationHistory
+                .map((history) => history.selectedBackgroundId)
+                .filter((id): id is string => Boolean(id)),
+            }),
+          });
+          const result = (await response.json()) as {
+            ok?: boolean;
+            error?: string;
+            recommendations?: BackgroundRecommendation[];
+          };
+          const recommendation = result.recommendations?.find(
+            (item) => !usedBackgroundIds.includes(item.background.id)
+          );
+          if (!response.ok || !result.ok || !recommendation) {
+            throw new Error(result.error || "문구별 배경 추천에 실패했습니다.");
+          }
+          usedBackgroundIds.push(recommendation.background.id);
+          const generatedCopy = index === 0 ? bannerCopy : automaticCopySet[index];
+          const hookCopy: GeneratedAdCopy = generatedCopy || {
+            ...bannerCopy,
+            headline: strategy.mainCopy || strategy.headline || bannerCopy.headline,
+            bodyCopy: strategy.subCopy || strategy.appeal || bannerCopy.bodyCopy,
+            highlightCopy: strategy.keyAppeal || bannerCopy.highlightCopy,
+          };
+          const plans = await requestAdaptiveLayouts(
+            recommendation,
+            strategy,
+            "recommended",
+            hookCopy
+          );
+          jobs.push({
+            recommendation,
+            plan: plans[index % plans.length],
+            strategy,
+            copy: hookCopy,
+          });
+        }
+      }
+
+      const initialResults: AdaptiveCreativeRenderResult[] = jobs.map((job, index) => ({
+        id: `adaptive-result-${Date.now()}-${index}`,
+        status: "pending",
+        mode: creativeGenerationMode,
+        background: job.recommendation.background,
+        plan: job.plan,
+        hookId: job.strategy.id,
+        hookTitle: job.strategy.title,
+      }));
+      setAdaptiveCreativeResults(initialResults);
+
+      for (const [index, job] of jobs.entries()) {
+        const id = initialResults[index].id;
+        setAdaptiveCreativeResults((current) =>
+          current.map((result) => (result.id === id ? { ...result, status: "running" } : result))
+        );
+        try {
+          const rendered = await renderAdaptiveVariant(job);
+          setAdaptiveCreativeResults((current) =>
+            current.map((result) =>
+              result.id === id
+                ? { ...result, status: "success", imagePath: rendered.imagePath }
+                : result
+            )
+          );
+        } catch (error) {
+          setAdaptiveCreativeResults((current) =>
+            current.map((result) =>
+              result.id === id
+                ? {
+                    ...result,
+                    status: "error",
+                    errorMessage: error instanceof Error ? error.message : "렌더링 실패",
+                  }
+                : result
+            )
+          );
+        }
+      }
+      setAdaptiveLayoutStatus({
+        kind: "success",
+        message: `서로 다른 광고 시안 ${jobs.length}개를 생성했습니다.`,
+      });
+    } catch (error) {
+      setAdaptiveLayoutStatus({
+        kind: "error",
+        message: error instanceof Error ? error.message : "광고 시안 생성에 실패했습니다.",
+      });
+    } finally {
+      setAdaptiveCreativeGenerating(false);
+    }
+  }
+
+  function useAdaptiveCreativeResult(result: AdaptiveCreativeRenderResult) {
+    const recommendation = backgroundRecommendations.find(
+      (item) => item.background.id === result.background.id
+    ) || {
+      background: result.background,
+      score: 0,
+      matchScore: 0,
+      diversityScore: 0,
+      reasons: ["생성 시안에서 선택"],
+      automaticLayout: result.plan.layoutType,
+    };
+    setBackgroundRecommendations((current) =>
+      current.some((item) => item.background.id === result.background.id)
+        ? current
+        : [recommendation, ...current]
+    );
+    setSelectedLibraryBackgroundId(result.background.id);
+    setAdaptiveLayoutPlans([result.plan]);
+    setAutomaticAdaptiveLayoutPlans([result.plan]);
+    setSelectedAdaptivePlanId(result.plan.id);
+    setProductInfo((current) => ({
+      ...current,
+      backgroundMode: "selected-detail-blur-dark",
+      backgroundImagePath: result.background.file,
+      selectedBackgroundSource: result.background.file,
+    }));
+    creativeWorkflow.setSelectedStrategyId(result.hookId);
+    setGeneratedBannerPath(result.imagePath || "");
+  }
+
+  async function renderSelectedTemplatesBatch(templateIdsOverride?: string[]) {
+    const templateIds = templateIdsOverride || selectedBatchTemplateIds;
+    if (!templateIds.length) {
       setBatchProgressMessage("일괄 생성할 템플릿을 선택해 주세요.");
       setBatchRenderStatus("idle");
       return;
@@ -3357,7 +4196,7 @@ export function MvpDashboard({
     }
 
     const selectedTemplates = categoryTemplates.filter((template) =>
-      selectedBatchTemplateIds.includes(template.id)
+      templateIds.includes(template.id)
     );
 
     if (!selectedTemplates.length) {
@@ -3416,6 +4255,10 @@ export function MvpDashboard({
           cta: showCta ? copyForRender.cta : "",
           price: copyForRender.price || productInfo.price,
         };
+        const templateFonts = resolveTemplateFontAssignment(
+          template.id,
+          headlineStyleOverrides.headlineFontPreset
+        );
 
         const response = await fetch("/api/render/template-ad", {
           method: "POST",
@@ -3450,7 +4293,10 @@ export function MvpDashboard({
               dimLevel: backgroundStyle.dimLevel,
               brightness: backgroundStyle.brightness,
               overlayOpacity: backgroundStyle.overlayOpacity,
-              scale: 1.08,
+              scale: backgroundStyle.scale,
+              offsetX: backgroundStyle.offsetX,
+              offsetY: backgroundStyle.offsetY,
+              flipHorizontal: backgroundStyle.flipHorizontal,
             },
             style: {
               backgroundColor: "#ffffff",
@@ -3465,13 +4311,16 @@ export function MvpDashboard({
               priceColor: "#ff1f1f",
               accentPhrase: bannerAccentPhrase,
               accentColor: bannerAccentColor,
-              selectedFontWeight: selectedBodyFont.fontWeight,
-              bodyFontWeight: selectedBodyFont.fontWeight,
-              headlineFontWeight: selectedHeadlineFont.fontWeight,
+              selectedFontFile: templateFonts.body.file,
+              headlineFontFile: templateFonts.headline.file,
+              selectedFontWeight: templateFonts.body.fontWeight,
+              bodyFontWeight: templateFonts.body.fontWeight,
+              headlineFontWeight: templateFonts.headline.fontWeight,
               creativeTextStylePresetId: selectedVisualDirection?.textStylePresetId || "",
+              manualTextColors,
               ...headlineStyleOverrides,
-              fontFamily: selectedBodyFont.fontFamily,
-              headlineFontFamily: selectedHeadlineFont.fontFamily,
+              fontFamily: templateFonts.body.fontFamily,
+              headlineFontFamily: templateFonts.headline.fontFamily,
             },
           }),
         });
@@ -3481,6 +4330,28 @@ export function MvpDashboard({
           throw new Error(renderResult.error || "렌더링 실패");
         }
 
+        const creativeAsset = await registerFinalCreativeAsset({
+          ...opportunityAssetFields(),
+          brandId: productInfo.copyGuideId || selectedAdvertiserName || undefined,
+          brandName: productInfo.brandName || productInfo.advertiserName || selectedAdvertiserName,
+          productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
+          productName: productInfo.productName,
+          category: productInfo.category,
+          hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+          advertisingHypothesis:
+            creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
+          headline: copyPayload.headline,
+          subCopy: copyPayload.bodyCopy,
+          benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy].filter(Boolean).join(" · "),
+          templateId: template.id,
+          layoutType: template.templateGroup || template.id,
+          backgroundType: currentBackgroundComposition?.sourceType || currentBackgroundMode,
+          backgroundId: currentBackgroundComposition?.sourceId,
+          sourceProductImage: resolvedImages.productImagePath || resolvedImages.productImagePaths[0],
+          generatedImageUrl: renderResult.imagePath || renderResult.path || "",
+          objective: creativeWorkflow.adBrief.adObjective,
+          generationRequestKey: `mvp-batch:${resultId}`,
+        });
         successCount += 1;
         updateBatchResult(resultId, {
           status: "success",
@@ -3492,6 +4363,7 @@ export function MvpDashboard({
           overflowSlots: copyResolution.preview.overflowSlots,
           copyPreview: copyResolution.preview,
           diagnostics: renderResult.diagnostics,
+          creativeAsset,
         });
         setBatchProgressMessage(index + 1 + "/" + selectedTemplates.length + " 생성 완료");
       } catch (error) {
@@ -3530,18 +4402,16 @@ export function MvpDashboard({
       const zip = new JSZip();
       let addedCount = 0;
 
-      for (const [index, result] of successResults.entries()) {
+      for (const result of successResults) {
         const url = batchResultImageUrl(result);
         try {
           const response = await fetch(url);
           if (!response.ok) continue;
           const blob = await response.blob();
-          const filename =
-            String(index + 1).padStart(2, "0") +
-            "_" +
-            sanitizeFileName(result.templateName || result.templateId) +
-            ".png";
+          if (!result.creativeAsset) continue;
+          const filename = result.creativeAsset.fileName;
           zip.file(filename, blob);
+          await markCreativeAssetExported(result.creativeAsset.assetCode);
           addedCount += 1;
         } catch {
           // Skip failed images and keep the rest of the ZIP useful.
@@ -3568,48 +4438,118 @@ export function MvpDashboard({
     setBatchProgressMessage("");
   }
 
-  async function renderBanner() {
-    if (!selectedTemplate) {
-      setRenderStatus({
-        kind: "error",
-        message: "현재 카테고리에 사용할 수 있는 전용 템플릿이 없습니다.",
+  async function ensureAutomaticBannerDesign(copyForLayout: GeneratedAdCopy) {
+    const strategy = creativeWorkflow.selectedStrategy || creativeWorkflow.strategies[0];
+    if (!strategy) throw new Error("자동 템플릿을 만들 광고 방향이 없습니다.");
+
+    let recommendation: BackgroundRecommendation | null =
+      selectedBackgroundRecommendation || backgroundRecommendations[0] || null;
+
+    if (!recommendation) {
+      setBackgroundRecommendationStatus({
+        kind: "loading",
+        message: "상품과 후킹에 맞는 배경을 자동 선택하고 있습니다.",
       });
-      return;
+      const response = await fetch("/api/background-library/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product: productInfo,
+          hook: strategy,
+          limit: 6,
+          selectedIds: backgroundRecommendationHistory
+            .map((history) => history.selectedBackgroundId)
+            .filter((id): id is string => Boolean(id)),
+        }),
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        recommendations?: BackgroundRecommendation[];
+        audienceProfile?: AudienceProfile;
+      };
+      recommendation = result.recommendations?.[0] || null;
+      if (!response.ok || !result.ok || !recommendation) {
+        throw new Error(result.error || "자동 템플릿에 사용할 배경을 찾지 못했습니다.");
+      }
+      setBackgroundRecommendations(result.recommendations || [recommendation]);
+      setBackgroundAudienceProfile(result.audienceProfile || null);
     }
 
-    setRenderStatus({ kind: "loading", message: "SVG 템플릿을 1200x1200 PNG로 렌더링 중입니다." });
+    // Rebuild the layout with the final copy so CTA/price visibility and product geometry
+    // are never inherited from the placeholder copy used during early recommendations.
+    const plans = await requestAdaptiveLayouts(
+      recommendation,
+      strategy,
+      recommendation.score > 0 ? "recommended" : "library",
+      copyForLayout
+    );
+    const currentPlan = plans.find((plan) => plan.id === selectedAdaptivePlanId);
+    const plan = currentPlan || plans[0];
+    if (!plan) throw new Error("자동 템플릿 레이아웃을 만들지 못했습니다.");
+
+    setBackgroundRecommendations((current) =>
+      current.some((item) => item.background.id === recommendation.background.id)
+        ? current
+        : [recommendation, ...current]
+    );
+    setSelectedLibraryBackgroundId(recommendation.background.id);
+    setAdaptiveLayoutPlans(plans);
+    setAutomaticAdaptiveLayoutPlans(plans);
+    setSelectedAdaptivePlanId(plan.id);
+    setProductInfo((current) => ({
+      ...current,
+      backgroundMode: "selected-detail-blur-dark",
+      backgroundImagePath: recommendation.background.file,
+      selectedBackgroundSource: recommendation.background.file,
+    }));
+    setBackgroundRecommendationStatus({
+      kind: "success",
+      message: `자동 배경 적용: ${recommendation.background.scene}`,
+    });
+    setAdaptiveLayoutStatus({
+      kind: "success",
+      message: `자동 템플릿 적용: ${plan.layoutType} · ${plan.layoutVariant}`,
+    });
+
+    return { recommendation, plan, strategy };
+  }
+
+  async function renderBanner() {
+    setRenderStatus({
+      kind: "loading",
+      message: "상품·후킹·배경을 분석해 자동 템플릿을 만들고 있습니다.",
+    });
 
     try {
-      const copyResolution = hasMasterCopy
-        ? resolveCopyForTemplate({
-            masterCopy,
-            templateId: selectedTemplate.id,
-            templateName: selectedTemplate.name,
-            copyLimits: selectedTemplate.copyLimits,
-            mode: templateCopyMode,
-          })
-        : resolveCopyForTemplate({
-            masterCopy: bannerCopy,
-            templateId: selectedTemplate.id,
-            templateName: selectedTemplate.name,
-            copyLimits: selectedTemplate.copyLimits,
-            mode: "force-fit",
-          });
-      const copyForRender = {
-        ...copyResolution.activeRenderCopy,
-        headline: activeRenderCopy.headline || copyResolution.activeRenderCopy.headline,
-        bodyCopy: activeRenderCopy.bodyCopy || copyResolution.activeRenderCopy.bodyCopy,
-        highlightCopy:
-          activeRenderCopy.highlightCopy || copyResolution.activeRenderCopy.highlightCopy,
-        bottomBarCopy:
-          activeRenderCopy.bottomBarCopy || copyResolution.activeRenderCopy.bottomBarCopy,
-        cta: activeRenderCopy.cta || copyResolution.activeRenderCopy.cta,
-        price: activeRenderCopy.price || copyResolution.activeRenderCopy.price,
-      };
+      const generationRequestId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const copyForRender = { ...bannerCopy };
+      const automaticDesign = await ensureAutomaticBannerDesign(copyForRender);
+      const automaticBackground = automaticDesign.recommendation.background;
+      const automaticPlan = automaticDesign.plan;
+      const resolvedImages = resolveCurrentProductImagePaths({
+        selectedAdImages,
+        productInfo,
+        sourceImageSelection,
+        selectedSourceImagePath,
+        productImageState,
+        uploadedMainImageDataUrl,
+        gptMainImagePath,
+        backgroundImagePath: automaticBackground.file,
+      });
+      const fontTemplateId =
+        selectedVisualDirection?.recommendedTemplateId ||
+        selectedTemplate?.id ||
+        categoryTemplates[0]?.id ||
+        "food-template-001";
+      const templateFonts = resolveTemplateFontAssignment(
+        fontTemplateId,
+        headlineStyleOverrides.headlineFontPreset
+      );
       setActiveRenderCopy(copyForRender);
       setBannerCopy(copyForRender);
-      setTemplateFittedCopy(copyResolution.preview.fittedCopy);
-      const productEffectForRender = resolveProductEffectForRender();
+      setTemplateFittedCopy(null);
+      const productEffectForRender = resolveProductEffectForRender(automaticBackground);
       const copyPayload = {
         headline: copyForRender.headline,
         bodyCopy: copyForRender.bodyCopy,
@@ -3622,18 +4562,18 @@ export function MvpDashboard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          templateId: selectedTemplate.id,
+          templateId: `auto-${automaticPlan.layoutType}`,
           canvasSize: { width: 1200, height: 1200 },
           productInfo,
           copy: copyPayload,
           copyVariants: masterCopy.copyVariants,
-          selectedVariant: copyResolution.preview.selectedVariant,
-          productImagePath: resolvedProductImages.productImagePath || currentMainProductImage,
+          selectedVariant: automaticPlan.layoutVariant,
+          productImagePath: resolvedImages.productImagePath || currentMainProductImage,
           secondaryProductImagePath:
-            resolvedProductImages.secondaryProductImagePath || currentSecondaryProductImage,
-          productImagePaths: resolvedProductImages.productImagePaths,
-          selectedProductImagePath: resolvedProductImages.productImagePath,
-          imageSource: resolvedProductImages.source,
+            resolvedImages.secondaryProductImagePath || currentSecondaryProductImage,
+          productImagePaths: resolvedImages.productImagePaths,
+          selectedProductImagePath: resolvedImages.productImagePath,
+          imageSource: resolvedImages.source,
           productImageState,
           productEffect: productEffectForRender,
           productOriginalPrice: productInfo.originalPrice || productInfo.oldPrice || "",
@@ -3642,15 +4582,23 @@ export function MvpDashboard({
             enabled: showAiDisclosure,
             text: aiDisclosureText,
           },
-          backgroundMode: currentBackgroundMode,
-          selectedBackgroundSource: currentBackgroundSource,
-          backgroundComposition: currentBackgroundComposition,
+          backgroundMode: "selected-detail-blur-dark",
+          selectedBackgroundSource: automaticBackground.file,
+          backgroundComposition: {
+            sourceId: automaticBackground.id,
+            sourceType: "library",
+            hookType: automaticDesign.strategy.hookType,
+            layoutPreset: automaticPlan.layoutType,
+            productPosition: automaticBackground.productPosition,
+            textSafeArea: automaticBackground.textSafeArea,
+          },
+          adaptiveCreativePlan: automaticPlan,
           backgroundStyle: {
-            blurLevel: backgroundStyle.blurLevel,
-            dimLevel: backgroundStyle.dimLevel,
-            brightness: backgroundStyle.brightness,
-            overlayOpacity: backgroundStyle.overlayOpacity,
-            scale: 1.08,
+            brightness: automaticPlan.backgroundAdjustments.brightness,
+            scale: automaticPlan.backgroundAdjustments.scale,
+            offsetX: automaticPlan.backgroundAdjustments.offsetX,
+            offsetY: automaticPlan.backgroundAdjustments.offsetY,
+            flipHorizontal: backgroundStyle.flipHorizontal,
           },
           style: {
             backgroundColor: "#ffffff",
@@ -3665,13 +4613,16 @@ export function MvpDashboard({
             priceColor: "#ff1f1f",
             accentPhrase: bannerAccentPhrase,
             accentColor: bannerAccentColor,
-            selectedFontWeight: selectedBodyFont.fontWeight,
-            bodyFontWeight: selectedBodyFont.fontWeight,
-            headlineFontWeight: selectedHeadlineFont.fontWeight,
+            selectedFontFile: templateFonts.body.file,
+            headlineFontFile: templateFonts.headline.file,
+            selectedFontWeight: templateFonts.body.fontWeight,
+            bodyFontWeight: templateFonts.body.fontWeight,
+            headlineFontWeight: templateFonts.headline.fontWeight,
             creativeTextStylePresetId: selectedVisualDirection?.textStylePresetId || "",
+            manualTextColors,
             ...headlineStyleOverrides,
-            fontFamily: selectedBodyFont.fontFamily,
-            headlineFontFamily: selectedHeadlineFont.fontFamily,
+            fontFamily: templateFonts.body.fontFamily,
+            headlineFontFamily: templateFonts.headline.fontFamily,
           },
         }),
       });
@@ -3681,9 +4632,36 @@ export function MvpDashboard({
         throw new Error(result.error ?? "배너 생성 실패");
       }
 
+      const asset = await registerFinalCreativeAsset({
+        ...opportunityAssetFields(),
+        brandId: productInfo.copyGuideId || selectedAdvertiserName || undefined,
+        brandName: productInfo.brandName || productInfo.advertiserName || selectedAdvertiserName,
+        productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
+        productName: productInfo.productName,
+        category: productInfo.category,
+        hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+        advertisingHypothesis:
+          creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
+        headline: copyPayload.headline,
+        subCopy: copyPayload.bodyCopy,
+        benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy].filter(Boolean).join(" · "),
+        templateId: `auto-${automaticPlan.layoutType}`,
+        layoutType: automaticPlan.layoutType,
+        backgroundType: automaticBackground.sourceType || "library",
+        backgroundId: automaticBackground.id,
+        sourceProductImage: resolvedImages.productImagePath || resolvedImages.productImagePaths[0],
+        generatedImageUrl: result.imagePath,
+        objective: creativeWorkflow.adBrief.adObjective,
+        parentAssetCode: generatedBannerAsset?.assetCode,
+        generationRequestKey: `mvp-single:${generationRequestId}`,
+      });
       setGeneratedBannerPath(result.imagePath);
+      setGeneratedBannerAsset(asset);
       setRenderDiagnostics(result.diagnostics || null);
-      setRenderStatus({ kind: "success", message: "1200x1200 PNG 배너를 생성했습니다." });
+      setRenderStatus({
+        kind: "success",
+        message: `자동 템플릿(${automaticDesign.plan.layoutType})으로 1200x1200 PNG 배너를 생성했습니다.`,
+      });
     } catch (error) {
       setRenderDiagnostics(null);
       setRenderStatus({
@@ -3796,6 +4774,7 @@ export function MvpDashboard({
               <TaxonomyGroup title="후킹 유형" items={hookTypeOptions} />
               <TaxonomyGroup title="소구점" items={appealPointOptions} />
             </div>
+            <BackgroundLibraryManager />
           </section>
         ) : null}
 
@@ -3887,7 +4866,7 @@ export function MvpDashboard({
             {initialCreationHandoff ? (
               <section className="analysis-handoff-banner">
                 <div className="analysis-handoff-score">
-                  <span>업체 분석 추천</span>
+                  <span>{initialCreationHandoff.creativeContext?.opportunityId ? "데이터 기반 광고 기회" : "업체 분석 추천"}</span>
                   <strong>{initialCreationHandoff.advertisingScore}</strong>
                   <small>
                     광고 적합도 · confidence {Math.round(initialCreationHandoff.confidence * 100)}%
@@ -3912,10 +4891,10 @@ export function MvpDashboard({
                   <span>추천 템플릿 {recommendedTemplateIds.length}개</span>
                   <span>추천 레퍼런스 {recommendedReferenceLabelIds.length}개</span>
                   <span>
-                    카피 가이드 {initialCreationHandoff.matchedCopyGuideId || "카테고리 기본"}
+                    참고사항 {initialCreationHandoff.creativeContext?.appliedContentNotes?.length || 0}개 · 카피 가이드 {initialCreationHandoff.matchedCopyGuideId || "카테고리 기본"}
                   </span>
                   <a
-                    href={`/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`}
+                    href={initialCreationHandoff.creativeContext?.opportunityId ? "/analyze-store" : `/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`}
                   >
                     분석 결과로 돌아가기
                   </a>
@@ -3923,19 +4902,25 @@ export function MvpDashboard({
               </section>
             ) : null}
 
-            <StepHeader
-              activeStep={creativeWorkflow.activeStep}
-              onStepChange={creativeWorkflow.setActiveStep}
-            />
+            <ol className="creation-flow-overview" aria-label="광고 콘텐츠 제작 흐름">
+              <li className={productInfo.productName ? "done" : "active"}>
+                <b>1</b><span><strong>상품 확인</strong><small>URL 분석과 실제 상품 이미지 확인</small></span>
+              </li>
+              <li className={generationPlanConfirmed ? "done" : productInfo.productName ? "active" : ""}>
+                <b>2</b><span><strong>목표·제작 방식</strong><small>성과 목표와 6장 구성 방식 확정</small></span>
+              </li>
+              <li className={generationPlanConfirmed ? "active" : ""}>
+                <b>3</b><span><strong>6장 생성</strong><small>목표별 문구·배경·레이아웃 자동 제작</small></span>
+              </li>
+            </ol>
 
-            <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
             <div className="ad-generation-flow">
               <div className="banner-builder">
                 <section className="strategy-form landing-url-panel">
-                  <p className="eyebrow">Landing URL</p>
+                  <p className="eyebrow">1 · 상품 확인</p>
                   <h4>상품 상세페이지 URL</h4>
                   <label>
-                    <span>landingUrl</span>
+                    <span>상품 URL</span>
                     <input
                       onChange={(event) => updateProductInfoField("landingUrl", event.target.value)}
                       placeholder="https://..."
@@ -3973,10 +4958,7 @@ export function MvpDashboard({
                           {field.key === "category" ? (
                             <select
                               onChange={(event) =>
-                                setProductInfo((current) => ({
-                                  ...current,
-                                  category: event.target.value,
-                                }))
+                                updateProductInfoField("category", event.target.value)
                               }
                               value={productInfo.category || "기타"}
                             >
@@ -3999,9 +4981,48 @@ export function MvpDashboard({
                       ))}
                   </section>
                 </details>
-                <ProductBriefForm brief={creativeWorkflow.adBrief} onChange={updateAdBrief} />
+                <ProductBriefForm
+                  brief={creativeWorkflow.adBrief}
+                  canConfirm={Boolean(productInfo.productName.trim() && currentProductImagePaths.length)}
+                  confirmed={generationPlanConfirmed}
+                  onChange={updateAdBrief}
+                  onConfirm={() => setGenerationPlanConfirmed(true)}
+                />
+                <CreativeContentNotesPanel
+                  onResolvedNotesChange={({ advertiserId, productId, notes }) => {
+                    setProductInfo((current) => ({
+                      ...current,
+                      creativeContext: {
+                        advertiserId,
+                        productId,
+                        ...current.creativeContext,
+                        appliedContentNotes: notes,
+                      },
+                    }));
+                  }}
+                  product={productInfo}
+                />
+                <SixCreativeGenerator
+                  adBrief={creativeWorkflow.adBrief}
+                  logoPath={brandLogoPath}
+                  planConfirmed={generationPlanConfirmed}
+                  product={productInfo}
+                  productImagePaths={currentProductImagePaths}
+                  selectedAdImages={selectedAdImages.selectedImagePaths}
+                  source={
+                    lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
+                      ? "landing-page"
+                      : "user-input"
+                  }
+                />
+                <details className="advanced-production-workspace">
+                  <summary>
+                    <span><b>고급 설정 · 대표 소재 직접 조정</b><small>업체 카피 가이드, 문구 전략, 배경, 레이아웃을 수동으로 바꿀 때만 사용</small></span>
+                  </summary>
+                  <div className="advanced-production-body">
+                <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
                 <section className="strategy-form template-first-panel">
-                  <p className="eyebrow">Template First</p>
+                  <p className="eyebrow">Auto Template</p>
                   <label>
                     <span>업체별 카피 가이드</span>
                     <select
@@ -4020,123 +5041,122 @@ export function MvpDashboard({
                         : "업체별 카피 가이드 미적용"}
                     </small>
                   </label>
-                  <h4>먼저 템플릿 선택</h4>
-                  <label>
-                    <span>사용할 템플릿</span>
-                    <select
-                      onChange={(event) => setSelectedTemplateId(event.target.value)}
-                      value={selectedTemplate?.id || ""}
-                    >
-                      {categoryTemplates.length ? (
-                        categoryTemplates.map((template) => (
-                          <option key={template.id} value={template.id}>
-                            {recommendedTemplateIds.includes(template.id) ? "★ 추천 · " : ""}
-                            {template.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="">선택 가능한 템플릿 없음</option>
-                      )}
-                    </select>
-                  </label>
+                  <h4>상품별 자동 템플릿</h4>
+                  <p className="template-limit-summary">
+                    자동 생성된 대표 문구에 맞춰 배경·문구 영역·상품 위치·가격·CTA·색상을 조합한
+                    전용 템플릿을 생성합니다. 고정 템플릿을 선택할 필요가 없습니다.
+                  </p>
                   {selectedTemplate ? (
                     <p className="template-limit-summary">
-                      문구 제한: headline {slotMaxChars("headline")}자 / body{" "}
-                      {slotMaxChars("bodyCopy")}자 / 하단 {slotMaxChars("bottomBarCopy")}자 / CTA{" "}
-                      {slotMaxChars("cta")}자
+                      자동 폰트 스타일 참고: {selectedTemplate.name} · 문구 제한 headline{" "}
+                      {slotMaxChars("headline")}자 / body {slotMaxChars("bodyCopy")}자 / 하단{" "}
+                      {slotMaxChars("bottomBarCopy")}자 / CTA {slotMaxChars("cta")}자
                     </p>
-                  ) : (
-                    <p className="strategy-empty">먼저 사용할 템플릿을 선택해주세요.</p>
-                  )}
+                  ) : null}
                   <p className="copy-generation-note">
-                    템플릿은 문구 길이와 배치에만 사용합니다. 아래에서 광고 후킹을 먼저
-                    선택해주세요.
+                    문구를 선택하는 단계 없이 6개를 만들고, 1번은 대표 소재에 적용하며 나머지는
+                    문구별 시안 생성에 자동 반영합니다.
                   </p>
                 </section>
                 <div className={`mvp-status ${strategyStatus.kind}`}>{strategyStatus.message}</div>
                 <StrategySelector
-                  isGenerating={creativeWorkflow.isGeneratingStrategies}
-                  onGenerate={async () => {
-                    setStrategyStatus({
-                      kind: "loading",
-                      message: "상품 사실과 내부 레퍼런스 신호로 후킹을 분석하고 있습니다.",
-                    });
-                    await creativeWorkflow.generateStrategies();
-                    setBackgroundRecommendations([]);
-                    setSelectedLibraryBackgroundId("");
-                    setStrategyStatus({
-                      kind: "success",
-                      message: creativeWorkflow.referenceMatches.length
-                        ? `관련 레퍼런스 ${creativeWorkflow.referenceMatches.length}개를 내부 매칭해 후킹 3안을 만들었습니다.`
-                        : "상품 상세페이지의 사실 정보만으로 후킹 3안을 만들었습니다.",
-                    });
-                  }}
-                  onGenerateMore={async () => {
-                    setStrategyStatus({
-                      kind: "loading",
-                      message: "겹치지 않는 다른 후킹 각도를 구성하고 있습니다.",
-                    });
-                    await creativeWorkflow.generateMoreStrategies();
-                    setBackgroundRecommendations([]);
-                    setSelectedLibraryBackgroundId("");
-                    setStrategyStatus({
-                      kind: "success",
-                      message: "상품 사실을 유지하면서 다른 관점의 후킹 3안을 만들었습니다.",
-                    });
-                  }}
-                  onSelect={(id) => {
-                    const strategy = creativeWorkflow.strategies.find((item) => item.id === id);
-                    creativeWorkflow.setSelectedStrategyId(id);
-                    creativeWorkflow.setActiveStep("copy");
-                    setStrategyStatus({
-                      kind: "success",
-                      message:
-                        "후킹을 선택했습니다. 배경을 고른 뒤 이 방향으로 문구를 만들 수 있습니다.",
-                    });
-                    if (strategy) void loadBackgroundRecommendations(strategy);
-                  }}
+                  copies={automaticCopySet}
+                  isGenerating={
+                    creativeWorkflow.isGeneratingStrategies ||
+                    copyStatus.kind === "loading" ||
+                    backgroundRecommendationStatus.kind === "loading"
+                  }
+                  onGenerate={() =>
+                    void generateAndApplyAutomaticCopies(creativeWorkflow.generateStrategies)
+                  }
+                  onGenerateMore={() =>
+                    void generateAndApplyAutomaticCopies(
+                      creativeWorkflow.generateMoreStrategies,
+                      true
+                    )
+                  }
                   selectedStrategyId={creativeWorkflow.selectedStrategyId}
                   strategies={creativeWorkflow.strategies}
                 />
                 {creativeWorkflow.selectedStrategy ? (
-                  <BackgroundRecommendationPanel
-                    aiAvailable={aiBackgroundAvailable}
-                    aiCandidates={sceneCandidates}
-                    isGeneratingAi={sceneGenerationStatus.kind === "loading"}
-                    loading={backgroundRecommendationStatus.kind === "loading"}
-                    mode={backgroundProductionMode}
-                    onGenerateAi={() => void generateHookBackground()}
-                    onModeChange={setBackgroundProductionMode}
-                    onSaveAi={(candidate) => void saveAiBackground(candidate)}
-                    onSelectAi={selectSceneCandidate}
-                    onSelectBackground={selectLibraryBackground}
-                    recommendations={backgroundRecommendations}
-                    savingAiCandidateId={savingAiCandidateId}
-                    selectedAiCandidateId={selectedSceneCandidateId}
-                    selectedBackgroundId={selectedLibraryBackgroundId}
-                    status={
-                      backgroundProductionMode === "ai"
-                        ? sceneGenerationStatus.message
-                        : backgroundRecommendationStatus.message
-                    }
+                  <>
+                    <BackgroundRecommendationPanel
+                      audienceProfile={backgroundAudienceProfile}
+                      loading={backgroundRecommendationStatus.kind === "loading"}
+                      onRefresh={() =>
+                        void loadBackgroundRecommendations(
+                          creativeWorkflow.selectedStrategy!,
+                          recentBackgroundRecommendationIds
+                        )
+                      }
+                      onSelectBackground={selectLibraryBackground}
+                      recommendations={backgroundRecommendations}
+                      selectedBackgroundId={selectedLibraryBackgroundId}
+                      status={backgroundRecommendationStatus.message}
+                    />
+                    <BackgroundCatalogPanel
+                      hook={creativeWorkflow.selectedStrategy}
+                      onSelectBackground={selectLibraryBackground}
+                      onSelectFixedBackground={selectFixedBackground}
+                      product={productInfo}
+                      selectedBackgroundSource={String(productInfo.selectedBackgroundSource || "")}
+                    />
+                  </>
+                ) : null}
+                {selectedLibraryBackground ? (
+                  <AdaptiveCreativePanel
+                    backgroundFile={selectedLibraryBackground.file}
+                    generationMode={creativeGenerationMode}
+                    generating={adaptiveCreativeGenerating}
+                    loading={adaptiveLayoutStatus.kind === "loading"}
+                    onChangePlan={(nextPlan) => {
+                      setAdaptiveLayoutPlans((current) =>
+                        current.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan))
+                      );
+                      setGeneratedBannerPath("");
+                    }}
+                    onGenerateVariants={() => void generateAdaptiveCreativeVariants()}
+                    onGenerationModeChange={(mode) => {
+                      setCreativeGenerationMode(mode);
+                      setAdaptiveCreativeResults([]);
+                    }}
+                    onReset={() => {
+                      setAdaptiveLayoutPlans(automaticAdaptiveLayoutPlans);
+                      setSelectedAdaptivePlanId(
+                        automaticAdaptiveLayoutPlans.find(
+                          (plan) => plan.id === selectedAdaptivePlanId
+                        )?.id ||
+                          automaticAdaptiveLayoutPlans[0]?.id ||
+                          ""
+                      );
+                      setGeneratedBannerPath("");
+                    }}
+                    onSelectPlan={(id) => {
+                      setSelectedAdaptivePlanId(id);
+                      setGeneratedBannerPath("");
+                    }}
+                    onUseResult={useAdaptiveCreativeResult}
+                    plans={adaptiveLayoutPlans}
+                    results={adaptiveCreativeResults}
+                    selectedPlanId={selectedAdaptivePlanId}
+                    status={adaptiveLayoutStatus.message}
                   />
                 ) : null}
                 <div className="workflow-primary-action">
-                  <button
-                    disabled={copyStatus.kind === "loading" || !creativeWorkflow.selectedStrategy}
-                    onClick={generateBannerCopy}
-                    type="button"
-                  >
-                    선택 후킹으로 광고문구 생성
-                  </button>
-                  {!creativeWorkflow.selectedStrategy ? (
-                    <span>후킹 하나를 선택하면 문구 생성 버튼이 활성화됩니다.</span>
-                  ) : (
-                    <span>{creativeWorkflow.selectedStrategy.title}</span>
-                  )}
+                  <span>
+                    {creativeWorkflow.selectedStrategy
+                      ? `대표 적용: ${creativeWorkflow.selectedStrategy.title} · 배경과 템플릿도 자동 적용`
+                      : "광고문구 6개를 생성하면 대표 문구·배경·템플릿이 자동 적용됩니다."}
+                  </span>
                 </div>
+                  </div>
+                </details>
               </div>
 
+              <details className="advanced-production-workspace advanced-editor-workspace">
+                <summary>
+                  <span><b>세부 문구·이미지·배너 편집기</b><small>생성 결과를 직접 수정하거나 단일 배너를 정밀 제작할 때 열기</small></span>
+                </summary>
               <div className="banner-workspace">
                 <section className="copy-edit-panel">
                   <div>
@@ -4482,9 +5502,14 @@ export function MvpDashboard({
                 <section className="banner-preview-panel">
                   <div>
                     <p className="eyebrow">PNG Preview</p>
-                    <h4>{selectedTemplate?.id || "템플릿 없음"}</h4>
+                    <h4>
+                      {renderDiagnostics?.templateId ||
+                        (selectedAdaptivePlan
+                          ? `auto-${selectedAdaptivePlan.layoutType}`
+                          : "자동 템플릿 대기")}
+                    </h4>
                     <small className="preview-context">
-                      1200×1200 · {creativeWorkflow.selectedStrategy?.title || "후킹 미선택"}
+                      1200×1200 · {creativeWorkflow.selectedStrategy?.title || "문구 자동 생성 전"}
                     </small>
                   </div>
                   {generatedBannerPath ? (
@@ -4494,18 +5519,18 @@ export function MvpDashboard({
                       src={generatedBannerPath}
                     />
                   ) : null}
-                  <details className="template-picker source-image-dropdown" open>
+                  <details className="template-picker source-image-dropdown">
                     <summary>
                       <div>
                         <p className="eyebrow">Template</p>
-                        <strong>템플릿 선택</strong>
-                        <span>{selectedTemplate?.name || "선택 필요"}</span>
+                        <strong>고정 템플릿 비교 설정</strong>
+                        <span>{selectedTemplate?.name || "선택 안 함"}</span>
                       </div>
-                      <b>{selectedTemplate ? "선택됨" : "선택 필요"}</b>
+                      <b>고급</b>
                     </summary>
                     <div>
                       <p className="eyebrow">Template</p>
-                      <h4>템플릿 선택</h4>
+                      <h4>고정 템플릿 비교용 스타일 변경</h4>
                     </div>
                     <label className="copy-mode-selector">
                       <span>문구 적용 방식</span>
@@ -4566,190 +5591,202 @@ export function MvpDashboard({
                           </button>
                         ))}
                       </div>
-                    ) : (
-                      <p className="strategy-empty">
-                        아직 해당 카테고리 전용 템플릿이 없습니다. 식품/선물 템플릿부터 먼저
-                        지원합니다.
-                      </p>
-                    )}
+                    ) : null}
                   </details>
 
-                  <section className="batch-render-panel reference-pattern-usage">
-                    <div className="section-heading-row">
-                      <div>
-                        <p className="eyebrow">Batch Render</p>
-                        <h4>일괄 생성할 템플릿 선택</h4>
-                      </div>
-                      <strong>선택된 템플릿 {selectedBatchTemplateIds.length}개</strong>
-                    </div>
-                    <div className="batch-actions">
-                      <button
-                        disabled={!categoryTemplates.length || batchRenderStatus === "running"}
-                        onClick={() =>
-                          setSelectedBatchTemplateIds(
-                            categoryTemplates.map((template) => template.id)
-                          )
-                        }
-                        type="button"
-                      >
-                        전체 선택
-                      </button>
-                      <button
-                        disabled={batchRenderStatus === "running"}
-                        onClick={() => setSelectedBatchTemplateIds([])}
-                        type="button"
-                      >
-                        전체 해제
-                      </button>
-                      <button
-                        className="primary"
-                        disabled={
-                          batchRenderStatus === "running" || !selectedBatchTemplateIds.length
-                        }
-                        onClick={renderSelectedTemplatesBatch}
-                        type="button"
-                      >
-                        선택 템플릿 일괄 생성
-                      </button>
-                      <button
-                        disabled={batchRenderStatus === "running" && !batchRenderResults.length}
-                        onClick={resetBatchRenderResults}
-                        type="button"
-                      >
-                        일괄 생성 결과 초기화
-                      </button>
-                    </div>
-                    {categoryTemplates.length ? (
-                      <div className="template-card-list batch-template-list">
-                        {categoryTemplates.map((template, index) => {
-                          const checked = selectedBatchTemplateIds.includes(template.id);
-                          return (
-                            <label
-                              className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
-                              key={template.id}
-                            >
-                              <input
-                                checked={checked}
-                                onChange={(event) => {
-                                  event.stopPropagation();
-                                  setSelectedBatchTemplateIds((current) =>
-                                    event.target.checked
-                                      ? Array.from(new Set([...current, template.id]))
-                                      : current.filter((id) => id !== template.id)
-                                  );
-                                }}
-                                onClick={(event) => event.stopPropagation()}
-                                type="checkbox"
-                              />
-                              <span>
-                                {index + 1}. {template.name}
-                                {recommendedTemplateIds.includes(template.id) ? " · 분석 추천" : ""}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                    <div
-                      className={
-                        "mvp-status " +
-                        (batchRenderStatus === "error"
-                          ? "error"
-                          : batchRenderStatus === "running"
-                            ? "loading"
-                            : batchRenderStatus === "success" ||
-                                batchRenderStatus === "partial-success"
-                              ? "success"
-                              : "idle")
-                      }
-                    >
-                      {batchProgressMessage || "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}
-                    </div>
-                    <section className="batch-result-panel">
+                  {creativeGenerationMode === "selected-background" ? (
+                    <details className="batch-render-panel reference-pattern-usage">
+                      <summary>고급: 선택한 배경으로 기존 템플릿 비교</summary>
                       <div className="section-heading-row">
                         <div>
-                          <p className="eyebrow">Batch Results</p>
-                          <h4>일괄 생성 결과</h4>
+                          <p className="eyebrow">Batch Render</p>
+                          <h4>선택한 배경 고정 템플릿 비교</h4>
                         </div>
-                        <strong>
-                          성공{" "}
-                          {
-                            batchRenderResults.filter((result) => result.status === "success")
-                              .length
-                          }
-                          개 / 실패{" "}
-                          {batchRenderResults.filter((result) => result.status === "error").length}
-                          개
-                        </strong>
+                        <strong>전체 {categoryTemplates.length}개 제작 가능</strong>
                       </div>
-                      <button
-                        className="download-button"
-                        disabled={
-                          isZipDownloading ||
-                          !batchRenderResults.some((result) => result.status === "success")
-                        }
-                        onClick={downloadBatchResultsAsZip}
-                        type="button"
-                      >
-                        {isZipDownloading ? "ZIP 생성 중" : "ZIP 다운로드"}
-                      </button>
-                      {batchRenderResults.length ? (
-                        <div className="batch-result-grid">
-                          {batchRenderResults.map((result, index) => {
-                            const imageUrl = batchResultImageUrl(result);
-                            return (
-                              <article
-                                className={"batch-result-card " + result.status}
-                                key={result.id}
-                              >
-                                <div>
-                                  <strong>{result.templateName}</strong>
-                                  <span>
-                                    {result.status === "pending"
-                                      ? "대기"
-                                      : result.status === "running"
-                                        ? "생성 중"
-                                        : result.status === "success"
-                                          ? "생성 완료"
-                                          : "실패"}
-                                  </span>
-                                </div>
-                                {imageUrl ? (
-                                  <img alt={result.templateName + " 배너"} src={imageUrl} />
-                                ) : null}
-                                {result.status === "success" ? (
-                                  <p>
-                                    적용 문구: {result.selectedVariant || "base"}
-                                    {result.hasOverflow ? " / 일부 자동축약" : ""}
-                                  </p>
-                                ) : null}
-                                {result.errorMessage ? (
-                                  <p className="copy-warning">{result.errorMessage}</p>
-                                ) : null}
-                                <button
-                                  disabled={result.status !== "success" || !imageUrl}
-                                  onClick={() =>
-                                    triggerDownload(
-                                      imageUrl,
-                                      String(index + 1).padStart(2, "0") +
-                                        "_" +
-                                        sanitizeFileName(result.templateName || result.templateId) +
-                                        ".png"
-                                    )
-                                  }
-                                  type="button"
+                      <div className="batch-actions">
+                        <button
+                          className="primary"
+                          disabled={!categoryTemplates.length || batchRenderStatus === "running"}
+                          onClick={() =>
+                            void renderSelectedTemplatesBatch(
+                              categoryTemplates.map((template) => template.id)
+                            )
+                          }
+                          type="button"
+                        >
+                          선택 배경으로 모든 템플릿 비교
+                        </button>
+                        <button
+                          disabled={
+                            batchRenderStatus === "running" || !selectedBatchTemplateIds.length
+                          }
+                          onClick={() => void renderSelectedTemplatesBatch()}
+                          type="button"
+                        >
+                          고른 템플릿만 생성 ({selectedBatchTemplateIds.length})
+                        </button>
+                        <button
+                          disabled={batchRenderStatus === "running"}
+                          onClick={() =>
+                            setSelectedBatchTemplateIds(
+                              categoryTemplates.map((template) => template.id)
+                            )
+                          }
+                          type="button"
+                        >
+                          전체 선택
+                        </button>
+                        <button
+                          disabled={batchRenderStatus === "running"}
+                          onClick={() => setSelectedBatchTemplateIds([])}
+                          type="button"
+                        >
+                          전체 해제
+                        </button>
+                        <button
+                          disabled={batchRenderStatus === "running" && !batchRenderResults.length}
+                          onClick={resetBatchRenderResults}
+                          type="button"
+                        >
+                          일괄 생성 결과 초기화
+                        </button>
+                      </div>
+                      {categoryTemplates.length ? (
+                        <details className="source-image-dropdown">
+                          <summary>
+                            일부 템플릿만 만들기 (선택사항 · {selectedBatchTemplateIds.length}개
+                            선택)
+                          </summary>
+                          <div className="template-card-list batch-template-list">
+                            {categoryTemplates.map((template, index) => {
+                              const checked = selectedBatchTemplateIds.includes(template.id);
+                              return (
+                                <label
+                                  className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
+                                  key={template.id}
                                 >
-                                  개별 다운로드
-                                </button>
-                              </article>
-                            );
-                          })}
+                                  <input
+                                    checked={checked}
+                                    onChange={(event) => {
+                                      event.stopPropagation();
+                                      setSelectedBatchTemplateIds((current) =>
+                                        event.target.checked
+                                          ? Array.from(new Set([...current, template.id]))
+                                          : current.filter((id) => id !== template.id)
+                                      );
+                                    }}
+                                    onClick={(event) => event.stopPropagation()}
+                                    type="checkbox"
+                                  />
+                                  <span>
+                                    {index + 1}. {template.name}
+                                    {recommendedTemplateIds.includes(template.id)
+                                      ? " · 분석 추천"
+                                      : ""}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      ) : null}
+                      <div
+                        className={
+                          "mvp-status " +
+                          (batchRenderStatus === "error"
+                            ? "error"
+                            : batchRenderStatus === "running"
+                              ? "loading"
+                              : batchRenderStatus === "success" ||
+                                  batchRenderStatus === "partial-success"
+                                ? "success"
+                                : "idle")
+                        }
+                      >
+                        {batchProgressMessage || "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}
+                      </div>
+                      <section className="batch-result-panel">
+                        <div className="section-heading-row">
+                          <div>
+                            <p className="eyebrow">Batch Results</p>
+                            <h4>일괄 생성 결과</h4>
+                          </div>
+                          <strong>
+                            성공{" "}
+                            {
+                              batchRenderResults.filter((result) => result.status === "success")
+                                .length
+                            }
+                            개 / 실패{" "}
+                            {
+                              batchRenderResults.filter((result) => result.status === "error")
+                                .length
+                            }
+                            개
+                          </strong>
                         </div>
-                      ) : (
-                        <p className="strategy-empty">아직 일괄 생성 결과가 없습니다.</p>
-                      )}
-                    </section>
-                  </section>
+                        <button
+                          className="download-button"
+                          disabled={
+                            isZipDownloading ||
+                            !batchRenderResults.some((result) => result.status === "success")
+                          }
+                          onClick={downloadBatchResultsAsZip}
+                          type="button"
+                        >
+                          {isZipDownloading ? "ZIP 생성 중" : "ZIP 다운로드"}
+                        </button>
+                        {batchRenderResults.length ? (
+                          <div className="batch-result-grid">
+                            {batchRenderResults.map((result) => {
+                              const imageUrl = batchResultImageUrl(result);
+                              return (
+                                <article
+                                  className={"batch-result-card " + result.status}
+                                  key={result.id}
+                                >
+                                  <div>
+                                    <strong>{result.templateName}</strong>
+                                    <span>
+                                      {result.status === "pending"
+                                        ? "대기"
+                                        : result.status === "running"
+                                          ? "생성 중"
+                                          : result.status === "success"
+                                            ? "생성 완료"
+                                            : "실패"}
+                                    </span>
+                                  </div>
+                                  {imageUrl ? (
+                                    <img alt={result.templateName + " 배너"} src={imageUrl} />
+                                  ) : null}
+                                  {result.status === "success" ? (
+                                    <p>
+                                      적용 문구: {result.selectedVariant || "base"}
+                                      {result.hasOverflow ? " / 일부 자동축약" : ""}
+                                    </p>
+                                  ) : null}
+                                  {result.errorMessage ? (
+                                    <p className="copy-warning">{result.errorMessage}</p>
+                                  ) : null}
+                                  {result.creativeAsset ? (
+                                    <CreativeAssetActions
+                                      asset={result.creativeAsset}
+                                      compact
+                                      onMessage={setBatchProgressMessage}
+                                    />
+                                  ) : null}
+                                </article>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="strategy-empty">아직 일괄 생성 결과가 없습니다.</p>
+                        )}
+                      </section>
+                    </details>
+                  ) : null}
                   <div className="hybrid-creative-flow">
                     <CreativeQualityPanel score={creativeQualityScore} />
                   </div>
@@ -5598,120 +6635,157 @@ export function MvpDashboard({
                         상세페이지 이미지, 첨부 이미지, GPT 생성 이미지 중 하나를 선택해주세요.
                       </p>
                     )}
+                    <ProductImageWorkbench
+                      key={productImageState.originalImagePath || selectedSourceImagePath}
+                      busy={productImageProcessStatus.kind === "loading"}
+                      candidates={(sourceImageSelection.candidates.length
+                        ? sourceImageSelection.candidates
+                        : productInfo.sourceImageCandidates || []
+                      ).slice(0, 6)}
+                      imageState={productImageState}
+                      onManualResult={applyManualMaskResult}
+                      onReprocess={reprocessWorkbenchImage}
+                      onRepresentationChange={updateProductRepresentationType}
+                      onScopeChange={updateProductExtractionScope}
+                      onSourceChange={selectWorkbenchSource}
+                      onUpload={selectUploadedMainImage}
+                      onUseCutout={() => selectProductImageMode("cutout")}
+                      onUseOriginal={() => selectProductImageMode("original")}
+                      recommendedBackgroundPath={currentBackgroundSource}
+                      representation={activeProductRepresentation}
+                      selectedSourceImagePath={
+                        productImageState.originalImagePath || selectedSourceImagePath
+                      }
+                      statusMessage={productImageProcessStatus.message}
+                    />
+                    <ReviewCreativeWorkbench
+                      key={`review-${productInfo.landingUrl || "empty"}`}
+                      accentColor={bannerAccentColor}
+                      backgroundImagePath={currentBackgroundSource}
+                      initialCandidates={productInfo.reviewSources || []}
+                      productDescription={productInfo.extractedDescription}
+                      productImagePath={
+                        resolvedProductImages.productImagePath || currentMainProductImage
+                      }
+                      productName={productInfo.productName}
+                    />
                     <div className="product-cutout-panel">
-                      <p>
-                        상품 이미지는 불러온 직후 자동으로 배경을 제거합니다. 경계를 찾지
-                        못하면 원본을 안전하게 유지합니다.
-                      </p>
-                      <div className="background-style-grid">
-                        <button
-                          disabled={
-                            !productImageState.originalImagePath ||
-                            productImageProcessStatus.kind === "loading"
-                          }
-                          onClick={applyCutoutToProductImage}
-                          type="button"
-                        >
-                          누끼 다시 적용
-                        </button>
-                        <button
-                          disabled={
-                            !productImageState.cutoutImagePath ||
-                            productImageProcessStatus.kind === "loading"
-                          }
-                          onClick={applyEffectToCutout}
-                          type="button"
-                        >
-                          효과 적용
-                        </button>
-                      </div>
-                      <label>
-                        <span>효과 프리셋</span>
-                        <select
-                          onChange={(event) =>
-                            setProductImageState((current) => ({
-                              ...current,
-                              effectPreset: event.target.value as ProductImageEffectPreset,
-                            }))
-                          }
-                          value={productImageState.effectPreset || "outline-glow-shadow"}
-                        >
-                          <option value="none">none</option>
-                          <option value="clean-outline">clean-outline</option>
-                          <option value="soft-glow">soft-glow</option>
-                          <option value="commerce-shadow">commerce-shadow</option>
-                          <option value="outline-glow-shadow">outline-glow-shadow</option>
-                        </select>
-                      </label>
-                      <label>
-                        <span>배너 이미지 모드</span>
-                        <select
-                          onChange={(event) =>
-                            selectProductImageMode(event.target.value as ProductImageMode)
-                          }
-                          value={productImageState.selectedImageMode}
-                        >
-                          <option value="original">원본 이미지 사용</option>
-                          <option disabled={!productImageState.cutoutImagePath} value="cutout">
-                            누끼 이미지 사용
-                          </option>
-                          <option
-                            disabled={!productImageState.styledCutoutImagePath}
-                            value="styled-cutout"
+                      <details>
+                        <summary>고급 효과 및 이전 호환 설정</summary>
+                        <p>
+                          상품 이미지는 불러온 직후 자동으로 배경을 제거합니다. 경계를 찾지 못하면
+                          원본을 안전하게 유지합니다.
+                        </p>
+                        <div className="background-style-grid">
+                          <button
+                            disabled={
+                              !productImageState.originalImagePath ||
+                              productImageProcessStatus.kind === "loading"
+                            }
+                            onClick={applyCutoutToProductImage}
+                            type="button"
                           >
-                            효과 적용 누끼 사용
-                          </option>
-                        </select>
-                      </label>
-                      <div className={`mvp-status ${productImageProcessStatus.kind}`}>
-                        {productImageProcessStatus.message}
-                      </div>
-                      <div className="product-image-variant-grid">
-                        <button
-                          className={
-                            productImageState.selectedImageMode === "original" ? "selected" : ""
-                          }
-                          disabled={!productImageState.originalImagePath}
-                          onClick={() => selectProductImageMode("original")}
-                          type="button"
-                        >
-                          {productImageState.originalImagePath ? (
-                            <img alt="원본 이미지" src={productImageState.originalImagePath} />
-                          ) : null}
-                          <span>원본</span>
-                        </button>
-                        <button
-                          className={
-                            productImageState.selectedImageMode === "cutout" ? "selected" : ""
-                          }
-                          disabled={!productImageState.cutoutImagePath}
-                          onClick={() => selectProductImageMode("cutout")}
-                          type="button"
-                        >
-                          {productImageState.cutoutImagePath ? (
-                            <img alt="누끼 이미지" src={productImageState.cutoutImagePath} />
-                          ) : null}
-                          <span>누끼본</span>
-                        </button>
-                        <button
-                          className={
-                            productImageState.selectedImageMode === "styled-cutout"
-                              ? "selected"
-                              : ""
-                          }
-                          disabled={!productImageState.styledCutoutImagePath}
-                          onClick={() => selectProductImageMode("styled-cutout")}
-                          type="button"
-                        >
-                          {productImageState.styledCutoutImagePath ? (
-                            <img
-                              alt="효과 적용 누끼 이미지"
-                              src={productImageState.styledCutoutImagePath}
-                            />
-                          ) : null}
-                          <span>효과본</span>
-                        </button>
-                      </div>
+                            누끼 다시 적용
+                          </button>
+                          <button
+                            disabled={
+                              !productImageState.cutoutImagePath ||
+                              productImageProcessStatus.kind === "loading"
+                            }
+                            onClick={applyEffectToCutout}
+                            type="button"
+                          >
+                            효과 적용
+                          </button>
+                        </div>
+                        <label>
+                          <span>효과 프리셋</span>
+                          <select
+                            onChange={(event) =>
+                              setProductImageState((current) => ({
+                                ...current,
+                                effectPreset: event.target.value as ProductImageEffectPreset,
+                              }))
+                            }
+                            value={productImageState.effectPreset || "commerce-shadow"}
+                          >
+                            <option value="none">none</option>
+                            <option value="clean-outline">clean-outline</option>
+                            <option value="soft-glow">soft-glow</option>
+                            <option value="commerce-shadow">commerce-shadow</option>
+                            <option value="outline-glow-shadow">outline-glow-shadow</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>배너 이미지 모드</span>
+                          <select
+                            onChange={(event) =>
+                              selectProductImageMode(event.target.value as ProductImageMode)
+                            }
+                            value={productImageState.selectedImageMode}
+                          >
+                            <option value="original">원본 이미지 사용</option>
+                            <option disabled={!productImageState.cutoutImagePath} value="cutout">
+                              누끼 이미지 사용
+                            </option>
+                            <option
+                              disabled={!productImageState.styledCutoutImagePath}
+                              value="styled-cutout"
+                            >
+                              효과 적용 누끼 사용
+                            </option>
+                          </select>
+                        </label>
+                        <div className={`mvp-status ${productImageProcessStatus.kind}`}>
+                          {productImageProcessStatus.message}
+                        </div>
+                        <div className="product-image-variant-grid">
+                          <button
+                            className={
+                              productImageState.selectedImageMode === "original" ? "selected" : ""
+                            }
+                            disabled={!productImageState.originalImagePath}
+                            onClick={() => selectProductImageMode("original")}
+                            type="button"
+                          >
+                            {productImageState.originalImagePath ? (
+                              <img alt="원본 이미지" src={productImageState.originalImagePath} />
+                            ) : null}
+                            <span>원본</span>
+                          </button>
+                          <button
+                            className={
+                              productImageState.selectedImageMode === "cutout" ? "selected" : ""
+                            }
+                            disabled={!productImageState.cutoutImagePath}
+                            onClick={() => selectProductImageMode("cutout")}
+                            type="button"
+                          >
+                            {productImageState.cutoutImagePath ? (
+                              <img alt="누끼 이미지" src={productImageState.cutoutImagePath} />
+                            ) : null}
+                            <span>누끼본</span>
+                          </button>
+                          <button
+                            className={
+                              productImageState.selectedImageMode === "styled-cutout"
+                                ? "selected"
+                                : ""
+                            }
+                            disabled={!productImageState.styledCutoutImagePath}
+                            onClick={() => selectProductImageMode("styled-cutout")}
+                            type="button"
+                          >
+                            {productImageState.styledCutoutImagePath ? (
+                              <img
+                                alt="효과 적용 누끼 이미지"
+                                src={productImageState.styledCutoutImagePath}
+                              />
+                            ) : null}
+                            <span>효과본</span>
+                          </button>
+                        </div>
+                      </details>
                       {productImageState.cutoutImagePath ? (
                         <details
                           className="cutout-effect-controls"
@@ -6024,7 +7098,6 @@ export function MvpDashboard({
                       <select
                         onChange={(event) => {
                           setSelectedLibraryBackgroundId("");
-                          setSelectedSceneCandidateId("");
                           setProductInfo((current) => ({
                             ...current,
                             backgroundMode: event.target.value as BackgroundMode,
@@ -6047,7 +7120,6 @@ export function MvpDashboard({
                         }
                         onChange={(event) => {
                           setSelectedLibraryBackgroundId("");
-                          setSelectedSceneCandidateId("");
                           setProductInfo((current) => ({
                             ...current,
                             selectedBackgroundSource: event.target.value,
@@ -6085,7 +7157,6 @@ export function MvpDashboard({
                             key={`background-${option.value}`}
                             onClick={() => {
                               setSelectedLibraryBackgroundId("");
-                              setSelectedSceneCandidateId("");
                               setProductInfo((current) => ({
                                 ...current,
                                 selectedBackgroundSource: option.value,
@@ -6155,10 +7226,127 @@ export function MvpDashboard({
                           <option value="high">높음</option>
                         </select>
                       </label>
+                      <label>
+                        <span>배경 확대 {backgroundStyle.scale.toFixed(2)}×</span>
+                        <input
+                          max="1.45"
+                          min="1"
+                          onChange={(event) =>
+                            setBackgroundStyle((current) => ({
+                              ...current,
+                              scale: Number(event.target.value),
+                            }))
+                          }
+                          step="0.01"
+                          type="range"
+                          value={backgroundStyle.scale}
+                        />
+                      </label>
+                      <label>
+                        <span>좌우 이동 {backgroundStyle.offsetX}px</span>
+                        <input
+                          max="220"
+                          min="-220"
+                          onChange={(event) =>
+                            setBackgroundStyle((current) => ({
+                              ...current,
+                              offsetX: Number(event.target.value),
+                            }))
+                          }
+                          step="5"
+                          type="range"
+                          value={backgroundStyle.offsetX}
+                        />
+                      </label>
+                      <label>
+                        <span>상하 이동 {backgroundStyle.offsetY}px</span>
+                        <input
+                          max="220"
+                          min="-220"
+                          onChange={(event) =>
+                            setBackgroundStyle((current) => ({
+                              ...current,
+                              offsetY: Number(event.target.value),
+                            }))
+                          }
+                          step="5"
+                          type="range"
+                          value={backgroundStyle.offsetY}
+                        />
+                      </label>
+                      <label>
+                        <span>밝기 {Math.round(backgroundStyle.brightness * 100)}%</span>
+                        <input
+                          max="1.35"
+                          min="0.55"
+                          onChange={(event) =>
+                            setBackgroundStyle((current) => ({
+                              ...current,
+                              brightness: Number(event.target.value),
+                            }))
+                          }
+                          step="0.05"
+                          type="range"
+                          value={backgroundStyle.brightness}
+                        />
+                      </label>
+                      <label>
+                        <span>오버레이 {Math.round(backgroundStyle.overlayOpacity * 100)}%</span>
+                        <input
+                          max="0.72"
+                          min="0"
+                          onChange={(event) =>
+                            setBackgroundStyle((current) => ({
+                              ...current,
+                              overlayOpacity: Number(event.target.value),
+                            }))
+                          }
+                          step="0.02"
+                          type="range"
+                          value={backgroundStyle.overlayOpacity}
+                        />
+                      </label>
+                      <label>
+                        <span>좌우 반전</span>
+                        <input
+                          checked={backgroundStyle.flipHorizontal}
+                          onChange={(event) =>
+                            setBackgroundStyle((current) => ({
+                              ...current,
+                              flipHorizontal: event.target.checked,
+                            }))
+                          }
+                          type="checkbox"
+                        />
+                      </label>
+                      <button
+                        onClick={() =>
+                          setBackgroundStyle({
+                            blurLevel: "low",
+                            dimLevel: "low",
+                            brightness: 1,
+                            overlayOpacity: 0.08,
+                            scale: 1.08,
+                            offsetX: 0,
+                            offsetY: 0,
+                            flipHorizontal: false,
+                          })
+                        }
+                        type="button"
+                      >
+                        배경 위치 초기화
+                      </button>
                     </div>
                     {currentBackgroundSource ? (
                       <div className="background-preview-thumb">
-                        <img alt="선택된 배경 이미지 미리보기" src={currentBackgroundSource} />
+                        <img
+                          alt="선택된 배경 이미지 미리보기"
+                          src={currentBackgroundSource}
+                          style={{
+                            filter: `brightness(${backgroundStyle.brightness})`,
+                            transform: `translate(${backgroundStyle.offsetX / 10}px, ${backgroundStyle.offsetY / 10}px) scale(${backgroundStyle.flipHorizontal ? -backgroundStyle.scale : backgroundStyle.scale}, ${backgroundStyle.scale})`,
+                          }}
+                        />
                         <span>
                           {productInfo.backgroundMode === "auto-detail-blur-dark"
                             ? "대표 이미지 자동 배경"
@@ -6196,12 +7384,13 @@ export function MvpDashboard({
                     <label>
                       <span>본문 문구 색상</span>
                       <input
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setManualTextColors(true);
                           setBannerTextColors((current) => ({
                             ...current,
                             bodyColor: event.target.value,
-                          }))
-                        }
+                          }));
+                        }}
                         type="color"
                         value={bannerTextColors.bodyColor}
                       />
@@ -6326,11 +7515,13 @@ export function MvpDashboard({
                     </div>
                   </details>
                   <button
-                    disabled={!bannerCopy.headline || !selectedTemplate}
+                    disabled={!bannerCopy.headline || renderStatus.kind === "loading"}
                     onClick={renderBanner}
                     type="button"
                   >
-                    배너만 다시 생성
+                    {renderStatus.kind === "loading"
+                      ? "자동 템플릿 제작 중..."
+                      : "자동 템플릿으로 배너 생성"}
                   </button>
                   <details className="background-settings ai-disclosure-settings source-image-dropdown">
                     <summary>
@@ -6452,22 +7643,33 @@ export function MvpDashboard({
                         onRender={renderBanner}
                         productEffect={cutoutProductEffect}
                       />
-                      <a className="download-button" download href={generatedBannerPath}>
-                        PNG 다운로드
-                      </a>
+                      {generatedBannerAsset ? (
+                        <CreativeAssetActions asset={generatedBannerAsset} onMessage={(message) => setRenderStatus({ kind: "success", message })} />
+                      ) : (
+                        <div className="creative-asset-migration">
+                          <p>이전 생성 결과입니다. 다운로드 전에 소재코드를 한 번 발급해 주세요.</p>
+                          <button
+                            onClick={() => void issueCodeForExistingBanner().then(() => setRenderStatus({ kind: "success", message: "소재코드를 발급했습니다." })).catch((error) => setRenderStatus({ kind: "error", message: error instanceof Error ? error.message : "소재코드 발급에 실패했습니다." }))}
+                            type="button"
+                          >
+                            소재코드 1회 발급
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div className="empty-banner-preview">
-                      <strong>와 진심 미쳤다</strong>
-                      <span>캠핑용 고기로 샀어요 입에서 살살 녹고</span>
-                      <em>이 구성에 이 가격이면 가족 선물각</em>
+                      <strong>상품 USP 분석 후 후킹 생성</strong>
+                      <span>상세페이지에서 확인한 차별점을 먼저 찾습니다.</span>
+                      <em>가격·구성·혜택은 확인된 정보만 사용합니다.</em>
                       <i aria-hidden="true" />
-                      <b>잡내 없이 부드러운 오늘의 특가 구성</b>
-                      <small>구성 보러가기 &gt;</small>
+                      <b>상품 누끼와 후킹별 강조 효과를 자동 적용합니다.</b>
+                      <small>상품 URL을 먼저 불러와주세요 &gt;</small>
                     </div>
                   )}
                 </section>
               </div>
+              </details>
             </div>
           </section>
         ) : null}
@@ -6492,6 +7694,7 @@ export function MvpDashboard({
                 </article>
               )}
             </div>
+            <CreativeAssetLibrary />
           </section>
         ) : null}
       </section>

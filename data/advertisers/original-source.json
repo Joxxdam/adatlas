@@ -2,7 +2,7 @@
   "id": "original-source",
   "name": "오리지널소스",
   "aliases": ["Original Source", "ORIGINAL SOURCE", "오리지날소스", "오리지널 소스"],
-  "domains": [],
+  "domains": ["originalsource.co.kr"],
   "categories": ["바디워시", "퍼스널케어", "생활용품", "뷰티/화장품"],
   "brandKeywords": ["민트", "티트리", "샤워젤", "쿨링", "상쾌함"],
   "visualKeywords": ["강렬함", "시원함", "민트", "물", "여름", "젊고 대담함"],
@@ -13,5 +13,45 @@
   "productDisplayRules": ["실제 패키지와 라벨을 변형하지 않음", "제품을 적어도 화면 높이의 46% 이상으로 표시", "배경과 제품의 조명 방향을 맞춤"],
   "scenePreferences": ["personal-care-cooling-impact", "personal-care-shower-freshness", "personal-care-post-workout", "personal-care-clean-product"],
   "defaultTextStylePreset": "cooling-impact",
-  "defaultSceneProfile": "personal-care-cooling-impact"
+  "defaultSceneProfile": "personal-care-cooling-impact",
+  "logoAssets": [
+    { "kind": "wordmark", "path": "/brand-logos/original-source-logo.png", "variant": "dark", "exact": true },
+    { "kind": "wordmark", "path": "/brand-logos/original-source-logo-light.png", "variant": "light", "exact": true }
+  ],
+  "preferredBlueprints": ["problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "proof-data"],
+  "defaultLogoPosition": "top-right",
+  "logoMinSize": 140,
+  "minLogoClearSpace": 24,
+  "productAssets": [
+    {
+      "productId": "65",
+      "productName": "민트 티트리 쿨링 샤워젤 · 바디워시 250ml",
+      "cutoutPath": "/product-cutouts/original-source/mint-tea-tree-250ml.png",
+      "backgroundPrefix": "/background-library/beauty/original-source/mint-tea-tree/"
+    },
+    {
+      "productId": "77",
+      "productName": "레몬 티트리 상쾌 샤워젤 · 바디워시 250ml",
+      "cutoutPath": "/product-cutouts/original-source/lemon-tea-tree-250ml.png",
+      "backgroundPrefix": "/background-library/beauty/original-source/lemon-tea-tree/"
+    },
+    {
+      "productId": "80",
+      "productName": "코코넛 시어버터 보습 샤워젤 · 바디워시 250ml",
+      "cutoutPath": "/product-cutouts/original-source/coconut-shea-butter-250ml.png",
+      "backgroundPrefix": "/background-library/beauty/original-source/coconut-shea-butter/"
+    },
+    {
+      "productId": "82",
+      "productName": "라임 생기 샤워젤 · 바디워시 250ml",
+      "cutoutPath": "/product-cutouts/original-source/lime-250ml.png",
+      "backgroundPrefix": "/background-library/beauty/original-source/lime/"
+    },
+    {
+      "productId": "84",
+      "productName": "루바브 라즈베리 진정 샤워젤 · 바디워시 250ml",
+      "cutoutPath": "/product-cutouts/original-source/rhubarb-raspberry-250ml.png",
+      "backgroundPrefix": "/background-library/beauty/original-source/rhubarb-raspberry/"
+    }
+  ]
 }

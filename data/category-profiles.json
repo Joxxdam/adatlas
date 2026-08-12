@@ -1,0 +1,62 @@
+[
+  {
+    "id": "personal-care",
+    "label": "퍼스널케어",
+    "matchers": ["바디워시", "샤워젤", "퍼스널케어", "생활용품", "뷰티", "스킨케어"],
+    "fallbackColors": ["#08d8b6", "#0b1b26", "#ffffff", "#54c9ef"],
+    "audienceHints": ["실사용 문제 상황", "사용 후 감각", "제품 패키지 식별"],
+    "preferredHookTypes": ["problem-solution", "sensory", "lifestyle", "social-proof"],
+    "preferredSceneTypes": ["shower", "post-workout", "clean-product", "cooling"],
+    "preferredBlueprints": ["problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "proof-data"],
+    "visualPriorities": ["실제 제품 라벨 보존", "제품 높이 40% 이상", "차가운 브랜드 대비", "사람 장면과 제품 연결"],
+    "forbiddenAssumptions": ["검증되지 않은 체취 감소율", "검증되지 않은 체감 온도", "의학적 효능"]
+  },
+  {
+    "id": "food-meat",
+    "label": "육류·식품",
+    "matchers": ["한우", "고기", "육류", "축산", "갈비", "등심", "식품", "선물"],
+    "fallbackColors": ["#d7281f", "#17100d", "#ffd52f", "#ffffff"],
+    "audienceHints": ["구성의 명확성", "식품 실물 질감", "가격과 품질 위계"],
+    "preferredHookTypes": ["price-benefit", "feature-usp", "gift", "social-proof"],
+    "preferredSceneTypes": ["grill", "premium-table", "family-meal", "camping"],
+    "preferredBlueprints": ["editorial-story", "comparison-versus", "product-hero-lifestyle", "proof-data", "problem-solution-split", "chat-ugc"],
+    "visualPriorities": ["실제 판매 부위 유지", "식품을 가장 선명하게", "가격은 확인된 경우만"],
+    "forbiddenAssumptions": ["검증되지 않은 등급", "검증되지 않은 중량", "검증되지 않은 원산지"]
+  },
+  {
+    "id": "agriculture",
+    "label": "농산물·산지직송",
+    "matchers": ["농산물", "산지", "과일", "채소", "고구마", "감자", "제철", "수확"],
+    "fallbackColors": ["#347b3d", "#f1bd3f", "#fff9e8", "#6a452c"],
+    "audienceHints": ["실물 신선도", "산지 신뢰", "판매 구성"],
+    "preferredHookTypes": ["origin-story", "freshness", "price-benefit", "lifestyle"],
+    "preferredSceneTypes": ["farm-fresh", "harvest", "direct-value", "clean-commerce"],
+    "preferredBlueprints": ["editorial-story", "product-hero-lifestyle", "proof-data", "chat-ugc", "problem-solution-split", "comparison-versus"],
+    "visualPriorities": ["실제 품종과 색 유지", "산지 배경은 일반화", "포장 단위 보존"],
+    "forbiddenAssumptions": ["특정 산지", "당도", "유기농·무농약 인증"]
+  },
+  {
+    "id": "fashion",
+    "label": "패션·의류",
+    "matchers": ["패션", "의류", "원피스", "상의", "하의", "신발", "가방", "리리앤코", "쇼핑몰"],
+    "fallbackColors": ["#211916", "#f3e8df", "#ffffff", "#bd806d"],
+    "audienceHints": ["착용 실루엣", "스타일링 상황", "소재와 핏"],
+    "preferredHookTypes": ["styling", "lifestyle", "curiosity", "price-benefit"],
+    "preferredSceneTypes": ["lookbook", "daily-life", "editorial", "studio"],
+    "preferredBlueprints": ["editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "problem-solution-split", "proof-data"],
+    "visualPriorities": ["상품 색상·핏 보존", "모델과 상품 중복 방지", "로고 여백"],
+    "forbiddenAssumptions": ["체형 변화", "근거 없는 소재 등급", "확인되지 않은 할인율"]
+  },
+  {
+    "id": "generic-commerce",
+    "label": "일반 커머스",
+    "matchers": ["기타", "커머스", "상품"],
+    "fallbackColors": ["#1769e0", "#101827", "#ffffff", "#ffcf33"],
+    "audienceHints": ["제품 식별", "단일 핵심 혜택", "명확한 CTA"],
+    "preferredHookTypes": ["feature-usp", "problem-solution", "price-benefit", "lifestyle"],
+    "preferredSceneTypes": ["clean-brand", "bold-performance", "commerce-stage"],
+    "preferredBlueprints": ["product-hero-lifestyle", "problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "proof-data"],
+    "visualPriorities": ["실제 상품 우선", "텍스트 읽기성", "브랜드색 최대 두 가지"],
+    "forbiddenAssumptions": ["검증되지 않은 성능 수치", "가짜 후기", "가짜 인증"]
+  }
+]

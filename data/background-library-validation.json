@@ -1,0 +1,46 @@
+{
+  "valid": true,
+  "checkedAt": "2026-08-12T21:54:00.575Z",
+  "total": 196,
+  "totalBytes": 34551686,
+  "categoryCounts": {
+    "fashion": 12,
+    "beauty": 112,
+    "health": 12,
+    "agriculture": 8,
+    "meat": 12,
+    "seafood": 6,
+    "processed-food": 8,
+    "food-mall": 8,
+    "living": 6,
+    "kids": 4,
+    "pet": 4,
+    "promotion": 4
+  },
+  "assetTypeCounts": {
+    "lifestyle_photo": 36,
+    "people_photo": 43,
+    "product_set": 22,
+    "pattern_texture": 1,
+    "ingredient_scene": 27,
+    "ai_generated": 62,
+    "designed_asset": 5,
+    "user_uploaded": 0
+  },
+  "peopleTotal": 55,
+  "ageCounts": {
+    "teens": 1,
+    "twenties": 32,
+    "thirties": 44,
+    "forties": 31,
+    "fifties": 5,
+    "senior": 5,
+    "kids": 12,
+    "family": 12,
+    "couple": 3,
+    "friends": 1,
+    "no_people": 0
+  },
+  "errors": [],
+  "warnings": []
+}

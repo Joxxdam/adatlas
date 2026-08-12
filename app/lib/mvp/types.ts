@@ -1,3 +1,6 @@
+import type { CreativeAsset } from "../creative-assets/types";
+import type { CreativeOpportunityContext } from "../creative-content-notes/types";
+
 export type MvpBrand = {
   id: string;
   brandName: string;
@@ -60,6 +63,19 @@ export type AdImageLabel = {
   labeledAt: string;
 };
 
+export type ProductTargetAgeGroup =
+  | "teens"
+  | "twenties"
+  | "thirties"
+  | "forties"
+  | "fifties"
+  | "senior"
+  | "kids"
+  | "family"
+  | "couple"
+  | "friends"
+  | "no_people";
+
 export type ProductInfoForPrompt = {
   productName: string;
   category: string;
@@ -86,6 +102,20 @@ export type ProductInfoForPrompt = {
   sourceImageCandidates?: SourceImageCandidate[];
   selectedSourceImageId?: string;
   selectedSourceImagePath?: string;
+  productSubCategory?: string;
+  detectedProductType?: string;
+  targetAgeGroups?: ProductTargetAgeGroup[];
+  productColors?: string[];
+  brandColors?: string[];
+  ingredients?: string[];
+  verifiedBenefits?: string[];
+  packageType?: string;
+  imageType?: string;
+  modelIncluded?: boolean;
+  productCutoutAvailable?: boolean;
+  productRepresentation?: ProductRepresentation;
+  reviewSources?: ReviewSourceCandidate[];
+  creativeContext?: CreativeOpportunityContext;
 };
 
 export type AdObjective = "purchase" | "signup" | "awareness" | "retargeting";
@@ -221,6 +251,33 @@ export type CreativeStrategy = {
   inferredEvidence: string[];
   matchedReferenceIds: string[];
   matchedReferencePatterns: string[];
+  backgroundHookType?:
+    | "problem_solution"
+    | "price_offer"
+    | "usp_proof"
+    | "sensory"
+    | "situation"
+    | "review_ugc"
+    | "urgency"
+    | "premium"
+    | "styling"
+    | "freshness"
+    | "origin_story"
+    | "family"
+    | "convenience"
+    | "gifting";
+  targetAgeGroups?: ProductTargetAgeGroup[];
+  preferredAssetTypes?: Array<
+    | "lifestyle_photo"
+    | "people_photo"
+    | "product_set"
+    | "pattern_texture"
+    | "ingredient_scene"
+    | "ai_generated"
+    | "designed_asset"
+    | "user_uploaded"
+  >;
+  preferredColors?: string[];
 };
 
 export type MessageHierarchy = {
@@ -267,6 +324,66 @@ export type CopyGuideContext = {
 
 export type ProductImageMode = "original" | "cutout" | "styled-cutout";
 
+export type ProductRepresentationType =
+  | "single-product"
+  | "multi-unit-set"
+  | "irregular-product"
+  | "packaged-product"
+  | "product-package-group"
+  | "bundle-components"
+  | "plated-product"
+  | "apparel-or-soft-product"
+  | "transparent-or-reflective-product"
+  | "already-transparent";
+
+export type ProductExtractionScope =
+  | "single-item"
+  | "visible-all"
+  | "sales-unit"
+  | "product-and-package"
+  | "food-only"
+  | "food-and-plate"
+  | "manual-region"
+  | "original";
+
+export type NormalizedImageBox = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type DetectedProductObject = {
+  id: string;
+  box: NormalizedImageBox;
+  confidence: number;
+  relativeArea: number;
+  selected: boolean;
+  role?: "primary" | "component" | "package" | "plate" | "unknown";
+};
+
+export type ProductRepresentation = {
+  type: ProductRepresentationType;
+  confidence: number;
+  reason: string;
+  recommendedExtractionScope: ProductExtractionScope;
+  selectedExtractionScope: ProductExtractionScope;
+  expectedUnitCount?: number;
+};
+
+export type ProductCutoutQuality = {
+  usable: boolean;
+  score: number;
+  transparencyRatio: number;
+  opaqueEdgeRatio: number;
+  foregroundRatio: number;
+  componentCount: number;
+  clippedEdgeCount: number;
+  haloRatio: number;
+  warnings: string[];
+  foregroundBox?: NormalizedImageBox;
+};
+
 export type ProductImageEffectPreset =
   "none" | "clean-outline" | "soft-glow" | "commerce-shadow" | "outline-glow-shadow";
 
@@ -299,6 +416,14 @@ export type ProductImageState = {
   selectedImageMode: ProductImageMode;
   cutoutApplied: boolean;
   effectPreset?: ProductImageEffectPreset;
+  representation?: ProductRepresentation;
+  selectedExtractionScope?: ProductExtractionScope;
+  selectedObjectIds?: string[];
+  selectedGroupBox?: NormalizedImageBox;
+  quality?: ProductCutoutQuality;
+  retryCount?: number;
+  manualEdited?: boolean;
+  processingProvider?: string;
 };
 
 export type SelectedAdImageSource =
@@ -320,6 +445,31 @@ export type SourceImageCandidate = {
   label: string;
   selected: boolean;
   createdAt: string;
+  width?: number;
+  height?: number;
+  sourceType?:
+    | "structured-data"
+    | "open-graph"
+    | "product-gallery"
+    | "detail-content"
+    | "option-image"
+    | "upload"
+    | "unknown";
+  sourceImageQualityScore?: number;
+  salesUnitMatchScore?: number;
+  recommendationScore?: number;
+  analysisReason?: string;
+  expectedRepresentationType?: ProductRepresentationType;
+  expectedExtractionScope?: ProductExtractionScope;
+  detectedObjects?: DetectedProductObject[];
+  detectedGroupBox?: NormalizedImageBox;
+  hasText?: boolean;
+  hasMultipleObjects?: boolean;
+  multipleObjectsAreSalesUnit?: boolean;
+  contentHash?: string;
+  perceptualHash?: string;
+  alreadyTransparent?: boolean;
+  warnings?: string[];
 };
 
 export type ProductImageCandidate = {
@@ -336,6 +486,103 @@ export type SourceImageSelectionState = {
   candidates: SourceImageCandidate[];
   selectedSourceImageId?: string;
   selectedSourceImagePath?: string;
+};
+
+export type ReviewSourceType =
+  | "product-review"
+  | "detail-testimonial"
+  | "community-capture"
+  | "before-after"
+  | "upload";
+
+export type ReviewType =
+  | "review-text-screenshot"
+  | "review-photo-with-text"
+  | "review-photo-only"
+  | "community-reaction"
+  | "before-after"
+  | "review-card"
+  | "testimonial-graphic"
+  | "not-review";
+
+export type ReviewRegionRole =
+  | "text"
+  | "review-body"
+  | "author"
+  | "profile"
+  | "date-order"
+  | "rating"
+  | "social-ui"
+  | "face"
+  | "photo"
+  | "unknown";
+
+export type ReviewImageRegion = {
+  id: string;
+  box: NormalizedImageBox;
+  role: ReviewRegionRole;
+  text?: string;
+  confidence: number;
+};
+
+export type ReviewPrivacyMaskStyle = "blur" | "mosaic" | "solid";
+
+export type ReviewPrivacyRegion = ReviewImageRegion & {
+  reason: string;
+  enabled: boolean;
+  maskStyle: ReviewPrivacyMaskStyle;
+};
+
+export type ReviewSourceCandidate = {
+  id: string;
+  imagePath: string;
+  originalUrl?: string;
+  width: number;
+  height: number;
+  sourceType: ReviewSourceType;
+  sourceContext?: string;
+  reviewType: ReviewType;
+  classificationConfidence: number;
+  ocrText: string;
+  ocrProvider: "openai-vision" | "apple-vision" | "manual" | "unavailable";
+  ocrConfidence: number;
+  keySentence: string;
+  imageQualityScore: number;
+  productRelevanceScore: number;
+  hookStrengthScore: number;
+  specificityScore: number;
+  privacyRiskScore: number;
+  policyRiskScore: number;
+  overallReviewScore: number;
+  textRegions: ReviewImageRegion[];
+  photoRegions: ReviewImageRegion[];
+  privacyRegions: ReviewPrivacyRegion[];
+  recommendedCrop: NormalizedImageBox;
+  cropConfidence: number;
+  automaticCropAvailable: boolean;
+  contentHash?: string;
+  perceptualHash?: string;
+  selected?: boolean;
+  recommended?: boolean;
+  warnings: string[];
+};
+
+export type ReviewCreativeTemplate =
+  | "reaction-comment"
+  | "real-review-focus"
+  | "review-collection"
+  | "before-after-usage";
+
+export type ReviewCreativeState = {
+  status: "idle" | "analyzing" | "ready" | "rendering" | "completed" | "error";
+  selectedReviewIds: string[];
+  template: ReviewCreativeTemplate;
+  headline: string;
+  cropByReviewId: Record<string, NormalizedImageBox>;
+  privacyMasksByReviewId: Record<string, ReviewPrivacyRegion[]>;
+  manualEdited: boolean;
+  generatedImagePath?: string;
+  warnings: string[];
 };
 
 export type GptImageGenerationMode = "visual-only" | "text-in-image";
@@ -556,6 +803,10 @@ export type ExtractedProductInfo = {
   detailImages?: string[];
   imageCandidates?: ProductImageCandidate[];
   sourceImageCandidates?: SourceImageCandidate[];
+  productRepresentation?: ProductRepresentation;
+  reviewSources?: ReviewSourceCandidate[];
+  verifiedBenefits?: string[];
+  ingredients?: string[];
 };
 
 export type CopySlotKey =
@@ -873,6 +1124,7 @@ export type BatchRenderResult = {
   overflowSlots?: CopySlotKey[];
   copyPreview?: TemplateCopyPreview;
   diagnostics?: RenderDiagnostics;
+  creativeAsset?: CreativeAsset;
   createdAt: string;
 };
 

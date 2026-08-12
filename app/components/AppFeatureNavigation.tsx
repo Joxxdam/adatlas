@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-export type AppFeatureKey = "store-analysis" | "product-creation" | "image-references";
+export type AppFeatureKey = "store-analysis" | "product-creation" | "hook-experiments" | "image-references";
 
 const FEATURES: Array<{
   key: AppFeatureKey;
@@ -25,9 +25,16 @@ const FEATURES: Array<{
     description: "상품 URL로 바로 제작하기",
   },
   {
+    key: "hook-experiments",
+    href: "/hook-experiments",
+    index: "03",
+    label: "후킹 탐색 실험",
+    description: "Meta 성과로 후킹 검증하기",
+  },
+  {
     key: "image-references",
     href: "/image-analysis-references",
-    index: "03",
+    index: "04",
     label: "이미지 분석 레퍼런스 보러가기",
     description: "수집 이미지 분석·라벨 보기",
   },

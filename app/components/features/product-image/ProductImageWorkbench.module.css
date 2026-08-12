@@ -1,0 +1,316 @@
+.panel {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #cbd8e7;
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.heading,
+.sectionHeading,
+.candidateMeta strong,
+.quality strong {
+  color: #122033;
+}
+
+.heading {
+  margin: 0;
+  font-size: 18px;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.7fr);
+  gap: 12px;
+}
+
+.summaryCard,
+.controlCard,
+.quality {
+  padding: 14px;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.summaryCard p,
+.quality p,
+.candidateMeta span,
+.candidateMeta small {
+  margin: 4px 0 0;
+  color: #5e6d7e;
+  line-height: 1.45;
+}
+
+.confidence {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #0b5fbe;
+  background: #e6f2ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.controlCard label,
+.manualControls label {
+  display: grid;
+  gap: 6px;
+  color: #42546a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.controlCard select,
+.manualControls input,
+.toolbar button,
+.actionRow button,
+.candidateActions button {
+  min-height: 40px;
+  border: 1px solid #b9c8d8;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.candidateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.candidate {
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgb(25 55 88 / 8%);
+}
+
+.candidateSelected {
+  border-color: #1677d2;
+}
+
+.candidateImage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 150px;
+  background: #eef3f8;
+}
+
+.candidateImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.candidateMeta {
+  display: grid;
+  gap: 3px;
+  padding: 11px;
+}
+
+.scoreRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.scoreRow span {
+  padding: 6px;
+  border-radius: 7px;
+  background: #f0f5fa;
+  color: #24405f;
+  font-size: 11px;
+  text-align: center;
+}
+
+.candidateActions,
+.actionRow,
+.toolbar,
+.objectActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.candidateActions {
+  padding: 0 11px 11px;
+}
+
+.candidateActions button,
+.actionRow button,
+.toolbar button {
+  flex: 1;
+  padding: 8px 10px;
+  color: #173552;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary {
+  color: #fff !important;
+  border-color: #1677d2 !important;
+  background: #1677d2 !important;
+}
+
+.comparisonGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.preview {
+  overflow: hidden;
+  border: 1px solid #d7e1eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.preview span {
+  display: block;
+  padding: 7px;
+  color: #53667c;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  background: rgb(255 255 255 / 86%);
+}
+
+.previewSurface {
+  display: grid;
+  place-items: center;
+  height: 150px;
+  background-position: center;
+  background-size: cover;
+}
+
+.previewSurface img {
+  width: 92%;
+  height: 92%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 8px rgb(0 0 0 / 20%));
+}
+
+.checker {
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #d8dfe7 25%, transparent 25%),
+    linear-gradient(-45deg, #d8dfe7 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d8dfe7 75%),
+    linear-gradient(-45deg, transparent 75%, #d8dfe7 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.black {
+  background: #0b0d10;
+}
+
+.objectGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.objectButton {
+  padding: 8px;
+  border: 1px solid #c9d5e2;
+  border-radius: 8px;
+  background: #fff;
+  color: #435a72;
+}
+
+.objectSelected {
+  color: #0c5dac;
+  border-color: #1677d2;
+  background: #eaf4ff;
+}
+
+.manualEditor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 14px;
+}
+
+.editStage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid #b9c8d8;
+  border-radius: 12px;
+  touch-action: none;
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #d8dfe7 25%, transparent 25%),
+    linear-gradient(-45deg, #d8dfe7 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d8dfe7 75%),
+    linear-gradient(-45deg, transparent 75%, #d8dfe7 75%);
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  background-size: 24px 24px;
+}
+
+.editStage img {
+  max-width: 92%;
+  max-height: 340px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.strokeDot {
+  position: absolute;
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.manualControls {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.status {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  color: #30516e;
+  background: #eaf4ff;
+}
+
+.warning {
+  color: #8c4915;
+  background: #fff2dd;
+}
+
+@media (max-width: 1000px) {
+  .candidateGrid,
+  .comparisonGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .summary,
+  .manualEditor {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .panel {
+    padding: 12px;
+  }
+  .candidateGrid,
+  .comparisonGrid,
+  .objectGrid {
+    grid-template-columns: 1fr;
+  }
+  .editStage,
+  .manualEditor .toolbar {
+    display: none;
+  }
+}

@@ -1,0 +1,33 @@
+.manager { display: grid; gap: 16px; margin-top: 22px; }
+.manager header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.manager header p { margin: 0 0 4px; color: #1677dc; font-size: 11px; font-weight: 850; letter-spacing: .08em; }
+.manager header h3 { margin: 0 0 5px; }
+.manager header span, .resultCount { color: #667085; font-size: 12px; }
+.manager button { padding: 9px 12px; border: 1px solid #d6e0eb; border-radius: 9px; background: #fff; color: #26364a; font-weight: 750; }
+.addPanel { padding: 14px; border: 1px solid #dbe5ef; border-radius: 12px; background: #f8fbff; }
+.addPanel summary { cursor: pointer; font-weight: 850; }
+.categoryCreator { display: flex; gap: 8px; margin: 14px 0 10px; }
+.categoryCreator input { flex: 1; }
+.uploadForm { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.uploadForm label { display: grid; gap: 5px; color: #526174; font-size: 11px; font-weight: 700; }
+.uploadForm input, .uploadForm select, .filters input, .filters select, .categoryCreator input { min-width: 0; padding: 9px 10px; border: 1px solid #d6e0eb; border-radius: 8px; background: #fff; }
+.uploadForm > button { align-self: end; background: #1677dc; color: #fff; }
+.filters { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.resultCount { margin: 0; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.grid > article { overflow: hidden; border: 1px solid #dce5ef; border-radius: 12px; background: #fff; }
+.grid > article > img { width: 100%; aspect-ratio: 1; object-fit: cover; background: #edf2f7; }
+.cardBody { display: grid; gap: 7px; padding: 11px; }
+.cardBody strong { font-size: 13px; line-height: 1.35; }
+.cardBody span, .cardBody small { color: #667085; font-size: 10px; line-height: 1.4; }
+.cardBody details { padding-top: 7px; border-top: 1px solid #e7edf4; font-size: 10px; }
+.cardBody details summary { cursor: pointer; font-weight: 750; }
+.cardBody details label { display: grid; gap: 3px; margin-top: 7px; }
+.cardBody details input { min-width: 0; padding: 7px; border: 1px solid #d6e0eb; border-radius: 7px; }
+.cardBody details button, .cardBody details a, .cardBody details span { display: block; margin-top: 7px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.deleteButton { color: #b42318 !important; }
+.disabled { opacity: .55; }
+.imageError { display: none; }
+@media (max-width: 1000px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .uploadForm, .filters, .grid { grid-template-columns: 1fr; } .manager header, .categoryCreator { flex-direction: column; } }

@@ -23,6 +23,22 @@ export type AdvertiserProfile = {
   scenePreferences?: string[];
   defaultTextStylePreset?: string;
   defaultSceneProfile?: string;
+  logoAssets?: Array<{
+    kind: "logo" | "wordmark" | "symbol";
+    path: string;
+    variant: "dark" | "light" | "color";
+    exact: boolean;
+  }>;
+  productAssets?: Array<{
+    productId: string;
+    productName: string;
+    cutoutPath: string;
+    backgroundPrefix: string;
+  }>;
+  preferredBlueprints?: string[];
+  defaultLogoPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+  logoMinSize?: number;
+  minLogoClearSpace?: number;
 };
 
 export type ProductSafeZone = {

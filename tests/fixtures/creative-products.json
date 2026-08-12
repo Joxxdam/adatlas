@@ -1,0 +1,59 @@
+[
+  {
+    "id": "original-source-mint-shower-gel",
+    "product": {
+      "productName": "오리지널소스 민트 앤 티트리 샤워젤 250ml",
+      "category": "바디워시",
+      "price": "19,900원",
+      "originalPrice": "",
+      "advertiserName": "오리지널소스",
+      "brandName": "Original Source",
+      "discountInfo": "",
+      "mainBenefit": "민트와 티트리의 상쾌한 사용감",
+      "targetCustomer": "운동 후 산뜻한 샤워를 원하는 고객",
+      "landingUrl": "https://example.com/original-source/mint-shower-gel",
+      "productImagePath": "/test-fixtures/creative/original-source-product.svg",
+      "backgroundImagePath": "",
+      "verifiedBenefits": ["민트와 티트리 성분을 강조한 샤워젤"],
+      "ingredients": ["민트", "티트리"],
+      "brandColors": ["#00d9b1", "#091823"]
+    }
+  },
+  {
+    "id": "kookdae-beef-set",
+    "product": {
+      "productName": "국대한우 실속 구이 세트",
+      "category": "한우",
+      "price": "59,000원",
+      "originalPrice": "69,000원",
+      "advertiserName": "국대한우",
+      "brandName": "국대한우",
+      "discountInfo": "10,000원 할인",
+      "mainBenefit": "여러 부위를 한 번에 확인하는 구이 구성",
+      "targetCustomer": "주말 식사와 선물 구성을 찾는 고객",
+      "landingUrl": "https://koreakoreanbeef.com/fixture-product",
+      "productImagePath": "/test-fixtures/creative/beef-set.svg",
+      "backgroundImagePath": "",
+      "verifiedBenefits": ["구이용 상품 구성"],
+      "brandColors": ["#d7281f", "#ffd52f"]
+    }
+  },
+  {
+    "id": "ririnco-dress",
+    "product": {
+      "productName": "리리앤코 데일리 원피스",
+      "category": "패션/의류",
+      "price": "39,800원",
+      "advertiserName": "리리앤코",
+      "brandName": "RIRINCO",
+      "discountInfo": "",
+      "mainBenefit": "단정한 실루엣의 데일리 스타일",
+      "targetCustomer": "출근과 주말에 함께 입을 원피스를 찾는 고객",
+      "landingUrl": "https://ririnco.com/product/fixture-dress",
+      "productImagePath": "/test-fixtures/creative/ririnco-dress.svg",
+      "backgroundImagePath": "",
+      "verifiedBenefits": ["데일리 원피스"],
+      "brandColors": ["#261c19", "#f2e6de"]
+    }
+  }
+]

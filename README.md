@@ -37,6 +37,10 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 # AdAtlas
 
+## 제품 기획서
+
+MVP의 상품 탐지, 동일 디자인 후킹 실험, 소재코드, 광고 등록, 성과 연결 및 향후 고도화 범위는 [애드아틀란티스 MVP 최종 기획서](docs/adatlantis-mvp-plan.md)에서 확인할 수 있습니다.
+
 상품 상세페이지 URL을 분석해 광고 후킹 3안, 배경 추천, 상품 합성, 문구·가격·장식 렌더링과 다운로드를 연결하는 Next.js 기반 광고 소재 제작 도구입니다.
 
 ## 배경 라이브러리

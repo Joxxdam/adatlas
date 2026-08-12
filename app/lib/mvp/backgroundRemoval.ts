@@ -2,16 +2,31 @@ import crypto from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
+import { validatePublicHttpUrl } from "../store-analysis/urlSafety";
 import {
-  imageSourceToBuffer,
+  prepareProductSourceBuffer,
   removeBackgroundToPng,
   saveProcessedProductImage,
 } from "./imageEffects";
+import { inspectCutoutQuality } from "./cutoutQuality";
+import {
+  PRODUCT_IMAGE_PIPELINE_VERSION,
+  productCutoutCacheDescriptor,
+} from "./productImagePipeline";
+import {
+  applySelectedObjectBoxes,
+  refineProductCutoutAlpha,
+} from "./productMaskPostprocess";
 import {
   appendProcessedProductImage,
   readProcessedProducts,
 } from "./processedProductStore";
-import { inspectCutoutQuality } from "./cutoutQuality";
+import type {
+  NormalizedImageBox,
+  ProductCutoutQuality,
+  ProductExtractionScope,
+  ProductRepresentationType,
+} from "./types";
 
 const allowedPublicPrefixes = [
   "product-images/",
@@ -22,21 +37,33 @@ const allowedPublicPrefixes = [
   "background-images/",
   "processed-products/",
 ];
-
 const maxRemoteImageBytes = 12 * 1024 * 1024;
+const maxImagePixels = 40_000_000;
+const maxRedirects = 4;
 
 export type BackgroundRemovalProvider = "removebg" | "clipdrop" | "mock";
 
 export type RemoveBackgroundInput = {
   imagePath: string;
   provider?: BackgroundRemovalProvider;
+  representationType?: ProductRepresentationType;
+  extractionScope?: ProductExtractionScope;
+  selectedObjectIds?: string[];
+  selectedObjectBoxes?: NormalizedImageBox[];
+  cropBox?: NormalizedImageBox;
+  expectedUnitCount?: number;
+  cleanupStrength?: "light" | "balanced" | "strong";
 };
 
 export type RemoveBackgroundResult = {
   success: boolean;
   originalImagePath: string;
   processedImagePath?: string | null;
+  croppedImagePath?: string;
   provider: BackgroundRemovalProvider;
+  quality?: ProductCutoutQuality;
+  retryCount?: number;
+  cacheKey?: string;
   error?: string;
   detail?: string;
   fallbackMessage?: string;
@@ -50,544 +77,404 @@ export type RemoveBackgroundResult = {
     normalizedByteLength?: number;
     removeBgStatus?: number;
     removeBgStatusText?: string;
-    removeBgResponseText?: string;
     cacheHit?: boolean;
   };
 };
 
-type PreparedImageFile = {
+type PreparedImage = {
   buffer: Buffer;
   filename: string;
   contentType: string;
-  byteLength: number;
+  sourceKind: "local-public-file" | "remote-url-downloaded";
 };
-
-function getFileNameFromImagePath(imagePath: string) {
-  try {
-    const url = new URL(imagePath);
-    return path.basename(url.pathname) || "product-image.png";
-  } catch {
-    return path.basename(imagePath) || "product-image.png";
-  }
-}
-
-function getContentType(imagePath: string) {
-  const extension = getFileNameFromImagePath(imagePath).toLowerCase().split(".").pop();
-  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
-  if (extension === "webp") return "image/webp";
-  if (extension === "png") return "image/png";
-  if (extension === "gif") return "image/gif";
-  return "application/octet-stream";
-}
 
 function isRemoteUrl(value: string) {
   try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:";
+    return ["http:", "https:"].includes(new URL(value).protocol);
   } catch {
     return false;
   }
 }
 
-function assertSafeRemoteHostname(hostname: string) {
-  const normalized = hostname.toLowerCase();
-
-  if (
-    normalized === "localhost" ||
-    normalized.endsWith(".localhost") ||
-    normalized === "0.0.0.0" ||
-    normalized === "127.0.0.1" ||
-    normalized.startsWith("127.") ||
-    normalized === "::1"
-  ) {
-    throw new Error("localhost or loopback image URLs are not allowed for background removal.");
+function localPublicPath(imagePath: string) {
+  const relative = imagePath.replace(/^\/+/, "").replace(/\\/g, "/");
+  if (!relative || relative.includes("..")) throw new Error("Invalid imagePath.");
+  if (!allowedPublicPrefixes.some((prefix) => relative.startsWith(prefix))) {
+    throw new Error("imagePath is outside allowed public image directories.");
   }
-
-  const ipv4Match = normalized.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (!ipv4Match) return;
-
-  const [a, b] = ipv4Match.slice(1).map(Number);
-  if (
-    a === 10 ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 169 && b === 254)
-  ) {
-    throw new Error("Private network image URLs are not allowed for background removal.");
-  }
+  const publicDir = path.resolve(process.cwd(), "public");
+  const absolute = path.resolve(publicDir, relative);
+  if (!absolute.startsWith(`${publicDir}${path.sep}`)) throw new Error("imagePath escapes public.");
+  return absolute;
 }
 
-function extensionFromContentType(contentType: string) {
-  if (contentType.includes("png")) return "png";
-  if (contentType.includes("webp")) return "webp";
-  if (contentType.includes("jpeg") || contentType.includes("jpg")) return "jpg";
-  if (contentType.includes("gif")) return "gif";
-  return "jpg";
-}
-
-function truncateForLog(value: string, maxLength = 1600) {
-  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
-}
-
-function isUnknownForegroundError(status: number, responseText: string) {
-  if (status !== 400) return false;
-  return /unknown_foreground|foreground|identify.*foreground|could not identify|can't identify|cannot identify|not find.*foreground|find.*foreground/i.test(
-    responseText
-  );
-}
-
-async function createLocalFallbackCutout(
-  imagePath: string,
-  provider: BackgroundRemovalProvider,
-  debug?: RemoveBackgroundResult["debug"]
-): Promise<RemoveBackgroundResult | null> {
-  try {
-    const sourceBuffer = await imageSourceToBuffer(imagePath);
-    const processedBuffer = await removeBackgroundToPng(sourceBuffer);
-    const quality = await inspectCutoutQuality(processedBuffer);
-    if (!quality.usable) {
-      console.warn("[remove-background] local fallback did not find a safe cutout", {
-        transparencyRatio: quality.transparencyRatio,
-        opaqueEdgeRatio: quality.opaqueEdgeRatio,
-      });
-      return null;
+async function readLimitedBody(response: Response) {
+  const length = Number(response.headers.get("content-length") || 0);
+  if (length > maxRemoteImageBytes) throw new Error("Remote image exceeds 12MB.");
+  if (!response.body) return Buffer.alloc(0);
+  const reader = response.body.getReader();
+  const chunks: Buffer[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxRemoteImageBytes) {
+      await reader.cancel();
+      throw new Error("Remote image exceeds 12MB.");
     }
-    const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
-    return {
-      success: true,
-      originalImagePath: imagePath,
-      processedImagePath,
-      provider,
-      sourceKind: "mock",
-      fallbackMessage:
-        "자동 배경 제거를 로컬 방식으로 완료했습니다. 결과가 어색하면 상품만 크게 나온 다른 이미지를 선택해주세요.",
-      debug: {
-        ...debug,
-        foregroundType: "auto",
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks, total);
+}
+
+async function downloadRemoteImage(imagePath: string): Promise<PreparedImage> {
+  let current = await validatePublicHttpUrl(imagePath);
+  for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount += 1) {
+    const response = await fetch(current, {
+      method: "GET",
+      redirect: "manual",
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+      headers: {
+        Accept: "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.5",
+        "User-Agent": "Mozilla/5.0 (compatible; AdAtlasBackgroundRemoval/1.0)",
       },
+    });
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location || redirectCount === maxRedirects) throw new Error("Too many redirects.");
+      current = await validatePublicHttpUrl(new URL(location, current).toString());
+      continue;
+    }
+    await validatePublicHttpUrl(response.url || current.toString());
+    if (!response.ok) throw new Error(`Remote image HTTP ${response.status}`);
+    const contentType = (response.headers.get("content-type") || "")
+      .split(";")[0]
+      .trim()
+      .toLowerCase();
+    if (!contentType.startsWith("image/") || contentType.includes("svg")) {
+      throw new Error("Remote response is not a supported raster image.");
+    }
+    return {
+      buffer: await readLimitedBody(response),
+      filename: path.basename(current.pathname) || "remote-product",
+      contentType,
+      sourceKind: "remote-url-downloaded",
     };
-  } catch (error) {
-    console.error("[remove-background] local fallback cutout failed", error);
-    return null;
   }
+  throw new Error("Too many redirects.");
 }
 
-async function findCachedProcessedImage(
-  originalImagePath: string,
-  provider: BackgroundRemovalProvider
-) {
+async function prepareImage(imagePath: string): Promise<PreparedImage> {
+  if (/^(?:data|blob|file):/i.test(imagePath)) throw new Error("Unsafe image URL protocol.");
+  const prepared = isRemoteUrl(imagePath)
+    ? await downloadRemoteImage(imagePath)
+    : {
+        buffer: await fs.readFile(localPublicPath(imagePath)),
+        filename: path.basename(imagePath) || "product-image",
+        contentType: "application/octet-stream",
+        sourceKind: "local-public-file" as const,
+      };
+  if (!prepared.buffer.length || prepared.buffer.length > maxRemoteImageBytes) {
+    throw new Error("Image must be between 1 byte and 12MB.");
+  }
+  const metadata = await sharp(prepared.buffer).metadata();
+  const width = metadata.width || 0;
+  const height = metadata.height || 0;
+  if (!width || !height || width > 10_000 || height > 10_000 || width * height > maxImagePixels) {
+    throw new Error("Image dimensions exceed the processing limit.");
+  }
+  if (!metadata.format || !["png", "jpeg", "webp", "avif"].includes(metadata.format)) {
+    throw new Error("Only PNG, JPEG, WEBP, or AVIF raster images are supported.");
+  }
+  return prepared;
+}
+
+export async function loadSafeProductImageBuffer(imagePath: string) {
+  return (await prepareImage(imagePath)).buffer;
+}
+
+export function buildProductCutoutCacheKey(input: {
+  contentHash: string;
+  provider: string;
+  representationType?: ProductRepresentationType;
+  extractionScope?: ProductExtractionScope;
+  selectedObjectIds?: string[];
+  cropBox?: NormalizedImageBox;
+  cleanupStrength?: string;
+}) {
+  const stable = productCutoutCacheDescriptor(input);
+  return crypto.createHash("sha256").update(stable).digest("hex");
+}
+
+async function cachedResult(cacheKey: string) {
   const records = await readProcessedProducts().catch(() => []);
-  const publicDir = path.join(process.cwd(), "public");
-
+  const publicDir = path.resolve(process.cwd(), "public");
   for (const record of records) {
-    if (record.originalImagePath !== originalImagePath || record.provider !== provider) continue;
-    const relativePath = record.processedImagePath.replace(/^\/+/, "").replace(/\\/g, "/");
-    if (!relativePath.startsWith("processed-products/") || relativePath.includes("..")) continue;
-    const absolutePath = path.resolve(publicDir, relativePath);
-    if (!absolutePath.startsWith(publicDir)) continue;
-
+    if (record.cacheKey !== cacheKey) continue;
+    const relative = record.processedImagePath.replace(/^\/+/, "").replace(/\\/g, "/");
+    const absolute = path.resolve(publicDir, relative);
+    if (!relative.startsWith("processed-products/") || !absolute.startsWith(`${publicDir}${path.sep}`))
+      continue;
     try {
-      const stat = await fs.stat(absolutePath);
-      if (!stat.isFile() || stat.size <= 0) continue;
-      const quality = await inspectCutoutQuality(await fs.readFile(absolutePath));
-      if (quality.usable) return record.processedImagePath;
+      const buffer = await fs.readFile(absolute);
+      if (buffer.length) return { path: record.processedImagePath, buffer };
     } catch {
-      // Ignore stale cache records and continue with a fresh background removal.
+      // Ignore a stale cache row.
     }
   }
-
-  return "";
-}
-
-async function validateImagePath(imagePath: string) {
-  if (/^(data|blob|file):/i.test(imagePath)) {
-    return "data:, blob:, and file: image URLs are not allowed for background removal.";
-  }
-
-  if (isRemoteUrl(imagePath)) {
-    try {
-      const url = new URL(imagePath);
-      if (url.protocol !== "https:") {
-        return "Remote product images must use an https URL.";
-      }
-      assertSafeRemoteHostname(url.hostname);
-      return null;
-    } catch (error) {
-      return error instanceof Error ? error.message : "Invalid remote image URL.";
-    }
-  }
-
-  const publicRelativePath = imagePath.replace(/^\/+/, "").replace(/\\/g, "/");
-  if (!publicRelativePath || publicRelativePath.includes("..")) {
-    return "Invalid imagePath.";
-  }
-
-  if (!allowedPublicPrefixes.some((prefix) => publicRelativePath.startsWith(prefix))) {
-    return "imagePath is outside allowed public image directories.";
-  }
-
-  const publicDir = path.join(process.cwd(), "public");
-  const absolutePath = path.resolve(publicDir, publicRelativePath);
-  if (!absolutePath.startsWith(publicDir)) {
-    return "imagePath escapes the public directory.";
-  }
-
-  try {
-    const stat = await fs.stat(absolutePath);
-    if (!stat.isFile()) return "imagePath is not a file.";
-  } catch {
-    return "imagePath file does not exist.";
-  }
-
   return null;
 }
 
-async function downloadRemoteImageAsBlob(imageUrl: string): Promise<PreparedImageFile> {
-  const url = new URL(imageUrl);
-
-  if (url.protocol !== "https:") {
-    throw new Error("Remote product images must use an https URL.");
-  }
-
-  assertSafeRemoteHostname(url.hostname);
-
-  const response = await fetch(url.toString(), {
-    method: "GET",
-    redirect: "follow",
-    cache: "no-store",
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-      Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Remote image download failed: HTTP ${response.status}`);
-  }
-
-  const contentType =
-    response.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() || "";
-  if (!contentType.startsWith("image/")) {
-    throw new Error(`Remote URL is not an image file. content-type=${contentType || "unknown"}`);
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  if (arrayBuffer.byteLength > maxRemoteImageBytes) {
-    throw new Error("Remote image is too large. Please use an image under 12MB.");
-  }
-
-  const extension = extensionFromContentType(contentType);
-
-  return {
-    buffer: Buffer.from(arrayBuffer),
-    filename: `remote-product-${Date.now()}.${extension}`,
-    contentType: contentType || "image/jpeg",
-    byteLength: arrayBuffer.byteLength,
-  };
-}
-
-async function readLocalPublicImageAsBlob(imagePath: string): Promise<PreparedImageFile> {
-  const publicRelativePath = imagePath.replace(/^\/+/, "").replace(/\\/g, "/");
-  const publicDir = path.join(process.cwd(), "public");
-  const absolutePath = path.resolve(publicDir, publicRelativePath);
-  const buffer = await fs.readFile(absolutePath);
-  const contentType = getContentType(imagePath);
-  const filename = getFileNameFromImagePath(imagePath);
-
-  return {
-    buffer,
-    filename,
-    contentType,
-    byteLength: buffer.byteLength,
-  };
-}
-
-async function buildRemoveBgFormData(imagePath: string, foregroundType?: "product" | "auto") {
-  const isRemote = isRemoteUrl(imagePath);
-  const imageFile = isRemote
-    ? await downloadRemoteImageAsBlob(imagePath)
-    : await readLocalPublicImageAsBlob(imagePath);
-  const normalizedPngBuffer = await sharp(imageFile.buffer).rotate().png().toBuffer();
-  const pngFileName = imageFile.filename.replace(/\.[^.]+$/, "") + ".png";
-  const formData = new FormData();
-
-  formData.append(
-    "image_file",
-    new Blob([new Uint8Array(normalizedPngBuffer)], { type: "image/png" }),
-    pngFileName
-  );
-  formData.append("size", "auto");
-  formData.append("format", "png");
-  if (foregroundType && foregroundType !== "auto") {
-    formData.append("type", foregroundType);
-  }
-
-  return {
-    formData,
-    sourceKind: isRemote ? ("remote-url-downloaded" as const) : ("local-public-file" as const),
-    debug: {
-      contentType: imageFile.contentType,
-      byteLength: imageFile.byteLength,
-      fileName: pngFileName,
-      foregroundType,
-      normalizedContentType: "image/png",
-      normalizedByteLength: normalizedPngBuffer.byteLength,
-    },
-  };
-}
-
-function failureResult(
-  input: RemoveBackgroundInput,
-  error: string,
-  fallbackMessage = "Background removal failed. Keeping the original image.",
-  extra?: Pick<RemoveBackgroundResult, "detail" | "sourceKind" | "debug">
-): RemoveBackgroundResult {
-  return {
-    success: false,
-    originalImagePath: input.imagePath,
-    processedImagePath: null,
-    provider: input.provider || "removebg",
-    error,
-    fallbackMessage,
-    ...extra,
-  };
-}
-
-async function saveResult(
-  originalImagePath: string,
-  provider: BackgroundRemovalProvider,
-  buffer: Buffer
-) {
+async function saveResult(input: {
+  originalImagePath: string;
+  provider: BackgroundRemovalProvider;
+  cacheKey: string;
+  buffer: Buffer;
+  representationType?: ProductRepresentationType;
+  extractionScope?: ProductExtractionScope;
+}) {
   const processedImagePath = await saveProcessedProductImage(
-    buffer,
-    `${provider}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`
+    input.buffer,
+    `${input.provider}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`
   );
-
   await appendProcessedProductImage({
     id: crypto.randomUUID(),
-    provider,
-    originalImagePath,
+    provider: input.provider,
+    originalImagePath: input.originalImagePath,
     processedImagePath,
+    cacheKey: input.cacheKey,
+    representationType: input.representationType,
+    extractionScope: input.extractionScope,
+    pipelineVersion: PRODUCT_IMAGE_PIPELINE_VERSION,
     createdAt: new Date().toISOString(),
-  }).catch((error) => {
-    console.error("[remove-background] processed product store write failed", error);
-  });
-
+  }).catch((error) => console.error("[remove-background] cache write failed", error));
   return processedImagePath;
+}
+
+function removeBgFormData(buffer: Buffer, filename: string, foregroundType: "product" | "auto") {
+  const formData = new FormData();
+  formData.append("image_file", new Blob([new Uint8Array(buffer)], { type: "image/png" }), `${filename}.png`);
+  formData.append("size", "auto");
+  formData.append("format", "png");
+  if (foregroundType === "product") formData.append("type", "product");
+  return formData;
+}
+
+async function callRemoveBg(buffer: Buffer, filename: string, foregroundType: "product" | "auto") {
+  const apiKey = process.env.REMOVE_BG_API_KEY;
+  if (!apiKey) throw new Error("REMOVE_BG_API_KEY is not configured");
+  const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+    method: "POST",
+    headers: { "X-Api-Key": apiKey },
+    body: removeBgFormData(buffer, filename, foregroundType),
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (!response.ok) {
+    const detail = (await response.text().catch(() => "")).slice(0, 500);
+    throw new Error(`remove.bg HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
+  }
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function finalizeCandidate(buffer: Buffer, input: RemoveBackgroundInput) {
+  let refined = await refineProductCutoutAlpha(buffer, {
+    representationType: input.representationType,
+    extractionScope: input.extractionScope,
+    cleanupStrength: input.cleanupStrength,
+  });
+  if (input.selectedObjectBoxes?.length) {
+    refined = await applySelectedObjectBoxes(refined, input.selectedObjectBoxes, input.cropBox);
+  }
+  const quality = await inspectCutoutQuality(refined, {
+    representationType: input.representationType,
+    extractionScope: input.extractionScope,
+    expectedUnitCount: input.expectedUnitCount,
+  });
+  return { buffer: refined, quality };
 }
 
 export async function removeProductBackground(
   input: RemoveBackgroundInput
 ): Promise<RemoveBackgroundResult> {
-  const provider = input.provider || "removebg";
   const imagePath = String(input.imagePath || "").trim();
-
+  const provider = input.provider || "removebg";
   if (!imagePath) {
-    return failureResult({ ...input, provider }, "imagePath is required.");
+    return { success: false, originalImagePath: "", provider, error: "imagePath is required." };
   }
-
   if (provider === "clipdrop") {
-    return failureResult(
-      { ...input, imagePath, provider },
-      "Clipdrop provider is not implemented.",
-      "Clipdrop is not implemented yet. Keeping the original image."
-    );
+    return {
+      success: false,
+      originalImagePath: imagePath,
+      provider,
+      error: "Clipdrop provider is not implemented.",
+      fallbackMessage: "Clipdrop 연결이 없어 기존 provider 또는 로컬 방식으로 다시 시도해 주세요.",
+    };
   }
 
   try {
-    const validationError = await validateImagePath(imagePath);
-    if (validationError) {
-      return failureResult(
-        { ...input, imagePath, provider },
-        validationError,
-        "이미지 경로를 확인해 주세요. 원격 이미지는 공개 https 이미지 URL만 처리할 수 있습니다."
+    const source = await prepareImage(imagePath);
+    const contentHash = crypto.createHash("sha256").update(source.buffer).digest("hex");
+    const cacheKey = buildProductCutoutCacheKey({
+      contentHash,
+      provider,
+      representationType: input.representationType,
+      extractionScope: input.extractionScope,
+      selectedObjectIds: input.selectedObjectIds,
+      cropBox: input.cropBox,
+      cleanupStrength: input.cleanupStrength,
+    });
+    const cached = await cachedResult(cacheKey);
+    if (cached) {
+      const quality = await inspectCutoutQuality(cached.buffer, {
+        representationType: input.representationType,
+        extractionScope: input.extractionScope,
+        expectedUnitCount: input.expectedUnitCount,
+      });
+      if (quality.usable) {
+        return {
+          success: true,
+          originalImagePath: imagePath,
+          processedImagePath: cached.path,
+          provider,
+          quality,
+          retryCount: 0,
+          cacheKey,
+          sourceKind: source.sourceKind,
+          debug: { cacheHit: true },
+        };
+      }
+    }
+
+    const normalized = await prepareProductSourceBuffer(source.buffer, input.cropBox);
+    let croppedImagePath: string | undefined;
+    if (input.cropBox) {
+      croppedImagePath = await saveProcessedProductImage(
+        normalized,
+        `crop-${Date.now()}-${crypto.randomBytes(3).toString("hex")}.png`
       );
     }
-
-    const cachedProcessedImagePath = await findCachedProcessedImage(imagePath, provider);
-    if (cachedProcessedImagePath) {
-      return {
-        success: true,
+    if (input.extractionScope === "original") {
+      const quality = await inspectCutoutQuality(normalized, { extractionScope: "original" });
+      const processedImagePath = await saveResult({
         originalImagePath: imagePath,
-        processedImagePath: cachedProcessedImagePath,
         provider,
-        sourceKind: "local-public-file",
-        debug: { cacheHit: true },
-      };
-    }
-
-    if (provider === "mock") {
-      const sourceBuffer = await imageSourceToBuffer(imagePath);
-      const processedBuffer = await removeBackgroundToPng(sourceBuffer);
-      const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
+        cacheKey,
+        buffer: normalized,
+        representationType: input.representationType,
+        extractionScope: input.extractionScope,
+      });
       return {
         success: true,
         originalImagePath: imagePath,
         processedImagePath,
+        croppedImagePath,
         provider,
-        sourceKind: "mock",
+        quality,
+        retryCount: 0,
+        cacheKey,
+        sourceKind: source.sourceKind,
+        fallbackMessage: "사용자 선택에 따라 원본 구성을 유지했습니다.",
       };
     }
 
-    const apiKey = process.env.REMOVE_BG_API_KEY;
-    if (!apiKey) {
-      const localFallback = await createLocalFallbackCutout(imagePath, provider);
-      if (localFallback) return localFallback;
-      return failureResult(
-        { ...input, imagePath, provider },
-        "REMOVE_BG_API_KEY is not configured and local fallback could not isolate the product",
-        "자동으로 상품 경계를 찾지 못해 원본 이미지를 유지했습니다. 배경이 단순하고 상품이 크게 나온 이미지를 선택해주세요."
+    const attempts: Array<() => Promise<Buffer>> = [];
+    if (provider === "removebg" && process.env.REMOVE_BG_API_KEY) {
+      attempts.push(
+        () => callRemoveBg(normalized, source.filename, "product"),
+        () => callRemoveBg(normalized, source.filename, "auto")
       );
     }
+    attempts.push(
+      () =>
+        removeBackgroundToPng(normalized, {
+          representationType: input.representationType,
+          extractionScope: input.extractionScope,
+          threshold: 36,
+          featherRadius: 0.6,
+        }),
+      () =>
+        removeBackgroundToPng(normalized, {
+          representationType: input.representationType,
+          extractionScope: input.extractionScope,
+          threshold: 46,
+          featherRadius: 0.9,
+        })
+    );
 
-    const { formData, sourceKind, debug } = await buildRemoveBgFormData(imagePath, "product");
-    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-      method: "POST",
-      headers: { "X-Api-Key": apiKey },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const contentType = response.headers.get("content-type") || "";
-      const errorText = truncateForLog(await response.text().catch(() => ""));
-      if (isUnknownForegroundError(response.status, errorText)) {
-        const retry = await buildRemoveBgFormData(imagePath, "auto");
-        const retryResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
-          method: "POST",
-          headers: { "X-Api-Key": apiKey },
-          body: retry.formData,
-        });
-
-        if (retryResponse.ok) {
-          const processedBuffer = Buffer.from(await retryResponse.arrayBuffer());
-          const quality = await inspectCutoutQuality(processedBuffer);
-          if (quality.usable) {
-            const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
-            return {
-              success: true,
-              originalImagePath: imagePath,
-              processedImagePath,
-              provider,
-              sourceKind: retry.sourceKind,
-              debug: retry.debug,
-            };
-          }
-
-          const localFallback = await createLocalFallbackCutout(imagePath, provider, retry.debug);
-          if (localFallback) return localFallback;
-          return failureResult(
-            { ...input, imagePath, provider },
-            "Background removal result did not isolate a usable foreground.",
-            "상품만 분리된 결과를 만들지 못해 원본 이미지를 유지했습니다. 상품이 크게 나온 단일 이미지를 선택해주세요.",
-            { sourceKind: retry.sourceKind, debug: retry.debug }
-          );
+    let bestQuality: ProductCutoutQuality | undefined;
+    let retryCount = 0;
+    for (const attempt of attempts.slice(0, 4)) {
+      try {
+        const candidate = await finalizeCandidate(await attempt(), input);
+        if (!bestQuality || candidate.quality.score > bestQuality.score) bestQuality = candidate.quality;
+        if (!candidate.quality.usable) {
+          retryCount += 1;
+          continue;
         }
-
-        const retryContentType = retryResponse.headers.get("content-type") || "";
-        const retryErrorText = truncateForLog(await retryResponse.text().catch(() => ""));
-        console.error("[remove-background] remove.bg API retry failed", {
-          status: retryResponse.status,
-          statusText: retryResponse.statusText,
-          contentType: retryContentType,
-          responseText: retryErrorText,
-          sourceKind: retry.sourceKind,
-          foregroundType: "auto",
-          debug: retry.debug,
+        const processedImagePath = await saveResult({
+          originalImagePath: imagePath,
+          provider,
+          cacheKey,
+          buffer: candidate.buffer,
+          representationType: input.representationType,
+          extractionScope: input.extractionScope,
         });
-
-        const localFallback = await createLocalFallbackCutout(imagePath, provider, {
-          ...retry.debug,
-          removeBgStatus: retryResponse.status,
-          removeBgStatusText: retryResponse.statusText,
-          removeBgResponseText:
-            process.env.NODE_ENV === "development" ? retryErrorText : undefined,
-        });
-
-        if (localFallback) return localFallback;
-
-        return failureResult(
-          { ...input, imagePath, provider },
-          `remove.bg API failed: HTTP ${retryResponse.status}`,
-          "remove.bg could not identify a clear product foreground in this image. Please choose another image with a larger product and clearer background separation, or keep using the original image.",
-          {
-            detail:
-              process.env.NODE_ENV === "development"
-                ? retryErrorText || retryResponse.statusText
-                : undefined,
-            sourceKind: retry.sourceKind,
-            debug: {
-              ...retry.debug,
-              removeBgStatus: retryResponse.status,
-              removeBgStatusText: retryResponse.statusText,
-              removeBgResponseText:
-                process.env.NODE_ENV === "development" ? retryErrorText : undefined,
-            },
-          }
-        );
-      }
-      console.error("[remove-background] remove.bg API failed", {
-        status: response.status,
-        statusText: response.statusText,
-        contentType,
-        responseText: errorText,
-        sourceKind,
-        debug,
-      });
-
-      const localFallback = await createLocalFallbackCutout(imagePath, provider, {
-        ...debug,
-        removeBgStatus: response.status,
-        removeBgStatusText: response.statusText,
-        removeBgResponseText: process.env.NODE_ENV === "development" ? errorText : undefined,
-      });
-      if (localFallback) return localFallback;
-
-      return failureResult(
-        { ...input, imagePath, provider },
-        `remove.bg API failed: HTTP ${response.status}`,
-        `remove.bg API request failed: HTTP ${response.status}. Please check the image format or remote image access.`,
-        {
-          detail:
-            process.env.NODE_ENV === "development" ? errorText || response.statusText : undefined,
-          sourceKind,
+        return {
+          success: true,
+          originalImagePath: imagePath,
+          processedImagePath,
+          croppedImagePath,
+          provider,
+          quality: candidate.quality,
+          retryCount,
+          cacheKey,
+          sourceKind: source.sourceKind,
+          fallbackMessage:
+            retryCount > 0
+              ? `${retryCount}회 설정을 조정해 품질 기준을 통과한 누끼를 선택했습니다.`
+              : process.env.REMOVE_BG_API_KEY
+                ? undefined
+                : "외부 API 키가 없어 로컬 배경 제거 방식으로 처리했습니다.",
           debug: {
-            ...debug,
-            removeBgStatus: response.status,
-            removeBgStatusText: response.statusText,
-            removeBgResponseText: process.env.NODE_ENV === "development" ? errorText : undefined,
+            byteLength: source.buffer.length,
+            fileName: source.filename,
+            normalizedContentType: "image/png",
+            normalizedByteLength: normalized.length,
           },
-        }
-      );
+        };
+      } catch (error) {
+        retryCount += 1;
+        console.warn("[remove-background] attempt failed", {
+          message: error instanceof Error ? error.message : "unknown failure",
+          retryCount,
+        });
+      }
     }
 
-    const processedBuffer = Buffer.from(await response.arrayBuffer());
-    const quality = await inspectCutoutQuality(processedBuffer);
-    if (!quality.usable) {
-      const localFallback = await createLocalFallbackCutout(imagePath, provider, debug);
-      if (localFallback) return localFallback;
-      return failureResult(
-        { ...input, imagePath, provider },
-        "Background removal result did not isolate a usable foreground.",
-        "상품만 분리된 결과를 만들지 못해 원본 이미지를 유지했습니다. 상품이 크게 나온 단일 이미지를 선택해주세요.",
-        { sourceKind, debug }
-      );
-    }
-    const processedImagePath = await saveResult(imagePath, provider, processedBuffer);
     return {
-      success: true,
+      success: false,
       originalImagePath: imagePath,
-      processedImagePath,
+      croppedImagePath,
       provider,
-      sourceKind,
-      debug,
+      quality: bestQuality,
+      retryCount,
+      cacheKey,
+      sourceKind: source.sourceKind,
+      error: "CUTOUT_QUALITY_FAILED",
+      fallbackMessage:
+        "품질 기준을 통과한 누끼를 만들지 못해 원본을 유지했습니다. 다른 원본·추출 범위·직접 영역을 선택해 주세요.",
     };
   } catch (error) {
-    console.error("[remove-background] background removal failed", error);
-    return failureResult(
-      { ...input, imagePath, provider },
-      error instanceof Error ? error.message : "Background removal failed.",
-      "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요."
-    );
+    return {
+      success: false,
+      originalImagePath: imagePath,
+      provider,
+      error: "REMOVE_BG_FAILED",
+      detail: process.env.NODE_ENV === "development" && error instanceof Error ? error.message : undefined,
+      fallbackMessage:
+        "이미지를 안전하게 처리하지 못해 원본을 유지했습니다. 파일 형식·크기 또는 원격 이미지 접근을 확인해 주세요.",
+    };
   }
 }

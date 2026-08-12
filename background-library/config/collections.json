@@ -1,0 +1,198 @@
+[
+  {
+    "id": "korean-beef-scenes",
+    "displayName": "국대한우 광고 배경",
+    "description": "한우 누끼와 가격·카피를 올릴 수 있는 식사, 조리, 캠핑 장면",
+    "targetCount": 500,
+    "categories": {
+      "restaurant-grill": 80,
+      "home-dining": 70,
+      "family-meal": 45,
+      "camping-barbecue": 85,
+      "forest-outdoor": 55,
+      "rustic-table": 75,
+      "kitchen-cooking": 50,
+      "fire-smoke": 40
+    },
+    "searchQueries": {
+      "restaurant-grill": ["Korean restaurant grill table empty space", "warm restaurant charcoal grill table"],
+      "home-dining": ["warm home dinner table empty space", "cozy home dining room table"],
+      "family-meal": ["family dining room wide scene", "home party dinner table background"],
+      "camping-barbecue": ["camping barbecue table forest empty space", "outdoor grill campsite wide shot"],
+      "forest-outdoor": ["forest picnic table product background", "woodland outdoor table negative space"],
+      "rustic-table": ["rustic wood dark table food background", "stone table warm moody background"],
+      "kitchen-cooking": ["kitchen counter frying pan background", "warm kitchen cooking counter empty"],
+      "fire-smoke": ["charcoal fire smoke dark background", "grill flames copy space background"]
+    },
+    "generationPromptParts": {
+      "base": "commercial advertising background, empty product placement surface, Korean dining mood, realistic photography",
+      "promptFamilies": [
+        "wide eye-level composition at morning", "wide eye-level composition at evening",
+        "low camera with foreground surface", "high angle with clear table space",
+        "side-lit cinematic composition", "soft window light composition",
+        "warm tungsten interior depth", "cool outdoor daylight depth",
+        "shallow depth with clean foreground", "deep focus environmental scene",
+        "left negative space composition", "right negative space composition"
+      ]
+    },
+    "negativePrompt": "text, letters, typography, watermark, logo, brand name, product package, price tag, meat package, competitor product, deformed objects, distorted hands, duplicated people, close-up face, cluttered composition, low resolution, oversharpened, artificial plastic texture, extreme blur, cropped subject, frame, border",
+    "preferredMoods": ["warm", "rustic", "premium", "cozy", "dramatic"],
+    "preferredColors": ["brown", "black", "amber", "forest-green", "stone"],
+    "excludedKeywords": ["packaged meat", "brand package", "close-up face", "logo", "price tag"],
+    "peoplePolicy": "hands-back-view-wide-scene",
+    "minimumResolution": 1600,
+    "outputFormat": "webp",
+    "enabled": true,
+    "recommendationRules": [
+      { "keywords": ["캠핑", "바비큐"], "categories": ["camping-barbecue", "forest-outdoor"] },
+      { "keywords": ["외식비", "식당"], "categories": ["restaurant-grill", "home-dining"] },
+      { "keywords": ["불맛", "숯불"], "categories": ["fire-smoke", "restaurant-grill"] }
+    ]
+  },
+  {
+    "id": "fresh-bodycare-scenes",
+    "displayName": "오리지널소스 광고 배경",
+    "description": "청량한 샤워·운동·자연·원료 장면과 제품 배치 공간",
+    "targetCount": 500,
+    "categories": {
+      "nature-forest": 75,
+      "bathroom-shower": 85,
+      "fitness-activity": 70,
+      "water-splash": 70,
+      "mint-herbs": 50,
+      "citrus-tropical": 50,
+      "colorful-interior": 55,
+      "spa-selfcare": 45
+    },
+    "searchQueries": {
+      "nature-forest": ["fresh green forest sunlight wet leaves", "dew leaves forest copy space"],
+      "bathroom-shower": ["modern shower bathroom shelf empty", "color tile bathroom product space"],
+      "fitness-activity": ["fitness activity wide shot back view", "runner silhouette fresh morning"],
+      "water-splash": ["water splash clean background copy space", "wet glass droplets dark fresh"],
+      "mint-herbs": ["mint leaves water product background", "fresh herbs clean studio background"],
+      "citrus-tropical": ["lime lemon tropical product background", "citrus water colorful copy space"],
+      "colorful-interior": ["pop color interior product pedestal", "colorful tile room empty space"],
+      "spa-selfcare": ["spa towel bathtub product background", "calm bathroom selfcare shelf"]
+    },
+    "generationPromptParts": {
+      "base": "fresh bodycare advertising background, realistic, clean product placement space, no product shown",
+      "promptFamilies": [
+        "bright morning wide shot", "cool evening wide shot", "eye-level shelf composition",
+        "low camera product-grounded composition", "high angle ingredient composition",
+        "backlit water atmosphere", "side-lit clean interior", "soft spa daylight",
+        "energetic motion background", "minimal macro texture with space",
+        "left negative space composition", "right negative space composition"
+      ]
+    },
+    "negativePrompt": "text, letters, typography, watermark, logo, brand name, bodywash package, cosmetic package, product package, endorsement, close-up face, duplicated people, distorted hands, cluttered composition, low resolution, oversharpened, plastic texture, extreme blur, cropped subject, frame, border",
+    "preferredMoods": ["fresh", "cool", "energetic", "clean", "vivid"],
+    "preferredColors": ["mint", "green", "aqua", "yellow", "orange"],
+    "excludedKeywords": ["body wash bottle", "cosmetic package", "brand logo", "close-up face", "endorsement"],
+    "peoplePolicy": "activity-back-view-silhouette",
+    "minimumResolution": 1600,
+    "outputFormat": "webp",
+    "enabled": true,
+    "recommendationRules": [
+      { "keywords": ["민트", "티트리"], "categories": ["mint-herbs", "nature-forest", "water-splash"] },
+      { "keywords": ["운동", "땀", "샤워"], "categories": ["fitness-activity", "bathroom-shower"] },
+      { "keywords": ["레몬", "라임", "시트러스"], "categories": ["citrus-tropical", "water-splash"] }
+    ]
+  },
+  {
+    "id": "farm-produce-scenes",
+    "displayName": "힘내라농가 광고 배경",
+    "description": "산지·수확·시장·주방·자연광 스튜디오 배경",
+    "targetCount": 500,
+    "categories": {
+      "farm-field": 75,
+      "orchard-harvest": 65,
+      "greenhouse": 55,
+      "fresh-market": 60,
+      "kitchen-cooking": 70,
+      "rustic-table": 70,
+      "picnic-family": 50,
+      "natural-studio": 55
+    },
+    "searchQueries": {
+      "farm-field": ["sunny farm field product background", "Korean countryside field wide scene"],
+      "orchard-harvest": ["orchard harvest hands wide scene", "fruit orchard basket copy space"],
+      "greenhouse": ["greenhouse aisle natural light empty", "farm greenhouse product background"],
+      "fresh-market": ["fresh produce market generic no logo", "farmers market wooden crate background"],
+      "kitchen-cooking": ["home kitchen produce preparation empty", "kitchen counter natural food background"],
+      "rustic-table": ["rustic wood table soil basket background", "natural wood table beige green"],
+      "picnic-family": ["nature picnic table wide family background", "outdoor picnic blanket copy space"],
+      "natural-studio": ["beige green natural light studio", "produce box product photography background"]
+    },
+    "generationPromptParts": {
+      "base": "farm produce advertising background, realistic natural light, empty product box placement, no branded package",
+      "promptFamilies": [
+        "sunrise wide landscape", "midday natural wide scene", "golden hour backlight",
+        "eye-level market scene", "low camera table foreground", "high angle preparation space",
+        "soft cloudy outdoor light", "warm window kitchen light", "deep focus farm environment",
+        "shallow depth rustic foreground", "left negative space composition", "right negative space composition"
+      ]
+    },
+    "negativePrompt": "text, letters, typography, watermark, logo, brand name, branded box, product package, oversized produce close-up, distorted hands, duplicated people, close-up face, cluttered composition, low resolution, oversharpened, artificial texture, extreme blur, cropped subject, frame, border",
+    "preferredMoods": ["natural", "fresh", "rustic", "warm", "clean"],
+    "preferredColors": ["green", "beige", "wood", "earth", "cream"],
+    "excludedKeywords": ["brand box", "logo", "oversized produce", "close-up face"],
+    "peoplePolicy": "farmer-hands-back-view-wide-scene",
+    "minimumResolution": 1600,
+    "outputFormat": "webp",
+    "enabled": true,
+    "recommendationRules": [
+      { "keywords": ["산지직송", "농가", "수확"], "categories": ["farm-field", "orchard-harvest"] },
+      { "keywords": ["집밥", "요리"], "categories": ["kitchen-cooking", "rustic-table"] },
+      { "keywords": ["선물", "박스"], "categories": ["natural-studio", "rustic-table"] }
+    ]
+  },
+  {
+    "id": "womens-fashion-scenes",
+    "displayName": "리리앤코 광고 배경",
+    "description": "전신 의류 누끼를 배치할 바닥과 세로 공간이 있는 패션 장면",
+    "targetCount": 500,
+    "categories": {
+      "minimal-studio": 90,
+      "cafe-lifestyle": 60,
+      "urban-street": 70,
+      "romantic-floral": 60,
+      "elegant-interior": 65,
+      "office-daily": 55,
+      "travel-hotel": 50,
+      "seasonal-outdoor": 50
+    },
+    "searchQueries": {
+      "minimal-studio": ["minimal fashion studio empty floor wall", "beige photo studio full body space"],
+      "cafe-lifestyle": ["aesthetic cafe interior empty floor", "bright cafe wall fashion background"],
+      "urban-street": ["clean urban street fashion background", "European alley empty full body space"],
+      "romantic-floral": ["romantic flower garden walkway", "floral interior empty fashion background"],
+      "elegant-interior": ["elegant staircase corridor empty", "classic interior full body fashion space"],
+      "office-daily": ["modern office lobby outfit background", "clean office corridor full body space"],
+      "travel-hotel": ["hotel lobby elegant empty floor", "hotel room fashion product background"],
+      "seasonal-outdoor": ["seasonal outdoor walkway fashion background", "park street seasonal full body space"]
+    },
+    "generationPromptParts": {
+      "base": "women's fashion advertising background, empty full-body placement area, visible floor contact, realistic editorial photography",
+      "promptFamilies": [
+        "bright morning full-body wide shot", "golden hour full-body wide shot",
+        "eye-level editorial composition", "low camera long vertical space",
+        "symmetrical corridor perspective", "asymmetrical wall and floor composition",
+        "soft window light interior", "dramatic side light interior", "spring color atmosphere",
+        "autumn neutral atmosphere", "left full-body negative space", "right full-body negative space"
+      ]
+    },
+    "negativePrompt": "text, letters, typography, watermark, logo, brand name, product package, clothing product, fashion model foreground, close-up face, mannequin, branded storefront, duplicated people, cluttered composition, low resolution, oversharpened, plastic texture, extreme blur, cropped floor, frame, border",
+    "preferredMoods": ["minimal", "romantic", "premium", "clean", "calm"],
+    "preferredColors": ["beige", "cream", "pink", "black", "white"],
+    "excludedKeywords": ["fashion model foreground", "clothing product", "brand storefront", "close-up face"],
+    "peoplePolicy": "empty-or-background",
+    "minimumResolution": 1600,
+    "outputFormat": "webp",
+    "enabled": true,
+    "recommendationRules": [
+      { "keywords": ["데일리룩", "출근룩"], "categories": ["cafe-lifestyle", "office-daily"] },
+      { "keywords": ["하객룩", "원피스"], "categories": ["elegant-interior", "romantic-floral"] },
+      { "keywords": ["봄", "여름", "가을", "겨울"], "categories": ["seasonal-outdoor"] }
+    ]
+  }
+]

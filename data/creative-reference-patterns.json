@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "sourcePolicy": "metadata-only; source JPEG files remain outside the repository",
+  "canvas": { "width": 1200, "height": 1200, "ratio": "1:1" },
+  "references": [
+    {
+      "id": "original-source-body-odor-01",
+      "sourceFileName": "체취 1 (수정).jpg",
+      "blueprintSignals": ["problem-solution-split", "proof-data"],
+      "composition": { "visualAreaRatio": 0.58, "copyAreaRatio": 0.42, "split": "vertical", "productScale": "large bottom cluster" },
+      "typography": { "levels": 4, "headline": "oversized black multiline", "highlight": "white-on-black and mint key phrase", "density": "high" },
+      "productTreatment": ["actual package repeated as a cluster", "foreground overlap", "label remains readable"],
+      "backgroundTreatment": ["AI lifestyle problem scene", "clean white copy panel", "black offer block"],
+      "logo": { "position": "bottom-left", "clearSpace": "medium" },
+      "cta": { "position": "bottom-right", "style": "offer block plus chevrons" },
+      "reusablePatterns": ["problem scene to right-side solution copy", "one accent color", "large product near offer"],
+      "risks": ["unverified -72% claim must never be reused", "high density requires strict safe area"]
+    },
+    {
+      "id": "original-source-body-odor-02",
+      "sourceFileName": "체취 2 (수정).jpg",
+      "blueprintSignals": ["editorial-story", "problem-solution-split"],
+      "composition": { "visualAreaRatio": 0.62, "copyAreaRatio": 0.38, "split": "horizontal editorial band", "productScale": "large left foreground" },
+      "typography": { "levels": 4, "headline": "editorial white/red", "highlight": "mint full-width band", "density": "high" },
+      "productTreatment": ["actual product on lower scene", "large single package", "dark ground"],
+      "backgroundTreatment": ["restaurant problem scene", "top black copy band", "lower dark gradient"],
+      "logo": { "position": "top-right", "clearSpace": "large" },
+      "cta": { "position": "bottom-right", "style": "chevrons" },
+      "reusablePatterns": ["question then refusal then solution band", "scene carries the copy premise", "lower proof stack"],
+      "risks": ["numerical claim and price require ProductTruth", "AI disclosure required when scene is generated"]
+    },
+    {
+      "id": "original-source-chat-ugc",
+      "sourceFileName": "체취 3.jpg",
+      "blueprintSignals": ["chat-ugc"],
+      "composition": { "visualAreaRatio": 0.8, "copyAreaRatio": 0.2, "split": "chat canvas plus result footer", "productScale": "medium inside photo message" },
+      "typography": { "levels": 3, "headline": "chat bubbles", "highlight": "red confession line", "density": "medium" },
+      "productTreatment": ["product photo becomes conversation evidence", "rounded message card"],
+      "backgroundTreatment": ["flat messenger blue", "yellow and white chat bubbles", "black outcome footer"],
+      "logo": { "position": "none", "clearSpace": "n/a" },
+      "cta": { "position": "bottom-right", "style": "mint result line plus chevrons" },
+      "reusablePatterns": ["native chat narrative", "photo-message-reaction sequence", "black bottom result bar"],
+      "risks": ["never fabricate a real reviewer identity", "keep chat clearly illustrative"]
+    },
+    {
+      "id": "original-source-cooling-split",
+      "sourceFileName": "쿨링 2.jpg",
+      "blueprintSignals": ["comparison-versus", "problem-solution-split"],
+      "composition": { "visualAreaRatio": 0.73, "copyAreaRatio": 0.27, "split": "diagonal hot versus cold", "productScale": "large in cold interaction scene" },
+      "typography": { "levels": 4, "headline": "outlined dramatic red and icy display", "highlight": "white pill badges", "density": "high" },
+      "productTreatment": ["wet product interaction", "real label visible", "cold-side hero"],
+      "backgroundTreatment": ["red heat tint", "blue shower water", "diagonal separator"],
+      "logo": { "position": "top-right", "clearSpace": "medium" },
+      "cta": { "position": "bottom", "style": "giant sensory hook" },
+      "reusablePatterns": ["semantic hot/cold split", "top metric pill", "large display payoff"],
+      "risks": ["-8.9°C cannot be used without verified source", "too many outline effects can hurt readability"]
+    },
+    {
+      "id": "original-source-cooling-hero",
+      "sourceFileName": "쿨링 3 (수정).jpg",
+      "blueprintSignals": ["product-hero-lifestyle"],
+      "composition": { "visualAreaRatio": 0.7, "copyAreaRatio": 0.3, "split": "full scene plus bottom fade", "productScale": "very large centered" },
+      "typography": { "levels": 3, "headline": "centered white with mint keyword", "highlight": "brush underline and capsule", "density": "medium" },
+      "productTreatment": ["centered actual package", "foam grounding", "label unobstructed"],
+      "backgroundTreatment": ["shower lifestyle", "navy atmospheric overlay", "white bottom fade"],
+      "logo": { "position": "implicit product label", "clearSpace": "n/a" },
+      "cta": { "position": "bottom-center", "style": "benefit statement" },
+      "reusablePatterns": ["product on contextually meaningful pedestal", "top headline and bottom payoff", "brand-color overlay"],
+      "risks": ["foreground foam must not obscure product label", "generated humans require quality review"]
+    },
+    {
+      "id": "original-source-cooling-proof",
+      "sourceFileName": "쿨링 4.jpg",
+      "blueprintSignals": ["proof-data", "comparison-versus"],
+      "composition": { "visualAreaRatio": 0.48, "copyAreaRatio": 0.52, "split": "stacked infographic", "productScale": "large tilted right foreground" },
+      "typography": { "levels": 4, "headline": "white/red/mint infographic hierarchy", "highlight": "cyan data bar", "density": "high" },
+      "productTreatment": ["tilted package", "mint outline", "foreground arrow connection"],
+      "backgroundTreatment": ["near-black canvas", "photo vs thermal comparison", "data scale"],
+      "logo": { "position": "product only", "clearSpace": "n/a" },
+      "cta": { "position": "bottom-left", "style": "product name underline" },
+      "reusablePatterns": ["proof card plus product foreground", "black scientific dashboard", "one dominant metric"],
+      "risks": ["thermal imagery can imply scientific validation", "all metrics must be source-backed"]
+    },
+    {
+      "id": "original-source-cooling-lifestyle",
+      "sourceFileName": "쿨링1.jpg",
+      "blueprintSignals": ["product-hero-lifestyle", "problem-solution-split"],
+      "composition": { "visualAreaRatio": 0.56, "copyAreaRatio": 0.44, "split": "vertical lifestyle and dark product stage", "productScale": "large single right" },
+      "typography": { "levels": 4, "headline": "white question and red problem", "highlight": "mint benefit", "density": "medium" },
+      "productTreatment": ["actual package on navy stage", "cooling swirl", "label fully visible"],
+      "backgroundTreatment": ["sweaty commute context", "dark navy commerce panel", "mint particles"],
+      "logo": { "position": "top-left", "clearSpace": "large" },
+      "cta": { "position": "bottom-right", "style": "short closure plus chevrons" },
+      "reusablePatterns": ["context person and product stage split", "problem to benefit reading order", "logo and disclosure on lifestyle side"],
+      "risks": ["do not depict identifiable endorsement", "avoid inventing cooling duration"]
+    }
+  ],
+  "globalQualityRules": {
+    "visualToCopyRatio": "visual 45-65%, copy 35-55% depending on blueprint",
+    "productScale": "product should occupy at least 12% of canvas area and normally 40-60% of canvas height",
+    "typographyLevels": "2-4 levels; headline 48px minimum at 1200px canvas",
+    "accentPolicy": "one brand accent plus at most one urgency color",
+    "overlayPolicy": "use scrims, bands, or fades where text crosses photography",
+    "safeArea": "48px outer margin; logo clear space 24px minimum",
+    "ctaPolicy": "one concise CTA with a distinct footer or pill",
+    "qualityBar": "text never clips, product label stays visible, scene must prove the hook, and unsupported claims never render"
+  }
+}

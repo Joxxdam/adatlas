@@ -1,5 +1,129 @@
 [
   {
+    "id": "d67de337-f48e-4a67-9acf-d5a1128a65e1",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/cc1547ecbda600908eddfa1b50e8a4ae.jpg",
+    "processedImagePath": "/processed-products/removebg-1786552569638-f0b41ad5.png",
+    "cacheKey": "69895735e5736501509bce3503cc25ca4c60f2a15b81c8dacc89f0cbf3ad0d9d",
+    "representationType": "multi-unit-set",
+    "extractionScope": "sales-unit",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-12T16:36:09.640Z"
+  },
+  {
+    "id": "376e2017-cd03-49b9-9bbe-a0dea79118a3",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/e1533e5c7314900c208893da1f2a9922.jpg",
+    "processedImagePath": "/processed-products/removebg-1786544027833-3af90e1c.png",
+    "cacheKey": "2e39545580f3b8dfc7e78ac301a7f613805a91293f7d59f64d28a8719c3276f9",
+    "representationType": "multi-unit-set",
+    "extractionScope": "sales-unit",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-12T14:13:47.834Z"
+  },
+  {
+    "id": "9d6f1144-0251-4694-8f5a-db542ba2816f",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202608060125542014124e38fcc6-2bca-43a9-b30a-02b0383219fc.jpg",
+    "processedImagePath": "/processed-products/removebg-1786539461371-9c178106.png",
+    "cacheKey": "3bad0fa0b1c314f6ebf7894077dc46381f9325329d1bb46541bdfc9d219a4fb6",
+    "representationType": "irregular-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-12T12:57:41.374Z"
+  },
+  {
+    "id": "ca7421df-7753-4d1b-9a7a-234ce1e8726c",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/e1533e5c7314900c208893da1f2a9922.jpg",
+    "processedImagePath": "/processed-products/removebg-1786041558969-97302b62.png",
+    "cacheKey": "34a8a63754b08b1fbfb593b0b268e3ee456579b2e02e63f0bb0e1916c63f7add",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:39:18.969Z"
+  },
+  {
+    "id": "36782ce6-5a85-4ca3-bc81-36ea58f0c1e8",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/e1533e5c7314900c208893da1f2a9922.jpg",
+    "processedImagePath": "/processed-products/removebg-1786041507786-48dbd7f9.png",
+    "cacheKey": "7de4b6d2d485ac302507b009b363372246e20fd556e06e607c7153e312fc615c",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:38:27.787Z"
+  },
+  {
+    "id": "6058b912-7c29-4adf-a59c-4fa146426641",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/e1533e5c7314900c208893da1f2a9922.jpg",
+    "processedImagePath": "/processed-products/removebg-1786041412332-962b3979.png",
+    "cacheKey": "d8f964256eca8356304f84eada6ddb807cadd80e916ac9fe7045136939f59192",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:36:52.333Z"
+  },
+  {
+    "id": "f67f7425-5a6d-4fca-a0e7-3c772d67f0aa",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/17a2fd687f0bbacd2f50ed20ea19ff39.jpg",
+    "processedImagePath": "/processed-products/removebg-1786041340537-7cf0f9ef.png",
+    "cacheKey": "9f21373ddb641089d79919d227dc572737e064e4b6a8044b4fdfd24ac8993dac",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:35:40.538Z"
+  },
+  {
+    "id": "160a01e3-838b-4c0d-b862-913dc12565a8",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/e1533e5c7314900c208893da1f2a9922.jpg",
+    "processedImagePath": "/processed-products/removebg-1786039686833-58c6e392.png",
+    "cacheKey": "d2f8d63d432c451aec72cf8d49a9411088cef3803608523a14f71e76a3708fda",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:08:06.834Z"
+  },
+  {
+    "id": "b4a6b3f4-48eb-4988-b0cf-87a779de781b",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16716352606847.jpg",
+    "processedImagePath": "/processed-products/removebg-1786039618296-5cbda83f.png",
+    "cacheKey": "2519cb5a0d1f6776bc08a2ae999dbc8ea4734f54f7ce971e347e86c4c50c0f30",
+    "representationType": "irregular-product",
+    "extractionScope": "visible-all",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:06:58.297Z"
+  },
+  {
+    "id": "3dadc077-d4ef-4ee1-99d7-f992fec19eaf",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/extra/big/202509/a23175eb5076a970cd505377e899fe99.jpg",
+    "processedImagePath": "/processed-products/removebg-1786039564504-00a17e24.png",
+    "cacheKey": "1582dd5a42e7f7106c0cc3fbe9875623276d6a65757ac96bc4f272e8aabe2c18",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-06T18:06:04.505Z"
+  },
+  {
+    "id": "17387fd9-ce9d-4e97-9295-9e4187f9b473",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/17a2fd687f0bbacd2f50ed20ea19ff39.jpg",
+    "processedImagePath": "/processed-products/removebg-1786027390065-6395f364.png",
+    "createdAt": "2026-08-06T14:43:10.069Z"
+  },
+  {
+    "id": "91d22c43-5485-48d0-80e2-ef0db8169400",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/e1533e5c7314900c208893da1f2a9922.jpg",
+    "processedImagePath": "/processed-products/removebg-1786024667567-12ef0f12.png",
+    "createdAt": "2026-08-06T13:57:47.568Z"
+  },
+  {
     "id": "0c46b194-0605-46a9-b112-b77636732c48",
     "provider": "removebg",
     "originalImagePath": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607030312047651782d67e7ea-f388-4df2-83e5-b8f1bff774bd.jpg",

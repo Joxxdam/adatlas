@@ -6,6 +6,7 @@ import type {
   StoreAnalysisResult,
 } from "./types";
 import { uniqueStrings } from "./htmlUtils";
+import { applyKnownProductAssets } from "../creative/knownProductAssets.ts";
 
 function formatCurrency(value?: number) {
   return value ? `${Math.round(value).toLocaleString("ko-KR")}원` : "";
@@ -57,12 +58,12 @@ export function productDetailToProductInfo(params: {
     [detail.product.imageUrl, ...detail.imageUrls, ...detail.detailImageUrls],
     30
   );
-  const primaryImages = images.slice(0, 4);
+  const primaryImages = uniqueStrings(images, 4);
   const benefit = uniqueStrings(
     [angle?.bodyDirection, ...detail.uspCandidates, detail.description],
     4
   ).join(" · ");
-  return {
+  return applyKnownProductAssets({
     productName: detail.product.name,
     category: mvpCategory(detail.product.category, detail.product.name),
     price: formatCurrency(detail.product.salePrice),
@@ -84,10 +85,10 @@ export function productDetailToProductInfo(params: {
     extractedGalleryImages: images,
     selectedBackgroundSource: primaryImages[0] || "",
     backgroundMode: primaryImages.length ? "auto-detail-blur-dark" : "none",
-    sourceImageCandidates: sourceCandidates(images),
-    selectedSourceImageId: images.length ? "analysis-hero-001" : "",
+    sourceImageCandidates: sourceCandidates(uniqueStrings(primaryImages.concat(images), 30)),
+    selectedSourceImageId: primaryImages.length ? "analysis-hero-001" : "",
     selectedSourceImagePath: primaryImages[0] || "",
-  };
+  });
 }
 
 export function buildProductCreationHandoff(params: {

@@ -267,6 +267,7 @@ export type ProductCreationHandoff = {
   advertiserName?: string;
   advertisingScore: number;
   confidence: number;
+  creativeContext?: import("../creative-content-notes/types").CreativeOpportunityContext;
 };
 
 export type StoreAnalysisJobStatus =

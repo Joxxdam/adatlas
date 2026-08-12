@@ -1,5 +1,6 @@
 import { copyLimitCharSummary } from "./templateCopyFitter";
-import { kookdaePatternPromptBlock } from "./kookdaeCopyPatterns";
+import { analyzeProductUsp } from "./productUsp";
+import { adObjectivePrompt } from "./adObjective";
 import type {
   AdBrief,
   AdImageLabel,
@@ -128,27 +129,21 @@ function guideSpecificRules(copyGuide?: CopyGuideContext | null) {
   if (copyGuide.guideId === "kookdae-hanwoo") {
     return `
 [국대한우 가이드 적용 규칙]
-- 국대한우 가이드는 단순 참고자료가 아니라 문구 생성의 1차 스타일 기준입니다.
-- productInfo의 사실 정보는 반드시 지키되, 말투/문장 구조/후킹 방식은 국대한우 가이드 예문을 강하게 따릅니다.
-- 예문을 그대로 복사하지 말라는 말은 상품 정보와 맞지 않는 문장을 맹목적으로 쓰지 말라는 뜻입니다.
-- 국대한우 문구는 가이드 예문과 문장 결, 감탄 구조, 가격 충격 표현, 내부자 고백형 문법이 가까워야 합니다.
-- 1-A/1-B/1-C/1-D는 모두 headline 후보군입니다. 반드시 headline과 headlineVariants에 우선 반영합니다.
-- 1-B 내부 고백/사장님 결단형, 1-C 전문가/권위 인용형, 1-D 반전/반신반의형은 bodyCopy, bottomBarCopy, cta에 긴 문장으로 넣지 않습니다.
-- bodyCopy는 상품 설명, 맛, 부위, 구성, 사용 상황을 존댓말 1문장으로 씁니다.
-- highlightCopy는 "도매가", "무료배송", "특별가", "선물용 구성"처럼 짧은 스티커/배지 문구로 씁니다.
-- bottomBarCopy는 가격 명분, 한정성, 구성 혜택을 짧게 보조합니다.
-- cta는 "구성 보러가기", "오늘 특가 보기"처럼 짧은 행동형 문구만 씁니다.
-- copyGuideUsage.usedSections에는 실제로 쓴 섹션명을 넣습니다. 예: ["1-A 기본 가격/선물 후킹형", "1-B 내부 고백/사장님 결단형", "2 서브카피"].
-- copyGuideUsage.toneApplied에는 적용한 톤을 구체적으로 씁니다. 예: ["가격 충격", "선물 명분", "내부 고백 톤", "존댓말 bodyCopy"].
-- headlineVariants.short/medium/long은 단순 축약이 아니라 1-A~1-D 중 서로 다른 후보 스타일을 자연스럽게 변형합니다.
+- 생성 내용의 1차 기준은 반드시 현재 상세페이지의 PRODUCT_USP_ANALYSIS입니다.
+- 국대한우 가이드는 속도감 있는 구어체, 짧은 호흡, 질문·반전 같은 표현 방식에만 사용합니다.
+- 가이드의 예시 문장, 상품 주장, 사장님·직원·정육점 서사, 도매가·손해·마진·품절 표현을 재사용하거나 유사하게 바꾸지 않습니다.
+- 가격 후킹은 현재 상품 정보에 실제 가격이나 할인 정보가 있을 때만 사용합니다.
+- 내부자 고백, 전문가 권위, 후기 표현은 상세페이지에 같은 근거가 명시된 경우에만 사용합니다.
+- headline은 선택한 전략과 핵심 USP를 한 문장 안에서 연결합니다. 말투만 강하고 상품 차이가 없는 문장은 실패입니다.
+- bodyCopy는 headline과 다른 확인된 USP, 구성, 맛, 부위, 사용 상황을 존댓말 1문장으로 씁니다.
+- highlightCopy와 bottomBarCopy도 상세페이지에서 확인된 가격·구성·혜택·USP만 사용합니다.
+- cta는 "상품 정보 보기", "구매 조건 보기", "구성 보기"처럼 사실을 과장하지 않는 짧은 행동형 문구로 씁니다.
+- copyGuideUsage에는 예문 이름이 아니라 실제 적용한 표현 원칙과 사용한 USP를 기록합니다.
 - copyVariants.short / medium / long은 서로 독립적으로 생성합니다. short는 long을 줄인 문장이 아니고, medium도 long의 요약본이 아닙니다.
-- short는 짧고 강한 후킹 문구입니다. 예: "와 진심 미쳤다", "이 가격 실화냐", "사장님 결심가,,", "가격보고 두번 봄;;".
-- medium은 자연스러운 광고 헤드라인/후기형 문구입니다. 예: "이 가격 보고 두 번 놀랐습니다", "사장님이 결심한 가격입니다", "이 가격 진짜 맞습니다;;".
-- long은 국대한우 문구 파일의 말투와 구조를 가장 풍부하게 살립니다. 예: "사장님이 미쳤어요.. 이 가격 진짜 손해 보고 파는 겁니다".
-- short / medium에는 필요 시 ",, / .. / ;; / ?!" 같은 말끝 처리와 구어체 압축을 자연스럽게 사용합니다.
+- short/medium/long은 각각 서로 다른 확인된 USP 또는 구매 이유에 근거합니다.
+- short / medium에는 필요 시 ",, / .. / ;; / ?!" 같은 말끝 처리를 제한적으로 사용할 수 있습니다.
 - 단, 모든 문구에 기호를 붙이지 말고 CTA에는 과한 기호를 붙이지 않습니다.
-- copyGuideUsage.selectedPatterns에는 short/medium/long 각각 어떤 길이별 패턴을 선택했는지 기록합니다.
-${kookdaePatternPromptBlock()}
+- copyGuideUsage.selectedPatterns에는 예시 문장이 아니라 각 variant가 사용한 USP와 후킹 방식을 기록합니다.
 `;
   }
 
@@ -187,19 +182,6 @@ ${kookdaePatternPromptBlock()}
 `;
 }
 
-function adObjectiveInstruction(objective: AdBrief["adObjective"] | undefined) {
-  if (objective === "signup") {
-    return "신규 고객 확보: 처음 보는 고객도 상품의 차별점과 필요성을 빠르게 이해하도록 설명한다.";
-  }
-  if (objective === "awareness") {
-    return "브랜드 인지도: 브랜드 이미지와 대표 메시지가 기억되도록 상품과 브랜드의 핵심 차이를 선명하게 남긴다.";
-  }
-  if (objective === "retargeting") {
-    return "재구매·리타겟팅: 상품을 이미 본 고객에게 확인된 혜택과 다시 구매할 이유를 간결하게 환기한다.";
-  }
-  return "구매 전환: 확인된 가격·혜택·구매 이유를 우선해 즉시 행동으로 이어지도록 구성한다.";
-}
-
 function intensityInstruction(intensity: AdBrief["creativeIntensity"] | undefined) {
   if (intensity === "brand") {
     return "부드럽게: 감성적이고 자연스러운 문장을 사용하고 과도한 판매 표현과 압박형 CTA를 최소화한다.";
@@ -232,6 +214,27 @@ export function buildGenerateCopyPrompt(params: {
   } = params;
   const copyLimitSummary = copyLimitCharSummary(template?.copyLimits);
   const referenceJson = referencePayload(reference);
+  const isKookdae = copyGuide?.guideId === "kookdae-hanwoo";
+  const referenceJsonForPrompt =
+    isKookdae && referenceJson
+      ? {
+          imageId: referenceJson.imageId,
+          category: referenceJson.category,
+          brandName: referenceJson.brandName,
+          sourcePlatform: referenceJson.sourcePlatform,
+          finalLabel: {
+            hookType: referenceJson.finalLabel.hookType,
+            appealPoint: referenceJson.finalLabel.appealPoint,
+            copyNuance: referenceJson.finalLabel.copyNuance,
+            whyItWorks: referenceJson.finalLabel.whyItWorks,
+            targetEmotion: referenceJson.finalLabel.targetEmotion,
+            visualTone: referenceJson.finalLabel.visualTone,
+            layoutPattern: referenceJson.finalLabel.layoutPattern,
+            recommendedUse: referenceJson.finalLabel.recommendedUse,
+          },
+        }
+      : referenceJson;
+  const productUspAnalysis = analyzeProductUsp(product);
   const copyGuideBlock = copyGuide
     ? `
 [Brand Copy Guide]
@@ -239,17 +242,21 @@ guideId: ${copyGuide.guideId}
 brandName: ${copyGuide.brandName}
 matchedBy: ${copyGuide.matchedBy.join(", ")}
 
-This guide contains the advertiser's preferred tone, repeatable copy structures, price framing, gift framing, proof cues, and CTA style.
+This guide is a tone and sentence-structure reference. It is not a source of product claims.
 ${
   copyGuide.guideId === "kookdae-hanwoo"
-    ? `Do not blindly copy guide examples when product facts do not match.
-However, for 국대한우, actively reuse the guide's sentence rhythm, colloquial hooks, price-shock grammar, and insider-confession structure.
-It is allowed to closely paraphrase guide examples if the product facts match.
-Replace variables such as productName, cut, price, use case, quantity, and benefit with current productInfo.`
+    ? `For 국대한우, use only a fast Korean conversational rhythm and concise hook structure.
+Never copy or closely paraphrase any guide example. Never use a guide example as a fallback.
+Product claims and hook content must come from PRODUCT_USP_ANALYSIS and current productInfo only.`
     : "Do not copy guide examples verbatim. Recompose the style for the current product and automatically matched reference patterns."
 }
 
-${copyGuide.content}
+${
+  copyGuide.guideId === "kookdae-hanwoo"
+    ? `Allowed tone summary: 빠른 호흡, 짧은 구어체, 질문·반전 구조, 확인된 가격이나 구성의 명확한 강조.
+Forbidden unless the current product page explicitly confirms it: 사장님·직원·정육점 내부자 서사, 손해·마진 포기, 도매가, 오타, 품절 임박, 오늘만, 전문가·후기·판매량 주장.`
+    : copyGuide.content
+}
 `
     : `
 [Brand Copy Guide]
@@ -270,17 +277,38 @@ No advertiser-specific copy guide matched. Use the product information and autom
 - 가격/혜택/상품명을 코드처럼 붙인 비문을 만들지 않는다.
 - headline에는 숫자만 넣지 않는다.
 - headline 후보 5개를 내부적으로 만든 뒤, 비문/generic/상품 정보 결여 후보를 제거하고 가장 좋은 1개만 JSON에 출력한다.
+- PRODUCT_USP_ANALYSIS.targetSegments에서 선택 전략의 audience와 가장 가까운 타겟을 고르고, 그 고객이 실제로 신경 쓰는 tension을 첫 문장에 반영한다.
+- PRODUCT_USP_ANALYSIS.hookAngles 중 선택 전략의 hookType과 맞는 angle을 사용한다. 문제형·근거형·감각형·가치형·상황형을 섞어 같은 말투만 반복하지 않는다.
+- 자극성은 과장된 수치가 아니라 현실적인 불편을 찌르는 질문, 기존 선택과의 대비, 놓치기 아쉬운 구체적 이점, 감각 묘사, 짧은 반전에서 만든다.
+- headline에는 반드시 target tension 또는 evidence signal 중 하나가 보여야 하며, 상품명이 없어도 해당 상품만의 차이가 드러나야 한다.
 - 이모지와 그림문자는 절대 출력하지 않는다.
 - bodyCopy는 headline을 반복하지 말고 존댓말 1문장으로 쓴다.
 
 [현재 광고 대상 상품의 사실 정보]
 ${JSON.stringify(product, null, 2)}
 
+[PRODUCT_USP_ANALYSIS]
+${JSON.stringify(productUspAnalysis, null, 2)}
+- primaryUsp와 uspSignals는 현재 상세페이지에서 추출한 상품 차별점 후보입니다.
+- headline은 반드시 이 USP 중 하나 또는 확인된 offerSignals를 중심으로 작성합니다.
+- 브랜드 가이드 예문보다 이 분석을 우선합니다.
+
 [광고 브리프]
 ${JSON.stringify(adBrief || {}, null, 2)}
 
+[광고 콘텐츠 참고사항]
+${JSON.stringify(product.creativeContext?.appliedContentNotes || [], null, 2)}
+- required 또는 MUST_INCLUDE는 상품 사실과 충돌하지 않는 범위에서 반드시 포함한다.
+- prohibited 또는 PROHIBITED_EXPRESSION은 어떤 변형에도 사용하지 않는다.
+- PRODUCT_USP, PREFERRED_HOOK, TONE_OF_VOICE는 각각 소구점·후킹·말투에 실제 반영한다.
+- PRICE_POLICY와 PROMOTION은 현재 상품 사실에 같은 가격·기간·구성이 확인된 경우에만 사용한다.
+- IMAGE_RULE, BACKGROUND_STYLE, LAYOUT_RULE은 카피 사실의 출처가 아니라 시각 제작 제약이다.
+
 [광고 목표 적용]
-${adObjectiveInstruction(adBrief?.adObjective)}
+${adObjectivePrompt(adBrief?.adObjective)}
+- 광고 목표는 단순한 말투 태그가 아닙니다. headline, bodyCopy, highlightCopy, bottomBarCopy, CTA의 역할과 정보 순서를 모두 목표에 맞게 바꾸세요.
+- 구매 전환은 구매 장벽을 줄이고, 신규 고객 확보는 필요성과 차이를 설명하고, 브랜드 인지도는 브랜드명과 대표 기억점을 남기고, 재구매·리타겟팅은 이미 본 고객의 망설임에 답해야 합니다.
+- copyVariants의 short/medium/long도 같은 광고 목표를 유지하되 서로 독립적인 문장 구조로 작성하세요.
 
 [광고 강도 적용]
 ${intensityInstruction(adBrief?.creativeIntensity)}
@@ -298,13 +326,13 @@ ${JSON.stringify(
     hookTypes: item.structuredLabels?.hookTypes || [item.finalLabel?.hookType].filter(Boolean),
     appealPoints:
       item.structuredLabels?.appealPoints || [item.finalLabel?.appealPoint].filter(Boolean),
-    ocrText: item.finalLabel?.ocrText,
-    firstLineHook: item.finalLabel?.firstLineHook,
+    ocrText: isKookdae ? undefined : item.finalLabel?.ocrText,
+    firstLineHook: isKookdae ? undefined : item.finalLabel?.firstLineHook,
     copyStructure: item.finalLabel?.copyStructure,
     copyNuance: item.finalLabel?.copyNuance || item.finalLabel?.toneOfVoice,
     consumerInsight: item.finalLabel?.consumerInsight,
     purchaseTrigger: item.finalLabel?.purchaseTrigger,
-    reusableCopyPattern: item.finalLabel?.reusableCopyPattern,
+    reusableCopyPattern: isKookdae ? undefined : item.finalLabel?.reusableCopyPattern,
     visualTone: item.finalLabel?.visualTone,
     layoutPattern: item.finalLabel?.layoutPattern || item.finalLabel?.visualCopyRelation,
     whyItWorks: item.finalLabel?.whyItWorks,
@@ -317,7 +345,21 @@ ${JSON.stringify(
 ${JSON.stringify(
   referenceUsages.map((usage) => ({
     ...usage,
-    reference: referenceContext.find((item) => item.imageId === usage.imageId)?.finalLabel || null,
+    reference: (() => {
+      const label = referenceContext.find((item) => item.imageId === usage.imageId)?.finalLabel;
+      if (!label) return null;
+      if (!isKookdae) return label;
+      return {
+        hookType: label.hookType,
+        appealPoint: label.appealPoint,
+        copyNuance: label.copyNuance,
+        whyItWorks: label.whyItWorks,
+        targetEmotion: label.targetEmotion,
+        visualTone: label.visualTone,
+        layoutPattern: label.layoutPattern,
+        recommendedUse: label.recommendedUse,
+      };
+    })(),
   })),
   null,
   2
@@ -331,6 +373,7 @@ ${JSON.stringify(
 - 광고 브리프의 mandatoryInfo는 누락하지 않고 prohibitedClaims는 절대 사용하지 않는다.
 - additionalEmphasis가 있으면 상세페이지 사실과 충돌하지 않는 범위에서 우선 반영한다.
 - 선택한 광고 전략의 후킹과 소구 방향을 우선하되 상품 정보에 없는 사실은 만들지 않는다.
+- 선택한 광고 전략이 PRODUCT_USP_ANALYSIS와 충돌하거나 상품 차이가 없는 generic 문구라면, 전략의 hookType만 유지하고 USP 중심으로 다시 작성한다.
 
 ${copyGuideBlock}
 
@@ -342,8 +385,8 @@ ${copyGuideBlock}
 - If no reference label exists, use product information and matched Brand Copy Guide only.
 - If neither guide nor reference exists, generate a conservative default performance ad copy from product information.
 - Do not copy guide examples or OCR text verbatim.
-- Generate copyVariants.short, copyVariants.medium, copyVariants.long with the same appeal but different natural lengths.
-- For 국대한우, copyVariants.short/medium/long must be independently generated from length-specific patterns. Never make short/medium by trimming long.
+- Generate copyVariants.short, copyVariants.medium, copyVariants.long as independent executions of the selected target tension and hook angle, not as paraphrases with only different lengths.
+- For 국대한우, copyVariants.short/medium/long must be independently grounded in confirmed USP signals. Never make short/medium by trimming long.
 - Fill copyGuideUsage with guideId, brandName, usedSections, and toneApplied when a guide exists.
 - Fill referencePatternUsage.usedReferenceIds, appliedPatterns, and avoidedDirectCopy when a reference exists.
 
@@ -361,7 +404,7 @@ ${templateSpecificRules(template?.templateId)}
 우선순위는 ${referenceFieldPriority.join(" > ")} 순서다.
 
 referenceLabel:
-${JSON.stringify(referenceJson, null, 2)}
+${JSON.stringify(referenceJsonForPrompt, null, 2)}
 
 분석해야 할 항목:
 - 원문 OCR
@@ -382,6 +425,16 @@ ${JSON.stringify(referenceJson, null, 2)}
 - 선물명분형: 가격보다 체면, 명분, 고급감을 같이 살린다.
 - 긴급/한정형: 지금 사야 할 이유를 분명하게 만든다.
 - 상황제안형: 특정 상황에서 왜 필요한지 보여준다.
+
+[타겟 맞춤 후킹 구조]
+- problem-solution: "타겟이 겪는 구체적 불편 → 짧은 반전 → 확인된 해결 근거"
+- feature-usp / proof: "비슷한 상품과 비교할 기준 → 상세페이지 근거 → 선택 이유"
+- sensory: "사용 직전의 불편한 감각 → 사용 순간의 확인된 감각 차이"
+- price-benefit: "가격 숫자 → 구성 또는 효용 → 이 조건을 봐야 하는 이유"
+- lifestyle / gift: "정확한 사용 순간 → 실패하고 싶지 않은 심리 → 상품 근거"
+- curiosity: "구체적 차이 하나 → 왜 중요한지 궁금증 → bodyCopy에서 근거 회수"
+- social-proof는 실제 후기 근거가 PRODUCT_USP_ANALYSIS 또는 reviewSources에 있을 때만 사용한다.
+- 같은 단어로 시작하는 headline을 short/medium/long에 반복하지 않는다.
 
 [밈/트렌드 표현 제한]
 ~코어, 나와버림, 저장각, 장바구니각, 야호, 미쳤다, 반칙, 아직도 없음?, 이거 왜 이제 알았지 같은 표현은 reference OCR/copyNuance/trendElements에 그런 톤이 있을 때만 사용한다.
@@ -414,8 +467,8 @@ reference가 고급형이면 고급스럽게, 가격형이면 가격정당화형
 - short/medium/long은 같은 소구를 기계적으로 자른 문구가 아니라, 길이별 전용 패턴에서 고른 자연스러운 대안이어야 한다.
 - short는 짧은 말맛과 강한 후킹을 우선한다.
 - medium은 자연스러운 후기/가격충격 문장으로 쓴다.
-- long은 가장 국대한우 가이드 말투가 풍부하게 살아야 한다.
-- 국대한우 가이드가 적용되면 1-A/1-B/1-C/1-D 스타일 중 최소 2개 이상을 headlineVariants에 반영한다.
+- long은 확인된 USP와 구매 이유를 가장 풍부하게 전달한다.
+- 국대한우 가이드가 적용되어도 가이드 예시 문장이나 가이드가 제공한 상품 주장을 사용하지 않는다.
 
 [출력 JSON]
 JSON만 반환한다. 모든 문자열에는 이모지를 넣지 않는다.

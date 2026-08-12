@@ -51,14 +51,15 @@ export function ProductAnalysisSummary(props: {
   const evidence = evidenceFromProduct(props.product);
 
   return (
-    <section className={styles.analysisSummary}>
-      <div className={styles.analysisSummaryHeader}>
+    <details className={styles.analysisSummary}>
+      <summary className={styles.analysisSummaryHeader}>
         <div>
-          <span>자동 분석</span>
-          <h4>상품 정보 자동 분석 완료</h4>
+          <span>1 · 상품 확인</span>
+          <h4>{props.product.productName || "상품 정보 자동 분석 완료"}</h4>
+          <small>{props.product.price || "가격 미확인"} · 상세 분석 보기</small>
         </div>
         <strong>1200×1200 광고 준비됨</strong>
-      </div>
+      </summary>
       <dl className={styles.analysisGrid}>
         <dt>상품명</dt>
         <dd>{props.product.productName || "확인되지 않음"}</dd>
@@ -75,6 +76,6 @@ export function ProductAnalysisSummary(props: {
           {inferred.hookType} · {inferred.tone}
         </dd>
       </dl>
-    </section>
+    </details>
   );
 }

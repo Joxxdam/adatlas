@@ -13,6 +13,7 @@ import {
 } from "./colorUtils";
 import { getCategoryFallbackPalette } from "./defaultPalettes";
 import type { ExtractedPalette } from "./types";
+import { readCatalogAssetFromUrl } from "../background-library/catalogStore.server";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const paletteCache = new Map<string, Promise<ExtractedPalette>>();
@@ -35,6 +36,11 @@ function isPrivateHostname(hostname: string) {
 }
 
 async function imageBuffer(source: string) {
+  const catalogBuffer = await readCatalogAssetFromUrl(source);
+  if (catalogBuffer) {
+    if (catalogBuffer.length > MAX_IMAGE_BYTES) throw new Error("Image is too large");
+    return catalogBuffer;
+  }
   if (/^data:image\//i.test(source)) {
     const comma = source.indexOf(",");
     const buffer = Buffer.from(source.slice(comma + 1), "base64");

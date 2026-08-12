@@ -8,15 +8,28 @@ import {
   removeProductBackground,
   type BackgroundRemovalProvider,
 } from "../../../lib/mvp/backgroundRemoval";
-import type { ProductImageEffectPreset } from "../../../lib/mvp/types";
+import type {
+  NormalizedImageBox,
+  ProductExtractionScope,
+  ProductImageEffectPreset,
+  ProductRepresentationType,
+} from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
 type Body = {
   imagePath?: string;
   sourceImagePath?: string;
+  candidateImagePaths?: string[];
   provider?: BackgroundRemovalProvider;
   effectPreset?: ProductImageEffectPreset;
+  representationType?: ProductRepresentationType;
+  extractionScope?: ProductExtractionScope;
+  selectedObjectIds?: string[];
+  selectedObjectBoxes?: NormalizedImageBox[];
+  cropBox?: NormalizedImageBox;
+  expectedUnitCount?: number;
+  cleanupStrength?: "light" | "balanced" | "strong";
 };
 
 const effectPresets = new Set<ProductImageEffectPreset>([
@@ -32,9 +45,9 @@ export async function POST(request: Request) {
     const body = (await request.json()) as Body;
     const sourceImagePath = String(body.imagePath || body.sourceImagePath || "").trim();
     const provider = body.provider || "removebg";
-    const effectPreset = effectPresets.has(body.effectPreset || "outline-glow-shadow")
-      ? body.effectPreset || "outline-glow-shadow"
-      : "outline-glow-shadow";
+    const effectPreset = effectPresets.has(body.effectPreset || "commerce-shadow")
+      ? body.effectPreset || "commerce-shadow"
+      : "commerce-shadow";
 
     if (!sourceImagePath) {
       return NextResponse.json(
@@ -50,13 +63,51 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await removeProductBackground({
-      imagePath: sourceImagePath,
+    const allowAlternativeSources = !body.cropBox && !(body.selectedObjectIds?.length);
+    const candidateImagePaths = [
+      sourceImagePath,
+      ...(allowAlternativeSources && Array.isArray(body.candidateImagePaths)
+        ? body.candidateImagePaths
+        : []),
+    ]
+      .map((value) => String(value || "").trim())
+      .filter((value, index, values) => value && values.indexOf(value) === index)
+      .slice(0, 8);
+    let result = await removeProductBackground({
+      imagePath: candidateImagePaths[0],
       provider,
+      representationType: body.representationType,
+      extractionScope: body.extractionScope,
+      selectedObjectIds: body.selectedObjectIds,
+      selectedObjectBoxes: body.selectedObjectBoxes,
+      cropBox: body.cropBox,
+      expectedUnitCount: body.expectedUnitCount,
+      cleanupStrength: body.cleanupStrength,
     });
 
+    for (const candidateImagePath of candidateImagePaths.slice(1)) {
+      if (result.success && result.processedImagePath) break;
+      result = await removeProductBackground({
+        imagePath: candidateImagePath,
+        provider,
+        representationType: body.representationType,
+        extractionScope: body.extractionScope,
+        selectedObjectIds: body.selectedObjectIds,
+        selectedObjectBoxes: body.selectedObjectBoxes,
+        expectedUnitCount: body.expectedUnitCount,
+        cleanupStrength: body.cleanupStrength,
+      });
+    }
+
     if (!result.success || !result.processedImagePath) {
-      return NextResponse.json(result);
+      return NextResponse.json({
+        ...result,
+        attemptedImageCount: candidateImagePaths.length,
+        fallbackMessage:
+          candidateImagePaths.length > 1
+            ? "상세 이미지에서 상품 단독 컷을 탐색했지만 안전하게 분리할 이미지를 찾지 못해 원본을 유지했습니다."
+            : result.fallbackMessage,
+      });
     }
 
     let styledCutoutImagePath: string | undefined;
@@ -71,7 +122,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      originalImagePath: sourceImagePath,
+      originalImagePath: result.originalImagePath,
+      requestedImagePath: sourceImagePath,
+      autoSelectedAlternative: result.originalImagePath !== sourceImagePath,
+      attemptedImageCount: candidateImagePaths.indexOf(result.originalImagePath) + 1,
       processedImagePath: result.processedImagePath,
       cutoutImagePath: result.processedImagePath,
       styledCutoutImagePath,
@@ -79,6 +133,10 @@ export async function POST(request: Request) {
       sourceKind: result.sourceKind,
       fallbackMessage: result.fallbackMessage,
       debug: result.debug,
+      croppedImagePath: result.croppedImagePath,
+      quality: result.quality,
+      retryCount: result.retryCount,
+      cacheKey: result.cacheKey,
       message: result.fallbackMessage || "Background removed successfully",
     });
   } catch (error) {

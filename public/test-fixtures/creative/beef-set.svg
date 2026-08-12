@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="620" viewBox="0 0 780 620">
+  <rect x="25" y="80" width="730" height="500" rx="42" fill="#15100d" stroke="#d9a63f" stroke-width="18"/>
+  <rect x="60" y="125" width="315" height="390" rx="25" fill="#85261f"/><rect x="405" y="125" width="315" height="390" rx="25" fill="#a63a28"/>
+  <path d="M100 250c60-100 170-95 230 10-50 90-185 105-230-10z" fill="#f3b09d" stroke="#fff4dc" stroke-width="12"/>
+  <path d="M450 250c60-100 170-95 230 10-50 90-185 105-230-10z" fill="#ef9786" stroke="#fff4dc" stroke-width="12"/>
+  <text x="390" y="60" text-anchor="middle" font-family="sans-serif" font-size="50" font-weight="900" fill="#22130d">국대한우 구이 세트</text>
+</svg>

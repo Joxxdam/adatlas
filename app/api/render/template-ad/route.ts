@@ -18,9 +18,17 @@ import {
 } from "../../../lib/mvp/bannerRenderPipeline";
 import { getCreativeTextStylePreset } from "../../../lib/creative/textStylePresets";
 import { buildOptimizedTemplateSvg } from "../../../lib/mvp/optimizedTemplateSvg";
+import { buildAdaptiveCreativeSvg } from "../../../lib/mvp/adaptiveCreativeSvg";
+import { prepareLogoDataUrlForSurface } from "../../../lib/mvp/adaptiveLogo.server";
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
+import { buildUspFirstFallbackCopy } from "../../../lib/mvp/productUsp";
 import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
+import type {
+  AdaptiveCreativePlan,
+  AutomaticLayoutPreset,
+} from "../../../lib/background-library/types";
+import { readCatalogAssetFromUrl } from "../../../lib/background-library/catalogStore.server";
 import type {
   AdHookType,
   AdProductPosition,
@@ -46,6 +54,7 @@ type RenderStyle = Partial<typeof foodImpactHeroTemplate.style> & {
   headlineFontFile?: string;
   accentPhrase?: string;
   accentColor?: string;
+  manualTextColors?: boolean;
 };
 
 type RenderBody = {
@@ -71,7 +80,9 @@ type RenderBody = {
     hookType?: AdHookType;
     productPosition?: AdProductPosition;
     textSafeArea?: AdTextSafeArea;
+    layoutPreset?: AutomaticLayoutPreset;
   };
+  adaptiveCreativePlan?: AdaptiveCreativePlan;
   logoImagePath?: string;
   aiDisclosure?: {
     enabled?: boolean;
@@ -84,6 +95,9 @@ type RenderBody = {
     overlayOpacity?: number;
     brightness?: number;
     scale?: number;
+    offsetX?: number;
+    offsetY?: number;
+    flipHorizontal?: boolean;
   };
   style?: RenderStyle;
   productEffect?: Partial<ProductImageRenderEffect>;
@@ -376,6 +390,12 @@ async function imageToDataUrl(imagePathOrUrl: string) {
   if (!imagePathOrUrl) return "";
   if (/^data:image\//.test(imagePathOrUrl)) return imagePathOrUrl;
 
+  const catalogBuffer = await readCatalogAssetFromUrl(imagePathOrUrl);
+  if (catalogBuffer) {
+    const png = await sharp(catalogBuffer).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
+
   if (isHttpUrl(imagePathOrUrl)) {
     const response = await fetch(imagePathOrUrl);
     if (!response.ok) throw new Error(`상품 이미지 다운로드 실패: HTTP ${response.status}`);
@@ -411,7 +431,10 @@ function backgroundDimOpacity(level?: "low" | "medium" | "high") {
 }
 
 function selectedBackgroundBlur(body: RenderBody) {
-  if (body.backgroundComposition?.sourceType === "library") return 0;
+  if (body.backgroundComposition?.sourceType === "library") {
+    if (body.backgroundStyle?.blurLevel === "low") return 0;
+    return body.backgroundStyle?.blurLevel === "medium" ? 3 : 7;
+  }
   if (body.backgroundComposition?.sourceType === "site") return 24;
   return backgroundBlurValue(body.backgroundStyle?.blurLevel);
 }
@@ -422,11 +445,22 @@ function selectedBackgroundOverlay(body: RenderBody) {
   return backgroundDimOpacity(body.backgroundStyle?.dimLevel);
 }
 
+function compositionProductPosition(body: RenderBody): AdProductPosition {
+  const layout = body.backgroundComposition?.layoutPreset;
+  if (layout === "text-left-product-right" || layout === "price-focused") return "center-right";
+  if (layout === "text-right-product-left") return "center-left";
+  if (layout === "text-top-product-bottom" || layout === "centered-product-promotion") {
+    return "bottom-center";
+  }
+  if (layout === "premium-minimal") return "center-right";
+  return body.backgroundComposition?.productPosition || "center-right";
+}
+
 function compositionProductFrame(
   body: RenderBody,
   options: { width: number; height: number; top: number; bottomTop?: number }
 ) {
-  const position = body.backgroundComposition?.productPosition || "center-right";
+  const position = compositionProductPosition(body);
   const xRatio: Record<AdProductPosition, number> = {
     left: 0.04,
     "center-left": 0.16,
@@ -462,7 +496,7 @@ function optimizedProductEffect(
   );
   if (!productSlot) return body.productEffect;
 
-  const position = body.backgroundComposition.productPosition;
+  const position = compositionProductPosition(body);
   const horizontalTarget: Record<AdProductPosition, number> = {
     left: 260,
     "center-left": 390,
@@ -645,6 +679,29 @@ function logoOverlaySvg(
   const size = options.size ?? 136;
   const opacity = options.opacity ?? 1;
   return `<image href="${logoImageDataUrl}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet" opacity="${opacity}" />`;
+}
+
+async function adaptiveLogoDataUrl(params: {
+  logoImageDataUrl: string;
+  surfaceDataUrl?: string;
+  x?: number;
+  y?: number;
+  size?: number;
+  fallbackTone?: "light" | "dark";
+}) {
+  if (!params.logoImageDataUrl) return "";
+  const size = params.size ?? 136;
+  return prepareLogoDataUrlForSurface({
+    logoDataUrl: params.logoImageDataUrl,
+    surfaceDataUrl: params.surfaceDataUrl,
+    surfaceBox: {
+      x: params.x ?? 1012,
+      y: params.y ?? 38,
+      width: size,
+      height: size,
+    },
+    fallbackTone: params.fallbackTone,
+  });
 }
 
 function splitAccentSegments(
@@ -857,13 +914,16 @@ function resolveHeadlineStyle(templateId: string, style: NonNullable<RenderBody[
   };
 }
 
-const foodImpactFallbackCopy = {
-  headline: "와 진심 미쳤다",
-  bodyCopy: "캠핑용 고기로 샀어요..입에서 살살 녹고\n양도 많은데 가격이 진짜 말도 안 됩니다",
-  highlightCopy: "4만원대로 온가족이서 배터지게 먹었네요",
-  bottomBarCopy: "잡내 없이 부드러운 찰진 등심 도매가 판매",
-  cta: "지금 구매하기",
-};
+function foodImpactFallbackCopy(productInfo?: ProductInfoForPrompt) {
+  if (productInfo) return buildUspFirstFallbackCopy(productInfo);
+  return {
+    headline: "상품 핵심을 확인하세요",
+    bodyCopy: "상세페이지의 확인된 정보로 문구를 생성합니다.",
+    highlightCopy: "확인된 상품 정보",
+    bottomBarCopy: "가격과 혜택은 확인된 내용만 표시합니다.",
+    cta: "상품 정보 보기",
+  };
+}
 
 const genericFoodImpactCopyPattern =
   /(?:정말\s*저렴|특별한\s*가격|만나는\s*기회|만나보세요|합리적인\s*가격|고품질\s*상품|한정가에|제공합니다|뛰어난\s*한우)/;
@@ -882,13 +942,14 @@ async function renderFoodImpactHero(body: RenderBody) {
   }
 
   const copy = body.copy ?? {};
+  const fallbackCopy = foodImpactFallbackCopy(body.productInfo);
   const foodCopy = {
     ...copy,
-    headline: foodImpactCopyValue(copy.headline, foodImpactFallbackCopy.headline),
-    bodyCopy: foodImpactCopyValue(copy.bodyCopy, foodImpactFallbackCopy.bodyCopy),
-    highlightCopy: foodImpactCopyValue(copy.highlightCopy, foodImpactFallbackCopy.highlightCopy),
-    bottomBarCopy: foodImpactCopyValue(copy.bottomBarCopy, foodImpactFallbackCopy.bottomBarCopy),
-    cta: foodImpactCopyValue(copy.cta, foodImpactFallbackCopy.cta),
+    headline: foodImpactCopyValue(copy.headline, fallbackCopy.headline),
+    bodyCopy: foodImpactCopyValue(copy.bodyCopy, fallbackCopy.bodyCopy),
+    highlightCopy: foodImpactCopyValue(copy.highlightCopy, fallbackCopy.highlightCopy),
+    bottomBarCopy: foodImpactCopyValue(copy.bottomBarCopy, fallbackCopy.bottomBarCopy),
+    cta: foodImpactCopyValue(copy.cta, fallbackCopy.cta),
   };
   const preset = foodImpactHeroTemplate;
   const templateId = body.templateId || preset.id;
@@ -927,9 +988,17 @@ async function renderFoodImpactHero(body: RenderBody) {
     productImageDataUrls.length === 1
       ? [productImageDataUrls[0], productImageDataUrls[0]]
       : productImageDataUrls.slice(0, 2);
-  const logoImageDataUrl = body.logoImagePath
+  const rawLogoImageDataUrl = body.logoImagePath
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
+  const logoImageDataUrl = await adaptiveLogoDataUrl({
+    logoImageDataUrl: rawLogoImageDataUrl,
+    surfaceDataUrl: heroImageUrls[1] || heroImageUrls[0],
+    x: width - 168,
+    y: 42,
+    size: 126,
+    fallbackTone: "light",
+  });
   const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
   const headlineFontFile = resolveOptionalFontFile(
@@ -945,6 +1014,8 @@ async function renderFoodImpactHero(body: RenderBody) {
   const headlineFontFaceWeight = Number(
     styleOverrides.headlineFontWeight ?? headlineStyle.fontWeight ?? 900
   );
+  const selectedFontFamily = `AdAtlasSelectedFont, ${String(style.fontFamily)}`;
+  const headlineFontFamily = `AdAtlasHeadlineFont, ${headlineStyle.fontFamily}`;
   const hasCta = Boolean(foodCopy.cta?.trim());
   const hasPrice = Boolean(foodCopy.price?.trim());
 
@@ -1022,7 +1093,7 @@ async function renderFoodImpactHero(body: RenderBody) {
     boxHeight: bottomBarHeight - 12,
     slot: "bottomBarCopy",
   });
-  const cta = fitLines(foodCopy.cta || foodImpactFallbackCopy.cta, {
+  const cta = fitLines(foodCopy.cta || fallbackCopy.cta, {
     maxWidth: 860,
     maxLines: 1,
     initialSize: 40,
@@ -1071,7 +1142,7 @@ async function renderFoodImpactHero(body: RenderBody) {
       letterSpacing: headlineStyle.letterSpacing,
     }).map((line) => ({
       ...line,
-      fontFamily: headlineStyle.fontFamily,
+      fontFamily: headlineFontFamily,
       stroke: headlineStyle.textStroke,
       strokeColor: headlineStyle.textStrokeColor,
       strokeWidth: headlineStyle.textStrokeWidth,
@@ -1148,24 +1219,24 @@ async function renderFoodImpactHero(body: RenderBody) {
           )
           .join("\n  ")
       : `<rect x="0" y="${imageTop}" width="${width}" height="${imageHeight}" fill="#f4f4f4" />
-  <text x="600" y="${imageTop + imageHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="34" font-weight="800" fill="#777777">PRODUCT IMAGE</text>`
+  <text x="600" y="${imageTop + imageHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(selectedFontFamily)}" font-size="34" font-weight="800" fill="#777777">PRODUCT IMAGE</text>`
   }
   ${
     oldPriceText
-      ? `<text x="${priceBlockX + 8}" y="${oldPriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">기존가</text>
-  <text x="${oldPriceX}" y="${oldPriceY}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">${escapeXml(oldPrice.lines[0] || "")}</text>
+      ? `<text x="${priceBlockX + 8}" y="${oldPriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(selectedFontFamily)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">기존가</text>
+  <text x="${oldPriceX}" y="${oldPriceY}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(selectedFontFamily)}" font-size="${oldPrice.fontSize}" font-weight="800" fill="#ffffff">${escapeXml(oldPrice.lines[0] || "")}</text>
   <line x1="${oldPriceX - 130}" y1="${oldPriceY}" x2="${oldPriceX + 130}" y2="${oldPriceY}" stroke="#ffffff" stroke-width="5" />`
       : ""
   }
   <rect x="${priceBlockX}" y="${priceBlockY + 78}" width="${dealBadgeWidth}" height="${dealBadgeHeight}" rx="10" fill="${style.priceColor}" />
-  <text x="${priceBlockX + dealBadgeWidth / 2}" y="${priceBlockY + 99}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="26" font-weight="900" fill="#ffffff">파격특가</text>
-  ${hasPrice ? `<text x="${salePriceX}" y="${salePriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(headlineStyle.fontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff238" stroke="#111111" stroke-width="7" paint-order="stroke fill">${escapeXml(salePrice.lines[0] || "")}</text>` : ""}
+  <text x="${priceBlockX + dealBadgeWidth / 2}" y="${priceBlockY + 99}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(selectedFontFamily)}" font-size="26" font-weight="900" fill="#ffffff">파격특가</text>
+  ${hasPrice ? `<text x="${salePriceX}" y="${salePriceY}" text-anchor="start" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff238" stroke="#111111" stroke-width="7" paint-order="stroke fill">${escapeXml(salePrice.lines[0] || "")}</text>` : ""}
   <rect x="0" y="${bottomBarY}" width="${width}" height="${bottomBarHeight}" fill="${style.bottomBarColor}" />
   ${hasCta ? `<rect x="0" y="${ctaY}" width="${width}" height="${ctaHeight}" rx="0" fill="${style.ctaBarColor}" />` : ""}
-  ${textSvg(textLines, `AdAtlasKR, ${style.fontFamily}`)}
-  ${hasCta ? `<text x="1132" y="${ctaY + ctaHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(`AdAtlasKR, ${style.fontFamily}`)}" font-size="68" font-weight="700" fill="${style.ctaTextColor}">›</text>` : ""}
+  ${textSvg(textLines, selectedFontFamily)}
+  ${hasCta ? `<text x="1132" y="${ctaY + ctaHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(selectedFontFamily)}" font-size="68" font-weight="700" fill="${style.ctaTextColor}">›</text>` : ""}
   ${logoOverlaySvg(logoImageDataUrl, { x: width - 168, y: 42, size: 126 })}
-  ${aiDisclosureSvg(body.aiDisclosure, `AdAtlasKR, ${style.fontFamily}`, width, height)}
+  ${aiDisclosureSvg(body.aiDisclosure, selectedFontFamily, width, height)}
 </svg>`;
 
   await fs.mkdir(outputDir, { recursive: true });
@@ -1242,7 +1313,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const backgroundImageDataUrl = backgroundSource
     ? await imageToDataUrl(backgroundSource).catch(() => "")
     : "";
-  const logoImageDataUrl = body.logoImagePath
+  const rawLogoImageDataUrl = body.logoImagePath
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
   const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
@@ -1259,16 +1330,35 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     style.headlineFontWeight ?? headlineStyle.fontWeight ?? 900
   );
   const fontFamily = `AdAtlasSelectedFont, ${String(style.fontFamily || foodImpactHeroTemplate.style.fontFamily)}`;
-  const headlineFontFamily = String(style.headlineFontFamily || headlineStyle.fontFamily).replace(
-    "AdAtlasSelectedFont",
-    "AdAtlasHeadlineFont"
-  );
+  const headlineFontFamily = `AdAtlasHeadlineFont, ${String(
+    style.headlineFontFamily || headlineStyle.fontFamily
+  )
+    .replaceAll("AdAtlasSelectedFont", "")
+    .replaceAll("AdAtlasHeadlineFont", "")}`;
   const hasCta = Boolean(copy.cta?.trim());
   const hasPrice = Boolean(copy.price?.trim());
   const globalLogoOverlay =
     templateId === "food-template-001" || templateId === "food-template-002"
       ? ""
-      : logoOverlaySvg(logoImageDataUrl, { x: 1012, y: 38, size: 136 });
+      : logoOverlaySvg(
+          await adaptiveLogoDataUrl({
+            logoImageDataUrl: rawLogoImageDataUrl,
+            surfaceDataUrl: backgroundImageDataUrl || productImageDataUrl,
+            x: 1012,
+            y: 38,
+            size: 136,
+            fallbackTone: backgroundImageDataUrl ? "dark" : "light",
+          }),
+          { x: 1012, y: 38, size: 136 }
+        );
+  const logoImageDataUrl = await adaptiveLogoDataUrl({
+    logoImageDataUrl: rawLogoImageDataUrl,
+    surfaceDataUrl: backgroundImageDataUrl || productImageDataUrl,
+    x: 1012,
+    y: 38,
+    size: 136,
+    fallbackTone: templateId === "food-template-002" ? "dark" : "light",
+  });
 
   const h = fitLines(copy.headline || "", {
     maxWidth: 1040,
@@ -1536,7 +1626,15 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     const backgroundDataUrl = template2BackgroundDataUrl || productImageDataUrl;
     const backgroundScale = Math.min(1.25, Math.max(1, Number(body.backgroundStyle?.scale ?? 1)));
     const backgroundRenderSize = 1200 * backgroundScale;
-    const backgroundOffset = (backgroundRenderSize - 1200) / -2;
+    const backgroundOffsetX =
+      (backgroundRenderSize - 1200) / -2 +
+      Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetX || 0)));
+    const backgroundOffsetY =
+      (backgroundRenderSize - 1200) / -2 +
+      Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetY || 0)));
+    const backgroundTransform = body.backgroundStyle?.flipHorizontal
+      ? 'transform="translate(1200 0) scale(-1 1)"'
+      : "";
     const backgroundBlur = selectedBackgroundBlur(body);
     const backgroundDim = selectedBackgroundOverlay(body);
     const hasBackgroundBlur = backgroundBlur > 0;
@@ -1603,7 +1701,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     };
 
     backgroundLayer = backgroundDataUrl
-      ? `<image href="${backgroundDataUrl}" x="${backgroundOffset}" y="${backgroundOffset}" width="${backgroundRenderSize}" height="${backgroundRenderSize}" preserveAspectRatio="xMidYMid slice" ${hasBackgroundBlur ? `filter="url(#backgroundBlur)"` : ""} />
+      ? `<image href="${backgroundDataUrl}" x="${backgroundOffsetX}" y="${backgroundOffsetY}" width="${backgroundRenderSize}" height="${backgroundRenderSize}" preserveAspectRatio="xMidYMid slice" ${backgroundTransform} ${hasBackgroundBlur ? `filter="url(#backgroundBlur)"` : ""} />
         <rect width="1200" height="1200" fill="${escapeXml(body.backgroundStyle?.overlayColor || "#000000")}" opacity="${Math.max(0.04, backgroundDim * 0.42)}" />
         <rect width="1200" height="1200" fill="url(#foodTemplate2Shade)" />`
       : `<rect width="1200" height="1200" fill="#1b1712" />
@@ -2477,9 +2575,17 @@ async function renderOptimizedTemplate(
       }
     })
   );
-  const logoDataUrl = body.logoImagePath
+  const rawLogoDataUrl = body.logoImagePath
     ? await imageToDataUrl(body.logoImagePath).catch(() => "")
     : "";
+  const logoDataUrl = await adaptiveLogoDataUrl({
+    logoImageDataUrl: rawLogoDataUrl,
+    surfaceDataUrl: frameData[0]?.dataUrl,
+    x: 1028,
+    y: 40,
+    size: 126,
+    fallbackTone: "light",
+  });
   const fontFaceCss =
     buildFontFaceCss(
       "AdAtlasSelectedFont",
@@ -2519,7 +2625,9 @@ async function renderOptimizedTemplate(
           ? styleOverrides.headlineFontSize
           : undefined,
       headlineColor:
-        typeof styleOverrides.headlineColor === "string" ? styleOverrides.headlineColor : undefined,
+        styleOverrides.manualTextColors && typeof styleOverrides.headlineColor === "string"
+          ? styleOverrides.headlineColor
+          : undefined,
       headlineFontWeight:
         typeof styleOverrides.headlineFontWeight === "number"
           ? styleOverrides.headlineFontWeight
@@ -2549,7 +2657,9 @@ async function renderOptimizedTemplate(
           ? styleOverrides.headlineShadow
           : undefined,
       bodyColor:
-        typeof styleOverrides.bodyColor === "string" ? styleOverrides.bodyColor : undefined,
+        styleOverrides.manualTextColors && typeof styleOverrides.bodyColor === "string"
+          ? styleOverrides.bodyColor
+          : undefined,
       bodyFontSize:
         typeof styleOverrides.bodyFontSize === "number" ? styleOverrides.bodyFontSize : undefined,
       bodyFontWeight:
@@ -2565,6 +2675,10 @@ async function renderOptimizedTemplate(
         0,
         Math.min(0.72, Number(body.selectedBackgroundSource ? selectedBackgroundOverlay(body) : 0))
       ),
+      scale: Math.max(1, Math.min(1.45, Number(body.backgroundStyle?.scale ?? 1))),
+      offsetX: Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetX ?? 0))),
+      offsetY: Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetY ?? 0))),
+      flipHorizontal: body.backgroundStyle?.flipHorizontal === true,
     },
   });
   await fs.mkdir(outputDir, { recursive: true });
@@ -2581,9 +2695,165 @@ async function renderOptimizedTemplate(
   return "/generated-ads/" + fileName;
 }
 
+async function renderAdaptiveCreative(body: RenderBody, plan: AdaptiveCreativePlan) {
+  const styleOverrides = body.style || {};
+  const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
+  const headlineFontFile = resolveOptionalFontFile(
+    styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
+  );
+  const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
+  const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
+  const fontFaceCss =
+    buildFontFaceCss(
+      "AdAtlasBody",
+      selectedFontFileUrl,
+      fontFormatFromFile(selectedFontFile),
+      Number(styleOverrides.selectedFontWeight || styleOverrides.bodyFontWeight || 800)
+    ) +
+    buildFontFaceCss(
+      "AdAtlasHeadline",
+      headlineFontFileUrl,
+      fontFormatFromFile(headlineFontFile),
+      Number(styleOverrides.headlineFontWeight || 900)
+    );
+  const backgroundDataUrl = await imageToDataUrl(body.selectedBackgroundSource || "");
+  const productPath = compactRequestedProductImagePaths(body)[0] || "";
+  const productDataUrl = productPath ? await imageToDataUrl(productPath).catch(() => "") : "";
+  const rawLogoDataUrl = body.logoImagePath
+    ? await imageToDataUrl(body.logoImagePath).catch(() => "")
+    : "";
+  const adaptiveLogoSize = 118;
+  const adaptiveLogoX = plan.textPlacement.x < 600 ? 1050 : 32;
+  const logoDataUrl = await adaptiveLogoDataUrl({
+    logoImageDataUrl: rawLogoDataUrl,
+    surfaceDataUrl: backgroundDataUrl,
+    x: adaptiveLogoX,
+    y: 32,
+    size: adaptiveLogoSize,
+    fallbackTone: plan.colorPalette.panel.toLowerCase() === "#181818" ? "dark" : "light",
+  });
+  const activeCopy: GeneratedAdCopyVariant = {
+    headline: String(body.copy?.headline || ""),
+    bodyCopy: String(body.copy?.bodyCopy || ""),
+    highlightCopy: String(body.copy?.highlightCopy || ""),
+    bottomBarCopy: String(body.copy?.bottomBarCopy || ""),
+    cta: String(body.copy?.cta || ""),
+    price: String(body.copy?.price || body.productInfo?.price || ""),
+  };
+  const svg = buildAdaptiveCreativeSvg({
+    plan: {
+      ...plan,
+      backgroundAdjustments: {
+        ...plan.backgroundAdjustments,
+        scale: Math.max(
+          1,
+          Math.min(1.45, Number(body.backgroundStyle?.scale ?? plan.backgroundAdjustments.scale))
+        ),
+        offsetX: Math.max(
+          -220,
+          Math.min(220, Number(body.backgroundStyle?.offsetX ?? plan.backgroundAdjustments.offsetX))
+        ),
+        offsetY: Math.max(
+          -220,
+          Math.min(220, Number(body.backgroundStyle?.offsetY ?? plan.backgroundAdjustments.offsetY))
+        ),
+        blur: Math.max(
+          0,
+          Math.min(
+            18,
+            body.selectedBackgroundSource
+              ? selectedBackgroundBlur(body)
+              : plan.backgroundAdjustments.blur
+          )
+        ),
+        brightness: Math.max(
+          0.55,
+          Math.min(
+            1.35,
+            Number(body.backgroundStyle?.brightness ?? plan.backgroundAdjustments.brightness)
+          )
+        ),
+      },
+    },
+    copy: activeCopy,
+    backgroundDataUrl,
+    productDataUrl,
+    logoDataUrl,
+    aiDisclosureText: body.aiDisclosure?.enabled
+      ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다."
+      : "",
+    fontFaceCss,
+    fontFamily:
+      typeof styleOverrides.fontFamily === "string" ? styleOverrides.fontFamily : undefined,
+    headlineFontFamily:
+      typeof styleOverrides.headlineFontFamily === "string"
+        ? styleOverrides.headlineFontFamily
+        : undefined,
+    productEffect: body.productEffect,
+    backgroundFlipHorizontal: body.backgroundStyle?.flipHorizontal,
+  });
+  await fs.mkdir(outputDir, { recursive: true });
+  const fileName = `generated-${Date.now()}-${crypto.randomBytes(4).toString("hex")}-adaptive-${plan.layoutVariant}.png`;
+  const outputPath = path.join(outputDir, fileName);
+  await sharp(Buffer.from(svg)).png().resize(1200, 1200).toFile(outputPath);
+  const palette = {
+    primaryColor: plan.colorPalette.accent,
+    secondaryColor: plan.colorPalette.panel,
+    accentColor: plan.colorPalette.accent,
+    backgroundColor: plan.colorPalette.panel,
+    surfaceColor: plan.colorPalette.panel,
+    textDarkColor: plan.colorPalette.headline,
+    textLightColor: plan.colorPalette.body,
+    mutedColor: plan.colorPalette.body,
+    highlightColor: plan.colorPalette.price,
+    dangerColor: plan.colorPalette.price,
+    sourceImagePath: body.selectedBackgroundSource,
+    confidence: 0.9,
+  };
+  return {
+    imagePath: `/generated-ads/${fileName}`,
+    diagnostics: {
+      templateId: `adaptive-${plan.layoutType}`,
+      paletteApplied: true,
+      palettePolicy: "full-auto",
+      palette,
+      selectedVariant: body.selectedVariant || "base",
+      variantReason: "선택한 배경의 안전 영역과 시각적 위계에 맞춘 적응형 레이아웃입니다.",
+      fitResults: [],
+      collisionResult: {
+        hasCollision: false,
+        collisions: [],
+        actions: [],
+        finalItems: [],
+        warnings: [],
+      },
+      imagePathsUsed: [body.selectedBackgroundSource, productPath].filter(Boolean),
+      hiddenElements: [],
+      optimizationFlags: {
+        autoPaletteApplied: true,
+        textFittingApplied: true,
+        collisionResolved: true,
+        lowPriorityElementsHidden: false,
+      },
+      warnings: productDataUrl ? [] : ["상품 이미지를 읽지 못해 배경과 문구만 렌더링했습니다."],
+      qualityScore: productDataUrl ? 96 : 78,
+      qualityStatus: productDataUrl ? "stable" : "review",
+    },
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RenderBody;
+    if (body.adaptiveCreativePlan && body.selectedBackgroundSource) {
+      const adaptive = await renderAdaptiveCreative(body, body.adaptiveCreativePlan);
+      return NextResponse.json({
+        success: true,
+        imagePath: adaptive.imagePath,
+        templateId: `adaptive-${body.adaptiveCreativePlan.layoutType}`,
+        diagnostics: adaptive.diagnostics,
+      });
+    }
     const requestedTemplateId = body.templateId || "food-template-001";
     const templateId = supportedTemplateIds.has(requestedTemplateId)
       ? requestedTemplateId

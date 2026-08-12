@@ -1,0 +1,25 @@
+{
+  "id": "ririnco",
+  "name": "리리앤코",
+  "aliases": ["리리앤코", "RIRINCO", "RIRI & CO", "ririnco"],
+  "domains": ["ririnco.com"],
+  "categories": ["패션", "의류", "여성의류", "쇼핑몰"],
+  "brandKeywords": ["데일리룩", "원피스", "빅사이즈", "여성의류", "코디"],
+  "visualKeywords": ["부드러운 뉴트럴", "룩북", "데일리 라이프", "제품 핏", "에디토리얼"],
+  "preferredTones": ["친근한 스타일 제안", "명확한 핏·소재 정보", "과장 없는 데일리 코디"],
+  "preferredColorHints": ["#261c19", "#f2e6de", "#ffffff", "#bd806d"],
+  "prohibitedVisuals": ["실제 상품과 다른 의류", "왜곡된 신체", "가짜 브랜드 로고", "상품 색상 변경"],
+  "prohibitedClaims": ["확인되지 않은 할인율", "확인되지 않은 체형 보정", "확인되지 않은 소재 등급"],
+  "productDisplayRules": ["실제 상품의 색과 실루엣을 유지", "모델 이미지가 있으면 동일 인물을 중복 생성하지 않음", "착용 이미지의 얼굴과 손을 왜곡하지 않음"],
+  "scenePreferences": ["generic-clean-brand", "generic-bold-performance"],
+  "defaultTextStylePreset": "clean-brand",
+  "defaultSceneProfile": "generic-clean-brand",
+  "logoAssets": [
+    { "kind": "logo", "path": "/brand-logos/ririnco-logo.png", "variant": "dark", "exact": true },
+    { "kind": "logo", "path": "/brand-logos/ririnco-logo-light.png", "variant": "light", "exact": true }
+  ],
+  "preferredBlueprints": ["editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "problem-solution-split", "proof-data"],
+  "defaultLogoPosition": "top-left",
+  "logoMinSize": 120,
+  "minLogoClearSpace": 24
+}

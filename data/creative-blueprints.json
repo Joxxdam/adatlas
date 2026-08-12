@@ -1,0 +1,164 @@
+[
+  {
+    "id": "problem-solution-split",
+    "label": "문제 해결 분할형",
+    "description": "문제 장면과 해결 메시지를 좌우로 분리하고 제품을 해결 영역에 크게 배치합니다.",
+    "referencePattern": "체취 문제형의 인물 장면 + 고대비 카피 패널",
+    "sceneModes": ["problem-scene", "people-photo", "lifestyle-photo"],
+    "productBox": { "x": 670, "y": 590, "width": 430, "height": 420 },
+    "productComposition": {
+      "mode": "single",
+      "requiresTransparentProduct": false,
+      "instances": [
+        { "role": "primary", "x": 670, "y": 590, "width": 430, "height": 420, "fit": "contain", "rotation": 0 }
+      ]
+    },
+    "textSafeArea": { "x": 700, "y": 100, "width": 410, "height": 500 },
+    "logoBox": { "x": 60, "y": 970, "width": 230, "height": 150 },
+    "slots": [
+      { "id": "logo", "required": false },
+      { "id": "headline", "required": true, "maxChars": 34, "maxLines": 4, "minFontSize": 54 },
+      { "id": "body", "required": true, "maxChars": 44, "maxLines": 3, "minFontSize": 34 },
+      { "id": "product", "required": true },
+      { "id": "cta", "required": true, "maxChars": 18, "maxLines": 1, "minFontSize": 28 }
+    ],
+    "palettePolicy": "dark-performance",
+    "fallbackBlueprintId": "product-hero-lifestyle"
+  },
+  {
+    "id": "editorial-story",
+    "label": "에디토리얼 스토리형",
+    "description": "상단 카피 밴드와 하단 실사용 장면을 연결해 기사형 설득 흐름을 만듭니다.",
+    "referencePattern": "검정 편집 레이아웃 + 민트 강조 밴드 + 하단 장면",
+    "sceneModes": ["editorial", "lifestyle-photo", "people-photo"],
+    "productBox": { "x": 100, "y": 540, "width": 340, "height": 590 },
+    "productComposition": {
+      "mode": "repeat-overlap",
+      "requiresTransparentProduct": true,
+      "instances": [
+        { "role": "support", "x": 20, "y": 690, "width": 235, "height": 390, "fit": "contain", "rotation": -8 },
+        { "role": "support", "x": 255, "y": 675, "width": 225, "height": 380, "fit": "contain", "rotation": 8 },
+        { "role": "primary", "x": 100, "y": 540, "width": 340, "height": 590, "fit": "contain", "rotation": 0 }
+      ]
+    },
+    "textSafeArea": { "x": 70, "y": 65, "width": 1030, "height": 395 },
+    "logoBox": { "x": 965, "y": 45, "width": 180, "height": 120 },
+    "slots": [
+      { "id": "logo", "required": false },
+      { "id": "headline", "required": true, "maxChars": 42, "maxLines": 3, "minFontSize": 50 },
+      { "id": "proof", "required": false, "maxChars": 26, "maxLines": 1, "minFontSize": 30 },
+      { "id": "offer", "required": false, "maxChars": 26, "maxLines": 2, "minFontSize": 32 },
+      { "id": "product", "required": true },
+      { "id": "cta", "required": true, "maxChars": 18, "maxLines": 1, "minFontSize": 28 }
+    ],
+    "palettePolicy": "editorial",
+    "fallbackBlueprintId": "product-hero-lifestyle"
+  },
+  {
+    "id": "chat-ugc",
+    "label": "채팅 UGC형",
+    "description": "대화 UI, 제품 사진 카드, 반전 메시지로 후기처럼 읽히는 네이티브 광고를 만듭니다.",
+    "referencePattern": "메신저 화면 + 제품 사진 + 하단 결과 바",
+    "sceneModes": ["ugc", "product-photo", "review-card"],
+    "productBox": { "x": 205, "y": 135, "width": 500, "height": 505 },
+    "productComposition": {
+      "mode": "single",
+      "requiresTransparentProduct": false,
+      "instances": [
+        { "role": "primary", "x": 205, "y": 135, "width": 500, "height": 505, "fit": "cover", "rotation": 0 }
+      ]
+    },
+    "textSafeArea": { "x": 185, "y": 655, "width": 920, "height": 430 },
+    "logoBox": { "x": 60, "y": 35, "width": 160, "height": 100 },
+    "slots": [
+      { "id": "logo", "required": false },
+      { "id": "headline", "required": true, "maxChars": 32, "maxLines": 2, "minFontSize": 46 },
+      { "id": "body", "required": true, "maxChars": 48, "maxLines": 3, "minFontSize": 34 },
+      { "id": "product", "required": true },
+      { "id": "cta", "required": true, "maxChars": 18, "maxLines": 1, "minFontSize": 28 }
+    ],
+    "palettePolicy": "ugc",
+    "fallbackBlueprintId": "editorial-story"
+  },
+  {
+    "id": "comparison-versus",
+    "label": "비교 대결형",
+    "description": "서로 다른 두 장면 또는 상태를 분할해 선택 기준을 빠르게 이해시키는 구성입니다.",
+    "referencePattern": "온열/쿨링 대각 분할 + 중앙 강한 결과 헤드라인",
+    "sceneModes": ["comparison", "split-panel", "problem-solution"],
+    "productBox": { "x": 700, "y": 250, "width": 410, "height": 640 },
+    "productComposition": {
+      "mode": "scale-contrast",
+      "requiresTransparentProduct": true,
+      "instances": [
+        { "role": "support", "x": 535, "y": 405, "width": 270, "height": 430, "fit": "contain", "rotation": -8 },
+        { "role": "primary", "x": 700, "y": 250, "width": 410, "height": 640, "fit": "contain", "rotation": 3 }
+      ]
+    },
+    "textSafeArea": { "x": 70, "y": 760, "width": 1060, "height": 350 },
+    "logoBox": { "x": 965, "y": 40, "width": 180, "height": 120 },
+    "slots": [
+      { "id": "logo", "required": false },
+      { "id": "headline", "required": true, "maxChars": 38, "maxLines": 3, "minFontSize": 52 },
+      { "id": "proof", "required": false, "maxChars": 20, "maxLines": 1, "minFontSize": 32 },
+      { "id": "product", "required": true },
+      { "id": "cta", "required": true, "maxChars": 18, "maxLines": 1, "minFontSize": 28 }
+    ],
+    "palettePolicy": "dark-performance",
+    "fallbackBlueprintId": "problem-solution-split"
+  },
+  {
+    "id": "product-hero-lifestyle",
+    "label": "제품 히어로 라이프스타일형",
+    "description": "브랜드 장면 위에 실제 제품을 가장 크게 배치하고 단일 혜택으로 정리합니다.",
+    "referencePattern": "제품 중앙 히어로 + 배경 사용 장면 + 하단 페이드 카피",
+    "sceneModes": ["product-hero", "lifestyle-photo", "clean-commerce"],
+    "productBox": { "x": 580, "y": 220, "width": 560, "height": 770 },
+    "productComposition": {
+      "mode": "single",
+      "requiresTransparentProduct": false,
+      "instances": [
+        { "role": "primary", "x": 580, "y": 220, "width": 560, "height": 770, "fit": "contain", "rotation": -2 }
+      ]
+    },
+    "textSafeArea": { "x": 75, "y": 90, "width": 520, "height": 610 },
+    "logoBox": { "x": 950, "y": 45, "width": 190, "height": 120 },
+    "slots": [
+      { "id": "logo", "required": false },
+      { "id": "headline", "required": true, "maxChars": 36, "maxLines": 4, "minFontSize": 54 },
+      { "id": "body", "required": true, "maxChars": 44, "maxLines": 3, "minFontSize": 34 },
+      { "id": "product", "required": true },
+      { "id": "cta", "required": true, "maxChars": 18, "maxLines": 1, "minFontSize": 28 }
+    ],
+    "palettePolicy": "brand-led"
+  },
+  {
+    "id": "proof-data",
+    "label": "근거 데이터형",
+    "description": "검증된 숫자나 제품 사실을 시각적 카드와 비교 프레임으로 강조합니다.",
+    "referencePattern": "검정 인포그래픽 + 비교 프레임 + 제품 전경",
+    "sceneModes": ["proof", "infographic", "product-set"],
+    "productBox": { "x": 790, "y": 520, "width": 330, "height": 590 },
+    "productComposition": {
+      "mode": "repeat-overlap",
+      "requiresTransparentProduct": true,
+      "instances": [
+        { "role": "support", "x": 650, "y": 660, "width": 240, "height": 410, "fit": "contain", "rotation": -9 },
+        { "role": "support", "x": 955, "y": 655, "width": 230, "height": 400, "fit": "contain", "rotation": 9 },
+        { "role": "primary", "x": 790, "y": 520, "width": 330, "height": 590, "fit": "contain", "rotation": 0 }
+      ]
+    },
+    "textSafeArea": { "x": 70, "y": 65, "width": 1050, "height": 440 },
+    "logoBox": { "x": 950, "y": 40, "width": 190, "height": 120 },
+    "slots": [
+      { "id": "logo", "required": false },
+      { "id": "headline", "required": true, "maxChars": 38, "maxLines": 3, "minFontSize": 50 },
+      { "id": "proof", "required": true, "maxChars": 24, "maxLines": 2, "minFontSize": 42 },
+      { "id": "body", "required": true, "maxChars": 44, "maxLines": 3, "minFontSize": 32 },
+      { "id": "product", "required": true },
+      { "id": "cta", "required": true, "maxChars": 18, "maxLines": 1, "minFontSize": 28 }
+    ],
+    "palettePolicy": "dark-performance",
+    "fallbackBlueprintId": "product-hero-lifestyle"
+  }
+]

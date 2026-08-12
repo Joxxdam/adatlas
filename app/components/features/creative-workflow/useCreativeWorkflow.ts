@@ -98,11 +98,11 @@ export function useCreativeWorkflow(params: {
         });
         const result = await response.json();
         const hooks = Array.isArray(result.hooks) ? result.hooks : result.strategies;
-        if (!response.ok || !result.ok || !Array.isArray(hooks) || hooks.length !== 3) {
-          throw new Error(result.error || "광고 후킹 생성 실패");
+        if (!response.ok || !result.ok || !Array.isArray(hooks) || hooks.length !== 6) {
+          throw new Error(result.error || "광고문구 6개 생성 실패");
         }
         setStrategies(hooks);
-        setSelectedStrategyId("");
+        setSelectedStrategyId(hooks[0]?.id || "");
         setStrategyBatch(nextBatch);
         setActiveStep("strategy");
         return hooks as CreativeStrategy[];
@@ -112,9 +112,10 @@ export function useCreativeWorkflow(params: {
           references,
           usages: referenceUsages,
           batch: nextBatch,
+          product: params.productInfo,
         });
         setStrategies(fallback);
-        setSelectedStrategyId("");
+        setSelectedStrategyId(fallback[0]?.id || "");
         setStrategyBatch(nextBatch);
         setActiveStep("strategy");
         return fallback;

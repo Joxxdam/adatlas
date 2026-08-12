@@ -21,6 +21,44 @@
   line-height: 1.55;
 }
 
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.refreshButton {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid #bfd8f1;
+  border-radius: 9px;
+  background: #fff;
+  color: #176bb7;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.headerActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.libraryButton {
+  padding: 9px 12px;
+  border: 1px solid #ccd7e5;
+  border-radius: 9px;
+  background: #172033;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.refreshButton:disabled {
+  opacity: 0.5;
+}
+
 .eyebrow {
   color: #1677dc;
   font-size: 11px;
@@ -28,9 +66,100 @@
   letter-spacing: 0.09em;
 }
 
+.audienceProfile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #dce8f5;
+  border-radius: 11px;
+  background: #f4f9ff;
+}
+
+.audienceProfile strong {
+  margin-right: 2px;
+  color: #2b4059;
+  font-size: 12px;
+}
+
+.audienceProfile span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #fff;
+  color: #176bb7;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.audienceProfile small {
+  flex-basis: 100%;
+  color: #667085;
+  font-size: 11px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.filterDetails {
+  margin-top: 12px;
+  border: 1px solid #dce8f5;
+  border-radius: 9px;
+  background: #ffffff;
+}
+
+.filterDetails > summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: #526174;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.filterDetails .filters {
+  margin: 0;
+  padding: 0 12px 12px;
+}
+
+.filters label {
+  display: grid;
+  gap: 5px;
+  color: #526174;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.filters select,
+.filters button {
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #d6deeb;
+  border-radius: 8px;
+  background: #fff;
+  color: #27364a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.filters button {
+  align-self: end;
+}
+
+.filters .filterSelected {
+  border-color: #2186e5;
+  background: #eff7ff;
+  color: #176bb7;
+}
+
 .modeGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 16px 0;
 }
@@ -69,6 +198,13 @@
   gap: 10px;
 }
 
+.libraryGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-height: 940px;
+  padding-right: 4px;
+  overflow-y: auto;
+}
+
 .card {
   display: flex;
   min-width: 0;
@@ -81,6 +217,17 @@
   background: #fff;
   color: #26364a;
   text-align: left;
+}
+
+.selectArea {
+  display: grid;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 button.card {
@@ -153,6 +300,51 @@ button.card {
   text-overflow: ellipsis;
 }
 
+.meta {
+  color: #176bb7;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.positions {
+  overflow: hidden;
+  color: #526174;
+  font-size: 10px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.selectLabel {
+  display: block;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #eef6ff;
+  color: #176bb7;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.sourceDetails {
+  padding-top: 7px;
+  border-top: 1px solid #e6edf5;
+  color: #667085;
+  font-size: 10px;
+}
+
+.sourceDetails summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.sourceDetails span,
+.sourceDetails a {
+  display: block;
+  margin-top: 5px;
+  color: #667085;
+}
+
 .aiArea {
   display: grid;
   gap: 14px;
@@ -209,9 +401,23 @@ button.card {
     grid-template-columns: 1fr;
   }
 
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .aiHeader {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .headerActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -219,6 +425,10 @@ button.card {
   .cardGrid,
   .modeGrid {
     grid-template-columns: 1fr;
+  }
+
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .aiHeader {

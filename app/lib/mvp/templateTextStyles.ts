@@ -230,6 +230,62 @@ export const templateTextStylePresets: Record<string, TemplateTextStyleSet> = {
       maxLines: 3,
     },
   }),
+  commerceOffer: mergeSet({
+    headline: {
+      ...common.headline!,
+      fontSize: 112,
+      minFontSize: 52,
+      lineHeight: 0.94,
+      letterSpacing: -4,
+      maxLines: 2,
+    },
+    bodyCopy: { ...common.bodyCopy!, fontSize: 34, maxLines: 1 },
+    highlight: { ...common.highlight!, fontSize: 38, maxLines: 1 },
+    price: { ...common.price!, fontSize: 82 },
+  }),
+  productRepeatImpact: mergeSet({
+    headline: {
+      ...common.headline!,
+      fill: "#ffffff",
+      fontSize: 104,
+      minFontSize: 52,
+      lineHeight: 0.96,
+      stroke: "#080808",
+      strokeWidth: 5,
+      maxLines: 2,
+    },
+    bodyCopy: { ...common.bodyCopy!, fill: "#ffffff", fontSize: 38, maxLines: 1 },
+    highlight: { ...common.highlight!, fontSize: 36 },
+    bottomBar: { ...common.bottomBar!, fontSize: 34 },
+  }),
+  featureProof: mergeSet({
+    headline: {
+      ...common.headline!,
+      fill: "#ffffff",
+      fontFamily: sans,
+      fontSize: 76,
+      minFontSize: 38,
+      lineHeight: 1.04,
+      stroke: "#09100f",
+      strokeWidth: 3,
+      maxLines: 4,
+    },
+    bodyCopy: { ...common.bodyCopy!, fill: "#ffffff", fontSize: 30, maxLines: 2 },
+    highlight: { ...common.highlight!, fontSize: 28 },
+  }),
+  lifestyleSplit: mergeSet({
+    headline: {
+      ...common.headline!,
+      fontFamily: sans,
+      fontSize: 68,
+      minFontSize: 36,
+      lineHeight: 1.06,
+      letterSpacing: -2,
+      maxLines: 4,
+    },
+    bodyCopy: { ...common.bodyCopy!, fontSize: 29, maxLines: 2 },
+    highlight: { ...common.highlight!, fontSize: 27 },
+  }),
 };
 
 export function resolveTemplateTextStyles(
@@ -242,7 +298,7 @@ export function resolveTemplateTextStyles(
   for (const [role, style] of Object.entries(preset)) {
     if (!style) continue;
     const preserveDarkOverlayText =
-      presetKey === "bodyProof" &&
+      ["bodyProof", "productRepeatImpact", "featureProof"].includes(presetKey || "") &&
       ["headline", "bodyCopy", "subheadline", "reviewQuote"].includes(role);
     const surface =
       role === "headline" && presetKey === "bodyProof"

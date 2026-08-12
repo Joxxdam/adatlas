@@ -1,11 +1,13 @@
-import himnaeraFarm from "../../../data/advertisers/himnaera-farm.json";
-import kookdaeHanwoo from "../../../data/advertisers/kookdae-hanwoo.json";
-import originalSource from "../../../data/advertisers/original-source.json";
-import type { ProductInfoForPrompt } from "../mvp/types";
-import type { AdvertiserProfile } from "./types";
+import himnaeraFarm from "../../../data/advertisers/himnaera-farm.json" with { type: "json" };
+import kookdaeHanwoo from "../../../data/advertisers/kookdae-hanwoo.json" with { type: "json" };
+import originalSource from "../../../data/advertisers/original-source.json" with { type: "json" };
+import ririnco from "../../../data/advertisers/ririnco.json" with { type: "json" };
+import type { ProductInfoForPrompt } from "../mvp/types.ts";
+import type { AdvertiserProfile } from "./types.ts";
 
 export const advertiserProfiles: AdvertiserProfile[] = [
   originalSource,
+  ririnco,
   kookdaeHanwoo,
   himnaeraFarm,
 ] as AdvertiserProfile[];

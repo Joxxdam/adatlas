@@ -1,0 +1,6726 @@
+[
+  {
+    "id": "agriculture-01",
+    "file": "/background-library/agriculture/agriculture-01.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "review_ugc",
+      "origin_story",
+      "freshness",
+      "family",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "자연광 아래 식물이 정돈된 온실 통로",
+    "mood": [
+      "신선한",
+      "정직한",
+      "생기있는"
+    ],
+    "elements": [
+      "온실",
+      "잎",
+      "통로",
+      "자연광"
+    ],
+    "colors": [
+      "green",
+      "white",
+      "earth"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "힘내라농가",
+      "힘내라 농가"
+    ],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/variety-of-plants-inside-a-greenhouse-6508425/",
+    "originalImageUrl": "https://images.pexels.com/photos/6508425/pexels-photo-6508425.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:17.696Z"
+  },
+  {
+    "id": "agriculture-02",
+    "file": "/background-library/agriculture/agriculture-02.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "origin_story",
+      "usp_proof",
+      "situation",
+      "freshness",
+      "family",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "유리 천장과 푸른 식물이 있는 현대 온실",
+    "mood": [
+      "청량한",
+      "밝은",
+      "지속가능한"
+    ],
+    "elements": [
+      "유리온실",
+      "잎",
+      "햇빛",
+      "통로"
+    ],
+    "colors": [
+      "green",
+      "white",
+      "blue"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/plants-inside-a-greenhouse-13025114/",
+    "originalImageUrl": "https://images.pexels.com/photos/13025114/pexels-photo-13025114.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:18.592Z"
+  },
+  {
+    "id": "agriculture-03",
+    "file": "/background-library/agriculture/agriculture-03.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "review_ugc",
+      "sensory",
+      "origin_story",
+      "freshness",
+      "family",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "행잉 플랜트가 이어지는 풍성한 온실",
+    "mood": [
+      "풍성한",
+      "자연스러운",
+      "따뜻한"
+    ],
+    "elements": [
+      "행잉플랜트",
+      "온실",
+      "잎",
+      "햇빛"
+    ],
+    "colors": [
+      "green",
+      "earth",
+      "cream"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/potted-plants-inside-a-greenhouse-6508962/",
+    "originalImageUrl": "https://images.pexels.com/photos/6508962/pexels-photo-6508962.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:18.423Z"
+  },
+  {
+    "id": "agriculture-04",
+    "file": "/background-library/agriculture/agriculture-04.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "urgency",
+      "origin_story",
+      "gifting",
+      "freshness",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "서리 내린 과수원의 황금빛 겨울 일출",
+    "mood": [
+      "고요한",
+      "계절감",
+      "진정성"
+    ],
+    "elements": [
+      "과수원",
+      "일출",
+      "서리",
+      "들판"
+    ],
+    "colors": [
+      "gold",
+      "blue",
+      "brown"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "힘내라농가",
+      "힘내라 농가"
+    ],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/frosty-sunrise-in-a-winter-orchard-scene-29626117/",
+    "originalImageUrl": "https://images.pexels.com/photos/29626117/pexels-photo-29626117.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:19.600Z"
+  },
+  {
+    "id": "agriculture-05",
+    "file": "/background-library/agriculture/agriculture-05.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "gifting",
+      "urgency",
+      "freshness",
+      "origin_story",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "햇빛 드는 초원 위 비어 있는 우드 피크닉 테이블",
+    "mood": [
+      "목가적",
+      "따뜻한",
+      "편안한"
+    ],
+    "elements": [
+      "초원",
+      "우드테이블",
+      "햇빛",
+      "산"
+    ],
+    "colors": [
+      "green",
+      "wood",
+      "gold"
+    ],
+    "productPosition": "center",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "힘내라농가",
+      "힘내라 농가"
+    ],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/an-empty-wooden-table-with-benches-standing-on-a-meadow-25798118/",
+    "originalImageUrl": "https://images.pexels.com/photos/25798118/pexels-photo-25798118.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:19.439Z"
+  },
+  {
+    "id": "agriculture-06",
+    "file": "/background-library/agriculture/agriculture-06.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "usp_proof",
+      "origin_story",
+      "freshness",
+      "family",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "테이블과 식물이 어우러진 밝은 온실 라운지",
+    "mood": [
+      "현대적",
+      "친환경",
+      "편안한"
+    ],
+    "elements": [
+      "온실",
+      "테이블",
+      "플랜트",
+      "자연광"
+    ],
+    "colors": [
+      "green",
+      "black",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/plants-around-table-and-chairs-in-greenhouse-24427154/",
+    "originalImageUrl": "https://images.pexels.com/photos/24427154/pexels-photo-24427154.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:19.503Z"
+  },
+  {
+    "id": "agriculture-07",
+    "file": "/background-library/agriculture/agriculture-07.webp",
+    "localSourceFile": "/background-library/agriculture/agriculture-07.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "origin_story",
+      "usp_proof",
+      "situation",
+      "review_ugc",
+      "price_offer",
+      "freshness"
+    ],
+    "ageGroups": [
+      "twenties"
+    ],
+    "peopleType": [
+      "woman",
+      "farmer"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "집중",
+    "personAction": "온실 채소를 살펴봄",
+    "scene": "온실에서 신선한 채소를 살피는 20대 여성 농부",
+    "mood": [
+      "신선한",
+      "건강한",
+      "정직한"
+    ],
+    "elements": [
+      "온실",
+      "채소",
+      "자연광",
+      "산지"
+    ],
+    "colors": [
+      "leaf-green",
+      "white",
+      "charcoal"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "힘내라농가",
+      "힘내라 농가"
+    ],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Audience Library",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "온실에서 신선한 채소를 살피는 20대 여성 농부. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "agriculture-08",
+    "file": "/background-library/agriculture/agriculture-08.webp",
+    "localSourceFile": "/background-library/agriculture/agriculture-08.webp",
+    "enabled": true,
+    "category": "agriculture",
+    "subcategories": [
+      "fruit",
+      "vegetable",
+      "grain",
+      "local-produce"
+    ],
+    "industries": [
+      "agriculture",
+      "fresh-food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "origin_story",
+      "review_ugc",
+      "gifting",
+      "urgency",
+      "price_offer",
+      "freshness"
+    ],
+    "ageGroups": [
+      "senior"
+    ],
+    "peopleType": [
+      "man",
+      "farmer",
+      "senior"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "신뢰감",
+    "personAction": "과수원에서 수확 상태를 확인함",
+    "scene": "햇살 드는 과수원에 선 60대 남성 농부",
+    "mood": [
+      "진정성",
+      "따뜻한",
+      "신뢰감"
+    ],
+    "elements": [
+      "과수원",
+      "농부",
+      "수확",
+      "오른쪽 문구 여백"
+    ],
+    "colors": [
+      "orchard-green",
+      "gold",
+      "navy"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-right",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "힘내라농가",
+      "힘내라 농가"
+    ],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Audience Library",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "햇살 드는 과수원에 선 60대 남성 농부. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "beauty-01",
+    "file": "/background-library/beauty/beauty-01.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "origin_story",
+      "sensory",
+      "problem_solution",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "우드 세면대와 뉴트럴 타일의 미니멀 욕실",
+    "mood": [
+      "정제된",
+      "내추럴",
+      "프리미엄"
+    ],
+    "elements": [
+      "우드",
+      "타일",
+      "거울",
+      "자연광"
+    ],
+    "colors": [
+      "beige",
+      "wood",
+      "gray"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/bathroom-with-minimalist-interior-design-10188096/",
+    "originalImageUrl": "https://images.pexels.com/photos/10188096/pexels-photo-10188096.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:12.905Z"
+  },
+  {
+    "id": "beauty-02",
+    "file": "/background-library/beauty/beauty-02.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "problem_solution",
+      "price_offer",
+      "sensory",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "화이트 대리석과 둥근 거울의 밝은 욕실",
+    "mood": [
+      "클린",
+      "밝은",
+      "신뢰감"
+    ],
+    "elements": [
+      "대리석",
+      "세면대",
+      "거울",
+      "화이트"
+    ],
+    "colors": [
+      "white",
+      "cream",
+      "gray"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/bathroom-interior-with-sink-on-counter-near-bidet-and-toilet-6585742/",
+    "originalImageUrl": "https://images.pexels.com/photos/6585742/pexels-photo-6585742.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:13.016Z"
+  },
+  {
+    "id": "beauty-03",
+    "file": "/background-library/beauty/beauty-03.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "origin_story",
+      "sensory",
+      "problem_solution",
+      "usp_proof",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "체브론 타일과 우드 캐비닛의 욕실 카운터",
+    "mood": [
+      "세련된",
+      "따뜻한",
+      "차분한"
+    ],
+    "elements": [
+      "우드",
+      "세면대",
+      "타일",
+      "카운터"
+    ],
+    "colors": [
+      "cream",
+      "wood",
+      "white"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/bathroom-interior-with-sink-on-counter-near-mirror-and-bath-6782431/",
+    "originalImageUrl": "https://images.pexels.com/photos/6782431/pexels-photo-6782431.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:12.865Z"
+  },
+  {
+    "id": "beauty-04",
+    "file": "/background-library/beauty/beauty-04.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "review_ugc",
+      "sensory",
+      "usp_proof",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "서브웨이 타일과 자연광이 있는 아늑한 욕실",
+    "mood": [
+      "편안한",
+      "일상적",
+      "깨끗한"
+    ],
+    "elements": [
+      "화이트타일",
+      "세면대",
+      "자연광",
+      "수건"
+    ],
+    "colors": [
+      "white",
+      "warm-gray",
+      "cream"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/an-empty-bathroom-6734409/",
+    "originalImageUrl": "https://images.pexels.com/photos/6734409/pexels-photo-6734409.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:13.663Z"
+  },
+  {
+    "id": "beauty-05",
+    "file": "/background-library/beauty/beauty-05.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "price_offer",
+      "problem_solution",
+      "sensory",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "화이트 선반과 카운터가 정돈된 밝은 욕실",
+    "mood": [
+      "기능적",
+      "정돈된",
+      "선명한"
+    ],
+    "elements": [
+      "선반",
+      "화이트카운터",
+      "거울",
+      "수건"
+    ],
+    "colors": [
+      "white",
+      "silver",
+      "light-gray"
+    ],
+    "productPosition": "center-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/modern-bathroom-interior-with-counter-near-mirror-and-shelves-6487949/",
+    "originalImageUrl": "https://images.pexels.com/photos/6487949/pexels-photo-6487949.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:13.621Z"
+  },
+  {
+    "id": "beauty-06",
+    "file": "/background-library/beauty/beauty-06.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "origin_story",
+      "usp_proof",
+      "gifting",
+      "sensory",
+      "problem_solution",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "화강암 카운터와 대형 거울의 모던 욕실",
+    "mood": [
+      "고급스러운",
+      "모던",
+      "차분한"
+    ],
+    "elements": [
+      "화강암",
+      "거울",
+      "카운터",
+      "간접조명"
+    ],
+    "colors": [
+      "white",
+      "gray",
+      "charcoal"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/modern-bathroom-interior-with-granite-countertop-31057558/",
+    "originalImageUrl": "https://images.pexels.com/photos/31057558/pexels-photo-31057558.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:13.962Z"
+  },
+  {
+    "id": "beauty-07",
+    "file": "/background-library/beauty/beauty-07.webp",
+    "localSourceFile": "/background-library/beauty/beauty-07.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "sensory",
+      "usp_proof",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "물기와 스팀이 남은 다크 샤워 공간",
+    "mood": [
+      "상쾌한",
+      "현실적인",
+      "시원한"
+    ],
+    "elements": [
+      "샤워부스",
+      "물방울",
+      "스팀",
+      "다크타일",
+      "민트조명"
+    ],
+    "colors": [
+      "charcoal",
+      "mint",
+      "gray"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "dark",
+    "contrast": "high",
+    "orientation": "square",
+    "advertiserAliases": [
+      "오리지널소스",
+      "오리지날소스",
+      "Original Source"
+    ],
+    "productKeywords": [
+      "샤워젤",
+      "바디워시",
+      "민트",
+      "티트리",
+      "쿨링",
+      "체취",
+      "상쾌"
+    ],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "물기와 스팀이 남은 다크 샤워 공간. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "beauty-08",
+    "file": "/background-library/beauty/beauty-08.webp",
+    "localSourceFile": "/background-library/beauty/beauty-08.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "sensory",
+      "usp_proof",
+      "urgency",
+      "problem_solution",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "얼음과 물보라가 있는 민트 쿨링 스튜디오",
+    "mood": [
+      "청량한",
+      "차가운",
+      "밝은"
+    ],
+    "elements": [
+      "얼음",
+      "물보라",
+      "민트잎",
+      "원형단상",
+      "글로우"
+    ],
+    "colors": [
+      "mint",
+      "white",
+      "ice-blue"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "오리지널소스",
+      "오리지날소스",
+      "Original Source"
+    ],
+    "productKeywords": [
+      "민트",
+      "티트리",
+      "멘톨",
+      "쿨링",
+      "얼음",
+      "샤워젤",
+      "바디워시"
+    ],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "얼음과 물보라가 있는 민트 쿨링 스튜디오. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "beauty-09",
+    "file": "/background-library/beauty/beauty-09.webp",
+    "localSourceFile": "/background-library/beauty/beauty-09.webp",
+    "enabled": true,
+    "category": "beauty",
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "situation",
+      "sensory",
+      "usp_proof",
+      "origin_story",
+      "problem_solution",
+      "premium"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "상쾌함",
+    "personAction": "샤워 후 편안하게 미소 지음",
+    "scene": "샤워 후 상쾌함을 느끼는 여성 욕실 장면",
+    "mood": [
+      "청량한",
+      "깨끗한",
+      "자연스러운"
+    ],
+    "elements": [
+      "욕실",
+      "물방울",
+      "젖은머리",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "mint-gray",
+      "white",
+      "ice-blue"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "오리지널소스",
+      "오리지날소스",
+      "Original Source"
+    ],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Person Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "샤워 후 상쾌함을 느끼는 여성 욕실 장면. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "sensory",
+      "premium",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "우아한",
+      "부드러운",
+      "편안한"
+    ],
+    "elements": [
+      "rose-petal",
+      "foam",
+      "water",
+      "towel"
+    ],
+    "colors": [
+      "rose",
+      "cream",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "beauty-10",
+    "file": "/background-library/beauty/beauty-10.webp",
+    "enabled": true,
+    "category": "beauty",
+    "photoId": "34201252",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/34201252/",
+    "originalImageUrl": "https://images.pexels.com/photos/34201252/pexels-photo-34201252.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Opal Hotel",
+    "scene": "장미 꽃잎과 거품, 타월이 놓인 고급 스파 세트"
+  },
+  {
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "sensory",
+      "problem_solution",
+      "situation"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "편안함",
+    "personAction": "꽃잎 욕조에서 휴식함",
+    "mood": [
+      "편안한",
+      "향기로운",
+      "부드러운"
+    ],
+    "elements": [
+      "bath",
+      "rose-petal",
+      "water"
+    ],
+    "colors": [
+      "rose",
+      "white",
+      "skin"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "beauty-11",
+    "file": "/background-library/beauty/beauty-11.webp",
+    "enabled": true,
+    "category": "beauty",
+    "photoId": "4553030",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/4553030/",
+    "originalImageUrl": "https://images.pexels.com/photos/4553030/pexels-photo-4553030.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "ROMAN ODINTSOV",
+    "scene": "장미 꽃잎이 떠 있는 욕조의 자연스러운 셀프케어 장면"
+  },
+  {
+    "subcategories": [
+      "skincare",
+      "body-wash",
+      "hair-care",
+      "personal-care"
+    ],
+    "industries": [
+      "beauty",
+      "personal-care"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "sensory",
+      "usp_proof",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "감각적인",
+      "자연스러운",
+      "우아한"
+    ],
+    "elements": [
+      "rose",
+      "petal",
+      "water",
+      "leaf"
+    ],
+    "colors": [
+      "red",
+      "green",
+      "black"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "dark",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "beauty-12",
+    "file": "/background-library/beauty/beauty-12.webp",
+    "enabled": true,
+    "category": "beauty",
+    "photoId": "4985821",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/4985821/",
+    "originalImageUrl": "https://images.pexels.com/photos/4985821/pexels-photo-4985821.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Anastasiia Vy",
+    "scene": "물 위에 장미와 잎이 떠 있는 향기 원료 플랫레이"
+  },
+  {
+    "id": "fashion-01",
+    "file": "/background-library/fashion/fashion-01.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "origin_story",
+      "usp_proof",
+      "styling",
+      "situation",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "아트월과 행거가 있는 디자이너 스튜디오",
+    "mood": [
+      "에디토리얼",
+      "창의적",
+      "모던"
+    ],
+    "elements": [
+      "행거",
+      "아트월",
+      "스튜디오",
+      "화이트"
+    ],
+    "colors": [
+      "white",
+      "blue",
+      "neutral"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/rack-with-clothes-in-designer-studio-6665063/",
+    "originalImageUrl": "https://images.pexels.com/photos/6665063/pexels-photo-6665063.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:14.628Z"
+  },
+  {
+    "id": "fashion-02",
+    "file": "/background-library/fashion/fashion-02.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "sensory",
+      "gifting",
+      "styling",
+      "premium",
+      "usp_proof"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "뉴트럴 의류와 팜파스가 놓인 미니멀 행거",
+    "mood": [
+      "부드러운",
+      "내추럴",
+      "세련된"
+    ],
+    "elements": [
+      "행거",
+      "니트",
+      "팜파스",
+      "우드플로어"
+    ],
+    "colors": [
+      "beige",
+      "cream",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/clothes-hanging-on-a-clothing-rack-8581406/",
+    "originalImageUrl": "https://images.pexels.com/photos/8581406/pexels-photo-8581406.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:14.529Z"
+  },
+  {
+    "id": "fashion-03",
+    "file": "/background-library/fashion/fashion-03.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "urgency",
+      "usp_proof",
+      "price_offer",
+      "styling",
+      "situation",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "오렌지 포인트가 있는 현대적인 워드로브",
+    "mood": [
+      "트렌디",
+      "활기찬",
+      "정돈된"
+    ],
+    "elements": [
+      "워드로브",
+      "행거",
+      "선반",
+      "슈즈"
+    ],
+    "colors": [
+      "orange",
+      "black",
+      "neutral"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/minimalist-wardrobe-with-stylish-clothing-display-35033800/",
+    "originalImageUrl": "https://images.pexels.com/photos/35033800/pexels-photo-35033800.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:14.756Z"
+  },
+  {
+    "id": "fashion-04",
+    "file": "/background-library/fashion/fashion-04.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "price_offer",
+      "review_ugc",
+      "situation",
+      "styling",
+      "premium",
+      "usp_proof"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "우드 바닥과 의류 랙이 있는 부티크",
+    "mood": [
+      "상업적",
+      "세련된",
+      "따뜻한"
+    ],
+    "elements": [
+      "부티크",
+      "행거",
+      "우드플로어",
+      "조명"
+    ],
+    "colors": [
+      "wood",
+      "navy",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/clothes-racks-in-a-boutique-5424922/",
+    "originalImageUrl": "https://images.pexels.com/photos/5424922/pexels-photo-5424922.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:15.940Z"
+  },
+  {
+    "id": "fashion-05",
+    "file": "/background-library/fashion/fashion-05.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "origin_story",
+      "usp_proof",
+      "review_ugc",
+      "styling",
+      "situation",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "자연광과 넓은 여백이 있는 모던 패션 매장",
+    "mood": [
+      "밝은",
+      "프리미엄",
+      "도시적"
+    ],
+    "elements": [
+      "패션매장",
+      "자연광",
+      "행거",
+      "오픈스페이스"
+    ],
+    "colors": [
+      "white",
+      "black",
+      "warm-gray"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/fashion-store-interior-with-garments-hanging-on-racks-4940756/",
+    "originalImageUrl": "https://images.pexels.com/photos/4940756/pexels-photo-4940756.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:15.306Z"
+  },
+  {
+    "id": "fashion-06",
+    "file": "/background-library/fashion/fashion-06.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "pattern_texture",
+    "hookTypes": [
+      "sensory",
+      "usp_proof",
+      "origin_story",
+      "styling",
+      "situation",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "빛과 굴곡이 흐르는 베이지 패브릭 텍스처",
+    "mood": [
+      "감각적",
+      "부드러운",
+      "고급스러운"
+    ],
+    "elements": [
+      "패브릭",
+      "주름",
+      "빛과그림자",
+      "텍스처"
+    ],
+    "colors": [
+      "beige",
+      "cream",
+      "sand"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "center-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/abstract-beige-textured-fabric-background-34860703/",
+    "originalImageUrl": "https://images.pexels.com/photos/34860703/pexels-photo-34860703.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:15.870Z"
+  },
+  {
+    "id": "fashion-07",
+    "file": "/background-library/fashion/fashion-07.webp",
+    "localSourceFile": "/background-library/fashion/fashion-07.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "situation",
+      "review_ugc",
+      "usp_proof",
+      "price_offer",
+      "styling",
+      "premium"
+    ],
+    "ageGroups": [
+      "teens",
+      "twenties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "자신감",
+    "personAction": "부티크에서 데일리룩을 보여줌",
+    "scene": "밝은 부티크에서 데일리룩을 입은 10대 후반·20대 여성",
+    "mood": [
+      "젊은",
+      "깔끔한",
+      "트렌디한"
+    ],
+    "elements": [
+      "부티크",
+      "데일리룩",
+      "자연광",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "cream",
+      "navy",
+      "sand"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "center-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Audience Library",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "밝은 부티크에서 데일리룩을 입은 10대 후반·20대 여성. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "fashion-08",
+    "file": "/background-library/fashion/fashion-08.webp",
+    "localSourceFile": "/background-library/fashion/fashion-08.webp",
+    "enabled": true,
+    "category": "fashion",
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "situation",
+      "review_ugc",
+      "usp_proof",
+      "origin_story",
+      "price_offer",
+      "styling"
+    ],
+    "ageGroups": [
+      "fifties",
+      "senior"
+    ],
+    "peopleType": [
+      "woman",
+      "senior"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "center",
+    "personGaze": "front",
+    "personEmotion": "편안한 미소",
+    "personAction": "밝은 실내에서 재킷을 입고 서 있음",
+    "scene": "따뜻한 부티크에서 재킷을 입은 50대 여성",
+    "mood": [
+      "우아한",
+      "편안한",
+      "신뢰감"
+    ],
+    "elements": [
+      "부티크",
+      "재킷",
+      "뉴트럴톤",
+      "오른쪽 문구 여백"
+    ],
+    "colors": [
+      "cream",
+      "beige",
+      "warm-white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "center-right",
+    "focalArea": "center_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Audience Library",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "따뜻한 부티크에서 재킷을 입은 50대 여성. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "styling",
+      "situation",
+      "premium"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "자신감",
+    "personAction": "도심 카페 거리를 걷는 중",
+    "mood": [
+      "도시적",
+      "세련된",
+      "자연스러운"
+    ],
+    "elements": [
+      "cafe",
+      "street",
+      "architecture",
+      "sunlight"
+    ],
+    "colors": [
+      "black",
+      "beige",
+      "warm-neutral"
+    ],
+    "productPosition": "center-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "fashion-09",
+    "file": "/background-library/fashion/fashion-09.webp",
+    "enabled": true,
+    "category": "fashion",
+    "photoId": "29300403",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/29300403/",
+    "originalImageUrl": "https://images.pexels.com/photos/29300403/pexels-photo-29300403.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "El gringo photo",
+    "scene": "카페가 이어진 유럽풍 도심 거리의 데일리룩 장면"
+  },
+  {
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "styling",
+      "premium",
+      "situation"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "자신감",
+    "personAction": "호텔 로비에서 편안하게 서 있음",
+    "mood": [
+      "고급스러운",
+      "따뜻한",
+      "세련된"
+    ],
+    "elements": [
+      "hotel",
+      "lobby",
+      "warm-light"
+    ],
+    "colors": [
+      "cream",
+      "gold",
+      "black"
+    ],
+    "productPosition": "center-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "fashion-10",
+    "file": "/background-library/fashion/fashion-10.webp",
+    "enabled": true,
+    "category": "fashion",
+    "photoId": "28208918",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/28208918/",
+    "originalImageUrl": "https://images.pexels.com/photos/28208918/pexels-photo-28208918.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Roman Iskanderov",
+    "scene": "고급 호텔 로비에서 스타일을 보여주는 자연스러운 인물 장면"
+  },
+  {
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "premium",
+      "styling",
+      "situation"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "고급스러운",
+      "정제된"
+    ],
+    "elements": [
+      "hotel",
+      "gallery",
+      "lounge",
+      "artwork"
+    ],
+    "colors": [
+      "brown",
+      "cream",
+      "gold"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "fashion-11",
+    "file": "/background-library/fashion/fashion-11.webp",
+    "enabled": true,
+    "category": "fashion",
+    "photoId": "32229384",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/32229384/",
+    "originalImageUrl": "https://images.pexels.com/photos/32229384/pexels-photo-32229384.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Hany Nafady",
+    "scene": "아트월과 고급 가구가 있는 세련된 호텔 라운지"
+  },
+  {
+    "subcategories": [
+      "apparel",
+      "shoes",
+      "bags",
+      "accessories"
+    ],
+    "industries": [
+      "fashion",
+      "apparel"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "premium",
+      "styling",
+      "situation"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "밝은",
+      "현대적",
+      "고급스러운"
+    ],
+    "elements": [
+      "hotel",
+      "window",
+      "marble",
+      "sunlight"
+    ],
+    "colors": [
+      "white",
+      "wood",
+      "green"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "fashion-12",
+    "file": "/background-library/fashion/fashion-12.webp",
+    "enabled": true,
+    "category": "fashion",
+    "photoId": "35215414",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/35215414/",
+    "originalImageUrl": "https://images.pexels.com/photos/35215414/pexels-photo-35215414.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "eran design",
+    "scene": "큰 창과 자연광이 있는 모던 럭셔리 호텔 로비"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "convenience",
+      "situation"
+    ],
+    "ageGroups": [
+      "kids",
+      "family",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 3,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "장 본 식재료를 주방에서 정리함",
+    "mood": [
+      "밝은",
+      "풍성한",
+      "즐거운"
+    ],
+    "elements": [
+      "groceries",
+      "kitchen",
+      "family"
+    ],
+    "colors": [
+      "white",
+      "wood",
+      "green"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-01",
+    "file": "/background-library/food-mall/food-mall-01.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "8211813",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/8211813/",
+    "originalImageUrl": "https://images.pexels.com/photos/8211813/pexels-photo-8211813.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Dziana Hasanbekava",
+    "scene": "밝은 주방에서 장 본 식재료를 함께 꺼내는 가족"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "price_offer",
+      "convenience"
+    ],
+    "ageGroups": [
+      "kids",
+      "family",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 3,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "즐거움",
+    "personAction": "쇼핑 카트와 함께 상품을 고름",
+    "mood": [
+      "활기찬",
+      "현실적인",
+      "즐거운"
+    ],
+    "elements": [
+      "grocery-store",
+      "shopping-cart",
+      "family"
+    ],
+    "colors": [
+      "white",
+      "green",
+      "colorful"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-02",
+    "file": "/background-library/food-mall/food-mall-02.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "3985081",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/3985081/",
+    "originalImageUrl": "https://images.pexels.com/photos/3985081/pexels-photo-3985081.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Gustavo Fring",
+    "scene": "슈퍼마켓에서 함께 장보는 자연스러운 가족"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "convenience",
+      "freshness",
+      "price_offer"
+    ],
+    "ageGroups": [
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "man"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "친절한 미소",
+    "personAction": "신선 식재료 박스를 배송함",
+    "mood": [
+      "신선한",
+      "밝은",
+      "신뢰감"
+    ],
+    "elements": [
+      "delivery",
+      "grocery-box",
+      "vegetables"
+    ],
+    "colors": [
+      "red",
+      "green",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-03",
+    "file": "/background-library/food-mall/food-mall-03.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "6994270",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/6994270/",
+    "originalImageUrl": "https://images.pexels.com/photos/6994270/pexels-photo-6994270.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Kindel Media",
+    "scene": "신선 식재료 박스를 들고 배송하는 밝은 장면"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "convenience",
+      "review_ugc",
+      "situation"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "기대",
+    "personAction": "주방에서 배송 상자를 열어봄",
+    "mood": [
+      "깔끔한",
+      "기대감",
+      "현대적"
+    ],
+    "elements": [
+      "unboxing",
+      "delivery-box",
+      "kitchen"
+    ],
+    "colors": [
+      "white",
+      "blue",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-04",
+    "file": "/background-library/food-mall/food-mall-04.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "32448547",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/32448547/",
+    "originalImageUrl": "https://images.pexels.com/photos/32448547/pexels-photo-32448547.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Smartroom Storage",
+    "scene": "모던 주방에서 택배 상자를 여는 언박싱 장면"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "product_set",
+    "hookTypes": [
+      "gifting",
+      "price_offer",
+      "urgency"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "축제",
+      "따뜻한",
+      "풍성한"
+    ],
+    "elements": [
+      "gift-box",
+      "ribbon",
+      "kraft-paper"
+    ],
+    "colors": [
+      "red",
+      "brown",
+      "green"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-05",
+    "file": "/background-library/food-mall/food-mall-05.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "1303080",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/1303080/",
+    "originalImageUrl": "https://images.pexels.com/photos/1303080/pexels-photo-1303080.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "George Dolgikh",
+    "scene": "원목 테이블 위 리본 선물 상자가 놓인 풍성한 플랫레이"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "gifting",
+      "situation"
+    ],
+    "ageGroups": [
+      "family",
+      "kids",
+      "thirties",
+      "forties",
+      "fifties"
+    ],
+    "peopleType": [
+      "family",
+      "friends"
+    ],
+    "peopleCount": 6,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "가족이 음식을 나누며 대화함",
+    "mood": [
+      "풍성한",
+      "따뜻한",
+      "즐거운"
+    ],
+    "elements": [
+      "family-table",
+      "meal",
+      "celebration"
+    ],
+    "colors": [
+      "warm-neutral",
+      "red",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-06",
+    "file": "/background-library/food-mall/food-mall-06.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "4262183",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/4262183/",
+    "originalImageUrl": "https://images.pexels.com/photos/4262183/pexels-photo-4262183.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "August de Richelieu",
+    "scene": "음식을 나누며 즐겁게 식사하는 풍성한 가족 식탁"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "gifting",
+      "origin_story"
+    ],
+    "ageGroups": [
+      "family",
+      "kids",
+      "thirties",
+      "fifties",
+      "senior"
+    ],
+    "peopleType": [
+      "family",
+      "senior",
+      "parent_child"
+    ],
+    "peopleCount": 6,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "따뜻한 미소",
+    "personAction": "여러 세대가 함께 식사함",
+    "mood": [
+      "따뜻한",
+      "신뢰감",
+      "풍성한"
+    ],
+    "elements": [
+      "family-table",
+      "multi-generation",
+      "kitchen"
+    ],
+    "colors": [
+      "beige",
+      "wood",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-07",
+    "file": "/background-library/food-mall/food-mall-07.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "5591173",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/5591173/",
+    "originalImageUrl": "https://images.pexels.com/photos/5591173/pexels-photo-5591173.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Tima Miroshnichenko",
+    "scene": "여러 세대가 함께하는 따뜻한 가족 식탁"
+  },
+  {
+    "subcategories": [
+      "grocery",
+      "gift-set",
+      "local-specialty",
+      "group-buy"
+    ],
+    "industries": [
+      "food-mall",
+      "grocery"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "freshness",
+      "origin_story",
+      "price_offer"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "신선한",
+      "풍성한",
+      "현장감"
+    ],
+    "elements": [
+      "farmers-market",
+      "vegetables",
+      "wood-crate"
+    ],
+    "colors": [
+      "green",
+      "orange",
+      "red"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "food-mall-08",
+    "file": "/background-library/food-mall/food-mall-08.webp",
+    "enabled": true,
+    "category": "food-mall",
+    "photoId": "24783843",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/24783843/",
+    "originalImageUrl": "https://images.pexels.com/photos/24783843/pexels-photo-24783843.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Natalia S",
+    "scene": "다양한 제철 채소가 나무 상자에 담긴 로컬 마켓"
+  },
+  {
+    "id": "health-01",
+    "file": "/background-library/health/health-01.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "price_offer",
+      "origin_story",
+      "problem_solution",
+      "situation",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "우드 데스크와 뉴트럴 벽의 비어 있는 모던 오피스",
+    "mood": [
+      "전문적",
+      "정돈된",
+      "현대적"
+    ],
+    "elements": [
+      "데스크",
+      "체어",
+      "벽",
+      "조명"
+    ],
+    "colors": [
+      "wood",
+      "gray",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/empty-desks-in-modern-office-7534208/",
+    "originalImageUrl": "https://images.pexels.com/photos/7534208/pexels-photo-7534208.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:21.312Z"
+  },
+  {
+    "id": "health-02",
+    "file": "/background-library/health/health-02.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "review_ugc",
+      "price_offer",
+      "problem_solution",
+      "situation",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "넓은 여백과 워크스테이션의 밝은 현대 오피스",
+    "mood": [
+      "신뢰감",
+      "밝은",
+      "효율적"
+    ],
+    "elements": [
+      "오피스",
+      "데스크",
+      "체어",
+      "자연광"
+    ],
+    "colors": [
+      "white",
+      "gray",
+      "blue"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/empty-modern-interior-of-an-office-12526862/",
+    "originalImageUrl": "https://images.pexels.com/photos/12526862/pexels-photo-12526862.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:21.694Z"
+  },
+  {
+    "id": "health-03",
+    "file": "/background-library/health/health-03.webp",
+    "localSourceFile": "/background-library/health/health-03.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "usp_proof",
+      "origin_story",
+      "sensory",
+      "situation",
+      "problem_solution",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "레몬 과수원과 지중해 해안의 산지 무드",
+    "mood": [
+      "상쾌한",
+      "밝은",
+      "원산지감"
+    ],
+    "elements": [
+      "레몬",
+      "과수원",
+      "해안",
+      "원형단상",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "lemon-yellow",
+      "leaf-green",
+      "sea-blue"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [
+      "레몬",
+      "시트러스",
+      "감귤",
+      "깔라만시",
+      "비타민"
+    ],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "레몬 과수원과 지중해 해안의 산지 무드. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "health-04",
+    "file": "/background-library/health/health-04.webp",
+    "localSourceFile": "/background-library/health/health-04.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "sensory",
+      "usp_proof",
+      "family"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "man",
+      "athlete"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "상쾌함",
+    "personAction": "운동 후 땀을 식힘",
+    "scene": "운동 직후 땀을 식히는 남성 실사용 장면",
+    "mood": [
+      "현실적인",
+      "역동적인",
+      "여름"
+    ],
+    "elements": [
+      "운동",
+      "땀",
+      "도시",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "charcoal",
+      "teal",
+      "skin"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "오리지널소스",
+      "오리지날소스",
+      "Original Source"
+    ],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Person Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "운동 직후 땀을 식히는 남성 실사용 장면. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "health-05",
+    "file": "/background-library/health/health-05.webp",
+    "localSourceFile": "/background-library/health/health-05.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "review_ugc",
+      "usp_proof",
+      "family"
+    ],
+    "ageGroups": [
+      "forties",
+      "fifties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "피로",
+    "personAction": "거실에서 잠시 쉬고 있음",
+    "scene": "거실에서 피로를 느끼는 중년 여성 장면",
+    "mood": [
+      "공감되는",
+      "차분한",
+      "현실적인"
+    ],
+    "elements": [
+      "거실",
+      "소파",
+      "피로",
+      "오른쪽 문구 여백"
+    ],
+    "colors": [
+      "deep-green",
+      "beige",
+      "cream"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-right",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Person Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "거실에서 피로를 느끼는 중년 여성 장면. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "health-06",
+    "file": "/background-library/health/health-06.webp",
+    "localSourceFile": "/background-library/health/health-06.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "usp_proof",
+      "review_ugc",
+      "family"
+    ],
+    "ageGroups": [
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "woman",
+      "office_worker"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "피로",
+    "personAction": "야근 후 식탁에서 쉬고 있음",
+    "scene": "야근 후 식탁에 앉은 직장인 여성 장면",
+    "mood": [
+      "공감되는",
+      "야간",
+      "차분한"
+    ],
+    "elements": [
+      "노트북",
+      "식탁",
+      "도시야경",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "olive",
+      "charcoal",
+      "warm-beige"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Person Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "야근 후 식탁에 앉은 직장인 여성 장면. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "health-07",
+    "file": "/background-library/health/health-07.webp",
+    "localSourceFile": "/background-library/health/health-07.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "usp_proof",
+      "situation",
+      "review_ugc",
+      "price_offer",
+      "problem_solution",
+      "family"
+    ],
+    "ageGroups": [
+      "twenties"
+    ],
+    "peopleType": [
+      "man",
+      "office_worker"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "집중",
+    "personAction": "홈오피스에서 기기를 사용함",
+    "scene": "모던 홈오피스에서 스마트 기기를 사용하는 20대 남성",
+    "mood": [
+      "현대적",
+      "집중한",
+      "신뢰감"
+    ],
+    "elements": [
+      "홈오피스",
+      "스마트기기",
+      "데스크",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "charcoal",
+      "navy",
+      "cool-gray"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "center-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Audience Library",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "모던 홈오피스에서 스마트 기기를 사용하는 20대 남성. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "health-08",
+    "file": "/background-library/health/health-08.webp",
+    "localSourceFile": "/background-library/health/health-08.webp",
+    "enabled": true,
+    "category": "health",
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "situation",
+      "review_ugc",
+      "problem_solution",
+      "origin_story",
+      "price_offer",
+      "usp_proof"
+    ],
+    "ageGroups": [
+      "senior",
+      "couple"
+    ],
+    "peopleType": [
+      "couple",
+      "senior"
+    ],
+    "peopleCount": 2,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "편안한 미소",
+    "personAction": "밝은 거실에서 함께 휴식함",
+    "scene": "밝은 거실에서 편안한 시간을 보내는 60대 부부",
+    "mood": [
+      "편안한",
+      "따뜻한",
+      "안심되는"
+    ],
+    "elements": [
+      "거실",
+      "부부",
+      "소파",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "warm-white",
+      "beige",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "center-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Audience Library",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "밝은 거실에서 편안한 시간을 보내는 60대 부부. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "convenience"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman",
+      "office_worker"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "피로",
+    "personAction": "업무 책상에서 잠시 쉬고 있음",
+    "mood": [
+      "현실적인",
+      "공감",
+      "차분한"
+    ],
+    "elements": [
+      "office",
+      "desk",
+      "documents"
+    ],
+    "colors": [
+      "white",
+      "blue",
+      "neutral"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "health-09",
+    "file": "/background-library/health/health-09.webp",
+    "enabled": true,
+    "category": "health",
+    "photoId": "7888733",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/7888733/",
+    "originalImageUrl": "https://images.pexels.com/photos/7888733/pexels-photo-7888733.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "RDNE Stock project",
+    "scene": "서류가 놓인 책상에서 피로를 느끼는 직장인 장면"
+  },
+  {
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "problem_solution",
+      "family",
+      "situation"
+    ],
+    "ageGroups": [
+      "senior",
+      "couple"
+    ],
+    "peopleType": [
+      "couple",
+      "senior"
+    ],
+    "peopleCount": 2,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "활기찬 미소",
+    "personAction": "거실에서 가벼운 요가를 함",
+    "mood": [
+      "건강한",
+      "밝은",
+      "편안한"
+    ],
+    "elements": [
+      "home",
+      "yoga",
+      "sunlight"
+    ],
+    "colors": [
+      "white",
+      "green",
+      "beige"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "health-10",
+    "file": "/background-library/health/health-10.webp",
+    "enabled": true,
+    "category": "health",
+    "photoId": "7529990",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/7529990/",
+    "originalImageUrl": "https://images.pexels.com/photos/7529990/pexels-photo-7529990.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Mikhail Nilov",
+    "scene": "밝은 거실에서 함께 운동하는 시니어 부부"
+  },
+  {
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "usp_proof",
+      "convenience"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "건강한",
+      "산뜻한",
+      "평온한"
+    ],
+    "elements": [
+      "breakfast",
+      "fruit",
+      "smoothie",
+      "sunlight"
+    ],
+    "colors": [
+      "green",
+      "wood",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "health-11",
+    "file": "/background-library/health/health-11.webp",
+    "enabled": true,
+    "category": "health",
+    "photoId": "15184842",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/15184842/",
+    "originalImageUrl": "https://images.pexels.com/photos/15184842/pexels-photo-15184842.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Phil Desforges",
+    "scene": "아침 햇빛이 드는 건강한 브런치 식탁"
+  },
+  {
+    "subcategories": [
+      "supplement",
+      "protein",
+      "wellness",
+      "inner-beauty"
+    ],
+    "industries": [
+      "health",
+      "wellness"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "situation",
+      "convenience"
+    ],
+    "ageGroups": [
+      "family",
+      "kids",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 4,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "가족이 아침 식사를 함께함",
+    "mood": [
+      "밝은",
+      "건강한",
+      "따뜻한"
+    ],
+    "elements": [
+      "family",
+      "breakfast",
+      "kitchen"
+    ],
+    "colors": [
+      "white",
+      "wood",
+      "fruit"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "health-12",
+    "file": "/background-library/health/health-12.webp",
+    "enabled": true,
+    "category": "health",
+    "photoId": "9885074",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/9885074/",
+    "originalImageUrl": "https://images.pexels.com/photos/9885074/pexels-photo-9885074.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Ron Lach",
+    "scene": "건강한 아침 식사를 함께하는 밝은 가족 장면"
+  },
+  {
+    "subcategories": [
+      "baby",
+      "toy",
+      "kids-fashion",
+      "parenting"
+    ],
+    "industries": [
+      "kids",
+      "parenting"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "situation",
+      "convenience"
+    ],
+    "ageGroups": [
+      "kids",
+      "family"
+    ],
+    "peopleType": [
+      "child"
+    ],
+    "peopleCount": 2,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "나무 놀이기구에서 함께 놂",
+    "mood": [
+      "밝은",
+      "안전한",
+      "즐거운"
+    ],
+    "elements": [
+      "playroom",
+      "wood-toy",
+      "sunlight"
+    ],
+    "colors": [
+      "pastel",
+      "wood",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "kids-01",
+    "file": "/background-library/kids/kids-01.webp",
+    "enabled": true,
+    "category": "kids",
+    "photoId": "8429900",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/8429900/",
+    "originalImageUrl": "https://images.pexels.com/photos/8429900/pexels-photo-8429900.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Yan Krukau",
+    "scene": "밝고 안전한 실내 놀이방에서 함께 노는 아이들"
+  },
+  {
+    "subcategories": [
+      "baby",
+      "toy",
+      "kids-fashion",
+      "parenting"
+    ],
+    "industries": [
+      "kids",
+      "parenting"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "problem_solution",
+      "situation"
+    ],
+    "ageGroups": [
+      "kids",
+      "family",
+      "thirties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 3,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "행복",
+    "personAction": "거실에서 아이를 안고 놂",
+    "mood": [
+      "따뜻한",
+      "안전한",
+      "사랑스러운"
+    ],
+    "elements": [
+      "family",
+      "living-room",
+      "play"
+    ],
+    "colors": [
+      "white",
+      "wood",
+      "pastel"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "kids-02",
+    "file": "/background-library/kids/kids-02.webp",
+    "enabled": true,
+    "category": "kids",
+    "photoId": "7220931",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/7220931/",
+    "originalImageUrl": "https://images.pexels.com/photos/7220931/pexels-photo-7220931.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pavel Danilyuk",
+    "scene": "따뜻한 거실에서 아이와 교감하는 부모"
+  },
+  {
+    "subcategories": [
+      "baby",
+      "toy",
+      "kids-fashion",
+      "parenting"
+    ],
+    "industries": [
+      "kids",
+      "parenting"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "convenience",
+      "family"
+    ],
+    "ageGroups": [
+      "kids"
+    ],
+    "peopleType": [
+      "child"
+    ],
+    "peopleCount": 3,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "집중과 즐거움",
+    "personAction": "교구와 장난감으로 함께 놂",
+    "mood": [
+      "컬러풀",
+      "활기찬",
+      "교육적"
+    ],
+    "elements": [
+      "playroom",
+      "toy",
+      "blocks"
+    ],
+    "colors": [
+      "pastel",
+      "yellow",
+      "blue"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "kids-03",
+    "file": "/background-library/kids/kids-03.webp",
+    "enabled": true,
+    "category": "kids",
+    "photoId": "8422169",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/8422169/",
+    "originalImageUrl": "https://images.pexels.com/photos/8422169/pexels-photo-8422169.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pavel Danilyuk",
+    "scene": "컬러풀한 교구가 있는 자연스러운 어린이 놀이 공간"
+  },
+  {
+    "subcategories": [
+      "baby",
+      "toy",
+      "kids-fashion",
+      "parenting"
+    ],
+    "industries": [
+      "kids",
+      "parenting"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "family",
+      "problem_solution"
+    ],
+    "ageGroups": [
+      "kids"
+    ],
+    "peopleType": [
+      "child"
+    ],
+    "peopleCount": 2,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "실내 놀이 구조물을 오르며 놂",
+    "mood": [
+      "활동적인",
+      "안전한",
+      "밝은"
+    ],
+    "elements": [
+      "indoor-playground",
+      "wood",
+      "slide"
+    ],
+    "colors": [
+      "wood",
+      "white",
+      "pastel"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "kids-04",
+    "file": "/background-library/kids/kids-04.webp",
+    "enabled": true,
+    "category": "kids",
+    "photoId": "8430255",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/8430255/",
+    "originalImageUrl": "https://images.pexels.com/photos/8430255/pexels-photo-8430255.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Yan Krukau",
+    "scene": "모던한 실내 놀이터에서 활동하는 아이들"
+  },
+  {
+    "id": "living-01",
+    "file": "/background-library/living/living-01.webp",
+    "enabled": true,
+    "category": "living",
+    "subcategories": [
+      "cleaning",
+      "kitchen",
+      "bedding",
+      "home-decor",
+      "appliance"
+    ],
+    "industries": [
+      "living",
+      "home"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "origin_story",
+      "gifting",
+      "problem_solution",
+      "convenience",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "높은 천장과 우드 포인트의 모던 거실",
+    "mood": [
+      "편안한",
+      "고급스러운",
+      "밝은"
+    ],
+    "elements": [
+      "거실",
+      "소파",
+      "커피테이블",
+      "자연광"
+    ],
+    "colors": [
+      "cream",
+      "wood",
+      "gray"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/modern-living-room-9976128/",
+    "originalImageUrl": "https://images.pexels.com/photos/9976128/pexels-photo-9976128.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:20.329Z"
+  },
+  {
+    "id": "living-02",
+    "file": "/background-library/living/living-02.webp",
+    "enabled": true,
+    "category": "living",
+    "subcategories": [
+      "cleaning",
+      "kitchen",
+      "bedding",
+      "home-decor",
+      "appliance"
+    ],
+    "industries": [
+      "living",
+      "home"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "sensory",
+      "situation",
+      "origin_story",
+      "problem_solution",
+      "convenience",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "파스텔 아트와 뉴트럴 소파의 미니멀 거실",
+    "mood": [
+      "차분한",
+      "세련된",
+      "부드러운"
+    ],
+    "elements": [
+      "소파",
+      "월아트",
+      "러그",
+      "우드플로어"
+    ],
+    "colors": [
+      "beige",
+      "pastel",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/interior-of-a-modern-living-room-26732551/",
+    "originalImageUrl": "https://images.pexels.com/photos/26732551/pexels-photo-26732551.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:20.309Z"
+  },
+  {
+    "id": "living-03",
+    "file": "/background-library/living/living-03.webp",
+    "enabled": true,
+    "category": "living",
+    "subcategories": [
+      "cleaning",
+      "kitchen",
+      "bedding",
+      "home-decor",
+      "appliance"
+    ],
+    "industries": [
+      "living",
+      "home"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "review_ugc",
+      "convenience",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "커튼과 우드 테이블이 있는 넓은 거실",
+    "mood": [
+      "따뜻한",
+      "일상적",
+      "신뢰감"
+    ],
+    "elements": [
+      "소파",
+      "테이블",
+      "커튼",
+      "조명"
+    ],
+    "colors": [
+      "cream",
+      "wood",
+      "warm-gray"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/interior-of-living-room-with-table-7195737/",
+    "originalImageUrl": "https://images.pexels.com/photos/7195737/pexels-photo-7195737.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:20.652Z"
+  },
+  {
+    "id": "living-04",
+    "file": "/background-library/living/living-04.webp",
+    "enabled": true,
+    "category": "living",
+    "subcategories": [
+      "cleaning",
+      "kitchen",
+      "bedding",
+      "home-decor",
+      "appliance"
+    ],
+    "industries": [
+      "living",
+      "home"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "problem_solution",
+      "sensory",
+      "situation",
+      "convenience",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "자연광과 뉴트럴 톤의 모던 침실",
+    "mood": [
+      "편안한",
+      "깨끗한",
+      "고요한"
+    ],
+    "elements": [
+      "침실",
+      "침구",
+      "자연광",
+      "플랜트"
+    ],
+    "colors": [
+      "white",
+      "beige",
+      "green"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/interior-of-a-modern-minimalist-bedroom-19889122/",
+    "originalImageUrl": "https://images.pexels.com/photos/19889122/pexels-photo-19889122.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:21.025Z"
+  },
+  {
+    "id": "living-05",
+    "file": "/background-library/living/living-05.webp",
+    "enabled": true,
+    "category": "living",
+    "subcategories": [
+      "cleaning",
+      "kitchen",
+      "bedding",
+      "home-decor",
+      "appliance"
+    ],
+    "industries": [
+      "living",
+      "home"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "problem_solution",
+      "situation",
+      "convenience",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "우드 아일랜드와 수납이 정돈된 현대 주방",
+    "mood": [
+      "기능적",
+      "밝은",
+      "모던"
+    ],
+    "elements": [
+      "주방",
+      "아일랜드",
+      "우드",
+      "수납"
+    ],
+    "colors": [
+      "wood",
+      "white",
+      "gray"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/interior-of-a-modern-kitchen-19192264/",
+    "originalImageUrl": "https://images.pexels.com/photos/19192264/pexels-photo-19192264.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:20.954Z"
+  },
+  {
+    "id": "living-06",
+    "file": "/background-library/living/living-06.webp",
+    "enabled": true,
+    "category": "living",
+    "subcategories": [
+      "cleaning",
+      "kitchen",
+      "bedding",
+      "home-decor",
+      "appliance"
+    ],
+    "industries": [
+      "living",
+      "home"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "sensory",
+      "gifting",
+      "origin_story",
+      "problem_solution",
+      "convenience",
+      "situation"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "베이지 침구와 창가가 있는 미니멀 침실",
+    "mood": [
+      "부드러운",
+      "안정적",
+      "내추럴"
+    ],
+    "elements": [
+      "침구",
+      "창",
+      "러그",
+      "우드선반"
+    ],
+    "colors": [
+      "beige",
+      "white",
+      "wood"
+    ],
+    "productPosition": "center-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/minimal-bedroom-interior-design-10827372/",
+    "originalImageUrl": "https://images.pexels.com/photos/10827372/pexels-photo-10827372.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:21.353Z"
+  },
+  {
+    "id": "meat-01",
+    "file": "/background-library/meat/meat-01.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "price_offer",
+      "review_ugc",
+      "sensory",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "우드 테이블과 그레이 벽의 세련된 빈 레스토랑",
+    "mood": [
+      "차분한",
+      "현대적",
+      "정돈된"
+    ],
+    "elements": [
+      "우드테이블",
+      "그레이벽",
+      "소파",
+      "식기"
+    ],
+    "colors": [
+      "gray",
+      "wood",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/empty-seats-at-a-restaurant-5865649/",
+    "originalImageUrl": "https://images.pexels.com/photos/5865649/pexels-photo-5865649.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:18:10.214Z"
+  },
+  {
+    "id": "meat-02",
+    "file": "/background-library/meat/meat-02.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "review_ugc",
+      "situation",
+      "origin_story",
+      "sensory",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "유리 테이블과 자연광의 모던 레스토랑",
+    "mood": [
+      "밝은",
+      "세련된",
+      "신뢰감"
+    ],
+    "elements": [
+      "다이닝",
+      "자연광",
+      "우드체어",
+      "창"
+    ],
+    "colors": [
+      "white",
+      "wood",
+      "green"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/photo-of-an-empty-restaurant-8753779/",
+    "originalImageUrl": "https://images.pexels.com/photos/8753779/pexels-photo-8753779.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:18:09.564Z"
+  },
+  {
+    "id": "meat-03",
+    "file": "/background-library/meat/meat-03.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "gifting",
+      "urgency",
+      "origin_story",
+      "sensory",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "화이트 리넨과 우드 체어의 고급 다이닝 테이블",
+    "mood": [
+      "고급스러운",
+      "따뜻한",
+      "기념일"
+    ],
+    "elements": [
+      "테이블",
+      "리넨",
+      "우드체어",
+      "간접조명"
+    ],
+    "colors": [
+      "cream",
+      "wood",
+      "brown"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/elegant-empty-restaurant-table-setting-indoors-28593085/",
+    "originalImageUrl": "https://images.pexels.com/photos/28593085/pexels-photo-28593085.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:18:09.564Z"
+  },
+  {
+    "id": "meat-04",
+    "file": "/background-library/meat/meat-04.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "situation",
+      "problem_solution",
+      "review_ugc",
+      "sensory",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "큰 창과 식물이 있는 캐주얼 레스토랑",
+    "mood": [
+      "편안한",
+      "자연스러운",
+      "밝은"
+    ],
+    "elements": [
+      "테이블",
+      "플랜트",
+      "큰창",
+      "우드체어"
+    ],
+    "colors": [
+      "green",
+      "wood",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/empty-tables-and-chairs-in-restaurant-18995454/",
+    "originalImageUrl": "https://images.pexels.com/photos/18995454/pexels-photo-18995454.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:18:09.784Z"
+  },
+  {
+    "id": "meat-05",
+    "file": "/background-library/meat/meat-05.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "usp_proof",
+      "urgency",
+      "sensory",
+      "premium",
+      "family",
+      "price_offer"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "핑크 체어와 마블 테이블의 트렌디한 카페",
+    "mood": [
+      "트렌디",
+      "화사한",
+      "감각적"
+    ],
+    "elements": [
+      "마블테이블",
+      "핑크체어",
+      "플랜트",
+      "조명"
+    ],
+    "colors": [
+      "pink",
+      "green",
+      "marble"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/empty-tables-at-a-restaurant-8471338/",
+    "originalImageUrl": "https://images.pexels.com/photos/8471338/pexels-photo-8471338.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:18:09.818Z"
+  },
+  {
+    "id": "meat-06",
+    "file": "/background-library/meat/meat-06.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "gifting",
+      "situation",
+      "origin_story",
+      "sensory",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "도시 전망과 원형 테이블의 아늑한 다이닝",
+    "mood": [
+      "아늑한",
+      "프리미엄",
+      "도시적"
+    ],
+    "elements": [
+      "원형테이블",
+      "창",
+      "램프",
+      "소파"
+    ],
+    "colors": [
+      "beige",
+      "brown",
+      "gray"
+    ],
+    "productPosition": "center-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/empty-table-in-restaurant-14547472/",
+    "originalImageUrl": "https://images.pexels.com/photos/14547472/pexels-photo-14547472.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:18:09.988Z"
+  },
+  {
+    "id": "meat-07",
+    "file": "/background-library/meat/meat-07.webp",
+    "localSourceFile": "/background-library/meat/meat-07.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "sensory",
+      "situation",
+      "problem_solution",
+      "premium",
+      "family",
+      "price_offer"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "숯불과 연기가 살아 있는 빈 고기 불판",
+    "mood": [
+      "먹음직스러운",
+      "뜨거운",
+      "프리미엄"
+    ],
+    "elements": [
+      "숯불",
+      "불판",
+      "연기",
+      "불빛",
+      "검은석재"
+    ],
+    "colors": [
+      "black",
+      "amber",
+      "charcoal"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "숯불과 연기가 살아 있는 빈 고기 불판. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "meat-08",
+    "file": "/background-library/meat/meat-08.webp",
+    "localSourceFile": "/background-library/meat/meat-08.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "usp_proof",
+      "gifting",
+      "origin_story",
+      "review_ugc",
+      "sensory",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "월넛 보드와 블랙 스톤의 프리미엄 정육 스튜디오",
+    "mood": [
+      "고급스러운",
+      "묵직한",
+      "신뢰감"
+    ],
+    "elements": [
+      "월넛보드",
+      "블랙스톤",
+      "레드림라이트",
+      "미스트",
+      "여백"
+    ],
+    "colors": [
+      "black",
+      "walnut",
+      "deep-red"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "dark",
+    "contrast": "high",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "월넛 보드와 블랙 스톤의 프리미엄 정육 스튜디오. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "meat-09",
+    "file": "/background-library/meat/meat-09.webp",
+    "localSourceFile": "/background-library/meat/meat-09.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "situation",
+      "review_ugc",
+      "problem_solution",
+      "sensory",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "빈 불판과 식기가 놓인 따뜻한 한식 테이블",
+    "mood": [
+      "푸짐한",
+      "따뜻한",
+      "현실적인"
+    ],
+    "elements": [
+      "한식테이블",
+      "빈불판",
+      "식기",
+      "원목",
+      "스팀"
+    ],
+    "colors": [
+      "wood",
+      "amber",
+      "charcoal"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "빈 불판과 식기가 놓인 따뜻한 한식 테이블. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "meat-10",
+    "file": "/background-library/meat/meat-10.webp",
+    "localSourceFile": "/background-library/meat/meat-10.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "sensory",
+      "situation",
+      "review_ugc",
+      "price_offer",
+      "premium",
+      "family"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "man"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "left",
+    "personGaze": "right",
+    "personEmotion": "만족",
+    "personAction": "식탁에서 한입 맛봄",
+    "scene": "한우를 한입 맛보는 남성 식탁 장면",
+    "mood": [
+      "먹음직스러운",
+      "따뜻한",
+      "설득력있는"
+    ],
+    "elements": [
+      "한우",
+      "불판",
+      "젓가락",
+      "오른쪽 가격 여백"
+    ],
+    "colors": [
+      "deep-red",
+      "charcoal",
+      "amber"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-right",
+    "focalArea": "left_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "국대한우",
+      "대한한우",
+      "kookdae"
+    ],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Person Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "한우를 한입 맛보는 남성 식탁 장면. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "meat-11",
+    "file": "/background-library/meat/meat-11.webp",
+    "localSourceFile": "/background-library/meat/meat-11.webp",
+    "enabled": true,
+    "category": "meat",
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "gifting",
+      "situation",
+      "review_ugc",
+      "origin_story",
+      "sensory",
+      "premium"
+    ],
+    "ageGroups": [
+      "thirties",
+      "forties",
+      "couple",
+      "family"
+    ],
+    "peopleType": [
+      "couple",
+      "family"
+    ],
+    "peopleCount": 2,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "즐거움",
+    "personAction": "함께 가족 식사를 준비함",
+    "scene": "가족 식사를 준비하는 부부의 따뜻한 장면",
+    "mood": [
+      "따뜻한",
+      "푸짐한",
+      "선물하기좋은"
+    ],
+    "elements": [
+      "가족",
+      "식탁",
+      "한식",
+      "왼쪽 문구 여백"
+    ],
+    "colors": [
+      "cream",
+      "wood",
+      "amber"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [
+      "국대한우",
+      "대한한우",
+      "kookdae"
+    ],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Person Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "가족 식사를 준비하는 부부의 따뜻한 장면. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "subcategories": [
+      "beef",
+      "pork",
+      "chicken",
+      "gift-set"
+    ],
+    "industries": [
+      "meat",
+      "food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "sensory",
+      "family"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties",
+      "friends"
+    ],
+    "peopleType": [
+      "friends"
+    ],
+    "peopleCount": 3,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "즐거움",
+    "personAction": "캠핑 그릴 주변에서 대화함",
+    "mood": [
+      "즐거운",
+      "야외",
+      "따뜻한"
+    ],
+    "elements": [
+      "camping",
+      "barbecue",
+      "forest",
+      "fire"
+    ],
+    "colors": [
+      "green",
+      "brown",
+      "orange"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "dark",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "meat-12",
+    "file": "/background-library/meat/meat-12.webp",
+    "enabled": true,
+    "category": "meat",
+    "photoId": "13991787",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/13991787/",
+    "originalImageUrl": "https://images.pexels.com/photos/13991787/pexels-photo-13991787.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Matheus Bertelli",
+    "scene": "숲속 캠핑장에서 친구들이 바비큐를 즐기는 장면"
+  },
+  {
+    "subcategories": [
+      "pet-food",
+      "pet-snack",
+      "pet-care",
+      "pet-toy"
+    ],
+    "industries": [
+      "pet",
+      "living"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "family",
+      "problem_solution"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "평온함",
+    "personAction": "공원에서 반려견과 산책함",
+    "mood": [
+      "평온한",
+      "따뜻한",
+      "자연스러운"
+    ],
+    "elements": [
+      "dog",
+      "park",
+      "sunset"
+    ],
+    "colors": [
+      "green",
+      "gold",
+      "blue"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "pet-01",
+    "file": "/background-library/pet/pet-01.webp",
+    "enabled": true,
+    "category": "pet",
+    "photoId": "34587707",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/34587707/",
+    "originalImageUrl": "https://images.pexels.com/photos/34587707/pexels-photo-34587707.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Jonathan Cooper",
+    "scene": "노을빛 공원에서 반려견과 산책하는 넓은 장면"
+  },
+  {
+    "subcategories": [
+      "pet-food",
+      "pet-snack",
+      "pet-care",
+      "pet-toy"
+    ],
+    "industries": [
+      "pet",
+      "living"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "family",
+      "convenience"
+    ],
+    "ageGroups": [
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "man"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "편안함",
+    "personAction": "공원에서 반려견들과 산책함",
+    "mood": [
+      "밝은",
+      "건강한",
+      "편안한"
+    ],
+    "elements": [
+      "dogs",
+      "park",
+      "sunlight"
+    ],
+    "colors": [
+      "green",
+      "brown",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "pet-02",
+    "file": "/background-library/pet/pet-02.webp",
+    "enabled": true,
+    "category": "pet",
+    "photoId": "9354904",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/9354904/",
+    "originalImageUrl": "https://images.pexels.com/photos/9354904/pexels-photo-9354904.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "PNW Production",
+    "scene": "햇살 드는 공원길에서 여러 반려견과 걷는 장면"
+  },
+  {
+    "subcategories": [
+      "pet-food",
+      "pet-snack",
+      "pet-care",
+      "pet-toy"
+    ],
+    "industries": [
+      "pet",
+      "living"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "problem_solution",
+      "situation",
+      "family"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "man"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "평온함",
+    "personAction": "반려견과 숲길 산책 중 쉬고 있음",
+    "mood": [
+      "차분한",
+      "자연스러운",
+      "신뢰감"
+    ],
+    "elements": [
+      "dog",
+      "forest-path",
+      "leash"
+    ],
+    "colors": [
+      "green",
+      "brown",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "pet-03",
+    "file": "/background-library/pet/pet-03.webp",
+    "enabled": true,
+    "category": "pet",
+    "photoId": "4355776",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/4355776/",
+    "originalImageUrl": "https://images.pexels.com/photos/4355776/pexels-photo-4355776.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Vova Kras",
+    "scene": "숲길에서 보호자와 차분히 쉬는 반려견"
+  },
+  {
+    "subcategories": [
+      "pet-food",
+      "pet-snack",
+      "pet-care",
+      "pet-toy"
+    ],
+    "industries": [
+      "pet",
+      "living"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "family",
+      "review_ugc"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "away",
+    "personEmotion": "편안함",
+    "personAction": "들판에서 반려견과 산책함",
+    "mood": [
+      "여유로운",
+      "자연스러운",
+      "밝은"
+    ],
+    "elements": [
+      "dog",
+      "meadow",
+      "trees"
+    ],
+    "colors": [
+      "green",
+      "blue",
+      "brown"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "pet-04",
+    "file": "/background-library/pet/pet-04.webp",
+    "enabled": true,
+    "category": "pet",
+    "photoId": "6966028",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/6966028/",
+    "originalImageUrl": "https://images.pexels.com/photos/6966028/pexels-photo-6966028.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Mathias Reding",
+    "scene": "초록 들판에서 반려견과 산책하는 여유로운 장면"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "situation",
+      "sensory"
+    ],
+    "ageGroups": [
+      "kids",
+      "family",
+      "thirties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 4,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "가족과 함께 간식을 먹음",
+    "mood": [
+      "밝은",
+      "따뜻한",
+      "즐거운"
+    ],
+    "elements": [
+      "kitchen",
+      "family",
+      "snack"
+    ],
+    "colors": [
+      "white",
+      "wood",
+      "warm-light"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-01",
+    "file": "/background-library/processed-food/processed-food-01.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "3752857",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/3752857/",
+    "originalImageUrl": "https://images.pexels.com/photos/3752857/pexels-photo-3752857.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Andrea Piacquadio",
+    "scene": "밝은 주방에서 간식을 즐기는 아이와 가족"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "situation",
+      "convenience"
+    ],
+    "ageGroups": [
+      "kids",
+      "family",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 4,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "즐거움",
+    "personAction": "주방에서 간식을 준비하고 나눔",
+    "mood": [
+      "따뜻한",
+      "활기찬",
+      "현실적인"
+    ],
+    "elements": [
+      "kitchen",
+      "family",
+      "snack"
+    ],
+    "colors": [
+      "red",
+      "white",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-02",
+    "file": "/background-library/processed-food/processed-food-02.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "5593117",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/5593117/",
+    "originalImageUrl": "https://images.pexels.com/photos/5593117/pexels-photo-5593117.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "RDNE Stock project",
+    "scene": "모던 주방에서 가족이 함께 간식을 나누는 장면"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "review_ugc",
+      "convenience"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "front",
+    "personEmotion": "편안한 미소",
+    "personAction": "소파에서 간식을 즐김",
+    "mood": [
+      "편안한",
+      "컬러풀",
+      "일상적"
+    ],
+    "elements": [
+      "living-room",
+      "sofa",
+      "snack"
+    ],
+    "colors": [
+      "blue",
+      "orange",
+      "green"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-03",
+    "file": "/background-library/processed-food/processed-food-03.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "36764813",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/36764813/",
+    "originalImageUrl": "https://images.pexels.com/photos/36764813/pexels-photo-36764813.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Vitaly Gariev",
+    "scene": "컬러풀한 거실에서 간식을 즐기는 자연스러운 장면"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "sensory",
+      "premium",
+      "situation"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "달콤한",
+      "아늑한",
+      "따뜻한"
+    ],
+    "elements": [
+      "dessert",
+      "coffee",
+      "wood-table"
+    ],
+    "colors": [
+      "brown",
+      "cream",
+      "red"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-04",
+    "file": "/background-library/processed-food/processed-food-04.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "15419503",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/15419503/",
+    "originalImageUrl": "https://images.pexels.com/photos/15419503/pexels-photo-15419503.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Nadin Sh",
+    "scene": "원목 테이블의 커피와 디저트가 있는 홈카페 장면"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "family",
+      "convenience",
+      "situation"
+    ],
+    "ageGroups": [
+      "kids",
+      "family",
+      "thirties",
+      "forties"
+    ],
+    "peopleType": [
+      "family",
+      "parent_child"
+    ],
+    "peopleCount": 4,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "즐거움",
+    "personAction": "가족이 함께 음식을 준비함",
+    "mood": [
+      "건강한",
+      "밝은",
+      "즐거운"
+    ],
+    "elements": [
+      "kitchen",
+      "family",
+      "cooking"
+    ],
+    "colors": [
+      "white",
+      "green",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-05",
+    "file": "/background-library/processed-food/processed-food-05.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "8507651",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/8507651/",
+    "originalImageUrl": "https://images.pexels.com/photos/8507651/pexels-photo-8507651.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Kampus Production",
+    "scene": "스타일리시한 주방에서 함께 요리하는 가족"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "sensory",
+      "premium",
+      "situation"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "아늑한",
+      "감성적인",
+      "따뜻한"
+    ],
+    "elements": [
+      "wood-table",
+      "linen",
+      "saucer",
+      "berries",
+      "window-light"
+    ],
+    "colors": [
+      "brown",
+      "cream",
+      "red"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-06",
+    "file": "/background-library/processed-food/processed-food-06.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "localSourceFile": "/background-library/processed-food/processed-food-06.webp",
+    "sourceType": "ai_generated",
+    "sourceName": "OpenAI ImageGen",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "generationModel": "OpenAI ImageGen",
+    "generationPrompt": "Photorealistic art-directed commercial advertising background for processed food: warm modern home-cafe, natural wood table, linen, ceramic saucer, berries at the far edge, afternoon window light, product-safe lower right and copy-safe upper left, no product, package, logo, text, price or watermark.",
+    "generatedAt": "2026-08-06T14:45:00.000Z",
+    "reviewed": true,
+    "scene": "따뜻한 홈카페 테이블과 자연광이 있는 범용 디저트 배경"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "convenience",
+      "situation",
+      "review_ugc"
+    ],
+    "ageGroups": [
+      "twenties",
+      "thirties"
+    ],
+    "peopleType": [
+      "woman",
+      "office_worker"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "집중",
+    "personAction": "노트북을 쓰며 간식을 먹음",
+    "mood": [
+      "현실적인",
+      "편안한",
+      "캐주얼"
+    ],
+    "elements": [
+      "home-office",
+      "sofa",
+      "snack"
+    ],
+    "colors": [
+      "beige",
+      "white",
+      "wood"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-07",
+    "file": "/background-library/processed-food/processed-food-07.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "7801204",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/7801204/",
+    "originalImageUrl": "https://images.pexels.com/photos/7801204/pexels-photo-7801204.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pavel Danilyuk",
+    "scene": "재택 업무 중 간식을 곁에 둔 편안한 거실"
+  },
+  {
+    "subcategories": [
+      "snack",
+      "beverage",
+      "dessert",
+      "meal-kit",
+      "hmr"
+    ],
+    "industries": [
+      "processed-food",
+      "food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "sensory",
+      "situation",
+      "premium"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "여유로운",
+      "따뜻한",
+      "감각적인"
+    ],
+    "elements": [
+      "outdoor-table",
+      "dessert",
+      "coffee",
+      "sunlight"
+    ],
+    "colors": [
+      "gold",
+      "brown",
+      "blue"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "processed-food-08",
+    "file": "/background-library/processed-food/processed-food-08.webp",
+    "enabled": true,
+    "category": "processed-food",
+    "photoId": "29300015",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/29300015/",
+    "originalImageUrl": "https://images.pexels.com/photos/29300015/pexels-photo-29300015.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Ali Dashti",
+    "scene": "햇빛 아래 디저트와 커피가 놓인 야외 테이블"
+  },
+  {
+    "id": "promotion-01",
+    "file": "/background-library/promotion/promotion-01.webp",
+    "enabled": true,
+    "category": "promotion",
+    "subcategories": [
+      "sale",
+      "new-product",
+      "shipping",
+      "seasonal"
+    ],
+    "industries": [
+      "promotion",
+      "commerce"
+    ],
+    "assetType": "product_set",
+    "hookTypes": [
+      "price_offer",
+      "usp_proof",
+      "urgency",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "레드 원형 단상과 그레이 배경의 미니멀 스튜디오",
+    "mood": [
+      "대담한",
+      "현대적",
+      "전환형"
+    ],
+    "elements": [
+      "단상",
+      "그레이월",
+      "레드포인트",
+      "기하학"
+    ],
+    "colors": [
+      "red",
+      "gray",
+      "wood"
+    ],
+    "productPosition": "center-right",
+    "textSafeArea": "center-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/blank-frame-placed-on-round-stand-7319315/",
+    "originalImageUrl": "https://images.pexels.com/photos/7319315/pexels-photo-7319315.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Pexels contributor (see source page)",
+    "downloadedAt": "2026-08-05T14:17:22.665Z"
+  },
+  {
+    "id": "promotion-02",
+    "file": "/background-library/promotion/promotion-02.webp",
+    "localSourceFile": "/background-library/promotion/promotion-02.webp",
+    "enabled": true,
+    "category": "promotion",
+    "subcategories": [
+      "sale",
+      "new-product",
+      "shipping",
+      "seasonal"
+    ],
+    "industries": [
+      "promotion",
+      "commerce"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "price_offer",
+      "urgency",
+      "gifting",
+      "usp_proof"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "오렌지 팝 컬러의 역동적인 프로모션 단상",
+    "mood": [
+      "강한",
+      "경쾌한",
+      "전환형"
+    ],
+    "elements": [
+      "오렌지그라데이션",
+      "단상",
+      "하프톤",
+      "사선",
+      "CTA영역"
+    ],
+    "colors": [
+      "orange",
+      "cream",
+      "black"
+    ],
+    "productPosition": "bottom-center",
+    "textSafeArea": "top-center",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "오렌지 팝 컬러의 역동적인 프로모션 단상. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "promotion-03",
+    "file": "/background-library/promotion/promotion-03.webp",
+    "localSourceFile": "/background-library/promotion/promotion-03.webp",
+    "enabled": true,
+    "category": "promotion",
+    "subcategories": [
+      "sale",
+      "new-product",
+      "shipping",
+      "seasonal"
+    ],
+    "industries": [
+      "promotion",
+      "commerce"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "usp_proof",
+      "review_ugc",
+      "origin_story",
+      "price_offer",
+      "urgency",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "에메랄드 스포트라이트가 있는 블랙 제품 스튜디오",
+    "mood": [
+      "대담한",
+      "신뢰감",
+      "집중되는"
+    ],
+    "elements": [
+      "블랙스튜디오",
+      "스포트라이트",
+      "에메랄드글로우",
+      "라이트풀",
+      "반사바닥"
+    ],
+    "colors": [
+      "black",
+      "emerald",
+      "teal"
+    ],
+    "productPosition": "bottom-center",
+    "textSafeArea": "top-center",
+    "focalArea": "center",
+    "brightness": "dark",
+    "contrast": "high",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "에메랄드 스포트라이트가 있는 블랙 제품 스튜디오. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "id": "promotion-04",
+    "file": "/background-library/promotion/promotion-04.webp",
+    "localSourceFile": "/background-library/promotion/promotion-04.webp",
+    "enabled": true,
+    "category": "promotion",
+    "subcategories": [
+      "sale",
+      "new-product",
+      "shipping",
+      "seasonal"
+    ],
+    "industries": [
+      "promotion",
+      "commerce"
+    ],
+    "assetType": "ai_generated",
+    "hookTypes": [
+      "price_offer",
+      "usp_proof",
+      "review_ugc",
+      "urgency",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "scene": "화이트·레드·블랙의 고대비 커머스 단상",
+    "mood": [
+      "직접적인",
+      "깔끔한",
+      "신뢰감"
+    ],
+    "elements": [
+      "화이트스튜디오",
+      "레드밴드",
+      "블랙블록",
+      "투명단상",
+      "CTA영역"
+    ],
+    "colors": [
+      "white",
+      "red",
+      "black"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "dark",
+    "contrast": "high",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "sourceType": "ai_generated",
+    "sourceName": "AdAtlas Hook Base",
+    "sourcePageUrl": "",
+    "originalImageUrl": "",
+    "licenseUrl": "",
+    "authorName": "AdAtlas",
+    "downloadedAt": "2026-08-06T00:00:00.000Z",
+    "generationModel": "OpenAI image model (legacy asset)",
+    "generationPrompt": "화이트·레드·블랙의 고대비 커머스 단상. Commercial advertising background, square composition, product and copy safe areas, no product, no package, no brand logo, no text, no price, no watermark.",
+    "generatedAt": "2026-08-06T00:00:00.000Z",
+    "reviewed": true
+  },
+  {
+    "subcategories": [
+      "fish",
+      "sashimi",
+      "shellfish",
+      "dried-seafood"
+    ],
+    "industries": [
+      "seafood",
+      "fresh-food"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "freshness",
+      "sensory",
+      "origin_story"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "신선한",
+      "차가운",
+      "선명한"
+    ],
+    "elements": [
+      "fish",
+      "ice",
+      "water"
+    ],
+    "colors": [
+      "silver",
+      "blue",
+      "white"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "seafood-01",
+    "file": "/background-library/seafood/seafood-01.webp",
+    "enabled": true,
+    "category": "seafood",
+    "photoId": "34996887",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/34996887/",
+    "originalImageUrl": "https://images.pexels.com/photos/34996887/pexels-photo-34996887.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "LG Đạt",
+    "scene": "얼음 위에 신선한 생선이 정돈된 수산 촬영 장면"
+  },
+  {
+    "subcategories": [
+      "fish",
+      "sashimi",
+      "shellfish",
+      "dried-seafood"
+    ],
+    "industries": [
+      "seafood",
+      "fresh-food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "origin_story",
+      "freshness",
+      "situation"
+    ],
+    "ageGroups": [
+      "thirties",
+      "forties",
+      "fifties"
+    ],
+    "peopleType": [
+      "man"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "집중",
+    "personAction": "수산시장에서 상품을 살펴봄",
+    "mood": [
+      "현장감",
+      "신선한",
+      "활기찬"
+    ],
+    "elements": [
+      "seafood-market",
+      "ice",
+      "market"
+    ],
+    "colors": [
+      "blue",
+      "gray",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "seafood-02",
+    "file": "/background-library/seafood/seafood-02.webp",
+    "enabled": true,
+    "category": "seafood",
+    "photoId": "1838594",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/1838594/",
+    "originalImageUrl": "https://images.pexels.com/photos/1838594/pexels-photo-1838594.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Elina Sazonova",
+    "scene": "현장감과 깊이가 있는 활기찬 수산시장"
+  },
+  {
+    "subcategories": [
+      "fish",
+      "sashimi",
+      "shellfish",
+      "dried-seafood"
+    ],
+    "industries": [
+      "seafood",
+      "fresh-food"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "freshness",
+      "sensory",
+      "usp_proof"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "신선한",
+      "깨끗한",
+      "차가운"
+    ],
+    "elements": [
+      "fish",
+      "ice",
+      "steel"
+    ],
+    "colors": [
+      "silver",
+      "red",
+      "ice"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "seafood-03",
+    "file": "/background-library/seafood/seafood-03.webp",
+    "enabled": true,
+    "category": "seafood",
+    "photoId": "17205219",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/17205219/",
+    "originalImageUrl": "https://images.pexels.com/photos/17205219/pexels-photo-17205219.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Andrea Mosti",
+    "scene": "얼음과 스테인리스 재질이 살아 있는 신선 수산물 세트"
+  },
+  {
+    "subcategories": [
+      "fish",
+      "sashimi",
+      "shellfish",
+      "dried-seafood"
+    ],
+    "industries": [
+      "seafood",
+      "fresh-food"
+    ],
+    "assetType": "lifestyle_photo",
+    "hookTypes": [
+      "origin_story",
+      "freshness",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "풍성한",
+      "현장감",
+      "신선한"
+    ],
+    "elements": [
+      "market",
+      "fish",
+      "ice"
+    ],
+    "colors": [
+      "silver",
+      "blue",
+      "brown"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-right",
+    "focalArea": "center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "seafood-04",
+    "file": "/background-library/seafood/seafood-04.webp",
+    "enabled": true,
+    "category": "seafood",
+    "photoId": "19443554",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/19443554/",
+    "originalImageUrl": "https://images.pexels.com/photos/19443554/pexels-photo-19443554.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Mehmet Turgut Kirkgoz",
+    "scene": "다양한 어종과 얼음이 보이는 산지 수산시장"
+  },
+  {
+    "subcategories": [
+      "fish",
+      "sashimi",
+      "shellfish",
+      "dried-seafood"
+    ],
+    "industries": [
+      "seafood",
+      "fresh-food"
+    ],
+    "assetType": "people_photo",
+    "hookTypes": [
+      "situation",
+      "freshness",
+      "origin_story"
+    ],
+    "ageGroups": [
+      "thirties",
+      "forties",
+      "family"
+    ],
+    "peopleType": [
+      "woman"
+    ],
+    "peopleCount": 1,
+    "includesPerson": true,
+    "personPosition": "right",
+    "personGaze": "left",
+    "personEmotion": "관심",
+    "personAction": "수산시장 진열대를 살펴봄",
+    "mood": [
+      "현실적인",
+      "활기찬",
+      "신선한"
+    ],
+    "elements": [
+      "seafood-market",
+      "crab",
+      "ice"
+    ],
+    "colors": [
+      "blue",
+      "orange",
+      "white"
+    ],
+    "productPosition": "bottom-left",
+    "textSafeArea": "top-left",
+    "focalArea": "right_center",
+    "brightness": "bright",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "seafood-05",
+    "file": "/background-library/seafood/seafood-05.webp",
+    "enabled": true,
+    "category": "seafood",
+    "photoId": "8352344",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/8352344/",
+    "originalImageUrl": "https://images.pexels.com/photos/8352344/pexels-photo-8352344.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Kindel Media",
+    "scene": "시장 진열대의 해산물과 자연스러운 장보기 장면"
+  },
+  {
+    "subcategories": [
+      "fish",
+      "sashimi",
+      "shellfish",
+      "dried-seafood"
+    ],
+    "industries": [
+      "seafood",
+      "fresh-food"
+    ],
+    "assetType": "ingredient_scene",
+    "hookTypes": [
+      "premium",
+      "freshness",
+      "gifting"
+    ],
+    "ageGroups": [
+      "no_people"
+    ],
+    "peopleType": [
+      "no_people"
+    ],
+    "peopleCount": 0,
+    "includesPerson": false,
+    "personPosition": "none",
+    "personGaze": "none",
+    "personEmotion": "",
+    "personAction": "",
+    "mood": [
+      "프리미엄",
+      "차가운",
+      "선명한"
+    ],
+    "elements": [
+      "lobster",
+      "shrimp",
+      "ice",
+      "water"
+    ],
+    "colors": [
+      "red",
+      "blue",
+      "silver"
+    ],
+    "productPosition": "bottom-right",
+    "textSafeArea": "top-left",
+    "focalArea": "center",
+    "brightness": "dark",
+    "contrast": "medium",
+    "orientation": "square",
+    "advertiserAliases": [],
+    "productKeywords": [],
+    "id": "seafood-06",
+    "file": "/background-library/seafood/seafood-06.webp",
+    "enabled": true,
+    "category": "seafood",
+    "photoId": "4571249",
+    "sourceType": "stock_photo",
+    "sourceName": "Pexels",
+    "sourcePageUrl": "https://www.pexels.com/photo/4571249/",
+    "originalImageUrl": "https://images.pexels.com/photos/4571249/pexels-photo-4571249.jpeg?auto=compress&cs=tinysrgb&w=2400",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "authorName": "Yan Stavchansky",
+    "scene": "얼음과 물방울이 있는 프리미엄 갑각류 촬영 세트"
+  }
+]

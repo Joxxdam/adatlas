@@ -1,0 +1,633 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-13T00:00:00.000Z",
+  "sourceStoreUrl": "https://originalsource.co.kr/category/%EC%87%BC%ED%95%91/91/",
+  "products": [
+    {
+      "id": "mint-tea-tree",
+      "name": "오리지널소스 민트 티트리 쿨링 샤워젤 · 바디워시 250ml",
+      "productId": "65",
+      "url": "https://originalsource.co.kr/product/오리지널소스-민트-티트리-쿨링-샤워젤-·-바디워시-250ml/65/category/91/display/1/",
+      "cutout": "/product-cutouts/original-source/mint-tea-tree-250ml.png",
+      "cutoutReferenceFiles": [
+        "민트젤 01 (1).jpg"
+      ],
+      "keywords": [
+        "민트",
+        "민트티트리",
+        "mintteatree",
+        "7927"
+      ],
+      "colors": [
+        "teal",
+        "navy",
+        "cyan",
+        "green"
+      ],
+      "cutoutSource": "user-supplied-reference-content",
+      "backgrounds": [
+        {
+          "id": "original-source-mint-tea-tree-01",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/01.webp",
+          "scene": "ingredient premium stage"
+        },
+        {
+          "id": "original-source-mint-tea-tree-02",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/02.webp",
+          "scene": "shower room"
+        },
+        {
+          "id": "original-source-mint-tea-tree-03",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/03.webp",
+          "scene": "ingredient splash"
+        },
+        {
+          "id": "original-source-mint-tea-tree-04",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/04.webp",
+          "scene": "editorial studio"
+        },
+        {
+          "id": "original-source-mint-tea-tree-05",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/05.webp",
+          "scene": "problem situation person"
+        },
+        {
+          "id": "original-source-mint-tea-tree-06",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/06.webp",
+          "scene": "lifestyle person"
+        },
+        {
+          "id": "original-source-mint-tea-tree-07",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/07.webp",
+          "scene": "ingredient flatlay"
+        },
+        {
+          "id": "original-source-mint-tea-tree-08",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/08.webp",
+          "scene": "outdoor origin scene"
+        },
+        {
+          "id": "original-source-mint-tea-tree-09",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/09.webp",
+          "scene": "premium dark stage"
+        },
+        {
+          "id": "original-source-mint-tea-tree-10",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/10.webp",
+          "scene": "clean bathroom"
+        },
+        {
+          "id": "original-source-mint-tea-tree-11",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/11.webp",
+          "scene": "review ugc cards"
+        },
+        {
+          "id": "original-source-mint-tea-tree-12",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/12.webp",
+          "scene": "problem solution abstract"
+        },
+        {
+          "id": "original-source-mint-tea-tree-13",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/13.webp",
+          "scene": "daily routine space"
+        },
+        {
+          "id": "original-source-mint-tea-tree-14",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/14.webp",
+          "scene": "seasonal lifestyle"
+        },
+        {
+          "id": "original-source-mint-tea-tree-15",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/15.webp",
+          "scene": "sensory macro"
+        },
+        {
+          "id": "original-source-mint-tea-tree-16",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/16.webp",
+          "scene": "ritual spa"
+        },
+        {
+          "id": "original-source-mint-tea-tree-17",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/17.webp",
+          "scene": "target audience person"
+        },
+        {
+          "id": "original-source-mint-tea-tree-18",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/18.webp",
+          "scene": "ingredient editorial"
+        },
+        {
+          "id": "original-source-mint-tea-tree-19",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/19.webp",
+          "scene": "promotion stage"
+        },
+        {
+          "id": "original-source-mint-tea-tree-20",
+          "file": "/background-library/beauty/original-source/mint-tea-tree/20.webp",
+          "scene": "sensory atmosphere"
+        }
+      ]
+    },
+    {
+      "id": "lemon-tea-tree",
+      "name": "오리지널소스 레몬 티트리 상쾌 샤워젤 · 바디워시 250ml",
+      "productId": "77",
+      "url": "https://originalsource.co.kr/product/오리지널소스-레몬-티트리-상쾌-샤워젤-·-바디워시-250ml/77/category/91/display/1/",
+      "cutout": "/product-cutouts/original-source/lemon-tea-tree-250ml.png",
+      "cutoutReferenceFiles": [
+        "755128586_880033851848590_6295451492637865095_n.jpg"
+      ],
+      "keywords": [
+        "레몬",
+        "레몬티트리",
+        "lemonteatree",
+        "시칠리아"
+      ],
+      "colors": [
+        "yellow",
+        "orange",
+        "blue",
+        "white"
+      ],
+      "cutoutSource": "user-supplied-reference-content",
+      "backgrounds": [
+        {
+          "id": "original-source-lemon-tea-tree-01",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/01.webp",
+          "scene": "ingredient premium stage"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-02",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/02.webp",
+          "scene": "shower room"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-03",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/03.webp",
+          "scene": "ingredient splash"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-04",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/04.webp",
+          "scene": "editorial studio"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-05",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/05.webp",
+          "scene": "problem situation person"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-06",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/06.webp",
+          "scene": "lifestyle person"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-07",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/07.webp",
+          "scene": "ingredient flatlay"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-08",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/08.webp",
+          "scene": "outdoor origin scene"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-09",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/09.webp",
+          "scene": "premium dark stage"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-10",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/10.webp",
+          "scene": "clean bathroom"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-11",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/11.webp",
+          "scene": "review ugc cards"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-12",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/12.webp",
+          "scene": "problem solution abstract"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-13",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/13.webp",
+          "scene": "daily routine space"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-14",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/14.webp",
+          "scene": "seasonal lifestyle"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-15",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/15.webp",
+          "scene": "sensory macro"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-16",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/16.webp",
+          "scene": "ritual spa"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-17",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/17.webp",
+          "scene": "target audience person"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-18",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/18.webp",
+          "scene": "ingredient editorial"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-19",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/19.webp",
+          "scene": "promotion stage"
+        },
+        {
+          "id": "original-source-lemon-tea-tree-20",
+          "file": "/background-library/beauty/original-source/lemon-tea-tree/20.webp",
+          "scene": "sensory atmosphere"
+        }
+      ]
+    },
+    {
+      "id": "coconut-shea-butter",
+      "name": "오리지널소스 코코넛 시어버터 보습 샤워젤 · 바디워시 250ml",
+      "productId": "80",
+      "url": "https://originalsource.co.kr/product/오리지널소스-코코넛-시어버터-보습-샤워젤-·-바디워시-250ml/80/category/91/display/1/",
+      "cutout": "/product-cutouts/original-source/coconut-shea-butter-250ml.png",
+      "cutoutReferenceFiles": [
+        "02.jpg"
+      ],
+      "keywords": [
+        "코코넛",
+        "코코넛시어버터",
+        "coconutsheabutter",
+        "보습",
+        "7872"
+      ],
+      "colors": [
+        "ivory",
+        "cream",
+        "brown",
+        "sand"
+      ],
+      "cutoutSource": "user-supplied-reference-content",
+      "backgrounds": [
+        {
+          "id": "original-source-coconut-shea-butter-01",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/01.webp",
+          "scene": "ingredient premium stage"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-02",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/02.webp",
+          "scene": "shower room"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-03",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/03.webp",
+          "scene": "ingredient splash"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-04",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/04.webp",
+          "scene": "editorial studio"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-05",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/05.webp",
+          "scene": "problem situation person"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-06",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/06.webp",
+          "scene": "lifestyle person"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-07",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/07.webp",
+          "scene": "ingredient flatlay"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-08",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/08.webp",
+          "scene": "outdoor origin scene"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-09",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/09.webp",
+          "scene": "premium dark stage"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-10",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/10.webp",
+          "scene": "clean bathroom"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-11",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/11.webp",
+          "scene": "review ugc cards"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-12",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/12.webp",
+          "scene": "problem solution abstract"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-13",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/13.webp",
+          "scene": "daily routine space"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-14",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/14.webp",
+          "scene": "seasonal lifestyle"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-15",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/15.webp",
+          "scene": "sensory macro"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-16",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/16.webp",
+          "scene": "ritual spa"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-17",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/17.webp",
+          "scene": "target audience person"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-18",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/18.webp",
+          "scene": "ingredient editorial"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-19",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/19.webp",
+          "scene": "promotion stage"
+        },
+        {
+          "id": "original-source-coconut-shea-butter-20",
+          "file": "/background-library/beauty/original-source/coconut-shea-butter/20.webp",
+          "scene": "sensory atmosphere"
+        }
+      ]
+    },
+    {
+      "id": "lime",
+      "name": "오리지널소스 라임 생기 샤워젤 · 바디워시 250ml",
+      "productId": "82",
+      "url": "https://originalsource.co.kr/product/오리지널소스-라임-생기-샤워젤-·-바디워시-250ml/82/category/91/display/1/",
+      "cutout": "/product-cutouts/original-source/lime-250ml.png",
+      "cutoutReferenceFiles": [
+        "03.jpg"
+      ],
+      "keywords": [
+        "라임",
+        "zingylime",
+        "생기"
+      ],
+      "colors": [
+        "lime",
+        "green",
+        "black",
+        "white"
+      ],
+      "cutoutSource": "user-supplied-reference-content",
+      "backgrounds": [
+        {
+          "id": "original-source-lime-01",
+          "file": "/background-library/beauty/original-source/lime/01.webp",
+          "scene": "ingredient premium stage"
+        },
+        {
+          "id": "original-source-lime-02",
+          "file": "/background-library/beauty/original-source/lime/02.webp",
+          "scene": "shower room"
+        },
+        {
+          "id": "original-source-lime-03",
+          "file": "/background-library/beauty/original-source/lime/03.webp",
+          "scene": "ingredient splash"
+        },
+        {
+          "id": "original-source-lime-04",
+          "file": "/background-library/beauty/original-source/lime/04.webp",
+          "scene": "editorial studio"
+        },
+        {
+          "id": "original-source-lime-05",
+          "file": "/background-library/beauty/original-source/lime/05.webp",
+          "scene": "problem situation person"
+        },
+        {
+          "id": "original-source-lime-06",
+          "file": "/background-library/beauty/original-source/lime/06.webp",
+          "scene": "lifestyle person"
+        },
+        {
+          "id": "original-source-lime-07",
+          "file": "/background-library/beauty/original-source/lime/07.webp",
+          "scene": "ingredient flatlay"
+        },
+        {
+          "id": "original-source-lime-08",
+          "file": "/background-library/beauty/original-source/lime/08.webp",
+          "scene": "outdoor origin scene"
+        },
+        {
+          "id": "original-source-lime-09",
+          "file": "/background-library/beauty/original-source/lime/09.webp",
+          "scene": "premium dark stage"
+        },
+        {
+          "id": "original-source-lime-10",
+          "file": "/background-library/beauty/original-source/lime/10.webp",
+          "scene": "clean bathroom"
+        },
+        {
+          "id": "original-source-lime-11",
+          "file": "/background-library/beauty/original-source/lime/11.webp",
+          "scene": "review ugc cards"
+        },
+        {
+          "id": "original-source-lime-12",
+          "file": "/background-library/beauty/original-source/lime/12.webp",
+          "scene": "problem solution abstract"
+        },
+        {
+          "id": "original-source-lime-13",
+          "file": "/background-library/beauty/original-source/lime/13.webp",
+          "scene": "daily routine space"
+        },
+        {
+          "id": "original-source-lime-14",
+          "file": "/background-library/beauty/original-source/lime/14.webp",
+          "scene": "seasonal lifestyle"
+        },
+        {
+          "id": "original-source-lime-15",
+          "file": "/background-library/beauty/original-source/lime/15.webp",
+          "scene": "sensory macro"
+        },
+        {
+          "id": "original-source-lime-16",
+          "file": "/background-library/beauty/original-source/lime/16.webp",
+          "scene": "ritual spa"
+        },
+        {
+          "id": "original-source-lime-17",
+          "file": "/background-library/beauty/original-source/lime/17.webp",
+          "scene": "target audience person"
+        },
+        {
+          "id": "original-source-lime-18",
+          "file": "/background-library/beauty/original-source/lime/18.webp",
+          "scene": "ingredient editorial"
+        },
+        {
+          "id": "original-source-lime-19",
+          "file": "/background-library/beauty/original-source/lime/19.webp",
+          "scene": "promotion stage"
+        },
+        {
+          "id": "original-source-lime-20",
+          "file": "/background-library/beauty/original-source/lime/20.webp",
+          "scene": "sensory atmosphere"
+        }
+      ]
+    },
+    {
+      "id": "rhubarb-raspberry",
+      "name": "오리지널소스 루바브 라즈베리 진정 샤워젤 · 바디워시 250ml",
+      "productId": "84",
+      "url": "https://originalsource.co.kr/product/오리지널소스-루바브-라즈베리-진정-샤워젤-·-바디워시-250ml/84/category/91/display/1/",
+      "cutout": "/product-cutouts/original-source/rhubarb-raspberry-250ml.png",
+      "cutoutReferenceFiles": [
+        "03.jpg"
+      ],
+      "keywords": [
+        "루바브",
+        "루바브라즈베리",
+        "rhubarbraspberry",
+        "진정",
+        "4essentialoils"
+      ],
+      "colors": [
+        "coral",
+        "pink",
+        "raspberry",
+        "burgundy"
+      ],
+      "cutoutSource": "user-supplied-reference-content",
+      "backgrounds": [
+        {
+          "id": "original-source-rhubarb-raspberry-01",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/01.webp",
+          "scene": "ingredient premium stage"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-02",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/02.webp",
+          "scene": "shower room"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-03",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/03.webp",
+          "scene": "ingredient splash"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-04",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/04.webp",
+          "scene": "editorial studio"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-05",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/05.webp",
+          "scene": "problem situation person"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-06",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/06.webp",
+          "scene": "lifestyle person"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-07",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/07.webp",
+          "scene": "ingredient flatlay"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-08",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/08.webp",
+          "scene": "outdoor origin scene"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-09",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/09.webp",
+          "scene": "premium dark stage"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-10",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/10.webp",
+          "scene": "clean bathroom"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-11",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/11.webp",
+          "scene": "review ugc cards"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-12",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/12.webp",
+          "scene": "problem solution abstract"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-13",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/13.webp",
+          "scene": "daily routine space"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-14",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/14.webp",
+          "scene": "seasonal lifestyle"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-15",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/15.webp",
+          "scene": "sensory macro"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-16",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/16.webp",
+          "scene": "ritual spa"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-17",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/17.webp",
+          "scene": "target audience person"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-18",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/18.webp",
+          "scene": "ingredient editorial"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-19",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/19.webp",
+          "scene": "promotion stage"
+        },
+        {
+          "id": "original-source-rhubarb-raspberry-20",
+          "file": "/background-library/beauty/original-source/rhubarb-raspberry/20.webp",
+          "scene": "sensory atmosphere"
+        }
+      ]
+    }
+  ]
+}

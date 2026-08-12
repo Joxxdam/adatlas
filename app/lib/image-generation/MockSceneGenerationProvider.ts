@@ -32,6 +32,10 @@ export class MockSceneGenerationProvider implements SceneGenerationProvider {
     return true;
   }
 
+  supports() {
+    return true;
+  }
+
   async generateScene(input: SceneGenerationInput): Promise<SceneGenerationResult> {
     const colors = palette(input);
     const safe = safeZoneRect(input);
@@ -70,5 +74,9 @@ export class MockSceneGenerationProvider implements SceneGenerationProvider {
       warning: "AI 이미지 API를 사용할 수 없어 카테고리별 안전 배경을 사용했습니다.",
       metadata: { profileId: input.profileId, requestedCanvas: "1200x1200" },
     };
+  }
+
+  async generateReferenceImage(input: SceneGenerationInput): Promise<SceneGenerationResult> {
+    return this.generateScene(input);
   }
 }

@@ -21,14 +21,17 @@ export async function POST(request: Request) {
     const result = recommendBackgrounds(items, {
       product: body.product,
       hook: body.hook,
-      limit: body.limit || 3,
+      limit: body.limit || 6,
+      excludeIds: Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 72) : [],
+      selectedIds: Array.isArray(body.selectedIds) ? body.selectedIds.slice(0, 24) : [],
+      recommendationPage: Number.isFinite(body.recommendationPage)
+        ? Number(body.recommendationPage)
+        : 0,
     });
     return NextResponse.json({
       ok: true,
       ...result,
       summary: summarizeBackgroundLibrary(items),
-      aiGenerationAvailable: Boolean(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY),
-      preferredAiProvider: process.env.OPENAI_API_KEY ? "openai" : process.env.GEMINI_API_KEY ? "gemini" : null,
     });
   } catch (error) {
     return NextResponse.json(

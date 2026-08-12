@@ -36,6 +36,10 @@ export type OptimizedTemplateSvgInput = {
     brightness?: number;
     overlayColor?: string;
     overlayOpacity?: number;
+    scale?: number;
+    offsetX?: number;
+    offsetY?: number;
+    flipHorizontal?: boolean;
   };
 };
 
@@ -161,6 +165,21 @@ function toneOverlay(template: BannerTemplateDefinition) {
   if (template.visualTone === "body-proof") {
     return '<rect width="1200" height="1200" fill="url(#optimizedBodyShade)"/>';
   }
+  if (template.visualTone === "product-repeat") {
+    return '<rect width="1200" height="1200" fill="url(#optimizedRepeatShade)"/>';
+  }
+  if (template.visualTone === "feature-proof") {
+    return '<rect width="1200" height="1200" fill="url(#optimizedFeatureShade)"/>';
+  }
+  if (template.visualTone === "testimonial-focus") {
+    return '<rect x="0" y="718" width="1200" height="482" fill="url(#optimizedReviewPanel)"/>';
+  }
+  if (template.visualTone === "lifestyle-split") {
+    return '<rect x="585" y="0" width="615" height="1200" fill="url(#optimizedSplitPanel)"/>';
+  }
+  if (template.visualTone === "commerce-offer") {
+    return '<rect x="0" y="0" width="1200" height="360" fill="#ffffff" opacity="0.94"/><rect x="0" y="890" width="1200" height="310" fill="#ffffff" opacity="0.94"/>';
+  }
   return "";
 }
 
@@ -190,7 +209,14 @@ function imageElements(input: OptimizedTemplateSvgInput, layer: "background" | "
             }" rx="8" fill="${xml(input.plan.palette.surfaceColor)}"/>`
           : "";
       if (background) {
-        return `<image href="${dataUrl}" x="${frame.x}" y="${frame.y}" width="${frame.width}" height="${frame.height}" preserveAspectRatio="xMidYMid ${preserve}" clip-path="url(#optimizedClip${index})" filter="url(#optimizedSceneFilter)"/>`;
+        const scale = Math.max(1, Math.min(1.45, Number(input.backgroundTreatment?.scale ?? 1)));
+        const offsetX = Math.max(-220, Math.min(220, Number(input.backgroundTreatment?.offsetX ?? 0)));
+        const offsetY = Math.max(-220, Math.min(220, Number(input.backgroundTreatment?.offsetY ?? 0)));
+        const centerX = frame.x + frame.width / 2;
+        const centerY = frame.y + frame.height / 2;
+        const horizontalScale = input.backgroundTreatment?.flipHorizontal ? -scale : scale;
+        const transform = `translate(${offsetX} ${offsetY}) translate(${centerX} ${centerY}) scale(${horizontalScale} ${scale}) translate(${-centerX} ${-centerY})`;
+        return `<g transform="${transform}"><image href="${dataUrl}" x="${frame.x}" y="${frame.y}" width="${frame.width}" height="${frame.height}" preserveAspectRatio="xMidYMid ${preserve}" clip-path="url(#optimizedClip${index})" filter="url(#optimizedSceneFilter)"/></g>`;
       }
       const effect = input.productEffect || {};
       const scale = Math.max(0.65, Math.min(1.45, Number(effect.productScale ?? 1)));
@@ -380,7 +406,7 @@ function textElements(input: OptimizedTemplateSvgInput) {
       const fill = ["cta", "bottomBar", "bottomBarCopy", "productBadge"].includes(role)
         ? "#ffffff"
         : isHeadline
-          ? textOverrides?.headlineColor || creativePreset?.foregroundColor || style.fill
+          ? textOverrides?.headlineColor || style.fill
           : isBodyCopy
             ? textOverrides?.bodyColor || style.fill
             : style.fill;
@@ -504,6 +530,10 @@ export function buildOptimizedTemplateSvg(input: OptimizedTemplateSvgInput) {
       ${headlineShadowFilter(input)}
       <linearGradient id="optimizedMeatShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#000" stop-opacity="0.56"/><stop offset="45%" stop-color="#000" stop-opacity="0.1"/><stop offset="100%" stop-color="#000" stop-opacity="0.78"/></linearGradient>
       <linearGradient id="optimizedBodyShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#07100f" stop-opacity="0.88"/><stop offset="62%" stop-color="#07100f" stop-opacity="0.46"/><stop offset="100%" stop-color="#07100f" stop-opacity="0.72"/></linearGradient>
+      <linearGradient id="optimizedRepeatShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#050505" stop-opacity="0.96"/><stop offset="55%" stop-color="#050505" stop-opacity="0.44"/><stop offset="100%" stop-color="#050505" stop-opacity="0.94"/></linearGradient>
+      <linearGradient id="optimizedFeatureShade" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#06100f" stop-opacity="0.93"/><stop offset="65%" stop-color="#06100f" stop-opacity="0.48"/><stop offset="100%" stop-color="#06100f" stop-opacity="0.76"/></linearGradient>
+      <linearGradient id="optimizedReviewPanel" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0"/><stop offset="24%" stop-color="#ffffff" stop-opacity="0.94"/><stop offset="100%" stop-color="#ffffff" stop-opacity="1"/></linearGradient>
+      <linearGradient id="optimizedSplitPanel" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="${xml(input.plan.palette.backgroundColor)}" stop-opacity="0.94"/><stop offset="100%" stop-color="${xml(input.plan.palette.surfaceColor)}" stop-opacity="1"/></linearGradient>
     </defs>
     ${surface(input)}
     ${imageElements(input, "background")}

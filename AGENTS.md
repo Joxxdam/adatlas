@@ -507,6 +507,13 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 - 기능이 구현되었다면 실제 UI와 결과 이미지에서 확인 가능해야 합니다.
 - 아직 새 엔진으로 이전되지 않은 템플릿은 기존 렌더러 fallback을 유지합니다.
 
+## Universal Creative Generation
+
+- 자동 6장 생성은 `ProductTruth → HookPlan → Blueprint → ScenePlan → RenderPlan → QA` 순서를 유지합니다.
+- 6장은 서로 다른 blueprint와 hook을 사용하며 한 장의 실패가 나머지 결과를 막지 않습니다.
+- 장면 라이브러리를 먼저 사용하고 유료 이미지 생성은 명시적 환경 플래그가 있을 때만 허용합니다.
+- 최종 파일은 1200×1200, WebP/JPEG, 800KB 이하로 저장 후 재디코딩 검증합니다.
+
 ---
 
 ## Security Rules
@@ -543,4 +550,3 @@ macOS/Linux:
 npx tsc --noEmit
 npm run build
 npm run dev
-

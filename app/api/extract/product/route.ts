@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
-import sharp from "sharp";
 import {
   ExtractedProductInfo,
   ProductImageCandidate,
+  ProductInfoForPrompt,
   SourceImageCandidate,
 } from "../../../lib/mvp/types";
+import { applyKnownProductAssets } from "../../../lib/creative/knownProductAssets";
+import { analyzeProductSourceCandidates } from "../../../lib/mvp/productImageAnalysis.server";
+import { inferProductRepresentation } from "../../../lib/mvp/productImagePipeline";
+import {
+  analyzeReviewSourceCandidates,
+  type ReviewRawCandidate,
+} from "../../../lib/mvp/reviewImageAnalysis.server";
+import { reviewCandidateContextScore } from "../../../lib/mvp/reviewCreative";
 
 function countHangul(value: string) {
   return (value.match(/[가-힣]/g) ?? []).length;
@@ -292,6 +300,28 @@ function extractCategory(html: string, jsonLdCategory: string) {
     jsonLdCategory ||
     ""
   );
+}
+
+function normalizeProductCategory(rawCategory: string, productContext: string) {
+  const context = `${rawCategory} ${productContext}`.toLowerCase();
+  if (
+    /뷰티|화장품|스킨|로션|크림|세럼|클렌징|샤워\s*젤|샤워젤|바디\s*워시|바디워시|퍼스널\s*케어|멘톨|쿨링|beauty|cosmetic|shower\s*gel|body\s*wash|personal\s*care/.test(
+      context
+    )
+  ) {
+    return "뷰티/스킨케어";
+  }
+  if (/건강기능|영양제|비타민|프로바이오틱스|supplement|wellness/.test(context)) {
+    return "건강기능식품";
+  }
+  if (/식품|음식|육류|한우|정육|소고기|돼지고기|과일|채소|농산|축산|food|beef|meat/.test(context)) {
+    return "식품/선물";
+  }
+  if (/패션|의류|신발|가방|fashion|apparel/.test(context)) return "패션/의류";
+  if (/인테리어|가구|침구|리빙|interior|furniture/.test(context)) return "인테리어/리빙";
+  if (/생활|주방|욕실|청소|반려|육아|living|household/.test(context)) return "생활용품";
+  if (/디지털|가전|전자|앱|digital|electronic|device/.test(context)) return "디지털/앱";
+  return rawCategory || "기타";
 }
 
 function imageFromSrcset(value: string, baseUrl: string) {
@@ -858,6 +888,116 @@ function indexInRanges(index: number, ranges: Array<[number, number]>) {
   return ranges.some(([start, end]) => index >= start && index <= end);
 }
 
+const productUspTextPattern =
+  /(원산지|국내산|한우|등급|부위|등심|안심|채끝|갈비|마블링|선별|숙성|냉장|냉동|산지|직송|구성|중량|용량|식감|육즙|풍미|고소|부드|신선|원재료|함량|무첨가|저자극|향|세정|쿨링|보습|선물|캠핑|가족|실속|프리미엄|특마블|도매팩)/i;
+const productUspBoilerplatePattern =
+  /(로그인|회원가입|장바구니|마이페이지|고객센터|상품문의|구매후기|리뷰쓰기|교환|반품|환불|배송안내|개인정보|이용약관|추천상품|관련상품|최근 본 상품|전체\s*리뷰|리뷰\s*목록|step\s*\d+|구성\s*선택|copyright|all rights reserved)/i;
+
+function isNoisyProductSignal(value: string) {
+  return /너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
+}
+
+function productDetailText(html: string) {
+  const ranges = detailHtmlRanges(html);
+  const chunks = ranges.length
+    ? ranges.slice(0, 3).map(([start, end]) => html.slice(start, Math.min(end, start + 180_000)))
+    : [html.slice(0, 350_000)];
+
+  return chunks
+    .join(" ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<(?:nav|footer|form)[^>]*>[\s\S]*?<\/(?:nav|footer|form)>/gi, " ")
+    .replace(/<(?:br|p|li|h[1-6]|tr|td|div|section)[^>]*>/gi, " · ")
+    .replace(/\s(?:alt|title)=["']([^"']+)["']/gi, " · $1 · ")
+    .replace(/<[^>]+>/g, " ");
+}
+
+function extractProductUspDescription(html: string, baseDescription: string, productName: string) {
+  const source = `${baseDescription} · ${productDetailText(html)}`;
+  const genericNameTokens = new Set([
+    "국내산",
+    "상품",
+    "제품",
+    "만든",
+    "진짜",
+    "세트",
+    "팩",
+    "박스",
+    "행사상품",
+  ]);
+  const productNameTokens = Array.from(productName.matchAll(/[0-9a-z가-힣]+/gi))
+    .map((match) => match[0].toLowerCase())
+    .filter(
+      (token) =>
+        token.length >= 2 &&
+        !genericNameTokens.has(token) &&
+        !/^\d+(?:kg|g|ml|l|팩|개)?$/i.test(token)
+    );
+  const candidates = source
+    .split(/\s*[·•|]\s*|[.!?]\s+/)
+    .map(decodeHtml)
+    .filter((value) => {
+      const length = [...value.replace(/\s+/g, "")].length;
+      const normalized = value.toLowerCase();
+      const matchesCurrentProduct =
+        !productNameTokens.length ||
+        productNameTokens.some((token) => normalized.includes(token)) ||
+        productUspTextPattern.test(value);
+      return (
+        length >= 5 &&
+        length <= 120 &&
+        matchesCurrentProduct &&
+        !productUspBoilerplatePattern.test(value) &&
+        !isNoisyProductSignal(value) &&
+        !/^(상품|제품|상세|정보|설명|홈)$/.test(value)
+      );
+    })
+    .map((value, index) => {
+      let score = index === 0 && baseDescription ? 20 : 0;
+      if (productUspTextPattern.test(value)) score += 10;
+      if (/\d/.test(value)) score += 2;
+      if (productName && value.includes(productName)) score += 3;
+      score += productNameTokens.filter((token) => value.toLowerCase().includes(token)).length * 5;
+      return { value, score, index };
+    })
+    .sort((a, b) => (a.score === b.score ? a.index - b.index : b.score - a.score));
+  const selected: string[] = [];
+  const keys = new Set<string>();
+  for (const candidate of candidates) {
+    const key = candidate.value.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+    if (!key || keys.has(key)) continue;
+    keys.add(key);
+    selected.push(candidate.value);
+    if (selected.length >= 12) break;
+  }
+  return selected.join(" · ") || baseDescription;
+}
+
+function extractStructuredProductSignals(description: string) {
+  const candidates = description
+    .split(/\s*[·•|]\s*|[.!?]\s+/)
+    .map((value) => decodeHtml(value).replace(/\s+/g, " ").trim())
+    .filter(
+      (value) =>
+        value.length >= 4 &&
+        value.length <= 120 &&
+        !productUspBoilerplatePattern.test(value) &&
+        !isNoisyProductSignal(value)
+    );
+  const verifiedBenefits = candidates
+    .filter((value) => productUspTextPattern.test(value))
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 12);
+  const ingredientPattern =
+    /(원재료|원료|성분|함유|추출물|민트|티트리|레몬|라임|코코넛|시어|과즙|국내산|원산지)/i;
+  const ingredients = candidates
+    .filter((value) => ingredientPattern.test(value))
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 8);
+  return { verifiedBenefits, ingredients };
+}
+
 function collectGalleryImages(html: string, baseUrl: string, seedImages: string[]) {
   const detailRanges = detailHtmlRanges(html);
   const candidates: { image: string; score: number; order: number; inDetail: boolean }[] = [
@@ -939,117 +1079,80 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
     .slice(0, maxGalleryImages);
 }
 
-async function remoteImageMetadata(imageUrl: string) {
-  try {
-    const response = await fetch(imageUrl, {
-      headers: {
-        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-        "User-Agent": "Mozilla/5.0 (compatible; AdAtlasProductExtractor/1.0)",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) return null;
-    const contentType = response.headers.get("content-type") || "";
-    if (contentType && !contentType.startsWith("image/")) return null;
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const metadata = await sharp(buffer).metadata();
-    if (!metadata.width || !metadata.height) return null;
-    const { data, info } = await sharp(buffer)
-      .resize(96, 96, { fit: "inside" })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    let meatPixels = 0;
-    let whitePixels = 0;
-    let darkPixels = 0;
-    const totalPixels = Math.max(1, info.width * info.height);
+function collectReviewImageCandidates(html: string, baseUrl: string): ReviewRawCandidate[] {
+  const candidates: Array<ReviewRawCandidate & { score: number; order: number }> = [];
+  const seen = new Set<string>();
+  const attrNames = [
+    "data-original",
+    "data-src",
+    "data-lazy",
+    "data-image",
+    "data-url",
+    "src",
+  ];
 
-    for (let index = 0; index < data.length; index += 3) {
-      const red = data[index];
-      const green = data[index + 1];
-      const blue = data[index + 2];
-      const max = Math.max(red, green, blue);
-      const min = Math.min(red, green, blue);
-      const saturation = max - min;
-      if (red > 70 && saturation > 20 && red > green * 1.02 && red > blue * 1.02) meatPixels += 1;
-      if (red > 220 && green > 220 && blue > 220) whitePixels += 1;
-      if (red < 55 && green < 55 && blue < 55) darkPixels += 1;
+  for (const match of html.matchAll(/<img\b[^>]*>/gi)) {
+    const tag = match[0];
+    const index = match.index ?? 0;
+    const alt = getTagAttribute(tag, "alt") || getTagAttribute(tag, "title");
+    const classContext = `${getTagAttribute(tag, "class")} ${getTagAttribute(tag, "id")}`;
+    const nearbyText = textContextFromHtml(
+      html.slice(Math.max(0, index - 1200), Math.min(html.length, index + 1200))
+    );
+    const context = `${classContext} ${alt} ${nearbyText}`;
+    const urls = attrNames.map((name) => getTagAttribute(tag, name));
+    const srcset = getTagAttribute(tag, "srcset") || getTagAttribute(tag, "data-srcset");
+    if (srcset) urls.push(bestSrcsetImage(srcset, baseUrl));
+    const width = Number(getTagAttribute(tag, "width")) || undefined;
+    const height = Number(getTagAttribute(tag, "height")) || undefined;
+
+    for (const value of urls) {
+      const imageUrl = absoluteUrl(value, baseUrl);
+      if (!imageUrl || !looksLikeUsableProductImage(imageUrl)) continue;
+      const directReviewSignal = /(review|reviewimg|photo[_-]?review|testimonial|comment|community|후기|리뷰|댓글)/i.test(
+        `${imageUrl} ${alt} ${classContext}`
+      );
+      const likelyProductGalleryPath =
+        /\/(?:web\/)?product\/(?:big|small|medium|extra|tiny)|\/goods\/(?:big|small|detail|thumb)|\/item\/(?:big|small|thumb)/i.test(
+          imageUrl
+        );
+      if (!directReviewSignal && likelyProductGalleryPath) continue;
+      const score = reviewCandidateContextScore({ url: imageUrl, alt, context, width, height });
+      if (score < 35) continue;
+      const key = normalizeImageUrlForDedup(imageUrl);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const sourceType = /(before|after|비포|애프터|전후)/i.test(`${imageUrl} ${context}`)
+        ? "before-after"
+        : /(community|comment|댓글|게시글|커뮤니티)/i.test(`${imageUrl} ${context}`)
+          ? "community-capture"
+          : /(detail|상세|testimonial)/i.test(context)
+            ? "detail-testimonial"
+            : "product-review";
+      candidates.push({
+        url: imageUrl,
+        sourceType,
+        sourceContext: context.slice(0, 700),
+        alt,
+        width,
+        height,
+        score,
+        order: index,
+      });
     }
-
-    return {
-      width: metadata.width,
-      height: metadata.height,
-      meatRatio: meatPixels / totalPixels,
-      whiteRatio: whitePixels / totalPixels,
-      darkRatio: darkPixels / totalPixels,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function meatPhotoScore(
-  imageUrl: string,
-  metadata: {
-    width: number;
-    height: number;
-    meatRatio: number;
-    whiteRatio: number;
-    darkRatio: number;
-  }
-) {
-  const lower = imageUrl.toLowerCase();
-  const { width, height, meatRatio, whiteRatio, darkRatio } = metadata;
-  const ratio = height / Math.max(1, width);
-
-  if (width < 220 || height < 220) return -100;
-  const isUserfilesDetailImage = /\/userfiles\/[^?]+\/(?:thumfull|thumbpc|thumb)\//.test(lower);
-  const isReviewImage = /\/data\/reviewimg\//.test(lower);
-  if (ratio > 2.15 && !isUserfilesDetailImage) return -100;
-  if (ratio < 0.38) return -100;
-  if (meatRatio < 0.08) return -100;
-  if (whiteRatio > 0.58 && meatRatio < 0.2) return -100;
-  if (whiteRatio > 0.46 && meatRatio < 0.26) return -100;
-  if (ratio > 1.35 && whiteRatio > 0.38 && meatRatio < 0.34) return -100;
-
-  let score = 0;
-  if (/\/userfiles\/[^?]+\/thumfull\//.test(lower)) score += 8;
-  if (/\/userfiles\/[^?]+\/thumbpc\//.test(lower)) score += 7;
-  if (/\/userfiles\/[^?]+\/thumb\//.test(lower)) score += 6;
-  if (isReviewImage) score -= 18;
-  if (/\/data\/goods\/[^?]+\/small\/thum2\//.test(lower)) score -= 6;
-  if (/(갈비|등심|한우|고기|소고기|스테이크|meat|beef)/i.test(decodeURIComponent(imageUrl)))
-    score += 4;
-  if (width >= 500 && height >= 500) score += 3;
-  if (ratio >= 0.55 && ratio <= 1.65) score += 5;
-  score += meatRatio * 24;
-  score -= whiteRatio * 10;
-  score -= darkRatio * 3;
-
-  return score;
-}
-
-async function filterProductPhotoImages(images: string[]) {
-  const scored: { image: string; score: number; order: number }[] = [];
-
-  for (const [order, image] of images.slice(0, 120).entries()) {
-    const metadata = await remoteImageMetadata(image);
-    if (!metadata) continue;
-    const score = meatPhotoScore(image, metadata);
-    if (score <= -50) continue;
-    scored.push({ image, score, order });
   }
 
-  const filtered = scored
+  return candidates
     .sort((a, b) => (a.score === b.score ? a.order - b.order : b.score - a.score))
-    .map((item) => item.image);
-
-  const detailProductPhotos = filtered.filter((image) =>
-    /\/userfiles\/[^?]+\/(?:thumfull|thumbpc|thumb)\//i.test(image)
-  );
-  const finalImages = detailProductPhotos.length >= 4 ? detailProductPhotos : filtered;
-
-  return finalImages.length ? finalImages.slice(0, maxGalleryImages) : images;
+    .slice(0, 10)
+    .map((candidate) => ({
+      url: candidate.url,
+      sourceType: candidate.sourceType,
+      sourceContext: candidate.sourceContext,
+      alt: candidate.alt,
+      width: candidate.width,
+      height: candidate.height,
+    }));
 }
 
 export async function POST(request: Request) {
@@ -1102,6 +1205,18 @@ export async function POST(request: Request) {
     const jsonLd = extractJsonLd(html, url.toString());
     const price = extractPrice(html, jsonLd.price);
     const originalPrice = extractOriginalPrice(html, price);
+    const productName =
+      jsonLd.name ||
+      metaContent(html, "og:title") ||
+      metaContent(html, "twitter:title") ||
+      titleContent(html);
+    const baseDescription =
+      jsonLd.description ||
+      metaContent(html, "og:description") ||
+      metaContent(html, "description") ||
+      metaContent(html, "twitter:description");
+    const extractedDescription = extractProductUspDescription(html, baseDescription, productName);
+    const structuredSignals = extractStructuredProductSignals(extractedDescription);
     const fallbackMainImage =
       jsonLd.image ||
       absoluteUrl(
@@ -1116,60 +1231,110 @@ export async function POST(request: Request) {
       fallbackMainImage,
       ...(jsonLd.images ?? []),
     ]);
+    const extractedCategory = extractCategory(html, jsonLd.category);
+    const normalizedCategory = normalizeProductCategory(
+      extractedCategory,
+      [productName, baseDescription, extractedDescription].join(" ")
+    );
     const productTextForType = [
       jsonLd.name,
       jsonLd.description,
-      extractCategory(html, jsonLd.category),
+      normalizedCategory,
       metaContent(html, "og:title"),
       metaContent(html, "og:description"),
     ].join(" ");
     const detected = classifyProductType(productTextForType);
     const candidateUrls = enhancedCandidates.map((candidate) => candidate.url);
     const mergedGalleryCandidates = mergeImageUrls([...candidateUrls, ...rawGalleryImages]);
-    const galleryImages =
-      detected.type === "meat"
-        ? (await filterProductPhotoImages(mergedGalleryCandidates)).slice(0, maxGalleryImages)
-        : mergedGalleryCandidates.slice(0, maxGalleryImages);
-    const mainImage = selectMainProductImage(
+    const representation = inferProductRepresentation({
+      productName,
+      description: extractedDescription,
+      category: normalizedCategory,
+      packageType: [productName, extractedDescription].join(" "),
+    });
+    const rawReviewCandidates = collectReviewImageCandidates(html, url.toString());
+    const reviewSources = await analyzeReviewSourceCandidates({
+      candidates: rawReviewCandidates,
+      productName,
+      productDescription: extractedDescription,
+      collectLimit: 10,
+      displayLimit: 5,
+    }).catch(() => []);
+    const rankedCandidates: ProductImageCandidate[] = [
+      ...enhancedCandidates,
+      ...mergedGalleryCandidates
+        .filter((image) => !enhancedCandidates.some((candidate) => candidate.url === image))
+        .map((image, index) => ({
+          url: image,
+          type: index === 0 ? ("gallery" as const) : ("detail" as const),
+          score: Math.max(5, 45 - index),
+          reason: "상세페이지 또는 갤러리에서 수집",
+        })),
+    ];
+    let sourceImageCandidates = await analyzeProductSourceCandidates({
+      candidates: rankedCandidates,
+      representation,
+      limit: 6,
+    }).catch(() => [] as SourceImageCandidate[]);
+    if (sourceImageCandidates.length < 3) {
+      const existing = new Set(sourceImageCandidates.map((candidate) => candidate.imagePath));
+      const createdAt = new Date().toISOString();
+      const fallbackCandidates = rankedCandidates
+        .filter(
+          (candidate) =>
+            candidate.url &&
+            !existing.has(candidate.url) &&
+            (!candidate.width || candidate.width >= 240) &&
+            (!candidate.height || candidate.height >= 240)
+        )
+        .slice(0, 6 - sourceImageCandidates.length)
+        .map((candidate, index): SourceImageCandidate => ({
+          id: `source-fallback-${index + 1}`,
+          type: sourceImageCandidates.length || index ? "detail" : "hero",
+          imagePath: candidate.url,
+          originalUrl: candidate.url,
+          label: "분석 대기 원본",
+          selected: false,
+          createdAt,
+          sourceType: candidate.type === "main" ? "product-gallery" : "detail-content",
+          sourceImageQualityScore: Math.max(0.2, Math.min(0.7, candidate.score / 100)),
+          salesUnitMatchScore: 0.5,
+          recommendationScore: 0.45,
+          analysisReason: "다운로드할 수 없어 HTML 문맥 점수만 반영했습니다.",
+          expectedRepresentationType: representation.type,
+          expectedExtractionScope: representation.recommendedExtractionScope,
+          warnings: ["이미지 기본 정보 분석에 실패했습니다."],
+        }));
+      sourceImageCandidates = [...sourceImageCandidates, ...fallbackCandidates];
+      if (sourceImageCandidates[0]) sourceImageCandidates[0].selected = true;
+    }
+    const inferredRepresentation = sourceImageCandidates[0]?.alreadyTransparent
+      ? {
+          ...representation,
+          type: "already-transparent" as const,
+          confidence: 0.98,
+          reason: "자동 추천 원본에서 정상 투명 영역이 확인됨",
+          recommendedExtractionScope: "visible-all" as const,
+          selectedExtractionScope: "visible-all" as const,
+        }
+      : representation;
+    const fallbackSelectedImage = selectMainProductImage(
       enhancedCandidates,
-      galleryImages,
+      mergedGalleryCandidates,
       fallbackMainImage,
-      detected.type === "meat"
+      false
     );
-    const createdAt = new Date().toISOString();
+    const mainImage = sourceImageCandidates[0]?.imagePath || fallbackSelectedImage;
+    const galleryImages = mergeImageUrls([
+      ...sourceImageCandidates.map((candidate) => candidate.imagePath),
+      ...mergedGalleryCandidates,
+    ]).slice(0, maxGalleryImages);
     const detailImages = galleryImages
       .filter((image) => image && image !== mainImage)
       .slice(0, maxDetailImages);
-    const sourceImageCandidates: SourceImageCandidate[] = [];
-    if (mainImage) {
-      sourceImageCandidates.push({
-        id: "hero-001",
-        type: "hero",
-        imagePath: mainImage,
-        originalUrl: mainImage,
-        label: "대표 이미지",
-        selected: true,
-        createdAt,
-      });
-    }
-    sourceImageCandidates.push(
-      ...detailImages.map((imagePath, index): SourceImageCandidate => ({
-        id: `detail-${String(index + 1).padStart(3, "0")}`,
-        type: "detail",
-        imagePath,
-        originalUrl: imagePath,
-        label: `상세 이미지 ${index + 1}`,
-        selected: false,
-        createdAt,
-      }))
-    );
-    const productInfo: ExtractedProductInfo = {
-      productName:
-        jsonLd.name ||
-        metaContent(html, "og:title") ||
-        metaContent(html, "twitter:title") ||
-        titleContent(html),
-      category: extractCategory(html, jsonLd.category),
+    const extractedProductInfo: ExtractedProductInfo = {
+      productName,
+      category: normalizedCategory,
       price,
       originalPrice,
       oldPrice: originalPrice,
@@ -1179,22 +1344,69 @@ export async function POST(request: Request) {
       categoryKeywords: detected.keywords,
       mainImage,
       galleryImages,
-      description:
-        jsonLd.description ||
-        metaContent(html, "og:description") ||
-        metaContent(html, "description") ||
-        metaContent(html, "twitter:description"),
-      extractedDescription:
-        jsonLd.description ||
-        metaContent(html, "og:description") ||
-        metaContent(html, "description") ||
-        metaContent(html, "twitter:description"),
+      description: extractedDescription,
+      extractedDescription,
       landingUrl: url.toString(),
       heroImage: mainImage,
       detailImages,
       imageCandidates: enhancedCandidates.slice(0, 30),
       sourceImageCandidates,
+      productRepresentation: inferredRepresentation,
+      reviewSources,
+      verifiedBenefits: structuredSignals.verifiedBenefits,
+      ingredients: structuredSignals.ingredients,
     };
+
+    const enrichedProduct = applyKnownProductAssets({
+      productName: extractedProductInfo.productName,
+      category: extractedProductInfo.category,
+      price: extractedProductInfo.price,
+      originalPrice: extractedProductInfo.originalPrice,
+      oldPrice: extractedProductInfo.oldPrice,
+      advertiserName: "",
+      brandName: extractedProductInfo.brandName || "",
+      discountInfo: extractedProductInfo.discountInfo,
+      mainBenefit:
+        extractedProductInfo.extractedDescription || extractedProductInfo.description || "",
+      targetCustomer: "",
+      landingUrl: extractedProductInfo.landingUrl,
+      productImagePath: extractedProductInfo.mainImage,
+      productImagePaths: extractedProductInfo.galleryImages,
+      secondaryProductImagePath: extractedProductInfo.detailImages?.[0] || "",
+      backgroundImagePath: "",
+      extractedDescription: extractedProductInfo.extractedDescription,
+      extractedMainImage: extractedProductInfo.mainImage,
+      extractedGalleryImages: extractedProductInfo.galleryImages,
+      sourceImageCandidates: extractedProductInfo.sourceImageCandidates,
+      selectedSourceImageId: extractedProductInfo.sourceImageCandidates?.find((item) => item.selected)?.id,
+      selectedSourceImagePath: extractedProductInfo.sourceImageCandidates?.find((item) => item.selected)?.imagePath,
+      productSubCategory: extractedProductInfo.productSubCategory,
+      detectedProductType: extractedProductInfo.detectedProductType,
+      productRepresentation: extractedProductInfo.productRepresentation,
+      reviewSources: extractedProductInfo.reviewSources,
+      verifiedBenefits: extractedProductInfo.verifiedBenefits,
+      ingredients: extractedProductInfo.ingredients,
+    } satisfies ProductInfoForPrompt);
+    const registeredCutoutApplied = enrichedProduct.productImagePath !== extractedProductInfo.mainImage;
+    const productInfo: ExtractedProductInfo = registeredCutoutApplied
+      ? {
+          ...extractedProductInfo,
+          brandName: enrichedProduct.brandName,
+          mainImage: enrichedProduct.productImagePath,
+          heroImage: enrichedProduct.productImagePath,
+          galleryImages: [
+            enrichedProduct.productImagePath,
+            ...extractedProductInfo.galleryImages.filter(
+              (imagePath) => imagePath !== enrichedProduct.productImagePath
+            ),
+          ],
+          detailImages: extractedProductInfo.galleryImages.filter(
+            (imagePath) => imagePath !== enrichedProduct.productImagePath
+          ),
+          sourceImageCandidates: enrichedProduct.sourceImageCandidates,
+          productRepresentation: enrichedProduct.productRepresentation,
+        }
+      : extractedProductInfo;
 
     if (!productInfo.productName && !productInfo.price && !productInfo.mainImage) {
       return NextResponse.json(
@@ -1217,6 +1429,7 @@ export async function POST(request: Request) {
       detailImages,
       imageCandidates: productInfo.imageCandidates,
       sourceImageCandidates,
+      reviewSources,
       debug: {
         totalImageUrlsFound: enhancedCandidates.length || rawGalleryImages.length,
         imageCandidatesReturned: productInfo.imageCandidates?.length || 0,
@@ -1231,6 +1444,8 @@ export async function POST(request: Request) {
                 ? "og"
                 : "none",
         detectedProductType: detected.type,
+        reviewCandidatesFound: rawReviewCandidates.length,
+        reviewCandidatesReturned: reviewSources.length,
       },
     });
   } catch (error) {

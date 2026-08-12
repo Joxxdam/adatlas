@@ -1,0 +1,407 @@
+.workbench {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid #d8e4f2;
+  border-radius: 18px;
+  background: #fbfdff;
+  box-shadow: 0 12px 30px rgb(35 75 120 / 7%);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.header span {
+  color: #1379d0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.header h3 {
+  margin: 6px 0;
+  font-size: 22px;
+}
+
+.header p,
+.header small {
+  margin: 0;
+  color: #66758a;
+}
+
+.uploadButton,
+.controls button,
+.cardActions button,
+.historyActions button,
+.maskHeader button,
+.maskRow button,
+.download {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2284d8;
+  border-radius: 10px;
+  background: #1976cb;
+  color: white;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.uploadButton input {
+  display: none;
+}
+
+.status {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef6ff;
+  color: #175f9f;
+}
+
+.status.error {
+  background: #fff0f0;
+  color: #b42318;
+}
+
+.status.success {
+  background: #ecfdf3;
+  color: #087a47;
+}
+
+.empty {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 24px;
+  border: 1px dashed #aac3dd;
+  border-radius: 14px;
+  color: #526174;
+}
+
+.candidateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.candidate {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #dbe5ef;
+  border-radius: 14px;
+  background: white;
+}
+
+.candidate.selected {
+  border-color: #2585d6;
+  box-shadow: 0 0 0 2px rgb(37 133 214 / 12%);
+}
+
+.candidateImage {
+  height: 160px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #eef3f7;
+}
+
+.candidateImage img,
+.previewSurface img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.badges b,
+.badges span {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #edf5fd;
+  color: #27689f;
+  font-size: 11px;
+}
+
+.badges b {
+  background: #dff6eb;
+  color: #087a47;
+}
+
+.candidate strong {
+  min-height: 38px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.candidate small {
+  color: #6b7789;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardActions button {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.cardActions label {
+  font-size: 11px;
+  color: #536174;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 180px minmax(280px, 1fr) 190px;
+  align-items: end;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #eef5fc;
+}
+
+.controls label,
+.advancedGrid label,
+.sliderGrid label,
+.maskRow label {
+  display: grid;
+  gap: 6px;
+  color: #455468;
+  font-size: 12px;
+}
+
+.controls select,
+.controls input,
+.advancedGrid select,
+.advancedGrid input,
+.advancedGrid textarea,
+.maskRow select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cbd9e8;
+  border-radius: 9px;
+  background: white;
+  padding: 8px 10px;
+  color: #172033;
+}
+
+.headlineField small {
+  color: #718096;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.previewGrid figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.previewGrid figcaption {
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 750;
+  color: #46566b;
+}
+
+.previewSurface,
+.cropSurface {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid #d9e3ee;
+  border-radius: 12px;
+  background-color: white;
+  background-image:
+    linear-gradient(45deg, #edf1f5 25%, transparent 25%),
+    linear-gradient(-45deg, #edf1f5 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #edf1f5 75%),
+    linear-gradient(-45deg, transparent 75%, #edf1f5 75%);
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+}
+
+.previewSurface span {
+  padding: 18px;
+  color: #7a8798;
+  text-align: center;
+}
+
+.zoomLayer {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+}
+
+.cropSurface img {
+  position: absolute;
+  max-width: none;
+  object-fit: fill;
+}
+
+.zoomLayer > span {
+  position: absolute;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.blurMask {
+  background: rgb(65 77 90 / 75%);
+  backdrop-filter: blur(8px);
+}
+
+.mosaicMask {
+  background-image: repeating-conic-gradient(#637083 0 25%, #aeb8c5 0 50%);
+  background-size: 10px 10px;
+}
+
+.solidMask {
+  background: #273142;
+}
+
+.advanced {
+  margin-top: 18px;
+  border: 1px solid #d8e4ef;
+  border-radius: 12px;
+  background: white;
+  padding: 14px;
+}
+
+.advanced summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.historyActions,
+.maskHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.historyActions button,
+.maskHeader button,
+.maskRow button {
+  min-height: 34px;
+  border-color: #adc3d8;
+  background: white;
+  color: #315776;
+  padding: 0 11px;
+}
+
+.historyActions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.advancedGrid,
+.sliderGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.advancedGrid .full {
+  grid-column: 1 / -1;
+}
+
+.maskHeader {
+  justify-content: space-between;
+  margin-top: 22px;
+}
+
+.maskRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) 100px repeat(4, minmax(70px, 1fr)) 60px;
+  align-items: end;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f5f8fb;
+}
+
+.rightsNotice {
+  margin: 16px 0 0;
+  color: #8b5f1d;
+  font-size: 12px;
+}
+
+.download {
+  margin-top: 12px;
+}
+
+@media (max-width: 1080px) {
+  .candidateGrid,
+  .previewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .maskRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .workbench {
+    padding: 15px;
+  }
+
+  .header,
+  .cardActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .candidateGrid,
+  .previewGrid,
+  .advancedGrid,
+  .sliderGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .advancedGrid,
+  .sliderGrid,
+  .maskHeader,
+  .maskRow,
+  .historyActions {
+    display: none;
+  }
+
+  .candidateImage {
+    height: 220px;
+  }
+}

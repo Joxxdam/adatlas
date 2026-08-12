@@ -13,5 +13,13 @@
   "productDisplayRules": ["실제 포장육 또는 실제 고기 사진을 핵심 레이어로 사용", "조리 장면은 보조 배경으로만 사용", "고기 색을 지나치게 붉게 포화하지 않음"],
   "scenePreferences": ["food-meat-grill", "food-meat-camping", "food-meat-family-meal", "food-meat-premium-table"],
   "defaultTextStylePreset": "premium-food",
-  "defaultSceneProfile": "food-meat-grill"
+  "defaultSceneProfile": "food-meat-grill",
+  "logoAssets": [
+    { "kind": "symbol", "path": "/brand-logos/gukdae-hanwoo-logo-exact.png", "variant": "dark", "exact": true },
+    { "kind": "symbol", "path": "/brand-logos/gukdae-hanwoo-logo-exact-light.png", "variant": "light", "exact": true }
+  ],
+  "preferredBlueprints": ["editorial-story", "comparison-versus", "product-hero-lifestyle", "proof-data", "problem-solution-split", "chat-ugc"],
+  "defaultLogoPosition": "top-left",
+  "logoMinSize": 120,
+  "minLogoClearSpace": 24
 }

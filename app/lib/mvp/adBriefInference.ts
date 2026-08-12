@@ -52,6 +52,9 @@ export function inferAdBriefContext(params: {
   references?: AdImageLabel[];
 }): InferredAdBriefContext {
   const { product, brief, references = [] } = params;
+  const contentNotes = product.creativeContext?.appliedContentNotes || [];
+  const preferredHook = contentNotes.find((note) => note.type === "PREFERRED_HOOK" && !note.prohibited)?.content;
+  const toneInstruction = contentNotes.find((note) => ["TONE_OF_VOICE", "TONE_AND_MANNER"].includes(note.type) && !note.prohibited)?.content;
   const text = [
     product.productName,
     product.category,
@@ -86,7 +89,7 @@ export function inferAdBriefContext(params: {
       ? "표시 가격만 보고 품질과 구성의 가치를 확신하기 어려움"
       : "상품을 선택할 구체적인 근거가 부족함");
   const hookType =
-    brief.desiredHookType ||
+    preferredHook || brief.desiredHookType || product.creativeContext?.recommendedHookTypes?.[0] ||
     (brief.adObjective === "awareness"
       ? "브랜드대표메시지형"
       : brief.adObjective === "signup"
@@ -105,7 +108,7 @@ export function inferAdBriefContext(params: {
     compact(product.discountInfo) ||
     (product.price ? `판매가 ${product.price} 중심` : "확인된 상품 혜택 중심");
   const tone =
-    brief.tonePreference ||
+    toneInstruction || brief.tonePreference ||
     (brief.creativeIntensity === "brand"
       ? "감성적이고 자연스러운 문장으로 판매 압박을 줄인 부드러운 톤"
       : brief.creativeIntensity === "performance"

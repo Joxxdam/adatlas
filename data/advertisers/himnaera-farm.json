@@ -13,5 +13,10 @@
   "productDisplayRules": ["실제 농산물 색과 형태를 유지", "신선함을 보이되 비현실적 물방울은 피함", "생산자나 농장은 실제 정보가 있을 때만 특정"],
   "scenePreferences": ["agriculture-farm-fresh", "agriculture-harvest", "agriculture-direct-value", "agriculture-clean-commerce"],
   "defaultTextStylePreset": "honest-farm-direct",
-  "defaultSceneProfile": "agriculture-farm-fresh"
+  "defaultSceneProfile": "agriculture-farm-fresh",
+  "logoAssets": [],
+  "preferredBlueprints": ["editorial-story", "product-hero-lifestyle", "proof-data", "chat-ugc", "problem-solution-split", "comparison-versus"],
+  "defaultLogoPosition": "top-left",
+  "logoMinSize": 120,
+  "minLogoClearSpace": 24
 }

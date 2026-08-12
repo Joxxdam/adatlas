@@ -13,6 +13,10 @@ export class GeminiSceneGenerationProvider implements SceneGenerationProvider {
     );
   }
 
+  supports(feature: "scene" | "reference-image" | "custom-square") {
+    return feature === "scene";
+  }
+
   async generateScene(input: SceneGenerationInput): Promise<SceneGenerationResult> {
     if (!this.isConfigured()) throw new Error("GEMINI_API_KEY가 설정되지 않았습니다.");
     const prompt = [
@@ -31,5 +35,9 @@ export class GeminiSceneGenerationProvider implements SceneGenerationProvider {
       revisedPrompt: result.promptUsed,
       metadata: { requestedCanvas: "1200x1200", model: result.model },
     };
+  }
+
+  async generateReferenceImage(): Promise<SceneGenerationResult> {
+    throw new Error("Gemini scene provider는 참조 이미지 생성을 지원하지 않습니다.");
   }
 }

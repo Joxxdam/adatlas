@@ -4,18 +4,20 @@ import { defaultAdBrief, productInfoToAdBrief } from "../../../lib/mvp/adBrief";
 import { buildGenerateCopyPrompt } from "../../../lib/mvp/copyPromptBuilder";
 import { loadCopyGuideForProduct } from "../../../lib/mvp/copyGuideLoader";
 import {
-  buildKookdaeCopyVariantsFromPatterns,
-  chooseKookdaePatternNames,
-  kookdaeFallbackCopy,
   kookdaeGenericForbiddenPhrases,
-  kookdaeGenericReplacements,
   normalizeKookdaePunctuation,
-  kookdaeProductFacts,
 } from "../../../lib/mvp/kookdaeCopyPatterns";
+import {
+  analyzeProductUsp,
+  buildTargetedCopyVariants,
+  buildUspFirstFallbackCopy,
+  isCopyGroundedInProductUsp,
+} from "../../../lib/mvp/productUsp";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
 import { labelsForReferenceMatches, matchReferences } from "../../../lib/mvp/referenceMatcher";
 import { normalizeReferenceUsages } from "../../../lib/mvp/referenceUsage";
 import { copyLimitCharSummary } from "../../../lib/mvp/templateCopyFitter";
+import { isObjectiveCtaAligned, objectiveCta } from "../../../lib/mvp/adObjective";
 import type {
   AdBrief,
   AdImageLabel,
@@ -39,6 +41,7 @@ type Body = {
   category?: string;
   adBrief?: AdBrief;
   creativeStrategy?: CreativeStrategy | null;
+  creativeStrategies?: CreativeStrategy[];
   referenceUsages?: ReferenceUsageSelection[];
 };
 
@@ -78,6 +81,9 @@ const copySlots = [
   "price",
 ] as const;
 
+const kookdaeGuideExamplePattern =
+  /(사장님|정육점|직원인 저|담당자 컨펌|경리팀|본사에서 뒤집|마진(?:도)? 안 남|손해 보고|오타 아닙니다|두 번 (?:놀랐|확인)|반신반의|인생 고기|진심 미쳤|가격 실화냐|사장님만 모릅니다|캠핑용 고기로|입에서 살살 녹|배터지게|잡내 없이 부드러운|가족 선물각|오늘의 특가 구성)/i;
+
 function cleanText(value?: string) {
   return String(value || "")
     .replace(/[\u{1f000}-\u{1ffff}]/gu, "")
@@ -101,11 +107,10 @@ function trimToLimit(value: string, maxChars: number) {
 
   let output = "";
   for (const char of text) {
-    if (/\s/.test(char)) continue;
     if (visibleLength(output + char) > maxChars) break;
     output += char;
   }
-  return output;
+  return output.trim();
 }
 
 function normalizeProduct(productInfo?: Partial<ProductInfoForPrompt>): ProductInfoForPrompt {
@@ -120,7 +125,7 @@ function normalizeProduct(productInfo?: Partial<ProductInfoForPrompt>): ProductI
     copyGuideId: cleanText(productInfo?.copyGuideId),
     copyGuideContext: productInfo?.copyGuideContext,
     discountInfo: cleanText(productInfo?.discountInfo),
-    mainBenefit: cleanText(productInfo?.mainBenefit),
+    mainBenefit: cleanText(productInfo?.mainBenefit || productInfo?.extractedDescription),
     targetCustomer: cleanText(productInfo?.targetCustomer),
     landingUrl: cleanText(productInfo?.landingUrl),
     productImagePath: cleanText(productInfo?.productImagePath),
@@ -135,6 +140,19 @@ function normalizeProduct(productInfo?: Partial<ProductInfoForPrompt>): ProductI
     sourceImageCandidates: productInfo?.sourceImageCandidates || [],
     selectedSourceImageId: cleanText(productInfo?.selectedSourceImageId),
     selectedSourceImagePath: cleanText(productInfo?.selectedSourceImagePath),
+    productSubCategory: cleanText(productInfo?.productSubCategory),
+    detectedProductType: cleanText(productInfo?.detectedProductType),
+    targetAgeGroups: productInfo?.targetAgeGroups || [],
+    productColors: productInfo?.productColors || [],
+    brandColors: productInfo?.brandColors || [],
+    ingredients: productInfo?.ingredients || [],
+    verifiedBenefits: productInfo?.verifiedBenefits || [],
+    packageType: cleanText(productInfo?.packageType),
+    imageType: cleanText(productInfo?.imageType),
+    modelIncluded: Boolean(productInfo?.modelIncluded),
+    productCutoutAvailable: Boolean(productInfo?.productCutoutAvailable),
+    productRepresentation: productInfo?.productRepresentation,
+    reviewSources: productInfo?.reviewSources || [],
   };
 }
 
@@ -152,6 +170,40 @@ function hasForbidden(value: string) {
   return forbiddenPhrases.some((phrase) => text.includes(phrase));
 }
 
+function hasUnsupportedFact(value: string, product: ProductInfoForPrompt) {
+  const text = cleanText(value);
+  const facts = cleanText(
+    [
+      product.productName,
+      product.price,
+      product.originalPrice,
+      product.oldPrice,
+      product.discountInfo,
+      product.mainBenefit,
+      product.extractedDescription,
+      ...(product.verifiedBenefits || []),
+      ...(product.ingredients || []),
+      ...(product.reviewSources || []).map((review) => review.keySentence),
+    ].join(" ")
+  );
+  const allowedNumbers = new Set(
+    (facts.match(/\d[\d,.]*/g) || []).map((number) => number.replace(/[,.]/g, ""))
+  );
+  const generatedNumbers = (text.match(/\d[\d,.]*/g) || []).map((number) =>
+    number.replace(/[,.]/g, "")
+  );
+  if (generatedNumbers.some((number) => !allowedNumbers.has(number))) return true;
+  const guardedClaims: Array<[RegExp, RegExp]> = [
+    [/무료\s*배송/i, /무료\s*배송/i],
+    [
+      /오늘만|오늘까지|기간\s*한정|마감\s*임박|품절\s*임박|한정\s*수량/i,
+      /오늘만|오늘까지|기간\s*한정|마감\s*임박|품절\s*임박|한정\s*수량/i,
+    ],
+    [/리뷰\s*\d|후기\s*\d|평점\s*\d/i, /리뷰\s*\d|후기\s*\d|평점\s*\d/i],
+  ];
+  return guardedClaims.some(([claim, evidence]) => claim.test(text) && !evidence.test(facts));
+}
+
 function isKookdaeGuide(copyGuide?: CopyGuideContext | null) {
   return copyGuide?.guideId === "kookdae-hanwoo";
 }
@@ -165,24 +217,54 @@ function rejectedKookdaeGenericExpressions(copy: Partial<GeneratedAdCopy>) {
 }
 
 function applyKookdaeGenericReplacements(value: string) {
-  let text = normalizeKookdaePunctuation(cleanText(value));
-  for (const [pattern, replacement] of kookdaeGenericReplacements) {
-    text = text.replace(pattern, replacement);
-  }
-  return normalizeKookdaePunctuation(text);
+  return normalizeKookdaePunctuation(cleanText(value));
 }
 
 function hasKookdaeForbidden(value: string) {
-  return kookdaeGenericForbiddenPhrases.some((phrase) => cleanText(value).includes(phrase));
+  const text = cleanText(value);
+  return (
+    kookdaeGuideExamplePattern.test(text) ||
+    kookdaeGenericForbiddenPhrases.some((phrase) => text.includes(phrase))
+  );
 }
 
-function isBadHeadline(value: string, copyGuide?: CopyGuideContext | null) {
+function isBadHeadline(
+  value: string,
+  copyGuide?: CopyGuideContext | null,
+  product?: ProductInfoForPrompt
+) {
   const text = cleanText(value);
   if (!text || text.length < 4) return true;
   if (/^[\d,]+[^\s\d,]*$/.test(text)) return true;
   if (hasForbidden(text)) return true;
   if (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(text)) return true;
+  if (
+    product &&
+    (hasUnsupportedFact(text, product) || !isCopyGroundedInProductUsp(text, product))
+  ) {
+    return true;
+  }
   return false;
+}
+
+function isObjectiveHeadlineAligned(
+  value: string,
+  brief: AdBrief | undefined,
+  product: ProductInfoForPrompt
+) {
+  if (!brief) return true;
+  const text = cleanText(value);
+  if (brief.adObjective === "signup") {
+    return /(처음|차이|왜|기준|필요|알아|무엇|어떤|비교)/.test(text);
+  }
+  if (brief.adObjective === "awareness") {
+    const brand = cleanText(product.brandName || product.advertiserName);
+    return Boolean((brand && text.includes(brand)) || /(브랜드|기억|대표|이름|감각)/.test(text));
+  }
+  if (brief.adObjective === "retargeting") {
+    return /(다시|망설|봤|보던|재구매|혜택|놓친|비교)/.test(text);
+  }
+  return /(구매|조건|혜택|구성|선택|결정|고를|이유|차이|가격|지금|근거|필요|순간|왜)/.test(text);
 }
 
 function inferHookType(reference?: AdImageLabel) {
@@ -193,15 +275,8 @@ function inferAppealPoint(reference?: AdImageLabel) {
   return cleanText(reference?.finalLabel?.appealPoint || "price-value");
 }
 
-function safeHeadlineFallback(
-  product: ProductInfoForPrompt,
-  reference?: AdImageLabel,
-  copyGuide?: CopyGuideContext | null
-) {
-  if (isKookdaeGuide(copyGuide)) {
-    return kookdaeFallbackCopy(product, reference).headline;
-  }
-
+function safeHeadlineFallback(product: ProductInfoForPrompt, reference?: AdImageLabel) {
+  const uspFallback = buildUspFirstFallbackCopy(product);
   const price = normalizePrice(product);
   const source = cleanText(
     reference?.finalLabel?.firstLineHook ||
@@ -210,8 +285,11 @@ function safeHeadlineFallback(
       product.productName ||
       product.category
   );
-  if (price) return trimToLimit(`${price} value proof`, 34);
-  return trimToLimit(source ? `${source} proof` : "value proof deal", 34);
+  if (price && uspFallback.headline) return trimToLimit(`${uspFallback.headline}, ${price}`, 34);
+  return trimToLimit(
+    uspFallback.headline || source || product.productName || "상품의 핵심 차이",
+    34
+  );
 }
 
 function bodyFallback(
@@ -220,16 +298,17 @@ function bodyFallback(
   copyGuide?: CopyGuideContext | null
 ) {
   if (isKookdaeGuide(copyGuide)) {
-    return kookdaeFallbackCopy(product, reference).bodyCopy;
+    return buildUspFirstFallbackCopy(product).bodyCopy;
   }
 
   const source = cleanText(
-    product.mainBenefit ||
+    analyzeProductUsp(product).uspSignals[1] ||
+      product.mainBenefit ||
       reference?.finalLabel?.consumerInsight ||
       product.productName ||
       product.category
   );
-  return trimToLimit(source ? `${source} ready.` : "Prepared for easier choice.", 36);
+  return trimToLimit(source ? `${source}을 확인해보세요.` : "상품의 차이를 확인해보세요.", 36);
 }
 
 function normalizeBody(value: string, fallback: string, copyGuide?: CopyGuideContext | null) {
@@ -240,13 +319,26 @@ function normalizeBody(value: string, fallback: string, copyGuide?: CopyGuideCon
   return trimToLimit(normalized, 36);
 }
 
-function normalizeCta(value?: string, copyGuide?: CopyGuideContext | null) {
+function normalizeCta(
+  value?: string,
+  copyGuide?: CopyGuideContext | null,
+  brief?: AdBrief,
+  hasConfirmedOffer = false
+) {
   const text = isKookdaeGuide(copyGuide)
     ? applyKookdaeGenericReplacements(value || "")
     : cleanText(value);
-  if (text && !hasForbidden(text) && !hasKookdaeForbidden(text)) return trimToLimit(text, 10);
-  if (isKookdaeGuide(copyGuide)) return "특가 확인하기";
-  return "view deal";
+  if (
+    text &&
+    !hasForbidden(text) &&
+    !hasKookdaeForbidden(text) &&
+    (!brief || isObjectiveCtaAligned(text, brief.adObjective))
+  ) {
+    return trimToLimit(text, 10);
+  }
+  if (brief) return trimToLimit(objectiveCta(brief.adObjective, hasConfirmedOffer), 10);
+  if (isKookdaeGuide(copyGuide)) return "상품 정보 보기";
+  return "상품 보기";
 }
 
 function referencePatternUsage(reference?: AdImageLabel): GeneratedAdCopy["referencePatternUsage"] {
@@ -323,34 +415,71 @@ function variantFrom(
   copy: Partial<GeneratedAdCopyVariant> | undefined,
   fallback: GeneratedAdCopyVariant,
   limits: Record<keyof GeneratedAdCopyVariant, number>,
-  copyGuide?: CopyGuideContext | null
+  copyGuide?: CopyGuideContext | null,
+  product?: ProductInfoForPrompt
 ): GeneratedAdCopyVariant {
   const sanitize = (value: string) =>
     isKookdaeGuide(copyGuide) ? applyKookdaeGenericReplacements(value) : value;
+  const safe = (incoming: string | undefined, fallback: string) => {
+    const value = sanitize(incoming || fallback);
+    return product && (hasForbidden(value) || hasUnsupportedFact(value, product))
+      ? sanitize(fallback)
+      : value;
+  };
 
   return {
-    headline: trimToLimit(sanitize(copy?.headline || fallback.headline), limits.headline),
-    bodyCopy: trimToLimit(sanitize(copy?.bodyCopy || fallback.bodyCopy), limits.bodyCopy),
+    headline: trimToLimit(safe(copy?.headline, fallback.headline), limits.headline),
+    bodyCopy: trimToLimit(safe(copy?.bodyCopy, fallback.bodyCopy), limits.bodyCopy),
     highlightCopy: trimToLimit(
-      sanitize(copy?.highlightCopy || fallback.highlightCopy),
+      safe(copy?.highlightCopy, fallback.highlightCopy),
       limits.highlightCopy
     ),
     bottomBarCopy: trimToLimit(
-      sanitize(copy?.bottomBarCopy || fallback.bottomBarCopy),
+      safe(copy?.bottomBarCopy, fallback.bottomBarCopy),
       limits.bottomBarCopy
     ),
-    cta: trimToLimit(sanitize(copy?.cta || fallback.cta), limits.cta),
-    price: trimToLimit(copy?.price || fallback.price || "", limits.price),
+    cta: trimToLimit(safe(copy?.cta, fallback.cta), limits.cta),
+    price: trimToLimit(
+      product && hasUnsupportedFact(copy?.price || "", product)
+        ? fallback.price || ""
+        : copy?.price || fallback.price || "",
+      limits.price
+    ),
+  };
+}
+
+function alignVariantToObjective(
+  incoming: Partial<GeneratedAdCopyVariant> | undefined,
+  fallback: GeneratedAdCopyVariant,
+  brief: AdBrief | undefined,
+  product: ProductInfoForPrompt
+) {
+  if (!incoming || !brief) return incoming;
+  const headline = incoming.headline || "";
+  return {
+    ...incoming,
+    headline:
+      isObjectiveHeadlineAligned(headline, brief, product) &&
+      isCopyGroundedInProductUsp(headline, product)
+        ? incoming.headline
+        : fallback.headline,
+    cta: isObjectiveCtaAligned(incoming.cta || "", brief.adObjective) ? incoming.cta : fallback.cta,
   };
 }
 
 function kookdaeVariantSlotValue(
   slot: keyof GeneratedAdCopyVariant,
   value: string | undefined,
-  fallback: string
+  fallback: string,
+  product: ProductInfoForPrompt
 ) {
   const raw = cleanText(value);
-  if (!raw || hasForbidden(raw) || hasKookdaeForbidden(raw)) {
+  if (
+    !raw ||
+    hasForbidden(raw) ||
+    hasKookdaeForbidden(raw) ||
+    (slot === "headline" && !isCopyGroundedInProductUsp(raw, product))
+  ) {
     return fallback;
   }
 
@@ -361,22 +490,25 @@ function kookdaeVariantSlotValue(
 
 function mergeKookdaeVariant(
   incoming: Partial<GeneratedAdCopyVariant> | undefined,
-  fallback: GeneratedAdCopyVariant
+  fallback: GeneratedAdCopyVariant,
+  product: ProductInfoForPrompt
 ): GeneratedAdCopyVariant {
   return {
-    headline: kookdaeVariantSlotValue("headline", incoming?.headline, fallback.headline),
-    bodyCopy: kookdaeVariantSlotValue("bodyCopy", incoming?.bodyCopy, fallback.bodyCopy),
+    headline: kookdaeVariantSlotValue("headline", incoming?.headline, fallback.headline, product),
+    bodyCopy: kookdaeVariantSlotValue("bodyCopy", incoming?.bodyCopy, fallback.bodyCopy, product),
     highlightCopy: kookdaeVariantSlotValue(
       "highlightCopy",
       incoming?.highlightCopy,
-      fallback.highlightCopy
+      fallback.highlightCopy,
+      product
     ),
     bottomBarCopy: kookdaeVariantSlotValue(
       "bottomBarCopy",
       incoming?.bottomBarCopy,
-      fallback.bottomBarCopy
+      fallback.bottomBarCopy,
+      product
     ),
-    cta: kookdaeVariantSlotValue("cta", incoming?.cta, fallback.cta),
+    cta: kookdaeVariantSlotValue("cta", incoming?.cta, fallback.cta, product),
     price: cleanText(incoming?.price || fallback.price || ""),
   };
 }
@@ -385,14 +517,35 @@ function buildCopyVariants(
   copy: Partial<GeneratedAdCopy>,
   product: ProductInfoForPrompt,
   reference?: AdImageLabel,
-  copyGuide?: CopyGuideContext | null
+  copyGuide?: CopyGuideContext | null,
+  adBrief?: AdBrief,
+  creativeStrategy?: CreativeStrategy | null
 ): GeneratedAdCopy["copyVariants"] {
   if (isKookdaeGuide(copyGuide)) {
-    const fallbackVariants = buildKookdaeCopyVariantsFromPatterns(product, reference).variants;
+    const fallbackVariants = adBrief
+      ? buildTargetedCopyVariants({ product, brief: adBrief, strategy: creativeStrategy })
+      : buildUspFirstFallbackCopy(product).variants;
     const preferred = {
-      short: mergeKookdaeVariant(copy.copyVariants?.short, fallbackVariants.short),
-      medium: mergeKookdaeVariant(copy.copyVariants?.medium, fallbackVariants.medium),
-      long: mergeKookdaeVariant(copy.copyVariants?.long, fallbackVariants.long),
+      short: mergeKookdaeVariant(
+        alignVariantToObjective(copy.copyVariants?.short, fallbackVariants.short, adBrief, product),
+        fallbackVariants.short,
+        product
+      ),
+      medium: mergeKookdaeVariant(
+        alignVariantToObjective(
+          copy.copyVariants?.medium,
+          fallbackVariants.medium,
+          adBrief,
+          product
+        ),
+        fallbackVariants.medium,
+        product
+      ),
+      long: mergeKookdaeVariant(
+        alignVariantToObjective(copy.copyVariants?.long, fallbackVariants.long, adBrief, product),
+        fallbackVariants.long,
+        product
+      ),
     };
 
     return {
@@ -407,7 +560,8 @@ function buildCopyVariants(
           cta: 6,
           price: 12,
         },
-        copyGuide
+        copyGuide,
+        product
       ),
       medium: variantFrom(
         preferred.medium,
@@ -420,7 +574,8 @@ function buildCopyVariants(
           cta: 8,
           price: 12,
         },
-        copyGuide
+        copyGuide,
+        product
       ),
       long: variantFrom(
         preferred.long,
@@ -433,13 +588,14 @@ function buildCopyVariants(
           cta: 10,
           price: 12,
         },
-        copyGuide
+        copyGuide,
+        product
       ),
     };
   }
 
   const fallback: GeneratedAdCopyVariant = {
-    headline: copy.headline || safeHeadlineFallback(product, reference, copyGuide),
+    headline: copy.headline || safeHeadlineFallback(product, reference),
     bodyCopy: copy.bodyCopy || bodyFallback(product, reference, copyGuide),
     highlightCopy: copy.highlightCopy || product.discountInfo || product.mainBenefit || "deal",
     bottomBarCopy:
@@ -447,14 +603,17 @@ function buildCopyVariants(
       reference?.finalLabel?.purchaseTrigger ||
       reference?.finalLabel?.whyItWorks ||
       "check bundle",
-    cta: copy.cta || "view deal",
+    cta: copy.cta || "상품 보기",
     price: normalizePrice(product, copy.price),
   };
+  const targetedFallbacks = adBrief
+    ? buildTargetedCopyVariants({ product, brief: adBrief, strategy: creativeStrategy })
+    : { short: fallback, medium: fallback, long: fallback };
 
   return {
     short: variantFrom(
-      copy.copyVariants?.short,
-      fallback,
+      alignVariantToObjective(copy.copyVariants?.short, targetedFallbacks.short, adBrief, product),
+      targetedFallbacks.short,
       {
         headline: 14,
         bodyCopy: 18,
@@ -463,11 +622,17 @@ function buildCopyVariants(
         cta: 6,
         price: 12,
       },
-      copyGuide
+      copyGuide,
+      product
     ),
     medium: variantFrom(
-      copy.copyVariants?.medium,
-      fallback,
+      alignVariantToObjective(
+        copy.copyVariants?.medium,
+        targetedFallbacks.medium,
+        adBrief,
+        product
+      ),
+      targetedFallbacks.medium,
       {
         headline: 22,
         bodyCopy: 28,
@@ -476,11 +641,12 @@ function buildCopyVariants(
         cta: 8,
         price: 12,
       },
-      copyGuide
+      copyGuide,
+      product
     ),
     long: variantFrom(
-      copy.copyVariants?.long,
-      fallback,
+      alignVariantToObjective(copy.copyVariants?.long, targetedFallbacks.long, adBrief, product),
+      targetedFallbacks.long,
       {
         headline: 34,
         bodyCopy: 42,
@@ -489,7 +655,8 @@ function buildCopyVariants(
         cta: 10,
         price: 12,
       },
-      copyGuide
+      copyGuide,
+      product
     ),
   };
 }
@@ -500,17 +667,17 @@ function removeForbidden(
   reference?: AdImageLabel,
   copyGuide?: CopyGuideContext | null
 ): GeneratedAdCopy {
-  const kookdaeFallback = kookdaeFallbackCopy(product, reference);
+  const kookdaeFallback = buildUspFirstFallbackCopy(product);
   const replacements: Partial<Record<keyof GeneratedAdCopyVariant, string>> = isKookdaeGuide(
     copyGuide
   )
     ? kookdaeFallback
     : {
-        headline: "value proof deal",
-        bodyCopy: "Prepared for easier choice.",
-        highlightCopy: "deal check",
-        bottomBarCopy: "check bundle",
-        cta: "view deal",
+        headline: kookdaeFallback.headline,
+        bodyCopy: kookdaeFallback.bodyCopy,
+        highlightCopy: kookdaeFallback.highlightCopy,
+        bottomBarCopy: kookdaeFallback.bottomBarCopy,
+        cta: kookdaeFallback.cta,
       };
 
   const next = { ...copy };
@@ -518,6 +685,7 @@ function removeForbidden(
     if (
       key !== "price" &&
       (hasForbidden(String(next[key] || "")) ||
+        hasUnsupportedFact(String(next[key] || ""), product) ||
         (isKookdaeGuide(copyGuide) && hasKookdaeForbidden(String(next[key] || ""))))
     ) {
       next[key] = replacements[key] || "";
@@ -564,9 +732,16 @@ function applyBriefConstraints(
         next[key] = stripUserProhibitedClaims(String(next[key] || ""), prohibitedClaims);
       }
     });
-    if (!next.headline) next.headline = safeHeadlineFallback(product, reference, copyGuide);
+    if (!next.headline) next.headline = safeHeadlineFallback(product, reference);
     if (!next.bodyCopy) next.bodyCopy = bodyFallback(product, reference, copyGuide);
-    if (!next.cta) next.cta = normalizeCta(undefined, copyGuide);
+    if (!next.cta) {
+      next.cta = normalizeCta(
+        undefined,
+        copyGuide,
+        brief,
+        Boolean(product.discountInfo || product.price)
+      );
+    }
 
     const currentText = copySlots.map((key) => String(next[key] || "")).join(" ");
     const hasAllMandatory = mandatoryInfo.every((item) => currentText.includes(item));
@@ -598,26 +773,42 @@ function normalizeGeneratedCopy(
   value: Partial<GeneratedAdCopy>,
   product: ProductInfoForPrompt,
   labels: AdImageLabel[],
-  copyGuide?: CopyGuideContext | null
+  copyGuide?: CopyGuideContext | null,
+  context?: { adBrief?: AdBrief; creativeStrategy?: CreativeStrategy | null }
 ): GeneratedAdCopy {
   const reference = labels[0];
   const price = normalizePrice(product, value.price);
-  const kookdaeFallback = kookdaeFallbackCopy(product, reference);
+  const kookdaeFallback = buildUspFirstFallbackCopy(product);
+  const productUsp = analyzeProductUsp(product);
+  const objectiveFallback = context?.adBrief
+    ? buildTargetedCopyVariants({
+        product,
+        brief: context.adBrief,
+        strategy: context.creativeStrategy,
+      }).medium
+    : undefined;
   const rejectedGenericExpressions = isKookdaeGuide(copyGuide)
     ? rejectedKookdaeGenericExpressions(value)
     : [];
   const headlineSource = isKookdaeGuide(copyGuide)
     ? applyKookdaeGenericReplacements(value.headline || "")
     : value.headline || "";
-  const headline = isBadHeadline(headlineSource, copyGuide)
-    ? safeHeadlineFallback(product, reference, copyGuide)
+  const headlineNeedsRepair =
+    isBadHeadline(headlineSource, copyGuide, product) ||
+    !isObjectiveHeadlineAligned(headlineSource, context?.adBrief, product);
+  const headline = headlineNeedsRepair
+    ? objectiveFallback?.headline || safeHeadlineFallback(product, reference)
     : cleanText(headlineSource);
-  const productFacts = kookdaeProductFacts(product, reference);
   const selectedKookdaePattern = isKookdaeGuide(copyGuide)
-    ? chooseKookdaePatternNames(product, reference).join(", ")
+    ? `USP 우선: ${productUsp.primaryUsp}`
     : "";
   const kookdaeVariantPatternPlan = isKookdaeGuide(copyGuide)
-    ? buildKookdaeCopyVariantsFromPatterns(product, reference).selectedPatterns
+    ? (["short", "medium", "long"] as const).map((variant, index) => ({
+        variant,
+        patternGroup: "product-usp",
+        sourcePattern: productUsp.uspSignals[index] || productUsp.primaryUsp || product.productName,
+        tone: "상세페이지 USP 기반 후킹",
+      }))
     : undefined;
   const baseCopyGuideUsage = copyGuideUsage(copyGuide);
   const usedReferenceIds = Array.from(
@@ -626,66 +817,73 @@ function normalizeGeneratedCopy(
       ...(value.referencePatternUsage?.usedReferenceIds || []),
     ])
   );
+  const normalizedBodyCopy = normalizeBody(
+    value.bodyCopy || "",
+    bodyFallback(product, reference, copyGuide),
+    copyGuide
+  );
+  const normalizedHighlightCopy = trimToLimit(
+    cleanText(
+      isKookdaeGuide(copyGuide)
+        ? applyKookdaeGenericReplacements(
+            value.highlightCopy ||
+              product.discountInfo ||
+              product.mainBenefit ||
+              kookdaeFallback.highlightCopy
+          )
+        : value.highlightCopy ||
+            product.discountInfo ||
+            productUsp.proofSignals[0] ||
+            product.mainBenefit ||
+            kookdaeFallback.highlightCopy
+    ),
+    28
+  );
+  const normalizedBottomBarCopy = trimToLimit(
+    cleanText(
+      isKookdaeGuide(copyGuide)
+        ? applyKookdaeGenericReplacements(value.bottomBarCopy || kookdaeFallback.bottomBarCopy)
+        : value.bottomBarCopy ||
+            reference?.finalLabel?.purchaseTrigger ||
+            reference?.finalLabel?.whyItWorks ||
+            productUsp.situationSignals[0] ||
+            productUsp.featureSignals[1] ||
+            kookdaeFallback.bottomBarCopy
+    ),
+    36
+  );
+  const normalizedCta = normalizeCta(
+    value.cta,
+    copyGuide,
+    context?.adBrief,
+    Boolean(product.discountInfo || product.price)
+  );
 
   const normalized: GeneratedAdCopy = {
     headline,
-    bodyCopy: normalizeBody(
-      value.bodyCopy || "",
-      bodyFallback(product, reference, copyGuide),
-      copyGuide
-    ),
-    highlightCopy: trimToLimit(
-      cleanText(
-        isKookdaeGuide(copyGuide)
-          ? applyKookdaeGenericReplacements(
-              value.highlightCopy ||
-                product.discountInfo ||
-                product.mainBenefit ||
-                kookdaeFallback.highlightCopy
-            )
-          : value.highlightCopy || product.discountInfo || product.mainBenefit || "deal"
-      ),
-      28
-    ),
-    bottomBarCopy: trimToLimit(
-      cleanText(
-        isKookdaeGuide(copyGuide)
-          ? applyKookdaeGenericReplacements(value.bottomBarCopy || kookdaeFallback.bottomBarCopy)
-          : value.bottomBarCopy ||
-              reference?.finalLabel?.purchaseTrigger ||
-              reference?.finalLabel?.whyItWorks ||
-              "check bundle"
-      ),
-      36
-    ),
-    cta: normalizeCta(value.cta, copyGuide),
+    bodyCopy: normalizedBodyCopy,
+    highlightCopy: normalizedHighlightCopy,
+    bottomBarCopy: normalizedBottomBarCopy,
+    cta: normalizedCta,
     price,
     hookType: cleanText(value.hookType || inferHookType(reference)),
     appealPoint: cleanText(value.appealPoint || inferAppealPoint(reference)),
     whyThisWorks: cleanText(
       value.whyThisWorks ||
         (isKookdaeGuide(copyGuide)
-          ? "국대한우 카피 가이드의 가격 충격/구어체 패턴을 상품 사실에 맞게 변형했습니다."
+          ? "상세페이지에서 확인한 USP를 중심으로 후킹을 만들고 국대한우 가이드는 말투에만 반영했습니다."
           : "Combined reference copy pattern with product value proof.")
     ),
     messageHierarchy: {
-      primaryMessage: cleanText(value.messageHierarchy?.primaryMessage || headline),
-      secondaryMessage: cleanText(
-        value.messageHierarchy?.secondaryMessage ||
-          value.bodyCopy ||
-          bodyFallback(product, reference, copyGuide)
-      ),
-      proofMessage: cleanText(
-        value.messageHierarchy?.proofMessage || value.highlightCopy || product.mainBenefit
-      ),
-      offerMessage: cleanText(
-        value.messageHierarchy?.offerMessage || value.bottomBarCopy || product.discountInfo
-      ),
-      actionMessage: cleanText(value.messageHierarchy?.actionMessage || value.cta || "구성 보기"),
+      primaryMessage: headline,
+      secondaryMessage: normalizedBodyCopy,
+      proofMessage: normalizedHighlightCopy,
+      offerMessage: normalizedBottomBarCopy,
+      actionMessage: normalizedCta,
     },
     reasoning: {
       ...(value.reasoning || {}),
-      headlineQualityCheck: isBadHeadline(headlineSource, copyGuide) ? "repaired" : "passed",
+      headlineQualityCheck: headlineNeedsRepair ? "repaired" : "passed",
       selectedKookdaePattern:
         value.reasoning?.selectedKookdaePattern || selectedKookdaePattern || undefined,
       rejectedGenericExpressions:
@@ -693,15 +891,9 @@ function normalizeGeneratedCopy(
       productFactsUsed:
         value.reasoning?.productFactsUsed ||
         (isKookdaeGuide(copyGuide)
-          ? [
-              productFacts.productName,
-              productFacts.cut,
-              productFacts.price,
-              productFacts.originalPrice,
-              productFacts.discountInfo,
-              productFacts.useCase,
-              productFacts.benefit,
-            ].filter(Boolean)
+          ? [product.productName, ...productUsp.uspSignals, ...productUsp.offerSignals].filter(
+              Boolean
+            )
           : undefined),
     },
     templateFit: {
@@ -757,7 +949,9 @@ function normalizeGeneratedCopy(
     { ...cleaned, copyVariants: value.copyVariants },
     product,
     reference,
-    copyGuide
+    copyGuide,
+    context?.adBrief,
+    context?.creativeStrategy
   );
   return cleaned;
 }
@@ -791,41 +985,53 @@ function mockCopy(
   creativeStrategy?: CreativeStrategy | null
 ) {
   const reference = labels[0];
-  const objectiveHeadline =
-    adBrief?.adObjective === "awareness"
-      ? `${product.brandName || product.advertiserName || product.productName}, 기억할 이름`
-      : adBrief?.adObjective === "signup"
-        ? `${product.productName}, 처음이라면 여기부터`
-        : adBrief?.adObjective === "retargeting"
-          ? `${product.productName}, 다시 볼 이유`
-          : adBrief?.creativeIntensity === "performance" && (product.discountInfo || product.price)
-            ? `${product.discountInfo || product.price}, 지금 확인`
-            : safeHeadlineFallback(product, reference, copyGuide);
-  const mockHeadline = cleanText(creativeStrategy?.mainCopy || objectiveHeadline);
-  const mockBody = cleanText(
-    creativeStrategy?.appeal || bodyFallback(product, reference, copyGuide)
-  );
-  const mockCta =
-    adBrief?.creativeIntensity === "brand"
-      ? "상품 알아보기"
-      : adBrief?.adObjective === "awareness"
-        ? "브랜드 보기"
-        : adBrief?.adObjective === "retargeting"
-          ? "혜택 다시 보기"
-          : "구매 혜택 보기";
+  const resolvedBrief = adBrief || productInfoToAdBrief(product, defaultAdBrief);
+  const objectiveFallback = buildTargetedCopyVariants({
+    product,
+    brief: resolvedBrief,
+    strategy: creativeStrategy,
+  }).medium;
+  const mockHeadline = cleanText(creativeStrategy?.mainCopy || objectiveFallback.headline);
+  const strategyEvidence = cleanText(
+    creativeStrategy?.keyAppeal || creativeStrategy?.appeal || objectiveFallback.bodyCopy
+  ).replace(/^[^:]{1,18}:\s*/, "");
+  const mockBody = creativeStrategy
+    ? {
+        "problem-solution": `고민의 답이 되는 ${strategyEvidence}`,
+        "feature-usp": `${strategyEvidence}, 핵심 차이를 확인하세요`,
+        "price-benefit": `${strategyEvidence}, 구매 조건을 확인하세요`,
+        "social-proof": `${strategyEvidence}, 선택 근거로 확인하세요`,
+        curiosity: `${strategyEvidence}, 왜 다른지 비교해보세요`,
+        lifestyle: `${strategyEvidence}, 필요한 순간에 선택하세요`,
+        "season-event": `${strategyEvidence}, 지금 필요한 이유를 확인하세요`,
+        sensory: `${strategyEvidence}, 사용하는 순간의 차이`,
+        gift: `${strategyEvidence}, 선물할 이유를 확인하세요`,
+        "brand-story": `${strategyEvidence}, 브랜드의 기준을 확인하세요`,
+      }[creativeStrategy.hookType]
+    : objectiveFallback.bodyCopy;
+  const mockHighlight = creativeStrategy
+    ? {
+        "problem-solution": (creativeStrategy.expectedCustomerProblem || strategyEvidence)
+          .replace(/어려움$/, "어려운 순간")
+          .replace(/필요함$/, "필요한 순간"),
+        "feature-usp": strategyEvidence,
+        "price-benefit": product.discountInfo || product.price || strategyEvidence,
+        "social-proof": creativeStrategy.inferredEvidence[0] || strategyEvidence,
+        curiosity: `직접 비교할 차이: ${strategyEvidence}`,
+        lifestyle: `필요한 순간의 선택: ${strategyEvidence}`,
+        "season-event": strategyEvidence,
+        sensory: strategyEvidence,
+        gift: strategyEvidence,
+        "brand-story": strategyEvidence,
+      }[creativeStrategy.hookType]
+    : objectiveFallback.highlightCopy;
   return normalizeGeneratedCopy(
     {
       headline: mockHeadline,
       bodyCopy: mockBody,
-      highlightCopy: isKookdaeGuide(copyGuide)
-        ? kookdaeFallbackCopy(product, reference).highlightCopy
-        : product.discountInfo || product.mainBenefit || "deal",
-      bottomBarCopy: isKookdaeGuide(copyGuide)
-        ? kookdaeFallbackCopy(product, reference).bottomBarCopy
-        : reference?.finalLabel?.purchaseTrigger ||
-          reference?.finalLabel?.whyItWorks ||
-          "check bundle",
-      cta: isKookdaeGuide(copyGuide) ? "특가 확인하기" : mockCta,
+      highlightCopy: mockHighlight,
+      bottomBarCopy: creativeStrategy?.audience || objectiveFallback.bottomBarCopy,
+      cta: objectiveFallback.cta,
       price: normalizePrice(product),
       hookType: inferHookType(reference),
       appealPoint: inferAppealPoint(reference),
@@ -835,7 +1041,8 @@ function mockCopy(
     },
     product,
     labels,
-    copyGuide
+    copyGuide,
+    { adBrief: resolvedBrief, creativeStrategy }
   );
 }
 
@@ -875,7 +1082,10 @@ async function generateWithOpenAI(
   }
 
   const parsed = parseJsonObject(getResponseText(await response.json()));
-  return normalizeGeneratedCopy(parsed, product, labels, copyGuide);
+  return normalizeGeneratedCopy(parsed, product, labels, copyGuide, {
+    adBrief: context?.adBrief,
+    creativeStrategy: context?.creativeStrategy,
+  });
 }
 
 export async function POST(request: Request) {
@@ -918,19 +1128,40 @@ export async function POST(request: Request) {
       templateId: body.templateId,
       templateName: body.templateName,
     };
-    const generatedCopy = process.env.OPENAI_API_KEY
+    const requestedStrategies = (body.creativeStrategies || [])
+      .filter((strategy): strategy is CreativeStrategy => Boolean(strategy?.id))
+      .slice(0, 6);
+    const copyStrategies = requestedStrategies.length
+      ? requestedStrategies
+      : body.creativeStrategy
+        ? [body.creativeStrategy]
+        : [];
+    const primaryStrategy = copyStrategies[0] || body.creativeStrategy;
+    const primaryGeneratedCopy = process.env.OPENAI_API_KEY
       ? await generateWithOpenAI(product, selectedLabels, template, copyGuide, {
           ...body,
+          creativeStrategy: primaryStrategy,
           adBrief,
           referenceLabels: selectedLabels,
           referenceUsages,
         })
-      : mockCopy(product, selectedLabels, copyGuide, adBrief, body.creativeStrategy);
-    const copy = applyBriefConstraints(generatedCopy, adBrief, product, selectedLabels, copyGuide);
+      : mockCopy(product, selectedLabels, copyGuide, adBrief, primaryStrategy);
+    const generatedCopies = copyStrategies.length
+      ? copyStrategies.map((strategy, index) =>
+          index === 0
+            ? primaryGeneratedCopy
+            : mockCopy(product, selectedLabels, copyGuide, adBrief, strategy)
+        )
+      : [primaryGeneratedCopy];
+    const copies = generatedCopies.map((generatedCopy) =>
+      applyBriefConstraints(generatedCopy, adBrief, product, selectedLabels, copyGuide)
+    );
+    const copy = copies[0];
 
     return NextResponse.json({
       ok: true,
       copy,
+      copies,
       referenceLabels: selectedLabels,
       referenceMatches,
       copyGuide,

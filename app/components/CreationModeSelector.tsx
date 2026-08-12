@@ -4,8 +4,8 @@ import { FeaturePageShell } from "./AppFeatureNavigation";
 const modes = [
   {
     eyebrow: "STORE DISCOVERY",
-    title: "분석 후 제작하기",
-    description: "쇼핑몰 전체를 분석해 지금 광고하기 좋은 상품과 콘텐츠 방향을 추천합니다.",
+    title: "광고 기회 상품 찾기",
+    description: "크리마켓 데이터 또는 업로드 지표를 비교하고, 미연결 시 기존 쇼핑몰 분석으로 광고 후보를 찾습니다.",
     features: [
       "베스트 카테고리 분석",
       "광고 후보 상품 추천",
@@ -15,13 +15,13 @@ const modes = [
       "추천 템플릿",
     ],
     href: "/analyze-store",
-    button: "업체 분석 시작",
+    button: "광고 기회 찾기",
     accent: "analysis",
     audience: "어떤 상품을 광고할지 아직 정하지 않았다면",
   },
   {
     eyebrow: "DIRECT CREATION",
-    title: "선택 상품 제작하기",
+    title: "상세페이지로 광고 만들기",
     description: "제작할 상품이 정해져 있다면 상품 URL을 입력해 바로 광고 소재를 만듭니다.",
     features: [
       "상품정보 추출",
@@ -31,7 +31,7 @@ const modes = [
       "단일/일괄 소재 생성",
     ],
     href: "/create-product",
-    button: "상품 제작 시작",
+    button: "상세페이지로 제작 시작",
     accent: "creation",
     audience: "제작할 상품 URL이 이미 준비되어 있다면",
   },

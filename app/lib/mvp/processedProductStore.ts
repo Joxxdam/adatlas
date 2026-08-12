@@ -5,6 +5,10 @@ export type ProcessedProductImageRecord = {
   provider: string;
   originalImagePath: string;
   processedImagePath: string;
+  cacheKey?: string;
+  representationType?: string;
+  extractionScope?: string;
+  pipelineVersion?: string;
   createdAt: string;
 };
 

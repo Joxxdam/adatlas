@@ -43,6 +43,7 @@ yarn-error.log*
 .env.*.local
 .env.production
 .env.development
+!.env.example
 
 # vercel
 .vercel
@@ -60,10 +61,30 @@ public/processed-products/*
 !public/processed-products/.gitkeep
 public/uploaded-source-images/*
 !public/uploaded-source-images/.gitkeep
+data/review-analysis-cache.json
 public/background-images/*
 !public/background-images/.gitkeep
 public/extracted/*
 !public/extracted/.gitkeep
+
+# large local background catalog runtime data
+/background-library/import/*
+!/background-library/import/.gitkeep
+/background-library/originals/*
+!/background-library/originals/.gitkeep
+/background-library/processed/*
+!/background-library/processed/.gitkeep
+/background-library/thumbnails/*
+!/background-library/thumbnails/.gitkeep
+/background-library/review/*
+!/background-library/review/.gitkeep
+/background-library/jobs/*
+!/background-library/jobs/.gitkeep
+/background-library/logs/*
+!/background-library/logs/.gitkeep
+/background-library/manifests/*
+!/background-library/manifests/schema.json
+!/background-library/manifests/.gitkeep
 
 # local creative quality benchmark source images
 data/creative-benchmarks/desired-quality/
@@ -71,3 +92,11 @@ data/creative-benchmarks/desired-quality/
 # local store analysis results
 data/store-analysis/*
 !data/store-analysis/.gitkeep
+
+# resumable creative-generation runtime jobs
+data/creative-generation-jobs/*
+!data/creative-generation-jobs/.gitkeep
+
+# generated creative asset registry (local JSON MVP storage)
+data/creative-assets/*
+!data/creative-assets/.gitkeep
