@@ -2,6 +2,8 @@ import type { AdBrief, ProductInfoForPrompt } from "../mvp/types";
 import type { CreativeAssetSnapshot } from "../creative-assets/types";
 import type { CreativeNoteCompliance } from "../creative-content-notes/types";
 
+export const CREATIVE_PLANNER_VERSION = "creative-planner-v2";
+
 export const creativeBlueprintIds = [
   "problem-solution-split",
   "editorial-story",

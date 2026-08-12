@@ -8,19 +8,19 @@ import { matchKnownProductAsset } from "../creative/knownProductAssets.ts";
 import { creativeBlueprints } from "./blueprints.ts";
 import { matchBrandProfile, matchCategoryProfile, withRequestedLogo } from "./profiles.ts";
 import { extractNumericTokens } from "./productTruth.ts";
-import type {
-  BrandProfile,
-  CreativeBlueprintId,
-  CreativePlan,
-  GenerationJob,
-  GenerationResult,
-  HookPlan,
-  ProductTruth,
-  SceneAsset,
-  ScenePlan,
-} from "./types";
+import {
+  CREATIVE_PLANNER_VERSION,
+  type BrandProfile,
+  type CreativeBlueprintId,
+  type CreativePlan,
+  type GenerationJob,
+  type GenerationResult,
+  type HookPlan,
+  type ProductTruth,
+  type SceneAsset,
+  type ScenePlan,
+} from "./types.ts";
 
-export const CREATIVE_PLANNER_VERSION = "creative-planner-v1";
 export const SCENE_PROMPT_VERSION = "scene-safe-zone-v1";
 
 function id(prefix: string, index = 0) {
@@ -102,13 +102,31 @@ function productCopySignals(truth: ProductTruth) {
   const fashion = /패션|의류|원피스|블라우스|팬츠|스커트|핏|실루엣|코디/i.test(productText);
   const food = /식품|한우|고기|과일|채소|농산|수산|맛|식감|풍미/i.test(productText);
   const primary = compact(find(/쿨링|상쾌|보습|향|성분|원료|핏|실루엣|구성|원산지|식감|풍미/i) || unique[0] || product.productName, 32);
-  const ingredients = compact(
-    Array.from(new Set((product.ingredients || []).flatMap((value) =>
-      String(value).match(/민트|티트리|레몬|라임|코코넛|시어버터|시어|멘톨|국내산|한우/gi) || []
-    ))).slice(0, 3).join(" · ") || find(/민트|티트리|레몬|라임|코코넛|시어|멘톨|원료|성분/i) || primary,
-    24
-  );
-  const sensory = compact(find(/쿨링|상쾌|시원|보습|촉촉|향|부드|식감|풍미|핏/i) || primary, 24);
+  const ingredientPattern = /민트|티트리|레몬|라임|코코넛|시어버터|시어|루바브|라즈베리|국내산|한우/gi;
+  const namedIngredientItems = String(product.productName).match(ingredientPattern) || [];
+  const ingredientItems = Array.from(new Set((
+    namedIngredientItems.length
+      ? namedIngredientItems
+      : (product.ingredients || []).flatMap((value) => String(value).match(ingredientPattern) || [])
+  ))).slice(0, 3);
+  const ingredientPhrase = ingredientItems.length === 1
+    ? ingredientItems[0]
+    : ingredientItems.length === 2
+      ? `${ingredientItems[0]}와 ${ingredientItems[1]}`
+      : ingredientItems.length > 2
+        ? `${ingredientItems.slice(0, -1).join(", ")} 그리고 ${ingredientItems.at(-1)}`
+        : compact(find(/민트|티트리|레몬|라임|코코넛|시어|멘톨|원료|성분/i) || primary, 24);
+  const ingredients = compact(ingredientPhrase, 24);
+  const cooling = /민트|멘톨|쿨링|시원|상쾌/i.test(productText);
+  const sensory = personalCare
+    ? cooling
+      ? "산뜻한 쿨링감"
+      : /보습|촉촉|시어|코코넛/i.test(productText)
+        ? "촉촉한 사용감"
+        : /향|레몬|라임|루바브|라즈베리/i.test(productText)
+          ? "기분 좋은 향과 사용감"
+          : "산뜻한 사용감"
+    : compact(find(/쿨링|상쾌|시원|보습|촉촉|향|부드|식감|풍미|핏/i) || primary, 24);
   const situation = personalCare
     ? /쿨링|시원|상쾌|민트/i.test(productText)
       ? "운동 후에도 열감이 남는 순간"
@@ -129,7 +147,7 @@ function productCopySignals(truth: ProductTruth) {
       : food
         ? "가격만 보고 골랐다가 맛이 아쉬웠다면"
         : "비슷한 상품 사이에서 고르기 어렵다면";
-  return { analysis, primary, ingredients, sensory, situation, problem, personalCare, fashion, food };
+  return { analysis, primary, ingredients, sensory, situation, problem, personalCare, fashion, food, cooling };
 }
 
 function hookBody(params: {
@@ -137,29 +155,48 @@ function hookBody(params: {
   fallback: string;
   signals: ReturnType<typeof productCopySignals>;
   offer: string;
+  uspNote?: string;
 }) {
-  const { hookType, fallback, signals, offer } = params;
+  const { hookType, fallback, signals, offer, uspNote } = params;
+  const withUspNote = (value: string) =>
+    uspNote && !value.includes(uspNote) ? `${value} · ${uspNote}` : value;
   if ((hookType === "price-benefit" || hookType === "price-value") && offer) {
-    return `${offer}, 확인된 가격으로 비교하세요`;
+    return withUspNote(signals.personalCare
+      ? `${signals.ingredients}의 사용감까지, 구매 조건과 함께 확인하세요`
+      : `${signals.primary}, 구매 조건과 함께 비교하세요`);
   }
   if (hookType === "problem-solution") {
-    return signals.personalCare
-      ? `${compact(signals.sensory, 12)}, 민트 샤워로 바꿔보세요`
-      : `${signals.primary}, 불편을 줄일 선택 기준`;
+    return withUspNote(signals.personalCare
+      ? signals.cooling
+        ? `${signals.ingredients}, 샤워의 감각부터 바꿔보세요`
+        : `${signals.sensory}, 샤워 뒤의 사용감부터 바꿔보세요`
+      : `${signals.primary}, 불편을 줄일 선택 기준`);
   }
-  if (hookType === "sensory") return `${signals.sensory}, 쓰는 순간 느껴지는 차이`;
+  if (hookType === "sensory") return withUspNote(signals.personalCare
+    ? `피부에 닿는 순간부터 이어지는 ${signals.sensory}`
+    : `${signals.sensory}, 쓰는 순간 느껴지는 차이`);
   if (hookType === "lifestyle" || hookType === "empathy-situation") {
-    return signals.personalCare
-      ? `${signals.ingredients}로 완성하는 상쾌한 사용감`
-      : `${signals.primary}, 필요한 순간의 선택`;
+    return withUspNote(signals.personalCare
+      ? `${signals.ingredients}로 시작하는 산뜻한 샤워 루틴`
+      : `${signals.primary}, 필요한 순간의 선택`);
   }
   if (hookType === "feature-usp" || hookType === "usp-proof" || hookType === "proof-data") {
-    return signals.personalCare
-      ? `${signals.ingredients}, 상품 차이를 만드는 조합`
-      : `${signals.primary}, 상세페이지에서 확인한 차이`;
+    return withUspNote(signals.personalCare
+      ? `성분부터 확인하고 고른다면, ${signals.ingredients}`
+      : `${signals.primary}, 상세페이지에서 확인한 차이`);
   }
-  if (hookType === "curiosity") return `${signals.primary}, 상세페이지에서 답을 확인하세요`;
-  return fallback;
+  if (hookType === "curiosity") return withUspNote(`${signals.primary}, 상세페이지에서 답을 확인하세요`);
+  if (hookType === "social-proof" || hookType === "review-ugc") {
+    return withUspNote(signals.personalCare
+      ? `상쾌함의 근거를 ${signals.ingredients}에서 확인하세요`
+      : `${signals.primary}, 말보다 확인 가능한 기준부터`);
+  }
+  if (hookType === "comparison") {
+    return withUspNote(signals.personalCare
+      ? `${signals.ingredients}로 시작하는 더 산뜻한 샤워 루틴`
+      : `${signals.primary}, 비슷해 보여도 다른 선택 기준`);
+  }
+  return withUspNote(fallback);
 }
 
 export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan[] {
@@ -167,6 +204,7 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
   const benefit = signals.primary || cleanBenefit(truth);
   const target = truth.product.targetCustomer || "이 상품이 필요한 고객";
   const offer = exactOffer(truth);
+  const headlineOffer = truth.product.discountInfo || truth.product.price;
   const objectiveProfile = getAdObjectiveProfile(adBrief?.adObjective);
   const approachProfile = getCreativeApproachProfile(adBrief?.creativeIntensity);
   const plannedCta = objectiveCta(adBrief?.adObjective, Boolean(offer));
@@ -176,7 +214,9 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
       hookType: "problem-solution",
       title: "문제에서 해결로",
       headline: signals.problem,
-      body: `${compact(signals.sensory, 12)}, 민트 샤워로 바꿔보세요`,
+      body: signals.cooling
+        ? `${signals.ingredients}, 샤워의 감각부터 바꿔보세요`
+        : `${signals.sensory}, 샤워 뒤의 사용감부터 바꿔보세요`,
       proof: "",
       offer,
       cta: plannedCta,
@@ -207,7 +247,9 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
         ? `샤워하고 나왔는데\n왜 아직도 덥지?`
         : `써보니 알겠다는 말,\n어떤 차이였을까요?`,
       body: signals.personalCare
-        ? `${signals.sensory}을 찾는다면 민트 샤워로`
+        ? signals.cooling
+          ? `${signals.sensory}이 필요한 샤워 순간`
+          : `${signals.sensory}, 샤워 뒤에 남기는 감각`
         : `${benefit}, 실제 선택 기준으로 확인하세요`,
       proof: "상세페이지의 상품 정보를 확인하세요",
       offer: "",
@@ -224,7 +266,7 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
         ? `씻기만 하는 샤워와\n기분까지 깨우는 샤워`
         : `비슷해 보여도\n선택 기준은 달라야 하니까`,
       body: signals.personalCare
-        ? `${signals.ingredients}, 사용감부터 다르게`
+        ? `${signals.ingredients}로 시작하는 더 산뜻한 샤워 루틴`
         : `${benefit}, 차이를 만드는 선택 기준`,
       proof: "상세페이지 확인 정보",
       offer,
@@ -241,7 +283,7 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
         ? `샤워하는 순간,\n상쾌함의 온도를 바꾸다`
         : `${benefit}, 한 번에 기억될 차이`,
       body: signals.personalCare
-        ? `${signals.ingredients}의 감각을 담은 샤워젤`
+        ? `피부에 닿는 순간부터 이어지는 ${signals.sensory}`
         : benefit,
       proof: "",
       offer,
@@ -258,7 +300,7 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
         ? `${signals.ingredients},\n상쾌함에는 이유가 있으니까`
         : `${benefit}, 말보다 기준으로 확인하세요`,
       body: signals.personalCare
-        ? `${signals.sensory}을 위한 확인된 상품 정보`
+        ? `성분부터 확인하고 고른다면, ${signals.ingredients}`
         : benefit,
       proof: truth.product.price || "상세페이지 확인 정보",
       offer: truth.product.discountInfo || "",
@@ -327,30 +369,42 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
     const hookType = preferred[index] || plan.hookType;
     const planHeadline =
       (hookType === "price-benefit" || hookType === "price-value") && offer
-        ? `${offer}, 상쾌한 샤워를 고를 이유`
+        ? signals.personalCare
+          ? `${headlineOffer || offer}으로 바꾸는\n샤워의 첫인상`
+          : `${headlineOffer || offer},\n지금 비교할 구매 조건`
         : hookType === "sensory"
           ? signals.personalCare
-            ? `샤워하는 순간,\n민트 바람이 터지는 듯`
+            ? signals.cooling
+              ? `샤워하는 순간,\n서늘한 바람이 스치는 듯`
+              : `샤워하는 순간,\n향이 피어나는 듯`
             : `${signals.sensory}, 쓰는 순간 느껴지는 차이`
           : hookType === "lifestyle" || hookType === "empathy-situation"
             ? signals.situation
             : hookType === "feature-usp" || hookType === "usp-proof"
               ? signals.personalCare
-                ? `${signals.ingredients},\n상쾌함을 만드는 조합`
+                ? `${signals.ingredients},\n샤워에 상쾌함을 켜다`
                 : `${benefit}, 차이를 만드는 기준`
               : hookType === "curiosity"
                 ? signals.personalCare
                   ? `평범한 샤워가\n유독 아쉬웠던 이유`
                   : `${benefit}, 왜 차이가 날까요?`
+                : hookType === "social-proof" || hookType === "review-ugc"
+                  ? context?.reviewInsightSummaries?.length || truth.product.reviewSources?.length
+                    ? `후기에서 반복된\n${signals.sensory}`
+                    : `샤워젤을 고를 때\n광고보다 먼저 볼 것`
+                  : hookType === "comparison"
+                    ? signals.personalCare
+                      ? `씻기만 하는 샤워와\n기분까지 깨우는 샤워`
+                      : `비슷해 보여도\n선택 기준은 달라야 하니까`
                 : hookType === "brand-story"
                   ? signals.personalCare
-                    ? `오리지널소스가\n샤워를 깨우는 방식`
+                    ? `${creativePlanBrandName(truth.product)},\n샤워를 깨우는 방식`
                     : `${creativePlanBrandName(truth.product)}, 기억할 한 가지 차이`
                   : plan.headline;
     const objectiveHeadline =
       adBrief?.adObjective === "awareness" && index === 0
         ? signals.personalCare
-          ? `오리지널소스,\n샤워를 깨우는 민트 감각`
+          ? `${creativePlanBrandName(truth.product)},\n샤워를 깨우는 감각`
           : `${creativePlanBrandName(truth.product)},\n${benefit}`
         : adBrief?.adObjective === "retargeting" && index === 0
           ? `다시 볼 이유,\n${benefit}`
@@ -367,6 +421,7 @@ export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief): HookPlan
         fallback: index === 1 && uspNote ? [plan.body, uspNote].filter(Boolean).join(" · ") : plan.body,
         signals,
         offer,
+        uspNote: index === 1 ? uspNote : undefined,
       }),
       offer: adBrief?.creativeIntensity === "brand" && index < 4 ? "" : plan.offer,
       sceneIntent: [

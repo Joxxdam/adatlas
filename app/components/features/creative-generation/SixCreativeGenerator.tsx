@@ -5,10 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
 import { getGenerationPlanSummary } from "../../../lib/mvp/adObjective";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
-import type {
-  CopyPlan,
-  GenerationJob,
-  GenerationResult,
+import {
+  CREATIVE_PLANNER_VERSION,
+  type CopyPlan,
+  type GenerationJob,
+  type GenerationResult,
 } from "../../../lib/creative-generation/types";
 
 type EditableCopy = Pick<CopyPlan, "headline" | "body" | "proof" | "offer" | "cta">;
@@ -23,7 +24,7 @@ type Props = {
   source: "landing-page" | "user-input";
 };
 
-const storedJobKey = "adatlas-six-creative-job-id";
+const storedJobKey = `adatlas-six-creative-job-id-${CREATIVE_PLANNER_VERSION}`;
 
 const resultStatusLabels: Record<GenerationResult["status"], string> = {
   pending: "대기",
@@ -116,7 +117,8 @@ export function SixCreativeGenerator(props: Props) {
             })
           : "";
         const samePlan = restoredBriefKey === briefKey;
-        if (sameProduct && samePlan) {
+        const samePlanner = payload.job.creativePlan.plannerVersion === CREATIVE_PLANNER_VERSION;
+        if (sameProduct && samePlan && samePlanner) {
           setJob(payload.job);
           setMessage("이전에 진행하던 6장 생성 작업을 복구했습니다.");
         } else {
