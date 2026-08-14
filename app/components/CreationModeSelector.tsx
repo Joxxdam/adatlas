@@ -5,8 +5,9 @@ const modes = [
   {
     eyebrow: "STORE DISCOVERY",
     title: "광고 기회 상품 찾기",
-    description: "크리마켓 데이터 또는 업로드 지표를 비교하고, 미연결 시 기존 쇼핑몰 분석으로 광고 후보를 찾습니다.",
+    description: "BigQuery·크리마켓·업로드 지표를 비교하고, 미연결 시 기존 쇼핑몰 분석으로 광고 후보를 찾습니다.",
     features: [
+      "BigQuery 판매·노출 데이터 분석",
       "베스트 카테고리 분석",
       "광고 후보 상품 추천",
       "후기/USP 분석",

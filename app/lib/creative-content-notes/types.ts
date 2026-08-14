@@ -104,4 +104,8 @@ export type CreativeOpportunityContext = {
   reviewInsightIds?: string[];
   reviewInsightSummaries?: string[];
   appliedContentNotes?: ResolvedCreativeContentNote[];
+  dataEvidence?: string[];
+  dataAsOf?: string;
+  dataSources?: string[];
+  dataSufficiency?: "analysis-ready" | "reference-only" | "data-insufficient";
 };

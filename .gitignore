@@ -23,6 +23,11 @@
 # misc
 .DS_Store
 *.pem
+application_default_credentials.json
+*service-account*.json
+gcp-credentials*.json
+google-credentials*.json
+credentials*.json
 
 # debug
 npm-debug.log*

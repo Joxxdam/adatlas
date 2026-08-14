@@ -304,6 +304,12 @@ ${JSON.stringify(product.creativeContext?.appliedContentNotes || [], null, 2)}
 - PRICE_POLICY와 PROMOTION은 현재 상품 사실에 같은 가격·기간·구성이 확인된 경우에만 사용한다.
 - IMAGE_RULE, BACKGROUND_STYLE, LAYOUT_RULE은 카피 사실의 출처가 아니라 시각 제작 제약이다.
 
+[데이터 기반 후보 근거]
+${JSON.stringify(product.creativeContext?.dataEvidence || [], null, 2)}
+- 이 근거는 후보 선정과 후킹 방향에 활용하되, 집계 매출을 상품 판매가로 표현하지 않는다.
+- 순위는 전체 시장 순위가 아니라 해당 광고주의 조회 가능한 상품 안에서의 순위임을 과장하지 않는다.
+- dataSufficiency가 analysis-ready가 아니면 확정적 성과 표현 대신 검증할 가설로만 사용한다.
+
 [광고 목표 적용]
 ${adObjectivePrompt(adBrief?.adObjective)}
 - 광고 목표는 단순한 말투 태그가 아닙니다. headline, bodyCopy, highlightCopy, bottomBarCopy, CTA의 역할과 정보 순서를 모두 목표에 맞게 바꾸세요.

@@ -4,6 +4,7 @@ import { readBrands, readGenerated } from "../lib/mvp/store";
 import { buildProductCreationHandoff } from "../lib/store-analysis/productCreationAdapter";
 import { storeAnalysisRepository } from "../lib/store-analysis/storeAnalysisRepository";
 import { buildOpportunityProductCreationHandoff } from "../lib/crema-market/handoff.server";
+import { buildBigQueryProductCreationHandoff } from "../lib/bigquery/handoff.server";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +22,20 @@ export default async function CreateProductPage({
   const productId = single(params.productId);
   const angle = single(params.angle);
   const opportunityId = single(params.opportunityId);
+  const dataCandidateId = single(params.dataCandidateId);
   const [brands, images, generated] = await Promise.all([
     readBrands(),
     readCollectedAdImages(),
     readGenerated(),
   ]);
   let initialCreationHandoff = null;
-  if (opportunityId) {
+  if (dataCandidateId) {
+    try {
+      initialCreationHandoff = await buildBigQueryProductCreationHandoff(dataCandidateId);
+    } catch {
+      initialCreationHandoff = null;
+    }
+  } else if (opportunityId) {
     try {
       initialCreationHandoff = await buildOpportunityProductCreationHandoff(opportunityId);
     } catch {
