@@ -230,6 +230,86 @@ export type SafeHtmlResponse = {
   contentType: string;
 };
 
+export type SafeTextResponse = SafeHtmlResponse;
+
+export async function safeFetchPublicText(
+  value: string,
+  options: {
+    timeoutMs?: number;
+    maxBytes?: number;
+    userAgent?: string;
+    allowedContentTypes?: RegExp;
+  } = {}
+): Promise<SafeTextResponse> {
+  let current = await validatePublicHttpUrl(value);
+  const requestedUrl = current.toString();
+  const allowedContentTypes =
+    options.allowedContentTypes || /(?:text\/html|application\/xhtml\+xml|application\/xml|text\/xml|text\/plain)/i;
+
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount += 1) {
+    let response: Response;
+    try {
+      response = await fetch(current, {
+        method: "GET",
+        redirect: "manual",
+        cache: "no-store",
+        signal: AbortSignal.timeout(options.timeoutMs || DEFAULT_TIMEOUT_MS),
+        headers: {
+          Accept: "text/html,application/xhtml+xml,application/xml,text/xml,text/plain;q=0.8",
+          "User-Agent": options.userAgent || "Mozilla/5.0 (compatible; AdAtlasStoreAnalyzer/1.0)",
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error && /abort|timeout/i.test(`${error.name} ${error.message}`)) {
+        throw new StoreAnalysisNetworkError("요청 시간이 초과되었습니다.", "TIMEOUT");
+      }
+      throw new StoreAnalysisNetworkError("쇼핑몰 페이지 요청에 실패했습니다.", "REQUEST_FAILED");
+    }
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) {
+        throw new StoreAnalysisNetworkError(
+          "리디렉션 위치를 확인하지 못했습니다.",
+          "REQUEST_FAILED"
+        );
+      }
+      if (redirectCount === MAX_REDIRECTS) {
+        throw new StoreAnalysisNetworkError("리디렉션 횟수가 너무 많습니다.", "TOO_MANY_REDIRECTS");
+      }
+      current = await validatePublicHttpUrl(new URL(location, current).toString());
+      continue;
+    }
+
+    await validatePublicHttpUrl(response.url || current.toString());
+    if (!response.ok) {
+      const blocked = [401, 403, 407, 429, 451].includes(response.status);
+      throw new StoreAnalysisNetworkError(
+        blocked
+          ? `사이트 접근이 제한되었습니다. (HTTP ${response.status})`
+          : `쇼핑몰 페이지 요청에 실패했습니다. (HTTP ${response.status})`,
+        blocked ? "ACCESS_BLOCKED" : "REQUEST_FAILED"
+      );
+    }
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType && !allowedContentTypes.test(contentType)) {
+      throw new StoreAnalysisNetworkError(
+        "분석할 수 없는 콘텐츠 유형입니다.",
+        "INVALID_CONTENT_TYPE"
+      );
+    }
+    const bytes = await readLimitedBody(response, options.maxBytes || MAX_HTML_BYTES);
+    return {
+      requestedUrl,
+      finalUrl: response.url || current.toString(),
+      html: decodeHtml(bytes, contentType),
+      status: response.status,
+      contentType,
+    };
+  }
+  throw new StoreAnalysisNetworkError("리디렉션 횟수가 너무 많습니다.", "TOO_MANY_REDIRECTS");
+}
+
 export async function safeFetchHtml(
   value: string,
   options: { timeoutMs?: number; maxBytes?: number; userAgent?: string } = {}

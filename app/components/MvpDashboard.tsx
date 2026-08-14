@@ -775,6 +775,13 @@ export function MvpDashboard({
     advertiserOptions.find(
       (option) => option.guideId === initialCreationHandoff?.matchedCopyGuideId
     )?.value || "";
+  const handoffAnalysisSource = initialCreationHandoff?.creativeContext?.analysisSource;
+  const handoffSourceLabel =
+    handoffAnalysisSource === "SITE_PUBLIC_DATA"
+      ? "사이트 공개정보 기반 후보"
+      : handoffAnalysisSource === "BIGQUERY"
+        ? "데이터 기반 광고 기회"
+        : "업체 분석 추천";
   const [activeMenu, setActiveMenu] = useState<MvpMenu>(initialActiveMenu);
   const [images, setImages] = useState(initialImages);
   const [generated, setGenerated] = useState(initialGenerated);
@@ -812,13 +819,13 @@ export function MvpDashboard({
   const [productExtractStatus, setProductExtractStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
     message: initialCreationHandoff
-      ? "업체 분석 결과에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다."
+      ? `${handoffSourceLabel}에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다.`
       : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
   });
   const [strategyStatus, setStrategyStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
     message: initialCreationHandoff?.selectedContentAngle
-      ? `업체 분석 추천 전략 '${initialCreationHandoff.selectedContentAngle.name}'을 상품 브리프에 반영했습니다.`
+      ? `${handoffSourceLabel} 전략 '${initialCreationHandoff.selectedContentAngle.name}'을 상품 브리프에 반영했습니다.`
       : "상품 정보를 불러오면 관련 내부 신호를 자동으로 찾아 후킹을 제안합니다.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
@@ -4866,7 +4873,7 @@ export function MvpDashboard({
             {initialCreationHandoff ? (
               <section className="analysis-handoff-banner">
                 <div className="analysis-handoff-score">
-                  <span>{initialCreationHandoff.creativeContext?.opportunityId ? "데이터 기반 광고 기회" : "업체 분석 추천"}</span>
+                  <span>{handoffSourceLabel}</span>
                   <strong>{initialCreationHandoff.advertisingScore}</strong>
                   <small>
                     광고 적합도 · confidence {Math.round(initialCreationHandoff.confidence * 100)}%

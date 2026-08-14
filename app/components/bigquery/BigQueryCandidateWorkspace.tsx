@@ -56,7 +56,11 @@ function sufficiencyText(value: BigQueryCandidateResponse["candidates"][number][
   return "데이터 부족";
 }
 
-export function BigQueryCandidateWorkspace() {
+export function BigQueryCandidateWorkspace({
+  onOpenSiteMode,
+}: {
+  onOpenSiteMode?: () => void;
+}) {
   const [status, setStatus] = useState<BigQueryConnectionStatus | null>(null);
   const [advertisers, setAdvertisers] = useState<BigQueryAdvertiser[]>([]);
   const [advertiserSearch, setAdvertiserSearch] = useState("");
@@ -191,6 +195,20 @@ export function BigQueryCandidateWorkspace() {
         <strong>{message}</strong>
         <span>사용자 SQL 입력 없이 고정 SELECT만 실행하며, 조회 전 비용 한도를 검사합니다.</span>
       </div>
+
+      {!loading && (!status?.connected || !advertisers.length) ? (
+        <div className={styles.siteFallback}>
+          <div>
+            <strong>연결된 판매 데이터가 없어 사이트 분석 추천으로 전환합니다.</strong>
+            <span>
+              자사몰 공개정보에서 광고 콘텐츠로 테스트할 가치가 높은 상품을 찾아드립니다.
+            </span>
+          </div>
+          <button onClick={onOpenSiteMode} type="button">
+            사이트 URL로 후보 찾기
+          </button>
+        </div>
+      ) : null}
 
       <div className={styles.controls}>
         <label>
@@ -361,7 +379,9 @@ export function BigQueryCandidateWorkspace() {
         <div className={styles.empty}>
           <strong>광고주와 기간을 선택해 후보를 찾아보세요.</strong>
           <span>연결 데이터가 없거나 원하는 상품이 없다면 기존 상세페이지 분석을 그대로 사용할 수 있습니다.</span>
-          <a href="#direct-store-analysis-entry">상세페이지 URL로 바로 만들기</a>
+          <button className={styles.inlineSiteAction} onClick={onOpenSiteMode} type="button">
+            사이트 URL로 후보 찾기
+          </button>
         </div>
       )}
     </section>

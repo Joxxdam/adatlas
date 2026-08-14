@@ -1,0 +1,52 @@
+.root {
+  padding-top: 24px;
+}
+
+.modeBar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(760px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 4px;
+  border: 1px solid #cfe0f4;
+  border-radius: 8px;
+  background: #f4f8fd;
+}
+
+.modeBar button {
+  display: grid;
+  gap: 2px;
+  min-height: 54px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 8px 14px;
+  color: #667085;
+  text-align: left;
+  cursor: pointer;
+}
+
+.modeBar button strong {
+  color: #344054;
+}
+
+.modeBar button span {
+  font-size: 11px;
+}
+
+.modeBar button.active {
+  background: #2478d3;
+  color: #dbeafe;
+  box-shadow: 0 4px 12px rgba(36, 120, 211, 0.18);
+}
+
+.modeBar button.active strong {
+  color: #fff;
+}
+
+@media (max-width: 560px) {
+  .modeBar {
+    grid-template-columns: 1fr;
+    width: calc(100% - 20px);
+  }
+}

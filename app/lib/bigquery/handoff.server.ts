@@ -58,6 +58,7 @@ function productInfo(candidate: BigQueryAdCandidate): ProductInfoForPrompt {
         candidate.dataSufficiency === "connection-required"
           ? "data-insufficient"
           : candidate.dataSufficiency,
+      analysisSource: "BIGQUERY",
     },
   };
 }

@@ -108,4 +108,8 @@ export type CreativeOpportunityContext = {
   dataAsOf?: string;
   dataSources?: string[];
   dataSufficiency?: "analysis-ready" | "reference-only" | "data-insufficient";
+  analysisSource?: "BIGQUERY" | "SITE_PUBLIC_DATA" | "CREMA" | "STORE_ANALYSIS";
+  adFitScore?: number;
+  evidenceLevel?: "high" | "medium" | "low";
+  recommendationReasons?: string[];
 };

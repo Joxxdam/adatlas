@@ -1,14 +1,14 @@
 import { FeaturePageShell } from "../components/AppFeatureNavigation";
+import { AdCandidateDiscoveryWorkspace } from "../components/ad-candidates/AdCandidateDiscoveryWorkspace";
 import { StoreAnalysisForm } from "../components/store-analysis/StoreAnalysisForm";
 import { CremaOpportunityWorkspace } from "../components/crema-market/CremaOpportunityWorkspace";
-import { BigQueryCandidateWorkspace } from "../components/bigquery/BigQueryCandidateWorkspace";
 
 export const dynamic = "force-dynamic";
 
 export default function AnalyzeStorePage() {
   return (
     <FeaturePageShell activeFeature="store-analysis">
-      <BigQueryCandidateWorkspace />
+      <AdCandidateDiscoveryWorkspace />
       <CremaOpportunityWorkspace />
       <section className="direct-store-analysis-entry" id="direct-store-analysis-entry">
         <div>
