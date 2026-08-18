@@ -28,6 +28,11 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     return { job, result: job.results.find((item) => item.id === input.resultId)! };
   }
 
+  if (job.status === "cancelled") throw new Error("사용자가 취소한 작업이므로 새 광고 생성을 시작하지 않습니다.");
+  if (action === "generate" && ["success", "approved"].includes(initial.status)) {
+    return { job, result: initial };
+  }
+
   job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, status: "running", startedAt: current.startedAt || new Date().toISOString(), results: current.results.map((result) => result.id === input.resultId ? { ...result, status: "running", generationStage: "reference-preparing", attempts: result.attempts + 1, error: undefined, startedAt: new Date().toISOString() } : result) }));
   const provider = createCreativeGenerationProvider(job.engine || "codex_local");
   const references = await prepareNativeReferenceImages(job);

@@ -10,6 +10,7 @@ import { buildNativeFinalCreativePrompt, buildNativeValidationPrompt } from "../
 import { buildVisualDiversityMatrix, validateVisualDiversityMatrix } from "../app/lib/creative-generation/visualDiversity.ts";
 import { optimizeNativeFinalImage } from "../app/lib/creative-generation/nativeCreativeStorage.server.ts";
 import { passesNativeCreativeValidation } from "../app/lib/creative-generation/nativeCreativeValidation.ts";
+import { assertNativeProductReferenceReady } from "../app/lib/creative-generation/productImages.server.ts";
 
 const product = { productName:"민트 샤워젤", category:"뷰티", price:"12,000원", advertiserName:"오리지널소스", brandName:"Original Source", discountInfo:"", mainBenefit:"민트 사용감", targetCustomer:"상쾌한 샤워를 원하는 고객", landingUrl:"https://www.originalsource.co.kr/product/detail.html?product_no=65", productImagePath:"/product.png" };
 const results = Array.from({length:6}, (_,i) => ({ hookPlan:{hookCode:`H0${i+1}`, headline:`후킹 ${i+1}`, body:`설명 ${i+1}`, cta:"상품 보기", hypothesis:`가설 ${i+1}`}, scenePlan:{sceneAsset:{scene:`장면 ${i+1}`}} }));
@@ -83,6 +84,31 @@ test("최종 내보내기는 1200x1200 JPEG 800KB 이하로만 저장한다", as
 test("새 native 경로는 레거시 SVG/Canvas/Sharp 텍스트 렌더러를 호출하지 않는다", async () => {
   const source=await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts",import.meta.url),"utf8");
   assert.doesNotMatch(source,/renderCreativeResult|\.composite\(|<svg|Canvas/);
+});
+
+test("AI 전체 광고는 누끼 없이 상세페이지 원본만으로 생성 준비가 된다", () => {
+  assert.doesNotThrow(() => assertNativeProductReferenceReady({
+    imageAssets: [{ path: "/detail/product-use.jpg", role: "detail-image" }],
+  }));
+  assert.throws(
+    () => assertNativeProductReferenceReady({
+      imageAssets: [{ path: "/product-cutouts/legacy.png", role: "product-cutout" }],
+    }),
+    /상세페이지 원본 이미지/
+  );
+});
+
+test("URL 분석과 native 작업 생성은 등록 누끼로 대표 이미지를 교체하지 않는다", async () => {
+  const [extractRoute, jobRoute, dashboard] = await Promise.all([
+    readFile(new URL("../app/api/extract/product/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/creative-generation/jobs/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/MvpDashboard.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(extractRoute, /applyKnownProductAssets/);
+  assert.doesNotMatch(jobRoute, /matchKnownProductAsset|등록된 상품 전용 누끼/);
+  assert.match(jobRoute, /originalProductReferencePaths/);
+  assert.doesNotMatch(dashboard, /automaticCutoutInFlightRef/);
+  assert.match(dashboard, /누끼 없이 상세페이지 원본 이미지를 참조합니다/);
 });
 
 test("로컬 공급자는 API 키 환경변수를 Codex 자식 프로세스에 전달하지 않는다", async () => {

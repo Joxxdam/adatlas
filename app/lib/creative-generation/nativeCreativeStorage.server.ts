@@ -39,8 +39,25 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
   const advertiserId = job.advertiserId || "unknown-advertiser";
   const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references");
   await mkdir(directory, { recursive: true });
-  const sources = [...job.productTruth.referenceImages, ...job.productTruth.imageAssets]
-    .filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index)
+  const unique = [...job.productTruth.imageAssets, ...job.productTruth.referenceImages]
+    .filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index);
+  const originals = unique.filter(
+    (asset) =>
+      asset.role !== "product-cutout" &&
+      !/\/(?:processed-products|product-cutouts)\//i.test(asset.path)
+  );
+  const sources = (originals.length ? originals : unique)
+    .sort((left, right) => {
+      const score = (asset: (typeof unique)[number]) => {
+        if (asset.role === "product-packshot") return 500;
+        if (asset.role === "product-lifestyle") return 450;
+        if (asset.role === "detail-image") return 350;
+        if (asset.role === "ad-reference") return 250;
+        if (asset.role === "product-cutout") return 100;
+        return 0;
+      };
+      return score(right) - score(left);
+    })
     .slice(0, 4);
   const files: string[] = [];
   for (let index = 0; index < sources.length; index += 1) {

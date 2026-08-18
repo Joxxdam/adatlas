@@ -3,7 +3,7 @@ import { creativeGenerationJobStore } from "../../../lib/creative-generation/job
 import { buildCreativePlan, buildExplorationCreativePlan, createGenerationJob, planAiScenes } from "../../../lib/creative-generation/planner";
 import { buildProductTruth } from "../../../lib/creative-generation/productTruth";
 import {
-  assertProductImageReady,
+  assertNativeProductReferenceReady,
   inspectProductTruthImages,
 } from "../../../lib/creative-generation/productImages.server";
 import { generateHookMessages } from "../../../lib/creative-generation/hookMessages.server";
@@ -16,9 +16,11 @@ import { getAdvertiserThread } from "../../../lib/creative-generation/codexRegis
 import { writeNativeManifest } from "../../../lib/creative-generation/nativeCreativeStorage.server";
 import { defaultAdBrief } from "../../../lib/mvp/adBrief";
 import type { AdBrief } from "../../../lib/mvp/types";
-import { applyKnownProductAssets, matchKnownProductAsset } from "../../../lib/creative/knownProductAssets";
 import { matchCategoryProfile } from "../../../lib/creative-generation/profiles";
 import { readCategoryHookPrior } from "../../../lib/creative-generation/hookLearning.server";
+import { enqueueGenerationJob } from "../../../lib/creative-generation/jobRunner.server";
+import { localAccessError, verifyLocalGenerationAccess } from "../../../lib/creative-generation/localGenerationAccess.server";
+import { toPublicGenerationError, toPublicGenerationJob } from "../../../lib/creative-generation/publicJob.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,9 +68,14 @@ function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]
   };
 }
 
+function isAutomaticCutoutPath(value: string) {
+  return /\/(?:processed-products|product-cutouts)\//i.test(value);
+}
+
 export async function POST(request: Request) {
   const started = Date.now();
   try {
+    verifyLocalGenerationAccess(request);
     const body = (await request.json().catch(() => ({}))) as Partial<CreateGenerationJobInput>;
     if (!body.product?.productName?.trim()) {
       return NextResponse.json({ ok: false, error: "먼저 상품정보를 불러와 주세요." }, { status: 400 });
@@ -86,42 +93,40 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
-    const product = applyKnownProductAssets(sanitizeProductForCreative(body.product));
-    const knownAsset = matchKnownProductAsset(product);
+    const product = sanitizeProductForCreative(body.product);
     const requestedProductImagePaths = Array.isArray(body.productImagePaths)
       ? body.productImagePaths.slice(0, 12)
       : [];
     const requestedSelectedImages = Array.isArray(body.selectedAdImages)
       ? body.selectedAdImages.slice(0, 12)
       : [];
+    const allProductReferencePaths = Array.from(
+      new Set([
+        ...requestedSelectedImages,
+        ...requestedProductImagePaths,
+        product.extractedMainImage,
+        ...(product.productImagePaths || []),
+        product.productImagePath,
+        ...(product.extractedGalleryImages || []),
+      ].map((value) => String(value || "").trim()).filter(Boolean))
+    );
+    const originalProductReferencePaths = allProductReferencePaths.filter(
+      (path) => !isAutomaticCutoutPath(path)
+    );
+    const productReferencePaths = (
+      originalProductReferencePaths.length ? originalProductReferencePaths : allProductReferencePaths
+    ).slice(0, 12);
     const rawTruth = buildProductTruth({
       product,
-      productImagePaths: knownAsset
-        ? [knownAsset.cutoutPath, ...requestedProductImagePaths.filter((path) => path !== knownAsset.cutoutPath)]
-        : requestedProductImagePaths,
-      // selectedAdImages are ad-reference assets only. A registered cutout is
-      // already present in productImagePaths and must never be relabeled as a reference.
-      selectedAdImages: requestedSelectedImages,
-      imageAssets: [
-        ...(knownAsset
-          ? [
-              {
-                id: `known-product-${knownAsset.productId}`,
-                path: knownAsset.cutoutPath,
-                role: "product-cutout" as const,
-                source: "known-product" as const,
-                verified: true,
-                transparent: true,
-                reason: "등록된 상품 전용 누끼",
-              },
-            ]
-          : []),
-        ...(body.imageAssets || []),
-      ],
+      // 이 화면에서 사용자가 고른 이미지는 광고 레퍼런스가 아니라 현재
+      // 상품의 상세페이지 원본이다. AI 전체 광고의 제품·사용 맥락 참조로 쓴다.
+      productImagePaths: productReferencePaths,
+      selectedAdImages: [],
+      imageAssets: body.imageAssets || [],
       source: body.source === "landing-page" ? "landing-page" : "user-input",
     });
     const truth = await inspectProductTruthImages(rawTruth);
-    assertProductImageReady(truth);
+    assertNativeProductReferenceReady(truth);
     const adBrief = resolveAdBrief(body.adBrief);
     const paidImageGenerationEnabled = engine === "openai_api";
     const configuredConcurrency = Math.max(
@@ -173,7 +178,8 @@ export async function POST(request: Request) {
       job.version = "generation-job-v6-ai-native-final";
       await creativeGenerationJobStore.create(job);
       await writeNativeManifest(job);
-      return NextResponse.json({ ok: true, job }, { status: 201 });
+      enqueueGenerationJob(job.id);
+      return NextResponse.json({ ok: true, job: toPublicGenerationJob(job) }, { status: 202 });
     }
     const copyGeneration = await generateHookMessages(truth);
     const creativePlan = buildCreativePlan(truth, {
@@ -211,14 +217,15 @@ export async function POST(request: Request) {
     job.version = "generation-job-v6-ai-native-final";
     await creativeGenerationJobStore.create(job);
     await writeNativeManifest(job);
-    return NextResponse.json({ ok: true, job }, { status: 201 });
+    enqueueGenerationJob(job.id);
+    return NextResponse.json({ ok: true, job: toPublicGenerationJob(job) }, { status: 202 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "광고 생성 작업 계획에 실패했습니다.";
+    const message = toPublicGenerationError(error, "광고 생성 작업 계획에 실패했습니다.");
     const userInputError = /실제 상품 이미지|상품 합성|누끼|제품 단독 이미지/.test(message);
     const configurationError = /AI 광고 콘텐츠 생성 설정/.test(message);
     return NextResponse.json(
       { ok: false, error: message },
-      { status: configurationError ? 503 : userInputError ? 400 : 500 }
+      { status: localAccessError(error) ? 403 : configurationError ? 503 : userInputError ? 400 : 500 }
     );
   }
 }

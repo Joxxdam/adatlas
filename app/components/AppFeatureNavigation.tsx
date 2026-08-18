@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DaywizBrand } from "./DaywizBrand";
+import { CreativeJobStatusIndicator } from "./features/creative-generation/CreativeJobStatusIndicator";
 
 export type AppFeatureKey =
   | "store-analysis"
@@ -128,6 +129,7 @@ export function FeaturePageShell({
           <h2>무엇을 시작할까요?</h2>
         </div>
         <AppFeatureNavigation activeFeature={activeFeature} />
+        <CreativeJobStatusIndicator />
         <details className="feature-sidebar-tools">
           <summary>관리 도구</summary>
           <AuxiliaryFeatureNavigation activeFeature={activeFeature} />

@@ -1,18 +1,10 @@
 import { NextResponse } from "next/server";
-import { createAssetFromGenerationResult } from "../../../../../../lib/creative-assets/fromGeneration.server";
-import { creativeAssetRepository } from "../../../../../../lib/creative-assets/repository.server";
-import { toCreativeAssetSnapshot } from "../../../../../../lib/creative-assets/types";
 import { creativeGenerationJobStore } from "../../../../../../lib/creative-generation/jobStore.server";
-import { renderCreativeResult } from "../../../../../../lib/creative-generation/renderer.server";
-import { validateCopyAgainstTruth } from "../../../../../../lib/creative-generation/productTruth";
-import { messageSimilarity } from "../../../../../../lib/creative-generation/hookMessages.server";
-import { planMasterScene } from "../../../../../../lib/creative-generation/masterScenePlanner";
-import { createOrReuseMasterScene } from "../../../../../../lib/creative-generation/masterSceneService.server";
 import type { CopyPlan } from "../../../../../../lib/creative-generation/types";
-import { applyCreativeContentNotesToCopy } from "../../../../../../lib/creative-content-notes/service";
-import { cremaMarketRepository } from "../../../../../../lib/crema-market/repository.server";
 import { handleNativeResultGeneration } from "../../../../../../lib/creative-generation/nativeResultGeneration.server";
 import { writeNativeManifest } from "../../../../../../lib/creative-generation/nativeCreativeStorage.server";
+import { localAccessError, verifyLocalGenerationAccess } from "../../../../../../lib/creative-generation/localGenerationAccess.server";
+import { toPublicGenerationError, toPublicGenerationJob } from "../../../../../../lib/creative-generation/publicJob.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +17,7 @@ export async function POST(
   const startedAtMs = Date.now();
   const { jobId, resultId } = await context.params;
   try {
+    verifyLocalGenerationAccess(request);
     const body = (await request.json().catch(() => ({}))) as {
       copy?: Partial<CopyPlan>;
       requestId?: string;
@@ -40,8 +33,38 @@ export async function POST(
     if (job.engine) {
       const native = await handleNativeResultGeneration({ jobId, resultId, requestId: body.requestId, action: body.action, feedback: body.feedback });
       const ok = ["success", "approved", "excluded"].includes(native.result.status) || body.action === "feedback";
-      return NextResponse.json({ ok, ...native }, { status: ok ? 200 : 422 });
+      const publicJob = toPublicGenerationJob(native.job);
+      return NextResponse.json({
+        ok,
+        job: publicJob,
+        result: publicJob.results.find((result) => result.id === native.result.id),
+      }, { status: ok ? 200 : 422 });
     }
+    // 레거시 작업만 지연 로드한다. AI native-final 작업에서는 템플릿·Sharp
+    // 합성 렌더러 모듈 자체를 불러오지 않는다.
+    const [
+      { createAssetFromGenerationResult },
+      { creativeAssetRepository },
+      { toCreativeAssetSnapshot },
+      { renderCreativeResult },
+      { validateCopyAgainstTruth },
+      { messageSimilarity },
+      { planMasterScene },
+      { createOrReuseMasterScene },
+      { applyCreativeContentNotesToCopy },
+      { cremaMarketRepository },
+    ] = await Promise.all([
+      import("../../../../../../lib/creative-assets/fromGeneration.server"),
+      import("../../../../../../lib/creative-assets/repository.server"),
+      import("../../../../../../lib/creative-assets/types"),
+      import("../../../../../../lib/creative-generation/renderer.server"),
+      import("../../../../../../lib/creative-generation/productTruth"),
+      import("../../../../../../lib/creative-generation/hookMessages.server"),
+      import("../../../../../../lib/creative-generation/masterScenePlanner"),
+      import("../../../../../../lib/creative-generation/masterSceneService.server"),
+      import("../../../../../../lib/creative-content-notes/service"),
+      import("../../../../../../lib/crema-market/repository.server"),
+    ]);
     const requestId = String(body.requestId || "").trim().slice(0, 160);
     const generationRequestKey = requestId
       ? `creative-result:${jobId}:${resultId}:${requestId}`
@@ -68,8 +91,8 @@ export async function POST(
       return NextResponse.json({
         ok: true,
         idempotent: true,
-        job,
-        result: job.results.find((result) => result.id === resultId),
+        job: toPublicGenerationJob(job),
+        result: toPublicGenerationJob(job).results.find((result) => result.id === resultId),
       });
     }
     const noteApplication = applyCreativeContentNotesToCopy({
@@ -274,11 +297,11 @@ export async function POST(
     }
     return NextResponse.json({
       ok: rendered.qa.passed,
-      job: completed,
-      result: completed.results.find((result) => result.id === resultId),
+      job: toPublicGenerationJob(completed),
+      result: toPublicGenerationJob(completed).results.find((result) => result.id === resultId),
     }, { status: rendered.qa.passed ? 200 : 422 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "광고 결과 생성 실패";
+    const message = toPublicGenerationError(error, "광고 결과 생성 실패");
     try {
       const failed = await creativeGenerationJobStore.update(jobId, (current) => ({
         ...current,
@@ -290,9 +313,9 @@ export async function POST(
         ),
       }));
       if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
-      return NextResponse.json({ ok: false, error: message, job: failed }, { status: 500 });
+      return NextResponse.json({ ok: false, error: message, job: toPublicGenerationJob(failed) }, { status: localAccessError(error) ? 403 : 500 });
     } catch {
-      return NextResponse.json({ ok: false, error: message }, { status: 500 });
+      return NextResponse.json({ ok: false, error: message }, { status: localAccessError(error) ? 403 : 500 });
     }
   }
 }

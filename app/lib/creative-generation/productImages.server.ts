@@ -135,3 +135,21 @@ export function assertProductImageReady(truth: ProductTruth) {
     throw new Error("참고 광고·리뷰·배경 이미지는 상품 합성 레이어로 사용할 수 없습니다.");
   }
 }
+
+/**
+ * AI-native final ads do not need a transparent compositing layer. A real
+ * product-page photo is enough because the model uses the complete image as
+ * identity, usage and texture reference.
+ */
+export function assertNativeProductReferenceReady(truth: ProductTruth) {
+  const usableReference = truth.imageAssets.some(
+    (asset) =>
+      Boolean(asset.path) &&
+      ["product-packshot", "product-lifestyle", "detail-image"].includes(asset.role)
+  );
+  if (!usableReference) {
+    throw new Error(
+      "AI 광고 제작에 사용할 상세페이지 원본 이미지가 없습니다. 상품 사진 또는 상세 이미지를 선택해 주세요."
+    );
+  }
+}

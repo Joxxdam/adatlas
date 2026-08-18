@@ -69,11 +69,17 @@ export function ProductAnalysisSummary(props: {
   const benefit = compact(props.product.mainBenefit || props.product.extractedDescription);
   const evidence = evidenceFromProduct(props.product);
   const features = featureList(props.product);
-  const imagePath =
-    props.imagePaths?.[0] ||
-    props.product.productImagePath ||
+  const imageCandidates = [
     props.product.extractedMainImage ||
-    props.product.extractedGalleryImages?.[0];
+      props.product.extractedGalleryImages?.[0],
+    ...(props.product.extractedGalleryImages || []),
+    ...(props.imagePaths || []),
+    props.product.productImagePath,
+  ].filter((value): value is string => Boolean(value));
+  const originalCandidates = imageCandidates.filter(
+    (value) => !/\/(?:processed-products|product-cutouts)\//i.test(value)
+  );
+  const imagePath = originalCandidates[0] || imageCandidates[0];
   const sourceImageCount = new Set(
     [
       ...(props.imagePaths || []),

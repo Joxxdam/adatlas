@@ -106,6 +106,7 @@ import {
 } from "./AppFeatureNavigation";
 import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
 import { DaywizBrand } from "./DaywizBrand";
+import { CreativeJobStatusIndicator } from "./features/creative-generation/CreativeJobStatusIndicator";
 
 type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
 
@@ -1009,13 +1010,12 @@ export function MvpDashboard({
   const activeProductImagePathRef = useRef(
     handoffImagePaths[0] || handoffProductInfo?.productImagePath || ""
   );
-  const automaticCutoutInFlightRef = useRef(new Set<string>());
   const [cutoutProductEffect, setCutoutProductEffect] = useState<ProductImageRenderEffect>(
     defaultCutoutProductEffect
   );
   const [productImageProcessStatus, setProductImageProcessStatus] = useState<Status>({
     kind: "idle",
-    message: "상품 이미지를 불러오면 배경을 자동으로 제거합니다.",
+    message: "AI 전체 광고는 상세페이지 원본 이미지를 그대로 참조합니다.",
   });
   const [hoveredDetailImage, setHoveredDetailImage] = useState<{
     src: string;
@@ -1208,15 +1208,6 @@ export function MvpDashboard({
       : mainImageSourceMode === "gpt"
         ? gptMainImagePath
         : productInfo.productImagePath;
-  const automaticCutoutCandidatePaths = useMemo(
-    () =>
-      compactUniqueImagePaths([
-        originalMainProductImage,
-        ...(productInfo.productImagePaths ?? []),
-        ...(productInfo.sourceImageCandidates ?? []).map((candidate) => candidate.imagePath),
-      ]).slice(0, 8),
-    [originalMainProductImage, productInfo.productImagePaths, productInfo.sourceImageCandidates]
-  );
   const baseCurrentMainProductImage =
     productImageState.selectedImageMode === "original"
       ? originalMainProductImage
@@ -1246,20 +1237,28 @@ export function MvpDashboard({
   );
   const currentProductImagePaths = resolvedProductImages.productImagePaths;
   const hookExperimentProductImagePaths = useMemo(
-    () =>
-      compactUniqueImagePaths([
-        getSelectedProductImagePath(productImageState),
+    () => {
+      const paths = compactUniqueImagePaths([
+        ...selectedAdImages.selectedImagePaths,
+        productInfo.extractedMainImage,
+        ...(productInfo.extractedGalleryImages || []),
         productInfo.productImagePath,
         ...(productInfo.productImagePaths || []),
-        productInfo.extractedMainImage,
+        ...(productInfo.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
         uploadedMainImageDataUrl,
-      ]).filter((imagePath) => !selectedAdImages.selectedImagePaths.includes(imagePath)),
+      ]);
+      const originals = paths.filter(
+        (imagePath) => !/\/(?:processed-products|product-cutouts)\//i.test(imagePath)
+      );
+      return (originals.length ? originals : paths).slice(0, 12);
+    },
     [
-      productImageState,
+      selectedAdImages.selectedImagePaths,
+      productInfo.extractedGalleryImages,
+      productInfo.extractedMainImage,
       productInfo.productImagePath,
       productInfo.productImagePaths,
-      productInfo.extractedMainImage,
-      selectedAdImages.selectedImagePaths,
+      productInfo.sourceImageCandidates,
       uploadedMainImageDataUrl,
     ]
   );
@@ -1610,129 +1609,15 @@ export function MvpDashboard({
               originalImagePath: imagePath,
             }
       );
+      setProductImageProcessStatus({
+        kind: "idle",
+        message: imagePath
+          ? "AI 전체 광고는 누끼 없이 상세페이지 원본 이미지를 참조합니다."
+          : "상품 이미지를 불러오면 상세페이지 원본을 참조합니다.",
+      });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [originalMainProductImage]);
-
-  useEffect(() => {
-    const imagePath = productImageState.originalImagePath;
-    if (imagePath !== (originalMainProductImage || "")) return;
-    const frame = window.requestAnimationFrame(() => {
-      activeProductImagePathRef.current = imagePath;
-
-      if (!imagePath) {
-        setProductImageProcessStatus({
-          kind: "idle",
-          message: "상품 이미지를 불러오면 배경을 자동으로 제거합니다.",
-        });
-        return;
-      }
-
-      if (mainImageSourceMode === "gpt") {
-        setProductImageProcessStatus({
-          kind: "idle",
-          message: "완성형 AI 비주얼은 원본 구성을 유지합니다.",
-        });
-        return;
-      }
-
-      if (automaticCutoutInFlightRef.current.has(imagePath)) return;
-      automaticCutoutInFlightRef.current.add(imagePath);
-      setProductImageProcessStatus({
-        kind: "loading",
-        message: "상품 이미지의 배경을 자동으로 제거하는 중입니다.",
-      });
-
-      void requestProductCutout(
-        imagePath,
-        "none",
-        automaticCutoutCandidatePaths.filter((candidate) => candidate !== imagePath),
-        {
-          representationType: activeProductRepresentation.type,
-          extractionScope: activeProductRepresentation.selectedExtractionScope,
-          selectedObjectIds: selectedSourceImage?.detectedObjects
-            ?.filter((object) => object.selected)
-            .map((object) => object.id),
-          selectedObjectBoxes: selectedSourceImage?.detectedObjects
-            ?.filter((object) => object.selected)
-            .map((object) => object.box),
-          cropBox:
-            (selectedSourceImage?.recommendationScore || 0) >= 0.55
-              ? selectedSourceImage?.detectedGroupBox
-              : undefined,
-          expectedUnitCount: activeProductRepresentation.expectedUnitCount,
-        }
-      )
-        .then((result) => {
-          if (activeProductImagePathRef.current !== imagePath) return;
-          if (!result.success) {
-            setProductImageProcessStatus({
-              kind: "error",
-              message:
-                result.fallbackMessage ||
-                result.error ||
-                "자동 누끼가 어려운 이미지라 원본을 유지했습니다.",
-            });
-            return;
-          }
-
-          const cutoutImagePath = result.cutoutImagePath || result.processedImagePath;
-          if (!cutoutImagePath) {
-            setProductImageProcessStatus({
-              kind: "error",
-              message: "자동 누끼 결과가 없어 원본 이미지를 유지했습니다.",
-            });
-            return;
-          }
-
-          setProductImageState((current) =>
-            current.originalImagePath === imagePath
-              ? {
-                  ...current,
-                  cutoutImagePath,
-                  styledCutoutImagePath: undefined,
-                  selectedImageMode: "cutout",
-                  cutoutApplied: true,
-                  representation: activeProductRepresentation,
-                  selectedExtractionScope: activeProductRepresentation.selectedExtractionScope,
-                  quality: result.quality,
-                  retryCount: result.retryCount,
-                  processingProvider: "removebg",
-                }
-              : current
-          );
-          setProductImageProcessStatus({
-            kind: "success",
-            message: result.autoSelectedAlternative
-              ? "상세 이미지 중 누끼에 적합한 상품 컷을 찾아 배너에 자동 적용했습니다."
-              : result.debug?.cacheHit
-                ? "저장된 자동 누끼 이미지를 배너에 적용했습니다."
-                : result.fallbackMessage || "상품 누끼 이미지를 자동으로 배너에 적용했습니다.",
-          });
-        })
-        .catch((error) => {
-          if (activeProductImagePathRef.current !== imagePath) return;
-          setProductImageProcessStatus({
-            kind: "error",
-            message:
-              error instanceof Error
-                ? `${error.message} 원본 이미지를 유지합니다.`
-                : "자동 누끼에 실패해 원본 이미지를 유지했습니다.",
-          });
-        })
-        .finally(() => {
-          automaticCutoutInFlightRef.current.delete(imagePath);
-        });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [
-    automaticCutoutCandidatePaths,
-    activeProductRepresentation,
-    mainImageSourceMode,
-    originalMainProductImage,
-    productImageState.originalImagePath,
-    selectedSourceImage,
-  ]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -4835,6 +4720,7 @@ export function MvpDashboard({
           <DaywizBrand subtitle="광고 콘텐츠 실험 시스템" />
         </Link>
         <AppFeatureNavigation activeFeature={activeFeature} />
+        <CreativeJobStatusIndicator />
         <details className="mvp-management-tools">
           <summary>관리 도구</summary>
           <nav className="mvp-workflow-navigation" aria-label="이미지와 카테고리 관리">
@@ -5187,11 +5073,12 @@ export function MvpDashboard({
                     onConfirm={() => setGenerationPlanConfirmed(true)}
                   />
                 </div>
-                <div hidden={!currentProductLoaded}>
+                <div>
                   <HookExperimentCreativeGenerator
                     adBrief={creativeWorkflow.adBrief}
                     logoPath={brandLogoPath}
                     planConfirmed={generationPlanConfirmed}
+                    productLoaded={currentProductLoaded}
                     product={productInfo}
                     productImagePaths={hookExperimentProductImagePaths}
                     selectedAdImages={selectedAdImages.selectedImagePaths}
@@ -6678,7 +6565,7 @@ export function MvpDashboard({
                       <summary>
                         <div>
                           <p className="eyebrow">Render Background</p>
-                          <strong>메인 이미지 / 누끼 설정</strong>
+                          <strong>상품 원본 이미지</strong>
                           <span>
                             {currentMainProductImage
                               ? productImageModeLabel(productImageState.selectedImageMode)
@@ -6926,8 +6813,8 @@ export function MvpDashboard({
                         <details>
                           <summary>고급 효과 및 이전 호환 설정</summary>
                           <p>
-                            상품 이미지는 불러온 직후 자동으로 배경을 제거합니다. 경계를 찾지 못하면
-                            원본을 안전하게 유지합니다.
+                            AI 전체 광고에는 사용하지 않습니다. 이전 템플릿 합성이 필요한 경우에만
+                            아래에서 수동으로 누끼를 만들 수 있습니다.
                           </p>
                           <div className="background-style-grid">
                             <button
@@ -7335,7 +7222,7 @@ export function MvpDashboard({
                       <summary>
                         <div>
                           <p className="eyebrow">Render Image</p>
-                          <strong>메인 이미지 / 누끼 설정</strong>
+                          <strong>상품 원본 이미지</strong>
                           <span>
                             {currentMainProductImage
                               ? productImageModeLabel(productImageState.selectedImageMode)
@@ -7941,7 +7828,7 @@ export function MvpDashboard({
                         <span>상세페이지에서 확인한 차별점을 먼저 찾습니다.</span>
                         <em>가격·구성·혜택은 확인된 정보만 사용합니다.</em>
                         <i aria-hidden="true" />
-                        <b>상품 누끼와 후킹별 강조 효과를 자동 적용합니다.</b>
+                        <b>상세페이지 원본 사진을 후킹별 전체 광고 제작에 참조합니다.</b>
                         <small>상품 URL을 먼저 불러와주세요 &gt;</small>
                       </div>
                     )}

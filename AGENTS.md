@@ -14,20 +14,19 @@ AdAtlas의 목적은 단순히 이미지를 생성하는 것이 아니라 다음
 → 광고하기 좋은 상품 및 콘텐츠 가설 추천
 → 사용자가 상품과 전략 선택
 → 기존 소재 제작 화면으로 전달
-→ 문구·이미지·템플릿 생성
+→ 후킹 6개와 AI 완성 광고 6장 생성
 
 ### 선택 상품 제작하기
 
 상품 URL 입력
 → 상품정보 및 상세 이미지 추출
 → 업체별 카피 가이드 매칭
-→ 광고 문구 생성
-→ 이미지 선택
-→ 템플릿 선택
-→ 단일 또는 일괄 렌더링
+→ 서로 다른 후킹 6개 생성
+→ 상세페이지 상품 이미지를 레퍼런스로 AI 완성 광고 6장 생성
+→ 결과별 검수·소재코드 발급
 → 다운로드
 
-두 흐름은 사용자 경험상 분리하되, 상품정보 추출·문구 생성·이미지 선택·템플릿 추천·렌더링 엔진은 최대한 공유합니다.
+두 흐름은 사용자 경험상 분리하되, 상품정보 추출·후킹 생성·ProductTruth·소재코드·결과 저장은 공유합니다. 기존 템플릿 제작 기능은 고급/레거시 도구로 유지하지만 새 6장 자동 생성의 기본 경로로 사용하지 않습니다.
 
 ---
 
@@ -85,11 +84,12 @@ AdAtlas의 목적은 단순히 이미지를 생성하는 것이 아니라 다음
 - 제작 방식 선택
 - 업체 분석
 - 선택 상품 제작
-- 이미지 선택
-- 문구 생성
-- 템플릿 선택
-- 단일/일괄 생성
-- 렌더 품질 진단 표시
+- 상세페이지 상품 레퍼런스 확인
+- 후킹 6개 생성
+- 서버 백그라운드 작업 생성·복원
+- 후킹별 AI 완성 광고 생성
+- 결과별 품질 검수와 다운로드
+- 레거시 수동 템플릿 도구는 고급 설정으로 분리
 
 현재 구현 위치는 저장소를 먼저 확인합니다.
 
@@ -114,7 +114,7 @@ AdAtlas의 목적은 단순히 이미지를 생성하는 것이 아니라 다음
 
 공개 페이지에서 확인할 수 없는 판매량·매출·재고·마진·ROAS는 생성하지 않습니다.
 
-### Copy Generation
+### Copy Generation (Legacy Template Path)
 
 문구 생성은 다음 구조를 유지합니다.
 
@@ -127,9 +127,32 @@ productInfo
 → activeRenderCopy
 → render API
 
-### Rendering
+### Native AI Creative Generation (Default)
 
-렌더링은 가능한 경우 다음 공통 흐름을 사용합니다.
+새 자동 6장 생성은 다음 공통 흐름을 사용합니다.
+
+ProductTruth
+→ HookPlan 6개
+→ 후킹별 독립 CreativeBrief
+→ 상세페이지 상품 레퍼런스 준비
+→ AI가 상품·장면·한국어 문구·타이포그래피·도형·레이아웃을 포함한 완성 광고 전체 생성
+→ AI 검수·필요 시 AI 전체 이미지 수정
+→ 1200×1200 JPEG 내보내기
+→ 소재코드와 결과 저장
+
+규칙:
+
+- 새 native AI 작업에서는 템플릿, 배경 라이브러리, SVG/Canvas/Sharp 사후 문구 합성을 호출하지 않습니다.
+- H01~H06은 문구만 바꾸는 변형이 아니라 서로 다른 후킹과 전체 장면을 갖습니다.
+- Codex 로컬 로그인 엔진이 기본이며 유료 API로 자동 전환하지 않습니다.
+- 생성 실행은 서버 job runner가 담당하고 클라이언트는 생성 순서를 지휘하지 않습니다.
+- 페이지 이동과 새로고침은 작업을 취소하지 않습니다.
+- 각 결과를 끝낼 때마다 JSON 작업 저장소에 즉시 기록합니다.
+- 로컬 Node 서버가 종료되면 작업은 멈추며 재실행 시 stale 결과부터 복구합니다.
+
+### Legacy Template Rendering
+
+기존 고급 수동 제작과 과거 작업만 다음 공통 흐름을 사용합니다.
 
 productImagePaths 결정
 → palette 결정
@@ -141,11 +164,11 @@ productImagePaths 결정
 → final render
 → diagnostics
 
-기존 템플릿이 새 공통 엔진으로 이전되지 않았다면 기존 렌더러 fallback을 유지합니다.
+레거시 작업 호환을 위해 기존 렌더러 fallback은 유지하지만 `engine`이 지정된 native AI 작업에서는 정적 import하거나 호출하지 않습니다.
 
 ---
 
-## Core Copy Concepts
+## Core Copy Concepts (Legacy Template Path)
 
 ### masterCopy
 
@@ -214,7 +237,7 @@ masterCopy
 
 ---
 
-## Copy Source Priority
+## Copy Source Priority (Legacy Template Path)
 
 문구 생성은 다음 우선순위를 따릅니다.
 
@@ -409,7 +432,7 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 
 ---
 
-## Automatic Design Rules
+## Automatic Design Rules (Legacy Template Path Only)
 
 광고 결과는 실제 집행 가능한 품질을 목표로 합니다.
 
@@ -458,7 +481,7 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 
 ---
 
-## Template Rules
+## Template Rules (Legacy Template Path Only)
 
 템플릿은 새 문구를 생성하지 않습니다.
 
@@ -494,7 +517,7 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 
 ---
 
-## Rendering Rules
+## Rendering Rules (Legacy Template Path Only)
 
 단일 렌더링과 일괄 렌더링은 가능한 한 동일한 렌더 파이프라인을 사용합니다.
 
@@ -509,10 +532,11 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 
 ## Universal Creative Generation
 
-- 자동 6장 생성은 `ProductTruth → HookPlan → Blueprint → ScenePlan → RenderPlan → QA` 순서를 유지합니다.
-- 6장은 서로 다른 blueprint와 hook을 사용하며 한 장의 실패가 나머지 결과를 막지 않습니다.
-- 장면 라이브러리를 먼저 사용하고 유료 이미지 생성은 명시적 환경 플래그가 있을 때만 허용합니다.
-- 최종 파일은 1200×1200, WebP/JPEG, 800KB 이하로 저장 후 재디코딩 검증합니다.
+- 자동 6장 생성은 `ProductTruth → HookPlan → CreativeBrief → AI Final Creative → AI QA → Export` 순서를 유지합니다.
+- 6장은 서로 다른 후킹과 독립적인 전체 광고 콘텐츠를 사용하며 한 장의 실패가 나머지 결과를 막지 않습니다.
+- 상세페이지의 실제 상품·사용·질감 이미지는 레퍼런스로 사용하고, 자동 누끼 합성이나 기존 배경 라이브러리를 기본 생성 방식으로 사용하지 않습니다.
+- AI가 한국어 문구까지 포함한 최종 광고를 생성하며 한국어를 별도 합성하지 않습니다.
+- 최종 파일은 1200×1200 JPEG, 800KB 이하로 저장 후 재디코딩 검증합니다.
 
 ---
 

@@ -79,17 +79,17 @@ test("create-product defaults to URL analysis and preserves admin entry points",
   assert.match(dashboard, /생성 설정·상태/);
 });
 
-test("hook creatives use bounded parallel generation and deliver each completed card immediately", async () => {
+test("hook creatives are server-driven and deliver each completed card immediately", async () => {
   const generator = await read(
     "app/components/features/creative-generation/SixCreativeGenerator.tsx"
   );
   const assetActions = await read(
     "app/components/features/creative-assets/CreativeAssetActions.tsx"
   );
-  assert.match(generator, /완성형 AI 광고 콘텐츠/);
-  assert.match(generator, /concurrency: 2/);
-  assert.match(generator, /workerCount/);
-  assert.match(generator, /Promise\.all\(Array\.from/);
+  assert.match(generator, /백그라운드에서 계속 제작됩니다/);
+  assert.match(generator, /creative-generation\/jobs\/active/);
+  assert.doesNotMatch(generator, /function runPending/);
+  assert.doesNotMatch(generator, /workerCount/);
   assert.match(generator, /six-creative-grid/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);

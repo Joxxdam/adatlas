@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import {
   ExtractedProductInfo,
   ProductImageCandidate,
-  ProductInfoForPrompt,
   SourceImageCandidate,
 } from "../../../lib/mvp/types";
-import { applyKnownProductAssets } from "../../../lib/creative/knownProductAssets";
 import { analyzeProductSourceCandidates } from "../../../lib/mvp/productImageAnalysis.server";
 import { inferProductRepresentation } from "../../../lib/mvp/productImagePipeline";
 import {
@@ -1447,59 +1445,9 @@ export async function POST(request: Request) {
       ingredients: structuredSignals.ingredients,
     };
 
-    const enrichedProduct = applyKnownProductAssets({
-      productName: extractedProductInfo.productName,
-      category: extractedProductInfo.category,
-      price: extractedProductInfo.price,
-      originalPrice: extractedProductInfo.originalPrice,
-      oldPrice: extractedProductInfo.oldPrice,
-      advertiserName: "",
-      brandName: extractedProductInfo.brandName || "",
-      discountInfo: extractedProductInfo.discountInfo,
-      mainBenefit:
-        extractedProductInfo.mainBenefit ||
-        extractedProductInfo.extractedDescription ||
-        extractedProductInfo.description ||
-        "",
-      targetCustomer: "",
-      landingUrl: extractedProductInfo.landingUrl,
-      productImagePath: extractedProductInfo.mainImage,
-      productImagePaths: extractedProductInfo.galleryImages,
-      secondaryProductImagePath: extractedProductInfo.detailImages?.[0] || "",
-      backgroundImagePath: "",
-      extractedDescription: extractedProductInfo.extractedDescription,
-      extractedMainImage: extractedProductInfo.mainImage,
-      extractedGalleryImages: extractedProductInfo.galleryImages,
-      sourceImageCandidates: extractedProductInfo.sourceImageCandidates,
-      selectedSourceImageId: extractedProductInfo.sourceImageCandidates?.find((item) => item.selected)?.id,
-      selectedSourceImagePath: extractedProductInfo.sourceImageCandidates?.find((item) => item.selected)?.imagePath,
-      productSubCategory: extractedProductInfo.productSubCategory,
-      detectedProductType: extractedProductInfo.detectedProductType,
-      productRepresentation: extractedProductInfo.productRepresentation,
-      reviewSources: extractedProductInfo.reviewSources,
-      verifiedBenefits: extractedProductInfo.verifiedBenefits,
-      ingredients: extractedProductInfo.ingredients,
-    } satisfies ProductInfoForPrompt);
-    const registeredCutoutApplied = enrichedProduct.productImagePath !== extractedProductInfo.mainImage;
-    const productInfo: ExtractedProductInfo = registeredCutoutApplied
-      ? {
-          ...extractedProductInfo,
-          brandName: enrichedProduct.brandName,
-          mainImage: enrichedProduct.productImagePath,
-          heroImage: enrichedProduct.productImagePath,
-          galleryImages: [
-            enrichedProduct.productImagePath,
-            ...extractedProductInfo.galleryImages.filter(
-              (imagePath) => imagePath !== enrichedProduct.productImagePath
-            ),
-          ],
-          detailImages: extractedProductInfo.galleryImages.filter(
-            (imagePath) => imagePath !== enrichedProduct.productImagePath
-          ),
-          sourceImageCandidates: enrichedProduct.sourceImageCandidates,
-          productRepresentation: enrichedProduct.productRepresentation,
-        }
-      : extractedProductInfo;
+    // AI-native 제작은 상세페이지의 실제 제품·사용·질감 이미지를 그대로
+    // 참조한다. 과거 템플릿 합성용 등록 누끼로 대표 이미지를 교체하지 않는다.
+    const productInfo: ExtractedProductInfo = extractedProductInfo;
 
     if (!productInfo.productName && !productInfo.price && !productInfo.mainImage) {
       return NextResponse.json(

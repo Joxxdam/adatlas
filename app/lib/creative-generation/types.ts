@@ -911,6 +911,33 @@ export type GenerationJob = {
   advertiserName?: string;
   codexThreadId?: string;
   visualDiversityMatrix?: VisualDiversityMatrixEntry[];
+  recoveryLog?: Array<{
+    at: string;
+    message: string;
+    resultIds: string[];
+  }>;
+};
+
+export type GenerationJobSummary = {
+  jobId: string;
+  advertiserId?: string;
+  advertiserName?: string;
+  productId: string;
+  productName: string;
+  productUrl: string;
+  totalCount: number;
+  completedCount: number;
+  successCount: number;
+  failedCount: number;
+  currentHookCode?: string;
+  status: GenerationJobStatus;
+  runnerActive: boolean;
+  createdAt: string;
+  startedAt?: string;
+  updatedAt: string;
+  completedAt?: string;
+  completedResults: GenerationResult[];
+  failedResults: GenerationResult[];
 };
 
 export type CreateGenerationJobInput = {
