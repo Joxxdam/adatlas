@@ -2,7 +2,7 @@ import type { AdBrief, ProductInfoForPrompt } from "../mvp/types";
 import type { CreativeAssetSnapshot } from "../creative-assets/types";
 import type { CreativeNoteCompliance } from "../creative-content-notes/types";
 
-export const CREATIVE_PLANNER_VERSION = "creative-planner-v2";
+export const CREATIVE_PLANNER_VERSION = "creative-planner-v3-hook-master";
 
 export const creativeBlueprintIds = [
   "problem-solution-split",
@@ -28,6 +28,35 @@ export type ProductFact = {
   numericTokens: string[];
 };
 
+export type CreativeImageRole =
+  | "product-cutout"
+  | "product-packshot"
+  | "product-lifestyle"
+  | "detail-image"
+  | "ad-reference"
+  | "review-image"
+  | "logo"
+  | "background";
+
+export type CreativeImageAsset = {
+  id: string;
+  path: string;
+  role: CreativeImageRole;
+  source:
+    | "known-product"
+    | "user-confirmed"
+    | "product-page"
+    | "source-candidate"
+    | "selected-reference"
+    | "brand-profile";
+  verified: boolean;
+  reason: string;
+  width?: number;
+  height?: number;
+  transparent?: boolean;
+  hasText?: boolean;
+};
+
 export type ProductTruth = {
   productId: string;
   product: ProductInfoForPrompt;
@@ -36,9 +65,35 @@ export type ProductTruth = {
   unverifiedClaims: string[];
   allowedNumericTokens: string[];
   blockedClaimPatterns: string[];
+  imageAssets: CreativeImageAsset[];
+  referenceImages: CreativeImageAsset[];
   imagePaths: string[];
+  confirmedProductImage?: CreativeImageAsset;
   completeness: number;
   createdAt: string;
+};
+
+export const hookMessageCodes = [
+  "H01",
+  "H02",
+  "H03",
+  "H04",
+  "H05",
+  "H06",
+  "H07",
+  "H08",
+] as const;
+
+export type HookMessageCode = (typeof hookMessageCodes)[number];
+
+export type HookMessageHypothesis = {
+  code: HookMessageCode;
+  hookType: string;
+  hypothesis: string;
+  mainHook: string;
+  subCopy: string;
+  factIds: string[];
+  confidence: "high" | "medium" | "low";
 };
 
 export type BrandAsset = {
@@ -99,9 +154,63 @@ export type HookPlan = {
   numericTokens: string[];
   experimentVariant?: string;
   visualDirection?: string;
-  hookCode?: string;
+  hookCode: HookMessageCode | string;
+  hypothesis: string;
+  confidence: "high" | "medium" | "low";
   mainMessage?: string;
   hookGroupId?: string;
+};
+
+export type DynamicTextBox = PlacementBox & {
+  maxChars: number;
+  maxLines: number;
+  fontSize: number;
+  minFontSize: number;
+  lineHeight: number;
+  padding: number;
+  align: "left" | "center";
+  container: "none" | "panel" | "pill";
+  colorRole: "foreground" | "background" | "accent" | "secondary";
+  fillRole?: "background" | "foreground" | "accent" | "secondary";
+};
+
+export type CreativePalette = {
+  background: string;
+  foreground: string;
+  accent: string;
+  secondary: string;
+};
+
+export type TypographyPlan = {
+  fontFamily: string;
+  headlineFontSize: number;
+  subCopyFontSize: number;
+  ctaFontSize: number;
+};
+
+export type MasterCreativeDirection = {
+  id: string;
+  categoryProfileId: string;
+  layoutFamily: CreativeBlueprintId;
+  backgroundAssetId: string;
+  productComposition: ProductCompositionPlan;
+  headlineBox: DynamicTextBox;
+  subCopyBox: DynamicTextBox;
+  proofBox?: DynamicTextBox;
+  offerBox?: DynamicTextBox;
+  logoBox: PlacementBox;
+  ctaBox: DynamicTextBox;
+  palette: CreativePalette;
+  typography: TypographyPlan;
+  fixedFacts: {
+    proof?: string;
+    offer?: string;
+    price?: string;
+    promotion?: string;
+    cta: string;
+  };
+  selectionReasons: string[];
+  locked: boolean;
 };
 
 export type CreativePlan = {
@@ -111,6 +220,12 @@ export type CreativePlan = {
   categoryProfile: CategoryProfile;
   hookPlans: HookPlan[];
   blueprintIds: CreativeBlueprintId[];
+  masterDesign: MasterCreativeDirection;
+  testCode: `T${string}`;
+  copyGeneration: {
+    provider: "openai" | "fallback";
+    warnings: string[];
+  };
   adBrief?: AdBrief;
   experimentContext?: {
     experimentId: string;
@@ -239,7 +354,23 @@ export type RenderPlan = {
   layout: LayoutPlan;
   scene: ScenePlan;
   productImagePaths: string[];
+  productImageAssets: CreativeImageAsset[];
   productComposition: ProductCompositionPlan;
+  masterDesignId: string;
+  backgroundAssetId: string;
+  renderedSlots: Array<{
+    id: "headline" | "body" | "proof" | "offer" | "cta";
+    box: PlacementBox;
+    textBounds: PlacementBox;
+    text: string;
+    lines: string[];
+    textColor: string;
+    fillColor?: string;
+    fontSize: number;
+    lineHeight: number;
+    lineCount: number;
+    overflow: boolean;
+  }>;
   logoAsset?: BrandAsset;
   repairPass: number;
 };
@@ -254,7 +385,13 @@ export type QAFinding = {
     | "product-visibility"
     | "factual-safety"
     | "logo"
-    | "duplication";
+    | "duplication"
+    | "category-contamination"
+    | "image-role"
+    | "empty-element"
+    | "unsupported-visualization"
+    | "copy-quality"
+    | "layout-collision";
   message: string;
   repairable: boolean;
 };
@@ -262,6 +399,10 @@ export type QAFinding = {
 export type QAResult = {
   passed: boolean;
   score: number;
+  technicalPassed: boolean;
+  creativePassed: boolean;
+  technicalScore: number;
+  creativeScore: number;
   width: number;
   height: number;
   format: string;
@@ -270,6 +411,7 @@ export type QAResult = {
   minFontSize: number;
   productAreaRatio: number;
   findings: QAFinding[];
+  autoRepairs: string[];
   checkedAt: string;
 };
 
@@ -290,6 +432,7 @@ export type GenerationResult = {
   qa?: QAResult;
   contentNoteCompliance?: CreativeNoteCompliance;
   attempts: number;
+  autoRepairs?: string[];
   error?: string;
   startedAt?: string;
   completedAt?: string;
@@ -327,7 +470,12 @@ export type CreateGenerationJobInput = {
   adBrief?: AdBrief;
   productImagePaths?: string[];
   selectedAdImages?: string[];
+  imageAssets?: CreativeImageAsset[];
   logoPath?: string;
   source?: "landing-page" | "user-input";
   concurrency?: number;
+  preserveMasterDesignId?: string;
+  preserveBackgroundAssetId?: string;
+  excludedMasterDesignIds?: CreativeBlueprintId[];
+  testCode?: `T${string}`;
 };

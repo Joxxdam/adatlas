@@ -18,15 +18,15 @@ import { isSameStoreDomain } from "../urlSafety";
 import { extractProductDetailFromHtml, extractProductSummaryFromHtml } from "../productAnalyzer";
 
 const PRODUCT_QUERY_PATTERN =
-  /[?&](?:product_no|goodsno|goodsNo|branduid|itemid|item_id|productId)=/i;
+  /[?&](?:product_no|pseq|goodsno|goodsNo|branduid|itemid|item_id|productId)=/i;
 const LIST_PATH_PATTERN =
-  /\/(?:category|categories|collections|best|new|sale|event|promotion|exhibition|plan|shop|goods\/goods_list)(?:\/|\.|\?|$)/i;
+  /\/(?:category|categories|collections|best|new|sale|event|promotion|exhibition|plan|shop|goods\/goods_list|products?\/products?_list\.php)(?:\/|\.|\?|$)|\/c\/[a-z0-9]+(?:x[a-z0-9]+)+(?:\/|$)/i;
 
 function isLikelyProductUrl(url: string) {
   const parsed = new URL(url);
   const path = parsed.pathname;
   if (
-    /(?:\/list|\/category|\/categories|\/collections(?:\/all)?\/?$|\/goods\/(?:lastitem|best|new|sale|event|category|list))/i.test(
+    /(?:\/list|\/category|\/categories|\/collections(?:\/all)?\/?$|\/products?\/products?_list\.php|\/goods\/(?:lastitem|best|new|sale|event|category|list))/i.test(
       path
     )
   ) {
@@ -37,9 +37,11 @@ function isLikelyProductUrl(url: string) {
     /\/goods\/(?:detail|view)\//i.test(path) ||
     /\/goods\/(?:goods_view|view)\.(?:php|html)$/i.test(path) ||
     /\/shop\/shopdetail\.html$/i.test(path) ||
+    /\/products?\/products?_view\.php$/i.test(path) ||
     /\/product\/detail\.html$/i.test(path) ||
     /\/product\/(?:[^/?#]+\/)?\d+(?:\/|$)/i.test(path) ||
     /\/products\/[^/?#]+\/?$/i.test(path) ||
+    /\/p\/[^/?#]+(?:\/[^?#]*)?\/?$/i.test(path) ||
     /\/(?:item|product-detail|product_detail)\/[a-z0-9_-]+\/?$/i.test(path)
   );
 }

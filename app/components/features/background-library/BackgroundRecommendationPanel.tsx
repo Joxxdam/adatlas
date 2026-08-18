@@ -150,7 +150,7 @@ export function BackgroundRecommendationPanel(props: {
         <div>
           <span className={styles.eyebrow}>MANUAL BACKGROUND OVERRIDE</span>
           <h4>배경 직접 바꾸기 <small>선택사항</small></h4>
-          <p>자동 6장 생성은 각 후킹과 상품에 맞는 배경을 자동 적용합니다. 대표 소재의 배경을 직접 교체할 때만 사용하세요.</p>
+          <p>후킹 실험 8장은 상품별 마스터 배경 하나를 공통 적용합니다. 새 마스터 디자인을 만들거나 대표 소재의 배경을 교체할 때만 변경하세요.</p>
         </div>
         <div className={styles.headerActions}>
           <button

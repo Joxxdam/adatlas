@@ -5,6 +5,7 @@ import { toCreativeAssetSnapshot } from "../../../../../../lib/creative-assets/t
 import { creativeGenerationJobStore } from "../../../../../../lib/creative-generation/jobStore.server";
 import { renderCreativeResult } from "../../../../../../lib/creative-generation/renderer.server";
 import { validateCopyAgainstTruth } from "../../../../../../lib/creative-generation/productTruth";
+import { messageSimilarity } from "../../../../../../lib/creative-generation/hookMessages.server";
 import type { CopyPlan } from "../../../../../../lib/creative-generation/types";
 import { applyCreativeContentNotesToCopy } from "../../../../../../lib/creative-content-notes/service";
 import { cremaMarketRepository } from "../../../../../../lib/crema-market/repository.server";
@@ -87,6 +88,23 @@ export async function POST(
         { status: 400 }
       );
     }
+    const duplicate = job.results.find(
+      (result) =>
+        result.id !== resultId &&
+        messageSimilarity(
+          `${noteApplication.copy.headline} ${noteApplication.copy.body}`,
+          `${result.hookPlan.headline} ${result.hookPlan.body}`
+        ) >= 0.72
+    );
+    if (duplicate) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `${duplicate.hookPlan.hookCode}와 의미가 지나치게 유사합니다. 다른 메시지 가설로 수정해 주세요.`,
+        },
+        { status: 400 }
+      );
+    }
     job = await creativeGenerationJobStore.update(jobId, (current) => ({
       ...current,
       status: "running",
@@ -104,9 +122,41 @@ export async function POST(
       ),
     }));
     const active = job.results.find((result) => result.id === resultId)!;
-    let rendered = await renderCreativeResult({ job, result: active, overrides: noteApplication.copy, repairPass: 0 });
-    if (!rendered.qa.passed && rendered.qa.findings.some((finding) => finding.repairable)) {
-      rendered = await renderCreativeResult({ job, result: active, overrides: noteApplication.copy, repairPass: 1 });
+    const requestedCopy = noteApplication.copy;
+    const autoRepairs: string[] = [];
+    let rendered = await renderCreativeResult({
+      job,
+      result: active,
+      overrides: requestedCopy,
+      repairPass: 0,
+    });
+    const overflowSlots = new Set(
+      rendered.qa.findings
+        .filter((finding) => finding.id === "text-overflow")
+        .flatMap(() =>
+          rendered.renderPlan.renderedSlots.filter((slot) => slot.overflow).map((slot) => slot.id)
+        )
+    );
+    const repairCopy = { ...requestedCopy };
+    if (
+      overflowSlots.has("headline") &&
+      requestedCopy.headline !== active.hookPlan.headline
+    ) {
+      repairCopy.headline = active.hookPlan.headline;
+      autoRepairs.push("슬롯을 초과한 사용자 헤드라인을 검증된 H 후킹 원문으로 복구");
+    }
+    if (overflowSlots.has("body") && requestedCopy.body !== active.hookPlan.body) {
+      repairCopy.body = active.hookPlan.body;
+      autoRepairs.push("슬롯을 초과한 사용자 서브 문구를 검증된 H 서브 문구로 복구");
+    }
+    if (!rendered.qa.passed && autoRepairs.length) {
+      rendered = await renderCreativeResult({
+        job,
+        result: active,
+        overrides: repairCopy,
+        repairPass: 1,
+        autoRepairs,
+      });
     }
     const assetResult = rendered.qa.passed
       ? await createAssetFromGenerationResult({
@@ -129,6 +179,7 @@ export async function POST(
               creativeAsset: assetResult ? toCreativeAssetSnapshot(assetResult.asset) : result.creativeAsset,
               renderPlan: rendered.renderPlan,
               qa: rendered.qa,
+              autoRepairs,
               contentNoteCompliance: noteApplication.compliance,
               error: rendered.qa.passed
                 ? undefined

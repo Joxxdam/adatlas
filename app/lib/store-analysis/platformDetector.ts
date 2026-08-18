@@ -8,7 +8,9 @@ export function detectStorePlatform(url: string, html = ""): StorePlatform {
   if (/makeshop|shopdetail\.html|branduid|mk_mall|ezadmin/i.test(`${hostname} ${html}`)) {
     return "makeshop";
   }
-  if (/cdn\.shopify\.com|shopify-section|shopify-payment|\/products\//i.test(html)) {
+  if (
+    /cdn\.shopify\.com|shopify-section|shopify-payment|Shopify\.theme|\.myshopify\.com/i.test(html)
+  ) {
     return "shopify";
   }
   if (

@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   createBrandCode,
   createProductCode,
+  createHookVariantAssetCode,
   extensionFromImageUrl,
   extractCreativeAssetCode,
   generateCreativeAssetCode,
@@ -149,6 +150,30 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
             throw new Error("같은 실험 회차와 변형의 소재코드가 이미 존재합니다.");
           }
           assetCode = candidate;
+        } else if (input.testCode && input.hookVariantCode) {
+          const base = createHookVariantAssetCode({
+            brandCode: entities.brandCode,
+            productCode: entities.productCode,
+            testCode: input.testCode,
+            hookVariantCode: input.hookVariantCode,
+          });
+          if (!store.assets.some((asset) => asset.assetCode === base)) {
+            assetCode = base;
+          } else {
+            for (let nextVersion = 2; nextVersion < 100; nextVersion += 1) {
+              const candidate = createHookVariantAssetCode({
+                brandCode: entities.brandCode,
+                productCode: entities.productCode,
+                testCode: input.testCode,
+                hookVariantCode: input.hookVariantCode,
+                version: nextVersion,
+              });
+              if (!store.assets.some((asset) => asset.assetCode === candidate)) {
+                assetCode = candidate;
+                break;
+              }
+            }
+          }
         } else {
           for (let attempt = 0; attempt < 64; attempt += 1) {
             const candidate = generateCreativeAssetCode({
@@ -188,6 +213,8 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
           generationRound: input.generationRound,
           variant: normalizedText(input.variant) || undefined,
           experimentId: normalizedText(input.experimentId) || undefined,
+          testCode: normalizedText(input.testCode) || undefined,
+          hookVariantCode: normalizedText(input.hookVariantCode) || undefined,
           advertisingHypothesis: normalizedText(input.advertisingHypothesis),
           headline: normalizedText(input.headline),
           subCopy: normalizedText(input.subCopy),

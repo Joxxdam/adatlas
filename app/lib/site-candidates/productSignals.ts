@@ -23,7 +23,10 @@ function visibleBlocks(html: string) {
 }
 
 function matchingBlocks(blocks: string[], pattern: RegExp, limit = 5) {
-  return uniqueStrings(blocks.filter((block) => pattern.test(block)), limit);
+  return uniqueStrings(
+    blocks.filter((block) => pattern.test(block)),
+    limit
+  );
 }
 
 function firstMatching(blocks: string[], pattern: RegExp) {
@@ -133,15 +136,12 @@ function reviewPhrases(detail: ProductDetailAnalysis) {
   const review = detail.reviewAnalysis;
   if (!review) return [];
   return uniqueStrings(
-    [
-      ...review.repeatedBenefits,
-      ...review.purchaseSituations,
-      ...review.copyUsableInsights,
-    ].map((value) =>
-      value
-        .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "")
-        .replace(/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/g, "")
-        .trim()
+    [...review.repeatedBenefits, ...review.purchaseSituations, ...review.copyUsableInsights].map(
+      (value) =>
+        value
+          .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "")
+          .replace(/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/g, "")
+          .trim()
     ),
     8
   );
@@ -259,9 +259,10 @@ export function extractSiteProductRecord(params: {
     blocks,
     /(?:행사|할인|프로모션|쿠폰)[^.]{0,120}(?:\d{1,2}[./-]\d{1,2}|오늘까지|이번\s*주|마감\s*(?:예정|임박)?)/i
   );
-  const purchaseButton = /(?:구매하기|바로\s*구매|주문하기|장바구니\s*담기|buy\s*now|add\s*to\s*cart)/i.test(
-    text
-  );
+  const purchaseButton =
+    /(?:구매하기|바로\s*구매|주문하기|장바구니(?:에)?\s*(?:담기|추가(?:하기)?)|buy\s*now|add\s*to\s*cart)/i.test(
+      text
+    );
   const stockStatus = explicitStockState(html, summary, purchaseButton);
   const reviewInsights = reviewPhrases(detail);
   const productName = summary.name || metaContent(html, "og:title") || "상품명 확인 필요";
@@ -285,15 +286,11 @@ export function extractSiteProductRecord(params: {
       stateForValue(summary.reviewCount || summary.rating || reviewInsights),
       summary.reviewCount || summary.rating || reviewInsights,
       source,
-      !summary.reviewCount && !summary.rating ? "리뷰가 0개인 것이 아니라 공개 페이지에서 확인하지 못했습니다." : undefined
+      !summary.reviewCount && !summary.rating
+        ? "리뷰가 0개인 것이 아니라 공개 페이지에서 확인하지 못했습니다."
+        : undefined
     ),
-    evidence(
-      "images",
-      "상품 이미지",
-      images.length ? "present" : "absent",
-      images,
-      "page-html"
-    ),
+    evidence("images", "상품 이미지", images.length ? "present" : "absent", images, "page-html"),
     evidence(
       "purchase-button",
       "구매 버튼",

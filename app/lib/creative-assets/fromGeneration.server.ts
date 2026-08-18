@@ -38,6 +38,8 @@ export async function createAssetFromGenerationResult(input: {
     generationRound: experiment?.generationRound,
     variant: input.result.hookPlan.experimentVariant,
     experimentId: experiment?.experimentId,
+    testCode: experiment ? undefined : input.job.creativePlan.testCode,
+    hookVariantCode: experiment ? undefined : input.result.hookPlan.hookCode,
     advertisingHypothesis: `${input.result.hookPlan.title} · ${input.result.hookPlan.sceneIntent}`,
     headline: input.copy.headline,
     subCopy: input.copy.body,

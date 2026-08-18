@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   createBrandCode,
+  createHookVariantAssetCode,
   createProductCode,
   extractCreativeAssetCode,
   generateCreativeAssetCode,
@@ -50,6 +51,30 @@ test("정상 소재코드를 지정 형식으로 생성한다", () => {
   });
   assert.equal(code, "AT-ORS-MINT-PRC-260812-K4M7");
   assert.equal(validateCreativeAssetCode(code), true);
+});
+
+test("후킹 실험 소재코드는 브랜드·상품·T01·H01을 동일하게 연결한다", async (context) => {
+  const code = createHookVariantAssetCode({
+    brandCode: "ORS",
+    productCode: "MINT",
+    testCode: "T01",
+    hookVariantCode: "H01",
+  });
+  assert.equal(code, "AT-ORS-MINT-T01-H01");
+  assert.equal(validateCreativeAssetCode(code), true);
+  assert.equal(extractCreativeAssetCode(`${code}.webp`), code);
+
+  const directory = await mkdtemp(path.join(tmpdir(), "adatlas-hook-assets-"));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  const repository = createCreativeAssetRepository({ dataDirectory: directory });
+  const first = await repository.create(
+    baseAsset({ testCode: "T01", hookVariantCode: "H01", generationRequestKey: "hook-1" })
+  );
+  const revision = await repository.create(
+    baseAsset({ testCode: "T01", hookVariantCode: "H01", generationRequestKey: "hook-2" })
+  );
+  assert.match(first.asset.assetCode, /^AT-[A-Z0-9]{3,5}-[A-Z0-9]{3,5}-T01-H01$/);
+  assert.equal(revision.asset.assetCode, `${first.asset.assetCode}-V02`);
 });
 
 test("10,000개 이상 생성해도 프로세스 내 UNIQUE가 겹치지 않는다", () => {

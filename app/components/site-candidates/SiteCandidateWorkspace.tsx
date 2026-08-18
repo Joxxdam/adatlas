@@ -214,8 +214,8 @@ export function SiteCandidateWorkspace() {
       </form>
 
       <div className={styles.disclaimer}>
-        사이트 공개정보를 기반으로 광고 콘텐츠 후보를 추천합니다. 실제 판매·광고 성과가
-        아니며 최종 성과는 광고 테스트로 검증해야 합니다.
+        사이트 공개정보를 기반으로 광고 콘텐츠 후보를 추천합니다. 실제 판매량·전환율·ROAS를
+        예측하지 않으며 최종 성과는 광고 테스트로 검증해야 합니다.
       </div>
 
       {error ? <div className={styles.error}>{error}</div> : null}
@@ -239,6 +239,18 @@ export function SiteCandidateWorkspace() {
 
       {analysis ? (
         <>
+          <div className={styles.scoreGuide}>
+            <div>
+              <strong>콘텐츠 적합도 안내</strong>
+              <p>
+                콘텐츠 적합도는 메시지·USP, 고객 신뢰, 가격·혜택, 소재 제작, 시즌·상황,
+                랜딩페이지 준비도를 종합한 공개정보 기반 점수입니다. 실제 판매량·전환율·ROAS를
+                예측하는 점수가 아닙니다.
+              </p>
+            </div>
+            <p>추천 순위는 콘텐츠 적합도와 함께 후킹 유형·상품 카테고리의 다양성을 반영합니다.</p>
+          </div>
+
           <div className={styles.toolbar}>
             <div className={styles.filters} aria-label="사이트 후보 유형 필터">
               <button
@@ -265,6 +277,27 @@ export function SiteCandidateWorkspace() {
           <div className={styles.grid}>
             {visibleCandidates.map((candidate) => {
               const product = candidate.product;
+              const recommendation = candidate.recommendationSummary || {
+                coreReason:
+                  candidate.recommendationReasons[0] ||
+                  "확인 가능한 공개정보가 적어 상세페이지 추가 확인이 필요합니다.",
+                topStrengths: Object.values(candidate.score.sections)
+                  .filter((item) => item.score > 0 && item.reasons.length)
+                  .sort(
+                    (left, right) =>
+                      right.score / right.maxScore - left.score / left.maxScore
+                  )
+                  .slice(0, 3)
+                  .map((item) => ({
+                    sectionKey: item.key,
+                    label: item.label,
+                    score: item.score,
+                    maxScore: item.maxScore,
+                    evidence: item.reasons.slice(0, 2).join(" · "),
+                  })),
+                recommendedTest: `${TYPE_LABEL[candidate.primaryRecommendationType]}형 후킹 우선 검증`,
+                insufficientData: candidate.evidenceLevel === "low",
+              };
               return (
                 <article className={styles.card} key={candidate.id}>
                   <div className={styles.rank}>#{candidate.rank}</div>
@@ -284,7 +317,11 @@ export function SiteCandidateWorkspace() {
                     <div className={styles.productHeading}>
                       <div className={styles.badges}>
                         <span>{TYPE_LABEL[candidate.primaryRecommendationType]}</span>
-                        <b>광고 적합도 {candidate.score.total}</b>
+                        <b
+                          title="상세페이지에서 광고 메시지와 이미지를 제작할 근거가 충분한 정도입니다. 실제 판매 가능성이나 광고 성과를 의미하지 않습니다."
+                        >
+                          콘텐츠 적합도 {candidate.score.total}
+                        </b>
                         <small>근거 {EVIDENCE_LABEL[candidate.evidenceLevel]}</small>
                       </div>
                       <h2>{product.productName}</h2>
@@ -297,14 +334,31 @@ export function SiteCandidateWorkspace() {
                     </div>
                   </div>
 
-                  <div className={styles.reasonList}>
-                    {candidate.recommendationReasons.slice(0, 3).map((reason) => (
-                      <p key={reason}>{reason}</p>
-                    ))}
-                    {!candidate.recommendationReasons.length ? (
-                      <p>확인 가능한 상품 근거가 적어 상세페이지 추가 확인이 필요합니다.</p>
+                  <section className={styles.recommendationPanel} aria-label="이 상품을 추천하는 이유">
+                    <p className={styles.recommendationTitle}>이 상품을 추천하는 이유</p>
+                    <div className={styles.recommendationCore}>
+                      <span>추천 핵심 <em>시스템 해석</em></span>
+                      <p>{recommendation.coreReason}</p>
+                    </div>
+                    {recommendation.topStrengths.length ? (
+                      <div className={styles.strengthBlock}>
+                        <span>강점 점수 <em>확인된 사실</em></span>
+                        <div className={styles.strengthRows}>
+                          {recommendation.topStrengths.slice(0, 3).map((strength) => (
+                            <div key={strength.sectionKey}>
+                              <strong>{strength.label} {strength.score}/{strength.maxScore}</strong>
+                              <small>· {strength.evidence}</small>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ) : null}
-                  </div>
+                    <div className={styles.testRecommendation}>
+                      <span>추천 테스트 <em>시스템 해석</em></span>
+                      <p>{recommendation.recommendedTest}</p>
+                      <small>동일한 디자인에서 메인 후킹과 서브 문구만 바꿔 비교합니다.</small>
+                    </div>
+                  </section>
 
                   <dl className={styles.quickFacts}>
                     <div><dt>확인된 USP</dt><dd>{product.uspCandidates[0] || "확인 불가"}</dd></div>
@@ -319,10 +373,11 @@ export function SiteCandidateWorkspace() {
                     <summary>상세 근거 보기</summary>
                     <div className={styles.scoreBreakdown}>
                       {Object.values(candidate.score.sections).map((item) => (
-                        <div key={item.key}>
+                        <div data-status={item.status} key={item.key}>
                           <span>{item.label}</span>
-                          <strong>{item.score}/{item.maxScore}</strong>
-                          <small>{item.reasons.join(" · ") || "확인 가능한 근거 부족"}</small>
+                          <strong>{item.status === "unavailable" ? "확인 불가" : `${item.score}/${item.maxScore}`}</strong>
+                          <em>근거 충족 {item.evidenceCount}/{item.indicatorCount}</em>
+                          <small>{item.reasons.join(" · ") || (item.status === "unavailable" ? "공개 페이지에서 정보를 확인하지 못함" : "확인된 강점 근거 없음")}</small>
                         </div>
                       ))}
                     </div>

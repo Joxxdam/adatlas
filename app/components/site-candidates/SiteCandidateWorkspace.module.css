@@ -94,6 +94,34 @@
   font-size: 13px;
 }
 
+.scoreGuide {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.8fr);
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid #cfe0f4;
+  border-radius: 8px;
+  background: #f7faff;
+  color: #475467;
+}
+
+.scoreGuide div {
+  display: grid;
+  gap: 4px;
+}
+
+.scoreGuide strong {
+  color: #175cd3;
+  font-size: 13px;
+}
+
+.scoreGuide p {
+  align-self: center;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .error {
   border-left-color: #d92d20;
   background: #fff3f2;
@@ -286,19 +314,95 @@
   font-weight: 900;
 }
 
-.reasonList {
+.recommendationPanel {
   display: grid;
-  gap: 5px;
+  gap: 10px;
   margin: 0 22px 14px;
-  padding: 11px 13px;
+  padding: 13px 14px;
   border-left: 3px solid #12b76a;
+  border-radius: 0 7px 7px 0;
   background: #f0fdf8;
 }
 
-.reasonList p {
+.recommendationTitle {
+  color: #067647;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.recommendationCore,
+.strengthBlock,
+.testRecommendation {
+  display: grid;
+  gap: 5px;
+}
+
+.recommendationCore > span,
+.strengthBlock > span,
+.testRecommendation > span {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   color: #176b4d;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.recommendationPanel em {
+  border: 1px solid #a6f4c5;
+  border-radius: 999px;
+  background: #dcfae6;
+  padding: 2px 6px;
+  color: #067647;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.recommendationCore p,
+.testRecommendation p {
+  color: #145c45;
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.48;
+}
+
+.strengthRows {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.strengthRows div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid #c7ead8;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.strengthRows strong {
+  color: #067647;
+  font-size: 11px;
+}
+
+.strengthRows small,
+.testRecommendation small {
+  overflow-wrap: anywhere;
+  color: #477863;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.testRecommendation {
+  padding-top: 8px;
+  border-top: 1px solid #c7ead8;
 }
 
 .quickFacts {
@@ -383,8 +487,25 @@
   font-size: 16px;
 }
 
+.scoreBreakdown em {
+  color: #667085;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
 .scoreBreakdown small {
   color: #667085;
+}
+
+.scoreBreakdown div[data-status="unavailable"] {
+  border-style: dashed;
+  background: #fcfcfd;
+}
+
+.scoreBreakdown div[data-status="unavailable"] strong,
+.scoreBreakdown div[data-status="unavailable"] em {
+  color: #b54708;
 }
 
 .evidenceList {
@@ -494,9 +615,11 @@
   .search,
   .discoverySummary,
   .productArea,
+  .scoreGuide,
   .quickFacts,
   .scoreBreakdown,
-  .evidenceList {
+  .evidenceList,
+  .strengthRows {
     grid-template-columns: 1fr;
   }
 
@@ -507,5 +630,9 @@
   .productImage {
     width: 100%;
     max-width: 260px;
+  }
+
+  .recommendationPanel {
+    margin-inline: 14px;
   }
 }

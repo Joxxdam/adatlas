@@ -247,6 +247,8 @@ function hookPlans(plan: CreateExperimentPlanResult): HookPlan[] {
         blueprintId: variant.blueprintId,
         hookType: recommendation.hookType,
         title: `${recommendation.label} ${asset.variant}안`,
+        hypothesis: recommendation.hypothesis,
+        confidence: "medium",
         headline: recommendation.mainMessage,
         body:
           variant.visual === "COPY_INFORMATION"

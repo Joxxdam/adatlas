@@ -1,5 +1,71 @@
 [
   {
+    "id": "b23feb2a-bc57-4cf8-a915-ee1b35134a64",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/extra/big/202509/a23175eb5076a970cd505377e899fe99.jpg",
+    "processedImagePath": "/processed-products/removebg-1786710744405-c97e4815.png",
+    "cacheKey": "d3fba2d1fa57dc3666f290cc5ad51e65ea5284efc7093bcb2c05e0ad9389fdf5",
+    "representationType": "already-transparent",
+    "extractionScope": "visible-all",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-14T12:32:24.406Z"
+  },
+  {
+    "id": "1b597c6f-545a-4c75-ba4e-6e0a6f80d492",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/extra/big/202509/a23175eb5076a970cd505377e899fe99.jpg",
+    "processedImagePath": "/processed-products/removebg-1786710738966-719b9763.png",
+    "cacheKey": "9d5e4bcb4a74ddeaa0a7bb030ffc33d5cdc007d4a02cb83fa5baf7d1d0a85c7f",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-14T12:32:18.967Z"
+  },
+  {
+    "id": "936e8ff3-a5f9-4a4b-9818-966be1cb948f",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16804437790236.jpg",
+    "processedImagePath": "/processed-products/removebg-1786710440254-fd29e119.png",
+    "cacheKey": "331b8feed5104829afec44df6f17a3c4528cf5d3330fcf0af7bc9c20b2058600",
+    "representationType": "multi-unit-set",
+    "extractionScope": "sales-unit",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-14T12:27:20.255Z"
+  },
+  {
+    "id": "e678386d-df7c-47b6-a072-1a6ff503b5d8",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/data/goods/meatmania0726/small/thum2/640KakaoTalk_20260725_020301292.jpg",
+    "processedImagePath": "/processed-products/removebg-1786710424311-f4828162.png",
+    "cacheKey": "278e4a2970df768c7ab33564571bb1bfb95439bd67bd4b5f7f803fd0a1221824",
+    "representationType": "irregular-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-14T12:27:04.312Z"
+  },
+  {
+    "id": "fecc3ddc-6a2c-4b0d-8aab-0ec9291b3181",
+    "provider": "removebg",
+    "originalImagePath": "https://kookdae.co.kr/contents/images/reward_1.png",
+    "processedImagePath": "/processed-products/removebg-1786709771787-6a4785fd.png",
+    "cacheKey": "d88b94b1e3e659248474271cf7f3123b4dc0207e32c0ebafa8c8881009c90d7d",
+    "representationType": "apparel-or-soft-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-14T12:16:11.788Z"
+  },
+  {
+    "id": "7f02d343-a651-476f-85c6-35c450337c62",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/data/goods/meatmania0726/small/thum2/KakaoTalk_6400260517_073254909_03.jpg",
+    "processedImagePath": "/processed-products/removebg-1786709761261-951c5d51.png",
+    "cacheKey": "d4e3765fb3472d473b380340653710814ec710322c2d7b144e31ab492a0de587",
+    "representationType": "multi-unit-set",
+    "extractionScope": "sales-unit",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-14T12:16:01.262Z"
+  },
+  {
     "id": "d67de337-f48e-4a67-9acf-d5a1128a65e1",
     "provider": "removebg",
     "originalImagePath": "https://originalsource.co.kr/web/product/big/202511/cc1547ecbda600908eddfa1b50e8a4ae.jpg",

@@ -4,57 +4,100 @@ import path from "node:path";
 import test from "node:test";
 import sharp from "sharp";
 
+import { validateBlueprintCatalog } from "../app/lib/creative-generation/blueprints.ts";
+import { buildGenerationSummary } from "../app/lib/creative-generation/generationSummary.ts";
 import {
-  creativeBlueprints,
-  validateBlueprintCatalog,
-} from "../app/lib/creative-generation/blueprints.ts";
-import { buildCreativePlan, createGenerationJob, planScenes } from "../app/lib/creative-generation/planner.ts";
+  buildFallbackHookMessages,
+  categoryContamination,
+  validateHookMessages,
+} from "../app/lib/creative-generation/hookMessages.server.ts";
+import {
+  buildCreativePlan,
+  createGenerationJob,
+  planScenes,
+} from "../app/lib/creative-generation/planner.ts";
 import { matchBrandProfile, matchCategoryProfile } from "../app/lib/creative-generation/profiles.ts";
-import { buildProductTruth, validateCopyAgainstTruth } from "../app/lib/creative-generation/productTruth.ts";
-import { renderCreativeResult } from "../app/lib/creative-generation/renderer.server.ts";
-import { defaultAdBrief } from "../app/lib/mvp/adBrief.ts";
+import {
+  buildProductTruth,
+  validateCopyAgainstTruth,
+} from "../app/lib/creative-generation/productTruth.ts";
+import { qaRenderedCreative } from "../app/lib/creative-generation/qa.ts";
+import {
+  buildRenderPlan,
+  renderCreativeResult,
+} from "../app/lib/creative-generation/renderer.server.ts";
+import { hookMessageCodes } from "../app/lib/creative-generation/types.ts";
 import { applyKnownProductAssets } from "../app/lib/creative/knownProductAssets.ts";
 
 const root = process.cwd();
-const fixtures = JSON.parse(await readFile(path.join(root, "tests/fixtures/creative-products.json"), "utf8"));
+const fixtures = JSON.parse(
+  await readFile(path.join(root, "tests/fixtures/creative-products.json"), "utf8")
+);
 const library = JSON.parse(await readFile(path.join(root, "data/background-library.json"), "utf8"));
 
-test("creative blueprint catalog defines six unique ad structures", () => {
+const genericProduct = {
+  productName: "모노 데일리 멀티 파우치",
+  category: "기타",
+  price: "",
+  advertiserName: "모노",
+  brandName: "MONO",
+  discountInfo: "",
+  mainBenefit: "작은 소지품을 나누어 담는 내부 구성",
+  targetCustomer: "가방 속 소지품을 정리하려는 고객",
+  landingUrl: "https://example.com/mono-pouch",
+  productImagePath: "/test-fixtures/creative/ririnco-dress.svg",
+  backgroundImagePath: "",
+  verifiedBenefits: ["여러 소지품을 나누어 담는 내부 구성"],
+};
+
+function truthFor(product) {
+  return buildProductTruth({
+    product,
+    productImagePaths: [product.productImagePath],
+    source: "landing-page",
+  });
+}
+
+function makeJob(product = fixtures[0].product, planOptions = {}) {
+  const truth = truthFor(product);
+  const creativePlan = buildCreativePlan(truth, planOptions);
+  const scenes = planScenes(creativePlan, library, false, planOptions);
+  const job = createGenerationJob({ truth, creativePlan, scenes, planningMs: 1, concurrency: 2 });
+  return { truth, creativePlan, scenes, job };
+}
+
+test("creative blueprint catalog remains available for category-specific master selection", () => {
   const result = validateBlueprintCatalog();
   assert.equal(result.valid, true);
   assert.equal(result.count, 6);
-  assert.equal(new Set(result.ids).size, 6);
 });
 
-test("blueprints include large, repeated-overlap, and scale-contrast product directions", () => {
-  const compositions = Object.fromEntries(
-    creativeBlueprints.map((blueprint) => [blueprint.id, blueprint.productComposition])
-  );
-  assert.equal(compositions["product-hero-lifestyle"].mode, "single");
-  assert.ok(
-    compositions["product-hero-lifestyle"].instances[0].height >= 740,
-    "hero product should be visibly large"
-  );
-  assert.equal(compositions["editorial-story"].mode, "repeat-overlap");
-  assert.equal(compositions["editorial-story"].instances.length, 3);
-  assert.equal(compositions["proof-data"].mode, "repeat-overlap");
-  assert.equal(compositions["proof-data"].instances.length, 3);
-  assert.equal(compositions["comparison-versus"].mode, "scale-contrast");
-  assert.equal(compositions["comparison-versus"].instances.length, 2);
-  assert.ok(
-    compositions["comparison-versus"].instances[1].height >
-      compositions["comparison-versus"].instances[0].height
-  );
+test("ProductTruth keeps ad references separate from compositable product images", () => {
+  const product = {
+    ...fixtures[0].product,
+    productImagePath: "/reference/ad.jpg",
+    productImagePaths: ["/reference/ad.jpg"],
+  };
+  const truth = buildProductTruth({
+    product,
+    productImagePaths: ["/confirmed/product.png", "/reference/ad.jpg"],
+    selectedAdImages: ["/reference/ad.jpg"],
+    source: "landing-page",
+  });
+  assert.deepEqual(truth.imagePaths, ["/confirmed/product.png"]);
+  assert.equal(truth.referenceImages.length, 1);
+  assert.equal(truth.referenceImages[0].role, "ad-reference");
+  assert.ok(!truth.imagePaths.includes("/reference/ad.jpg"));
 });
 
-test("ProductTruth blocks reference-only performance numbers", () => {
-  const truth = buildProductTruth({ product: fixtures[0].product, source: "landing-page" });
+test("ProductTruth blocks unverified performance numbers", () => {
+  const truth = truthFor(fixtures[0].product);
   assert.equal(validateCopyAgainstTruth("체취 -72% 감소", truth).valid, false);
   assert.equal(validateCopyAgainstTruth("체감 온도 -8.9°C", truth).valid, false);
   assert.equal(validateCopyAgainstTruth(`판매가 ${fixtures[0].product.price}`, truth).valid, true);
 });
 
-test("brand and category profiles match Original Source, Kookdae, and Ririnco without brand conditionals", () => {
+test("brand and category profiles do not leak personal-care rules into meat or fashion", () => {
   const expected = [
     ["original-source", "personal-care"],
     ["kookdae-hanwoo", "food-meat"],
@@ -64,44 +107,181 @@ test("brand and category profiles match Original Source, Kookdae, and Ririnco wi
     assert.equal(matchBrandProfile(fixture.product).id, expected[index][0]);
     assert.equal(matchCategoryProfile(fixture.product).id, expected[index][1]);
   });
+  assert.equal(categoryContamination("food-meat", "샤워 후 쿨링"), "샤워");
 });
 
-test("planner makes six unique hooks, blueprints, and reusable scenes", () => {
+test("fallback copy returns eight distinct, fact-linked category-safe message hypotheses", () => {
+  for (const product of [...fixtures.map((fixture) => fixture.product), genericProduct]) {
+    const truth = truthFor(product);
+    const hooks = buildFallbackHookMessages(truth);
+    const validation = validateHookMessages(hooks, truth);
+    assert.equal(validation.valid, true, validation.errors.join("\n"));
+    assert.deepEqual(hooks.map((hook) => hook.code), hookMessageCodes);
+    assert.equal(new Set(hooks.map((hook) => hook.hookType)).size, 8);
+    assert.equal(new Set(hooks.map((hook) => hook.mainHook)).size, 8);
+    assert.ok(hooks.every((hook) => hook.factIds.length > 0));
+    const category = matchCategoryProfile(product).id;
+    assert.ok(hooks.every((hook) => !categoryContamination(category, `${hook.mainHook} ${hook.subCopy}`)));
+  }
+});
+
+test("products without price or reviews never receive price-benefit or review hooks", () => {
+  const hooks = buildFallbackHookMessages(truthFor(genericProduct));
+  assert.ok(!hooks.some((hook) => hook.hookType === "price-benefit"));
+  assert.ok(!hooks.some((hook) => hook.hookType === "review-ugc"));
+  assert.ok(!hooks.some((hook) => /원|할인|후기|리뷰/.test(`${hook.mainHook} ${hook.subCopy}`)));
+});
+
+test("one product gets one master design and one background across H01-H08", () => {
   for (const fixture of fixtures) {
-    const truth = buildProductTruth({ product: fixture.product, source: "landing-page" });
-    const plan = buildCreativePlan(truth);
-    const scenes = planScenes(plan, library, false);
-    assert.equal(plan.hookPlans.length, 6);
-    assert.equal(new Set(plan.hookPlans.map((item) => item.blueprintId)).size, 6);
-    assert.equal(new Set(plan.hookPlans.map((item) => item.hookType)).size, 6);
-    assert.equal(new Set(scenes.map((item) => item.sceneAsset.id)).size, 6);
-    assert.ok(scenes.every((scene) => scene.provider === "library" && scene.generated === false));
+    const { creativePlan, scenes, job } = makeJob(fixture.product);
+    assert.equal(creativePlan.hookPlans.length, 8);
+    assert.equal(new Set(creativePlan.hookPlans.map((hook) => hook.blueprintId)).size, 1);
+    assert.equal(new Set(scenes.map((scene) => scene.sceneAsset.id)).size, 1);
+    assert.equal(new Set(job.results.map((result) => result.hookPlan.hookCode)).size, 8);
+    assert.ok(job.results.every((result) => result.blueprintId === creativePlan.masterDesign.layoutFamily));
   }
 });
 
-test("planner creates message hypotheses instead of product-name fallback copy", () => {
-  const fixture = fixtures[0];
-  const truth = buildProductTruth({ product: fixture.product, source: "landing-page" });
-  const plan = buildCreativePlan(truth);
-  const forbiddenFallbacks = [
-    "한눈에 만나는 핵심",
-    "광고 전에 확인할",
-    "고르는 이유가 분명합니다",
-    `${fixture.product.category} 고민`,
+test("different product categories can select different master designs", () => {
+  const personal = makeJob(fixtures[0].product).creativePlan.masterDesign.layoutFamily;
+  const meat = makeJob(fixtures[1].product).creativePlan.masterDesign.layoutFamily;
+  const generic = makeJob(genericProduct).creativePlan.masterDesign.layoutFamily;
+  assert.equal(personal, "problem-solution-split");
+  assert.equal(meat, "editorial-story");
+  assert.equal(generic, "product-hero-lifestyle");
+});
+
+test("master and background preservation keeps every fixed design variable stable", () => {
+  const first = makeJob(fixtures[0].product);
+  const secondTruth = truthFor(fixtures[0].product);
+  const secondPlan = buildCreativePlan(secondTruth, {
+    preserveMasterDesignId: first.creativePlan.masterDesign.id,
+  });
+  const secondScenes = planScenes(secondPlan, library, false, {
+    preserveBackgroundAssetId: first.scenes[0].sceneAsset.id,
+  });
+  assert.equal(secondPlan.masterDesign.id, first.creativePlan.masterDesign.id);
+  assert.deepEqual(
+    secondPlan.masterDesign.productComposition,
+    first.creativePlan.masterDesign.productComposition
+  );
+  assert.equal(secondScenes[0].sceneAsset.id, first.scenes[0].sceneAsset.id);
+});
+
+test(
+  "H01-H08 render as decodable ads with identical fixed geometry and passing split QA",
+  { timeout: 120_000 },
+  async () => {
+    const { job } = makeJob(fixtures[0].product);
+    const rendered = [];
+    for (const result of job.results) rendered.push(await renderCreativeResult({ job, result }));
+    assert.equal(rendered.length, 8);
+    const geometry = JSON.stringify({
+      product: rendered[0].renderPlan.productComposition,
+      slots: rendered[0].renderPlan.renderedSlots.map((slot) => ({
+        id: slot.id,
+        box: slot.box,
+        fontSize: slot.fontSize,
+        textColor: slot.textColor,
+        fillColor: slot.fillColor,
+      })),
+    });
+    for (const item of rendered) {
+      assert.equal(item.qa.passed, true, JSON.stringify(item.qa.findings));
+      assert.equal(item.qa.technicalPassed, true);
+      assert.equal(item.qa.creativePassed, true);
+      assert.ok(item.qa.score >= 85);
+      assert.equal(item.qa.width, 1200);
+      assert.equal(item.qa.height, 1200);
+      assert.equal(item.qa.format, "webp");
+      assert.ok(item.qa.fileSizeBytes <= 800 * 1024);
+      assert.ok(item.qa.productAreaRatio >= 0.09);
+      assert.equal(item.renderPlan.renderedSlots.filter((slot) => slot.id === "cta").length, 1);
+      assert.equal(
+        JSON.stringify({
+          product: item.renderPlan.productComposition,
+          slots: item.renderPlan.renderedSlots.map((slot) => ({
+            id: slot.id,
+            box: slot.box,
+            fontSize: slot.fontSize,
+            textColor: slot.textColor,
+            fillColor: slot.fillColor,
+          })),
+        }),
+        geometry
+      );
+      const metadata = await sharp(
+        path.join(root, "public", item.imagePath.replace(/^\//, ""))
+      ).metadata();
+      assert.equal(metadata.width, 1200);
+      assert.equal(metadata.height, 1200);
+    }
+    assert.equal(new Set(rendered.map((item) => item.renderPlan.masterDesignId)).size, 1);
+    assert.equal(new Set(rendered.map((item) => item.renderPlan.backgroundAssetId)).size, 1);
+    assert.equal(new Set(rendered.map((item) => item.qa.productAreaRatio)).size, 1);
+  }
+);
+
+test("Creative QA rejects contamination, unsupported graphs, tiny products, and invalid image roles", async () => {
+  const { truth, job } = makeJob(fixtures[1].product);
+  const result = job.results[0];
+  const renderPlan = await buildRenderPlan(job, result, {
+    headline: "샤워 후 쿨링",
+    body: "피부를 산뜻하게",
+  });
+  renderPlan.productImageAssets = [
+    {
+      id: "bad-reference",
+      path: "/reference.jpg",
+      role: "ad-reference",
+      source: "selected-reference",
+      verified: true,
+      reason: "test",
+    },
   ];
-  for (const hook of plan.hookPlans) {
-    assert.ok(hook.headline.trim(), hook.hookType);
-    assert.ok(hook.body.trim(), hook.hookType);
-    assert.ok(
-      forbiddenFallbacks.every((phrase) => !hook.headline.includes(phrase)),
-      hook.headline
-    );
-    assert.notEqual(hook.headline.replace(/\s+/g, " ").trim(), fixture.product.productName);
-    assert.notEqual(hook.body.replace(/\s+/g, " ").trim(), fixture.product.productName);
-  }
+  const surfaceBeforeText = await sharp({
+    create: { width: 1200, height: 1200, channels: 3, background: "#101010" },
+  })
+    .png()
+    .toBuffer();
+  const buffer = await sharp(surfaceBeforeText).webp().toBuffer();
+  const qa = await qaRenderedCreative({
+    buffer,
+    surfaceBeforeText,
+    renderPlan,
+    truth,
+    hookPlan: result.hookPlan,
+    productPixelAreaRatio: 0.02,
+    productBounds: { x: 700, y: 300, width: 100, height: 100 },
+    logoRendered: false,
+    unsupportedVisualization: true,
+  });
+  const ids = new Set(qa.findings.map((finding) => finding.id));
+  assert.equal(qa.creativePassed, false);
+  assert.equal(qa.passed, false);
+  assert.ok(ids.has("category-contamination"));
+  assert.ok(ids.has("image-role"));
+  assert.ok(ids.has("product-too-small"));
+  assert.ok(ids.has("unsupported-visualization"));
 });
 
-test("Original Source URL jobs use the registered cutout and matching background collection", () => {
+test("generation ZIP summary preserves all eight statuses, failures, master design and missing codes", () => {
+  const { job } = makeJob(fixtures[2].product);
+  job.results[0].status = "success";
+  job.results[1].status = "failed";
+  job.results[1].error = "QA 실패";
+  job.results = job.results.slice(0, 7);
+  const summary = buildGenerationSummary(job);
+  assert.equal(summary.counts.expected, 8);
+  assert.equal(summary.counts.success, 1);
+  assert.equal(summary.counts.failed, 1);
+  assert.deepEqual(summary.missingHookCodes, ["H08"]);
+  assert.equal(summary.masterDesign.id, job.creativePlan.masterDesign.id);
+  assert.equal(summary.results[1].error, "QA 실패");
+});
+
+test("Original Source URL jobs still use the registered product cutout and dedicated background", () => {
   const rawProduct = {
     ...fixtures[0].product,
     productName: "오리지널소스 민트 티트리 쿨링 샤워젤 · 바디워시 250ml",
@@ -111,106 +291,8 @@ test("Original Source URL jobs use the registered cutout and matching background
     productImagePaths: ["https://originalsource.co.kr/web/product/big/product.jpg"],
   };
   const enriched = applyKnownProductAssets(rawProduct);
-  assert.equal(
-    enriched.productImagePath,
-    "/product-cutouts/original-source/mint-tea-tree-250ml.png"
-  );
-  const truth = buildProductTruth({ product: enriched, source: "landing-page" });
-  const creativePlan = buildCreativePlan(truth);
-  const scenes = planScenes(creativePlan, library, false);
-  assert.equal(scenes.length, 6);
-  assert.ok(
-    scenes.every((scene) => scene.sceneAsset.id.startsWith("original-source-mint-tea-tree-")),
-    scenes.map((scene) => scene.sceneAsset.id).join(", ")
-  );
-});
-
-test("selected objective and production approach change the six-card plan", () => {
-  const truth = buildProductTruth({ product: fixtures[0].product, source: "landing-page" });
-  const awarenessPlan = buildCreativePlan(truth, {
-    adBrief: { ...defaultAdBrief, adObjective: "awareness", creativeIntensity: "brand" },
-  });
-  const conversionPlan = buildCreativePlan(truth, {
-    adBrief: { ...defaultAdBrief, adObjective: "purchase", creativeIntensity: "performance" },
-  });
-
-  assert.equal(awarenessPlan.adBrief.adObjective, "awareness");
-  assert.equal(awarenessPlan.hookPlans[0].hookType, "lifestyle");
-  assert.ok(awarenessPlan.hookPlans.every((item) => item.cta === "브랜드 알아보기"));
-  assert.ok(awarenessPlan.hookPlans.slice(0, 4).every((item) => item.offer === ""));
-  assert.equal(conversionPlan.hookPlans[0].hookType, "price-benefit");
-  assert.equal(conversionPlan.hookPlans[1].hookType, "problem-solution");
-  assert.ok(conversionPlan.hookPlans.every((item) => item.cta === "구매 조건 보기"));
-});
-
-test("Original Source fixture renders six decodable 1200px WebP ads below 800KB", { timeout: 120_000 }, async () => {
-  const truth = buildProductTruth({ product: fixtures[0].product, source: "landing-page" });
-  const creativePlan = buildCreativePlan(truth);
-  const scenes = planScenes(creativePlan, library, false);
-  const job = createGenerationJob({ truth, creativePlan, scenes, planningMs: 1, concurrency: 2 });
-  const rendered = [];
-  for (const result of job.results) rendered.push(await renderCreativeResult({ job, result }));
-  assert.equal(rendered.length, 6);
-  for (const item of rendered) {
-    assert.equal(item.qa.passed, true, JSON.stringify(item.qa.findings));
-    assert.equal(item.qa.width, 1200);
-    assert.equal(item.qa.height, 1200);
-    assert.equal(item.qa.format, "webp");
-    assert.ok(item.qa.fileSizeBytes <= 800 * 1024);
-    const metadata = await sharp(path.join(root, "public", item.imagePath.replace(/^\//, ""))).metadata();
-    assert.equal(metadata.width, 1200);
-    assert.equal(metadata.height, 1200);
-  }
-  assert.equal(
-    rendered.find((item) => item.renderPlan.layout.blueprintId === "editorial-story")
-      .renderPlan.productComposition.instances.length,
-    3,
-    "transparent fixture should preserve the repeated product direction"
-  );
-});
-
-test("opaque product photos safely fall back from repetition to one image", { timeout: 120_000 }, async () => {
-  const photoPath = library.find((item) => item.enabled !== false)?.file;
-  assert.ok(photoPath);
-  const product = {
-    ...fixtures[0].product,
-    productImagePath: photoPath,
-    productImagePaths: [photoPath],
-  };
-  const truth = buildProductTruth({ product, productImagePaths: [photoPath], source: "landing-page" });
-  const creativePlan = buildCreativePlan(truth);
-  const scenes = planScenes(creativePlan, library, false);
-  const job = createGenerationJob({ truth, creativePlan, scenes, planningMs: 1, concurrency: 1 });
-  const target = job.results.find((result) => result.blueprintId === "editorial-story");
-  assert.ok(target);
-  const rendered = await renderCreativeResult({ job, result: target });
-  assert.equal(rendered.renderPlan.productComposition.mode, "single");
-  assert.equal(rendered.renderPlan.productComposition.instances.length, 1);
-  assert.equal(rendered.qa.passed, true);
-});
-
-test("transparent Original Source cutout renders repeated and mixed-scale product compositions", { timeout: 120_000 }, async () => {
-  const cutoutPath = "/product-cutouts/original-source/mint-tea-tree-250ml.png";
-  const product = {
-    ...fixtures[0].product,
-    productImagePath: cutoutPath,
-    productImagePaths: [cutoutPath],
-  };
-  const truth = buildProductTruth({ product, productImagePaths: [cutoutPath], source: "landing-page" });
-  const creativePlan = buildCreativePlan(truth);
-  const scenes = planScenes(creativePlan, library, false);
-  const job = createGenerationJob({ truth, creativePlan, scenes, planningMs: 1, concurrency: 2 });
-  const targets = job.results.filter((result) =>
-    ["editorial-story", "comparison-versus", "proof-data"].includes(result.blueprintId)
-  );
-  const rendered = [];
-  for (const result of targets) rendered.push(await renderCreativeResult({ job, result }));
-  assert.equal(rendered.length, 3);
-  assert.equal(rendered[0].renderPlan.productComposition.mode, "repeat-overlap");
-  assert.equal(rendered[0].renderPlan.productComposition.instances.length, 3);
-  assert.equal(rendered[1].renderPlan.productComposition.mode, "scale-contrast");
-  assert.equal(rendered[1].renderPlan.productComposition.instances.length, 2);
-  assert.equal(rendered[2].renderPlan.productComposition.mode, "repeat-overlap");
-  assert.equal(rendered[2].renderPlan.productComposition.instances.length, 3);
-  assert.ok(rendered.every((item) => item.qa.passed));
+  assert.equal(enriched.productImagePath, "/product-cutouts/original-source/mint-tea-tree-250ml.png");
+  const { scenes } = makeJob(enriched);
+  assert.equal(scenes.length, 8);
+  assert.ok(scenes.every((scene) => scene.sceneAsset.id.startsWith("original-source-mint-tea-tree-")));
 });

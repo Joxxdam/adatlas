@@ -114,7 +114,7 @@ export function ProductBriefForm(props: {
           </div>
         </div>
         <div className={styles.briefChoiceGroup}>
-          <FieldTitle help="6장의 문구·근거·시각 위계를 어떤 방식으로 구성할지 선택합니다.">2. 어떻게 제작할까요?</FieldTitle>
+          <FieldTitle help="한 상품의 마스터 디자인은 고정하고 H01~H08의 메인 후킹과 서브 문구만 비교합니다.">2. 어떻게 제작할까요?</FieldTitle>
           <div className={`${styles.choiceGrid} ${styles.intensityGrid}`}>
             {intensityOptions.map((option) => (
               <label

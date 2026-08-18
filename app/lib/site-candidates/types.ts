@@ -91,11 +91,30 @@ export type SiteAdFitSection = {
   score: number;
   maxScore: number;
   reasons: string[];
+  evidenceCount: number;
+  indicatorCount: number;
+  evidenceSufficiency: number;
+  status: "scored" | "limited" | "unavailable";
 };
 
 export type SiteCandidateScore = {
   total: number;
   sections: Record<SiteAdFitSectionKey, SiteAdFitSection>;
+};
+
+export type SiteCandidateStrength = {
+  sectionKey: SiteAdFitSectionKey;
+  label: string;
+  score: number;
+  maxScore: number;
+  evidence: string;
+};
+
+export type SiteCandidateRecommendationSummary = {
+  coreReason: string;
+  topStrengths: SiteCandidateStrength[];
+  recommendedTest: string;
+  insufficientData: boolean;
 };
 
 export type SiteAdCandidate = {
@@ -107,6 +126,7 @@ export type SiteAdCandidate = {
   evidenceLevel: SiteEvidenceLevel;
   recommendationTypes: SiteRecommendationType[];
   primaryRecommendationType: SiteRecommendationType;
+  recommendationSummary: SiteCandidateRecommendationSummary;
   recommendationReasons: string[];
   cautions: string[];
   unavailableInformation: string[];

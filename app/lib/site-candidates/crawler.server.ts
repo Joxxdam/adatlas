@@ -13,9 +13,10 @@ import { extractorForPlatform, detectStorePlatform } from "../store-analysis/pla
 import type { DiscoveredProductLink, DiscoveredStorePage } from "../store-analysis/types";
 import {
   isSameStoreDomain,
+  isSameStorePathScope,
   readRobotsPolicy,
   robotsAllowsUrl,
-  safeFetchHtml,
+  safeFetchStorefrontHtml,
   safeFetchPublicText,
   validatePublicHttpUrl,
 } from "../store-analysis/urlSafety";
@@ -84,9 +85,7 @@ function jsonLdProductUrls(html: string, baseUrl: string) {
       for (const item of items) {
         const record = firstRecord(item);
         const nested = firstRecord(record.item);
-        urls.push(
-          absoluteHttpUrl(stringValue(record.url) || stringValue(nested.url), baseUrl)
-        );
+        urls.push(absoluteHttpUrl(stringValue(record.url) || stringValue(nested.url), baseUrl));
       }
     }
   }
@@ -96,13 +95,14 @@ function jsonLdProductUrls(html: string, baseUrl: string) {
 function sourceScore(link: DiscoveredProductLink) {
   const source = link.discoveredFrom.join(" ").toLowerCase();
   return (
-    (/sitemap|사이트맵/.test(source) ? 80 : 0) +
-    (/feed|피드/.test(source) ? 75 : 0) +
-    (/json-ld/.test(source) ? 70 : 0) +
+    (/입력 페이지|입력 홈페이지|입력 카테고리|입력 기획전/.test(source) ? 100 : 0) +
+    (/json-ld/.test(source) ? 90 : 0) +
+    (/feed|피드/.test(source) ? 70 : 0) +
+    (/sitemap|사이트맵/.test(source) ? 50 : 0) +
     (link.isBest ? 60 : 0) +
     (link.isNew ? 50 : 0) +
     (link.isDiscounted ? 40 : 0) +
-    (/입력 페이지/.test(source) ? 30 : 0)
+    (/상품 목록|product-list|category/.test(source) ? 30 : 0)
   );
 }
 
@@ -135,7 +135,7 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
   }
 
   await pacer.wait();
-  const firstPage = await safeFetchHtml(safeInput.toString(), { timeoutMs: 12_000 });
+  const firstPage = await safeFetchStorefrontHtml(safeInput.toString(), { timeoutMs: 12_000 });
   const normalizedUrl = normalizeSitePageUrl(firstPage.finalUrl);
   const pageType = detectSitePageType(normalizedUrl, firstPage.html);
   const platform = detectStorePlatform(normalizedUrl, firstPage.html);
@@ -143,6 +143,11 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
   const storeInfo = extractor.extractStoreInfo(normalizedUrl, firstPage.html);
   const warnings: string[] = [];
   const links: DiscoveredProductLink[] = [];
+  if (firstPage.retrievalMode === "public-snapshot") {
+    warnings.push(
+      "원본 사이트의 자동 접근 제한으로 공개 텍스트 스냅샷을 사용했습니다. 가격·재고 등 시점 정보는 상세페이지에서 다시 확인해주세요."
+    );
+  }
 
   if (pageType === "product") {
     links.push({
@@ -159,16 +164,15 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
           : pageType === "category"
             ? "입력 카테고리"
             : "입력 기획전",
-      kind:
-        pageType === "homepage"
-          ? "home"
-          : pageType === "category"
-            ? "category"
-            : "promotion",
+      kind: pageType === "homepage" ? "home" : pageType === "category" ? "category" : "promotion",
     };
-    links.push(...extractor.discoverProductUrls(normalizedUrl, firstPage.html, source));
+    links.push(
+      ...extractor
+        .discoverProductUrls(normalizedUrl, firstPage.html, source)
+        .filter((link) => isSameStorePathScope(link.url, normalizedUrl))
+    );
     for (const url of jsonLdProductUrls(firstPage.html, normalizedUrl)) {
-      if (!isSameStoreDomain(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
+      if (!isSameStorePathScope(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
       links.push({ url, discoveredFrom: ["JSON-LD 상품 목록"] });
     }
 
@@ -203,12 +207,15 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
             }
           }
           for (const url of sitemapUrls) {
-            if (!isSameStoreDomain(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
+            if (!isSameStorePathScope(url, normalizedUrl) || !looksLikeProductPageUrl(url))
+              continue;
             links.push({ url, discoveredFrom: ["사이트맵"] });
           }
         }
       } catch {
-        warnings.push("공개 사이트맵을 확인하지 못해 입력 페이지와 상품 목록을 기준으로 탐색했습니다.");
+        warnings.push(
+          "공개 사이트맵을 확인하지 못해 입력 페이지와 상품 목록을 기준으로 탐색했습니다."
+        );
       }
     }
 
@@ -229,7 +236,7 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
         });
         if (!isSameStoreDomain(feed.finalUrl, normalizedUrl)) continue;
         for (const url of publicFeedProductUrls(feed.html, feed.finalUrl)) {
-          if (!isSameStoreDomain(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
+          if (!isSameStorePathScope(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
           links.push({ url, discoveredFrom: ["공개 상품 피드"] });
         }
       } catch {
@@ -237,11 +244,18 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
       }
     }
 
+    const discoveredFromInput = links.length;
+    const listPageLimit =
+      firstPage.retrievalMode === "public-snapshot" && discoveredFromInput > 0
+        ? 0
+        : firstPage.retrievalMode === "public-snapshot"
+          ? 3
+          : MAX_LIST_PAGES;
     const listPages = extractor
       .discoverCategoryUrls(normalizedUrl, firstPage.html)
-      .filter((page) => isSameStoreDomain(page.url, normalizedUrl))
+      .filter((page) => isSameStorePathScope(page.url, normalizedUrl))
       .filter((page) => robotsAllowsUrl(robots, page.url))
-      .slice(0, MAX_LIST_PAGES);
+      .slice(0, listPageLimit);
     for (const page of listPages) {
       if (Date.now() - startedAt >= TOTAL_TIMEOUT_MS) {
         warnings.push("전체 분석 시간 제한으로 일부 상품 목록만 확인했습니다.");
@@ -249,13 +263,15 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
       }
       try {
         await pacer.wait();
-        const response = await safeFetchHtml(page.url, { timeoutMs: 10_000 });
+        const response = await safeFetchStorefrontHtml(page.url, { timeoutMs: 10_000 });
         if (!isSameStoreDomain(response.finalUrl, normalizedUrl)) continue;
         links.push(
-          ...extractor.discoverProductUrls(response.finalUrl, response.html, {
-            ...page,
-            url: response.finalUrl,
-          })
+          ...extractor
+            .discoverProductUrls(response.finalUrl, response.html, {
+              ...page,
+              url: response.finalUrl,
+            })
+            .filter((link) => isSameStorePathScope(link.url, normalizedUrl))
         );
       } catch {
         warnings.push(`${page.label || "상품 목록"} 페이지는 접근하지 못해 건너뛰었습니다.`);
@@ -265,7 +281,8 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
     warnings.push("상품 목록을 찾을 수 없는 일반 콘텐츠 페이지로 감지했습니다.");
   }
 
-  const products = mergeLinks(links).map(toPublicProduct);
+  const productLimit = firstPage.retrievalMode === "public-snapshot" ? 8 : MAX_PRODUCTS;
+  const products = mergeLinks(links).slice(0, productLimit).map(toPublicProduct);
   if (!products.length) {
     warnings.push(
       "상품을 자동으로 찾지 못했습니다. 카테고리 또는 상품 상세페이지 URL을 입력해주세요."

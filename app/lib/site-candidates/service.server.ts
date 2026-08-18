@@ -6,9 +6,10 @@ import { extractorForPlatform, detectStorePlatform } from "../store-analysis/pla
 import type { DiscoveredProductLink } from "../store-analysis/types";
 import {
   isSameStoreDomain,
+  isSameStorePathScope,
   readRobotsPolicy,
   robotsAllowsUrl,
-  safeFetchHtml,
+  safeFetchStorefrontHtml,
 } from "../store-analysis/urlSafety";
 import { siteCandidateCache } from "./cache.server";
 import { selectDiverseSiteCandidates } from "./diversity";
@@ -89,14 +90,19 @@ export async function analyzeDiscoveredSite(discoveryId: string) {
         return null;
       }
       if (
-        !isSameStoreDomain(item.url, discovery.normalizedUrl) ||
+        !isSameStorePathScope(item.url, discovery.normalizedUrl) ||
         !robotsAllowsUrl(robots, item.url)
       ) {
         failedProductCount += 1;
         return null;
       }
       try {
-        const response = await safeFetchHtml(item.url, { timeoutMs: 12_000 });
+        const response = await safeFetchStorefrontHtml(item.url, { timeoutMs: 12_000 });
+        if (response.retrievalMode === "public-snapshot") {
+          warnings.push(
+            "일부 상품은 원본 사이트의 자동 접근 제한으로 공개 텍스트 스냅샷에서 분석했습니다."
+          );
+        }
         if (
           !isSameStoreDomain(response.finalUrl, discovery.normalizedUrl) ||
           detectSitePageType(response.finalUrl, response.html) !== "product"

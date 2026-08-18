@@ -82,7 +82,7 @@ import { BackgroundLibraryManager } from "./features/background-library/Backgrou
 import { BackgroundCatalogPanel } from "./features/background-library/BackgroundCatalogPanel";
 import ProductImageWorkbench from "./features/product-image/ProductImageWorkbench";
 import ReviewCreativeWorkbench from "./features/review-creative/ReviewCreativeWorkbench";
-import { SixCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
+import { HookExperimentCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
 import { CreativeAssetActions, markCreativeAssetExported } from "./features/creative-assets/CreativeAssetActions";
 import { CreativeAssetLibrary } from "./features/creative-assets/CreativeAssetLibrary";
 import type { CreateCreativeAssetInput, CreativeAsset } from "../lib/creative-assets/types";
@@ -1184,7 +1184,6 @@ export function MvpDashboard({
     () =>
       compactUniqueImagePaths([
         originalMainProductImage,
-        ...selectedAdImages.selectedImagePaths,
         ...(productInfo.productImagePaths ?? []),
         ...(productInfo.sourceImageCandidates ?? []).map((candidate) => candidate.imagePath),
       ]).slice(0, 8),
@@ -1192,7 +1191,6 @@ export function MvpDashboard({
       originalMainProductImage,
       productInfo.productImagePaths,
       productInfo.sourceImageCandidates,
-      selectedAdImages.selectedImagePaths,
     ]
   );
   const baseCurrentMainProductImage =
@@ -1223,6 +1221,24 @@ export function MvpDashboard({
     ]
   );
   const currentProductImagePaths = resolvedProductImages.productImagePaths;
+  const hookExperimentProductImagePaths = useMemo(
+    () =>
+      compactUniqueImagePaths([
+        getSelectedProductImagePath(productImageState),
+        productInfo.productImagePath,
+        ...(productInfo.productImagePaths || []),
+        productInfo.extractedMainImage,
+        uploadedMainImageDataUrl,
+      ]).filter((imagePath) => !selectedAdImages.selectedImagePaths.includes(imagePath)),
+    [
+      productImageState,
+      productInfo.productImagePath,
+      productInfo.productImagePaths,
+      productInfo.extractedMainImage,
+      selectedAdImages.selectedImagePaths,
+      uploadedMainImageDataUrl,
+    ]
+  );
   const currentMainProductImage =
     resolvedProductImages.productImagePath || baseCurrentMainProductImage;
   const currentSecondaryProductImage =
@@ -4914,10 +4930,10 @@ export function MvpDashboard({
                 <b>1</b><span><strong>상품 확인</strong><small>URL 분석과 실제 상품 이미지 확인</small></span>
               </li>
               <li className={generationPlanConfirmed ? "done" : productInfo.productName ? "active" : ""}>
-                <b>2</b><span><strong>목표·제작 방식</strong><small>성과 목표와 6장 구성 방식 확정</small></span>
+                <b>2</b><span><strong>목표·마스터 디자인</strong><small>성과 목표와 고정 디자인 확정</small></span>
               </li>
               <li className={generationPlanConfirmed ? "active" : ""}>
-                <b>3</b><span><strong>6장 생성</strong><small>목표별 문구·배경·레이아웃 자동 제작</small></span>
+                <b>3</b><span><strong>후킹 8장 생성</strong><small>같은 디자인에서 H01~H08 메시지만 비교</small></span>
               </li>
             </ol>
 
@@ -4990,7 +5006,7 @@ export function MvpDashboard({
                 </details>
                 <ProductBriefForm
                   brief={creativeWorkflow.adBrief}
-                  canConfirm={Boolean(productInfo.productName.trim() && currentProductImagePaths.length)}
+                  canConfirm={Boolean(productInfo.productName.trim() && hookExperimentProductImagePaths.length)}
                   confirmed={generationPlanConfirmed}
                   onChange={updateAdBrief}
                   onConfirm={() => setGenerationPlanConfirmed(true)}
@@ -5009,12 +5025,12 @@ export function MvpDashboard({
                   }}
                   product={productInfo}
                 />
-                <SixCreativeGenerator
+                <HookExperimentCreativeGenerator
                   adBrief={creativeWorkflow.adBrief}
                   logoPath={brandLogoPath}
                   planConfirmed={generationPlanConfirmed}
                   product={productInfo}
-                  productImagePaths={currentProductImagePaths}
+                  productImagePaths={hookExperimentProductImagePaths}
                   selectedAdImages={selectedAdImages.selectedImagePaths}
                   source={
                     lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl

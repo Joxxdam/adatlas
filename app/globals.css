@@ -127,6 +127,44 @@
 
 .six-creative-actions {
   justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.hook-master-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hook-master-summary > div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #cce7df;
+  border-radius: 12px;
+  background: #f5fffb;
+  color: #223649;
+}
+
+.hook-master-summary strong {
+  color: #08705d;
+  font-size: 12px;
+}
+
+.hook-master-summary small {
+  overflow-wrap: anywhere;
+  color: #6a7587;
+  font-size: 10px;
+}
+
+.hook-master-summary img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
 }
 
 .six-creative-grid {
@@ -217,6 +255,38 @@
   color: #176b55;
   font-size: 12px;
   font-weight: 800;
+}
+
+.six-creative-qa small {
+  display: block;
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+.hook-hypothesis {
+  display: grid;
+  gap: 5px;
+  margin: 0 14px 12px;
+  padding: 12px;
+  border: 1px solid #d7eee8;
+  border-radius: 10px;
+  background: #f4fbf9;
+}
+
+.hook-hypothesis b,
+.hook-hypothesis small {
+  color: #627385;
+  font-size: 10px;
+}
+
+.hook-hypothesis strong {
+  color: #0b725f;
+  font-size: 15px;
+}
+
+.hook-hypothesis span {
+  color: #25364b;
+  font-size: 12px;
 }
 
 .six-creative-qa.review,
@@ -551,6 +621,7 @@
   }
 
   .six-creative-plan-summary,
+  .hook-master-summary,
   .creation-flow-overview {
     grid-template-columns: 1fr;
   }

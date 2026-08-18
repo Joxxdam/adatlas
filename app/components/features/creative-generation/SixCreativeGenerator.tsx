@@ -11,6 +11,7 @@ import {
   type GenerationJob,
   type GenerationResult,
 } from "../../../lib/creative-generation/types";
+import { buildGenerationSummary } from "../../../lib/creative-generation/generationSummary";
 
 type EditableCopy = Pick<CopyPlan, "headline" | "body" | "proof" | "offer" | "cta">;
 
@@ -24,7 +25,7 @@ type Props = {
   source: "landing-page" | "user-input";
 };
 
-const storedJobKey = `adatlas-six-creative-job-id-${CREATIVE_PLANNER_VERSION}`;
+const storedJobKey = `adatlas-hook-experiment-job-id-${CREATIVE_PLANNER_VERSION}`;
 
 const resultStatusLabels: Record<GenerationResult["status"], string> = {
   pending: "대기",
@@ -59,7 +60,7 @@ function initialEdit(result: GenerationResult): EditableCopy {
   };
 }
 
-export function SixCreativeGenerator(props: Props) {
+export function HookExperimentCreativeGenerator(props: Props) {
   const [job, setJob] = useState<GenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -78,7 +79,7 @@ export function SixCreativeGenerator(props: Props) {
   const canGenerate = Boolean(props.product.productName.trim() && props.productImagePaths.length);
   const canStart = canGenerate && props.planConfirmed;
   const progress = useMemo(() => {
-    if (!job) return { completed: 0, total: 6, success: 0, failed: 0 };
+    if (!job) return { completed: 0, total: 8, success: 0, failed: 0 };
     return {
       completed: job.results.filter((result) => ["success", "failed", "cancelled"].includes(result.status)).length,
       total: job.results.length,
@@ -120,7 +121,7 @@ export function SixCreativeGenerator(props: Props) {
         const samePlanner = payload.job.creativePlan.plannerVersion === CREATIVE_PLANNER_VERSION;
         if (sameProduct && samePlan && samePlanner) {
           setJob(payload.job);
-          setMessage("이전에 진행하던 6장 생성 작업을 복구했습니다.");
+          setMessage("이전에 진행하던 H01~H08 후킹 실험을 복구했습니다.");
         } else {
           setJob(null);
           setEdits({});
@@ -201,12 +202,12 @@ export function SixCreativeGenerator(props: Props) {
     };
     await Promise.all(Array.from({ length: Math.min(activeJob.concurrency, pending.length) }, () => worker()));
     const refreshed = await refreshJob(activeJob.id);
-    if (refreshed.status === "completed") setMessage("광고 콘텐츠 6장이 모두 생성되었습니다.");
+    if (refreshed.status === "completed") setMessage("같은 디자인의 H01~H08 광고 8장이 모두 생성되었습니다.");
     else if (refreshed.status === "partial") setMessage("생성된 결과를 먼저 확인하고 실패한 카드만 재시도할 수 있습니다.");
     return refreshed;
   }
 
-  async function startGeneration() {
+  async function startGeneration(mode: "new" | "hooks" | "master" = "new") {
     if (!canGenerate) {
       setMessage("상품정보와 실제 상품 이미지가 필요합니다.");
       return;
@@ -218,7 +219,11 @@ export function SixCreativeGenerator(props: Props) {
     setLoading(true);
     setJob(null);
     setEdits({});
-    setMessage("ProductTruth와 6개 광고 방향을 계획하고 있습니다.");
+    setMessage(
+      mode === "master"
+        ? "현재와 다른 마스터 디자인을 고르고 있습니다."
+        : "ProductTruth와 H01~H08 메시지 가설을 계획하고 있습니다."
+    );
     try {
       const response = await fetch("/api/creative-generation/jobs", {
         method: "POST",
@@ -231,16 +236,26 @@ export function SixCreativeGenerator(props: Props) {
           logoPath: props.logoPath,
           source: props.source,
           concurrency: 2,
+          testCode: job?.creativePlan.testCode || "T01",
+          ...(mode === "hooks" && job
+            ? {
+                preserveMasterDesignId: job.creativePlan.masterDesign.id,
+                preserveBackgroundAssetId: job.creativePlan.masterDesign.backgroundAssetId,
+              }
+            : {}),
+          ...(mode === "master" && job
+            ? { excludedMasterDesignIds: [job.creativePlan.masterDesign.layoutFamily] }
+            : {}),
         }),
       });
       const payload = (await response.json()) as { ok?: boolean; job?: GenerationJob; error?: string };
-      if (!response.ok || !payload.job) throw new Error(payload.error || "6장 생성 작업을 시작하지 못했습니다.");
+      if (!response.ok || !payload.job) throw new Error(payload.error || "후킹 실험 생성을 시작하지 못했습니다.");
       setJob(payload.job);
       window.sessionStorage.setItem(storedJobKey, payload.job.id);
-      setMessage("6개 블루프린트를 순차적으로 렌더링하고 있습니다.");
+      setMessage("고정된 마스터 디자인에 H01~H08 문구만 바꿔 렌더링하고 있습니다.");
       await runPending(payload.job);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "6장 생성 작업에 실패했습니다.");
+      setMessage(error instanceof Error ? error.message : "후킹 실험 생성에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -295,14 +310,20 @@ export function SixCreativeGenerator(props: Props) {
     }
   }
 
-  async function downloadAll() {
+  async function downloadAll(requireAllEight = false) {
     if (!job) return;
     const completedResults = job.results.filter((result) => result.status === "success" && result.imagePath);
-    if (!completedResults.length) return;
+    if (!completedResults.length || (requireAllEight && completedResults.length !== 8)) return;
     setDownloading(true);
     try {
       const successes: GenerationResult[] = [];
       for (const result of completedResults) successes.push(await ensureResultAsset(job, result));
+      const summaryJob: GenerationJob = {
+        ...job,
+        results: job.results.map(
+          (result) => successes.find((success) => success.id === result.id) || result
+        ),
+      };
       const zip = new JSZip();
       await Promise.all(
         successes.map(async (result) => {
@@ -316,19 +337,7 @@ export function SixCreativeGenerator(props: Props) {
       zip.file(
         "generation-summary.json",
         JSON.stringify(
-          {
-            jobId: job.id,
-            product: job.productTruth.product.productName,
-            results: successes.map((result) => ({
-              order: result.order,
-              assetCode: result.creativeAsset?.assetCode,
-              recommendedAdName: result.creativeAsset?.recommendedAdName,
-              utmContent: result.creativeAsset?.utmContent,
-              blueprintId: result.blueprintId,
-              qa: result.qa,
-              scene: result.scenePlan.sceneAsset,
-            })),
-          },
+          buildGenerationSummary(summaryJob),
           null,
           2
         )
@@ -337,7 +346,7 @@ export function SixCreativeGenerator(props: Props) {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `adatlas-assets-${job.id}.zip`;
+      anchor.download = `adatlas-${job.creativePlan.testCode}-${requireAllEight ? "all-8" : "passed"}-${job.id}.zip`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -352,16 +361,16 @@ export function SixCreativeGenerator(props: Props) {
       <div className="six-creative-head">
         <div>
           <p className="eyebrow">3 · 광고 콘텐츠 생성</p>
-          <h4>{generationPlan.objectiveLabel} 목표로 광고 콘텐츠 6장 만들기</h4>
-          <p>{generationPlan.approachLabel} 방식으로 문구·근거·배경을 서로 다른 가설에 맞춰 자동 구성합니다.</p>
+          <h4>{generationPlan.objectiveLabel} 목표의 후킹 실험 8장 만들기</h4>
+          <p>상품별 마스터 디자인 1개를 정한 뒤 H01~H08의 메인 후킹과 서브 문구만 바꿉니다.</p>
         </div>
         <button disabled={!canStart || loading} onClick={() => void startGeneration()} type="button">
-          {loading ? "6장 생성 중…" : props.planConfirmed ? "광고 콘텐츠 6장 만들기" : "제작 계획을 먼저 확정해 주세요"}
+          {loading ? "8장 생성 중…" : props.planConfirmed ? "후킹 실험 8장 만들기" : "제작 계획을 먼저 확정해 주세요"}
         </button>
       </div>
       <div className="six-creative-plan-summary">
-        <span><b>문구</b>{generationPlan.copy}</span>
-        <span><b>배경</b>각 후킹과 상품 카테고리에 맞는 장면을 자동 선택</span>
+        <span><b>변경</b>메인 후킹 + 서브 문구</span>
+        <span><b>고정</b>상품·배경·레이아웃·폰트·색상·가격·CTA</span>
         <span><b>CTA</b>{generationPlan.cta}</span>
       </div>
       <div className="six-creative-status">
@@ -379,8 +388,43 @@ export function SixCreativeGenerator(props: Props) {
               <button disabled={loading} onClick={() => void resumeJob()} type="button">중단 지점부터 재개</button>
             ) : null}
             <button disabled={!progress.success || downloading} onClick={() => void downloadAll()} type="button">
-              {downloading ? "ZIP 준비 중…" : `성공 결과 ${progress.success}장 전체 다운로드`}
+              {downloading ? "ZIP 준비 중…" : `QA 통과 ${progress.success}장 ZIP`}
             </button>
+            <button disabled={progress.success !== 8 || downloading} onClick={() => void downloadAll(true)} type="button">
+              H01~H08 전체 ZIP
+            </button>
+            <button disabled={loading} onClick={() => void startGeneration("hooks")} type="button">
+              디자인 고정 · 후킹 8개 다시 만들기
+            </button>
+            <button disabled={loading} onClick={() => void startGeneration("master")} type="button">
+              다른 마스터 디자인 선택
+            </button>
+          </div>
+          <div className="hook-master-summary">
+            <div>
+              <strong>실제 상품 이미지</strong>
+              {job.productTruth.confirmedProductImage ? (
+                // Runtime or extracted product assets intentionally bypass Next image optimization.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img alt="합성에 사용하는 실제 상품" src={job.productTruth.confirmedProductImage.path} />
+              ) : <span>확정되지 않음</span>}
+              <small>{job.productTruth.confirmedProductImage?.role || "product image missing"}</small>
+            </div>
+            <div>
+              <strong>마스터 디자인</strong>
+              <span>{job.creativePlan.masterDesign.layoutFamily}</span>
+              <small>{job.creativePlan.masterDesign.id}</small>
+            </div>
+            <div>
+              <strong>고정 배경</strong>
+              <span>{job.results[0]?.scenePlan.sceneAsset.scene}</span>
+              <small>{job.creativePlan.masterDesign.backgroundAssetId}</small>
+            </div>
+            <div>
+              <strong>광고 참고 이미지</strong>
+              <span>{job.productTruth.referenceImages.length}장 · 합성 제외</span>
+              <small>레이아웃·색감·정보 위계 참고 전용</small>
+            </div>
           </div>
           <div className="six-creative-grid">
             {job.results.map((result) => {
@@ -388,8 +432,8 @@ export function SixCreativeGenerator(props: Props) {
               return (
                 <article className={`six-creative-card ${result.status}`} key={result.id}>
                   <div className="six-creative-card-head">
-                    <span>{String(result.order).padStart(2, "0")}</span>
-                    <div><strong>{result.blueprintLabel}</strong><small>{result.hookPlan.title}</small></div>
+                    <span>{result.hookPlan.hookCode}</span>
+                    <div><strong>{result.hookPlan.hookType}</strong><small>{result.hookPlan.hypothesis}</small></div>
                     <b>{resultStatusLabels[result.status]}</b>
                   </div>
                   <div className="six-creative-preview">
@@ -401,9 +445,16 @@ export function SixCreativeGenerator(props: Props) {
                   </div>
                   {result.qa ? (
                     <div className={`six-creative-qa ${result.qa.passed ? "pass" : "review"}`}>
-                      QA {result.qa.score} · {result.qa.width}×{result.qa.height} · {Math.ceil(result.qa.fileSizeBytes / 1024)}KB
+                      종합 QA {result.qa.score} · 기술 {result.qa.technicalScore} · 크리에이티브 {result.qa.creativeScore}
+                      <small>{result.qa.width}×{result.qa.height} · {Math.ceil(result.qa.fileSizeBytes / 1024)}KB · 상품 픽셀 {(result.qa.productAreaRatio * 100).toFixed(1)}%</small>
                     </div>
                   ) : null}
+                  <div className="hook-hypothesis">
+                    <b>메시지 가설</b>
+                    <strong>{result.hookPlan.headline}</strong>
+                    <span>{result.hookPlan.body}</span>
+                    <small>근거 · {result.hookPlan.factIds.map((id) => job.productTruth.facts.find((fact) => fact.id === id)?.value).filter(Boolean).join(" · ") || "확인 가능한 상품 사실"}</small>
+                  </div>
                   {result.contentNoteCompliance ? (
                     <div className={`six-creative-compliance ${result.contentNoteCompliance.state}`}>
                       참고사항 {result.contentNoteCompliance.appliedNoteIds.length}개 · {result.contentNoteCompliance.state === "passed" ? "준수" : result.contentNoteCompliance.state === "repaired" ? "자동 보정" : "차단"}
@@ -430,7 +481,7 @@ export function SixCreativeGenerator(props: Props) {
                   </div>
                   <details className="six-creative-edit">
                     <summary>문구 수정 후 재생성</summary>
-                    {(["headline", "body", "proof", "offer", "cta"] as const).map((key) => (
+                    {(["headline", "body"] as const).map((key) => (
                       <label key={key}>
                         <span>{key}</span>
                         <textarea

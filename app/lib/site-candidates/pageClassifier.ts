@@ -1,11 +1,15 @@
-import { extractJsonLdNodes, jsonLdTypeIncludes, metaContent } from "../store-analysis/htmlUtils.ts";
+import {
+  extractJsonLdNodes,
+  jsonLdTypeIncludes,
+  metaContent,
+} from "../store-analysis/htmlUtils.ts";
 import type { SitePageType } from "./types";
 
 const PRODUCT_PATH =
-  /\/(?:product\/(?:[^/?#]+\/)?\d+|products\/[^/?#]+|goods\/(?:detail|view)|shop\/shopdetail\.html|product[_-]?detail|items?\/[^/?#]+|p\/[^/?#]+)(?:\/|\.|\?|$)/i;
-const PRODUCT_QUERY = /[?&](?:product_no|goodsno|branduid|itemid|item_id|productId)=/i;
+  /\/(?:product\/(?:[^/?#]+\/)?\d+|products\/[^/?#]+|products?\/products?_view\.php|goods\/(?:detail|view)|shop\/shopdetail\.html|product[_-]?detail|items?\/[^/?#]+|p\/[^/?#]+)(?:\/|\.|\?|$)/i;
+const PRODUCT_QUERY = /[?&](?:product_no|pseq|goodsno|branduid|itemid|item_id|productId)=/i;
 const CATEGORY_SIGNAL =
-  /\/(?:category|categories|collections|shop|goods\/goods_list|product\/list)(?:\/|\.|\?|$)|[?&](?:cate_no|category)=/i;
+  /\/(?:category|categories|collections|shop|goods\/goods_list|products?\/products?_list\.php|product\/list)(?:\/|\.|\?|$)|\/c\/[a-z0-9]+(?:x[a-z0-9]+)+(?:\/|$)|[?&](?:cate_no|category)=/i;
 const PROMOTION_SIGNAL =
   /\/(?:event|events|promotion|promotions|exhibition|project|plan|sale)(?:\/|\.|\?|$)|기획전|프로모션|이벤트|특가/i;
 const CONTENT_SIGNAL = /\/(?:board|blog|article|notice|faq|community|magazine)(?:\/|\.|\?|$)/i;
@@ -13,6 +17,7 @@ const CONTENT_SIGNAL = /\/(?:board|blog|article|notice|faq|community|magazine)(?
 export function looksLikeProductPageUrl(value: string) {
   try {
     const url = new URL(value);
+    if (/\/products?\/products?_list\.php(?:\/|$)/i.test(url.pathname)) return false;
     return PRODUCT_PATH.test(url.pathname) || PRODUCT_QUERY.test(url.search);
   } catch {
     return false;
@@ -37,6 +42,13 @@ export function detectSitePageType(url: string, html: string): SitePageType {
   if (CATEGORY_SIGNAL.test(signal)) return "category";
   if (parsed.pathname === "/" || !parsed.pathname) return "homepage";
   if (CONTENT_SIGNAL.test(signal)) return "unsupported";
+  const pathSegments = parsed.pathname.split("/").filter(Boolean);
+  const productLinkCount = Array.from(
+    html.matchAll(
+      /\bhref\s*=\s*["'][^"']*(?:\/p\/[^"']+|products?_view\.php\?[^"']*(?:product_no|pseq)=)[^"']*["']/gi
+    )
+  ).length;
+  if (pathSegments.length === 1 && productLinkCount > 0) return "homepage";
   return "unsupported";
 }
 
@@ -67,10 +79,13 @@ export function deduplicateProductUrls<T extends { url: string }>(items: T[], li
     const parsed = new URL(normalized);
     const productKey =
       parsed.searchParams.get("product_no") ||
+      parsed.searchParams.get("pseq") ||
       parsed.searchParams.get("goodsno") ||
       parsed.searchParams.get("goodsNo") ||
       parsed.searchParams.get("branduid") ||
-      parsed.pathname.match(/\/(?:product|products|goods\/(?:detail|view))\/(?:[^/]+\/)?([^/?#]+)/i)?.[1];
+      parsed.pathname.match(
+        /\/(?:product|products|goods\/(?:detail|view))\/(?:[^/]+\/)?([^/?#]+)/i
+      )?.[1];
     const identity = productKey
       ? `${parsed.hostname.toLowerCase()}:${productKey}`
       : normalized.toLowerCase();

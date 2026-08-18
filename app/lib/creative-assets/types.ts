@@ -34,6 +34,8 @@ export type CreativeAsset = {
   generationRound?: number;
   variant?: string;
   experimentId?: string;
+  testCode?: string;
+  hookVariantCode?: string;
   advertisingHypothesis: string;
   headline: string;
   subCopy: string;
@@ -85,6 +87,8 @@ export type CreativeAssetSnapshot = Pick<
   | "generationRound"
   | "variant"
   | "experimentId"
+  | "testCode"
+  | "hookVariantCode"
 >;
 
 export type CreateCreativeAssetInput = {
@@ -107,6 +111,8 @@ export type CreateCreativeAssetInput = {
   generationRound?: number;
   variant?: string;
   experimentId?: string;
+  testCode?: string;
+  hookVariantCode?: string;
   advertisingHypothesis?: string;
   headline?: string;
   subCopy?: string;
@@ -194,5 +200,7 @@ export function toCreativeAssetSnapshot(asset: CreativeAsset): CreativeAssetSnap
     generationRound: asset.generationRound,
     variant: asset.variant,
     experimentId: asset.experimentId,
+    testCode: asset.testCode,
+    hookVariantCode: asset.hookVariantCode,
   };
 }

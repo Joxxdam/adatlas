@@ -2,7 +2,7 @@
   {
     "id": "personal-care",
     "label": "퍼스널케어",
-    "matchers": ["바디워시", "샤워젤", "퍼스널케어", "생활용품", "뷰티", "스킨케어"],
+    "matchers": ["바디워시", "샤워젤", "퍼스널케어", "뷰티", "스킨케어"],
     "fallbackColors": ["#08d8b6", "#0b1b26", "#ffffff", "#54c9ef"],
     "audienceHints": ["실사용 문제 상황", "사용 후 감각", "제품 패키지 식별"],
     "preferredHookTypes": ["problem-solution", "sensory", "lifestyle", "social-proof"],
@@ -46,6 +46,18 @@
     "preferredBlueprints": ["editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "problem-solution-split", "proof-data"],
     "visualPriorities": ["상품 색상·핏 보존", "모델과 상품 중복 방지", "로고 여백"],
     "forbiddenAssumptions": ["체형 변화", "근거 없는 소재 등급", "확인되지 않은 할인율"]
+  },
+  {
+    "id": "household-goods",
+    "label": "생활용품",
+    "matchers": ["생활용품", "청소", "세탁", "주방용품", "수납", "탈취", "세정제"],
+    "fallbackColors": ["#1677a6", "#11232d", "#ffffff", "#f3bc3e"],
+    "audienceHints": ["반복되는 생활 문제", "실제 사용 장면", "제품 기능 식별"],
+    "preferredHookTypes": ["problem-solution", "empathy-situation", "feature-usp", "curiosity"],
+    "preferredSceneTypes": ["problem-scene", "daily-life", "clean-commerce", "product-hero"],
+    "preferredBlueprints": ["problem-solution-split", "product-hero-lifestyle", "editorial-story", "chat-ugc", "comparison-versus", "proof-data"],
+    "visualPriorities": ["문제와 사용 장면의 연결", "실제 제품 우선", "한 화면 한 메시지"],
+    "forbiddenAssumptions": ["검증되지 않은 제거율", "근거 없는 살균 효과", "가짜 전후 비교"]
   },
   {
     "id": "generic-commerce",
