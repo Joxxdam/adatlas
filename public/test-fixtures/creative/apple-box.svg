@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <defs><linearGradient id="box" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9a45b"/><stop offset="1" stop-color="#9b6431"/></linearGradient></defs>
+  <g transform="translate(48 120)">
+    <path d="M60 220 252 120l192 100-192 100Z" fill="#c88943"/>
+    <path d="m60 220 192 100v360L60 574Z" fill="url(#box)"/>
+    <path d="m444 220-192 100v360l192-106Z" fill="#b77738"/>
+    <g fill="#d9342b" stroke="#8b1d19" stroke-width="8">
+      <circle cx="150" cy="205" r="72"/><circle cx="260" cy="180" r="76"/><circle cx="366" cy="210" r="70"/>
+      <circle cx="205" cy="282" r="68"/><circle cx="322" cy="282" r="68"/>
+    </g>
+    <g stroke="#5f3b21" stroke-width="12" stroke-linecap="round"><path d="m150 142 12-34"/><path d="m260 111 7-36"/><path d="m366 145 17-31"/></g>
+    <path d="M118 422h268v112H118z" rx="18" fill="#fff8de"/>
+    <text x="252" y="468" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#285c2c">GREEN FARM</text>
+    <text x="252" y="510" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" fill="#7b351f">APPLE 3kg</text>
+  </g>
+</svg>

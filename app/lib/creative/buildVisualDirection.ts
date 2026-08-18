@@ -1,4 +1,4 @@
-import { matchBenchmarkPatterns } from "./benchmarkPatternMatcher";
+import { matchBenchmarkPatterns } from "./benchmarkPatternMatcher.ts";
 import { buildProductTreatment } from "./buildProductTreatment";
 import { buildScenePrompt } from "./buildScenePrompt";
 import { getSceneProfile } from "./sceneProfiles";

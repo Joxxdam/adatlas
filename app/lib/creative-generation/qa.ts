@@ -89,6 +89,9 @@ export async function qaRenderedCreative(input: {
   autoRepairs?: string[];
   unsupportedVisualization?: boolean;
   emptyVisualElementCount?: number;
+  expectedDesignFingerprint?: string;
+  expectedMasterSceneId?: string;
+  expectedMasterVisualDigest?: string;
 }) {
   const findings: QAFinding[] = [];
   let decoded = true;
@@ -178,7 +181,12 @@ export async function qaRenderedCreative(input: {
   }
 
   const categoryId = matchCategoryProfile(input.truth.product).id;
-  const copyText = `${input.renderPlan.copy.headline} ${input.renderPlan.copy.body}`;
+  const copyText = [
+    input.renderPlan.copy.headline,
+    input.renderPlan.copy.body,
+    input.renderPlan.copy.proof,
+    input.renderPlan.copy.offer,
+  ].join(" ");
   const contamination = categoryContamination(categoryId, copyText);
   if (contamination) {
     findings.push(
@@ -218,7 +226,10 @@ export async function qaRenderedCreative(input: {
   }
 
   const invalidRoles = input.renderPlan.productImageAssets.filter(
-    (asset) => !asset.verified || !isCompositableImageRole(asset.role)
+    (asset) =>
+      !asset.verified ||
+      asset.validationStatus !== "confirmed" ||
+      !isCompositableImageRole(asset.role)
   );
   if (!input.renderPlan.productImageAssets.length || invalidRoles.length) {
     findings.push(
@@ -254,6 +265,7 @@ export async function qaRenderedCreative(input: {
     );
   }
   if (
+    input.renderPlan.generationMode !== "real-photo-adaptation" &&
     input.productBounds.width > 0 &&
     (input.productBounds.x <= 1 ||
       input.productBounds.y <= 1 ||
@@ -317,6 +329,86 @@ export async function qaRenderedCreative(input: {
     );
   }
 
+  const designLockVerified =
+    !input.expectedDesignFingerprint ||
+    input.renderPlan.designFingerprint === input.expectedDesignFingerprint;
+  if (!designLockVerified) {
+    findings.push(
+      finding(
+        "design-lock",
+        "error",
+        "layout-collision",
+        "H01~H06 고정 디자인 지문과 현재 렌더 지문이 다릅니다.",
+        false
+      )
+    );
+  }
+  const masterSceneLockVerified =
+    (!input.expectedMasterSceneId || input.renderPlan.masterSceneId === input.expectedMasterSceneId) &&
+    (!input.expectedMasterVisualDigest ||
+      input.renderPlan.masterVisualDigest === input.expectedMasterVisualDigest);
+  if (!masterSceneLockVerified) {
+    findings.push(
+      finding(
+        "master-scene-lock",
+        "error",
+        "layout-collision",
+        "H01~H06에 적용된 마스터 비주얼이 서로 다릅니다.",
+        false
+      )
+    );
+  }
+  if (input.hookPlan.validationStatus === "invalid") {
+    findings.push(
+      finding(
+        "hook-validation",
+        "error",
+        "copy-quality",
+        `검증되지 않은 후킹 문구입니다: ${(input.hookPlan.validationErrors || []).join(" · ")}`,
+        true
+      )
+    );
+  }
+  const usableFactIds = new Set(
+    input.truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.id)
+  );
+  if (
+    !input.hookPlan.factIds.length ||
+    input.hookPlan.factIds.some((factId) => !usableFactIds.has(factId))
+  ) {
+    findings.push(
+      finding(
+        "hook-evidence",
+        "error",
+        "copy-quality",
+        "후킹 문구가 확인된 ProductTruth 근거와 연결되지 않았습니다.",
+        false
+      )
+    );
+  }
+  if ((input.hookPlan.specificityScore ?? 100) < 40) {
+    findings.push(
+      finding(
+        "hook-specificity",
+        "warning",
+        "copy-quality",
+        `후킹 구체성 점수가 ${input.hookPlan.specificityScore}점으로 낮습니다.`,
+        true
+      )
+    );
+  }
+  if ((input.hookPlan.naturalnessScore ?? 100) < 55) {
+    findings.push(
+      finding(
+        "hook-naturalness",
+        "error",
+        "copy-quality",
+        `후킹 자연스러움 점수가 ${input.hookPlan.naturalnessScore}점으로 낮습니다.`,
+        true
+      )
+    );
+  }
+
   for (const slot of input.renderPlan.renderedSlots) {
     const ratio = await sampledContrast(
       input.surfaceBeforeText,
@@ -336,7 +428,8 @@ export async function qaRenderedCreative(input: {
       );
     }
     if (
-      ["headline", "body", "cta"].includes(slot.id) &&
+      input.renderPlan.generationMode !== "real-photo-adaptation" &&
+      ["headline", "body", "proof", "offer", "cta"].includes(slot.id) &&
       intersectionArea(slot.box, input.productBounds) > 0
     ) {
       findings.push(
@@ -350,7 +443,25 @@ export async function qaRenderedCreative(input: {
       );
     }
   }
+  for (let first = 0; first < input.renderPlan.renderedSlots.length; first += 1) {
+    for (let second = first + 1; second < input.renderPlan.renderedSlots.length; second += 1) {
+      const left = input.renderPlan.renderedSlots[first];
+      const right = input.renderPlan.renderedSlots[second];
+      if (intersectionArea(left.box, right.box) > 0) {
+        findings.push(
+          finding(
+            `slot-collision-${left.id}-${right.id}`,
+            "error",
+            "layout-collision",
+            `${left.id} 영역과 ${right.id} 영역이 겹칩니다.`,
+            true
+          )
+        );
+      }
+    }
+  }
   if (
+    input.renderPlan.generationMode !== "real-photo-adaptation" &&
     input.logoRendered &&
     intersectionArea(input.renderPlan.layout.placement.logo, input.productBounds) > 0
   ) {
@@ -389,9 +500,13 @@ export async function qaRenderedCreative(input: {
     minFontSize: minFontSize === 999 ? input.renderPlan.layout.minFontSize : minFontSize,
     productAreaRatio: input.productPixelAreaRatio,
     findings,
-    autoRepairs: input.autoRepairs || [],
+    autoRepairs: [
+      ...(input.autoRepairs || []),
+      ...(input.renderPlan.fontAdjustments || []),
+    ],
+    designLockVerified,
+    masterSceneLockVerified,
     checkedAt: new Date().toISOString(),
   };
   return result;
 }
-

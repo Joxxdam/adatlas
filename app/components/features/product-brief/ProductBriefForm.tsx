@@ -84,75 +84,49 @@ export function ProductBriefForm(props: {
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <div>
-          <span className={styles.sectionStep}>2 · 광고 전략 선택</span>
-          <h4>광고 목표가 무엇입니까?</h4>
-          <p>목표와 제작 방식을 먼저 확정해야 광고 콘텐츠를 생성할 수 있습니다.</p>
+          <span className={styles.sectionStep}>2 · 광고 이미지 만들기</span>
+          <h4>AI가 추천한 광고 방향</h4>
+          <p>상품 특징과 선택한 목표를 바탕으로 공통 광고 이미지를 먼저 만듭니다.</p>
         </div>
       </div>
-      <div className={styles.briefChoiceLayout}>
-        <div className={styles.briefChoiceGroup}>
-          <FieldTitle help="광고에서 가장 우선할 성과를 선택합니다.">1. 광고 목표</FieldTitle>
-          <div className={`${styles.choiceGrid} ${styles.objectiveGrid}`}>
-            {objectiveOptions.map((option) => (
-              <label
-                className={`${styles.choiceCard} ${props.brief.adObjective === option.value ? styles.choiceCardSelected : ""}`}
-                key={option.value}
-              >
-                <input
-                  checked={props.brief.adObjective === option.value}
-                  name="ad-objective"
-                  onChange={() => set("adObjective", option.value)}
-                  type="radio"
-                  value={option.value}
-                />
-                <span>
-                  <strong>{option.label}</strong>
-                  <small>{option.description}</small>
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className={styles.briefChoiceGroup}>
-          <FieldTitle help="한 상품의 마스터 디자인은 고정하고 H01~H08의 메인 후킹과 서브 문구만 비교합니다.">2. 어떻게 제작할까요?</FieldTitle>
-          <div className={`${styles.choiceGrid} ${styles.intensityGrid}`}>
-            {intensityOptions.map((option) => (
-              <label
-                className={`${styles.choiceCard} ${props.brief.creativeIntensity === option.value ? styles.choiceCardSelected : ""}`}
-                key={option.value}
-              >
-                <input
-                  checked={props.brief.creativeIntensity === option.value}
-                  name="creative-intensity"
-                  onChange={() => set("creativeIntensity", option.value)}
-                  type="radio"
-                  value={option.value}
-                />
-                <span>
-                  <strong>{option.label}</strong>
-                  <small>{option.description}</small>
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className={styles.planPreview} aria-live="polite">
+      <div className={styles.recommendedDirection}>
         <div>
-          <span>선택한 제작 계획</span>
+          <span>추천 방향</span>
           <strong>{plan.objectiveLabel} · {plan.approachLabel}</strong>
+          <p>{plan.visual}</p>
         </div>
-        <dl>
-          <dt>대상</dt><dd>{plan.audience}</dd>
-          <dt>문구</dt><dd>{plan.copy}</dd>
-          <dt>화면</dt><dd>{plan.visual}</dd>
-          <dt>CTA</dt><dd>{plan.cta}</dd>
-        </dl>
+        <small>후킹 6종은 이 상품 원본을 보존하면서 각 메시지에 맞는 AI 콘텐츠로 제작합니다.</small>
       </div>
 
-      <details className={styles.additionalSettings}>
-        <summary>세부 문구·필수/금지 설정 <small>선택사항</small></summary>
-        <div className={styles.additionalSettingsBody}>
+      <details className={styles.productionSettings}>
+        <summary>제작 설정 변경 <small>선택사항</small></summary>
+        <div className={styles.productionSettingsBody}>
+          <div className={styles.briefChoiceGroup}>
+            <FieldTitle help="광고에서 가장 우선할 성과를 선택합니다.">광고 목표</FieldTitle>
+            <div className={`${styles.choiceGrid} ${styles.objectiveGrid}`}>
+              {objectiveOptions.map((option) => (
+                <label className={`${styles.choiceCard} ${props.brief.adObjective === option.value ? styles.choiceCardSelected : ""}`} key={option.value}>
+                  <input checked={props.brief.adObjective === option.value} name="ad-objective" onChange={() => set("adObjective", option.value)} type="radio" value={option.value} />
+                  <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className={styles.briefChoiceGroup}>
+            <FieldTitle help="H01~H06의 서로 다른 메시지 가설을 각 후킹에 맞는 AI 콘텐츠로 제작합니다.">메시지 제작 방식</FieldTitle>
+            <div className={`${styles.choiceGrid} ${styles.intensityGrid}`}>
+              {intensityOptions.map((option) => (
+                <label className={`${styles.choiceCard} ${props.brief.creativeIntensity === option.value ? styles.choiceCardSelected : ""}`} key={option.value}>
+                  <input checked={props.brief.creativeIntensity === option.value} name="creative-intensity" onChange={() => set("creativeIntensity", option.value)} type="radio" value={option.value} />
+                  <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className={styles.planPreview} aria-live="polite">
+            <div><span>현재 제작 계획</span><strong>{plan.objectiveLabel} · {plan.approachLabel}</strong></div>
+            <dl><dt>대상</dt><dd>{plan.audience}</dd><dt>문구</dt><dd>{plan.copy}</dd><dt>화면</dt><dd>{plan.visual}</dd><dt>CTA</dt><dd>{plan.cta}</dd></dl>
+          </div>
           <label className={styles.fullWidth}>
             추가 강조사항 <small>선택사항</small>
             <textarea
@@ -185,13 +159,13 @@ export function ProductBriefForm(props: {
       <div className={`${styles.confirmBar} ${props.confirmed ? styles.confirmBarDone : ""}`}>
         <span>
           {props.confirmed
-            ? `${plan.objectiveLabel} · ${plan.approachLabel}으로 제작 준비가 완료됐습니다.`
+            ? `${plan.objectiveLabel} 방향으로 광고 이미지를 만들고 있습니다.`
             : props.canConfirm
-              ? "선택한 목표와 제작 방식을 확인해 주세요."
-              : "먼저 상품정보와 광고용 이미지를 불러와 주세요."}
+              ? "추천 설정은 나중에 다시 바꿀 수 있습니다."
+              : "먼저 상품 정보와 광고용 이미지를 불러와 주세요."}
         </span>
         <button disabled={!props.canConfirm || props.confirmed} onClick={props.onConfirm} type="button">
-          {props.confirmed ? "제작 계획 확정됨" : "이 목표로 광고 제작 준비"}
+          {props.confirmed ? "광고 이미지 제작 중" : "광고 이미지 만들기"}
         </button>
       </div>
     </section>

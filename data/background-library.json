@@ -4655,7 +4655,7 @@
   {
     "id": "meat-01",
     "file": "/background-library/meat/meat-01.webp",
-    "enabled": true,
+    "enabled": false,
     "category": "meat",
     "subcategories": [
       "beef",
@@ -4729,7 +4729,7 @@
   {
     "id": "meat-02",
     "file": "/background-library/meat/meat-02.webp",
-    "enabled": true,
+    "enabled": false,
     "category": "meat",
     "subcategories": [
       "beef",
@@ -4803,7 +4803,7 @@
   {
     "id": "meat-03",
     "file": "/background-library/meat/meat-03.webp",
-    "enabled": true,
+    "enabled": false,
     "category": "meat",
     "subcategories": [
       "beef",
@@ -4877,7 +4877,7 @@
   {
     "id": "meat-04",
     "file": "/background-library/meat/meat-04.webp",
-    "enabled": true,
+    "enabled": false,
     "category": "meat",
     "subcategories": [
       "beef",
@@ -4951,7 +4951,7 @@
   {
     "id": "meat-05",
     "file": "/background-library/meat/meat-05.webp",
-    "enabled": true,
+    "enabled": false,
     "category": "meat",
     "subcategories": [
       "beef",
@@ -5025,7 +5025,7 @@
   {
     "id": "meat-06",
     "file": "/background-library/meat/meat-06.webp",
-    "enabled": true,
+    "enabled": false,
     "category": "meat",
     "subcategories": [
       "beef",

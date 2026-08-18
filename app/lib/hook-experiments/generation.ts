@@ -57,7 +57,7 @@ function stageRound(stage: ExperimentStage) {
 }
 
 function stageDefaults(stage: ExperimentStage) {
-  if (stage === "DISCOVERY") return { hookCount: 8, variantsPerHook: 2 };
+  if (stage === "DISCOVERY") return { hookCount: 6, variantsPerHook: 2 };
   if (stage === "VALIDATION") return { hookCount: 3, variantsPerHook: 6 };
   return { hookCount: 1, variantsPerHook: 6 };
 }

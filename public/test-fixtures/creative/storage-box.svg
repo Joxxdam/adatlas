@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <defs><linearGradient id="front" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6ca3aa"/><stop offset="1" stop-color="#285f69"/></linearGradient></defs>
+  <g transform="translate(45 120)">
+    <path d="M50 190 255 84l205 106-205 104Z" fill="#a8c9cc" stroke="#174a53" stroke-width="10"/>
+    <path d="M50 190 255 294v372L50 548Z" fill="url(#front)" stroke="#174a53" stroke-width="10"/>
+    <path d="m460 190-205 104v372l205-118Z" fill="#477d84" stroke="#174a53" stroke-width="10"/>
+    <path d="m88 250 130 66v268L88 510Z" fill="#c5dadd" opacity=".42"/>
+    <path d="M134 390h236v126H134z" rx="24" fill="#f7f0e7" stroke="#174a53" stroke-width="8"/>
+    <text x="252" y="438" text-anchor="middle" font-family="Arial,sans-serif" font-size="31" font-weight="700" fill="#174a53">TIDY HOME</text>
+    <text x="252" y="482" text-anchor="middle" font-family="Arial,sans-serif" font-size="25" fill="#174a53">FOLDABLE 2 SET</text>
+    <path d="m101 164 154-80 154 80" fill="none" stroke="#e9d6bd" stroke-width="22" stroke-linecap="round"/>
+  </g>
+</svg>

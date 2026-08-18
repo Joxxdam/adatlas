@@ -1,4 +1,4 @@
-import type { SceneGenerationInput, SceneGenerationResult } from "../creative/types";
+import type { SceneGenerationInput, SceneGenerationResult } from "../creative/types.ts";
 
 export type ImageGenerationFeature = "scene" | "reference-image" | "custom-square";
 
@@ -11,5 +11,8 @@ export interface SceneGenerationProvider {
 }
 
 export function isPaidImageGenerationEnabled() {
-  return String(process.env.PAID_IMAGE_GENERATION_ENABLED || "false").toLowerCase() === "true";
+  return [
+    process.env.ADATLAS_IMAGE_GENERATION_ENABLED,
+    process.env.PAID_IMAGE_GENERATION_ENABLED,
+  ].some((value) => String(value || "false").toLowerCase() === "true");
 }

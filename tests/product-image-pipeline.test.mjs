@@ -32,6 +32,10 @@ test("상품 문맥에서 단일·세트·비정형·포장·플레이팅·투�
     "irregular-product"
   );
   assert.equal(
+    inferProductRepresentation({ productName: "여름 한정 봉황 청사과 5kg" }).type,
+    "irregular-product"
+  );
+  assert.equal(
     inferProductRepresentation({ productName: "진공 포장 트레이 한우" }).type,
     "packaged-product"
   );

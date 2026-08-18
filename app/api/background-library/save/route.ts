@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       sourcePageUrl: "",
       originalImageUrl: "",
       licenseUrl: "",
-      authorName: "AdAtlas",
+      authorName: "DAYWIZ",
       generationModel: body.provider || "unknown",
       generationPrompt: String(hook.sceneDescription || "공용 광고 합성 배경"),
       generatedAt: now,

@@ -1,9 +1,8 @@
 import path from "path";
-import { imageSourceToBuffer } from "./imageEffects";
+import { readCreativeRasterAsset } from "../creative-generation/assets.server.ts";
 
 type ImageSize =
   | "1024x1024"
-  | "1200x1200"
   | "1536x1024"
   | "1024x1536";
 type ImageQuality = "low" | "medium" | "high";
@@ -16,7 +15,19 @@ type ImageClientResult = {
 };
 
 export function getOpenAIImageModel() {
-  return process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
+  return process.env.ADATLAS_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || "gpt-image-1.5";
+}
+
+export function getOpenAIImageQuality(): ImageQuality {
+  const value = String(process.env.ADATLAS_IMAGE_QUALITY || "high").toLowerCase();
+  return value === "low" || value === "medium" ? value : "high";
+}
+
+export function getOpenAIImageSize(): ImageSize {
+  const value = String(process.env.ADATLAS_IMAGE_SIZE || "1024x1024");
+  return ["1024x1024", "1536x1024", "1024x1536"].includes(value)
+    ? (value as ImageSize)
+    : "1024x1024";
 }
 
 function contentTypeFromSource(source: string) {
@@ -99,7 +110,7 @@ export async function editImageFromSource(params: {
     throw new Error("선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다.");
   }
 
-  const sourceBuffer = await imageSourceToBuffer(params.sourceImagePath);
+  const sourceBuffer = await readCreativeRasterAsset(params.sourceImagePath);
   const contentType = contentTypeFromSource(params.sourceImagePath);
   const fileName = fileNameFromSource(params.sourceImagePath);
   const formData = new FormData();
@@ -107,13 +118,16 @@ export async function editImageFromSource(params: {
   formData.append("prompt", params.prompt);
   formData.append("size", params.size || "1024x1024");
   formData.append("quality", params.quality || "medium");
+  formData.append("input_fidelity", "high");
+  formData.append("background", "opaque");
+  formData.append("output_format", "png");
   formData.append("image[]", new Blob([sourceBuffer], { type: contentType }), fileName);
 
   const referenceImagePaths = Array.from(new Set(params.referenceImagePaths ?? []))
     .filter(Boolean)
     .slice(0, 3);
   for (const referenceImagePath of referenceImagePaths) {
-    const referenceBuffer = await imageSourceToBuffer(referenceImagePath);
+    const referenceBuffer = await readCreativeRasterAsset(referenceImagePath);
     formData.append(
       "image[]",
       new Blob([referenceBuffer], { type: contentTypeFromSource(referenceImagePath) }),

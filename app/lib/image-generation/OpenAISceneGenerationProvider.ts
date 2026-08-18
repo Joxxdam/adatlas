@@ -2,13 +2,14 @@ import {
   editImageFromSource,
   generateImageFromText,
   getOpenAIImageModel,
-} from "../mvp/openaiImageClient";
-import type { SceneGenerationInput, SceneGenerationResult } from "../creative/types";
+  getOpenAIImageQuality,
+} from "../mvp/openaiImageClient.ts";
+import type { SceneGenerationInput, SceneGenerationResult } from "../creative/types.ts";
 import {
   isPaidImageGenerationEnabled,
   type ImageGenerationFeature,
   type SceneGenerationProvider,
-} from "./SceneGenerationProvider";
+} from "./SceneGenerationProvider.ts";
 
 export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   readonly id = "openai" as const;
@@ -18,7 +19,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   }
 
   supports(feature: ImageGenerationFeature) {
-    if (feature === "custom-square") return getOpenAIImageModel().startsWith("gpt-image-2");
+    if (feature === "custom-square") return false;
     return feature === "scene" || feature === "reference-image";
   }
 
@@ -33,16 +34,15 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
       input.negativePrompt ? `Negative constraints: ${input.negativePrompt}` : "",
       "OUTPUT CONTRACT: one edge-to-edge, fully opaque square commercial photography plate. Fill all four corners and every pixel with the continuous environment.",
       "A product-safe zone means a low-detail photographed surface with coherent perspective and light. It must never be transparent, black, blank, masked, boxed, or cut out.",
-      "Do not render the sold category, a replacement product, food, package, bottle, label, logo, price, text, or isolated hero object anywhere. Preserve every specified safe zone.",
+      "Do not render the sold product, a lookalike replacement product, package, bottle, label, logo, price, text, or isolated hero object anywhere. Contextual ingredients, water, foam, surfaces, people or usage props are allowed only when the art-direction prompt explicitly requests them, and they must not obstruct the reserved product stage.",
     ]
       .filter(Boolean)
       .join("\n\n");
     const model = getOpenAIImageModel();
-    const supportsCustomSquare = model.startsWith("gpt-image-2");
     const result = await generateImageFromText({
       prompt,
-      size: supportsCustomSquare ? "1200x1200" : "1024x1024",
-      quality: "high",
+      size: "1024x1024",
+      quality: getOpenAIImageQuality(),
       background: "opaque",
       outputFormat: "png",
     });
@@ -52,8 +52,8 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
       revisedPrompt: result.promptUsed,
       metadata: {
         requestedCanvas: "1200x1200",
-        sourceCanvas: supportsCustomSquare ? "1200x1200" : "1024x1024",
-        quality: "high",
+        sourceCanvas: "1024x1024",
+        quality: getOpenAIImageQuality(),
         background: "opaque",
         model,
       },
@@ -72,8 +72,8 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
       sourceImagePath,
       referenceImagePaths,
       prompt: [input.prompt, input.negativePrompt].filter(Boolean).join("\n\n"),
-      size: this.supports("custom-square") ? "1200x1200" : "1024x1024",
-      quality: "high",
+      size: "1024x1024",
+      quality: getOpenAIImageQuality(),
     });
     return {
       imageBuffer: result.imageBuffer,
@@ -82,7 +82,8 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
       metadata: {
         requestedCanvas: "1200x1200",
         model: getOpenAIImageModel(),
-        inputFidelity: "provider-default-high",
+        inputFidelity: "high",
+        referenceCount: input.referenceImages?.length || 0,
       },
     };
   }

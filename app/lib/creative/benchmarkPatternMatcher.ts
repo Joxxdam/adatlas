@@ -1,4 +1,31 @@
-import { loadBenchmarkAnalysis } from "./benchmarkLoader";
+import { loadBenchmarkAnalysis } from "./benchmarkLoader.ts";
+
+function stringList(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+    : [];
+}
+
+export function buildBenchmarkQualityContract() {
+  const analysis = loadBenchmarkAnalysis();
+  const patterns = analysis.globalPatterns;
+  const thresholds = analysis.qualityThresholds;
+  const readTime = typeof patterns.hookReadTimeSeconds === "number"
+    ? patterns.hookReadTimeSeconds
+    : 2;
+
+  return [
+    "Use the benchmark only as an abstract quality bar. Never reproduce any benchmark's exact layout, framing, copy, product, logo, badge, palette arrangement or brand identity.",
+    `Make the current hook understandable in about ${readTime} seconds with one dominant visual idea.`,
+    `Information order: ${stringList(patterns.informationOrder).join(" → ")}.`,
+    `Composition principles: ${stringList(patterns.composition).join("; ")}.`,
+    `Product treatment principles: ${stringList(patterns.productTreatment).join("; ")}.`,
+    `Typography-planning principles: ${stringList(patterns.textTreatment).join("; ")}. Exact Korean typography is rendered by the application after image generation.`,
+    `Category guidance: ${stringList(patterns.categoryDifferences).join("; ")}.`,
+    `Quality bar: overall ${thresholds.minimumOverall ?? 78}+, product visibility ${thresholds.minimumProductVisibility ?? 78}+, readability ${thresholds.minimumTextReadability ?? 82}+, scene relevance ${thresholds.minimumSceneRelevance ?? 76}+, at most ${thresholds.maximumPrimaryFocalPoints ?? 2} primary focal points.`,
+    "Translate these principles into a new composition built specifically for the current verified product, hook and customer situation.",
+  ].filter((line) => !line.endsWith(": ."));
+}
 
 function normalizedCategory(value: string) {
   const text = value.toLowerCase();

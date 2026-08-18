@@ -107,6 +107,28 @@ JSON file storage
 
 현재는 별도 DB 없이 `data` 폴더의 JSON 파일을 사용합니다.
 
+### 영상 제작 협업 모듈
+
+`/video-collaboration`은 기존 이미지 광고 제작 흐름과 분리된 영상 제작 협업 화면입니다.
+상품 URL을 기존 상품 추출 API로 분석한 뒤 서로 다른 후킹의 영상 대본 3개를 만들고,
+마케터의 대본 확정 → 디자이너 제작 → 버전 업로드 → 타임코드 피드백 → 수정본 → 최종
+승인 흐름을 관리합니다. 이 기능은 영상을 AI로 생성하거나 편집하지 않습니다.
+
+프로젝트별 제작 대본은 `/video-collaboration/{projectId}/script`에서 독립 작업지시서로
+열립니다. 장면·자막·영상 장면·참고 이미지 2열을 기본으로 표시하고, 장면 순서·내레이션·
+필요 소스·제작 메모를 편집할 수 있습니다. 디자이너 보기와 인쇄/PDF 출력도 지원합니다.
+
+현재 MVP 저장 방식은 다음과 같습니다.
+
+- 프로젝트·대본·상태·피드백: `data/video-collaboration/projects.json`
+- 참고 자료: `public/video-collaboration/references/`
+- 장면별 참고 이미지: `public/video-collaboration/script-references/{projectId}/`
+- 영상 버전: `public/video-collaboration/videos/{projectId}/`
+- 영상 업로드 형식: MP4, MOV, WEBM / 파일당 최대 200MB
+
+위 경로는 로컬 개발용 파일 저장소입니다. 서버리스 배포나 다중 서버 환경에서 영구성과
+동시 접근을 보장하지 않으므로, 운영 전에는 객체 스토리지와 데이터베이스로 교체해야 합니다.
+
 ---
 
 ## 실행 방법
@@ -138,6 +160,29 @@ OpenAI API를 사용하려면 프로젝트 루트에 `.env.local` 파일을 만�
 ```env
 OPENAI_API_KEY=<your_openai_api_key>
 ```
+
+후킹별 AI 광고 장면 생성은 비용이 발생하므로 서버에서 명시적으로 활성화합니다. 이 제작
+흐름에서는 설정이 없거나 생성이 실패해도 기존 배경으로 대체하지 않습니다. 실패한 후킹
+카드만 남겨 재시도하며 이미 완성된 카드는 그대로 유지합니다.
+
+```env
+ADATLAS_IMAGE_GENERATION_ENABLED=true
+ADATLAS_IMAGE_MODEL=gpt-image-1.5
+ADATLAS_IMAGE_QUALITY=high
+ADATLAS_IMAGE_SIZE=1024x1024
+ADATLAS_CREATIVE_COUNT=6
+ADATLAS_CREATIVE_CONCURRENCY=1
+ADATLAS_IMAGE_MAX_RETRIES=2
+ADATLAS_MAX_SCENE_CANDIDATES=1
+ADATLAS_SCENE_IDENTITY_VISION_ENABLED=true
+```
+
+생성 흐름은 상세페이지 원본 이미지 수집·역할 분류 → 후킹별 `MasterSceneSpec` → 상품·사용·
+질감 레퍼런스를 high-fidelity 입력으로 사용한 완성형 AI 키비주얼 생성 → 상품 동일성 검사 →
+가격·혜택·CTA·한글 카피와 원본 로고 후처리 → QA 순서입니다. UI는 동시 생성하지 않고
+H01부터 한 장씩 완료 즉시 전달합니다. AI 생성물의 상품 형태·패키지·색상은 상세페이지
+레퍼런스와 비교하고, 정확한 한국어와 로고는 이미지 모델에 맡기지 않습니다. 최종 결과는
+1200×1200으로 정규화됩니다.
 
 주의:
 

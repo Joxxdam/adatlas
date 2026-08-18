@@ -317,6 +317,20 @@ export function createHookExperimentRepository(options: { dataDirectory?: string
           group.stability = result.stability;
           group.status = result.eligible ? "ranked" : "additional_data_required";
           group.updatedAt = new Date().toISOString();
+          for (const record of store.performanceRecords.filter(
+            (item) => item.experimentId === analysis.experimentId && item.hookGroupId === result.hookGroupId
+          )) {
+            record.resultStatus = analysis.needsMoreData || !result.eligible
+              ? "needs-more-data"
+              : result.hookCode === analysis.winnerHookCode
+                ? "validated-winner"
+                : result.rank === 1
+                  ? "promising"
+                  : "loser";
+            record.dataSufficiency = result.eligible
+              ? "comparison-ready"
+              : "additional-data-required";
+          }
         }
         return analysis;
       });

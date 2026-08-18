@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { buildProductCreationHref } from "../../lib/product-creation/handoffUrl";
 import { useEffect, useMemo, useState } from "react";
 import type {
   BigQueryAdvertiser,
@@ -8,20 +9,16 @@ import type {
   BigQueryCandidateMetric,
   BigQueryCandidatePeriod,
   BigQueryCandidateResponse,
-  BigQueryCandidateType,
   BigQueryConnectionStatus,
+  BigQueryRecommendationType,
 } from "../../lib/bigquery/types";
 import styles from "./BigQueryCandidateWorkspace.module.css";
 
-const candidateLabels: Record<BigQueryCandidateType, string> = {
-  "sales-rising": "매출 상승",
-  bestseller: "판매 상위",
-  "review-strength": "후기 강점",
-  "exposure-efficient": "노출 효율",
-  "exposure-potential": "저노출 잠재",
-  "improvement-needed": "전환 개선 필요",
-  "new-product": "신상품",
-  "price-competitive": "가격 경쟁력",
+const candidateLabels: Record<BigQueryRecommendationType, string> = {
+  "core-scale": "핵심 확장",
+  "core-recovery": "핵심 회복",
+  "hidden-potential": "숨은 잠재",
+  "creative-improvement": "콘텐츠 개선",
 };
 
 const periodLabels: Record<BigQueryCandidatePeriod, string> = {
@@ -49,24 +46,13 @@ function bytesText(bytes: number) {
   return `${(bytes / 1_000_000).toFixed(1)} MB`;
 }
 
-function sufficiencyText(value: BigQueryCandidateResponse["candidates"][number]["dataSufficiency"]) {
-  if (value === "analysis-ready") return "분석 가능";
-  if (value === "reference-only") return "참고용";
-  if (value === "connection-required") return "연결 확인 필요";
-  return "데이터 부족";
-}
-
-export function BigQueryCandidateWorkspace({
-  onOpenSiteMode,
-}: {
-  onOpenSiteMode?: () => void;
-}) {
+export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?: () => void }) {
   const [status, setStatus] = useState<BigQueryConnectionStatus | null>(null);
   const [advertisers, setAdvertisers] = useState<BigQueryAdvertiser[]>([]);
   const [advertiserSearch, setAdvertiserSearch] = useState("");
   const [advertiserId, setAdvertiserId] = useState("");
   const [period, setPeriod] = useState<BigQueryCandidatePeriod>("4w");
-  const [candidateType, setCandidateType] = useState<BigQueryCandidateType | "all">("all");
+  const [candidateType, setCandidateType] = useState<BigQueryRecommendationType | "all">("all");
   const [result, setResult] = useState<BigQueryCandidateResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [querying, setQuerying] = useState(false);
@@ -90,7 +76,8 @@ export function BigQueryCandidateWorkspace({
         };
         if (cancelled) return;
         if (statusPayload.status) setStatus(statusPayload.status);
-        if (!brandsResponse.ok) throw new Error(brandsPayload.error || "광고주 목록 조회에 실패했습니다.");
+        if (!brandsResponse.ok)
+          throw new Error(brandsPayload.error || "광고주 목록 조회에 실패했습니다.");
         const nextAdvertisers = brandsPayload.advertisers || [];
         setAdvertisers(nextAdvertisers);
         setAdvertiserId(nextAdvertisers[0]?.id || "");
@@ -101,7 +88,9 @@ export function BigQueryCandidateWorkspace({
         );
       } catch (error) {
         if (!cancelled) {
-          setMessage(error instanceof Error ? error.message : "BigQuery 연결을 확인하지 못했습니다.");
+          setMessage(
+            error instanceof Error ? error.message : "BigQuery 연결을 확인하지 못했습니다."
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -136,7 +125,9 @@ export function BigQueryCandidateWorkspace({
     setMessage("dry run으로 조회량을 확인한 뒤 광고 후보를 계산하고 있습니다.");
     try {
       const params = new URLSearchParams({ brandId: advertiserId, period, type: candidateType });
-      const response = await fetch(`/api/ad-candidates?${params.toString()}`, { cache: "no-store" });
+      const response = await fetch(`/api/ad-candidates?${params.toString()}`, {
+        cache: "no-store",
+      });
       const payload = (await response.json()) as BigQueryCandidateResponse & {
         ok?: boolean;
         error?: string;
@@ -156,14 +147,16 @@ export function BigQueryCandidateWorkspace({
     }
   }
 
-  function filterResult(type: BigQueryCandidateType | "all") {
+  function filterResult(type: BigQueryRecommendationType | "all") {
     setCandidateType(type);
     if (!result) return;
     void (async () => {
       setQuerying(true);
       try {
         const params = new URLSearchParams({ brandId: advertiserId, period, type });
-        const response = await fetch(`/api/ad-candidates?${params.toString()}`, { cache: "no-store" });
+        const response = await fetch(`/api/ad-candidates?${params.toString()}`, {
+          cache: "no-store",
+        });
         const payload = (await response.json()) as BigQueryCandidateResponse & { error?: string };
         if (!response.ok) throw new Error(payload.error || "필터를 적용하지 못했습니다.");
         setResult(payload);
@@ -182,27 +175,30 @@ export function BigQueryCandidateWorkspace({
         <div>
           <p className="eyebrow">DATA-BASED AD DISCOVERY</p>
           <h1 id="bigquery-candidate-title">데이터 기반 광고 후보 찾기</h1>
-          <p>판매·노출·구매 집계를 읽기 전용으로 비교해 지금 광고할 근거가 있는 상품을 찾습니다.</p>
+          <p>판매·노출·구매 집계를 읽기 전용으로 분석해 목적별 광고 테스트 우선상품을 찾습니다.</p>
         </div>
         <div className={`${styles.connection} ${status?.connected ? styles.connected : ""}`}>
           <span aria-hidden="true" />
-          <strong>{status?.connected ? "BigQuery 연결됨" : loading ? "연결 확인 중" : "연결 확인 필요"}</strong>
+          <strong>
+            {status?.connected ? "BigQuery 연결됨" : loading ? "연결 확인 중" : "연결 확인 필요"}
+          </strong>
           <small>읽기 전용 · {status?.location || "US"}</small>
         </div>
       </header>
 
       <div className={styles.notice} role="status">
         <strong>{message}</strong>
-        <span>사용자 SQL 입력 없이 고정 SELECT만 실행하며, 조회 전 비용 한도를 검사합니다.</span>
+        <span>
+          광고 추천도는 현재 판매 규모, 구매 반응, 노출 기회와 최근 흐름을 함께 분석해 광고 테스트
+          우선순위를 제안합니다.
+        </span>
       </div>
 
       {!loading && (!status?.connected || !advertisers.length) ? (
         <div className={styles.siteFallback}>
           <div>
             <strong>연결된 판매 데이터가 없어 사이트 분석 추천으로 전환합니다.</strong>
-            <span>
-              자사몰 공개정보에서 광고 콘텐츠로 테스트할 가치가 높은 상품을 찾아드립니다.
-            </span>
+            <span>자사몰 공개정보에서 광고 콘텐츠로 테스트할 가치가 높은 상품을 찾아드립니다.</span>
           </div>
           <button onClick={onOpenSiteMode} type="button">
             사이트 URL로 후보 찾기
@@ -233,7 +229,8 @@ export function BigQueryCandidateWorkspace({
             <option value="">광고주 선택</option>
             {filteredAdvertisers.map((advertiser) => (
               <option key={advertiser.id} value={advertiser.id}>
-                {advertiser.name} · {advertiser.category || "카테고리 미확인"} · 상품 {advertiser.productCount}개
+                {advertiser.name} · {advertiser.category || "카테고리 미확인"} · 상품{" "}
+                {advertiser.productCount}개
               </option>
             ))}
           </select>
@@ -248,21 +245,43 @@ export function BigQueryCandidateWorkspace({
             value={period}
           >
             {Object.entries(periodLabels).map(([value, label]) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
         </label>
-        <button disabled={querying || !advertiserId} onClick={() => void findCandidates()} type="button">
+        <button
+          disabled={querying || !advertiserId}
+          onClick={() => void findCandidates()}
+          type="button"
+        >
           {querying ? "근거 계산 중" : "광고 후보 찾기"}
         </button>
       </div>
 
       {selectedAdvertiser ? (
         <div className={styles.advertiserSummary}>
-          <div><span>선택 광고주</span><strong>{selectedAdvertiser.name}</strong></div>
-          <div><span>최신 데이터</span><strong>{selectedAdvertiser.latestDataDate}</strong></div>
-          <div><span>조회 상품</span><strong>{selectedAdvertiser.productCount.toLocaleString("ko-KR")}개</strong></div>
-          <div><span>브랜드 매칭</span><strong>{selectedAdvertiser.brandMatchConfidence === "exact" ? "정확히 연결" : "상품 집계명 기준"}</strong></div>
+          <div>
+            <span>선택 광고주</span>
+            <strong>{selectedAdvertiser.name}</strong>
+          </div>
+          <div>
+            <span>최신 데이터</span>
+            <strong>{selectedAdvertiser.latestDataDate}</strong>
+          </div>
+          <div>
+            <span>조회 상품</span>
+            <strong>{selectedAdvertiser.productCount.toLocaleString("ko-KR")}개</strong>
+          </div>
+          <div>
+            <span>브랜드 매칭</span>
+            <strong>
+              {selectedAdvertiser.brandMatchConfidence === "exact"
+                ? "정확히 연결"
+                : "상품 집계명 기준"}
+            </strong>
+          </div>
         </div>
       ) : null}
 
@@ -275,7 +294,8 @@ export function BigQueryCandidateWorkspace({
                 onClick={() => filterResult("all")}
                 type="button"
               >
-                전체
+                전체 추천 ({Object.values(result.typeCounts).reduce((sum, count) => sum + count, 0)}
+                )
               </button>
               {typeOptions.map((capability) => (
                 <button
@@ -286,11 +306,14 @@ export function BigQueryCandidateWorkspace({
                   title={capability.reason}
                   type="button"
                 >
-                  {candidateLabels[capability.type]}
+                  {candidateLabels[capability.type]} ({result.typeCounts[capability.type] || 0})
                 </button>
               ))}
             </div>
-            <p>최신 {result.latestDataDate} · {periodLabels[result.period]} · 조회 {bytesText(result.processedBytes)}</p>
+            <p>
+              최신 {result.latestDataDate} · {periodLabels[result.period]} · 조회{" "}
+              {bytesText(result.processedBytes)}
+            </p>
           </div>
 
           <div className={styles.grid} aria-busy={querying}>
@@ -301,14 +324,15 @@ export function BigQueryCandidateWorkspace({
                   <div>
                     <div className={styles.badges}>
                       <span>{candidateLabels[candidate.primaryType]}</span>
-                      <b>후보 점수 {candidate.score}</b>
-                      <small>{sufficiencyText(candidate.dataSufficiency)}</small>
+                      <b>광고 추천도 {candidate.recommendationScore}</b>
                       {candidate.secondaryTypes.slice(0, 2).map((type) => (
                         <small key={type}>{candidateLabels[type]}</small>
                       ))}
                     </div>
                     <h2>{candidate.productName}</h2>
-                    <p>{candidate.brandName} · {candidate.category || "카테고리 미확인"}</p>
+                    <p>
+                      {candidate.brandName} · {candidate.category || "카테고리 미확인"}
+                    </p>
                   </div>
                   <div className={styles.imagePlaceholder}>
                     <strong>상품 이미지 미연결</strong>
@@ -316,16 +340,44 @@ export function BigQueryCandidateWorkspace({
                   </div>
                 </div>
                 <p className={styles.reason}>{candidate.recommendationReason}</p>
+                <div className={styles.scoreOverview} aria-label="추천 점수 구성">
+                  <div>
+                    <span>사업 중요도</span>
+                    <strong>{candidate.businessImportanceScore}</strong>
+                    <small>/100</small>
+                  </div>
+                  <div>
+                    <span>광고 기회도</span>
+                    <strong>{candidate.adOpportunityScore}</strong>
+                    <small>/100</small>
+                  </div>
+                  <p>
+                    <strong>{candidate.trendLabel}</strong>
+                    <span>{candidate.productFamilySummary}</span>
+                  </p>
+                </div>
                 <dl className={styles.metrics}>
-                  {candidate.metrics.slice(0, 4).map((metric) => (
-                    <div key={metric.key} title={metric.note}>
-                      <dt>{metric.label}</dt>
-                      <dd>{metricText(metric)}</dd>
-                      <small>{metric.previousValue === null ? metric.note : `비교값 ${metric.unit === "rate" ? `${(metric.previousValue * 100).toFixed(1)}%` : Math.round(metric.previousValue).toLocaleString("ko-KR")}`}</small>
-                    </div>
-                  ))}
+                  {candidate.metrics
+                    .filter((metric) =>
+                      ["current-sales", "purchase-count", "sales-rank", "sales-share"].includes(
+                        metric.key
+                      )
+                    )
+                    .map((metric) => (
+                      <div key={metric.key} title={metric.note}>
+                        <dt>{metric.label}</dt>
+                        <dd>{metricText(metric)}</dd>
+                        <small>
+                          {metric.previousValue === null
+                            ? metric.note
+                            : `비교값 ${metric.unit === "rate" ? `${(metric.previousValue * 100).toFixed(1)}%` : Math.round(metric.previousValue).toLocaleString("ko-KR")}`}
+                        </small>
+                      </div>
+                    ))}
                 </dl>
                 <div className={styles.direction}>
+                  <strong>다음 행동</strong>
+                  <span>{candidate.recommendedAction}</span>
                   <strong>추천 후킹</strong>
                   <span>{candidate.recommendedHookTypes.join(" · ")}</span>
                   <strong>메시지 방향</strong>
@@ -333,8 +385,18 @@ export function BigQueryCandidateWorkspace({
                 </div>
                 <details className={styles.details}>
                   <summary>데이터 기준과 주의사항</summary>
-                  <p>분석 {candidate.analysisPeriodStart}~{candidate.analysisPeriodEnd} · 비교 {candidate.comparisonPeriodStart}~{candidate.comparisonPeriodEnd}</p>
-                  <p>최신 기준일 {candidate.latestDataDate} · 충분도 {sufficiencyText(candidate.dataSufficiency)}</p>
+                  <p>
+                    분석 {candidate.analysisPeriodStart}~{candidate.analysisPeriodEnd} · 비교{" "}
+                    {candidate.comparisonPeriodStart}~{candidate.comparisonPeriodEnd}
+                  </p>
+                  <p>
+                    최신 기준일 {candidate.latestDataDate} · 최근 흐름 {candidate.trendLabel}
+                  </p>
+                  <p>
+                    {candidate.productFamilyName} 제품군 · 매출 비중{" "}
+                    {(candidate.salesShare * 100).toFixed(1)}% · 구매 비중{" "}
+                    {(candidate.purchaseShare * 100).toFixed(1)}%
+                  </p>
                   <dl className={styles.detailMetrics}>
                     {candidate.metrics.map((metric) => (
                       <div key={metric.key}>
@@ -345,11 +407,20 @@ export function BigQueryCandidateWorkspace({
                     ))}
                   </dl>
                   <p>원본 테이블: {candidate.sourceTables.join(" · ")}</p>
-                  <ul>{candidate.cautions.map((caution) => <li key={caution}>{caution}</li>)}</ul>
+                  <ul>
+                    {candidate.cautions.map((caution) => (
+                      <li key={caution}>{caution}</li>
+                    ))}
+                  </ul>
                 </details>
                 <div className={styles.actions}>
-                  <Link href={`/create-product?dataCandidateId=${encodeURIComponent(candidate.id)}`}>
-                    이 상품으로 광고 만들기
+                  <Link
+                    href={buildProductCreationHref(
+                      { dataCandidateId: candidate.id },
+                      candidate.productUrl
+                    )}
+                  >
+                    이 상품으로 후킹 6개 만들기
                     <span aria-hidden="true">→</span>
                   </Link>
                 </div>
@@ -364,11 +435,13 @@ export function BigQueryCandidateWorkspace({
           ) : null}
 
           <details className={styles.capabilities}>
-            <summary>사용 지표와 현재 제공하지 않는 후보 유형</summary>
+            <summary>광고 추천도 계산 기준</summary>
             <div>
               {result.capabilities.map((capability: BigQueryCandidateCapability) => (
                 <article key={capability.type}>
-                  <span data-state={capability.availability}>{candidateLabels[capability.type]}</span>
+                  <span data-state={capability.availability}>
+                    {candidateLabels[capability.type]}
+                  </span>
                   <p>{capability.reason}</p>
                 </article>
               ))}
@@ -378,7 +451,10 @@ export function BigQueryCandidateWorkspace({
       ) : (
         <div className={styles.empty}>
           <strong>광고주와 기간을 선택해 후보를 찾아보세요.</strong>
-          <span>연결 데이터가 없거나 원하는 상품이 없다면 기존 상세페이지 분석을 그대로 사용할 수 있습니다.</span>
+          <span>
+            연결 데이터가 없거나 원하는 상품이 없다면 기존 상세페이지 분석을 그대로 사용할 수
+            있습니다.
+          </span>
           <button className={styles.inlineSiteAction} onClick={onOpenSiteMode} type="button">
             사이트 URL로 후보 찾기
           </button>

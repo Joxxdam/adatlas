@@ -31,6 +31,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "creative:fixtures": "node scripts/render-hook-experiment-fixtures.mjs",
     "collect:daily": "node scripts/daily-collector.mjs",
     "collect:schedule": "node scripts/schedule-daily-collector.mjs",
     "crawl:watchlist": "node scripts/watchlist-crawler.mjs",
@@ -38,6 +39,7 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^9.0.2",
+    "@openai/codex-sdk": "^0.147.0",
     "jszip": "^3.10.1",
     "next": "16.2.9",
     "playwright": "^1.61.0",

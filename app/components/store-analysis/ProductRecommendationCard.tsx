@@ -6,6 +6,7 @@ import type {
   ProductDetailAnalysis,
   RecommendedProductCandidate,
 } from "../../lib/store-analysis/types";
+import { buildProductCreationHref } from "../../lib/product-creation/handoffUrl";
 import { ContentAngleList } from "./ContentAngleList";
 
 const TYPE_LABELS = {
@@ -45,7 +46,14 @@ export function ProductRecommendationCard({
   const selectedAngle =
     candidate.analysis.recommendedAngles.find((angle) => angle.id === selectedAngleId) ||
     candidate.analysis.recommendedAngles[0];
-  const createHref = `/create-product?analysisId=${encodeURIComponent(analysisId)}&productId=${encodeURIComponent(candidate.product.id)}${selectedAngle ? `&angle=${encodeURIComponent(selectedAngle.id)}` : ""}`;
+  const createHref = buildProductCreationHref(
+    {
+      analysisId,
+      productId: candidate.product.id,
+      angle: selectedAngle?.id,
+    },
+    candidate.product.url
+  );
   return (
     <article className="product-recommendation-card">
       <div className="product-card-media">

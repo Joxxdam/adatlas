@@ -228,7 +228,7 @@ export function HookExperimentWorkspace() {
   async function createExperiment(event: FormEvent) {
     event.preventDefault();
     setBusy("creating");
-    setStatus("8개 후킹과 16개 소재 계획을 만들고 있습니다.");
+    setStatus("6개 후킹과 12개 소재 계획을 만들고 있습니다.");
     try {
       const response = await fetch("/api/hook-experiments", {
         method: "POST",
@@ -516,9 +516,9 @@ export function HookExperimentWorkspace() {
                 <div>
                   <small>STEP 01</small>
                   <h2>첫 탐색 실험 설정</h2>
-                  <p>실제 상품 사실을 기준으로 안전하게 적용 가능한 후킹 8개를 고릅니다.</p>
+                  <p>실제 상품 사실을 기준으로 안전하게 적용 가능한 후킹 6개를 고릅니다.</p>
                 </div>
-                <span className={styles.countBadge}>16장</span>
+                <span className={styles.countBadge}>12장</span>
               </div>
               <div className={styles.urlRow}>
                 <label>
@@ -726,7 +726,7 @@ export function HookExperimentWorkspace() {
               <div className={styles.formAction}>
                 <p>목표가 달라도 같은 상품·후킹 메시지는 동일하게 생성됩니다.</p>
                 <button disabled={Boolean(busy)} type="submit">
-                  T01 후킹 8개 · 소재 16장 계획하기
+                  T01 후킹 6개 · 소재 12장 계획하기
                 </button>
               </div>
             </form>
@@ -991,7 +991,9 @@ export function HookExperimentWorkspace() {
                         onClick={() => void createNext()}
                         type="button"
                       >
-                        다음 회차 만들기
+                        {current.analysis.winnerHookCode
+                          ? "우승 후킹 가설로 다음 콘텐츠 만들기"
+                          : "상위 후킹 가설 다음 검증 만들기"}
                       </button>
                     ) : null}
                   </div>
@@ -1010,6 +1012,11 @@ export function HookExperimentWorkspace() {
                           <strong>
                             {group.hookCode} · {group.hookType}
                           </strong>
+                          {current.hookGroups.find((item) => item.id === group.hookGroupId)?.primaryTag ? (
+                            <small>
+                              내부 태그 · {current.hookGroups.find((item) => item.id === group.hookGroupId)?.primaryTag}
+                            </small>
+                          ) : null}
                           <small>
                             {group.eligibleAssetCount}개 소재 기준 ·{" "}
                             {group.stability.replaceAll("_", " ")}

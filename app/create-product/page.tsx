@@ -6,6 +6,7 @@ import { storeAnalysisRepository } from "../lib/store-analysis/storeAnalysisRepo
 import { buildOpportunityProductCreationHandoff } from "../lib/crema-market/handoff.server";
 import { buildBigQueryProductCreationHandoff } from "../lib/bigquery/handoff.server";
 import { buildSiteCandidateProductCreationHandoff } from "../lib/site-candidates/handoff.server";
+import { normalizeProductCreationUrl } from "../lib/product-creation/handoffUrl";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,8 @@ export default async function CreateProductPage({
   const opportunityId = single(params.opportunityId);
   const dataCandidateId = single(params.dataCandidateId);
   const siteCandidateId = single(params.siteCandidateId);
+  const initialProductUrl = normalizeProductCreationUrl(single(params.productUrl));
+  const view = single(params.view);
   const [brands, images, generated] = await Promise.all([
     readBrands(),
     readCollectedAdImages(),
@@ -65,9 +68,11 @@ export default async function CreateProductPage({
   }
   return (
     <MvpDashboard
-      activeFeature="product-creation"
+      activeFeature={view === "results" ? "creative-results" : "product-creation"}
+      initialActiveMenu={view === "results" ? "결과 다운로드" : "광고 생성"}
       initialBrands={brands}
       initialCreationHandoff={initialCreationHandoff}
+      initialProductUrl={initialProductUrl}
       initialGenerated={generated}
       initialImages={images}
     />

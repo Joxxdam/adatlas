@@ -109,7 +109,7 @@ test("금지 참고사항은 ProductTruth의 차단 패턴에 포함된다", () 
   assert.equal(validateCopyAgainstTruth("피부 완치", truth).valid, false);
 });
 
-test("근거가 있는 추천 후킹과 USP·배경 참고사항이 8장 후킹 계획에 반영된다", () => {
+test("근거가 있는 추천 후킹과 USP·배경 참고사항이 6장 후킹 계획에 반영된다", () => {
   const appliedContentNotes = resolveCreativeContentNotes([
     note({ id: "usp", type: "PRODUCT_USP", content: "민트 사용감" }),
     note({ id: "review", type: "REVIEW_INSIGHT", content: "사용 후 산뜻하다는 후기" }),
@@ -137,7 +137,7 @@ test("근거가 있는 추천 후킹과 USP·배경 참고사항이 8장 후킹 
   assert.equal(scenes.every((scene) => scene.reason.includes("청량한 파란 배경")), true);
 });
 
-test("근거 없는 후기 선호는 강제하지 않고 제외 후킹 없이 안전한 8개 가설을 만든다", () => {
+test("근거 없는 후기 선호는 강제하지 않고 제외 후킹 없이 안전한 6개 가설을 만든다", () => {
   const appliedContentNotes = resolveCreativeContentNotes([
     note({ id: "preferred", type: "PREFERRED_HOOK", content: "review-ugc" }),
     note({ id: "avoided", type: "AVOIDED_HOOK", content: "긴급 후킹은 다음 제작에서 제외" }),
@@ -151,7 +151,7 @@ test("근거 없는 후기 선호는 강제하지 않고 제외 후킹 없이 �
     source: "landing-page",
   });
   const plan = buildCreativePlan(truth);
-  assert.equal(plan.hookPlans.length, 8);
+  assert.equal(plan.hookPlans.length, 6);
   assert.equal(plan.hookPlans.some((hook) => hook.hookType === "review-ugc"), false);
   assert.equal(plan.hookPlans.some((hook) => hook.hookType === "urgency"), false);
 });

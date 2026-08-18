@@ -36,6 +36,12 @@ export type CreativeAsset = {
   experimentId?: string;
   testCode?: string;
   hookVariantCode?: string;
+  explorationCode?: string;
+  conceptCode?: string;
+  primaryHookTag?: string;
+  secondaryHookTags?: string[];
+  customerReason?: string;
+  hypothesisId?: string;
   advertisingHypothesis: string;
   headline: string;
   subCopy: string;
@@ -89,6 +95,12 @@ export type CreativeAssetSnapshot = Pick<
   | "experimentId"
   | "testCode"
   | "hookVariantCode"
+  | "explorationCode"
+  | "conceptCode"
+  | "primaryHookTag"
+  | "secondaryHookTags"
+  | "customerReason"
+  | "hypothesisId"
 >;
 
 export type CreateCreativeAssetInput = {
@@ -113,6 +125,12 @@ export type CreateCreativeAssetInput = {
   experimentId?: string;
   testCode?: string;
   hookVariantCode?: string;
+  explorationCode?: string;
+  conceptCode?: string;
+  primaryHookTag?: string;
+  secondaryHookTags?: string[];
+  customerReason?: string;
+  hypothesisId?: string;
   advertisingHypothesis?: string;
   headline?: string;
   subCopy?: string;
@@ -202,5 +220,11 @@ export function toCreativeAssetSnapshot(asset: CreativeAsset): CreativeAssetSnap
     experimentId: asset.experimentId,
     testCode: asset.testCode,
     hookVariantCode: asset.hookVariantCode,
+    explorationCode: asset.explorationCode,
+    conceptCode: asset.conceptCode,
+    primaryHookTag: asset.primaryHookTag,
+    secondaryHookTags: asset.secondaryHookTags,
+    customerReason: asset.customerReason,
+    hypothesisId: asset.hypothesisId,
   };
 }

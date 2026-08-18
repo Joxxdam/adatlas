@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FeaturePageShell } from "./AppFeatureNavigation";
+import { DaywizBrand } from "./DaywizBrand";
 
 const modes = [
   {
@@ -44,8 +45,7 @@ export function CreationModeSelector() {
       <main className="mode-selector-page">
         <section className="mode-selector-hero">
           <div className="mode-selector-brand">
-            <span className="mode-selector-logo">A</span>
-            <strong>AdAtlas</strong>
+            <DaywizBrand />
           </div>
           <p className="eyebrow">CREATIVE OPERATIONS</p>
           <h1>광고 제작을 어디서 시작할까요?</h1>

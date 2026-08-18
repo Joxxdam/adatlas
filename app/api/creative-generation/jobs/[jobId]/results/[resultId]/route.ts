@@ -6,13 +6,17 @@ import { creativeGenerationJobStore } from "../../../../../../lib/creative-gener
 import { renderCreativeResult } from "../../../../../../lib/creative-generation/renderer.server";
 import { validateCopyAgainstTruth } from "../../../../../../lib/creative-generation/productTruth";
 import { messageSimilarity } from "../../../../../../lib/creative-generation/hookMessages.server";
+import { planMasterScene } from "../../../../../../lib/creative-generation/masterScenePlanner";
+import { createOrReuseMasterScene } from "../../../../../../lib/creative-generation/masterSceneService.server";
 import type { CopyPlan } from "../../../../../../lib/creative-generation/types";
 import { applyCreativeContentNotesToCopy } from "../../../../../../lib/creative-content-notes/service";
 import { cremaMarketRepository } from "../../../../../../lib/crema-market/repository.server";
+import { handleNativeResultGeneration } from "../../../../../../lib/creative-generation/nativeResultGeneration.server";
+import { writeNativeManifest } from "../../../../../../lib/creative-generation/nativeCreativeStorage.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(
   request: Request,
@@ -24,12 +28,20 @@ export async function POST(
     const body = (await request.json().catch(() => ({}))) as {
       copy?: Partial<CopyPlan>;
       requestId?: string;
+      regenerateScene?: boolean;
+      action?: "generate" | "regenerate" | "revise" | "revalidate" | "approve" | "exclude" | "feedback";
+      feedback?: string;
     };
     let job = await creativeGenerationJobStore.get(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
     if (job.status === "cancelled") return NextResponse.json({ ok: false, error: "취소된 작업입니다." }, { status: 409 });
     const target = job.results.find((result) => result.id === resultId);
     if (!target) return NextResponse.json({ ok: false, error: "결과 항목을 찾지 못했습니다." }, { status: 404 });
+    if (job.engine) {
+      const native = await handleNativeResultGeneration({ jobId, resultId, requestId: body.requestId, action: body.action, feedback: body.feedback });
+      const ok = ["success", "approved", "excluded"].includes(native.result.status) || body.action === "feedback";
+      return NextResponse.json({ ok, ...native }, { status: ok ? 200 : 422 });
+    }
     const requestId = String(body.requestId || "").trim().slice(0, 160);
     const generationRequestKey = requestId
       ? `creative-result:${jobId}:${resultId}:${requestId}`
@@ -94,7 +106,7 @@ export async function POST(
         messageSimilarity(
           `${noteApplication.copy.headline} ${noteApplication.copy.body}`,
           `${result.hookPlan.headline} ${result.hookPlan.body}`
-        ) >= 0.72
+        ) >= 0.68
     );
     if (duplicate) {
       return NextResponse.json(
@@ -121,9 +133,74 @@ export async function POST(
           : result
       ),
     }));
-    const active = job.results.find((result) => result.id === resultId)!;
+    let active = job.results.find((result) => result.id === resultId)!;
+    if (
+      job.productReferenceProfile &&
+      active.creativeDesign &&
+      (!active.masterScene || body.regenerateScene)
+    ) {
+      const productReferenceProfile = job.productReferenceProfile;
+      job = await creativeGenerationJobStore.update(jobId, (current) => ({
+        ...current,
+        results: current.results.map((result) =>
+          result.id === resultId ? { ...result, generationStage: "scene-generating" } : result
+        ),
+      }));
+      active = job.results.find((result) => result.id === resultId)!;
+      const sceneSpec = planMasterScene({
+        productId: job.productTruth.productId,
+        profile: productReferenceProfile,
+        masterDesign: active.creativeDesign!,
+        aiFullCreative: true,
+        strategyVariation: active.order,
+        creativeBrief: active.hookPlan.creativeBrief,
+      });
+      const masterScene = await createOrReuseMasterScene({
+        truth: job.productTruth,
+        profile: productReferenceProfile,
+        spec: sceneSpec,
+        forceRevision: true,
+        revision: Date.now() + active.order,
+      });
+      job = await creativeGenerationJobStore.update(jobId, (current) => ({
+        ...current,
+        results: current.results.map((result) =>
+          result.id === resultId
+            ? {
+                ...result,
+                masterScene,
+                generationStage: "compositing",
+                scenePlan: {
+                  ...result.scenePlan,
+                  sceneAsset: {
+                    ...result.scenePlan.sceneAsset,
+                    file: masterScene.file,
+                    sourceType: "generated",
+                    scene: result.hookPlan.creativeBrief?.sceneDescription || result.scenePlan.sceneAsset.scene,
+                  },
+                  promptVersion: masterScene.generationPromptVersion,
+                  provider: "openai",
+                  providerModel: masterScene.imageModel,
+                  generated: masterScene.provider === "openai",
+                  masterSceneId: masterScene.id,
+                  generationMode: masterScene.generationMode,
+                  reason: [result.scenePlan.reason, ...masterScene.warnings].filter(Boolean).join(" · "),
+                },
+              }
+            : result
+        ),
+      }));
+      active = job.results.find((result) => result.id === resultId)!;
+    }
     const requestedCopy = noteApplication.copy;
     const autoRepairs: string[] = [];
+    job = await creativeGenerationJobStore.update(jobId, (current) => ({
+      ...current,
+      results: current.results.map((result) =>
+        result.id === resultId ? { ...result, generationStage: "copy-rendering" } : result
+      ),
+    }));
+    active = job.results.find((result) => result.id === resultId)!;
     let rendered = await renderCreativeResult({
       job,
       result: active,
@@ -174,6 +251,7 @@ export async function POST(
           ? {
               ...result,
               status: rendered.qa.passed ? "success" : "failed",
+              generationStage: rendered.qa.passed ? "completed" : "quality-check",
               imagePath: rendered.imagePath,
               downloadName: assetResult?.asset.fileName || rendered.downloadName,
               creativeAsset: assetResult ? toCreativeAssetSnapshot(assetResult.asset) : result.creativeAsset,
@@ -211,6 +289,7 @@ export async function POST(
             : result
         ),
       }));
+      if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
       return NextResponse.json({ ok: false, error: message, job: failed }, { status: 500 });
     } catch {
       return NextResponse.json({ ok: false, error: message }, { status: 500 });

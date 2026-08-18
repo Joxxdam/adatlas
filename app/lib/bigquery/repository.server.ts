@@ -28,8 +28,22 @@ type ProductSignalQueryRow = {
   sales_change_rate: string | number | null;
   average_exposures: string | number | null;
   brand_conversion_rate: string | number | null;
+  brand_total_sales: string | number | null;
+  brand_total_purchases: string | number | null;
+  product_sales_share: string | number | null;
+  product_purchase_share: string | number | null;
   sales_rank: string | number;
+  purchase_rank: string | number;
   product_count: string | number;
+  recent_1_week_sales: string | number | null;
+  recent_1_week_purchases: string | number | null;
+  recent_4_week_sales: string | number | null;
+  previous_4_week_sales: string | number | null;
+  recent_8_week_sales: string | number | null;
+  recent_12_week_sales: string | number | null;
+  recent_4_week_purchases: string | number | null;
+  previous_4_week_purchases: string | number | null;
+  periods_available: string | number;
   latest_date: string;
 };
 
@@ -108,7 +122,7 @@ WITH source_rows AS (
   FROM \`${table}\`
   WHERE NORMALIZE(TRIM(BRAND_NAME), NFKC) = NORMALIZE(TRIM(@brandName), NFKC)
     AND PRODUCT_NAME IS NOT NULL
-    AND DATE(\`DATE\`) BETWEEN DATE(@previousStart) AND DATE(@currentEnd)
+    AND DATE(\`DATE\`) BETWEEN DATE(@historyStart) AND DATE(@currentEnd)
 ),
 aggregated AS (
   SELECT
@@ -120,7 +134,16 @@ aggregated AS (
     SUM(IF(event_date BETWEEN DATE(@previousStart) AND DATE(@previousEnd), exposures, 0)) AS previous_exposures,
     SUM(IF(event_date BETWEEN DATE(@currentStart) AND DATE(@currentEnd), purchases, 0)) AS current_purchases,
     SUM(IF(event_date BETWEEN DATE(@previousStart) AND DATE(@previousEnd), purchases, 0)) AS previous_purchases,
-    SUM(IF(event_date BETWEEN DATE(@currentStart) AND DATE(@currentEnd), carts, 0)) AS current_carts
+    SUM(IF(event_date BETWEEN DATE(@currentStart) AND DATE(@currentEnd), carts, 0)) AS current_carts,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 6 DAY) AND DATE(@currentEnd), sales, 0)) AS recent_1_week_sales,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 6 DAY) AND DATE(@currentEnd), purchases, 0)) AS recent_1_week_purchases,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 27 DAY) AND DATE(@currentEnd), sales, 0)) AS recent_4_week_sales,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 55 DAY) AND DATE_SUB(DATE(@currentEnd), INTERVAL 28 DAY), sales, 0)) AS previous_4_week_sales,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 55 DAY) AND DATE(@currentEnd), sales, 0)) AS recent_8_week_sales,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 83 DAY) AND DATE(@currentEnd), sales, 0)) AS recent_12_week_sales,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 27 DAY) AND DATE(@currentEnd), purchases, 0)) AS recent_4_week_purchases,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 55 DAY) AND DATE_SUB(DATE(@currentEnd), INTERVAL 28 DAY), purchases, 0)) AS previous_4_week_purchases,
+    SUM(IF(event_date BETWEEN DATE_SUB(DATE(@currentEnd), INTERVAL 83 DAY) AND DATE_SUB(DATE(@currentEnd), INTERVAL 56 DAY), sales, 0)) AS older_4_week_sales
   FROM source_rows
   GROUP BY product_name, product_id_hint
 ),
@@ -135,6 +158,17 @@ active_products AS (
     current_purchases,
     previous_purchases,
     current_carts,
+    recent_1_week_sales,
+    recent_1_week_purchases,
+    recent_4_week_sales,
+    previous_4_week_sales,
+    recent_8_week_sales,
+    recent_12_week_sales,
+    recent_4_week_purchases,
+    previous_4_week_purchases,
+    CAST(recent_4_week_sales > 0 AS INT64)
+      + CAST(previous_4_week_sales > 0 AS INT64)
+      + CAST(older_4_week_sales > 0 AS INT64) AS periods_available,
     SAFE_DIVIDE(current_purchases, NULLIF(current_exposures, 0)) AS conversion_rate,
     SAFE_DIVIDE(current_sales - previous_sales, NULLIF(previous_sales, 0)) AS sales_change_rate
   FROM aggregated
@@ -144,6 +178,8 @@ brand_stats AS (
   SELECT
     AVG(current_exposures) AS average_exposures,
     SAFE_DIVIDE(SUM(current_purchases), NULLIF(SUM(current_exposures), 0)) AS brand_conversion_rate,
+    SUM(current_sales) AS brand_total_sales,
+    SUM(current_purchases) AS brand_total_purchases,
     COUNT(1) AS product_count
   FROM active_products
 ),
@@ -158,9 +194,19 @@ ranked AS (
     current_purchases,
     previous_purchases,
     current_carts,
+    recent_1_week_sales,
+    recent_1_week_purchases,
+    recent_4_week_sales,
+    previous_4_week_sales,
+    recent_8_week_sales,
+    recent_12_week_sales,
+    recent_4_week_purchases,
+    previous_4_week_purchases,
+    periods_available,
     conversion_rate,
     sales_change_rate,
-    RANK() OVER (ORDER BY current_sales DESC, current_purchases DESC, product_name) AS sales_rank
+    RANK() OVER (ORDER BY current_sales DESC, current_purchases DESC, product_name) AS sales_rank,
+    RANK() OVER (ORDER BY current_purchases DESC, current_sales DESC, product_name) AS purchase_rank
   FROM active_products
 )
 SELECT
@@ -173,11 +219,25 @@ SELECT
   ranked.current_purchases,
   ranked.previous_purchases,
   ranked.current_carts,
+  ranked.recent_1_week_sales,
+  ranked.recent_1_week_purchases,
+  ranked.recent_4_week_sales,
+  ranked.previous_4_week_sales,
+  ranked.recent_8_week_sales,
+  ranked.recent_12_week_sales,
+  ranked.recent_4_week_purchases,
+  ranked.previous_4_week_purchases,
+  ranked.periods_available,
   ranked.conversion_rate,
   ranked.sales_change_rate,
   brand_stats.average_exposures,
   brand_stats.brand_conversion_rate,
+  brand_stats.brand_total_sales,
+  brand_stats.brand_total_purchases,
+  SAFE_DIVIDE(ranked.current_sales, NULLIF(brand_stats.brand_total_sales, 0)) AS product_sales_share,
+  SAFE_DIVIDE(ranked.current_purchases, NULLIF(brand_stats.brand_total_purchases, 0)) AS product_purchase_share,
   ranked.sales_rank,
+  ranked.purchase_rank,
   brand_stats.product_count,
   @currentEnd AS latest_date
 FROM ranked
@@ -244,6 +304,7 @@ export async function queryBigQueryProductSignals(input: {
   currentEnd: string;
   previousStart: string;
   previousEnd: string;
+  historyStart: string;
 }) {
   const result = await runReadOnlyBigQuery<ProductSignalQueryRow>({
     queryName: `ad-candidates-${input.source}`,
@@ -254,6 +315,7 @@ export async function queryBigQueryProductSignals(input: {
       currentEnd: input.currentEnd,
       previousStart: input.previousStart,
       previousEnd: input.previousEnd,
+      historyStart: input.historyStart,
       rowLimit: 200,
     },
     maxResults: 200,
@@ -272,8 +334,22 @@ export async function queryBigQueryProductSignals(input: {
     salesChangeRate: nullableNumber(row.sales_change_rate),
     averageExposures: numberValue(row.average_exposures),
     brandConversionRate: nullableNumber(row.brand_conversion_rate),
+    brandTotalSales: numberValue(row.brand_total_sales),
+    brandTotalPurchases: numberValue(row.brand_total_purchases),
+    productSalesShare: nullableNumber(row.product_sales_share) ?? 0,
+    productPurchaseShare: nullableNumber(row.product_purchase_share) ?? 0,
     salesRank: numberValue(row.sales_rank),
+    purchaseRank: numberValue(row.purchase_rank),
     productCount: numberValue(row.product_count),
+    recent1WeekSales: numberValue(row.recent_1_week_sales),
+    recent1WeekPurchases: numberValue(row.recent_1_week_purchases),
+    recent4WeekSales: numberValue(row.recent_4_week_sales),
+    previous4WeekSales: numberValue(row.previous_4_week_sales),
+    recent8WeekSales: numberValue(row.recent_8_week_sales),
+    recent12WeekSales: numberValue(row.recent_12_week_sales),
+    recent4WeekPurchases: numberValue(row.recent_4_week_purchases),
+    previous4WeekPurchases: numberValue(row.previous_4_week_purchases),
+    periodsAvailable: numberValue(row.periods_available),
     latestDate: row.latest_date,
   }));
   return { ...result, rows };

@@ -798,6 +798,7 @@ export type ExtractedProductInfo = {
   galleryImages: string[];
   description: string;
   extractedDescription?: string;
+  mainBenefit?: string;
   landingUrl: string;
   heroImage?: string;
   detailImages?: string[];

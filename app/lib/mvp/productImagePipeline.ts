@@ -129,7 +129,11 @@ export function inferProductRepresentation(input: RepresentationInput): ProductR
       reason: "투명 또는 반사 소재 신호가 확인됨",
     });
   }
-  if (/생고기|고기|등심|안심|갈비|한우|육류|꽃|화분|식물|과일|채소|수산|회|원물|meat|flower|plant/.test(text)) {
+  if (
+    /생고기|고기|등심|안심|갈비|한우|육류|꽃|화분|식물|과일|채소|사과|청사과|아오리|배|복숭아|자두|포도|수박|참외|딸기|감귤|한라봉|토마토|감자|고구마|옥수수|버섯|수산|회|원물|meat|fruit|apple|produce|flower|plant/.test(
+      text
+    )
+  ) {
     signals.push({
       type: expectedUnitCount && expectedUnitCount > 1 ? "multi-unit-set" : "irregular-product",
       score: expectedUnitCount ? 0.88 : 0.8,

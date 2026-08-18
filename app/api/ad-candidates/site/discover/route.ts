@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { StoreAnalysisNetworkError } from "../../../../lib/store-analysis/urlSafety";
 import { discoverSiteCandidates } from "../../../../lib/site-candidates/crawler.server";
 import { cacheSiteDiscovery } from "../../../../lib/site-candidates/service.server";
+import { siteCandidateCache } from "../../../../lib/site-candidates/cache.server";
+import {
+  assertSiteAnalysisRateLimit,
+  SiteAnalysisRateLimitError,
+} from "../../../../lib/site-candidates/rateLimit.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +21,7 @@ function statusForError(error: unknown) {
 
 export async function POST(request: Request) {
   try {
+    assertSiteAnalysisRateLimit(request, "discover");
     const body = (await request.json()) as { url?: unknown };
     const url = String(body.url || "").trim();
     if (!url || url.length > 2_048) {
@@ -24,9 +30,16 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const discovery = cacheSiteDiscovery(await discoverSiteCandidates(url));
-    return NextResponse.json({ ok: true, discovery });
+    const cached = siteCandidateCache.getDiscoveryByUrl(url);
+    const discovery = cached || cacheSiteDiscovery(await discoverSiteCandidates(url));
+    return NextResponse.json({ ok: true, discovery, cacheStatus: cached ? "hit" : "miss" });
   } catch (error) {
+    if (error instanceof SiteAnalysisRateLimitError) {
+      return NextResponse.json(
+        { ok: false, error: error.message },
+        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } }
+      );
+    }
     const message =
       error instanceof Error ? error.message : "사이트 URL을 확인하지 못했습니다.";
     return NextResponse.json({ ok: false, error: message }, { status: statusForError(error) });

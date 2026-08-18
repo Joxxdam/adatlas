@@ -346,6 +346,51 @@
   font-weight: 700;
 }
 
+.scoreOverview {
+  display: grid;
+  grid-template-columns: 150px 150px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0 22px 14px;
+}
+
+.scoreOverview > div {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid #b9e8d4;
+  border-radius: 8px;
+  background: #f0fdf8;
+  color: #176b4d;
+}
+
+.scoreOverview > div span,
+.scoreOverview > div small {
+  font-size: 11px;
+}
+
+.scoreOverview > div strong {
+  margin-left: auto;
+  font-size: 20px;
+}
+
+.scoreOverview > p {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475467;
+  font-size: 11px;
+}
+
+.scoreOverview > p strong {
+  color: #175cd3;
+  font-size: 12px;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -577,9 +622,18 @@
   }
 
   .reason,
-  .details {
+  .details,
+  .scoreOverview {
     margin-right: 16px;
     margin-left: 16px;
+  }
+
+  .scoreOverview {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scoreOverview > p {
+    grid-column: 1 / -1;
   }
 
   .metrics {

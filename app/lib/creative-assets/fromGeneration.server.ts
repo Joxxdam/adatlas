@@ -40,6 +40,14 @@ export async function createAssetFromGenerationResult(input: {
     experimentId: experiment?.experimentId,
     testCode: experiment ? undefined : input.job.creativePlan.testCode,
     hookVariantCode: experiment ? undefined : input.result.hookPlan.hookCode,
+    explorationCode: input.job.creativePlan.mode === "concept-exploration" ? "E01" : undefined,
+    conceptCode: input.job.creativePlan.mode === "concept-exploration"
+      ? `C${String(input.result.order).padStart(2, "0")}`
+      : undefined,
+    primaryHookTag: input.result.hookPlan.primaryTag,
+    secondaryHookTags: input.result.hookPlan.secondaryTags,
+    customerReason: input.result.hookPlan.customerReason,
+    hypothesisId: input.result.hookPlan.creativeBrief?.hypothesisId,
     advertisingHypothesis: `${input.result.hookPlan.title} · ${input.result.hookPlan.sceneIntent}`,
     headline: input.copy.headline,
     subCopy: input.copy.body,

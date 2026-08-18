@@ -113,8 +113,7 @@ export async function layoutTextSlot(params: {
     : params.box;
   const overflow =
     lines.length > params.box.maxLines ||
-    lines.length * lineHeight > availableHeight ||
-    Array.from(text.replace(/\s+/g, "")).length > params.box.maxChars;
+    lines.length * lineHeight > availableHeight;
   return {
     id: params.id,
     box: {
@@ -185,43 +184,60 @@ export async function resolveRenderedSlots(params: {
     cta: string;
   };
 }) {
-  const sizes = await resolveSharedTypography(params.master, params.hooks);
+  // Older persisted jobs used a two-line/18-character headline contract even
+  // when the physical box could safely hold three lines. Normalize those
+  // constraints at render time so an already generated AI key visual can be
+  // repaired without another paid image call.
+  const master: MasterCreativeDirection = {
+    ...params.master,
+    headlineBox: {
+      ...params.master.headlineBox,
+      maxChars: Math.max(32, params.master.headlineBox.maxChars),
+      maxLines: Math.max(3, params.master.headlineBox.maxLines),
+    },
+    subCopyBox: {
+      ...params.master.subCopyBox,
+      maxChars: Math.max(42, params.master.subCopyBox.maxChars),
+      maxLines: Math.max(3, params.master.subCopyBox.maxLines),
+    },
+  };
+  const sizes = await resolveSharedTypography(master, params.hooks);
   const candidates = [
     await layoutTextSlot({
       id: "headline",
       text: params.copy.headline,
-      box: params.master.headlineBox,
-      master: params.master,
+      box: master.headlineBox,
+      master,
       fixedFontSize: sizes.headline,
     }),
     await layoutTextSlot({
       id: "body",
       text: params.copy.body,
-      box: params.master.subCopyBox,
-      master: params.master,
+      box: master.subCopyBox,
+      master,
       fixedFontSize: sizes.body,
     }),
-    params.master.proofBox
+    master.proofBox
       ? await layoutTextSlot({
           id: "proof",
           text: params.copy.proof,
-          box: params.master.proofBox,
-          master: params.master,
+          box: master.proofBox,
+          master,
         })
       : null,
-    params.master.offerBox
+    master.offerBox
       ? await layoutTextSlot({
           id: "offer",
           text: params.copy.offer,
-          box: params.master.offerBox,
-          master: params.master,
+          box: master.offerBox,
+          master,
         })
       : null,
     await layoutTextSlot({
       id: "cta",
       text: params.copy.cta,
-      box: params.master.ctaBox,
-      master: params.master,
+      box: master.ctaBox,
+      master,
     }),
   ];
   return candidates.filter((slot): slot is NonNullable<typeof slot> => Boolean(slot));

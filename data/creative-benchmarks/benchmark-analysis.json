@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "sourceDirectory": "data/creative-benchmarks/desired-quality",
   "images": [
     {
@@ -183,6 +183,30 @@
       "qualityNotes": ["comparison is understood without long copy", "right side gets both brightness and scale"]
     },
     {
+      "fileName": "753241875_28004183899268826_5238084778001079519_n.jpg",
+      "category": "food-meat",
+      "detectedArchetype": "giant-hook",
+      "composition": { "headlineZone": "top full-width statement", "productZone": "center and lower full-bleed cooking scene", "supportZone": "lower-left proof chips", "footerZone": "none" },
+      "visualTraits": ["oversized value hook", "appetite-dominant cooking scene", "black red white hierarchy", "compact proof chips"],
+      "textHierarchy": ["price surprise hook", "product scene", "proof chips", "directional CTA"],
+      "productTreatment": ["large realistic cooked food", "edge-to-edge close crop", "warm directional light", "visible texture and steam"],
+      "backgroundTreatment": ["bright kitchen context", "controlled top copy surface", "food scene fills lower two-thirds"],
+      "reusablePatterns": ["giant value hook above an appetite-dominant scene", "one or two compact proof chips instead of scattered badges", "small directional CTA separated from the food"],
+      "qualityNotes": ["food photography remains the largest evidence", "high graphic impact without covering the focal food"]
+    },
+    {
+      "fileName": "764720068_841283742285516_8710510657235890494_n.jpg",
+      "category": "food-meat",
+      "detectedArchetype": "price-event",
+      "composition": { "headlineZone": "upper reaction and grouped offer zone", "productZone": "lifestyle eating scene paired with lower product close-up", "supportZone": "small brand marker", "footerZone": "grouped price block" },
+      "visualTraits": ["lifestyle and conversion split", "large white yellow price hierarchy", "authentic eating reaction", "controlled red performance field"],
+      "textHierarchy": ["reaction hook", "product identity", "weight and price", "food close-up"],
+      "productTreatment": ["real eating context", "close-up product texture", "two coordinated focal zones"],
+      "backgroundTreatment": ["natural dining scene paired with a solid conversion field", "strong but controlled separation"],
+      "reusablePatterns": ["lifestyle proof paired with a grouped conversion panel", "reaction scene and price block share one eye path", "close-up product texture anchors the offer"],
+      "qualityNotes": ["the lifestyle area supplies credibility while the graphic area closes conversion", "the split is a hierarchy principle, not a fixed layout to copy"]
+    },
+    {
       "fileName": "photo-upload-10098340089162720526.jpg",
       "category": "food-meat",
       "detectedArchetype": "lifestyle-context",
@@ -237,10 +261,10 @@
     "headlineAreaRatio": "0.18-0.32",
     "priceAreaRatio": "0.12-0.22",
     "informationOrder": ["hook", "product", "benefit or proof", "offer", "CTA"],
-    "composition": ["one dominant focal point", "quiet text-safe surface", "grouped offer block", "bottom proof or CTA strip", "category-specific scene"],
+    "composition": ["one dominant focal point", "quiet text-safe surface", "grouped offer block", "bottom proof or CTA strip", "category-specific scene", "lifestyle proof may pair with a grouped conversion panel when both share one eye path"],
     "productTreatment": ["real product layer", "hero scale", "contact shadow", "rim light matched to scene", "outline only when background is busy"],
     "textTreatment": ["one oversized hook", "one accent color", "tight line height", "two or fewer headline lines", "Korean text rendered by the app"],
-    "categoryDifferences": ["personal care favors cool sensory energy, clean graphics and review UI", "meat favors appetite scenes, red-yellow offer blocks and large price grouping", "farm-direct creative favors documentary trust, sunlight and honest material textures"]
+    "categoryDifferences": ["personal care favors cool sensory energy, clean graphics and review UI", "meat favors appetite-dominant scenes, controlled red-yellow offer blocks, lifestyle proof and large price grouping", "farm-direct creative favors documentary trust, sunlight and honest material textures"]
   },
   "qualityThresholds": {
     "minimumOverall": 78,

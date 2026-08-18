@@ -5,7 +5,15 @@ import type { AdBrief, CreativeStrategy, ProductInfoForPrompt } from "../mvp/typ
 import { matchKnownProductAsset } from "../creative/knownProductAssets.ts";
 import { getCreativeBlueprint } from "./blueprints.ts";
 import { buildFallbackHookMessages } from "./hookMessages.server.ts";
-import { selectMasterCreativeDirection } from "./masterDesign.ts";
+import {
+  blueprintForHookTag,
+  buildProductHookExploration,
+  type CategoryHookPrior,
+} from "./hookHypothesisEngine.ts";
+import {
+  designFingerprintForMaster,
+  selectMasterCreativeDirection,
+} from "./masterDesign.ts";
 import { matchBrandProfile, matchCategoryProfile, withRequestedLogo } from "./profiles.ts";
 import { extractNumericTokens } from "./productTruth.ts";
 import {
@@ -17,7 +25,10 @@ import {
   type GenerationResult,
   type HookMessageHypothesis,
   type HookPlan,
+  type HookHypothesisCandidate,
   type ProductTruth,
+  type ProductReferenceProfile,
+  type MasterSceneArtifact,
   type SceneAsset,
   type ScenePlan,
 } from "./types.ts";
@@ -66,6 +77,13 @@ export function buildHookPlans(
       mainMessage: hypothesis.mainHook,
       hookGroupId: `hook-experiment-${truth.productId}`,
       visualDirection: blueprintId,
+      evidenceSummary: hypothesis.evidenceSummary,
+      specificityScore: hypothesis.specificityScore,
+      naturalnessScore: hypothesis.naturalnessScore,
+      validationStatus: hypothesis.validationStatus,
+      validationErrors: hypothesis.validationErrors,
+      generationSource: hypothesis.generationSource,
+      repairCount: hypothesis.repairCount,
     };
   });
 }
@@ -109,6 +127,7 @@ export function buildCreativePlan(
       ...masterDesign,
       fixedFacts: { ...masterDesign.fixedFacts, cta: fixedCta },
     },
+    mode: "exact-message-comparison",
     testCode: options.testCode || "T01",
     copyGeneration: options.copyGeneration || {
       provider: "fallback",
@@ -120,7 +139,118 @@ export function buildCreativePlan(
   };
 }
 
-function strategyFor(plan: HookPlan, product: ProductInfoForPrompt): CreativeStrategy {
+function hookPlansForExploration(
+  truth: ProductTruth,
+  selected: HookHypothesisCandidate[],
+  adBrief?: AdBrief
+): HookPlan[] {
+  const offer = exactOffer(truth);
+  const cta = objectiveCta(adBrief?.adObjective, Boolean(offer));
+  return selected.map((candidate, index) => {
+    const blueprintId = blueprintForHookTag(candidate.primaryTag);
+    const hookCode = `H${String(index + 1).padStart(2, "0")}`;
+    const text = [candidate.mainHook, candidate.subCopy, offer, cta].join(" ");
+    return {
+      id: `hook-${hookCode}-${candidate.id}`,
+      blueprintId,
+      hookType: candidate.primaryTag,
+      primaryTag: candidate.primaryTag,
+      secondaryTags: candidate.secondaryTags,
+      title: candidate.hypothesis,
+      hypothesis: candidate.hypothesis,
+      confidence: candidate.score.evidenceStrength >= 75 ? "high" : candidate.score.evidenceStrength >= 48 ? "medium" : "low",
+      headline: candidate.mainHook,
+      body: candidate.subCopy,
+      proof: "",
+      offer,
+      cta,
+      audience: truth.product.targetCustomer || "확인된 상품 고객",
+      sceneIntent: candidate.visualStory,
+      factIds: candidate.factIds,
+      numericTokens: extractNumericTokens(text),
+      experimentVariant: hookCode,
+      hookCode,
+      mainMessage: candidate.mainHook,
+      hookGroupId: `hook-exploration-${truth.productId}`,
+      visualDirection: candidate.creativeBrief.sceneDescription,
+      evidenceSummary: candidate.evidenceSummary,
+      specificityScore: candidate.score.distinctiveness,
+      naturalnessScore: candidate.score.claimSafety,
+      validationStatus: "valid",
+      validationErrors: [],
+      generationSource: "fallback",
+      repairCount: 0,
+      customerReason: candidate.customerReason,
+      selectionReason: candidate.selectionReason,
+      score: candidate.score,
+      creativeBrief: {
+        ...candidate.creativeBrief,
+        creativeId: `creative-${truth.productId}-${hookCode}-C${String(index + 1).padStart(2, "0")}`,
+        hookCode,
+        mainHook: candidate.mainHook,
+        subCopy: candidate.subCopy,
+        messageHypothesis: candidate.hypothesis,
+        customerInsight: candidate.customerReason,
+        verifiedFacts: candidate.evidence.map((item) => item.fact),
+        referenceImageIds: truth.imageAssets
+          .filter((asset) => asset.verified && asset.validationStatus !== "excluded")
+          .map((asset) => asset.id),
+      },
+    };
+  });
+}
+
+export function buildExplorationCreativePlan(
+  truth: ProductTruth,
+  options: {
+    logoPath?: string;
+    adBrief?: AdBrief;
+    categoryPrior?: CategoryHookPrior;
+    testCode?: `T${string}`;
+  } = {}
+): CreativePlan {
+  const brandProfile = withRequestedLogo(matchBrandProfile(truth.product), options.logoPath);
+  const categoryProfile = matchCategoryProfile(truth.product);
+  const exploration = buildProductHookExploration(truth, options.categoryPrior);
+  if (exploration.selected.length < 6) {
+    throw new Error("상품 근거로 구분 가능한 후킹 가설이 6개보다 적습니다. 상세정보를 추가해 주세요.");
+  }
+  const hookPlans = hookPlansForExploration(truth, exploration.selected, options.adBrief);
+  const firstBlueprint = hookPlans[0].blueprintId;
+  const masterDesign = selectMasterCreativeDirection({
+    truth,
+    brand: brandProfile,
+    category: categoryProfile,
+    preserveMasterDesignId: `exploration-${firstBlueprint}-01`,
+  });
+  return {
+    id: id("creative-exploration-plan"),
+    productTruth: truth,
+    brandProfile,
+    categoryProfile,
+    hookPlans,
+    blueprintIds: Array.from(new Set(hookPlans.map((hook) => hook.blueprintId))),
+    masterDesign,
+    mode: "concept-exploration",
+    productInsightProfile: exploration.profile,
+    candidateHypotheses: exploration.candidates,
+    selectedHypotheses: exploration.selected,
+    testCode: options.testCode || "T01",
+    copyGeneration: {
+      provider: "fallback",
+      warnings: ["상품 공개정보와 검증된 입력만 사용해 후킹 가설 후보를 점수화했습니다."],
+    },
+    adBrief: options.adBrief,
+    createdAt: new Date().toISOString(),
+    plannerVersion: CREATIVE_PLANNER_VERSION,
+  };
+}
+
+function strategyForMaster(
+  blueprintId: CreativeBlueprintId,
+  categoryVariant: string,
+  product: ProductInfoForPrompt
+): CreativeStrategy {
   const map: Record<CreativeBlueprintId, Pick<CreativeStrategy, "hookType" | "backgroundHookType">> = {
     "problem-solution-split": { hookType: "problem-solution", backgroundHookType: "problem_solution" },
     "editorial-story": { hookType: "lifestyle", backgroundHookType: "situation" },
@@ -129,34 +259,35 @@ function strategyFor(plan: HookPlan, product: ProductInfoForPrompt): CreativeStr
     "product-hero-lifestyle": { hookType: "feature-usp", backgroundHookType: "usp_proof" },
     "proof-data": { hookType: "feature-usp", backgroundHookType: "usp_proof" },
   };
+  const strategy = map[blueprintId];
   return {
-    id: plan.id,
-    title: plan.title,
-    ...map[plan.blueprintId],
-    headline: plan.headline,
-    subCopy: plan.body,
+    id: `master-background-${blueprintId}-${categoryVariant}`,
+    title: `상품 고정 배경 · ${categoryVariant}`,
+    ...strategy,
+    headline: product.productName,
+    subCopy: product.mainBenefit,
     keyAppeal: product.mainBenefit,
-    sceneDescription: plan.sceneIntent,
+    sceneDescription: "상품·카테고리·마스터 디자인에 맞는 고정 배경",
     mood: ["고대비", "상품 중심", "광고 집행형"],
     textSafeArea: "top-left",
     productPosition: "center-right",
-    backgroundTags: [plan.hookType, product.category, product.mainBenefit].filter(Boolean),
-    appeal: plan.body,
-    mainCopy: plan.headline,
-    audience: plan.audience,
-    explanation: plan.sceneIntent,
-    mainHookAngle: plan.hookType,
-    coreAppealPoint: plan.body,
-    audienceFit: plan.audience,
-    referenceFit: plan.blueprintId,
+    backgroundTags: [product.category, product.mainBenefit, categoryVariant, blueprintId].filter(Boolean),
+    appeal: product.mainBenefit,
+    mainCopy: product.productName,
+    audience: product.targetCustomer,
+    explanation: "후킹과 독립된 상품 단위 배경 선택",
+    mainHookAngle: "product-master",
+    coreAppealPoint: product.mainBenefit,
+    audienceFit: product.targetCustomer,
+    referenceFit: blueprintId,
     suggestedVisualEmphasis: "actual-product-large",
     risk: "검증되지 않은 수치 사용 금지",
     expectedCustomerProblem: product.mainBenefit,
     purchaseBarrierResponse: "상품 사실과 실제 이미지를 우선 표시",
     recommendedTone: "사실 중심",
-    inferredEvidence: plan.factIds,
+    inferredEvidence: [],
     matchedReferenceIds: [],
-    matchedReferencePatterns: [plan.blueprintId],
+    matchedReferencePatterns: [blueprintId, categoryVariant],
   };
 }
 
@@ -180,6 +311,89 @@ function toSceneAsset(item: BackgroundLibraryItem): SceneAsset {
   };
 }
 
+function productPhotoSceneCandidates(creativePlan: CreativePlan): SceneAsset[] {
+  const product = creativePlan.productTruth.product;
+  const categoryId = creativePlan.categoryProfile.id;
+  const fullPhotoCategory = ["agriculture", "food-meat", "packaged-food"].includes(categoryId);
+  const representation = product.productRepresentation?.type || "";
+  if (
+    !fullPhotoCategory ||
+    !["irregular-product", "plated-product"].includes(representation)
+  ) {
+    return [];
+  }
+  return (product.sourceImageCandidates || [])
+    .filter(
+      (candidate) =>
+        !candidate.hasText &&
+        (candidate.width || 0) >= 500 &&
+        (candidate.height || 0) >= 500 &&
+        candidate.sourceType !== "unknown"
+    )
+    .slice(0, 3)
+    .map((candidate, index) => ({
+      id: `product-photo-${candidate.id}`,
+      file: candidate.imagePath,
+      sourceType: "product" as const,
+      assetType: "lifestyle_photo",
+      scene: `실제 상세페이지 상품 사진 ${index + 1}`,
+      category: categoryId,
+      includesPerson: false,
+      textSafeArea: index % 2 ? "right" : "left",
+      productPosition: "center",
+      license: {
+        sourceName: "상품 상세페이지",
+        sourcePageUrl: product.landingUrl,
+      },
+    }));
+}
+
+/**
+ * Creates empty per-hook scene slots for the AI-only production pipeline.
+ * No background file is selected here: each result route must generate its
+ * own scene plate before the verified product layer and Korean copy are added.
+ */
+export function planAiScenes(
+  creativePlan: CreativePlan,
+  paidGenerationAllowed = true
+): ScenePlan[] {
+  const designNotes = (creativePlan.productTruth.product.creativeContext?.appliedContentNotes || [])
+    .filter((note) => ["IMAGE_RULE", "PRODUCT_IMAGE_RULE", "BACKGROUND_STYLE", "LAYOUT_RULE", "DESIGN_GUIDELINE"].includes(note.type))
+    .map((note) => note.content);
+  return creativePlan.hookPlans.map((hookPlan) => ({
+    id: `scene-${hookPlan.hookCode}-ai-${hookPlan.blueprintId}`,
+    blueprintId: hookPlan.blueprintId,
+    sceneAsset: {
+      id: `ai-hook-${hookPlan.hookCode}-${hookPlan.blueprintId}`,
+      file: "",
+      sourceType: "generated" as const,
+      assetType: "ai-generated-background",
+      scene:
+        hookPlan.creativeBrief?.sceneDescription ||
+        hookPlan.creativeBrief?.visualStory ||
+        `${hookPlan.hypothesis}을 시각화한 전용 광고 장면`,
+      category: creativePlan.categoryProfile.id,
+      includesPerson: false,
+      textSafeArea: "planned-from-hook-layout",
+      productPosition: "planned-from-hook-layout",
+      license: { sourceName: "OpenAI generated scene" },
+    },
+    promptVersion: "ai-hook-background-v1",
+    provider: "openai" as const,
+    generated: true,
+    paidGenerationAllowed,
+    generationMode: "ai-reference-full-creative" as const,
+    reason: [
+      `${hookPlan.hookCode} 메시지 가설 전용 AI 전체 키비주얼`,
+      hookPlan.creativeBrief?.visualStory,
+      "기존 배경 라이브러리 미사용",
+      "상세페이지 상품·사용·질감 이미지를 참조해 AI가 완성형 키비주얼 전체를 제작",
+      "상품·장면·정확한 한국어 문구를 한 번에 조판한 완성형 광고 이미지",
+      ...designNotes,
+    ].filter(Boolean).join(" · "),
+  }));
+}
+
 export function planScenes(
   creativePlan: CreativePlan,
   library: BackgroundLibraryItem[],
@@ -200,15 +414,66 @@ export function planScenes(
         (item) => item.enabled !== false && item.id === options.preserveBackgroundAssetId
       )
     : undefined;
-  const referenceHook = creativePlan.hookPlans[0];
-  const recommendation = referenceHook
-    ? recommendBackgrounds(recommendationPool, {
+  if (creativePlan.mode === "concept-exploration") {
+    const productPhotoScenes = productPhotoSceneCandidates(creativePlan);
+    const selectedIds: string[] = [];
+    return creativePlan.hookPlans.map((hookPlan, index) => {
+      const productPhoto = productPhotoScenes[index % Math.max(1, productPhotoScenes.length)];
+      if (productPhoto) {
+        return {
+          id: `scene-${hookPlan.hookCode}-${productPhoto.id}`,
+          blueprintId: hookPlan.blueprintId,
+          sceneAsset: productPhoto,
+          promptVersion: SCENE_PROMPT_VERSION,
+          provider: "library" as const,
+          generated: false,
+          paidGenerationAllowed: paidImageGenerationAllowed,
+          generationMode: "real-photo-adaptation" as const,
+          reason: [
+            "배경 제거 없이 현재 상품의 실제 상세페이지 사진을 전체 장면으로 사용",
+            hookPlan.creativeBrief?.visualStory,
+            "상품 품종·색·질감은 원본 픽셀로 보존하고 정확한 한국어 문구만 후처리",
+            ...designNotes,
+          ].filter(Boolean).join(" · "),
+        };
+      }
+      const recommendation = recommendBackgrounds(recommendationPool, {
         product: creativePlan.productTruth.product,
-        hook: strategyFor(referenceHook, creativePlan.productTruth.product),
-        limit: 6,
-        recommendationPage: 0,
-      }).recommendations[0]
-    : undefined;
+        hook: strategyForExploration(hookPlan, creativePlan.productTruth.product),
+        selectedIds,
+        limit: Math.max(6, recommendationPool.length),
+        recommendationPage: index,
+      }).recommendations.find((item) => !selectedIds.includes(item.background.id));
+      const selected = recommendation?.background || recommendationPool.find((item) => !selectedIds.includes(item.id)) || fallback;
+      if (!selected) throw new Error("사용 가능한 배경 장면이 없습니다.");
+      selectedIds.push(selected.id);
+      return {
+        id: `scene-${hookPlan.hookCode}-${selected.id}`,
+        blueprintId: hookPlan.blueprintId,
+        sceneAsset: toSceneAsset(selected),
+        promptVersion: SCENE_PROMPT_VERSION,
+        provider: "library" as const,
+        generated: false,
+        paidGenerationAllowed: paidImageGenerationAllowed,
+        reason: [
+          recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback",
+          hookPlan.creativeBrief?.sceneDescription,
+          "실제 상품 레퍼런스를 사용하고 정확한 한국어 문구는 렌더 단계에서 후처리",
+          ...designNotes,
+        ].filter(Boolean).join(" · "),
+      };
+    });
+  }
+  const recommendation = recommendBackgrounds(recommendationPool, {
+    product: creativePlan.productTruth.product,
+    hook: strategyForMaster(
+      creativePlan.masterDesign.layoutFamily,
+      creativePlan.masterDesign.categoryVariant,
+      creativePlan.productTruth.product
+    ),
+    limit: 6,
+    recommendationPage: 0,
+  }).recommendations[0];
   const selected = preserved || recommendation?.background || fallback;
   if (!selected) throw new Error("사용 가능한 배경 장면이 없습니다.");
   return creativePlan.hookPlans.map((hookPlan) => {
@@ -225,7 +490,7 @@ export function planScenes(
         preserved
           ? "사용자가 고정한 마스터 배경"
           : recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback",
-        "H01~H08 동일 배경·크롭·오버레이 고정",
+        "상품·카테고리·마스터 디자인을 기준으로 선택된 고정 배경이며, 후킹 성과 비교를 위해 H01~H06에 동일하게 적용",
         ...designNotes,
       ]
         .filter(Boolean)
@@ -234,35 +499,110 @@ export function planScenes(
   });
 }
 
+function strategyForExploration(hookPlan: HookPlan, product: ProductInfoForPrompt): CreativeStrategy {
+  const map: Record<string, Pick<CreativeStrategy, "hookType" | "backgroundHookType">> = {
+    "problem-solution": { hookType: "problem-solution", backgroundHookType: "problem_solution" },
+    "sensory-experience": { hookType: "sensory", backgroundHookType: "sensory" },
+    "price-value": { hookType: "price-benefit", backgroundHookType: "price_offer" },
+    "feature-usp": { hookType: "feature-usp", backgroundHookType: "usp_proof" },
+    "review-trust": { hookType: "social-proof", backgroundHookType: "review_ugc" },
+    "usage-occasion": { hookType: "lifestyle", backgroundHookType: "situation" },
+    "target-identity": { hookType: "lifestyle", backgroundHookType: "situation" },
+    convenience: { hookType: "problem-solution", backgroundHookType: "convenience" },
+    "bundle-choice": { hookType: "price-benefit", backgroundHookType: "price_offer" },
+    "season-newness": { hookType: "season-event", backgroundHookType: "urgency" },
+    "brand-origin": { hookType: "brand-story", backgroundHookType: "origin_story" },
+    "comparison-alternative": { hookType: "problem-solution", backgroundHookType: "usp_proof" },
+    "scarcity-urgency": { hookType: "season-event", backgroundHookType: "urgency" },
+    "gift-purpose": { hookType: "gift", backgroundHookType: "gifting" },
+    other: { hookType: "feature-usp", backgroundHookType: "usp_proof" },
+  };
+  const direction = map[hookPlan.primaryTag || hookPlan.hookType] || map.other;
+  return {
+    id: `exploration-${hookPlan.hookCode}`,
+    title: hookPlan.title,
+    ...direction,
+    headline: hookPlan.headline,
+    subCopy: hookPlan.body,
+    keyAppeal: hookPlan.customerReason || product.mainBenefit,
+    sceneDescription: hookPlan.creativeBrief?.sceneDescription || hookPlan.sceneIntent,
+    mood: ["실사", "상품 중심", hookPlan.primaryTag || hookPlan.hookType],
+    textSafeArea: "top-left",
+    productPosition: "center-right",
+    backgroundTags: [product.category, hookPlan.primaryTag, hookPlan.creativeBrief?.visualStory].filter(Boolean) as string[],
+    appeal: hookPlan.customerReason || product.mainBenefit,
+    mainCopy: hookPlan.headline,
+    audience: hookPlan.audience,
+    explanation: hookPlan.selectionReason || hookPlan.sceneIntent,
+    mainHookAngle: hookPlan.primaryTag || hookPlan.hookType,
+    coreAppealPoint: hookPlan.customerReason || product.mainBenefit,
+    audienceFit: hookPlan.audience,
+    referenceFit: hookPlan.blueprintId,
+    suggestedVisualEmphasis: "actual-product-large",
+    risk: "확인되지 않은 사실·수치·옵션 사용 금지",
+    expectedCustomerProblem: hookPlan.customerReason || product.mainBenefit,
+    purchaseBarrierResponse: hookPlan.body,
+    recommendedTone: "상품 근거 중심",
+    inferredEvidence: hookPlan.factIds,
+    matchedReferenceIds: [],
+    matchedReferencePatterns: [hookPlan.blueprintId, hookPlan.primaryTag || hookPlan.hookType],
+  };
+}
+
 export function createGenerationJob(params: {
   truth: ProductTruth;
   creativePlan: CreativePlan;
   scenes: ScenePlan[];
   concurrency?: number;
+  retryLimit?: number;
   paidImageGenerationEnabled?: boolean;
   planningMs: number;
+  productReferenceProfile?: ProductReferenceProfile;
+  masterScene?: MasterSceneArtifact;
 }): GenerationJob {
   const jobId = id("creative-job");
   const now = new Date().toISOString();
   const masterScene = params.scenes[0];
+  const masterWithBackground = {
+    ...params.creativePlan.masterDesign,
+    backgroundAssetId:
+      masterScene?.sceneAsset.id || params.creativePlan.masterDesign.backgroundAssetId,
+  };
   const creativePlan: CreativePlan = {
     ...params.creativePlan,
     masterDesign: {
-      ...params.creativePlan.masterDesign,
-      backgroundAssetId:
-        masterScene?.sceneAsset.id || params.creativePlan.masterDesign.backgroundAssetId,
+      ...masterWithBackground,
+      designFingerprint: designFingerprintForMaster(masterWithBackground),
     },
   };
-  const results: GenerationResult[] = params.creativePlan.hookPlans.map((hookPlan, index) => ({
-    id: `result-${hookPlan.hookCode}-${hookPlan.blueprintId}`,
-    order: index + 1,
-    blueprintId: hookPlan.blueprintId,
-    blueprintLabel: getCreativeBlueprint(hookPlan.blueprintId).label,
-    status: "pending",
-    hookPlan,
-    scenePlan: params.scenes[index],
-    attempts: 0,
-  }));
+  const results: GenerationResult[] = params.creativePlan.hookPlans.map((hookPlan, index) => {
+    const creativeDesign = params.creativePlan.mode === "concept-exploration"
+      ? selectMasterCreativeDirection({
+          truth: params.truth,
+          brand: params.creativePlan.brandProfile,
+          category: params.creativePlan.categoryProfile,
+          preserveMasterDesignId: `exploration-${hookPlan.blueprintId}-${index}`,
+        })
+      : creativePlan.masterDesign;
+    const withBackground = {
+      ...creativeDesign,
+      backgroundAssetId: params.scenes[index]?.sceneAsset.id || creativeDesign.backgroundAssetId,
+      fixedFacts: { ...creativeDesign.fixedFacts, cta: hookPlan.cta },
+    };
+    withBackground.designFingerprint = designFingerprintForMaster(withBackground);
+    return {
+      id: `result-${hookPlan.hookCode}-${hookPlan.blueprintId}`,
+      order: index + 1,
+      blueprintId: hookPlan.blueprintId,
+      blueprintLabel: getCreativeBlueprint(hookPlan.blueprintId).label,
+      status: "pending",
+      generationStage: "planned",
+      hookPlan,
+      scenePlan: params.scenes[index],
+      creativeDesign: withBackground,
+      attempts: 0,
+    };
+  });
   return {
     id: jobId,
     status: "pending",
@@ -270,12 +610,15 @@ export function createGenerationJob(params: {
     creativePlan,
     results,
     concurrency: Math.max(1, Math.min(3, params.concurrency || 2)),
+    retryLimit: Math.max(0, Math.min(3, params.retryLimit ?? 2)),
     paidImageGenerationEnabled: Boolean(params.paidImageGenerationEnabled),
+    productReferenceProfile: params.productReferenceProfile,
+    masterScene: params.masterScene,
     createdAt: now,
     updatedAt: now,
     timing: { planningMs: params.planningMs },
     errors: [],
-    version: "generation-job-v3-hook-master",
+    version: "generation-job-v5-product-hook-exploration",
   };
 }
 

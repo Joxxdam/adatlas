@@ -165,6 +165,34 @@ function discountFromPrices(original: number, sale: number) {
   return rate > 0 && rate < 90 ? rate : 0;
 }
 
+function currentProductSummaryHtml(html: string) {
+  const anchors = [
+    /<div[^>]+class=["'][^"']*\binfo-wrapper\b[^"']*\bwrap_info\b[^"']*["'][^>]*>/i,
+    /<div[^>]+class=["'][^"']*\bdetail-heading\b[^"']*["'][^>]*>/i,
+    /<section[^>]+(?:id|class)=["'][^"']*(?:product|goods)[^"']*(?:summary|info|detail)[^"']*["'][^>]*>/i,
+  ];
+  const match = anchors.map((pattern) => html.match(pattern)).find(Boolean);
+  if (!match || match.index === undefined) return "";
+  const start = match.index;
+  const tail = html.slice(start, Math.min(html.length, start + 90_000));
+  const end = tail.search(
+    /(?:<!--\s*\/\/\s*info-wrapper\s*-->|구매후기가\s*증명|오늘의\s*추천상품|관련\s*상품|recently\s*viewed)/i
+  );
+  return tail.slice(0, end > 0 ? end : tail.length);
+}
+
+function currentProductSummaryText(html: string) {
+  const summary = currentProductSummaryHtml(html);
+  if (!summary) return "";
+  return decodeHtml(
+    summary
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<(?:br|p|li|h[1-6]|tr|td|div|section|span|text)[^>]*>/gi, " · ")
+      .replace(/<[^>]+>/g, " ")
+  );
+}
+
 function collectJsonLdNodes(value: unknown): Record<string, unknown>[] {
   if (!value) return [];
   if (Array.isArray(value)) return value.flatMap(collectJsonLdNodes);
@@ -245,9 +273,14 @@ function extractPrice(html: string, jsonLdPrice: string) {
 
 function extractOriginalPrice(html: string, salePrice: string) {
   const saleNumeric = numberValue(salePrice);
+  const productSummary = currentProductSummaryHtml(html);
   const raw =
     metaContent(html, "product:original_price:amount") ||
     metaContent(html, "product:retail_price:amount") ||
+    firstMatch(productSummary, [
+      /class=["'][^"']*(?:dc-price|org-price|original-price|retail-price)[^"']*["'][^>]*>[\s\S]{0,160}?([\d,.]+)\s*원/i,
+      /(?:기존가|정상가|소비자가|시중가)[^0-9]{0,60}([\d,]+)\s*원/i,
+    ]) ||
     firstMatch(html, [
       /(?:originalPrice|consumerPrice|marketPrice|listPrice|retailPrice|oldPrice|originPrice)["']?\s*[:=]\s*["']?([\d,.]+)/i,
       /(?:기존가|정상가|소비자가|시중가|원가)[^0-9]{0,30}([\d,]+)\s*원/i,
@@ -258,8 +291,21 @@ function extractOriginalPrice(html: string, salePrice: string) {
   return originalNumeric && saleNumeric && originalNumeric <= saleNumeric ? "" : formatted;
 }
 
-function extractDiscountInfo(html: string, price: string) {
+function extractDiscountInfo(html: string, price: string, originalPrice = "") {
+  const calculatedRate = discountFromPrices(numberValue(originalPrice), numberValue(price));
+  if (calculatedRate) return `${calculatedRate}% 할인`;
+
+  const productSummary = currentProductSummaryHtml(html);
+  const summaryRate = validDiscountRate(
+    firstMatch(productSummary, [
+      /class=["'][^"']*(?:discount|dc-rate)[^"']*["'][^>]*>[\s\S]{0,80}?(\d{1,2})\s*(?:<[^>]+>\s*)*%/i,
+      /(?:할인율|할인)[^0-9]{0,40}(\d{1,2})\s*%/i,
+    ])
+  );
+  if (summaryRate) return `${summaryRate}% 할인`;
+
   for (const window of windowsAroundPrice(html, price)) {
+    if (/포인트\s*지급|적립|APP\s*구매/i.test(window)) continue;
     const nearbyRate = validDiscountRate(
       firstMatch(window, [
         /(?:할인율|할인|SALE|sale|dc|discount)[^0-9]{0,40}(\d{1,2})\s*%/i,
@@ -314,7 +360,11 @@ function normalizeProductCategory(rawCategory: string, productContext: string) {
   if (/건강기능|영양제|비타민|프로바이오틱스|supplement|wellness/.test(context)) {
     return "건강기능식품";
   }
-  if (/식품|음식|육류|한우|정육|소고기|돼지고기|과일|채소|농산|축산|food|beef|meat/.test(context)) {
+  if (
+    /식품|음식|육류|한우|정육|소고기|돼지고기|과일|채소|농산|축산|사과|청사과|아오리|배|복숭아|자두|포도|수박|참외|딸기|감귤|한라봉|토마토|감자|고구마|옥수수|버섯|food|beef|meat|apple|fruit|produce/.test(
+      context
+    )
+  ) {
     return "식품/선물";
   }
   if (/패션|의류|신발|가방|fashion|apparel/.test(context)) return "패션/의류";
@@ -889,7 +939,7 @@ function indexInRanges(index: number, ranges: Array<[number, number]>) {
 }
 
 const productUspTextPattern =
-  /(원산지|국내산|한우|등급|부위|등심|안심|채끝|갈비|마블링|선별|숙성|냉장|냉동|산지|직송|구성|중량|용량|식감|육즙|풍미|고소|부드|신선|원재료|함량|무첨가|저자극|향|세정|쿨링|보습|선물|캠핑|가족|실속|프리미엄|특마블|도매팩)/i;
+  /(원산지|국내산|한우|등급|부위|등심|안심|채끝|갈비|마블링|선별|숙성|냉장|냉동|산지|직송|구성|중량|용량|식감|육즙|풍미|고소|부드|신선|원재료|함량|무첨가|저자극|향|세정|쿨링|보습|선물|캠핑|가족|실속|프리미엄|특마블|도매팩|사과|청사과|아오리|과일|제철|수확|한정|아삭|새콤달콤|청량|과즙|품종)/i;
 const productUspBoilerplatePattern =
   /(로그인|회원가입|장바구니|마이페이지|고객센터|상품문의|구매후기|리뷰쓰기|교환|반품|환불|배송안내|개인정보|이용약관|추천상품|관련상품|최근 본 상품|전체\s*리뷰|리뷰\s*목록|step\s*\d+|구성\s*선택|copyright|all rights reserved)/i;
 
@@ -914,7 +964,10 @@ function productDetailText(html: string) {
 }
 
 function extractProductUspDescription(html: string, baseDescription: string, productName: string) {
-  const source = `${baseDescription} · ${productDetailText(html)}`;
+  const summary = currentProductSummaryText(html);
+  const source = summary
+    ? `${baseDescription} · ${summary}`
+    : `${baseDescription} · ${productDetailText(html)}`;
   const genericNameTokens = new Set([
     "국내산",
     "상품",
@@ -974,6 +1027,27 @@ function extractProductUspDescription(html: string, baseDescription: string, pro
   return selected.join(" · ") || baseDescription;
 }
 
+function selectMainBenefit(benefits: string[], description: string, productName: string) {
+  const candidates = [...benefits, ...description.split(/\s*[·•|]\s*/)]
+    .map((value) => decodeHtml(value).replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .filter((value) => value !== productName)
+    .filter((value) => !/(택배사|배송비|포인트\s*지급|회원|로그인|쿠폰)/i.test(value));
+  const ranked = candidates
+    .map((value, index) => {
+      let score = 0;
+      if (/(아삭|새콤달콤|청량|식감|풍미|신선|부드|고소|향|사용감)/i.test(value)) score += 40;
+      if (/(제철|여름|한정|수확|산지|직송)/i.test(value)) score += 28;
+      if (/\d[\d,.]*\s*(?:kg|g|ml|l|개|팩|병|원|%)/i.test(value)) score += 18;
+      if (/(특가|마진\s*없이|구성|실속)/i.test(value)) score += 12;
+      if (/(?:^|\s)1등(?:\s|$)|특가.*특가|★|!!/i.test(value)) score -= 72;
+      score += Math.max(0, 18 - Math.abs([...value].length - 24));
+      return { value, score, index };
+    })
+    .sort((left, right) => right.score - left.score || left.index - right.index);
+  return ranked[0]?.value || candidates[0] || productName;
+}
+
 function extractStructuredProductSignals(description: string) {
   const candidates = description
     .split(/\s*[·•|]\s*|[.!?]\s+/)
@@ -987,6 +1061,7 @@ function extractStructuredProductSignals(description: string) {
     );
   const verifiedBenefits = candidates
     .filter((value) => productUspTextPattern.test(value))
+    .filter((value) => !/&#\d+;|(?:^|\s)1등(?:\s|$)/i.test(value))
     .filter((value, index, values) => values.indexOf(value) === index)
     .slice(0, 12);
   const ingredientPattern =
@@ -1112,6 +1187,7 @@ function collectReviewImageCandidates(html: string, baseUrl: string): ReviewRawC
       const directReviewSignal = /(review|reviewimg|photo[_-]?review|testimonial|comment|community|후기|리뷰|댓글)/i.test(
         `${imageUrl} ${alt} ${classContext}`
       );
+      if (!directReviewSignal) continue;
       const likelyProductGalleryPath =
         /\/(?:web\/)?product\/(?:big|small|medium|extra|tiny)|\/goods\/(?:big|small|detail|thumb)|\/item\/(?:big|small|thumb)/i.test(
           imageUrl
@@ -1217,6 +1293,11 @@ export async function POST(request: Request) {
       metaContent(html, "twitter:description");
     const extractedDescription = extractProductUspDescription(html, baseDescription, productName);
     const structuredSignals = extractStructuredProductSignals(extractedDescription);
+    const mainBenefit = selectMainBenefit(
+      structuredSignals.verifiedBenefits,
+      extractedDescription,
+      productName
+    );
     const fallbackMainImage =
       jsonLd.image ||
       absoluteUrl(
@@ -1261,6 +1342,14 @@ export async function POST(request: Request) {
       displayLimit: 5,
     }).catch(() => []);
     const rankedCandidates: ProductImageCandidate[] = [
+      ...(fallbackMainImage
+        ? [{
+            url: fallbackMainImage,
+            type: "main" as const,
+            score: 120,
+            reason: "구조화 메타데이터에서 확인한 현재 상품 대표 이미지",
+          }]
+        : []),
       ...enhancedCandidates,
       ...mergedGalleryCandidates
         .filter((image) => !enhancedCandidates.some((candidate) => candidate.url === image))
@@ -1338,7 +1427,7 @@ export async function POST(request: Request) {
       price,
       originalPrice,
       oldPrice: originalPrice,
-      discountInfo: extractDiscountInfo(html, price),
+      discountInfo: extractDiscountInfo(html, price, originalPrice),
       brandName: jsonLd.brandName,
       detectedProductType: detected.type,
       categoryKeywords: detected.keywords,
@@ -1346,6 +1435,7 @@ export async function POST(request: Request) {
       galleryImages,
       description: extractedDescription,
       extractedDescription,
+      mainBenefit,
       landingUrl: url.toString(),
       heroImage: mainImage,
       detailImages,
@@ -1367,7 +1457,10 @@ export async function POST(request: Request) {
       brandName: extractedProductInfo.brandName || "",
       discountInfo: extractedProductInfo.discountInfo,
       mainBenefit:
-        extractedProductInfo.extractedDescription || extractedProductInfo.description || "",
+        extractedProductInfo.mainBenefit ||
+        extractedProductInfo.extractedDescription ||
+        extractedProductInfo.description ||
+        "",
       targetCustomer: "",
       landingUrl: extractedProductInfo.landingUrl,
       productImagePath: extractedProductInfo.mainImage,

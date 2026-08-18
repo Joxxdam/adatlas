@@ -23,6 +23,20 @@ async function writeClipboard(value: string) {
   if (!copied) throw new Error("복사하지 못했습니다.");
 }
 
+export function buildTrackedLandingUrl(landingUrl: string | undefined, utmContent: string) {
+  const target = String(landingUrl || "").trim();
+  if (!target) return "";
+  try {
+    const url = new URL(target);
+    const tracking = new URLSearchParams(utmContent);
+    tracking.forEach((value, key) => url.searchParams.set(key, value));
+    return url.toString();
+  } catch {
+    const separator = target.includes("?") ? "&" : "?";
+    return `${target}${separator}${utmContent}`;
+  }
+}
+
 export async function markCreativeAssetExported(assetCode: string) {
   await fetch(`/api/creative-assets/${encodeURIComponent(assetCode)}`, {
     method: "PATCH",
@@ -34,16 +48,30 @@ export async function markCreativeAssetExported(assetCode: string) {
 export function CreativeAssetActions({
   asset,
   compact = false,
+  landingUrl,
   onMessage,
+  downloadUrl,
 }: {
   asset: DisplayAsset;
   compact?: boolean;
+  landingUrl?: string;
   onMessage?: (message: string) => void;
+  downloadUrl?: string;
 }) {
   const [message, setMessage] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [feedbackScope, setFeedbackScope] = useState<CreativeContentNoteScope>("product");
   const [promotionId, setPromotionId] = useState("");
+  const trackedLandingUrl = buildTrackedLandingUrl(landingUrl, asset.utmContent);
+  const hookLabel = getHookLabel(asset.hookCode || asset.hookType);
+  const deliveryText = [
+    `후킹: ${asset.hookCode} · ${hookLabel}${asset.mainMessage ? ` · ${asset.mainMessage}` : ""}`,
+    `소재코드: ${asset.assetCode}`,
+    `권장 광고명: ${asset.recommendedAdName}`,
+    `UTM: ${asset.utmContent}`,
+    trackedLandingUrl ? `최종 랜딩 URL: ${trackedLandingUrl}` : "",
+    `파일명: ${asset.fileName}`,
+  ].filter(Boolean).join("\n");
 
   function announce(next: string) {
     setMessage(next);
@@ -63,7 +91,7 @@ export function CreativeAssetActions({
   async function download() {
     setDownloading(true);
     try {
-      const response = await fetch(asset.generatedImageUrl);
+      const response = await fetch(downloadUrl || asset.generatedImageUrl);
       if (!response.ok) throw new Error();
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
@@ -102,9 +130,19 @@ export function CreativeAssetActions({
         {asset.version > 1 ? <b>v{asset.version}</b> : null}
       </div>
       {!compact ? (
-        <small>
-          이 코드를 Meta 광고 이름에 포함하면 향후 광고 보고서와 소재 성과를 자동으로 연결할 수 있습니다.
-        </small>
+        <>
+          <small>
+            이 코드를 Meta 광고 이름에 포함하면 향후 광고 보고서와 소재 성과를 자동으로 연결할 수 있습니다.
+          </small>
+          <dl className="creative-asset-delivery">
+            <div><dt>후킹</dt><dd>{asset.hookCode} · {hookLabel}{asset.mainMessage ? ` · ${asset.mainMessage}` : ""}</dd></div>
+            <div><dt>소재코드</dt><dd><code>{asset.assetCode}</code></dd></div>
+            <div><dt>권장 광고명</dt><dd><code>{asset.recommendedAdName}</code></dd></div>
+            <div><dt>UTM</dt><dd><code>{asset.utmContent}</code></dd></div>
+            {trackedLandingUrl ? <div><dt>최종 랜딩 URL</dt><dd><code>{trackedLandingUrl}</code></dd></div> : null}
+            <div><dt>파일명</dt><dd><code>{asset.fileName}</code></dd></div>
+          </dl>
+        </>
       ) : null}
       <div className="creative-asset-buttons">
         <button onClick={() => void copy(asset.assetCode, "소재코드를 복사했습니다.")} type="button">
@@ -116,7 +154,17 @@ export function CreativeAssetActions({
         <button onClick={() => void copy(asset.utmContent, "UTM 값을 복사했습니다.")} type="button">
           UTM 복사
         </button>
-        <button disabled={downloading} onClick={() => void download()} type="button">
+        {trackedLandingUrl ? (
+          <button onClick={() => void copy(trackedLandingUrl, "UTM이 포함된 랜딩 URL을 복사했습니다.")} type="button">
+            최종 URL 복사
+          </button>
+        ) : null}
+        {!compact ? (
+          <button onClick={() => void copy(deliveryText, "후킹·소재코드·UTM 전달정보를 복사했습니다.")} type="button">
+            전달정보 전체 복사
+          </button>
+        ) : null}
+        <button className="creative-asset-download-button" disabled={downloading} onClick={() => void download()} type="button">
           {downloading ? "다운로드 중…" : "이미지 다운로드"}
         </button>
         {!compact && asset.advertiserId ? (

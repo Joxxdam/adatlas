@@ -404,7 +404,13 @@ async function analyzeCandidate(
   const salesMatch = salesMatchScore(representation, objectCount, candidate);
   const recommendationScore = Math.max(
     0,
-    Math.min(1, quality * 0.54 + salesMatch * 0.38 + representation.confidence * 0.08)
+    Math.min(
+      1,
+      quality * 0.54 +
+        salesMatch * 0.38 +
+        representation.confidence * 0.08 +
+        (candidate.type === "main" ? 0.16 : candidate.type === "gallery" ? 0.05 : 0)
+    )
   );
   const warnings: string[] = [];
   if (Math.min(width, height) < 500) warnings.push("해상도가 낮습니다.");

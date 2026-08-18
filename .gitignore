@@ -101,7 +101,21 @@ data/store-analysis/*
 # resumable creative-generation runtime jobs
 data/creative-generation-jobs/*
 !data/creative-generation-jobs/.gitkeep
+data/creative-generation-master-scenes/*
+!data/creative-generation-master-scenes/.gitkeep
+public/generated-master-scenes/*
+!public/generated-master-scenes/.gitkeep
 
 # generated creative asset registry (local JSON MVP storage)
 data/creative-assets/*
 !data/creative-assets/.gitkeep
+
+# video collaboration MVP runtime data and uploaded files
+data/video-collaboration/*
+!data/video-collaboration/.gitkeep
+public/video-collaboration/*
+!public/video-collaboration/.gitkeep
+
+# local Codex advertiser threads and AI-native final creatives
+.data/codex/
+public/generated/

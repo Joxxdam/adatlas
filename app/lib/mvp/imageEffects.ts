@@ -7,7 +7,7 @@ import type {
   ProductImageEffectPreset,
   ProductImageState,
   ProductRepresentationType,
-} from "./types";
+} from "./types.ts";
 
 const processedDir = path.join(process.cwd(), "public", "processed-products");
 

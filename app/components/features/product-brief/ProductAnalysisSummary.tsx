@@ -1,5 +1,8 @@
 "use client";
 
+/* Product-page and runtime image URLs intentionally bypass Next image optimization. */
+/* eslint-disable @next/next/no-img-element */
+
 import { inferAdBriefContext } from "../../../lib/mvp/adBriefInference";
 import type { AdBrief, AdImageLabel, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import styles from "../creative-workflow/CreativeWorkflow.module.css";
@@ -33,11 +36,27 @@ function evidenceFromProduct(product: ProductInfoForPrompt) {
   return Array.from(new Set(evidence)).join(", ");
 }
 
+function featureList(product: ProductInfoForPrompt) {
+  const candidates = [
+    ...(product.verifiedBenefits || []),
+    product.mainBenefit,
+    product.discountInfo,
+    product.ingredients?.length ? `주요 성분 · ${product.ingredients.slice(0, 3).join(", ")}` : "",
+    product.targetCustomer ? `추천 대상 · ${product.targetCustomer}` : "",
+  ]
+    .map((item) => compact(item, 64))
+    .filter(Boolean);
+  return Array.from(new Set(candidates)).slice(0, 3);
+}
+
 export function ProductAnalysisSummary(props: {
   product: ProductInfoForPrompt;
   brief: AdBrief;
   references?: AdImageLabel[];
   loaded: boolean;
+  imagePaths?: string[];
+  onChooseOther?: () => void;
+  onUseProduct?: () => void;
 }) {
   if (!props.loaded) return null;
 
@@ -49,33 +68,62 @@ export function ProductAnalysisSummary(props: {
   const composition = compositionFromProduct(props.product);
   const benefit = compact(props.product.mainBenefit || props.product.extractedDescription);
   const evidence = evidenceFromProduct(props.product);
+  const features = featureList(props.product);
+  const imagePath =
+    props.imagePaths?.[0] ||
+    props.product.productImagePath ||
+    props.product.extractedMainImage ||
+    props.product.extractedGalleryImages?.[0];
+  const sourceImageCount = new Set(
+    [
+      ...(props.imagePaths || []),
+      ...(props.product.productImagePaths || []),
+      ...(props.product.extractedGalleryImages || []),
+      ...(props.product.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
+    ].filter(Boolean)
+  ).size;
 
   return (
-    <details className={styles.analysisSummary}>
-      <summary className={styles.analysisSummaryHeader}>
-        <div>
-          <span>1 · 상품 확인</span>
-          <h4>{props.product.productName || "상품 정보 자동 분석 완료"}</h4>
-          <small>{props.product.price || "가격 미확인"} · 상세 분석 보기</small>
+    <section className={styles.productConfirmation} aria-label="분석한 상품 확인">
+      <div className={styles.productConfirmationMedia}>
+        {imagePath ? <img alt={`${props.product.productName} 대표 상품`} src={imagePath} /> : <span>상품 이미지 준비 중</span>}
+      </div>
+      <div className={styles.productConfirmationBody}>
+        <span className={styles.sectionStep}>상품 분석 완료</span>
+        <h4>{props.product.productName || "상품 정보 자동 분석 완료"}</h4>
+        <p className={styles.productBrand}>{props.product.brandName || props.product.advertiserName || "브랜드 미확인"}</p>
+        <strong className={styles.productPrice}>{props.product.price || "가격 미확인"}</strong>
+        {features.length ? (
+          <ul className={styles.productFeatureList}>
+            {features.map((feature) => <li key={feature}>{feature}</li>)}
+          </ul>
+        ) : <p className={styles.productFeatureEmpty}>공개 페이지에서 확인된 핵심 특징을 상세 분석에서 확인해 주세요.</p>}
+        <p className={styles.sourceImageCount}>광고 제작에 사용할 수 있는 원본 이미지 {sourceImageCount}장</p>
+        <div className={styles.productConfirmationActions}>
+          <button onClick={props.onUseProduct} type="button">이 상품으로 광고 만들기</button>
+          <button onClick={props.onChooseOther} type="button">다른 상품 선택</button>
         </div>
-        <strong>1200×1200 광고 준비됨</strong>
-      </summary>
-      <dl className={styles.analysisGrid}>
-        <dt>상품명</dt>
-        <dd>{props.product.productName || "확인되지 않음"}</dd>
-        <dt>판매가</dt>
-        <dd>{props.product.price || "확인되지 않음"}</dd>
-        <dt>주요 구성</dt>
-        <dd>{composition || "확인되지 않음"}</dd>
-        <dt>주요 혜택</dt>
-        <dd>{benefit || "확인되지 않음"}</dd>
-        <dt>확인된 근거</dt>
-        <dd>{evidence || "추가로 확인된 근거 없음"}</dd>
-        <dt>자동 추천 방향</dt>
-        <dd>
-          {inferred.hookType} · {inferred.tone}
-        </dd>
-      </dl>
-    </details>
+        <details className={styles.analysisSummary}>
+          <summary>분석 내용 자세히 보기</summary>
+          <dl className={styles.analysisGrid}>
+            <dt>상품명</dt><dd>{props.product.productName || "확인되지 않음"}</dd>
+            <dt>판매가</dt><dd>{props.product.price || "확인되지 않음"}</dd>
+            <dt>주요 구성</dt><dd>{composition || "확인되지 않음"}</dd>
+            <dt>주요 혜택</dt><dd>{benefit || "확인되지 않음"}</dd>
+            <dt>확인된 근거</dt><dd>{evidence || "추가로 확인된 근거 없음"}</dd>
+            <dt>추천 대상</dt><dd>{props.product.targetCustomer || "확인되지 않음"}</dd>
+            <dt>추천 방향</dt><dd>{inferred.hookType} · {inferred.tone}</dd>
+            <dt>원본 이미지</dt>
+            <dd>
+              {props.imagePaths?.length ? (
+                <div className={styles.analysisImageList}>
+                  {props.imagePaths.slice(0, 8).map((path, index) => <img alt={`상품 원본 ${index + 1}`} key={path} src={path} />)}
+                </div>
+              ) : "확인되지 않음"}
+            </dd>
+          </dl>
+        </details>
+      </div>
+    </section>
   );
 }

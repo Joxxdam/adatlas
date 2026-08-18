@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 228 64" role="img" aria-labelledby="title description">
+  <title id="title">DAYWIZ</title>
+  <desc id="description">데이위즈 로고</desc>
+  <defs>
+    <linearGradient id="daywiz-gradient" x1="0" y1="0" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#246BFD"/>
+      <stop offset="1" stop-color="#13B7C8"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="5" width="54" height="54" rx="15" fill="url(#daywiz-gradient)"/>
+  <path d="M17 17h10.8C39.7 17 47 23.1 47 32S39.7 47 27.8 47H17V17Zm9.3 7.5v15h2.1c5.7 0 9.1-2.6 9.1-7.5s-3.4-7.5-9.1-7.5h-2.1Z" fill="#fff"/>
+  <text x="69" y="44" fill="#172B4D" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" letter-spacing="1.1">DAYWIZ</text>
+</svg>

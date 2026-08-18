@@ -162,14 +162,14 @@ test("실험·소재·비노출 카테고리 코드는 지정 형식을 따르�
   );
 });
 
-test("T01은 기본 8개 후킹을 두 표현으로 계획하고 같은 후킹 메시지를 유지한다", () => {
+test("T01은 기본 6개 후킹을 두 표현으로 계획하고 같은 후킹 메시지를 유지한다", () => {
   const plan = buildExperimentPlan(input());
   assert.deepEqual(
     plan.recommendations.map((item) => item.hookCode),
-    ["SEN", "CUR", "PRB", "BRD", "PRC", "REV", "USP", "EMP"]
+    ["SEN", "CUR", "PRB", "PRC", "USP", "EMP"]
   );
-  assert.equal(plan.experiment.totalAssetCount, 16);
-  assert.equal(plan.hookGroups.length, 8);
+  assert.equal(plan.experiment.totalAssetCount, 12);
+  assert.equal(plan.hookGroups.length, 6);
   for (const group of plan.hookGroups) {
     const variants = plan.experimentAssets.filter((asset) => asset.hookGroupId === group.id);
     assert.deepEqual(
@@ -202,17 +202,13 @@ test("리뷰 근거가 없으면 REV를 만들지 않고 안전한 대체 후킹
     plan.recommendations.some((item) => item.hookCode === "REV"),
     false
   );
-  assert.equal(
-    plan.recommendations.some((item) => ["VAL", "NEW"].includes(item.hookCode)),
-    true
-  );
-  assert.equal(plan.recommendations.length, 8);
+  assert.equal(plan.recommendations.length, 6);
 });
 
-test("선택 대조군은 T01 기본 16장과 분리해 2장을 추가한다", () => {
+test("선택 대조군은 T01 기본 12장과 분리해 2장을 추가한다", () => {
   const plan = buildExperimentPlan(input({ useControl: true }));
   assert.equal(plan.recommendations.at(-1).hookCode, "CTL");
-  assert.equal(plan.experiment.totalAssetCount, 18);
+  assert.equal(plan.experiment.totalAssetCount, 14);
 });
 
 test("T02는 상위 3개 후킹×6장, T03은 우승 후킹 1개×6장으로 고정한다", () => {
@@ -253,15 +249,15 @@ test("서로 다른 캠페인 목표는 콘텐츠 계획을 바꾸지 않고 실
   assert.notEqual(awareness.experiment.experimentCode, sales.experiment.experimentCode);
 });
 
-test("기존 생성 엔진에 T01 16개 결과를 전달하고 목표와 무관한 후킹 계획을 유지한다", async () => {
+test("기존 생성 엔진에 T01 12개 결과를 전달하고 목표와 무관한 후킹 계획을 유지한다", async () => {
   const plan = buildExperimentPlan(input());
   const job = await buildGenerationJobForExperiment(plan);
-  assert.equal(job.results.length, 16);
+  assert.equal(job.results.length, 12);
   assert.equal(job.creativePlan.adBrief, undefined);
   assert.ok(
     job.results.every((result) => result.hookPlan.hookCode && result.hookPlan.experimentVariant)
   );
-  assert.equal(new Set(job.results.map((result) => result.hookPlan.mainMessage)).size, 8);
+  assert.equal(new Set(job.results.map((result) => result.hookPlan.mainMessage)).size, 6);
 });
 
 test("실험 소재 저장은 T 회차 코드를 발급하고 수정본에 V02를 붙이며 objective를 비운다", async (context) => {
@@ -465,7 +461,18 @@ test("CSV/XLSX 보고서는 한영 헤더·0·빈 값을 보존하고 광고명 
   assert.equal(rows[0].spend, 0);
   assert.equal(rows[0].linkClicks, null);
   const matching = createCreativePerformanceMatchingService({
-    getByCode: async (value) => (value === code ? { id: "asset-1", assetCode: code } : null),
+    getByCode: async (value) => (value === code ? {
+      id: "asset-1",
+      assetCode: code,
+      advertiserId: "advertiser-ors",
+      productId: "product-mini-set",
+      category: "바디워시/여행용 세트",
+      hookVariantCode: "H01",
+      hypothesisId: "hypothesis-mini-convenience",
+      primaryHookTag: "convenience",
+      secondaryHookTags: ["problem-solution"],
+      visualDirection: "캐리어 안의 미니 3종과 파우치",
+    } : null),
   });
   const records = await matching.match({
     experiment: buildExperimentPlan(input()).experiment,
@@ -476,6 +483,14 @@ test("CSV/XLSX 보고서는 한영 헤더·0·빈 값을 보존하고 광고명 
   });
   assert.equal(records[0].matchStatus, "matched");
   assert.equal(records[0].assetId, "asset-1");
+  assert.equal(records[0].advertiserId, "advertiser-ors");
+  assert.equal(records[0].productId, "product-mini-set");
+  assert.equal(records[0].category, "바디워시/여행용 세트");
+  assert.equal(records[0].hypothesisId, "hypothesis-mini-convenience");
+  assert.equal(records[0].primaryTag, "convenience");
+  assert.deepEqual(records[0].secondaryTags, ["problem-solution"]);
+  assert.equal(records[0].dataSufficiency, "additional-data-required");
+  assert.equal(records[0].resultStatus, "needs-more-data");
 });
 
 test("등록 ZIP은 00_experiment와 후킹별 이미지·XLSX·CSV 구조를 만든다", async () => {

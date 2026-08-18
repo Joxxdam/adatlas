@@ -3,8 +3,8 @@
 ## Scope
 
 - Source: `data/creative-benchmarks/desired-quality`
-- Analyzed files: 19
-- Categories represented: personal care (11), meat/food commerce (8)
+- Analyzed files: 21
+- Categories represented: personal care (11), meat/food commerce (10)
 - Role: visual quality and composition benchmark only. These files are not copied into user reference labels or runtime advertiser data.
 
 ## Global quality patterns
@@ -32,6 +32,8 @@
 - Black, white, red and yellow establish an immediate performance hierarchy.
 - Price, weight and original price are treated as one block near the lower third or footer.
 - Farm/process scenes function as trust evidence. Origin, grade and producer details must come from product facts.
+- A giant value hook can sit above one appetite-dominant scene, with only one or two compact proof chips supporting it.
+- Lifestyle proof and a grouped conversion panel can share one eye path, but the scene, panel proportions and framing must be newly designed for the current hook.
 
 ## Implementation thresholds
 
@@ -45,4 +47,4 @@
 
 ## Non-copying rule
 
-The system may reuse information hierarchy, safe-zone planning, product scale, contrast strategy and component patterns. It must not reproduce benchmark copy, logos, exact layouts, product claims or visual identity.
+The system may reuse information hierarchy, safe-zone planning, product scale, contrast strategy and component patterns. It must not reproduce benchmark copy, logos, exact layouts, framing, palette arrangements, product claims or visual identity. Every result must translate these quality principles into a new hook-specific composition for the current verified product.

@@ -1,5 +1,104 @@
 [
   {
+    "id": "fecd2bd7-d4b8-4aa1-a29a-9e5acdc479aa",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/data/goods/meatmania0726/small/thum2/KakaoTalk_64020260614_143916712.jpg",
+    "processedImagePath": "/processed-products/removebg-1787072687745-7beba586.png",
+    "cacheKey": "78b237787e0e9e5aeae367ff8776b6975f2086911f03c5b907768fa367a60b80",
+    "representationType": "irregular-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T17:04:47.745Z"
+  },
+  {
+    "id": "a5214cb7-17e6-4571-8edf-c3cc8d776c0a",
+    "provider": "removebg",
+    "originalImagePath": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607100423044632781d5a5391-49c4-4ba4-8e49-ebcc0beb2ffe.jpg",
+    "processedImagePath": "/processed-products/removebg-1787064469130-53c77ac2.png",
+    "cacheKey": "9f1084606a51168933eb58d1dd62f0b5648d988484632eeaeabccffffc183cce",
+    "representationType": "irregular-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T14:47:49.131Z"
+  },
+  {
+    "id": "0931b355-2d48-47aa-8368-3cf64f5c306a",
+    "provider": "removebg",
+    "originalImagePath": "https://flexgcdn-zetenth77.moall.shop/data/goods/zetenth77/small/thum2/2_20260710042313183_1.jpg",
+    "processedImagePath": "/processed-products/removebg-1787064463706-7e6f4057.png",
+    "cacheKey": "0284c8e27a3b0af546b96a14b3260c0d09cb3051512a801e6096f52d21712de7",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T14:47:43.707Z"
+  },
+  {
+    "id": "dcbd2304-b206-4474-90fe-e65488922ed6",
+    "provider": "removebg",
+    "originalImagePath": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202604100415129813712f0c1db9-6322-4b38-8ec7-b4bd608b6e14.jpg",
+    "processedImagePath": "/processed-products/removebg-1787063345476-361ab24e.png",
+    "cacheKey": "4a44142a4a4e4d534d5318a69ff98266d5c1472c0213d247ea198069e8b90d2b",
+    "representationType": "irregular-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T14:29:05.477Z"
+  },
+  {
+    "id": "fd755dfb-84a4-4d68-9690-33b11368189f",
+    "provider": "removebg",
+    "originalImagePath": "https://www.fightingfarm.com/contents/images/reward_1.png",
+    "processedImagePath": "/processed-products/removebg-1787063339076-eb9031d9.png",
+    "cacheKey": "2c7e4995468e336004bfbac714e17a7ed5006a4d8a30f4e2e4414684d2bcc69d",
+    "representationType": "single-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T14:28:59.077Z"
+  },
+  {
+    "id": "9efcba13-2a25-4d8d-a55f-6788dfb6ba54",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202607/05d7108cd713b1144714d1388275567e.jpg",
+    "processedImagePath": "/processed-products/removebg-1787062704928-4bfa1f2a.png",
+    "cacheKey": "4ed2cfad4fcaad9fa39a413b12a9eb577a13da2b32fb6f50ea20ac404354dfdb",
+    "representationType": "multi-unit-set",
+    "extractionScope": "sales-unit",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T14:18:24.929Z"
+  },
+  {
+    "id": "f5456ceb-1ceb-4a04-be28-24bcbae1892d",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/big/202607/05d7108cd713b1144714d1388275567e.jpg",
+    "processedImagePath": "/processed-products/removebg-1787059239391-80114e3b.png",
+    "cacheKey": "ad094d4b51c538212dd50175fb7ea1e19c3494371e3aa585a91a47ccc89231bc",
+    "representationType": "multi-unit-set",
+    "extractionScope": "sales-unit",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T13:20:39.392Z"
+  },
+  {
+    "id": "eb3f3544-2df0-46bb-ad50-261a5fcf5419",
+    "provider": "removebg",
+    "originalImagePath": "https://originalsource.co.kr/web/product/extra/big/202509/5772ac7855e3a5fc2ea6a59fda161e9a.jpg",
+    "processedImagePath": "/processed-products/removebg-1787059162154-b2258e8a.png",
+    "cacheKey": "1e87c8e54e4ac34a1a23a7f3083e988766f6d4f82b4704b29c7ec0a66bce6452",
+    "representationType": "already-transparent",
+    "extractionScope": "visible-all",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T13:19:22.157Z"
+  },
+  {
+    "id": "f7d21844-b633-469b-9554-21add090123e",
+    "provider": "removebg",
+    "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240629013624065925f6de904d-b2c5-452d-aab1-aa647bf8505e.jpg",
+    "processedImagePath": "/processed-products/removebg-1787048694529-5d9141bd.png",
+    "cacheKey": "8aeaae3f83ae2c71c9a22578fe6166b27111e192011d40dcaf4a06d9a906ec6d",
+    "representationType": "packaged-product",
+    "extractionScope": "product-and-package",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T10:24:54.530Z"
+  },
+  {
     "id": "b23feb2a-bc57-4cf8-a915-ee1b35134a64",
     "provider": "removebg",
     "originalImagePath": "https://originalsource.co.kr/web/product/extra/big/202509/a23175eb5076a970cd505377e899fe99.jpg",

@@ -103,6 +103,27 @@ function stripComments(sql: string) {
   return output;
 }
 
+function hasSqlComment(sql: string) {
+  let quote: "'" | '"' | "`" | null = null;
+  for (let index = 0; index < sql.length; index += 1) {
+    const current = sql[index];
+    const next = sql[index + 1];
+    if (quote) {
+      if (current === "\\") index += 1;
+      else if (current === quote) quote = null;
+      continue;
+    }
+    if (current === "'" || current === '"' || current === "`") {
+      quote = current;
+      continue;
+    }
+    if ((current === "-" && next === "-") || (current === "/" && next === "*") || current === "#") {
+      return true;
+    }
+  }
+  return false;
+}
+
 function maskQuotedValues(sql: string) {
   let output = "";
   let quote: "'" | '"' | null = null;
@@ -162,6 +183,9 @@ export function assertReadOnlyBigQuery(params: {
   sql: string;
   namedParameters: Record<string, unknown>;
 }) {
+  if (hasSqlComment(params.sql)) {
+    throw new BigQueryReadOnlyError("SQL 주석은 조회 전용 쿼리에서 허용되지 않습니다.");
+  }
   const commentFree = stripComments(params.sql).trim();
   const masked = maskQuotedValues(commentFree);
 

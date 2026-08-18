@@ -8,15 +8,16 @@ import {
   queryBigQueryAdvertisers,
   queryBigQueryProductSignals,
 } from "./repository.server";
-import { buildCandidatesFromSignals } from "./scoring";
+import { buildCandidatesFromSignals, buildProductFamilies } from "./scoring";
 import type {
   BigQueryAdCandidate,
   BigQueryAdvertiser,
   BigQueryCandidateCapability,
   BigQueryCandidatePeriod,
   BigQueryCandidateResponse,
-  BigQueryCandidateType,
+  BigQueryRecommendationType,
 } from "./types";
+import { bigQueryRecommendationTypes } from "./types";
 
 const ADVERTISER_CACHE_MS = 5 * 60 * 1_000;
 const CANDIDATE_CACHE_MS = 4 * 60 * 1_000;
@@ -40,7 +41,9 @@ function periodRange(latestDataDate: string, period: BigQueryCandidatePeriod) {
   const currentStart = shiftDate(currentEnd, -(days - 1));
   const previousEnd = shiftDate(currentStart, -1);
   const previousStart = shiftDate(previousEnd, -(days - 1));
-  return { currentStart, currentEnd, previousStart, previousEnd };
+  const twelveWeekStart = shiftDate(currentEnd, -83);
+  const historyStart = previousStart < twelveWeekStart ? previousStart : twelveWeekStart;
+  return { currentStart, currentEnd, previousStart, previousEnd, historyStart };
 }
 
 function sourceTable(source: "host24" | "hostmk") {
@@ -53,54 +56,43 @@ function capabilities(source: "host24" | "hostmk"): BigQueryCandidateCapability[
   const activeSource = sourceTable(source);
   return [
     {
-      type: "sales-rising",
+      type: "core-scale",
       availability: "analysis-ready",
-      reason: "최근 기간과 동일 길이의 직전 기간 집계 매출을 비교합니다.",
+      reason: "매출·구매 기여도와 노출 대비 구매 반응을 함께 보고 확장 후보를 찾습니다.",
       sourceTables: [activeSource],
     },
     {
-      type: "bestseller",
+      type: "core-recovery",
       availability: "analysis-ready",
-      reason: "전체 시장이 아닌 선택한 광고주의 조회 상품 안에서 매출 순위를 계산합니다.",
+      reason: "기여도가 높은 주력상품 중 최근 반응 회복 테스트가 필요한 후보를 찾습니다.",
       sourceTables: [activeSource],
     },
     {
-      type: "exposure-efficient",
+      type: "hidden-potential",
       availability: "analysis-ready",
-      reason: "상품 노출 대비 구매율을 광고주 평균과 비교합니다.",
+      reason: "노출은 상대적으로 적지만 노출 대비 구매 반응이 확인된 후보를 찾습니다.",
       sourceTables: [activeSource],
     },
     {
-      type: "exposure-potential",
+      type: "creative-improvement",
       availability: "analysis-ready",
-      reason: "노출은 적지만 노출 대비 구매율이 높은 상품을 찾습니다.",
+      reason: "판매 기여는 있으나 메시지 개선 실험이 필요한 후보를 찾습니다.",
       sourceTables: [activeSource],
-    },
-    {
-      type: "improvement-needed",
-      availability: "analysis-ready",
-      reason: "노출은 많지만 노출 대비 구매율이 낮은 상품을 찾습니다.",
-      sourceTables: [activeSource],
-    },
-    {
-      type: "review-strength",
-      availability: "reference-only",
-      reason: "후기 원천은 있으나 현재 안전 조회량 한도 안에서 상품별 결합을 보장할 수 없어 후보 점수에 사용하지 않습니다.",
-      sourceTables: ["first-project-394906.FACT_REVIEWS.MONTHLY_COUNTS"],
-    },
-    {
-      type: "new-product",
-      availability: "data-insufficient",
-      reason: "현재 연결한 상품 집계에는 신상품 등록일 필드가 없습니다.",
-      sourceTables: [activeSource],
-    },
-    {
-      type: "price-competitive",
-      availability: "data-insufficient",
-      reason: "가격 데이터는 카테고리·가격대 집계이며 상품 ID 기준으로 안전하게 연결할 수 없습니다.",
-      sourceTables: ["first-project-394906.FACT_PRICE.MONTHLY_SALES"],
     },
   ];
+}
+
+function recommendationTypeCounts(candidates: BigQueryAdCandidate[]) {
+  return Object.fromEntries(
+    bigQueryRecommendationTypes.map((type) => [
+      type,
+      candidates.filter((candidate) => candidate.primaryType === type).length,
+    ])
+  ) as Record<BigQueryRecommendationType, number>;
+}
+
+function matchesCandidateType(candidate: BigQueryAdCandidate, type: BigQueryRecommendationType) {
+  return candidate.primaryType === type;
 }
 
 function candidateId(input: {
@@ -156,7 +148,7 @@ export async function listBigQueryAdvertisers() {
 export async function getBigQueryCandidates(input: {
   advertiserId: string;
   period: BigQueryCandidatePeriod;
-  type?: BigQueryCandidateType | "all";
+  type?: BigQueryRecommendationType | "all";
 }) {
   const decoded = decodeBigQueryAdvertiserId(input.advertiserId);
   if (!decoded) throw new Error("유효한 BigQuery 광고주를 선택해 주세요.");
@@ -166,7 +158,7 @@ export async function getBigQueryCandidates(input: {
   );
   if (!advertiser) throw new Error("선택한 광고주의 최신 집계 데이터를 찾지 못했습니다.");
 
-  const cacheKey = `bigquery-candidates:v2:${input.advertiserId}:${input.period}`;
+  const cacheKey = `bigquery-candidates:v5:${input.advertiserId}:${input.period}`;
   let response = readBigQueryCache<BigQueryCandidateResponse>(cacheKey);
   if (response) {
     response = { ...response, cacheHit: true, processedBytes: 0 };
@@ -183,6 +175,7 @@ export async function getBigQueryCandidates(input: {
       brandId: advertiser.brandId,
       brandName: advertiser.name,
       category: advertiser.category,
+      storeUrl: advertiser.storeUrl,
       analysisPeriodStart: range.currentStart,
       analysisPeriodEnd: range.currentEnd,
       comparisonPeriodStart: range.previousStart,
@@ -192,11 +185,13 @@ export async function getBigQueryCandidates(input: {
     });
     response = {
       candidates,
+      productFamilies: buildProductFamilies(signals.rows),
+      typeCounts: recommendationTypeCounts(candidates),
       advertiser,
       period: input.period,
       latestDataDate: advertiser.latestDataDate,
       capabilities: capabilities(advertiser.source),
-      partial: capabilities(advertiser.source).some((item) => item.availability !== "analysis-ready"),
+      partial: false,
       processedBytes: signals.processedBytes,
       cacheHit: signals.cacheHit,
       generatedAt: new Date().toISOString(),
@@ -204,14 +199,13 @@ export async function getBigQueryCandidates(input: {
     writeBigQueryCache(cacheKey, response, CANDIDATE_CACHE_MS);
   }
 
+  if (!response) throw new Error("BigQuery 광고 후보 응답을 구성하지 못했습니다.");
+
   const selectedType = input.type;
   if (!selectedType || selectedType === "all") return response;
   return {
     ...response,
-    candidates: response.candidates.filter(
-      (candidate) =>
-        candidate.primaryType === selectedType || candidate.secondaryTypes.includes(selectedType)
-    ),
+    candidates: response.candidates.filter((candidate) => matchesCandidateType(candidate, selectedType)),
   };
 }
 

@@ -2,7 +2,7 @@ import type { AdBrief, ProductInfoForPrompt } from "../mvp/types";
 import type { CreativeAssetSnapshot } from "../creative-assets/types";
 import type { CreativeNoteCompliance } from "../creative-content-notes/types";
 
-export const CREATIVE_PLANNER_VERSION = "creative-planner-v3-hook-master";
+export const CREATIVE_PLANNER_VERSION = "creative-planner-v7-ai-hook-parallel-repair";
 
 export const creativeBlueprintIds = [
   "problem-solution-split",
@@ -15,6 +15,22 @@ export const creativeBlueprintIds = [
 
 export type CreativeBlueprintId = (typeof creativeBlueprintIds)[number];
 export type FactVerification = "verified" | "source-backed" | "user-provided" | "unverified";
+export type ProductEvidenceType =
+  | "identity"
+  | "usp"
+  | "ingredient"
+  | "composition"
+  | "quantity"
+  | "usage"
+  | "target"
+  | "price"
+  | "offer"
+  | "shipping"
+  | "review"
+  | "origin"
+  | "certification"
+  | "numeric"
+  | "other";
 
 export type ProductFact = {
   id: string;
@@ -26,6 +42,17 @@ export type ProductFact = {
   sourceUrl?: string;
   usableInCopy: boolean;
   numericTokens: string[];
+  strength?: number;
+  specificity?: number;
+  evidenceType?: ProductEvidenceType;
+};
+
+export type ProductEvidence = {
+  factId: string;
+  summary: string;
+  strength: number;
+  specificity: number;
+  evidenceType: ProductEvidenceType;
 };
 
 export type CreativeImageRole =
@@ -55,6 +82,184 @@ export type CreativeImageAsset = {
   height?: number;
   transparent?: boolean;
   hasText?: boolean;
+  validationStatus?: "confirmed" | "excluded" | "needs-confirmation";
+  classificationSignals?: string[];
+  productFocusRatio?: number;
+};
+
+export const productReferenceRoles = [
+  "primary-product",
+  "front-package",
+  "side-package",
+  "back-package",
+  "product-detail",
+  "texture",
+  "lifestyle",
+  "usage",
+  "worn",
+  "cooked",
+  "ingredient",
+  "size-reference",
+  "option",
+  "brand-logo",
+  "unknown",
+] as const;
+
+export type ProductReferenceRole = (typeof productReferenceRoles)[number];
+
+export type ProductReferenceImage = {
+  id: string;
+  url: string;
+  role: ProductReferenceRole;
+  importance: number;
+  width?: number;
+  height?: number;
+  usableForGeneration: boolean;
+  description: string;
+  contentHash?: string;
+  duplicateOf?: string;
+  watermarkRisk?: boolean;
+  hasText?: boolean;
+};
+
+export type ProductReferenceProfile = {
+  id: string;
+  productName: string;
+  brandName?: string;
+  category: string;
+  subCategory?: string;
+  immutableFacts: {
+    productType?: string;
+    packageType?: string;
+    packageShape?: string;
+    primaryColor?: string;
+    secondaryColors?: string[];
+    logoDescription?: string;
+    labelLayout?: string;
+    quantity?: string;
+    volume?: string;
+    count?: string;
+    material?: string;
+    pattern?: string;
+    mainIngredients?: string[];
+    origin?: string;
+    optionName?: string;
+    includedItems?: string[];
+  };
+  visualIdentity: {
+    silhouette: string;
+    proportions: string;
+    surfaceTexture: string;
+    signatureDetails: string[];
+    mustPreserve: string[];
+    mustNotGenerate: string[];
+  };
+  verifiedClaims: string[];
+  prohibitedClaims: string[];
+  referenceImages: ProductReferenceImage[];
+  referenceSufficiency: "high" | "medium" | "low";
+  createdAt: string;
+};
+
+export const masterSceneConcepts = [
+  "sensory-impact",
+  "problem-solution",
+  "premium-editorial",
+  "price-impact",
+  "review-trust",
+  "usage-moment",
+  "ingredient-origin",
+  "brand-story",
+  "target-lifestyle",
+] as const;
+
+export type MasterSceneConcept = (typeof masterSceneConcepts)[number];
+
+export const masterSceneGenerationModes = [
+  "ai-background-composite",
+  "ai-reference-full-creative",
+  "reference-guided-full-scene",
+  "real-photo-adaptation",
+  "protected-product-composite",
+  "library-fallback",
+] as const;
+
+export type MasterSceneGenerationMode = (typeof masterSceneGenerationModes)[number];
+
+export type MasterSceneSpec = {
+  sceneId: string;
+  productId: string;
+  category: string;
+  concept: MasterSceneConcept;
+  generationMode: MasterSceneGenerationMode;
+  productPlacement: {
+    position: string;
+    scale: number;
+    angle: string;
+    groundingSurface: string;
+  };
+  lighting: string;
+  environment: string;
+  colorDirection: string;
+  cameraDirection: string;
+  depthDirection: string;
+  copySafeZone: PlacementBox;
+  productSafeZone: PlacementBox;
+  forbiddenElements: string[];
+  referenceImageUrls: string[];
+  referenceArchetype?: string;
+  benchmarkPatterns?: string[];
+  designFingerprint: string;
+  strategyVariation: number;
+};
+
+export type SceneQualityResult = {
+  score: number;
+  productIdentityScore: number;
+  compositionScore: number;
+  groundingScore: number;
+  copySafetyScore: number;
+  factSafetyScore: number;
+  productVisibilityScore: number;
+  categoryFitScore: number;
+  attentionScore: number;
+  failures: string[];
+  recommendation: "approve" | "retry" | "use-protected-product-composite" | "manual-review";
+};
+
+export type MasterSceneCandidate = {
+  id: string;
+  file?: string;
+  provider: "openai" | "library" | "protected-composite";
+  generationMode: MasterSceneGenerationMode;
+  quality: SceneQualityResult;
+  selected: boolean;
+  warning?: string;
+};
+
+export type MasterSceneArtifact = {
+  id: string;
+  file: string;
+  cacheKey: string;
+  productReferenceProfileId: string;
+  generationMode: MasterSceneGenerationMode;
+  requestedGenerationMode: MasterSceneGenerationMode;
+  includesProduct: boolean;
+  provider: "openai" | "library" | "protected-composite";
+  imageModel: string;
+  generationPromptVersion: string;
+  referenceImageIds: string[];
+  sceneSpec: MasterSceneSpec;
+  sceneQualityResult: SceneQualityResult;
+  candidates: MasterSceneCandidate[];
+  productIdentityScore: number;
+  masterVisualDigest: string;
+  estimatedProductAreaRatio: number;
+  productBounds: PlacementBox;
+  reused: boolean;
+  requiresProductReview: boolean;
+  warnings: string[];
+  createdAt: string;
 };
 
 export type ProductTruth = {
@@ -69,6 +274,8 @@ export type ProductTruth = {
   referenceImages: CreativeImageAsset[];
   imagePaths: string[];
   confirmedProductImage?: CreativeImageAsset;
+  coreEvidence?: ProductEvidence[];
+  needsConfirmationImages?: CreativeImageAsset[];
   completeness: number;
   createdAt: string;
 };
@@ -80,8 +287,6 @@ export const hookMessageCodes = [
   "H04",
   "H05",
   "H06",
-  "H07",
-  "H08",
 ] as const;
 
 export type HookMessageCode = (typeof hookMessageCodes)[number];
@@ -94,6 +299,172 @@ export type HookMessageHypothesis = {
   subCopy: string;
   factIds: string[];
   confidence: "high" | "medium" | "low";
+  evidenceSummary?: string;
+  specificityScore?: number;
+  naturalnessScore?: number;
+  validationStatus?: "valid" | "invalid" | "fallback";
+  validationErrors?: string[];
+  generationSource?: "ai" | "repaired-ai" | "fallback";
+  repairCount?: number;
+};
+
+export const hookTaxonomyTags = [
+  "problem-solution",
+  "sensory-experience",
+  "price-value",
+  "feature-usp",
+  "review-trust",
+  "usage-occasion",
+  "target-identity",
+  "convenience",
+  "bundle-choice",
+  "season-newness",
+  "brand-origin",
+  "comparison-alternative",
+  "scarcity-urgency",
+  "gift-purpose",
+  "other",
+] as const;
+
+export type HookTaxonomyTag = (typeof hookTaxonomyTags)[number];
+export type CreativeExplorationMode = "concept-exploration" | "exact-message-comparison";
+
+export type ProductInsightProfile = {
+  productId: string;
+  productName: string;
+  category: string;
+  brandName: string;
+  primaryBenefit: string;
+  customerReasons: Array<{ id: string; reason: string; factIds: string[]; strength: number }>;
+  problems: Array<{ value: string; factIds: string[] }>;
+  outcomes: Array<{ value: string; factIds: string[] }>;
+  useOccasions: Array<{ value: string; factIds: string[] }>;
+  targets: Array<{ value: string; factIds: string[] }>;
+  ingredients: Array<{ value: string; factIds: string[] }>;
+  priceSignals: Array<{ value: string; factIds: string[] }>;
+  reviewSignals: Array<{ value: string; factIds: string[] }>;
+  optionSignals: Array<{ value: string; factIds: string[] }>;
+  originSignals: Array<{ value: string; factIds: string[] }>;
+  seasonSignals: Array<{ value: string; factIds: string[] }>;
+  visualAssets: Array<{ id: string; role: CreativeImageRole; path: string }>;
+  dataSufficiency: number;
+};
+
+export type HookHypothesisScore = {
+  evidenceStrength: number;
+  purchaseReasonStrength: number;
+  distinctiveness: number;
+  visualizability: number;
+  claimSafety: number;
+  categoryPrior: number;
+  novelty: number;
+  total: number;
+};
+
+export type HookCreativeBrief = {
+  creativeId: string;
+  hookCode: string;
+  hypothesisId: string;
+  mainHook: string;
+  subCopy: string;
+  customerInsight: string;
+  messageHypothesis: string;
+  verifiedFacts: string[];
+  objective: string;
+  visualStory: string;
+  sceneDescription: string;
+  productRole: string;
+  composition: string;
+  cameraDirection: string;
+  lightingDirection: string;
+  colorDirection: string;
+  graphicDirection: string;
+  copySafeZone: string;
+  referenceImageIds: string[];
+  forbiddenElements: string[];
+  productDirection: string;
+  backgroundDirection: string;
+  copySafeDirection: string;
+  mustUseReferenceImages: boolean;
+  forbidPromotionalBannerCutouts: boolean;
+  /** Native-final means the image model creates scene, product, Korean copy and layout together. */
+  textRendering: "post-render-exact-korean" | "ai-native-final";
+  sceneType?: string;
+  framing?: string;
+  productPlacement?: string;
+  productScale?: string;
+  typographyStyle?: string;
+  emotionalTone?: string;
+  visualMetaphor?: string;
+  requiredKoreanText?: string[];
+  negativePrompt?: string[];
+};
+
+export type CreativeGenerationEngine = "codex_local" | "openai_api";
+
+export type VisualDiversityMatrixEntry = {
+  hookCode: HookMessageCode;
+  sceneType: string;
+  cameraAngle: string;
+  productPlacement: string;
+  productScale: string;
+  dominantColor: string;
+  typographyStyle: string;
+  emotionalTone: string;
+  visualMetaphor: string;
+};
+
+export type NativeCreativeValidation = {
+  hookAlignment: number;
+  productIdentity: number;
+  factualAccuracy: number;
+  koreanTextAccuracy: number;
+  readability: number;
+  composition: number;
+  diversity: number;
+  commercialQuality: number;
+  exportCompliance: number;
+  observedKoreanText: string[];
+  failures: string[];
+  recommendation: "approve" | "revise" | "manual-review";
+  checkedAt: string;
+};
+
+export type NativeCreativeArtifact = {
+  engine: CreativeGenerationEngine;
+  originalPath?: string;
+  revisionPaths: string[];
+  finalPath?: string;
+  promptVersion: string;
+  revisionCount: number;
+  validation?: NativeCreativeValidation;
+  export?: {
+    width: 1200;
+    height: 1200;
+    fileSizeBytes: number;
+    jpegQuality: number;
+    colorSpace: "srgb";
+    format: "jpeg";
+  };
+};
+
+export type HookHypothesisCandidate = {
+  id: string;
+  primaryTag: HookTaxonomyTag;
+  secondaryTags: HookTaxonomyTag[];
+  hypothesis: string;
+  mainHook: string;
+  subCopy: string;
+  customerReason: string;
+  selectionReason: string;
+  evidenceSummary: string;
+  evidence: Array<{ fact: string; sourceReference: string }>;
+  factIds: string[];
+  sceneKey: string;
+  visualStory: string;
+  score: HookHypothesisScore;
+  status: "candidate" | "selected" | "rejected";
+  creativeBrief: HookCreativeBrief;
 };
 
 export type BrandAsset = {
@@ -159,6 +530,19 @@ export type HookPlan = {
   confidence: "high" | "medium" | "low";
   mainMessage?: string;
   hookGroupId?: string;
+  evidenceSummary?: string;
+  specificityScore?: number;
+  naturalnessScore?: number;
+  validationStatus?: "valid" | "invalid" | "fallback";
+  validationErrors?: string[];
+  generationSource?: "ai" | "repaired-ai" | "fallback";
+  repairCount?: number;
+  primaryTag?: HookTaxonomyTag;
+  secondaryTags?: HookTaxonomyTag[];
+  customerReason?: string;
+  selectionReason?: string;
+  score?: HookHypothesisScore;
+  creativeBrief?: HookCreativeBrief;
 };
 
 export type DynamicTextBox = PlacementBox & {
@@ -188,12 +572,39 @@ export type TypographyPlan = {
   ctaFontSize: number;
 };
 
+export const categoryDesignVariants = [
+  "raw-product-focus",
+  "cooked-serving",
+  "set-composition",
+  "fresh-origin",
+  "harvest-story",
+  "table-serving",
+  "outfit-hero",
+  "silhouette-focus",
+  "detail-focus",
+  "package-hero",
+  "ingredient-proof",
+  "usage-scene",
+  "problem-scene",
+  "function-demo",
+  "clean-product-hero",
+  "product-hero",
+  "benefit-proof",
+  "offer-focus",
+] as const;
+
+export type CategoryDesignVariant = (typeof categoryDesignVariants)[number];
+
 export type MasterCreativeDirection = {
   id: string;
   categoryProfileId: string;
   layoutFamily: CreativeBlueprintId;
+  categoryVariant: CategoryDesignVariant;
+  designFingerprint: string;
   backgroundAssetId: string;
   productComposition: ProductCompositionPlan;
+  productPosition: PlacementBox;
+  productScale: number;
   headlineBox: DynamicTextBox;
   subCopyBox: DynamicTextBox;
   proofBox?: DynamicTextBox;
@@ -202,6 +613,11 @@ export type MasterCreativeDirection = {
   ctaBox: DynamicTextBox;
   palette: CreativePalette;
   typography: TypographyPlan;
+  fontPreset: string;
+  overlay: {
+    color: string;
+    opacity: number;
+  };
   fixedFacts: {
     proof?: string;
     offer?: string;
@@ -221,9 +637,15 @@ export type CreativePlan = {
   hookPlans: HookPlan[];
   blueprintIds: CreativeBlueprintId[];
   masterDesign: MasterCreativeDirection;
+  mode?: CreativeExplorationMode;
+  productInsightProfile?: ProductInsightProfile;
+  candidateHypotheses?: HookHypothesisCandidate[];
+  selectedHypotheses?: HookHypothesisCandidate[];
   testCode: `T${string}`;
   copyGeneration: {
-    provider: "openai" | "fallback";
+    provider: "openai" | "mixed" | "fallback";
+    model?: string;
+    repairAttempts?: number;
     warnings: string[];
   };
   adBrief?: AdBrief;
@@ -305,6 +727,8 @@ export type ScenePlan = {
   generated: boolean;
   paidGenerationAllowed: boolean;
   reason: string;
+  masterSceneId?: string;
+  generationMode?: MasterSceneGenerationMode;
 };
 
 export type PlacementBox = {
@@ -357,7 +781,15 @@ export type RenderPlan = {
   productImageAssets: CreativeImageAsset[];
   productComposition: ProductCompositionPlan;
   masterDesignId: string;
+  designFingerprint: string;
   backgroundAssetId: string;
+  masterSceneId?: string;
+  masterVisualDigest?: string;
+  generationMode?: MasterSceneGenerationMode;
+  productReferenceProfileId?: string;
+  productLayerRequired?: boolean;
+  overlay: MasterCreativeDirection["overlay"];
+  fontAdjustments?: string[];
   renderedSlots: Array<{
     id: "headline" | "body" | "proof" | "offer" | "cta";
     box: PlacementBox;
@@ -412,10 +844,12 @@ export type QAResult = {
   productAreaRatio: number;
   findings: QAFinding[];
   autoRepairs: string[];
+  designLockVerified?: boolean;
+  masterSceneLockVerified?: boolean;
   checkedAt: string;
 };
 
-export type GenerationResultStatus = "pending" | "running" | "success" | "failed" | "cancelled";
+export type GenerationResultStatus = "pending" | "running" | "success" | "failed" | "cancelled" | "korean-review" | "product-review" | "approved" | "excluded";
 
 export type GenerationResult = {
   id: string;
@@ -425,6 +859,9 @@ export type GenerationResult = {
   status: GenerationResultStatus;
   hookPlan: HookPlan;
   scenePlan: ScenePlan;
+  creativeDesign?: MasterCreativeDirection;
+  masterScene?: MasterSceneArtifact;
+  generationStage?: "planned" | "reference-preparing" | "ai-generating" | "ai-revising" | "quality-check" | "exporting" | "completed" | "scene-generating" | "compositing" | "copy-rendering";
   renderPlan?: RenderPlan;
   imagePath?: string;
   downloadName?: string;
@@ -437,6 +874,8 @@ export type GenerationResult = {
   startedAt?: string;
   completedAt?: string;
   durationMs?: number;
+  nativeCreative?: NativeCreativeArtifact;
+  userFeedback?: string;
 };
 
 export type GenerationJobStatus =
@@ -454,7 +893,10 @@ export type GenerationJob = {
   creativePlan: CreativePlan;
   results: GenerationResult[];
   concurrency: number;
+  retryLimit: number;
   paidImageGenerationEnabled: boolean;
+  productReferenceProfile?: ProductReferenceProfile;
+  masterScene?: MasterSceneArtifact;
   createdAt: string;
   updatedAt: string;
   startedAt?: string;
@@ -463,6 +905,12 @@ export type GenerationJob = {
   timing: { planningMs: number; totalMs?: number };
   errors: string[];
   version: string;
+  engine?: CreativeGenerationEngine;
+  paidApiUsed?: boolean;
+  advertiserId?: string;
+  advertiserName?: string;
+  codexThreadId?: string;
+  visualDiversityMatrix?: VisualDiversityMatrixEntry[];
 };
 
 export type CreateGenerationJobInput = {
@@ -478,4 +926,9 @@ export type CreateGenerationJobInput = {
   preserveBackgroundAssetId?: string;
   excludedMasterDesignIds?: CreativeBlueprintId[];
   testCode?: `T${string}`;
+  generationModePreference?: "auto" | "actual-product" | "ai-full-scene";
+  forceSceneRevision?: boolean;
+  strategyVariation?: number;
+  mode?: CreativeExplorationMode;
+  engine?: CreativeGenerationEngine;
 };

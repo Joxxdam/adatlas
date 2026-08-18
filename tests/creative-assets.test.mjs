@@ -7,6 +7,7 @@ import test from "node:test";
 import {
   createBrandCode,
   createHookVariantAssetCode,
+  createExplorationAssetCode,
   createProductCode,
   extractCreativeAssetCode,
   generateCreativeAssetCode,
@@ -75,6 +76,35 @@ test("후킹 실험 소재코드는 브랜드·상품·T01·H01을 동일하게 
   );
   assert.match(first.asset.assetCode, /^AT-[A-Z0-9]{3,5}-[A-Z0-9]{3,5}-T01-H01$/);
   assert.equal(revision.asset.assetCode, `${first.asset.assetCode}-V02`);
+});
+
+test("상품별 광고 콘셉트 탐색 소재코드는 E01·H01·C01을 동일하게 연결한다", async (context) => {
+  const code = createExplorationAssetCode({
+    brandCode: "ORS",
+    productCode: "MINT",
+    explorationCode: "E01",
+    hookVariantCode: "H01",
+    conceptCode: "C01",
+  });
+  assert.equal(code, "AT-ORS-MINT-E01-H01-C01");
+  assert.equal(validateCreativeAssetCode(code), true);
+  assert.equal(extractCreativeAssetCode(`${code}.webp`), code);
+
+  const directory = await mkdtemp(path.join(tmpdir(), "adatlas-exploration-assets-"));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  const repository = createCreativeAssetRepository({ dataDirectory: directory });
+  const first = await repository.create(baseAsset({
+    explorationCode: "E01",
+    hookVariantCode: "H01",
+    conceptCode: "C01",
+    primaryHookTag: "sensory-experience",
+    secondaryHookTags: ["usage-occasion"],
+    customerReason: "민트와 티트리의 상쾌한 사용감",
+    generationRequestKey: "exploration-1",
+  }));
+  assert.equal(first.asset.assetCode, code);
+  assert.equal(first.asset.primaryHookTag, "sensory-experience");
+  assert.deepEqual(first.asset.secondaryHookTags, ["usage-occasion"]);
 });
 
 test("10,000개 이상 생성해도 프로세스 내 UNIQUE가 겹치지 않는다", () => {

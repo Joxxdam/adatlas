@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { BigQueryPublicError } from "../../../lib/bigquery/client.server";
 import { getBigQueryCandidate } from "../../../lib/bigquery/candidateService.server";
+import { assertInternalApiAccess, InternalApiAccessError } from "../../../lib/internal-api/access.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ candidateId: string }> }
 ) {
   try {
+    assertInternalApiAccess(request);
     const { candidateId } = await context.params;
     const candidate = await getBigQueryCandidate(candidateId);
     if (!candidate) {
@@ -20,6 +22,9 @@ export async function GET(
       { headers: { "Cache-Control": "private, no-store" } }
     );
   } catch (error) {
+    if (error instanceof InternalApiAccessError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    }
     const known = error instanceof BigQueryPublicError ? error : null;
     return NextResponse.json(
       {

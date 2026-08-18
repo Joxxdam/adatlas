@@ -56,10 +56,14 @@ export async function buildRenderPlan(
   overrides: Partial<CopyPlan> = {},
   repairPass = 0
 ): Promise<RenderPlan> {
-  const master = job.creativePlan.masterDesign;
+  const master = result.creativeDesign || job.creativePlan.masterDesign;
+  const masterScene = result.masterScene || job.masterScene;
   const copy = copyFor(result, overrides);
   const productImageAssets = job.productTruth.imageAssets.filter(
-    (asset) => asset.verified && isCompositableImageRole(asset.role)
+    (asset) =>
+      asset.verified &&
+      asset.validationStatus === "confirmed" &&
+      isCompositableImageRole(asset.role)
   );
   const productImagePaths = productImageAssets.map((asset) => asset.path);
   const product = unionBoxes(master.productComposition.instances);
@@ -78,6 +82,23 @@ export async function buildRenderPlan(
     bodyFontSize: master.typography.subCopyFontSize,
     minFontSize: Math.min(master.headlineBox.minFontSize, master.subCopyBox.minFontSize),
   };
+  const renderedSlots = await resolveRenderedSlots({
+    master,
+    hooks: job.creativePlan.hookPlans,
+    copy,
+  });
+  const fontAdjustments = renderedSlots
+    .filter((slot) => {
+      const expected = slot.id === "headline"
+        ? master.typography.headlineFontSize
+        : slot.id === "body"
+          ? master.typography.subCopyFontSize
+          : slot.id === "cta"
+            ? master.typography.ctaFontSize
+            : undefined;
+      return expected !== undefined && slot.fontSize < expected;
+    })
+    .map((slot) => `${slot.id} ${slot.fontSize}px로 허용 범위 내 축소`);
   return {
     id: `render-${job.id}-${result.id}-${repairPass}`,
     jobId: job.id,
@@ -93,20 +114,50 @@ export async function buildRenderPlan(
     productImageAssets,
     productComposition: master.productComposition,
     masterDesignId: master.id,
+    designFingerprint: master.designFingerprint,
     backgroundAssetId: master.backgroundAssetId,
-    renderedSlots: await resolveRenderedSlots({
-      master,
-      hooks: job.creativePlan.hookPlans,
-      copy,
-    }),
+    masterSceneId: masterScene?.id,
+    masterVisualDigest: masterScene?.masterVisualDigest,
+    generationMode: masterScene?.generationMode,
+    productReferenceProfileId: job.productReferenceProfile?.id,
+    productLayerRequired:
+      !masterScene?.includesProduct && result.scenePlan.generationMode !== "real-photo-adaptation",
+    overlay: result.scenePlan.generationMode === "real-photo-adaptation"
+      ? { ...master.overlay, opacity: Math.min(master.overlay.opacity, 0.14) }
+      : master.overlay,
+    renderedSlots,
+    fontAdjustments,
     logoAsset: job.creativePlan.brandProfile.logoAssets[0],
     repairPass,
   };
 }
 
-function underlaySvg(plan: RenderPlan) {
+function underlaySvg(plan: RenderPlan, copySafetyScore = 100) {
   const colors = plan.layout.colors;
   const id = plan.layout.blueprintId;
+  if (["ai-background-composite", "ai-reference-full-creative"].includes(plan.generationMode || "")) {
+    const copyArea = unionBoxes(
+      plan.renderedSlots
+        .filter((slot) => ["headline", "body", "proof", "offer"].includes(slot.id))
+        .map((slot) => slot.box)
+    );
+    const copyOnRight = copyArea.x + copyArea.width / 2 > 600;
+    const copyMostlyTop = copyArea.y + copyArea.height < 650 && copyArea.width > 650;
+    const needsCopyRepair = copySafetyScore < 55;
+    const strongOpacity = needsCopyRepair ? ".96" : ".84";
+    const middleOpacity = needsCopyRepair ? ".56" : ".25";
+    const gradient = copyMostlyTop
+      ? `<linearGradient id="aiCopyFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${colors.background}" stop-opacity="${strongOpacity}"/><stop offset=".68" stop-color="${colors.background}" stop-opacity="${middleOpacity}"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>`
+      : copyOnRight
+        ? `<linearGradient id="aiCopyFade" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="${colors.background}" stop-opacity="${strongOpacity}"/><stop offset=".7" stop-color="${colors.background}" stop-opacity="${middleOpacity}"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>`
+        : `<linearGradient id="aiCopyFade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${colors.background}" stop-opacity="${strongOpacity}"/><stop offset=".7" stop-color="${colors.background}" stop-opacity="${middleOpacity}"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>`;
+    const copyShield = needsCopyRepair
+      ? `<rect x="${Math.max(0, copyArea.x - 28)}" y="${Math.max(0, copyArea.y - 24)}" width="${Math.min(1200 - Math.max(0, copyArea.x - 28), copyArea.width + 56)}" height="${Math.min(1200 - Math.max(0, copyArea.y - 24), copyArea.height + 48)}" rx="34" fill="${colors.background}" fill-opacity=".30"/>`
+      : "";
+    return Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><defs>${gradient}</defs><rect width="1200" height="1200" fill="${plan.overlay.color}" opacity="${Math.min(plan.overlay.opacity, 0.1).toFixed(2)}"/><rect width="1200" height="1200" fill="url(#aiCopyFade)"/>${copyShield}</svg>`
+    );
+  }
   const common = `<defs>
     <linearGradient id="leftFade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${colors.background}" stop-opacity=".96"/><stop offset=".82" stop-color="${colors.background}" stop-opacity=".63"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>
     <linearGradient id="topFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${colors.background}" stop-opacity=".95"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>
@@ -118,10 +169,10 @@ function underlaySvg(plan: RenderPlan) {
     "chat-ugc": `<rect width="1200" height="1200" fill="${colors.background}" opacity=".26"/><rect x="390" y="120" width="760" height="850" rx="48" fill="${colors.background}" opacity=".16"/>`,
     "comparison-versus": `<rect width="640" height="1200" fill="url(#leftFade)"/><path d="M680 0H1200V1200H480Z" fill="${colors.accent}" opacity=".14"/><path d="M680 0L480 1200" stroke="${colors.foreground}" stroke-opacity=".45" stroke-width="5"/>`,
     "product-hero-lifestyle": `<rect width="650" height="1200" fill="url(#leftFade)"/><circle cx="870" cy="640" r="360" fill="${colors.accent}" opacity=".13"/>`,
-    "proof-data": `<rect width="680" height="1200" fill="url(#leftFade)"/><circle cx="890" cy="680" r="340" fill="${colors.accent}" opacity=".11"/>`,
+    "proof-data": `<rect width="680" height="1200" fill="url(#leftFade)"/><rect width="1200" height="330" fill="url(#topFade)"/><circle cx="890" cy="680" r="340" fill="${colors.accent}" opacity=".11"/>`,
   };
   return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200">${common}${shapes[id] || shapes["product-hero-lifestyle"]}</svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200">${common}<rect width="1200" height="1200" fill="${plan.overlay.color}" opacity="${plan.overlay.opacity.toFixed(2)}"/>${shapes[id] || shapes["product-hero-lifestyle"]}</svg>`
   );
 }
 
@@ -175,8 +226,23 @@ async function fitRaster(buffer: Buffer, box: PlacementBox, mode: "contain" | "c
   return image.png().toBuffer();
 }
 
-async function productComposite(product: Buffer, instance: ProductCompositionInstance) {
-  const raster = await fitRaster(product, instance, instance.fit);
+async function productComposite(
+  product: Buffer,
+  instance: ProductCompositionInstance,
+  transparent = false
+) {
+  // Registered cutouts often retain a large transparent export canvas. Fitting
+  // that canvas makes a perfectly valid bottle or tube look artificially tiny.
+  // Trim only verified transparent products; opaque packshots must keep their
+  // original framing and background.
+  const prepared = transparent
+    ? await sharp(product)
+        .rotate()
+        .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer()
+    : product;
+  const raster = await fitRaster(prepared, instance, instance.fit);
   if (!instance.rotation) return raster;
   return sharp(raster)
     .rotate(instance.rotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -208,7 +274,7 @@ async function productLayer(plan: RenderPlan) {
     }
     const source = await readCreativeRasterAsset(sourcePath);
     composites.push({
-      input: await productComposite(source, instance),
+      input: await productComposite(source, instance, Boolean(asset.transparent)),
       left: instance.x,
       top: instance.y,
     });
@@ -273,6 +339,8 @@ export async function renderCreativeResult(input: {
     input.overrides,
     input.repairPass || 0
   );
+  const activeMaster = input.result.creativeDesign || input.job.creativePlan.masterDesign;
+  const activeMasterScene = input.result.masterScene || input.job.masterScene;
   let scene: Buffer;
   try {
     scene = await readCreativeRasterAsset(renderPlan.scene.sceneAsset.file);
@@ -286,18 +354,24 @@ export async function renderCreativeResult(input: {
     .resize(1200, 1200, { fit: "cover", position: "centre" })
     .png()
     .toBuffer();
-  const underlay = underlaySvg(renderPlan);
-  const product = await productLayer(renderPlan);
+  const underlay = underlaySvg(renderPlan, activeMasterScene?.sceneQualityResult.copySafetyScore);
+  const product = renderPlan.productLayerRequired === false
+    ? {
+        layer: null,
+        pixelAreaRatio: activeMasterScene?.estimatedProductAreaRatio || 0.58,
+        bounds: activeMasterScene?.productBounds || renderPlan.layout.placement.product,
+      }
+    : await productLayer(renderPlan);
   const baseComposites: Array<{ input: Buffer; left: number; top: number }> = [
     { input: underlay, left: 0, top: 0 },
-    { input: product.layer, left: 0, top: 0 },
+    ...(product.layer ? [{ input: product.layer, left: 0, top: 0 }] : []),
   ];
   const surfaceBeforeLogo = await sharp(base).composite(baseComposites).png().toBuffer();
   let logoRendered = false;
   if (renderPlan.logoAsset?.path) {
     try {
       const logo = await readCreativeRasterAsset(renderPlan.logoAsset.path);
-      const logoBox = input.job.creativePlan.masterDesign.logoBox;
+      const logoBox = activeMaster.logoBox;
       const preparedLogo = await prepareLogoForSurface({
         logoBuffer: logo,
         surfaceBuffer: surfaceBeforeLogo,
@@ -331,6 +405,9 @@ export async function renderCreativeResult(input: {
     productBounds: product.bounds,
     logoRendered,
     autoRepairs: input.autoRepairs || [],
+    expectedDesignFingerprint: activeMaster.designFingerprint,
+    expectedMasterSceneId: activeMasterScene?.id,
+    expectedMasterVisualDigest: activeMasterScene?.masterVisualDigest,
   });
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
   const digest = crypto.createHash("sha256").update(encoded.buffer).digest("hex").slice(0, 10);

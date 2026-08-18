@@ -16,6 +16,27 @@ type ParsedReportRow = Omit<
   | "assetId"
   | "assetCode"
   | "hookGroupId"
+  | "advertiserId"
+  | "productId"
+  | "category"
+  | "subCategory"
+  | "hookCode"
+  | "hypothesisId"
+  | "primaryTag"
+  | "secondaryTags"
+  | "creativeId"
+  | "creativeCode"
+  | "visualConcept"
+  | "cpm"
+  | "ctr"
+  | "outboundCtr"
+  | "cpc"
+  | "costPerLandingPageView"
+  | "cvr"
+  | "cpa"
+  | "roas"
+  | "dataSufficiency"
+  | "resultStatus"
   | "matchStatus"
   | "matchMessage"
   | "importedAt"
@@ -113,6 +134,12 @@ function platform(value: unknown): "META" | "GOOGLE" | "OTHER" {
   return "META";
 }
 
+function ratio(numerator: number | null, denominator: number | null, multiplier = 1) {
+  if (numerator === null || denominator === null || denominator <= 0) return null;
+  const calculated = (numerator / denominator) * multiplier;
+  return Number.isFinite(calculated) ? calculated : null;
+}
+
 export const PerformanceImportService = {
   parse(
     buffer: Buffer,
@@ -188,7 +215,35 @@ export function createCreativePerformanceMatchingService(
           assetId: relationship?.assetId,
           assetCode: relationship?.assetCode || code || undefined,
           hookGroupId: relationship?.hookGroupId,
+          advertiserId: asset?.advertiserId || input.experiment.advertiserId,
+          productId: asset?.productId || input.experiment.productId,
+          category: asset?.category || input.experiment.categoryId,
+          hookCode: relationship?.hookCode || asset?.hookVariantCode || asset?.hookCode,
+          hypothesisId: relationship?.hypothesisId || asset?.hypothesisId,
+          primaryTag: relationship?.primaryTag || asset?.primaryHookTag,
+          secondaryTags: relationship?.secondaryTags || asset?.secondaryHookTags || [],
+          creativeId: asset?.id,
+          creativeCode: relationship?.assetCode || asset?.assetCode || code || undefined,
+          visualConcept: asset?.visualDirection || relationship?.visualDirection,
           ...row,
+          cpm: ratio(row.spend, row.impressions, 1000),
+          ctr: ratio(row.linkClicks, row.impressions),
+          outboundCtr: ratio(row.outboundClicks, row.impressions),
+          cpc: ratio(row.spend, row.linkClicks),
+          costPerLandingPageView: ratio(row.spend, row.landingPageViews),
+          cvr: ratio(row.purchases, row.linkClicks),
+          cpa: ratio(row.spend, row.purchases),
+          roas: ratio(row.purchaseValue, row.spend),
+          dataSufficiency:
+            (row.spend || 0) >= input.experiment.ruleConfig.minimumSpend &&
+            (row.impressions || 0) >= input.experiment.ruleConfig.minimumImpressions
+              ? "minimum-delivery-met"
+              : "additional-data-required",
+          resultStatus:
+            (row.spend || 0) >= input.experiment.ruleConfig.minimumSpend &&
+            (row.impressions || 0) >= input.experiment.ruleConfig.minimumImpressions
+              ? "promising"
+              : "needs-more-data",
           matchStatus,
           matchMessage,
           importedAt,

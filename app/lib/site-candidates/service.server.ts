@@ -55,6 +55,8 @@ export function cacheSiteDiscovery(result: SiteDiscoveryResult) {
 }
 
 export async function analyzeDiscoveredSite(discoveryId: string) {
+  const cachedAnalysis = siteCandidateCache.getAnalysisByDiscovery(discoveryId);
+  if (cachedAnalysis) return cachedAnalysis;
   const discovery = siteCandidateCache.getDiscovery(discoveryId);
   if (!discovery) {
     throw new Error("사이트 탐색 결과가 만료되었습니다. URL부터 다시 분석해주세요.");

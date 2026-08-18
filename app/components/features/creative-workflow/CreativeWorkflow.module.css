@@ -86,6 +86,78 @@
   margin-bottom: 12px;
 }
 
+.recommendedDirection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.55fr);
+  align-items: center;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid #bcd7f2;
+  border-radius: 9px;
+  background: #f5faff;
+}
+
+.recommendedDirection span,
+.recommendedDirection strong,
+.recommendedDirection p,
+.recommendedDirection small {
+  display: block;
+  margin: 0;
+}
+
+.recommendedDirection span {
+  color: #647187;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.recommendedDirection strong {
+  margin-top: 4px;
+  color: #075fb7;
+  font-size: 17px;
+}
+
+.recommendedDirection p,
+.recommendedDirection small {
+  margin-top: 5px;
+  color: #53657a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.productionSettings {
+  margin-top: 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.productionSettings > summary {
+  cursor: pointer;
+  padding: 12px;
+  color: #40566d;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.productionSettings > summary small {
+  color: #8793a3;
+  font-weight: 700;
+}
+
+.productionSettingsBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr);
+  gap: 14px;
+  border-top: 1px solid #dbe4ef;
+  padding: 14px;
+}
+
+.productionSettingsBody > .planPreview,
+.productionSettingsBody > .fullWidth {
+  grid-column: 1 / -1;
+}
+
 .briefChoiceGroup {
   display: grid;
   align-content: start;
@@ -346,9 +418,9 @@
 .confirmBar button {
   flex: 0 0 auto;
   padding: 10px 14px;
-  border: 1px solid #0b725f;
+  border: 1px solid #1677d2;
   border-radius: 6px;
-  background: #0b725f;
+  background: #1677d2;
   color: #ffffff;
   font-size: 12px;
   font-weight: 900;
@@ -367,10 +439,122 @@
 .analysisSummary {
   display: grid;
   gap: 12px;
-  padding: 15px;
-  border: 1px solid #bcd7f2;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid #d8e7f6;
   border-radius: 6px;
-  background: #f5faff;
+  background: transparent;
+}
+
+.analysisSummary > summary {
+  cursor: pointer;
+  padding: 13px 0 0;
+  color: #496078;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.analysisSummary > .analysisGrid {
+  padding-top: 2px;
+}
+
+.productConfirmation {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.38fr) minmax(0, 0.62fr);
+  gap: 22px;
+  padding: 20px;
+  border: 1px solid #cfe0f2;
+  border-radius: 14px;
+  background: #f8fbff;
+}
+
+.productConfirmationMedia {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.productConfirmationMedia img {
+  width: 100%;
+  height: 100%;
+  max-height: 360px;
+  object-fit: contain;
+}
+
+.productConfirmationMedia span {
+  color: #7a8798;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.productConfirmationBody h4 {
+  margin: 4px 0 3px;
+  color: #14233b;
+  font-size: clamp(20px, 3vw, 29px);
+  line-height: 1.25;
+}
+
+.productBrand,
+.productFeatureEmpty,
+.sourceImageCount {
+  margin: 0;
+  color: #66768a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.productPrice {
+  display: block;
+  margin-top: 10px;
+  color: #075fb7;
+  font-size: 21px;
+}
+
+.productFeatureList {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.productFeatureList li {
+  position: relative;
+  padding-left: 17px;
+  color: #32445a;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.productFeatureList li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #1677d2;
+  content: "✓";
+}
+
+.productConfirmationActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.productConfirmationActions button:first-child {
+  border-color: #1677d2;
+  background: #1677d2;
+  color: #ffffff;
+}
+
+.productConfirmationActions button:last-child {
+  background: #ffffff;
+  color: #455b72;
 }
 
 .analysisSummaryHeader {
@@ -431,6 +615,21 @@
   line-height: 1.45;
 }
 
+@container (max-width: 620px) {
+  .productConfirmation {
+    grid-template-columns: 1fr;
+  }
+
+  .productConfirmationMedia {
+    min-height: 220px;
+  }
+
+  .recommendedDirection,
+  .productionSettingsBody {
+    grid-template-columns: 1fr;
+  }
+}
+
 .analysisGrid dt {
   color: #647187;
   font-weight: 800;
@@ -442,6 +641,22 @@
   color: #162034;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.analysisImageList {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.analysisImageList img {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border: 1px solid #dbe4ef;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #ffffff;
 }
 
 .referenceList,

@@ -1,5 +1,5 @@
-import analysis from "../../../data/creative-benchmarks/benchmark-analysis.json";
-import type { BenchmarkAnalysis } from "./types";
+import analysis from "../../../data/creative-benchmarks/benchmark-analysis.json" with { type: "json" };
+import type { BenchmarkAnalysis } from "./types.ts";
 
 const fallback: BenchmarkAnalysis = {
   version: 1,

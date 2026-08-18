@@ -23,6 +23,11 @@ import {
   exclusionReasons,
   scoreEvidenceSection,
 } from "../app/lib/site-candidates/scoring.ts";
+import {
+  assertSiteAnalysisRateLimit,
+  clearSiteAnalysisRateLimits,
+  SiteAnalysisRateLimitError,
+} from "../app/lib/site-candidates/rateLimit.server.ts";
 
 const PRODUCT_HTML = `
 <!doctype html>
@@ -862,4 +867,19 @@ test("요청 시간이 초과되면 TIMEOUT 오류로 처리한다", async () =>
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("사이트 URL 분석 API rate limit은 동일 클라이언트의 반복 요청을 완화한다", () => {
+  clearSiteAnalysisRateLimits();
+  const request = new Request("https://adatlas.example/api/ad-candidates/site/discover", {
+    headers: { "x-forwarded-for": "203.0.113.77" },
+  });
+  for (let index = 0; index < 10; index += 1) {
+    assert.doesNotThrow(() => assertSiteAnalysisRateLimit(request, "discover"));
+  }
+  assert.throws(
+    () => assertSiteAnalysisRateLimit(request, "discover"),
+    SiteAnalysisRateLimitError
+  );
+  clearSiteAnalysisRateLimits();
 });

@@ -20,6 +20,34 @@
     }
   },
   {
+    "id": "original-source-mini-shower-gel-set",
+    "product": {
+      "productName": "오리지널소스 미니 샤워젤 3종 세트 여행용 휴대용 바디워시",
+      "category": "바디워시/여행용 세트",
+      "price": "14,500원",
+      "originalPrice": "",
+      "advertiserName": "오리지널소스",
+      "brandName": "Original Source",
+      "discountInfo": "미니 샤워젤 3종과 파우치 구성",
+      "mainBenefit": "여행·헬스장·캠핑에 나누어 챙기는 미니 샤워젤 3종",
+      "targetCustomer": "외출할 때 샤워용품을 간단히 챙기려는 고객",
+      "landingUrl": "https://originalsource.co.kr/product/오리지널소스-미니-샤워젤-3종-세트-여행용-휴대용-바디워시/122/category/94/display/1/",
+      "productImagePath": "/product-cutouts/original-source/mint-tea-tree-250ml.png",
+      "productImagePaths": [
+        "/product-cutouts/original-source/mint-tea-tree-250ml.png",
+        "/product-cutouts/original-source/lemon-tea-tree-250ml.png",
+        "/product-cutouts/original-source/coconut-shea-butter-250ml.png"
+      ],
+      "backgroundImagePath": "",
+      "verifiedBenefits": [
+        "미니 샤워젤 3종 구성",
+        "파우치 포함",
+        "여행·헬스장·캠핑 휴대용"
+      ],
+      "brandColors": ["#00d9b1", "#ffd32a", "#f3eee4"]
+    }
+  },
+  {
     "id": "kookdae-beef-set",
     "product": {
       "productName": "국대한우 실속 구이 세트",
@@ -54,6 +82,61 @@
       "backgroundImagePath": "",
       "verifiedBenefits": ["데일리 원피스"],
       "brandColors": ["#261c19", "#f2e6de"]
+    }
+  },
+  {
+    "id": "green-farm-apple-box",
+    "product": {
+      "productName": "푸른농원 산지 사과 3kg",
+      "category": "농산물/과일",
+      "price": "29,900원",
+      "advertiserName": "푸른농원",
+      "brandName": "푸른농원",
+      "discountInfo": "무료배송",
+      "mainBenefit": "경북 농가에서 수확한 사과 3kg 구성",
+      "targetCustomer": "신선한 제철 과일을 찾는 고객",
+      "landingUrl": "https://example.com/green-farm/apple-box",
+      "productImagePath": "/test-fixtures/creative/apple-box.svg",
+      "backgroundImagePath": "",
+      "verifiedBenefits": ["사과 3kg 한 상자"],
+      "brandColors": ["#2f7d32", "#f7d75c"]
+    }
+  },
+  {
+    "id": "tidy-home-storage-box",
+    "product": {
+      "productName": "정돈생활 접이식 수납함 2개",
+      "category": "생활용품/수납",
+      "price": "24,900원",
+      "advertiserName": "정돈생활",
+      "brandName": "정돈생활",
+      "discountInfo": "2개 세트",
+      "mainBenefit": "사용하지 않을 때 접어두는 수납함",
+      "targetCustomer": "좁은 공간을 정리하려는 고객",
+      "landingUrl": "https://example.com/tidy-home/storage-box",
+      "productImagePath": "/test-fixtures/creative/storage-box.svg",
+      "backgroundImagePath": "",
+      "verifiedBenefits": ["접이식 구조", "수납함 2개 구성"],
+      "brandColors": ["#235c68", "#e9d6bd"]
+    }
+  },
+  {
+    "id": "daily-oat-granola",
+    "product": {
+      "productName": "데일리오트 견과 그래놀라 300g",
+      "category": "가공식품/시리얼",
+      "price": "12,900원",
+      "advertiserName": "데일리오트",
+      "brandName": "DAILY OAT",
+      "discountInfo": "",
+      "mainBenefit": "오트와 아몬드가 들어간 그래놀라",
+      "targetCustomer": "간편한 아침 식사를 준비하는 고객",
+      "landingUrl": "https://example.com/daily-oat/granola",
+      "productImagePath": "/test-fixtures/creative/granola-package.svg",
+      "backgroundImagePath": "",
+      "verifiedBenefits": ["오트와 아몬드 구성", "300g 포장"],
+      "ingredients": ["오트", "아몬드"],
+      "brandColors": ["#e9b84a", "#593923"]
     }
   }
 ]

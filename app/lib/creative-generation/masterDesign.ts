@@ -2,6 +2,7 @@ import { getCreativeBlueprint } from "./blueprints.ts";
 import { chooseTextColor, relativeLuminance } from "../mvp/colorUtils.ts";
 import type {
   BrandProfile,
+  CategoryDesignVariant,
   CategoryProfile,
   CreativeBlueprintId,
   DynamicTextBox,
@@ -113,13 +114,13 @@ function textBox(
     ...box,
     maxChars:
       slotId === "headline"
-        ? 18
+        ? 32
         : slotId === "body"
-          ? 28
+          ? 42
           : constraint?.maxChars || defaults.maxChars,
     maxLines:
       slotId === "headline" || slotId === "body"
-        ? 2
+        ? 3
         : constraint?.maxLines || defaults.maxLines,
     fontSize: defaults.fontSize,
     minFontSize:
@@ -143,6 +144,79 @@ function proofText(truth: ProductTruth) {
       /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length > 0
   );
   return numericBenefit?.value || "";
+}
+
+function selectCategoryVariant(truth: ProductTruth, categoryId: string): CategoryDesignVariant {
+  const text = truth.facts.map((fact) => `${fact.key} ${fact.value}`).join(" ");
+  const hasOffer = Boolean(truth.product.price || truth.product.discountInfo);
+  const hasIngredients = truth.facts.some((fact) => /^ingredient/.test(fact.key));
+  const hasNumericProof = truth.facts.some(
+    (fact) => /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length
+  );
+  const hasSet = /세트|구성|묶음|팩|\d+\s*개/i.test(text);
+  if (categoryId === "packaged-food") {
+    if (hasIngredients || hasNumericProof) return "ingredient-proof";
+    if (/먹는|식사|아침|간식|조리|레시피/i.test(text)) return "usage-scene";
+    return hasOffer ? "offer-focus" : "package-hero";
+  }
+  if (categoryId === "food-meat") {
+    if (hasSet) return "set-composition";
+    if (/구이|조리|레시피|스테이크|먹는|식탁/i.test(text)) return "cooked-serving";
+    return "raw-product-focus";
+  }
+  if (categoryId === "agriculture") {
+    if (/수확|농장|농가|재배|생산자/i.test(text)) return "harvest-story";
+    if (/식탁|레시피|요리|샐러드/i.test(text)) return "table-serving";
+    return "fresh-origin";
+  }
+  if (categoryId === "fashion") {
+    if (/디테일|소재|원단|봉제|버튼/i.test(text)) return "detail-focus";
+    if (/핏|실루엣|라인|체형/i.test(text)) return "silhouette-focus";
+    return "outfit-hero";
+  }
+  if (categoryId === "personal-care") {
+    if (hasIngredients || hasNumericProof) return "ingredient-proof";
+    if (/사용|샤워|세안|바르는|씻는|아침|저녁/i.test(text)) return "usage-scene";
+    return "package-hero";
+  }
+  if (categoryId === "household-goods") {
+    if (/불편|고민|문제|냄새|얼룩|먼지/i.test(text)) return "problem-scene";
+    if (/기능|작동|세척|정리|흡수|분리/i.test(text) || hasNumericProof) return "function-demo";
+    return "clean-product-hero";
+  }
+  if (hasOffer) return "offer-focus";
+  if (truth.product.mainBenefit || truth.product.verifiedBenefits?.length) return "benefit-proof";
+  return "product-hero";
+}
+
+function stableHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+export function designFingerprintForMaster(
+  master: Omit<MasterCreativeDirection, "designFingerprint"> & { designFingerprint?: string }
+) {
+  return `design-${stableHash(JSON.stringify({
+    layoutFamily: master.layoutFamily,
+    categoryVariant: master.categoryVariant,
+    backgroundAssetId: master.backgroundAssetId,
+    productImage: master.productComposition,
+    productPosition: master.productPosition,
+    productScale: master.productScale,
+    headlineBox: master.headlineBox,
+    subCopyBox: master.subCopyBox,
+    proof: master.fixedFacts.proof || "",
+    offer: master.fixedFacts.offer || "",
+    cta: master.fixedFacts.cta,
+    fontPreset: master.fontPreset,
+    palette: master.palette,
+    overlay: master.overlay,
+  }))}`;
 }
 
 function hasReviewEvidence(truth: ProductTruth) {
@@ -254,12 +328,32 @@ export function selectMasterCreativeDirection(params: {
     .filter(Boolean)
     .join(" · ");
   const productKind = params.truth.confirmedProductImage?.transparent ? "cutout" : "packshot";
-  return {
-    id: `master-${params.category.id}-${blueprintId}-${productKind}`,
+  const categoryVariant = selectCategoryVariant(params.truth, params.category.id);
+  const evidenceFocused = /(?:detail-focus|ingredient-proof|function-demo|benefit-proof|offer-focus)/.test(categoryVariant);
+  const lifestyleFocused = /(?:cooked-serving|table-serving|usage-scene|problem-scene|harvest-story)/.test(categoryVariant);
+  const heroFocused = /(?:raw-product-focus|fresh-origin|outfit-hero|package-hero|clean-product-hero|product-hero|set-composition)/.test(categoryVariant);
+  const variantScale = evidenceFocused ? 0.94 : heroFocused ? 1.04 : 1;
+  const shiftX = evidenceFocused ? 24 : lifestyleFocused ? -18 : 0;
+  const shiftY = evidenceFocused ? 18 : lifestyleFocused ? 26 : heroFocused ? -12 : 0;
+  const variantWidth = Math.round(layout.product.width * variantScale);
+  const variantHeight = Math.round(layout.product.height * variantScale);
+  const productPosition = {
+    ...layout.product,
+    x: Math.round(layout.product.x + (layout.product.width - variantWidth) / 2 + shiftX),
+    y: Math.round(layout.product.y + (layout.product.height - variantHeight) / 2 + shiftY),
+    width: variantWidth,
+    height: variantHeight,
+  };
+  const base = {
+    id: `master-${params.category.id}-${blueprintId}-${categoryVariant}-${productKind}`,
     categoryProfileId: params.category.id,
     layoutFamily: blueprintId,
+    categoryVariant,
+    designFingerprint: "pending",
     backgroundAssetId: "pending",
-    productComposition: productComposition(blueprintId, params.truth, layout.product),
+    productComposition: productComposition(blueprintId, params.truth, productPosition),
+    productPosition,
+    productScale: variantScale,
     headlineBox: textBox(blueprintId, "headline", layout.headline, {
       maxChars: 18,
       maxLines: 2,
@@ -280,7 +374,7 @@ export function selectMasterCreativeDirection(params: {
       colorRole: blueprintId === "chat-ugc" ? "background" : "accent",
       fillRole: blueprintId === "chat-ugc" ? "secondary" : undefined,
     }),
-    proofBox: layout.proof
+    proofBox: proof && layout.proof
       ? textBox(blueprintId, "proof", layout.proof, {
           maxChars: 24,
           maxLines: 2,
@@ -292,7 +386,7 @@ export function selectMasterCreativeDirection(params: {
           fillRole: "background",
         })
       : undefined,
-    offerBox: layout.offer
+    offerBox: offer && layout.offer
       ? textBox(blueprintId, "offer", layout.offer, {
           maxChars: 26,
           maxLines: 2,
@@ -326,6 +420,11 @@ export function selectMasterCreativeDirection(params: {
       subCopyFontSize: 34,
       ctaFontSize: 28,
     },
+    fontPreset: "noto-sans-kr-performance",
+    overlay: {
+      color: colors.background,
+      opacity: evidenceFocused ? 0.6 : lifestyleFocused ? 0.44 : blueprintId === "editorial-story" ? 0.42 : 0.52,
+    },
     fixedFacts: {
       proof: proof || undefined,
       offer: offer || undefined,
@@ -336,10 +435,12 @@ export function selectMasterCreativeDirection(params: {
     selectionReasons: [
       `카테고리 ${params.category.label}의 선호 레이아웃 반영`,
       `상품 이미지 유형 ${productKind} 반영`,
+      `상품 근거 기반 카테고리 변형 ${categoryVariant} 선택`,
       proof ? "검증된 수치 근거 슬롯 사용 가능" : "근거 없는 데이터 시각화 제외",
     ],
     locked: true,
-  };
+  } satisfies MasterCreativeDirection;
+  return { ...base, designFingerprint: designFingerprintForMaster(base) };
 }
 
 export function masterDesignGeometry(blueprintId: CreativeBlueprintId) {

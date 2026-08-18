@@ -13,7 +13,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div>
-        <p className="eyebrow">AdAtlas</p>
+        <DaywizBrand />
         <h1>AI 광고 레퍼런스 대시보드</h1>
       </div>
       <nav aria-label="주요 메뉴">
@@ -32,3 +32,4 @@ export function Sidebar() {
     </aside>
   );
 }
+import { DaywizBrand } from "./DaywizBrand";

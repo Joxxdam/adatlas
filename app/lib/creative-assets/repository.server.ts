@@ -5,6 +5,7 @@ import {
   createBrandCode,
   createProductCode,
   createHookVariantAssetCode,
+  createExplorationAssetCode,
   extensionFromImageUrl,
   extractCreativeAssetCode,
   generateCreativeAssetCode,
@@ -137,7 +138,22 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
         const hookCode = getHookCode(input.hookType || "");
         const version = parent ? parent.version + 1 : 1;
         let assetCode = "";
-        if (input.experimentId && input.originalHostProductNo && input.generationRound && input.variant) {
+        if (input.explorationCode && input.hookVariantCode && input.conceptCode) {
+          for (let nextVersion = version; nextVersion < 100; nextVersion += 1) {
+            const candidate = createExplorationAssetCode({
+              brandCode: entities.brandCode,
+              productCode: entities.productCode,
+              explorationCode: input.explorationCode,
+              hookVariantCode: input.hookVariantCode,
+              conceptCode: input.conceptCode,
+              version: nextVersion,
+            });
+            if (!store.assets.some((asset) => asset.assetCode === candidate)) {
+              assetCode = candidate;
+              break;
+            }
+          }
+        } else if (input.experimentId && input.originalHostProductNo && input.generationRound && input.variant) {
           const candidate = createExperimentAssetCode({
             brandCode: entities.brandCode,
             originalHostProductNo: input.originalHostProductNo,
@@ -215,6 +231,12 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
           experimentId: normalizedText(input.experimentId) || undefined,
           testCode: normalizedText(input.testCode) || undefined,
           hookVariantCode: normalizedText(input.hookVariantCode) || undefined,
+          explorationCode: normalizedText(input.explorationCode) || undefined,
+          conceptCode: normalizedText(input.conceptCode) || undefined,
+          primaryHookTag: normalizedText(input.primaryHookTag) || undefined,
+          secondaryHookTags: Array.from(new Set(input.secondaryHookTags || [])).filter(Boolean),
+          customerReason: normalizedText(input.customerReason) || undefined,
+          hypothesisId: normalizedText(input.hypothesisId) || undefined,
           advertisingHypothesis: normalizedText(input.advertisingHypothesis),
           headline: normalizedText(input.headline),
           subCopy: normalizedText(input.subCopy),

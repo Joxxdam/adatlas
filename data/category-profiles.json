@@ -12,9 +12,21 @@
     "forbiddenAssumptions": ["검증되지 않은 체취 감소율", "검증되지 않은 체감 온도", "의학적 효능"]
   },
   {
+    "id": "packaged-food",
+    "label": "패키지 식품",
+    "matchers": ["가공식품", "시리얼", "그래놀라", "간식", "음료", "소스", "과자", "건강식품"],
+    "fallbackColors": ["#d99b32", "#4b3426", "#fff9e8", "#6d8d42"],
+    "audienceHints": ["실제 패키지 식별", "내용물과 재료 질감", "섭취·조리 상황"],
+    "preferredHookTypes": ["feature-usp", "ingredient", "usage-moment", "price-benefit"],
+    "preferredSceneTypes": ["package-and-content", "breakfast-table", "ingredient-closeup", "clean-commerce"],
+    "preferredBlueprints": ["product-hero-lifestyle", "editorial-story", "proof-data", "problem-solution-split", "comparison-versus", "chat-ugc"],
+    "visualPriorities": ["실제 포장 형태와 라벨 유지", "내용물 종류와 상태 유지", "확인된 용량·구성만 표시"],
+    "forbiddenAssumptions": ["확인되지 않은 영양 효능", "확인되지 않은 원산지", "새 인증마크와 함량"]
+  },
+  {
     "id": "food-meat",
     "label": "육류·식품",
-    "matchers": ["한우", "고기", "육류", "축산", "갈비", "등심", "식품", "선물"],
+    "matchers": ["한우", "고기", "육류", "축산", "갈비", "등심", "수산", "생선", "해산물", "선물"],
     "fallbackColors": ["#d7281f", "#17100d", "#ffd52f", "#ffffff"],
     "audienceHints": ["구성의 명확성", "식품 실물 질감", "가격과 품질 위계"],
     "preferredHookTypes": ["price-benefit", "feature-usp", "gift", "social-proof"],
@@ -26,8 +38,8 @@
   {
     "id": "agriculture",
     "label": "농산물·산지직송",
-    "matchers": ["농산물", "산지", "과일", "채소", "고구마", "감자", "제철", "수확"],
-    "fallbackColors": ["#347b3d", "#f1bd3f", "#fff9e8", "#6a452c"],
+    "matchers": ["농산물", "산지", "과일", "채소", "사과", "청사과", "아오리", "과수원", "고구마", "감자", "제철", "수확"],
+    "fallbackColors": ["#a8d641", "#173c25", "#fffdf5", "#f3bd36"],
     "audienceHints": ["실물 신선도", "산지 신뢰", "판매 구성"],
     "preferredHookTypes": ["origin-story", "freshness", "price-benefit", "lifestyle"],
     "preferredSceneTypes": ["farm-fresh", "harvest", "direct-value", "clean-commerce"],

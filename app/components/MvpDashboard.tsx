@@ -1,6 +1,7 @@
 "use client";
 
 import JSZip from "jszip";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CreativeQualityScore, VisualDirection } from "../lib/creative/types";
 import { evaluateCreativeQuality } from "../lib/creative/creativeQualityEvaluator";
@@ -83,7 +84,10 @@ import { BackgroundCatalogPanel } from "./features/background-library/Background
 import ProductImageWorkbench from "./features/product-image/ProductImageWorkbench";
 import ReviewCreativeWorkbench from "./features/review-creative/ReviewCreativeWorkbench";
 import { HookExperimentCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
-import { CreativeAssetActions, markCreativeAssetExported } from "./features/creative-assets/CreativeAssetActions";
+import {
+  CreativeAssetActions,
+  markCreativeAssetExported,
+} from "./features/creative-assets/CreativeAssetActions";
 import { CreativeAssetLibrary } from "./features/creative-assets/CreativeAssetLibrary";
 import type { CreateCreativeAssetInput, CreativeAsset } from "../lib/creative-assets/types";
 import {
@@ -95,8 +99,13 @@ import {
   type BannerTemplateDefinition,
 } from "../../lib/bannerTemplates";
 import type { ProductCreationHandoff } from "../lib/store-analysis/types";
-import { AppFeatureNavigation, type AppFeatureKey } from "./AppFeatureNavigation";
+import {
+  AppFeatureNavigation,
+  AuxiliaryFeatureNavigation,
+  type AppFeatureKey,
+} from "./AppFeatureNavigation";
 import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
+import { DaywizBrand } from "./DaywizBrand";
 
 type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
 
@@ -105,11 +114,22 @@ type Props = {
   initialImages: CollectedAdImage[];
   initialGenerated: GeneratedAdImage[];
   initialCreationHandoff?: ProductCreationHandoff | null;
+  initialProductUrl?: string;
   initialActiveMenu?: MvpMenu;
   activeFeature?: AppFeatureKey;
 };
 
 type Status = { kind: "idle" | "loading" | "success" | "error"; message: string };
+
+type RecentProductSummary = {
+  productName: string;
+  landingUrl: string;
+  imagePath: string;
+  brandName: string;
+  price: string;
+};
+
+const recentProductsStorageKey = "adatlas-recent-products";
 
 type HeadlineStyleOverrides = {
   headlineFontPreset?:
@@ -762,10 +782,13 @@ export function MvpDashboard({
   activeFeature = "product-creation",
   initialActiveMenu = "광고 생성",
   initialCreationHandoff,
+  initialProductUrl = "",
   initialGenerated,
   initialImages,
 }: Props) {
   const handoffProductInfo = initialCreationHandoff?.productInfo;
+  const initialLandingUrl =
+    handoffProductInfo?.landingUrl || initialCreationHandoff?.productUrl || initialProductUrl;
   const handoffImagePaths = initialCreationHandoff?.productImagePaths ?? emptyRecommendationIds;
   const recommendedTemplateIds =
     initialCreationHandoff?.recommendedTemplateIds ?? emptyRecommendationIds;
@@ -783,6 +806,8 @@ export function MvpDashboard({
         ? "데이터 기반 광고 기회"
         : "업체 분석 추천";
   const [activeMenu, setActiveMenu] = useState<MvpMenu>(initialActiveMenu);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [recentProducts, setRecentProducts] = useState<RecentProductSummary[]>([]);
   const [images, setImages] = useState(initialImages);
   const [generated, setGenerated] = useState(initialGenerated);
   const [labels, setLabels] = useState<AdImageLabel[]>([]);
@@ -798,10 +823,11 @@ export function MvpDashboard({
   const [productInfo, setProductInfo] = useState<ProductInfoForPrompt>(() => ({
     ...emptyProductInfo,
     ...(handoffProductInfo ?? {}),
+    landingUrl: initialLandingUrl,
   }));
   const [selectedAdvertiserName, setSelectedAdvertiserName] = useState(initialAdvertiserName);
   const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState(
-    initialCreationHandoff?.productUrl || ""
+    initialCreationHandoff ? initialLandingUrl : ""
   );
   const [generationPlanConfirmed, setGenerationPlanConfirmed] = useState(false);
   const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(
@@ -820,7 +846,9 @@ export function MvpDashboard({
     kind: initialCreationHandoff ? "success" : "idle",
     message: initialCreationHandoff
       ? `${handoffSourceLabel}에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다.`
-      : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
+      : initialLandingUrl
+        ? "광고 분석 결과에서 선택한 상품 URL을 자동으로 입력했습니다. 상품 분석하기를 눌러 상세정보를 불러오세요."
+        : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
   });
   const [strategyStatus, setStrategyStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
@@ -1187,11 +1215,7 @@ export function MvpDashboard({
         ...(productInfo.productImagePaths ?? []),
         ...(productInfo.sourceImageCandidates ?? []).map((candidate) => candidate.imagePath),
       ]).slice(0, 8),
-    [
-      originalMainProductImage,
-      productInfo.productImagePaths,
-      productInfo.sourceImageCandidates,
-    ]
+    [originalMainProductImage, productInfo.productImagePaths, productInfo.sourceImageCandidates]
   );
   const baseCurrentMainProductImage =
     productImageState.selectedImageMode === "original"
@@ -1446,10 +1470,56 @@ export function MvpDashboard({
     ["카테고리 수", categoryCount],
     ["후킹 유형 수", hookTypeCount],
   ];
+  const currentProductLoaded = Boolean(
+    lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
+  );
 
   useEffect(() => {
     refreshImages().catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(
+        window.localStorage.getItem(recentProductsStorageKey) || "[]"
+      ) as RecentProductSummary[];
+      setRecentProducts(stored.filter((item) => item?.landingUrl && item?.productName).slice(0, 3));
+    } catch {
+      setRecentProducts([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!lastLoadedProductUrl || !productInfo.productName) return;
+    const nextProduct: RecentProductSummary = {
+      productName: productInfo.productName,
+      landingUrl: lastLoadedProductUrl,
+      imagePath:
+        hookExperimentProductImagePaths[0] ||
+        productInfo.productImagePath ||
+        productInfo.extractedMainImage ||
+        "",
+      brandName: productInfo.brandName || productInfo.advertiserName || "",
+      price: productInfo.price || "",
+    };
+    setRecentProducts((current) => {
+      const next = [
+        nextProduct,
+        ...current.filter((item) => item.landingUrl !== nextProduct.landingUrl),
+      ].slice(0, 3);
+      window.localStorage.setItem(recentProductsStorageKey, JSON.stringify(next));
+      return next;
+    });
+  }, [
+    hookExperimentProductImagePaths,
+    lastLoadedProductUrl,
+    productInfo.advertiserName,
+    productInfo.brandName,
+    productInfo.extractedMainImage,
+    productInfo.price,
+    productInfo.productImagePath,
+    productInfo.productName,
+  ]);
 
   useEffect(() => {
     if (generatedBannerAsset && generatedBannerAsset.generatedImageUrl !== generatedBannerPath) {
@@ -2014,8 +2084,12 @@ export function MvpDashboard({
         ? extracted.discountInfo || ""
         : extracted.discountInfo || current.discountInfo || "",
       mainBenefit: replaceExtractedFields
-        ? extracted.extractedDescription || extracted.description || ""
-        : current.mainBenefit || extracted.extractedDescription || extracted.description || "",
+        ? extracted.mainBenefit || extracted.extractedDescription || extracted.description || ""
+        : current.mainBenefit ||
+          extracted.mainBenefit ||
+          extracted.extractedDescription ||
+          extracted.description ||
+          "",
       landingUrl: replaceExtractedFields
         ? extracted.landingUrl || current.landingUrl || ""
         : current.landingUrl || extracted.landingUrl || "",
@@ -2189,27 +2263,18 @@ export function MvpDashboard({
       setAutomaticCopySet([]);
       setProductExtractStatus({
         kind: "success",
-        message: "상품 분석을 완료했습니다. 광고문구 6개를 자동 생성할 수 있습니다.",
+        message: "상품 확인이 끝났어요. 아래 정보가 맞는지 확인해 주세요.",
       });
       return mergedProductInfo;
-    } catch (error) {
-      const extractErrorMessage =
-        error instanceof Error
-          ? error.message
-          : "상품 정보를 불러오지 못했습니다. 직접 입력해주세요.";
+    } catch {
       setProductExtractStatus({
         kind: "error",
-        message: "상품 정보를 불러오지 못했습니다. 직접 입력해주세요.",
-      });
-      setProductExtractStatus({
-        kind: "error",
-        message: extractErrorMessage,
+        message: "상품 정보를 가져오지 못했어요. 주소를 확인하고 다시 시도해 주세요.",
       });
       if (!options.silent) {
         setCopyStatus({
           kind: "error",
-          message:
-            error instanceof Error ? error.message : "상품 정보 추출 중 오류가 발생했습니다.",
+          message: "상품 정보를 가져오지 못했어요. 주소를 확인하고 다시 시도해 주세요.",
         });
       }
       return productInfo;
@@ -2499,11 +2564,11 @@ export function MvpDashboard({
       orientation: "square",
       recommendedLayouts: ["product-grounded", "premium-minimal"],
       sourceType: "designed_asset",
-      sourceName: "AdAtlas 고정 배경",
+      sourceName: "DAYWIZ 고정 배경",
       sourcePageUrl: "",
       originalImageUrl: "",
       licenseUrl: "",
-      authorName: "AdAtlas",
+      authorName: "DAYWIZ",
       width: 1600,
       height: 1600,
       fileSize: source.length,
@@ -3883,16 +3948,18 @@ export function MvpDashboard({
 
   function opportunityAssetFields(): Partial<CreateCreativeAssetInput> {
     const context = productInfo.creativeContext;
-    return context ? {
-      advertiserId: context.advertiserId,
-      productId: context.productId,
-      opportunityId: context.opportunityId,
-      analysisRunId: context.analysisRunId,
-      opportunityType: context.opportunityType,
-      recommendedHookType: context.recommendedHookTypes?.[0],
-      appliedContentNoteIds: context.appliedContentNotes?.map((note) => note.id),
-      reviewInsightIds: context.reviewInsightIds,
-    } : {};
+    return context
+      ? {
+          advertiserId: context.advertiserId,
+          productId: context.productId,
+          opportunityId: context.opportunityId,
+          analysisRunId: context.analysisRunId,
+          opportunityType: context.opportunityType,
+          recommendedHookType: context.recommendedHookTypes?.[0],
+          appliedContentNoteIds: context.appliedContentNotes?.map((note) => note.id),
+          reviewInsightIds: context.reviewInsightIds,
+        }
+      : {};
   }
 
   async function issueCodeForExistingBanner() {
@@ -3905,14 +3972,16 @@ export function MvpDashboard({
       productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
       productName: productInfo.productName,
       category: productInfo.category,
-      hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+      hookType:
+        creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
       advertisingHypothesis:
         creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
       headline: bannerCopy.headline,
       subCopy: bannerCopy.bodyCopy,
       benefitCopy: [bannerCopy.highlightCopy, bannerCopy.bottomBarCopy].filter(Boolean).join(" · "),
       templateId: renderDiagnostics?.templateId || selectedTemplate?.id || "existing-render",
-      layoutType: selectedAdaptivePlan?.layoutType || selectedTemplate?.templateGroup || "existing-render",
+      layoutType:
+        selectedAdaptivePlan?.layoutType || selectedTemplate?.templateGroup || "existing-render",
       backgroundType: currentBackgroundComposition.sourceType,
       backgroundId: currentBackgroundComposition.sourceId,
       sourceProductImage: currentMainProductImage,
@@ -4360,17 +4429,22 @@ export function MvpDashboard({
           productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
           productName: productInfo.productName,
           category: productInfo.category,
-          hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+          hookType:
+            creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
           advertisingHypothesis:
-            creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
+            creativeWorkflow.selectedStrategy?.explanation ||
+            creativeWorkflow.selectedStrategy?.title,
           headline: copyPayload.headline,
           subCopy: copyPayload.bodyCopy,
-          benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy].filter(Boolean).join(" · "),
+          benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy]
+            .filter(Boolean)
+            .join(" · "),
           templateId: template.id,
           layoutType: template.templateGroup || template.id,
           backgroundType: currentBackgroundComposition?.sourceType || currentBackgroundMode,
           backgroundId: currentBackgroundComposition?.sourceId,
-          sourceProductImage: resolvedImages.productImagePath || resolvedImages.productImagePaths[0],
+          sourceProductImage:
+            resolvedImages.productImagePath || resolvedImages.productImagePaths[0],
           generatedImageUrl: renderResult.imagePath || renderResult.path || "",
           objective: creativeWorkflow.adBrief.adObjective,
           generationRequestKey: `mvp-batch:${resultId}`,
@@ -4545,7 +4619,8 @@ export function MvpDashboard({
     });
 
     try {
-      const generationRequestId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const generationRequestId =
+        globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const copyForRender = { ...bannerCopy };
       const automaticDesign = await ensureAutomaticBannerDesign(copyForRender);
       const automaticBackground = automaticDesign.recommendation.background;
@@ -4662,12 +4737,16 @@ export function MvpDashboard({
         productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
         productName: productInfo.productName,
         category: productInfo.category,
-        hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+        hookType:
+          creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
         advertisingHypothesis:
-          creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
+          creativeWorkflow.selectedStrategy?.explanation ||
+          creativeWorkflow.selectedStrategy?.title,
         headline: copyPayload.headline,
         subCopy: copyPayload.bodyCopy,
-        benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy].filter(Boolean).join(" · "),
+        benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy]
+          .filter(Boolean)
+          .join(" · "),
         templateId: `auto-${automaticPlan.layoutType}`,
         layoutType: automaticPlan.layoutType,
         backgroundType: automaticBackground.sourceType || "library",
@@ -4721,7 +4800,7 @@ export function MvpDashboard({
   }
 
   return (
-    <main className="mvp-shell">
+    <main className="mvp-shell mvp-shell-simplified">
       {hoveredDetailImage ? (
         <div
           className="floating-detail-preview"
@@ -4731,61 +4810,107 @@ export function MvpDashboard({
           <span>{hoveredDetailImage.label}</span>
         </div>
       ) : null}
-      <aside className="mvp-sidebar">
-        <a className="daywiz-brand" href="https://daywiz.ai/ko/" rel="noreferrer" target="_blank">
-          <img
-            alt="DAYWIZ"
-            src="https://framerusercontent.com/images/qf5jzCui73psKYbHJrIqtpXYQU.png"
-          />
-        </a>
-        <div>
-          <p className="eyebrow">AdAtlas MVP</p>
-          <h1>광고 이미지 수집 생성기</h1>
-        </div>
+      <button
+        aria-controls="adatlas-workspace-navigation"
+        aria-expanded={mobileNavOpen}
+        className="mvp-mobile-navigation-button"
+        onClick={() => setMobileNavOpen((current) => !current)}
+        type="button"
+      >
+        {mobileNavOpen ? "메뉴 닫기" : "메뉴"}
+      </button>
+      {mobileNavOpen ? (
+        <button
+          aria-label="메뉴 닫기"
+          className="mvp-navigation-backdrop"
+          onClick={() => setMobileNavOpen(false)}
+          type="button"
+        />
+      ) : null}
+      <aside
+        className={`mvp-sidebar ${mobileNavOpen ? "open" : ""}`}
+        id="adatlas-workspace-navigation"
+      >
+        <Link className="adatlas-sidebar-brand" href="/">
+          <DaywizBrand subtitle="광고 콘텐츠 실험 시스템" />
+        </Link>
         <AppFeatureNavigation activeFeature={activeFeature} />
-        <nav className="mvp-workflow-navigation" aria-label="현재 작업 세부 메뉴">
-          {menus.map((menu) => (
-            <button
-              className={activeMenu === menu ? "active" : ""}
-              key={menu}
-              onClick={() => setActiveMenu(menu)}
-              type="button"
+        <details className="mvp-management-tools">
+          <summary>관리 도구</summary>
+          <nav className="mvp-workflow-navigation" aria-label="이미지와 카테고리 관리">
+            {menus
+              .filter((menu) => !["광고 생성", "결과 다운로드"].includes(menu))
+              .map((menu) => (
+                <button
+                  className={activeMenu === menu ? "active" : ""}
+                  key={menu}
+                  onClick={() => {
+                    setActiveMenu(menu);
+                    setMobileNavOpen(false);
+                  }}
+                  type="button"
+                >
+                  {menu}
+                </button>
+              ))}
+            <a
+              href="#advanced-generation-settings"
+              onClick={() => {
+                setActiveMenu("광고 생성");
+                setMobileNavOpen(false);
+              }}
             >
-              {menu}
-            </button>
-          ))}
-        </nav>
+              생성 설정·상태
+            </a>
+          </nav>
+          <AuxiliaryFeatureNavigation activeFeature={activeFeature} />
+        </details>
+        <details className="mvp-sidebar-help" id="create-product-help">
+          <summary>도움말</summary>
+          <p>상품 주소를 분석한 뒤 파란색 버튼을 따라가면 광고 6장을 완성할 수 있습니다.</p>
+        </details>
       </aside>
 
       <section className="mvp-workspace">
-        <header className="mvp-hero">
+        <header className={`mvp-hero ${activeMenu === "광고 생성" ? "creation-page-hero" : ""}`}>
           <div>
-            <p className="eyebrow">MVP Workflow</p>
-            <h2>수집된 광고 이미지를 카테고리, 후킹 유형, 소구점 기준으로 라벨링합니다.</h2>
-          </div>
-          <div className="mvp-primary-actions">
-            <button onClick={() => setActiveMenu("이미지 수집")} type="button">
-              수집 이미지 라벨링
-            </button>
-            <button onClick={() => setActiveMenu("이미지 수집")} type="button">
-              수집된 이미지 보기
-            </button>
-            <button onClick={() => setActiveMenu("광고 생성")} type="button">
-              광고 이미지 생성하기
-            </button>
+            <p className="eyebrow">
+              {activeMenu === "광고 생성"
+                ? "CREATE"
+                : activeMenu === "결과 다운로드"
+                  ? "RESULTS"
+                  : "ADMIN"}
+            </p>
+            <h2>
+              {activeMenu === "광고 생성"
+                ? "광고 만들기"
+                : activeMenu === "결과 다운로드"
+                  ? "제작 결과"
+                  : "이미지 관리 현황"}
+            </h2>
+            <p>
+              {activeMenu === "광고 생성"
+                ? "상품 페이지 주소를 입력하면 상품을 분석하고 광고 콘텐츠를 제작합니다."
+                : activeMenu === "결과 다운로드"
+                  ? "생성한 광고와 소재코드를 다시 확인하고 내려받습니다."
+                  : "수집 이미지, 라벨, 카테고리와 생성 설정을 관리합니다."}
+            </p>
           </div>
         </header>
 
-        <section className="mvp-metrics">
-          {metrics.map(([label, value]) => (
-            <article key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </article>
-          ))}
-        </section>
-
-        <div className={`mvp-status ${status.kind}`}>{status.message}</div>
+        {!["광고 생성", "결과 다운로드"].includes(activeMenu) ? (
+          <>
+            <section className="mvp-metrics" aria-label="이미지 관리 현황">
+              {metrics.map(([label, value]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </article>
+              ))}
+            </section>
+            <div className={`mvp-status ${status.kind}`}>{status.message}</div>
+          </>
+        ) : null}
 
         {activeMenu === "카테고리 관리" ? (
           <section className="mvp-panel">
@@ -4878,29 +5003,19 @@ export function MvpDashboard({
         ) : null}
 
         {activeMenu === "광고 생성" ? (
-          <section className="mvp-panel">
-            <div className="mvp-panel-head">
-              <h3>Canvas/SVG 광고 배너 생성</h3>
-              <span className="panel-note">
-                문구 생성만 OpenAI를 사용할 수 있고, 배너 생성은 SVG 렌더링만 사용합니다.
-              </span>
-            </div>
-
+          <section className="mvp-panel create-product-panel">
             {initialCreationHandoff ? (
-              <section className="analysis-handoff-banner">
-                <div className="analysis-handoff-score">
-                  <span>{handoffSourceLabel}</span>
-                  <strong>{initialCreationHandoff.advertisingScore}</strong>
-                  <small>
-                    광고 적합도 · confidence {Math.round(initialCreationHandoff.confidence * 100)}%
-                  </small>
-                </div>
-                <div className="analysis-handoff-copy">
-                  <p className="eyebrow">SELECTED CONTENT ANGLE</p>
-                  <h4>{initialCreationHandoff.selectedContentAngle?.name || "추천 상품 제작"}</h4>
+              <details className="analysis-handoff-notice">
+                <summary>
+                  <span>{handoffSourceLabel}에서 선택한 상품을 불러왔습니다.</span>
+                  <strong>
+                    {initialCreationHandoff.selectedContentAngle?.name || "추천 방향 적용됨"}
+                  </strong>
+                </summary>
+                <div>
                   <p>
                     {initialCreationHandoff.selectedContentAngle?.reason ||
-                      "분석 결과의 상품정보와 이미지 후보를 기존 제작 엔진에 연결했습니다."}
+                      "상품정보와 이미지 후보를 광고 제작에 연결했습니다."}
                   </p>
                   {initialCreationHandoff.selectedContentAngle?.evidence.length ? (
                     <ul>
@@ -4909,67 +5024,124 @@ export function MvpDashboard({
                       ))}
                     </ul>
                   ) : null}
-                </div>
-                <div className="analysis-handoff-meta">
-                  <span>추천 템플릿 {recommendedTemplateIds.length}개</span>
-                  <span>추천 레퍼런스 {recommendedReferenceLabelIds.length}개</span>
-                  <span>
-                    참고사항 {initialCreationHandoff.creativeContext?.appliedContentNotes?.length || 0}개 · 카피 가이드 {initialCreationHandoff.matchedCopyGuideId || "카테고리 기본"}
-                  </span>
                   <a
-                    href={initialCreationHandoff.creativeContext?.opportunityId ? "/analyze-store" : `/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`}
+                    href={
+                      initialCreationHandoff.creativeContext?.opportunityId
+                        ? "/analyze-store"
+                        : `/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`
+                    }
                   >
-                    분석 결과로 돌아가기
+                    다른 추천 상품 보기
                   </a>
                 </div>
-              </section>
+              </details>
             ) : null}
 
             <ol className="creation-flow-overview" aria-label="광고 콘텐츠 제작 흐름">
-              <li className={productInfo.productName ? "done" : "active"}>
-                <b>1</b><span><strong>상품 확인</strong><small>URL 분석과 실제 상품 이미지 확인</small></span>
+              <li className={currentProductLoaded ? "done" : "active"}>
+                <b>1</b>
+                <span>
+                  <strong>상품 확인</strong>
+                  <small>주소를 분석하고 상품을 확인합니다</small>
+                </span>
               </li>
-              <li className={generationPlanConfirmed ? "done" : productInfo.productName ? "active" : ""}>
-                <b>2</b><span><strong>목표·마스터 디자인</strong><small>성과 목표와 고정 디자인 확정</small></span>
+              <li
+                className={generationPlanConfirmed ? "done" : currentProductLoaded ? "active" : ""}
+              >
+                <b>2</b>
+                <span>
+                  <strong>이미지 만들기</strong>
+                  <small>목표와 공통 디자인을 정합니다</small>
+                </span>
               </li>
               <li className={generationPlanConfirmed ? "active" : ""}>
-                <b>3</b><span><strong>후킹 8장 생성</strong><small>같은 디자인에서 H01~H08 메시지만 비교</small></span>
+                <b>3</b>
+                <span>
+                  <strong>후킹 6종 완성</strong>
+                  <small>후킹마다 다른 AI 콘텐츠를 제작합니다</small>
+                </span>
               </li>
             </ol>
 
             <div className="ad-generation-flow">
               <div className="banner-builder">
-                <section className="strategy-form landing-url-panel">
+                <section className="strategy-form landing-url-panel" id="product-url-step">
                   <p className="eyebrow">1 · 상품 확인</p>
-                  <h4>상품 상세페이지 URL</h4>
-                  <label>
-                    <span>상품 URL</span>
-                    <input
-                      onChange={(event) => updateProductInfoField("landingUrl", event.target.value)}
-                      placeholder="https://..."
-                      value={productInfo.landingUrl}
-                    />
-                  </label>
-                  <button
-                    disabled={productExtractStatus.kind === "loading"}
-                    onClick={() => loadProductInfoFromUrl()}
-                    type="button"
-                  >
-                    상품정보 불러오기
-                  </button>
+                  <h3>어떤 상품의 광고를 만들까요?</h3>
+                  <p>쇼핑몰의 상품 상세페이지 주소를 붙여 넣어주세요.</p>
+                  <div className="product-url-entry">
+                    <label>
+                      <span className="sr-only">상품 페이지 주소</span>
+                      <input
+                        id="product-url-input"
+                        onChange={(event) =>
+                          updateProductInfoField("landingUrl", event.target.value)
+                        }
+                        placeholder="https://shop.example.com/products/123"
+                        value={productInfo.landingUrl}
+                      />
+                    </label>
+                    <button
+                      disabled={productExtractStatus.kind === "loading"}
+                      onClick={() => loadProductInfoFromUrl()}
+                      type="button"
+                    >
+                      {productExtractStatus.kind === "loading"
+                        ? "상품을 확인하고 있어요…"
+                        : "상품 분석하기"}
+                    </button>
+                  </div>
+                  <small>예: 브랜드몰·스마트스토어·카페24의 개별 상품 주소</small>
                   <div className={`mvp-status ${productExtractStatus.kind}`}>
                     {productExtractStatus.message}
                   </div>
+                  {recentProducts.length ? (
+                    <div className="recent-product-list" aria-label="최근 분석한 상품">
+                      <span>최근 상품</span>
+                      <div>
+                        {recentProducts.map((item) => (
+                          <button
+                            key={item.landingUrl}
+                            onClick={() => {
+                              updateProductInfoField("landingUrl", item.landingUrl);
+                              window.requestAnimationFrame(() =>
+                                document.getElementById("product-url-input")?.focus()
+                              );
+                            }}
+                            type="button"
+                          >
+                            {/* Stored product-page images intentionally bypass Next image optimization. */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {item.imagePath ? <img alt="" src={item.imagePath} /> : null}
+                            <span>
+                              <strong>{item.productName}</strong>
+                              <small>{item.brandName || item.price || "다시 분석하기"}</small>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </section>
                 <ProductAnalysisSummary
                   brief={creativeWorkflow.adBrief}
-                  loaded={Boolean(
-                    lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
-                  )}
+                  imagePaths={hookExperimentProductImagePaths}
+                  loaded={currentProductLoaded}
+                  onChooseOther={() => {
+                    document.getElementById("product-url-input")?.focus();
+                    document
+                      .getElementById("product-url-step")
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  onUseProduct={() =>
+                    document
+                      .getElementById("ad-strategy-step")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
                   product={productInfo}
                   references={autoMatchedReferenceLabels}
                 />
-                <details className="product-info-details">
+                <details className="product-info-details" hidden={!currentProductLoaded}>
                   <summary>불러온 상품 정보 확인·수정</summary>
                   <section className="strategy-form banner-product-form">
                     <p className="eyebrow">Product Info</p>
@@ -5004,190 +5176,216 @@ export function MvpDashboard({
                       ))}
                   </section>
                 </details>
-                <ProductBriefForm
-                  brief={creativeWorkflow.adBrief}
-                  canConfirm={Boolean(productInfo.productName.trim() && hookExperimentProductImagePaths.length)}
-                  confirmed={generationPlanConfirmed}
-                  onChange={updateAdBrief}
-                  onConfirm={() => setGenerationPlanConfirmed(true)}
-                />
-                <CreativeContentNotesPanel
-                  onResolvedNotesChange={({ advertiserId, productId, notes }) => {
-                    setProductInfo((current) => ({
-                      ...current,
-                      creativeContext: {
-                        advertiserId,
-                        productId,
-                        ...current.creativeContext,
-                        appliedContentNotes: notes,
-                      },
-                    }));
-                  }}
-                  product={productInfo}
-                />
-                <HookExperimentCreativeGenerator
-                  adBrief={creativeWorkflow.adBrief}
-                  logoPath={brandLogoPath}
-                  planConfirmed={generationPlanConfirmed}
-                  product={productInfo}
-                  productImagePaths={hookExperimentProductImagePaths}
-                  selectedAdImages={selectedAdImages.selectedImagePaths}
-                  source={
-                    lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
-                      ? "landing-page"
-                      : "user-input"
-                  }
-                />
-                <details className="advanced-production-workspace">
+                <div hidden={!currentProductLoaded} id="ad-strategy-step">
+                  <ProductBriefForm
+                    brief={creativeWorkflow.adBrief}
+                    canConfirm={Boolean(
+                      productInfo.productName.trim() && hookExperimentProductImagePaths.length
+                    )}
+                    confirmed={generationPlanConfirmed}
+                    onChange={updateAdBrief}
+                    onConfirm={() => setGenerationPlanConfirmed(true)}
+                  />
+                </div>
+                <div hidden={!currentProductLoaded}>
+                  <HookExperimentCreativeGenerator
+                    adBrief={creativeWorkflow.adBrief}
+                    logoPath={brandLogoPath}
+                    planConfirmed={generationPlanConfirmed}
+                    product={productInfo}
+                    productImagePaths={hookExperimentProductImagePaths}
+                    selectedAdImages={selectedAdImages.selectedImagePaths}
+                    source={
+                      lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
+                        ? "landing-page"
+                        : "user-input"
+                    }
+                  />
+                </div>
+                <details
+                  className="advanced-production-workspace"
+                  hidden={!currentProductLoaded}
+                  id="advanced-generation-settings"
+                >
                   <summary>
-                    <span><b>고급 설정 · 대표 소재 직접 조정</b><small>업체 카피 가이드, 문구 전략, 배경, 레이아웃을 수동으로 바꿀 때만 사용</small></span>
+                    <span>
+                      <b>고급 설정 · 대표 소재 직접 조정</b>
+                      <small>
+                        업체 카피 가이드, 문구 전략, 배경, 레이아웃을 수동으로 바꿀 때만 사용
+                      </small>
+                    </span>
                   </summary>
                   <div className="advanced-production-body">
-                <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
-                <section className="strategy-form template-first-panel">
-                  <p className="eyebrow">Auto Template</p>
-                  <label>
-                    <span>업체별 카피 가이드</span>
-                    <select
-                      onChange={(event) => setSelectedAdvertiserName(event.target.value)}
-                      value={selectedAdvertiserName}
-                    >
-                      {advertiserOptions.map((option) => (
-                        <option key={option.value || "none"} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <small>
-                      {selectedAdvertiserOption.guideId
-                        ? `${selectedAdvertiserOption.label} 카피 가이드 적용 예정`
-                        : "업체별 카피 가이드 미적용"}
-                    </small>
-                  </label>
-                  <h4>상품별 자동 템플릿</h4>
-                  <p className="template-limit-summary">
-                    자동 생성된 대표 문구에 맞춰 배경·문구 영역·상품 위치·가격·CTA·색상을 조합한
-                    전용 템플릿을 생성합니다. 고정 템플릿을 선택할 필요가 없습니다.
-                  </p>
-                  {selectedTemplate ? (
-                    <p className="template-limit-summary">
-                      자동 폰트 스타일 참고: {selectedTemplate.name} · 문구 제한 headline{" "}
-                      {slotMaxChars("headline")}자 / body {slotMaxChars("bodyCopy")}자 / 하단{" "}
-                      {slotMaxChars("bottomBarCopy")}자 / CTA {slotMaxChars("cta")}자
-                    </p>
-                  ) : null}
-                  <p className="copy-generation-note">
-                    문구를 선택하는 단계 없이 6개를 만들고, 1번은 대표 소재에 적용하며 나머지는
-                    문구별 시안 생성에 자동 반영합니다.
-                  </p>
-                </section>
-                <div className={`mvp-status ${strategyStatus.kind}`}>{strategyStatus.message}</div>
-                <StrategySelector
-                  copies={automaticCopySet}
-                  isGenerating={
-                    creativeWorkflow.isGeneratingStrategies ||
-                    copyStatus.kind === "loading" ||
-                    backgroundRecommendationStatus.kind === "loading"
-                  }
-                  onGenerate={() =>
-                    void generateAndApplyAutomaticCopies(creativeWorkflow.generateStrategies)
-                  }
-                  onGenerateMore={() =>
-                    void generateAndApplyAutomaticCopies(
-                      creativeWorkflow.generateMoreStrategies,
-                      true
-                    )
-                  }
-                  selectedStrategyId={creativeWorkflow.selectedStrategyId}
-                  strategies={creativeWorkflow.strategies}
-                />
-                {creativeWorkflow.selectedStrategy ? (
-                  <>
-                    <BackgroundRecommendationPanel
-                      audienceProfile={backgroundAudienceProfile}
-                      loading={backgroundRecommendationStatus.kind === "loading"}
-                      onRefresh={() =>
-                        void loadBackgroundRecommendations(
-                          creativeWorkflow.selectedStrategy!,
-                          recentBackgroundRecommendationIds
+                    <CreativeContentNotesPanel
+                      onResolvedNotesChange={({ advertiserId, productId, notes }) => {
+                        setProductInfo((current) => ({
+                          ...current,
+                          creativeContext: {
+                            advertiserId,
+                            productId,
+                            ...current.creativeContext,
+                            appliedContentNotes: notes,
+                          },
+                        }));
+                      }}
+                      product={productInfo}
+                    />
+                    <div className={`mvp-status ${copyStatus.kind}`}>{copyStatus.message}</div>
+                    <section className="strategy-form template-first-panel">
+                      <p className="eyebrow">Auto Template</p>
+                      <label>
+                        <span>업체별 카피 가이드</span>
+                        <select
+                          onChange={(event) => setSelectedAdvertiserName(event.target.value)}
+                          value={selectedAdvertiserName}
+                        >
+                          {advertiserOptions.map((option) => (
+                            <option key={option.value || "none"} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <small>
+                          {selectedAdvertiserOption.guideId
+                            ? `${selectedAdvertiserOption.label} 카피 가이드 적용 예정`
+                            : "업체별 카피 가이드 미적용"}
+                        </small>
+                      </label>
+                      <h4>상품별 자동 템플릿</h4>
+                      <p className="template-limit-summary">
+                        자동 생성된 대표 문구에 맞춰 배경·문구 영역·상품 위치·가격·CTA·색상을 조합한
+                        전용 템플릿을 생성합니다. 고정 템플릿을 선택할 필요가 없습니다.
+                      </p>
+                      {selectedTemplate ? (
+                        <p className="template-limit-summary">
+                          자동 폰트 스타일 참고: {selectedTemplate.name} · 문구 제한 headline{" "}
+                          {slotMaxChars("headline")}자 / body {slotMaxChars("bodyCopy")}자 / 하단{" "}
+                          {slotMaxChars("bottomBarCopy")}자 / CTA {slotMaxChars("cta")}자
+                        </p>
+                      ) : null}
+                      <p className="copy-generation-note">
+                        문구를 선택하는 단계 없이 6개를 만들고, 1번은 대표 소재에 적용하며 나머지는
+                        문구별 시안 생성에 자동 반영합니다.
+                      </p>
+                    </section>
+                    <div className={`mvp-status ${strategyStatus.kind}`}>
+                      {strategyStatus.message}
+                    </div>
+                    <StrategySelector
+                      copies={automaticCopySet}
+                      isGenerating={
+                        creativeWorkflow.isGeneratingStrategies ||
+                        copyStatus.kind === "loading" ||
+                        backgroundRecommendationStatus.kind === "loading"
+                      }
+                      onGenerate={() =>
+                        void generateAndApplyAutomaticCopies(creativeWorkflow.generateStrategies)
+                      }
+                      onGenerateMore={() =>
+                        void generateAndApplyAutomaticCopies(
+                          creativeWorkflow.generateMoreStrategies,
+                          true
                         )
                       }
-                      onSelectBackground={selectLibraryBackground}
-                      recommendations={backgroundRecommendations}
-                      selectedBackgroundId={selectedLibraryBackgroundId}
-                      status={backgroundRecommendationStatus.message}
+                      selectedStrategyId={creativeWorkflow.selectedStrategyId}
+                      strategies={creativeWorkflow.strategies}
                     />
-                    <BackgroundCatalogPanel
-                      hook={creativeWorkflow.selectedStrategy}
-                      onSelectBackground={selectLibraryBackground}
-                      onSelectFixedBackground={selectFixedBackground}
-                      product={productInfo}
-                      selectedBackgroundSource={String(productInfo.selectedBackgroundSource || "")}
-                    />
-                  </>
-                ) : null}
-                {selectedLibraryBackground ? (
-                  <AdaptiveCreativePanel
-                    backgroundFile={selectedLibraryBackground.file}
-                    generationMode={creativeGenerationMode}
-                    generating={adaptiveCreativeGenerating}
-                    loading={adaptiveLayoutStatus.kind === "loading"}
-                    onChangePlan={(nextPlan) => {
-                      setAdaptiveLayoutPlans((current) =>
-                        current.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan))
-                      );
-                      setGeneratedBannerPath("");
-                    }}
-                    onGenerateVariants={() => void generateAdaptiveCreativeVariants()}
-                    onGenerationModeChange={(mode) => {
-                      setCreativeGenerationMode(mode);
-                      setAdaptiveCreativeResults([]);
-                    }}
-                    onReset={() => {
-                      setAdaptiveLayoutPlans(automaticAdaptiveLayoutPlans);
-                      setSelectedAdaptivePlanId(
-                        automaticAdaptiveLayoutPlans.find(
-                          (plan) => plan.id === selectedAdaptivePlanId
-                        )?.id ||
-                          automaticAdaptiveLayoutPlans[0]?.id ||
-                          ""
-                      );
-                      setGeneratedBannerPath("");
-                    }}
-                    onSelectPlan={(id) => {
-                      setSelectedAdaptivePlanId(id);
-                      setGeneratedBannerPath("");
-                    }}
-                    onUseResult={useAdaptiveCreativeResult}
-                    plans={adaptiveLayoutPlans}
-                    results={adaptiveCreativeResults}
-                    selectedPlanId={selectedAdaptivePlanId}
-                    status={adaptiveLayoutStatus.message}
-                  />
-                ) : null}
-                <div className="workflow-primary-action">
-                  <span>
-                    {creativeWorkflow.selectedStrategy
-                      ? `대표 적용: ${creativeWorkflow.selectedStrategy.title} · 배경과 템플릿도 자동 적용`
-                      : "광고문구 6개를 생성하면 대표 문구·배경·템플릿이 자동 적용됩니다."}
-                  </span>
-                </div>
+                    {creativeWorkflow.selectedStrategy ? (
+                      <>
+                        <BackgroundRecommendationPanel
+                          audienceProfile={backgroundAudienceProfile}
+                          loading={backgroundRecommendationStatus.kind === "loading"}
+                          onRefresh={() =>
+                            void loadBackgroundRecommendations(
+                              creativeWorkflow.selectedStrategy!,
+                              recentBackgroundRecommendationIds
+                            )
+                          }
+                          onSelectBackground={selectLibraryBackground}
+                          recommendations={backgroundRecommendations}
+                          selectedBackgroundId={selectedLibraryBackgroundId}
+                          status={backgroundRecommendationStatus.message}
+                        />
+                        <BackgroundCatalogPanel
+                          hook={creativeWorkflow.selectedStrategy}
+                          onSelectBackground={selectLibraryBackground}
+                          onSelectFixedBackground={selectFixedBackground}
+                          product={productInfo}
+                          selectedBackgroundSource={String(
+                            productInfo.selectedBackgroundSource || ""
+                          )}
+                        />
+                      </>
+                    ) : null}
+                    {selectedLibraryBackground ? (
+                      <AdaptiveCreativePanel
+                        backgroundFile={selectedLibraryBackground.file}
+                        generationMode={creativeGenerationMode}
+                        generating={adaptiveCreativeGenerating}
+                        loading={adaptiveLayoutStatus.kind === "loading"}
+                        onChangePlan={(nextPlan) => {
+                          setAdaptiveLayoutPlans((current) =>
+                            current.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan))
+                          );
+                          setGeneratedBannerPath("");
+                        }}
+                        onGenerateVariants={() => void generateAdaptiveCreativeVariants()}
+                        onGenerationModeChange={(mode) => {
+                          setCreativeGenerationMode(mode);
+                          setAdaptiveCreativeResults([]);
+                        }}
+                        onReset={() => {
+                          setAdaptiveLayoutPlans(automaticAdaptiveLayoutPlans);
+                          setSelectedAdaptivePlanId(
+                            automaticAdaptiveLayoutPlans.find(
+                              (plan) => plan.id === selectedAdaptivePlanId
+                            )?.id ||
+                              automaticAdaptiveLayoutPlans[0]?.id ||
+                              ""
+                          );
+                          setGeneratedBannerPath("");
+                        }}
+                        onSelectPlan={(id) => {
+                          setSelectedAdaptivePlanId(id);
+                          setGeneratedBannerPath("");
+                        }}
+                        onUseResult={useAdaptiveCreativeResult}
+                        plans={adaptiveLayoutPlans}
+                        results={adaptiveCreativeResults}
+                        selectedPlanId={selectedAdaptivePlanId}
+                        status={adaptiveLayoutStatus.message}
+                      />
+                    ) : null}
+                    <div className="workflow-primary-action">
+                      <span>
+                        {creativeWorkflow.selectedStrategy
+                          ? `대표 적용: ${creativeWorkflow.selectedStrategy.title} · 배경과 템플릿도 자동 적용`
+                          : "광고문구 6개를 생성하면 대표 문구·배경·템플릿이 자동 적용됩니다."}
+                      </span>
+                    </div>
                   </div>
                 </details>
               </div>
 
-              <details className="advanced-production-workspace advanced-editor-workspace">
+              <details
+                className="advanced-production-workspace advanced-editor-workspace"
+                hidden={!currentProductLoaded}
+              >
                 <summary>
-                  <span><b>세부 문구·이미지·배너 편집기</b><small>생성 결과를 직접 수정하거나 단일 배너를 정밀 제작할 때 열기</small></span>
+                  <span>
+                    <b>세부 문구·이미지·배너 편집기</b>
+                    <small>생성 결과를 직접 수정하거나 단일 배너를 정밀 제작할 때 열기</small>
+                  </span>
                 </summary>
-              <div className="banner-workspace">
-                <section className="copy-edit-panel">
-                  <div>
-                    <p className="eyebrow">Editable Copy</p>
-                    <h4>생성 문구 수정</h4>
-                  </div>
-                  {(["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta"] as const).map(
-                    (key) => (
+                <div className="banner-workspace">
+                  <section className="copy-edit-panel">
+                    <div>
+                      <p className="eyebrow">Editable Copy</p>
+                      <h4>생성 문구 수정</h4>
+                    </div>
+                    {(
+                      ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta"] as const
+                    ).map((key) => (
                       <label key={key}>
                         <span>
                           {key}
@@ -5217,137 +5415,2206 @@ export function MvpDashboard({
                           <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
                         ) : null}
                       </label>
-                    )
-                  )}
-                  {hasMasterCopy ? (
-                    <>
-                      <MessageHierarchyEditor
-                        onChange={updateMessageHierarchy}
-                        value={creativeWorkflow.messageHierarchy}
-                      />
-                      <CopyQualityPanel
-                        onTighten={applyTemplateTightCopy}
-                        report={copyQualityReport}
-                      />
-                    </>
-                  ) : null}
-                  <BasicStyleControls onChange={updateBasicEditor} value={basicEditorSettings} />
-                  <label>
-                    <span>CTA 표시</span>
-                    <select
-                      onChange={(event) => setShowCta(event.target.value === "show")}
-                      value={showCta ? "show" : "hide"}
-                    >
-                      <option value="show">표시</option>
-                      <option value="hide">표시 안 함</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>제목 글씨 스타일</span>
-                    <select
-                      onChange={(event) =>
-                        selectHeadlinePreset(
-                          event.target.value as HeadlineStyleOverrides["headlineFontPreset"]
-                        )
-                      }
-                      value={headlineStyleOverrides.headlineFontPreset || "impact-korean-red"}
-                    >
-                      <option value="impact-korean-red">빨간 특가형</option>
-                      <option value="commerce-heavy-black">검정 굵은형</option>
-                      <option value="premium-serif-gold">고급 선물형</option>
-                      <option value="ugc-bold-white">흰색 외곽선형</option>
-                    </select>
-                  </label>
-                  <div className="copy-accent-controls">
+                    ))}
+                    {hasMasterCopy ? (
+                      <>
+                        <MessageHierarchyEditor
+                          onChange={updateMessageHierarchy}
+                          value={creativeWorkflow.messageHierarchy}
+                        />
+                        <CopyQualityPanel
+                          onTighten={applyTemplateTightCopy}
+                          report={copyQualityReport}
+                        />
+                      </>
+                    ) : null}
+                    <BasicStyleControls onChange={updateBasicEditor} value={basicEditorSettings} />
                     <label>
-                      <span>강조할 문구</span>
+                      <span>CTA 표시</span>
+                      <select
+                        onChange={(event) => setShowCta(event.target.value === "show")}
+                        value={showCta ? "show" : "hide"}
+                      >
+                        <option value="show">표시</option>
+                        <option value="hide">표시 안 함</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>제목 글씨 스타일</span>
+                      <select
+                        onChange={(event) =>
+                          selectHeadlinePreset(
+                            event.target.value as HeadlineStyleOverrides["headlineFontPreset"]
+                          )
+                        }
+                        value={headlineStyleOverrides.headlineFontPreset || "impact-korean-red"}
+                      >
+                        <option value="impact-korean-red">빨간 특가형</option>
+                        <option value="commerce-heavy-black">검정 굵은형</option>
+                        <option value="premium-serif-gold">고급 선물형</option>
+                        <option value="ugc-bold-white">흰색 외곽선형</option>
+                      </select>
+                    </label>
+                    <div className="copy-accent-controls">
+                      <label>
+                        <span>강조할 문구</span>
+                        <input
+                          onChange={(event) => setBannerAccentPhrase(event.target.value)}
+                          placeholder="비워두면 자동 선택. 예: 입안에서 육즙 폭발, 등심"
+                          value={bannerAccentPhrase}
+                        />
+                        <small>
+                          비워두면 가격/상품명/혜택 표현을 자동 강조합니다. 수동 입력은 쉼표로
+                          구분하고, 문구 안에서 [[등심]]처럼 감싸도 됩니다.
+                        </small>
+                      </label>
+                      <label>
+                        <span>강조 색상</span>
+                        <input
+                          onChange={(event) => setBannerAccentColor(event.target.value)}
+                          type="color"
+                          value={bannerAccentColor}
+                        />
+                      </label>
+                    </div>
+                    <button
+                      className="secondary-tool-button"
+                      onClick={() => setShowAdvancedHeadlineStyle((current) => !current)}
+                      type="button"
+                    >
+                      제목 세부 조정 {showAdvancedHeadlineStyle ? "닫기" : "열기"}
+                    </button>
+                    {showAdvancedHeadlineStyle ? (
+                      <div className="advanced-style-grid">
+                        <label>
+                          <span>글씨 크기</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineFontSize",
+                                event.target.value ? Number(event.target.value) : ""
+                              )
+                            }
+                            placeholder="자동"
+                            type="number"
+                            value={headlineStyleOverrides.headlineFontSize ?? ""}
+                          />
+                        </label>
+                        <label>
+                          <span>굵기</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineFontWeight",
+                                event.target.value ? Number(event.target.value) : ""
+                              )
+                            }
+                            placeholder="900"
+                            type="number"
+                            value={headlineStyleOverrides.headlineFontWeight ?? ""}
+                          />
+                        </label>
+                        <label>
+                          <span>자간</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineLetterSpacing",
+                                event.target.value ? Number(event.target.value) : ""
+                              )
+                            }
+                            placeholder="-4"
+                            type="number"
+                            value={headlineStyleOverrides.headlineLetterSpacing ?? ""}
+                          />
+                        </label>
+                        <label>
+                          <span>줄 간격</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineLineHeight",
+                                event.target.value ? Number(event.target.value) : ""
+                              )
+                            }
+                            placeholder="0.95"
+                            step="0.01"
+                            type="number"
+                            value={headlineStyleOverrides.headlineLineHeight ?? ""}
+                          />
+                        </label>
+                        <label>
+                          <span>제목 색상</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride("headlineColor", event.target.value)
+                            }
+                            type="color"
+                            value={headlineStyleOverrides.headlineColor || "#ff1f1f"}
+                          />
+                        </label>
+                        <label>
+                          <span>외곽선</span>
+                          <select
+                            onChange={(event) =>
+                              setHeadlineStrokeEnabled(event.target.value === "on")
+                            }
+                            value={headlineStyleOverrides.headlineTextStroke ? "on" : "off"}
+                          >
+                            <option value="off">끄기</option>
+                            <option value="on">켜기</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>외곽선 색상</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineTextStrokeColor",
+                                event.target.value
+                              )
+                            }
+                            type="color"
+                            value={headlineStyleOverrides.headlineTextStrokeColor || "#111111"}
+                          />
+                        </label>
+                        <label>
+                          <span>외곽선 두께</span>
+                          <input
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineTextStrokeWidth",
+                                event.target.value ? Number(event.target.value) : ""
+                              )
+                            }
+                            placeholder="0"
+                            type="number"
+                            value={headlineStyleOverrides.headlineTextStrokeWidth ?? ""}
+                          />
+                        </label>
+                        <label>
+                          <span>그림자</span>
+                          <select
+                            onChange={(event) =>
+                              setHeadlineStyleOverride(
+                                "headlineShadow",
+                                event.target.value === "on"
+                              )
+                            }
+                            value={headlineStyleOverrides.headlineShadow === false ? "off" : "on"}
+                          >
+                            <option value="on">켜기</option>
+                            <option value="off">끄기</option>
+                          </select>
+                        </label>
+                      </div>
+                    ) : null}
+                    <label>
+                      <span>
+                        price {copyVisibleLength(productInfo.price)}/{slotMaxChars("price")}자
+                      </span>
                       <input
-                        onChange={(event) => setBannerAccentPhrase(event.target.value)}
-                        placeholder="비워두면 자동 선택. 예: 입안에서 육즙 폭발, 등심"
-                        value={bannerAccentPhrase}
+                        onChange={(event) =>
+                          setProductInfo((current) => ({ ...current, price: event.target.value }))
+                        }
+                        value={productInfo.price}
                       />
-                      <small>
-                        비워두면 가격/상품명/혜택 표현을 자동 강조합니다. 수동 입력은 쉼표로
-                        구분하고, 문구 안에서 [[등심]]처럼 감싸도 됩니다.
+                      {copyVisibleLength(productInfo.price) > slotMaxChars("price") ? (
+                        <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
+                      ) : null}
+                    </label>
+                    {templateFittedCopy?.slotFits.some((slot) => slot.status === "trimmed") ? (
+                      <p className="copy-validation-note">
+                        선택한 템플릿 제한에 맞춰 일부 문구가 자동 압축되었습니다.
+                      </p>
+                    ) : null}
+                    {copyResult ? (
+                      <p className="strategy-empty">{copyResult.whyThisWorks}</p>
+                    ) : null}
+                    {copyResult?.copyGuideUsage ? (
+                      <details className="reference-pattern-usage">
+                        <summary>적용된 업체별 카피 가이드</summary>
+                        <dl>
+                          <div>
+                            <dt>가이드</dt>
+                            <dd>
+                              {copyResult.copyGuideUsage.brandName} /{" "}
+                              {copyResult.copyGuideUsage.guideId}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>참고 섹션</dt>
+                            <dd>{copyResult.copyGuideUsage.usedSections.join(", ")}</dd>
+                          </div>
+                          <div>
+                            <dt>적용 톤</dt>
+                            <dd>{copyResult.copyGuideUsage.toneApplied.join(", ")}</dd>
+                          </div>
+                        </dl>
+                      </details>
+                    ) : null}
+                    {copyResult?.copyVariants ? (
+                      <details className="reference-pattern-usage">
+                        <summary>길이별 문구 세트</summary>
+                        <dl>
+                          {(["short", "medium", "long"] as const).map((variantKey) => {
+                            const variant = copyResult.copyVariants?.[variantKey];
+                            if (!variant) return null;
+
+                            return (
+                              <div key={variantKey}>
+                                <dt>{variantKey}</dt>
+                                <dd>
+                                  {[
+                                    variant.headline,
+                                    variant.bodyCopy,
+                                    variant.highlightCopy,
+                                    variant.bottomBarCopy,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" / ")}
+                                </dd>
+                              </div>
+                            );
+                          })}
+                        </dl>
+                      </details>
+                    ) : null}
+                    {copyResult?.copyValidation?.bodyCopy &&
+                    (!copyResult.copyValidation.bodyCopy.ok ||
+                      copyResult.copyValidation.bodyCopy.original !==
+                        copyResult.copyValidation.bodyCopy.normalized) ? (
+                      <p className="copy-validation-note">
+                        바디카피의 반말/비격식 표현이 존댓말형으로 보정되었습니다.
+                      </p>
+                    ) : null}
+                    {copyResult?.referencePatternUsage ? (
+                      <details className="reference-pattern-usage">
+                        <summary>참고한 레퍼런스 패턴</summary>
+                        <dl>
+                          {[
+                            [
+                              "적용 패턴",
+                              copyResult.referencePatternUsage.appliedPatterns?.join(", "),
+                            ],
+                            [
+                              "직접 복사 회피",
+                              copyResult.referencePatternUsage.avoidedDirectCopy ? "예" : "",
+                            ],
+                            ["후킹 패턴", copyResult.referencePatternUsage.usedHookPattern],
+                            ["문구 구조", copyResult.referencePatternUsage.usedCopyStructure],
+                            ["톤앤매너", copyResult.referencePatternUsage.usedToneOfVoice],
+                            [
+                              "소비자 인사이트",
+                              copyResult.referencePatternUsage.usedConsumerInsight,
+                            ],
+                            ["구매 트리거", copyResult.referencePatternUsage.usedPurchaseTrigger],
+                            [
+                              "재사용 문구 패턴",
+                              copyResult.referencePatternUsage.usedReusablePattern,
+                            ],
+                            [
+                              "비주얼/문구 관계",
+                              copyResult.referencePatternUsage.usedVisualCopyRelation,
+                            ],
+                          ]
+                            .filter(([, value]) => Boolean(value))
+                            .map(([label, value]) => (
+                              <div key={label}>
+                                <dt>{label}</dt>
+                                <dd>{value}</dd>
+                              </div>
+                            ))}
+                        </dl>
+                      </details>
+                    ) : null}
+                  </section>
+
+                  <section className="banner-preview-panel">
+                    <div>
+                      <p className="eyebrow">PNG Preview</p>
+                      <h4>
+                        {renderDiagnostics?.templateId ||
+                          (selectedAdaptivePlan
+                            ? `auto-${selectedAdaptivePlan.layoutType}`
+                            : "자동 템플릿 대기")}
+                      </h4>
+                      <small className="preview-context">
+                        1200×1200 ·{" "}
+                        {creativeWorkflow.selectedStrategy?.title || "문구 자동 생성 전"}
                       </small>
-                    </label>
-                    <label>
-                      <span>강조 색상</span>
-                      <input
-                        onChange={(event) => setBannerAccentColor(event.target.value)}
-                        type="color"
-                        value={bannerAccentColor}
+                    </div>
+                    {generatedBannerPath ? (
+                      <img
+                        alt="현재 1200x1200 배너 미리보기"
+                        className="sticky-live-preview"
+                        src={generatedBannerPath}
                       />
-                    </label>
-                  </div>
-                  <button
-                    className="secondary-tool-button"
-                    onClick={() => setShowAdvancedHeadlineStyle((current) => !current)}
-                    type="button"
-                  >
-                    제목 세부 조정 {showAdvancedHeadlineStyle ? "닫기" : "열기"}
-                  </button>
-                  {showAdvancedHeadlineStyle ? (
-                    <div className="advanced-style-grid">
-                      <label>
-                        <span>글씨 크기</span>
-                        <input
+                    ) : null}
+                    <details className="template-picker source-image-dropdown">
+                      <summary>
+                        <div>
+                          <p className="eyebrow">Template</p>
+                          <strong>고정 템플릿 비교 설정</strong>
+                          <span>{selectedTemplate?.name || "선택 안 함"}</span>
+                        </div>
+                        <b>고급</b>
+                      </summary>
+                      <div>
+                        <p className="eyebrow">Template</p>
+                        <h4>고정 템플릿 비교용 스타일 변경</h4>
+                      </div>
+                      <label className="copy-mode-selector">
+                        <span>문구 적용 방식</span>
+                        <select
                           onChange={(event) =>
-                            setHeadlineStyleOverride(
-                              "headlineFontSize",
-                              event.target.value ? Number(event.target.value) : ""
-                            )
+                            setTemplateCopyMode(event.target.value as TemplateCopyApplyMode)
                           }
-                          placeholder="자동"
-                          type="number"
-                          value={headlineStyleOverrides.headlineFontSize ?? ""}
-                        />
+                          value={templateCopyMode}
+                        >
+                          <option value="auto-variant">길이별 자동 선택</option>
+                          <option value="original">원문 그대로</option>
+                          <option value="force-fit">강제 자동축약</option>
+                        </select>
+                        <small>
+                          {selectedTemplateCopyPreview
+                            ? `선택 variant: ${selectedTemplateCopyPreview.selectedVariant}${selectedTemplateCopyPreview.hasOverflow ? " / 일부 자동축약" : " / 맞음"}`
+                            : "문구 생성 후 템플릿별 적용 결과가 표시됩니다."}
+                        </small>
+                      </label>
+                      {categoryTemplates.length ? (
+                        <div className="template-card-list">
+                          {categoryTemplates.map((template, index) => (
+                            <button
+                              className={`${selectedTemplateId === template.id ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
+                              key={template.id}
+                              onClick={() => setSelectedTemplateId(template.id)}
+                              type="button"
+                            >
+                              <div>
+                                <strong>
+                                  {index + 1}. {template.name}
+                                </strong>
+                                <span>{template.description.split(".")[0]}</span>
+                                <small>
+                                  문구 제한: headline{" "}
+                                  {template.copyLimits?.headline?.maxChars || 14}자 / body{" "}
+                                  {template.copyLimits?.bodyCopy?.maxChars || 32}자 / 하단{" "}
+                                  {template.copyLimits?.bottomBarCopy?.maxChars || 28}자 / CTA{" "}
+                                  {template.copyLimits?.cta?.maxChars || 8}자
+                                </small>
+                              </div>
+                              {recommendedTemplateIds.includes(template.id) ? (
+                                <em className="analysis-template-badge">분석 추천</em>
+                              ) : null}
+                              {selectedTemplateId === template.id ? <b>선택됨</b> : null}
+                              <div className="template-palette" aria-hidden="true">
+                                {[
+                                  "headlineColor",
+                                  "highlightBackground",
+                                  "bottomBarColor",
+                                  "ctaBarColor",
+                                ].map((key) => (
+                                  <i
+                                    key={key}
+                                    style={{ background: String(template.style[key] || "#ffffff") }}
+                                  />
+                                ))}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </details>
+
+                    {creativeGenerationMode === "selected-background" ? (
+                      <details className="batch-render-panel reference-pattern-usage">
+                        <summary>고급: 선택한 배경으로 기존 템플릿 비교</summary>
+                        <div className="section-heading-row">
+                          <div>
+                            <p className="eyebrow">Batch Render</p>
+                            <h4>선택한 배경 고정 템플릿 비교</h4>
+                          </div>
+                          <strong>전체 {categoryTemplates.length}개 제작 가능</strong>
+                        </div>
+                        <div className="batch-actions">
+                          <button
+                            className="primary"
+                            disabled={!categoryTemplates.length || batchRenderStatus === "running"}
+                            onClick={() =>
+                              void renderSelectedTemplatesBatch(
+                                categoryTemplates.map((template) => template.id)
+                              )
+                            }
+                            type="button"
+                          >
+                            선택 배경으로 모든 템플릿 비교
+                          </button>
+                          <button
+                            disabled={
+                              batchRenderStatus === "running" || !selectedBatchTemplateIds.length
+                            }
+                            onClick={() => void renderSelectedTemplatesBatch()}
+                            type="button"
+                          >
+                            고른 템플릿만 생성 ({selectedBatchTemplateIds.length})
+                          </button>
+                          <button
+                            disabled={batchRenderStatus === "running"}
+                            onClick={() =>
+                              setSelectedBatchTemplateIds(
+                                categoryTemplates.map((template) => template.id)
+                              )
+                            }
+                            type="button"
+                          >
+                            전체 선택
+                          </button>
+                          <button
+                            disabled={batchRenderStatus === "running"}
+                            onClick={() => setSelectedBatchTemplateIds([])}
+                            type="button"
+                          >
+                            전체 해제
+                          </button>
+                          <button
+                            disabled={batchRenderStatus === "running" && !batchRenderResults.length}
+                            onClick={resetBatchRenderResults}
+                            type="button"
+                          >
+                            일괄 생성 결과 초기화
+                          </button>
+                        </div>
+                        {categoryTemplates.length ? (
+                          <details className="source-image-dropdown">
+                            <summary>
+                              일부 템플릿만 만들기 (선택사항 · {selectedBatchTemplateIds.length}개
+                              선택)
+                            </summary>
+                            <div className="template-card-list batch-template-list">
+                              {categoryTemplates.map((template, index) => {
+                                const checked = selectedBatchTemplateIds.includes(template.id);
+                                return (
+                                  <label
+                                    className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
+                                    key={template.id}
+                                  >
+                                    <input
+                                      checked={checked}
+                                      onChange={(event) => {
+                                        event.stopPropagation();
+                                        setSelectedBatchTemplateIds((current) =>
+                                          event.target.checked
+                                            ? Array.from(new Set([...current, template.id]))
+                                            : current.filter((id) => id !== template.id)
+                                        );
+                                      }}
+                                      onClick={(event) => event.stopPropagation()}
+                                      type="checkbox"
+                                    />
+                                    <span>
+                                      {index + 1}. {template.name}
+                                      {recommendedTemplateIds.includes(template.id)
+                                        ? " · 분석 추천"
+                                        : ""}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        ) : null}
+                        <div
+                          className={
+                            "mvp-status " +
+                            (batchRenderStatus === "error"
+                              ? "error"
+                              : batchRenderStatus === "running"
+                                ? "loading"
+                                : batchRenderStatus === "success" ||
+                                    batchRenderStatus === "partial-success"
+                                  ? "success"
+                                  : "idle")
+                          }
+                        >
+                          {batchProgressMessage ||
+                            "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}
+                        </div>
+                        <section className="batch-result-panel">
+                          <div className="section-heading-row">
+                            <div>
+                              <p className="eyebrow">Batch Results</p>
+                              <h4>일괄 생성 결과</h4>
+                            </div>
+                            <strong>
+                              성공{" "}
+                              {
+                                batchRenderResults.filter((result) => result.status === "success")
+                                  .length
+                              }
+                              개 / 실패{" "}
+                              {
+                                batchRenderResults.filter((result) => result.status === "error")
+                                  .length
+                              }
+                              개
+                            </strong>
+                          </div>
+                          <button
+                            className="download-button"
+                            disabled={
+                              isZipDownloading ||
+                              !batchRenderResults.some((result) => result.status === "success")
+                            }
+                            onClick={downloadBatchResultsAsZip}
+                            type="button"
+                          >
+                            {isZipDownloading ? "ZIP 생성 중" : "ZIP 다운로드"}
+                          </button>
+                          {batchRenderResults.length ? (
+                            <div className="batch-result-grid">
+                              {batchRenderResults.map((result) => {
+                                const imageUrl = batchResultImageUrl(result);
+                                return (
+                                  <article
+                                    className={"batch-result-card " + result.status}
+                                    key={result.id}
+                                  >
+                                    <div>
+                                      <strong>{result.templateName}</strong>
+                                      <span>
+                                        {result.status === "pending"
+                                          ? "대기"
+                                          : result.status === "running"
+                                            ? "생성 중"
+                                            : result.status === "success"
+                                              ? "생성 완료"
+                                              : "실패"}
+                                      </span>
+                                    </div>
+                                    {imageUrl ? (
+                                      <img alt={result.templateName + " 배너"} src={imageUrl} />
+                                    ) : null}
+                                    {result.status === "success" ? (
+                                      <p>
+                                        적용 문구: {result.selectedVariant || "base"}
+                                        {result.hasOverflow ? " / 일부 자동축약" : ""}
+                                      </p>
+                                    ) : null}
+                                    {result.errorMessage ? (
+                                      <p className="copy-warning">{result.errorMessage}</p>
+                                    ) : null}
+                                    {result.creativeAsset ? (
+                                      <CreativeAssetActions
+                                        asset={result.creativeAsset}
+                                        compact
+                                        onMessage={setBatchProgressMessage}
+                                      />
+                                    ) : null}
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="strategy-empty">아직 일괄 생성 결과가 없습니다.</p>
+                          )}
+                        </section>
+                      </details>
+                    ) : null}
+                    <div className="hybrid-creative-flow">
+                      <CreativeQualityPanel score={creativeQualityScore} />
+                    </div>
+                    <details className="background-settings source-image-settings source-image-dropdown">
+                      <summary>
+                        <div>
+                          <p className="eyebrow">GPT Source</p>
+                          <strong>원본 기준 이미지 선택 / GPT 이미지 생성</strong>
+                          <span>
+                            GPT 생성이 필요할 때만 열어서 기준 이미지, 생성 옵션, 결과를 관리하세요.
+                          </span>
+                        </div>
+                        <b>{selectedSourceImagePath ? "기준 이미지 있음" : "선택 필요"}</b>
+                      </summary>
+                      <div className="source-image-panel-body">
+                        <label>
+                          <span>직접 업로드</span>
+                          <input
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={(event) => uploadSourceImage(event.target.files?.[0])}
+                            type="file"
+                          />
+                        </label>
+                        <div className={`mvp-status ${sourceImageStatus.kind}`}>
+                          {sourceImageStatus.message}
+                        </div>
+                        <div className="source-image-layout">
+                          <div className="source-image-candidates">
+                            {sourceImageCandidatesForDisplay.length ? (
+                              sourceImageCandidatesForDisplay.map((candidate) => (
+                                <button
+                                  className={
+                                    candidate.id === selectedSourceImage?.id ? "selected" : ""
+                                  }
+                                  key={candidate.id}
+                                  onClick={() => selectSourceImage(candidate)}
+                                  type="button"
+                                >
+                                  <img alt={candidate.label} src={candidate.imagePath} />
+                                  <span>
+                                    {candidate.type === "hero"
+                                      ? "대표 이미지"
+                                      : candidate.type === "upload"
+                                        ? "직접 업로드"
+                                        : "상세 이미지"}
+                                  </span>
+                                  <strong>{candidate.label}</strong>
+                                  {candidate.id === selectedSourceImage?.id ? (
+                                    <b>현재 원본 기준</b>
+                                  ) : null}
+                                </button>
+                              ))
+                            ) : (
+                              <p className="strategy-empty">
+                                상품정보를 불러오면 상세페이지 이미지가 원본 기준 후보로 표시됩니다.
+                              </p>
+                            )}
+                          </div>
+                          <div className="source-image-preview">
+                            <strong>현재 GPT 생성 기준 이미지</strong>
+                            {selectedSourceImagePath ? (
+                              <>
+                                <img
+                                  alt="현재 GPT 생성 기준 이미지"
+                                  src={selectedSourceImagePath}
+                                />
+                                <span>{selectedSourceImage?.label || "기본 대표 이미지"}</span>
+                                <small>
+                                  이 이미지를 기준으로 상품 원형, 색상, 포장, 표면 디테일을 최대한
+                                  유지합니다.
+                                </small>
+                              </>
+                            ) : (
+                              <p className="strategy-empty">아직 선택된 기준 이미지가 없습니다.</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="gpt-reference-upload">
+                          <div>
+                            <strong>GPT 참고 이미지</strong>
+                            <small>
+                              원본 상품은 위 기준 이미지를 유지하고, 참고 이미지는
+                              분위기/구도/조명만 참고합니다. 최대 3장까지 첨부됩니다.
+                            </small>
+                          </div>
+                          <label>
+                            <span>참고 이미지 첨부</span>
+                            <input
+                              accept="image/png,image/jpeg,image/webp"
+                              onChange={(event) => {
+                                uploadGptReferenceImage(event.target.files?.[0]);
+                                event.currentTarget.value = "";
+                              }}
+                              type="file"
+                            />
+                          </label>
+                          {gptReferenceImages.length ? (
+                            <div className="gpt-reference-list">
+                              {gptReferenceImages.map((image) => (
+                                <article key={image.id}>
+                                  <img alt={image.label} src={image.imagePath} />
+                                  <span>{image.label}</span>
+                                  <button
+                                    onClick={() =>
+                                      setGptReferenceImages((current) =>
+                                        current.filter((item) => item.id !== image.id)
+                                      )
+                                    }
+                                    type="button"
+                                  >
+                                    제거
+                                  </button>
+                                </article>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="strategy-empty">
+                              참고 이미지가 없으면 원본 기준 이미지만 사용합니다.
+                            </p>
+                          )}
+                          <p className={`mvp-status ${gptReferenceImageStatus.kind}`}>
+                            {gptReferenceImageStatus.message}
+                          </p>
+                        </div>
+                        <details className="gpt-generator-dropdown">
+                          <summary>
+                            <div>
+                              <p className="eyebrow">Optional GPT</p>
+                              <strong>GPT 이미지 생성</strong>
+                              <span>선택한 원본 기준 이미지로 광고용 이미지를 생성합니다.</span>
+                            </div>
+                            <b>
+                              {gptVisualAsset || gptTextAdAsset ? "생성 결과 있음" : "선택 사항"}
+                            </b>
+                          </summary>
+                          <div className="gpt-image-generator">
+                            <div>
+                              <p className="eyebrow">GPT Image</p>
+                              <h4>GPT 이미지 생성</h4>
+                              <p className="source-help">
+                                상품 원본을 최대한 유지하려면 “선택 이미지 기준 생성 + 상품 원본
+                                최대한 유지”를 사용하세요.
+                              </p>
+                            </div>
+                            <div className="gpt-compact-controls">
+                              <label>
+                                <span>이미지 생성 엔진</span>
+                                <select
+                                  onChange={(event) =>
+                                    setImageGenerationProvider(
+                                      event.target.value as ImageGenerationProvider
+                                    )
+                                  }
+                                  value={imageGenerationProvider}
+                                >
+                                  <option value="openai">GPT 이미지 생성</option>
+                                  <option value="gemini">나노바나나</option>
+                                </select>
+                                <small>
+                                  {imageGenerationProvider === "gemini"
+                                    ? "Gemini API Key로 나노바나나 이미지 생성을 사용합니다."
+                                    : "OpenAI 이미지 생성 API를 사용합니다."}
+                                </small>
+                              </label>
+                              <label>
+                                <span>생성 방식</span>
+                                <select
+                                  onChange={(event) =>
+                                    setGptImageSourceMode(event.target.value as GptImageSourceMode)
+                                  }
+                                  value={gptImageSourceMode}
+                                >
+                                  <option value="image-edit">선택 이미지 기준으로 생성</option>
+                                  <option value="text-to-image">새 이미지 생성</option>
+                                </select>
+                                <small>
+                                  {gptImageSourceMode === "image-edit"
+                                    ? "선택한 원본 기준 이미지를 바탕으로 배경/조명/무드를 보정합니다."
+                                    : "상품 정보를 바탕으로 새 이미지를 생성합니다. 원본 상품 유지력은 낮을 수 있습니다."}
+                                </small>
+                              </label>
+                              <label>
+                                <span>원본 유지</span>
+                                <select
+                                  onChange={(event) =>
+                                    setGptPreservationMode(
+                                      event.target.value as GptImagePreservationMode
+                                    )
+                                  }
+                                  value={gptPreservationMode}
+                                >
+                                  <option value="preserve-product">상품 원본 최대한 유지</option>
+                                  <option value="free-generate">자유 생성</option>
+                                </select>
+                                <small>
+                                  상품 형태, 포장, 색상, 개수, 라벨 위치 보존 여부입니다.
+                                </small>
+                              </label>
+                              <label>
+                                <span>프롬프트</span>
+                                <select
+                                  onChange={(event) =>
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      promptMode: event.target.value as "auto" | "custom",
+                                      finalPrompt:
+                                        event.target.value === "custom" &&
+                                        current.customPrompt.trim()
+                                          ? current.customPrompt.trim()
+                                          : autoGptImagePrompt,
+                                    }))
+                                  }
+                                  value={gptPromptState.promptMode}
+                                >
+                                  <option value="auto">자동 프롬프트</option>
+                                  <option value="custom">직접 작성 프롬프트</option>
+                                </select>
+                                <small>
+                                  {gptPromptState.promptMode === "custom"
+                                    ? "직접 작성한 프롬프트가 실제 생성에 우선 적용됩니다."
+                                    : "상품정보와 기준 이미지로 자동 생성합니다."}
+                                </small>
+                              </label>
+                              <label>
+                                <span>자동 프롬프트 목적</span>
+                                <select
+                                  onChange={(event) => {
+                                    const templateMode = event.target
+                                      .value as GptPromptTemplateMode;
+                                    setGptPromptTemplateMode(templateMode);
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      promptMode: "auto",
+                                      customPrompt: "",
+                                    }));
+                                  }}
+                                  value={gptPromptTemplateMode}
+                                >
+                                  <option value="visual-only">글씨 없는 광고 비주얼</option>
+                                  <option value="ad-image-with-copy">문구 포함 광고 배너</option>
+                                </select>
+                                <small>
+                                  두 모드 모두 1200x1200 SNS 배너 기준으로 자동 작성됩니다.
+                                </small>
+                              </label>
+                              <label>
+                                <span>후보 개수</span>
+                                <select
+                                  onChange={(event) =>
+                                    setNumImageCandidates(Number(event.target.value))
+                                  }
+                                  value={numImageCandidates}
+                                >
+                                  <option value={1}>1개</option>
+                                  <option value={2}>2개</option>
+                                  <option value={3}>3개</option>
+                                  <option value={4}>4개</option>
+                                </select>
+                                <small>
+                                  빠르게 보려면 1개, 비교가 필요하면 2~4개를 선택하세요.
+                                </small>
+                              </label>
+                            </div>
+                            <details className="gpt-prompt-panel">
+                              <summary>프롬프트 설정 열기</summary>
+                              <label>
+                                <span>세부 수정 프롬프트</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      customPromptNote: event.target.value,
+                                    }))
+                                  }
+                                  placeholder="예: 배경은 더 어둡게, 고기 색감은 원본처럼 유지, 포장 트레이처럼 만들지 말 것."
+                                  rows={3}
+                                  value={gptPromptState.customPromptNote || ""}
+                                />
+                                <small>
+                                  전체 프롬프트를 다시 쓰지 않고, 자동 프롬프트 뒤에 추가로 붙일
+                                  지시만 적습니다.
+                                </small>
+                              </label>
+                              <label>
+                                <span>자동 생성 프롬프트</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      promptMode: "custom",
+                                      customPrompt: event.target.value,
+                                      finalPrompt: event.target.value,
+                                    }))
+                                  }
+                                  rows={9}
+                                  value={
+                                    gptPromptState.promptMode === "custom" &&
+                                    gptPromptState.customPrompt
+                                      ? gptPromptState.customPrompt
+                                      : autoGptImagePrompt
+                                  }
+                                />
+                                <small>
+                                  자동 프롬프트를 직접 수정하면 직접 작성 프롬프트 모드로
+                                  전환됩니다.
+                                </small>
+                              </label>
+                              <label>
+                                <span>직접 작성 프롬프트</span>
+                                <textarea
+                                  onChange={(event) =>
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      promptMode: "custom",
+                                      customPrompt: event.target.value,
+                                      finalPrompt: event.target.value,
+                                    }))
+                                  }
+                                  placeholder="예: 원본 이미지의 구운 고기 형태와 질감은 유지하고, 포장육 상품처럼 바꾸지 마세요. 배경과 조명만 광고스럽게 개선해주세요. 글씨는 넣지 마세요."
+                                  rows={6}
+                                  value={gptPromptState.customPrompt}
+                                />
+                              </label>
+                              <div className="gpt-prompt-actions">
+                                <button
+                                  onClick={() =>
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      promptMode: "custom",
+                                      customPrompt: preserveSourcePromptTemplate,
+                                      finalPrompt: preserveSourcePromptTemplate,
+                                    }))
+                                  }
+                                  type="button"
+                                >
+                                  원본 이미지 유지형 프롬프트 불러오기
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    setGptPromptState((current) => ({
+                                      ...current,
+                                      promptMode: "custom",
+                                      customPrompt: noTextAdVisualPromptTemplate,
+                                      finalPrompt: noTextAdVisualPromptTemplate,
+                                    }))
+                                  }
+                                  type="button"
+                                >
+                                  글씨 없는 광고 비주얼 프롬프트 불러오기
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    setGptPromptState((current) => {
+                                      const base =
+                                        current.customPrompt.trim() || autoGptImagePrompt;
+                                      const customPrompt =
+                                        `${base}\n\n${noPackageChangePromptTemplate}`.trim();
+                                      return {
+                                        ...current,
+                                        promptMode: "custom",
+                                        customPrompt,
+                                        finalPrompt: customPrompt,
+                                      };
+                                    })
+                                  }
+                                  type="button"
+                                >
+                                  포장 변경 금지 프롬프트 추가
+                                </button>
+                              </div>
+                              <label>
+                                <span>실제 생성에 사용될 최종 프롬프트</span>
+                                <textarea readOnly rows={5} value={finalGptImagePrompt} />
+                              </label>
+                            </details>
+                            <label>
+                              <span>GPT 이미지 전용 결과 URL/경로</span>
+                              <input
+                                onChange={(event) => {
+                                  setGptMainImagePath(event.target.value);
+                                  if (event.target.value) setMainImageSourceMode("gpt");
+                                }}
+                                placeholder="/generated-product-images/example.png 또는 https://..."
+                                value={gptMainImagePath}
+                              />
+                            </label>
+                            <div className="gpt-image-actions">
+                              <button
+                                disabled={gptImageStatus.kind === "loading"}
+                                onClick={() => generateGptImage("visual-only")}
+                                type="button"
+                              >
+                                {gptImageStatus.kind === "loading"
+                                  ? "이미지 생성 중..."
+                                  : "이미지만 생성"}
+                              </button>
+                              <button
+                                disabled={gptTextAdStatus.kind === "loading"}
+                                onClick={() => generateGptImage("text-in-image")}
+                                type="button"
+                              >
+                                {gptTextAdStatus.kind === "loading"
+                                  ? "광고 생성 중..."
+                                  : "글씨까지 생성"}
+                              </button>
+                            </div>
+                            <p className={`mvp-status ${gptImageStatus.kind}`}>
+                              {gptImageStatus.message}
+                            </p>
+                            <p className={`mvp-status ${gptTextAdStatus.kind}`}>
+                              {gptTextAdStatus.message}
+                            </p>
+                          </div>
+                        </details>
+                        <details className="gpt-generator-dropdown gpt-result-dropdown">
+                          <summary>
+                            <div>
+                              <p className="eyebrow">Optional GPT</p>
+                              <strong>GPT 생성 결과</strong>
+                              <span>
+                                생성한 이미지가 있을 때만 열어서 메인 이미지나 최종 광고안으로
+                                채택하세요.
+                              </span>
+                            </div>
+                            <b>
+                              {gptImageCandidates.length ||
+                              gptVisualAsset ||
+                              gptTextAdAsset ||
+                              gptMainImagePath ||
+                              gptTextAdImagePath
+                                ? "결과 있음"
+                                : "비어 있음"}
+                            </b>
+                          </summary>
+                          <p className="source-help">
+                            이미지 생성 결과가 마음에 들지 않으면 실패 이유를 선택하고 다시 생성할
+                            수 있습니다. 정확한 상품 형태, 한글 문구, 가격, CTA는 이미지 생성보다
+                            템플릿 합성이 더 안정적입니다.
+                          </p>
+                          <div className="gpt-result-grid">
+                            <article className="gpt-image-result">
+                              <strong>GPT 이미지 생성 결과</strong>
+                              <span>글씨 없는 비주얼</span>
+                              {gptVisualAsset?.imagePath || gptMainImagePath ? (
+                                <>
+                                  <img
+                                    alt="GPT 이미지 전용 결과"
+                                    src={gptVisualAsset?.imagePath || gptMainImagePath}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const imagePath =
+                                        gptVisualAsset?.imagePath || gptMainImagePath;
+                                      setGptMainImagePath(imagePath);
+                                      setMainImageSourceMode("gpt");
+                                    }}
+                                    type="button"
+                                  >
+                                    이 이미지를 메인 상품 이미지로 사용
+                                  </button>
+                                </>
+                              ) : (
+                                <p className="strategy-empty">
+                                  [이미지만 생성] 결과가 여기에 표시됩니다.
+                                </p>
+                              )}
+                            </article>
+                            <article className="gpt-image-result">
+                              <strong>GPT 글씨 포함 광고 생성 결과</strong>
+                              <span>완성형 광고안</span>
+                              {gptTextAdAsset?.imagePath || gptTextAdImagePath ? (
+                                <>
+                                  <img
+                                    alt="GPT 글씨 포함 광고 결과"
+                                    src={gptTextAdAsset?.imagePath || gptTextAdImagePath}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const imagePath =
+                                        gptTextAdAsset?.imagePath || gptTextAdImagePath;
+                                      setGeneratedBannerPath(imagePath);
+                                    }}
+                                    type="button"
+                                  >
+                                    이 이미지를 최종 광고안으로 채택
+                                  </button>
+                                </>
+                              ) : (
+                                <p className="strategy-empty">
+                                  [글씨까지 생성] 결과가 여기에 표시됩니다.
+                                </p>
+                              )}
+                            </article>
+                          </div>
+                          {gptImageCandidates.length ? (
+                            <div className="gpt-candidate-panel">
+                              <div>
+                                <p className="eyebrow">Candidates</p>
+                                <h4>생성 후보</h4>
+                              </div>
+                              <div className="source-candidate-grid">
+                                {gptImageCandidates.map((candidate) => (
+                                  <article
+                                    className={`source-candidate-card ${selectedGptImageCandidate?.id === candidate.id ? "selected" : ""}`}
+                                    key={candidate.id}
+                                  >
+                                    <button
+                                      onClick={() => selectGptCandidate(candidate)}
+                                      type="button"
+                                    >
+                                      <img alt="GPT 생성 후보" src={candidate.imagePath} />
+                                      <span>
+                                        {candidate.imageGenerationMode === "text-in-image"
+                                          ? "글씨 포함"
+                                          : "이미지 전용"}{" "}
+                                        · {candidate.attempt}차
+                                      </span>
+                                      <small>
+                                        {candidate.imageSourceMode === "image-edit"
+                                          ? "원본 기준"
+                                          : "새 생성"}
+                                      </small>
+                                    </button>
+                                    <div className="gpt-prompt-actions">
+                                      <button
+                                        onClick={() => selectGptCandidate(candidate)}
+                                        type="button"
+                                      >
+                                        이 이미지 선택
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setSelectedGptImageCandidateId(candidate.id);
+                                          setSelectedImageFailureReasons(
+                                            candidate.failureReasons || []
+                                          );
+                                          setImageCustomFeedback(candidate.customFeedback || "");
+                                          setImageRevisionPrompt(candidate.revisionPrompt || "");
+                                        }}
+                                        type="button"
+                                      >
+                                        피드백 작성 기준
+                                      </button>
+                                    </div>
+                                    <details className="gpt-prompt-panel">
+                                      <summary>생성/수정 기록 보기</summary>
+                                      <textarea
+                                        readOnly
+                                        rows={8}
+                                        value={[
+                                          `id: ${candidate.id}`,
+                                          `imagePath: ${candidate.imagePath}`,
+                                          `sourceImagePath: ${candidate.sourceImagePath || candidate.selectedSourceImagePath || ""}`,
+                                          `promptTemplateMode: ${candidate.promptTemplateMode || ""}`,
+                                          `canvasPreset: ${candidate.canvasPreset || ""}`,
+                                          `attempt: ${candidate.attempt}`,
+                                          `imageGenerationMode: ${candidate.imageGenerationMode}`,
+                                          `imageSourceMode: ${candidate.imageSourceMode}`,
+                                          `preservationMode: ${candidate.preservationMode}`,
+                                          `selectedSourceImagePath: ${candidate.selectedSourceImagePath || ""}`,
+                                          `parentCandidateId: ${candidate.parentCandidateId || ""}`,
+                                          `productName: ${candidate.productName || ""}`,
+                                          `category: ${candidate.category || ""}`,
+                                          `createdAt: ${candidate.createdAt}`,
+                                          "",
+                                          "[autoPrompt]",
+                                          candidate.autoPrompt || "",
+                                          "",
+                                          "[customPromptNote]",
+                                          candidate.customPromptNote || "",
+                                          "",
+                                          "[basePrompt]",
+                                          candidate.basePrompt || "",
+                                          "",
+                                          "[revisionPrompt]",
+                                          candidate.revisionPrompt || "",
+                                          "",
+                                          "[failureReasons]",
+                                          (candidate.failureReasons || []).join(", "),
+                                          "",
+                                          "[customFeedback]",
+                                          candidate.customFeedback || "",
+                                          "",
+                                          "[promptUsed]",
+                                          candidate.promptUsed || "",
+                                        ].join("\n")}
+                                      />
+                                    </details>
+                                  </article>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className="gpt-candidate-panel">
+                            <div>
+                              <p className="eyebrow">Feedback Loop</p>
+                              <h4>실패 이유 선택 후 다시 생성</h4>
+                              <p className="source-help">
+                                선택한 후보의 원본 기준 이미지를 유지한 채, 아래 피드백을 수정
+                                프롬프트로 바꿔 재생성합니다.
+                              </p>
+                            </div>
+                            <div className="feedback-reason-list">
+                              {gptImageFailureReasonOptions.map((option) => (
+                                <label className="feedback-reason-option" key={option.value}>
+                                  <input
+                                    checked={selectedImageFailureReasons.includes(option.value)}
+                                    onChange={() => toggleImageFailureReason(option.value)}
+                                    type="checkbox"
+                                  />
+                                  <span>{option.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <label>
+                              <span>추가 피드백</span>
+                              <textarea
+                                onChange={(event) => setImageCustomFeedback(event.target.value)}
+                                placeholder="예: 고기 색감은 유지하고 배경만 더 깔끔하게. 포장 트레이처럼 만들지 말 것."
+                                rows={4}
+                                value={imageCustomFeedback}
+                              />
+                            </label>
+                            <label>
+                              <span>수정 프롬프트</span>
+                              <textarea readOnly rows={7} value={imageRevisionPrompt} />
+                            </label>
+                            <div className="gpt-image-actions">
+                              <button onClick={makeImageRevisionPrompt} type="button">
+                                수정 프롬프트 만들기
+                              </button>
+                              <button
+                                disabled={
+                                  !selectedGptImageCandidate ||
+                                  gptImageStatus.kind === "loading" ||
+                                  gptTextAdStatus.kind === "loading"
+                                }
+                                onClick={regenerateImageWithFeedback}
+                                type="button"
+                              >
+                                이 피드백으로 다시 생성
+                              </button>
+                            </div>
+                          </div>
+                          {latestImagePrompt ? (
+                            <p className="prompt-summary">
+                              최근 GPT 이미지 프롬프트: {latestImagePrompt.slice(0, 220)}
+                              {latestImagePrompt.length > 220 ? "..." : ""}
+                            </p>
+                          ) : null}
+                        </details>
+                      </div>
+                    </details>
+                    <details className="background-settings render-settings source-image-dropdown">
+                      <summary>
+                        <div>
+                          <p className="eyebrow">Render Background</p>
+                          <strong>메인 이미지 / 누끼 설정</strong>
+                          <span>
+                            {currentMainProductImage
+                              ? productImageModeLabel(productImageState.selectedImageMode)
+                              : "이미지 선택 필요"}
+                          </span>
+                        </div>
+                        <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
+                      </summary>
+                      <div>
+                        <p className="eyebrow">Render Image</p>
+                        <h4>메인 상품 이미지 설정</h4>
+                      </div>
+                      <label>
+                        <span>메인 이미지 소스</span>
+                        <select
+                          onChange={(event) =>
+                            setMainImageSourceMode(event.target.value as MainImageSourceMode)
+                          }
+                          value={mainImageSourceMode}
+                        >
+                          <option value="detail">상세페이지 이미지 선택</option>
+                          <option value="upload">내 이미지 첨부</option>
+                          <option value="gpt">GPT 생성 이미지 경로</option>
+                        </select>
+                      </label>
+                      {mainImageSourceMode === "detail" ? (
+                        <>
+                          <label>
+                            <span>메인으로 쓸 상세 이미지</span>
+                            <select
+                              disabled={!backgroundImageOptions.length}
+                              onChange={(event) => setProductImageSlot(0, event.target.value)}
+                              value={
+                                currentProductImagePaths[0] ||
+                                backgroundImageOptions[0]?.value ||
+                                ""
+                              }
+                            >
+                              {backgroundImageOptions.length ? (
+                                backgroundImageOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))
+                              ) : (
+                                <option value="">추출된 상세 이미지 없음</option>
+                              )}
+                            </select>
+                          </label>
+                          <label>
+                            <span>선택 이미지 수</span>
+                            <small>
+                              선택한 이미지 개수만 배치합니다. 1개면 1장, 2개면 2장, 최대 4장까지
+                              들어갑니다.
+                            </small>
+                          </label>
+                          {[1, 2, 3].map((slotIndex) => (
+                            <label key={`product-image-slot-${slotIndex}`}>
+                              <span>{slotIndex + 1}번째 상품 이미지</span>
+                              <select
+                                disabled={!backgroundImageOptions.length}
+                                onChange={(event) =>
+                                  setProductImageSlot(slotIndex, event.target.value)
+                                }
+                                value={currentProductImagePaths[slotIndex] || ""}
+                              >
+                                <option value="">선택 안 함</option>
+                                {backgroundImageOptions.map((option) => (
+                                  <option
+                                    key={`slot-${slotIndex}-${option.value}`}
+                                    value={option.value}
+                                  >
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ))}
+                          <div className="main-detail-scroll-shell">
+                            <button
+                              aria-label="Scroll image candidates left"
+                              className="main-detail-scroll-button"
+                              onClick={() => moveMainDetailCandidates(-1)}
+                              type="button"
+                            >
+                              ‹
+                            </button>
+                            <div
+                              className="source-image-candidates main-detail-candidates"
+                              onScroll={updateMainDetailScrollPercent}
+                              ref={mainDetailCandidatesRef}
+                            >
+                              {backgroundImageOptions.map((option) => {
+                                const selectedOrder = selectedAdImages.selectedImagePaths.indexOf(
+                                  option.value
+                                );
+                                return (
+                                  <button
+                                    aria-label={`${option.label} 광고 이미지 선택 토글`}
+                                    className={selectedOrder >= 0 ? "selected" : ""}
+                                    key={`main-${option.value}`}
+                                    onClick={() => toggleSelectedAdImage(option.value)}
+                                    onMouseEnter={(event) =>
+                                      setHoveredDetailImage({
+                                        src: option.value,
+                                        label: option.label,
+                                        x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                                        y: Math.max(20, event.clientY - 80),
+                                      })
+                                    }
+                                    onMouseLeave={() => setHoveredDetailImage(null)}
+                                    onMouseMove={(event) =>
+                                      setHoveredDetailImage({
+                                        src: option.value,
+                                        label: option.label,
+                                        x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                                        y: Math.max(20, event.clientY - 80),
+                                      })
+                                    }
+                                    type="button"
+                                  >
+                                    <img alt={option.label} src={option.value} />
+                                    <span>
+                                      {selectedOrder >= 0
+                                        ? `${selectedOrder + 1}. ${option.label}`
+                                        : option.label}
+                                    </span>
+                                    <img
+                                      alt={`${option.label} 크게 보기`}
+                                      className="detail-image-hover-preview"
+                                      src={option.value}
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <button
+                              aria-label="Scroll image candidates right"
+                              className="main-detail-scroll-button"
+                              onClick={() => moveMainDetailCandidates(1)}
+                              type="button"
+                            >
+                              ›
+                            </button>
+                          </div>
+                          <input
+                            aria-label="메인 이미지 후보 가로 스크롤"
+                            className="main-detail-scroll-range"
+                            max={100}
+                            min={0}
+                            onChange={(event) =>
+                              scrollMainDetailCandidates(Number(event.target.value))
+                            }
+                            onInput={(event) =>
+                              scrollMainDetailCandidates(Number(event.currentTarget.value))
+                            }
+                            type="range"
+                            value={mainDetailScrollPercent}
+                          />
+                          <div className="selected-ad-image-status">
+                            <div>
+                              <strong>
+                                선택된 광고 이미지: {selectedAdImages.selectedImagePaths.length}장
+                              </strong>
+                              <span>
+                                출처: {selectedAdImages.source} / 렌더 순서:{" "}
+                                {selectedAdImages.selectedImagePaths.length
+                                  ? selectedAdImages.selectedImagePaths
+                                      .map((_, index) => index + 1)
+                                      .join(" → ")
+                                  : "기본 상품 이미지 fallback"}
+                              </span>
+                              <small>
+                                선택한 상세 이미지가 모든 템플릿에 공통 적용됩니다. 첫 번째 선택
+                                이미지가 대표 이미지입니다.
+                              </small>
+                            </div>
+                            <button onClick={resetSelectedAdImages} type="button">
+                              이미지 선택 초기화
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
+                      {mainImageSourceMode === "upload" ? (
+                        <label>
+                          <span>이미지 첨부</span>
+                          <input
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={(event) => selectUploadedMainImage(event.target.files?.[0])}
+                            type="file"
+                          />
+                        </label>
+                      ) : null}
+                      {currentMainProductImage ? (
+                        <div className="background-preview-thumb">
+                          <img
+                            alt="선택된 메인 상품 이미지 미리보기"
+                            src={currentMainProductImage}
+                          />
+                          <span>
+                            현재 배너에 사용하는 이미지:{" "}
+                            {productImageModeLabel(productImageState.selectedImageMode)}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="strategy-empty">
+                          상세페이지 이미지, 첨부 이미지, GPT 생성 이미지 중 하나를 선택해주세요.
+                        </p>
+                      )}
+                      <ProductImageWorkbench
+                        key={productImageState.originalImagePath || selectedSourceImagePath}
+                        busy={productImageProcessStatus.kind === "loading"}
+                        candidates={(sourceImageSelection.candidates.length
+                          ? sourceImageSelection.candidates
+                          : productInfo.sourceImageCandidates || []
+                        ).slice(0, 6)}
+                        imageState={productImageState}
+                        onManualResult={applyManualMaskResult}
+                        onReprocess={reprocessWorkbenchImage}
+                        onRepresentationChange={updateProductRepresentationType}
+                        onScopeChange={updateProductExtractionScope}
+                        onSourceChange={selectWorkbenchSource}
+                        onUpload={selectUploadedMainImage}
+                        onUseCutout={() => selectProductImageMode("cutout")}
+                        onUseOriginal={() => selectProductImageMode("original")}
+                        recommendedBackgroundPath={currentBackgroundSource}
+                        representation={activeProductRepresentation}
+                        selectedSourceImagePath={
+                          productImageState.originalImagePath || selectedSourceImagePath
+                        }
+                        statusMessage={productImageProcessStatus.message}
+                      />
+                      <ReviewCreativeWorkbench
+                        key={`review-${productInfo.landingUrl || "empty"}`}
+                        accentColor={bannerAccentColor}
+                        backgroundImagePath={currentBackgroundSource}
+                        initialCandidates={productInfo.reviewSources || []}
+                        productDescription={productInfo.extractedDescription}
+                        productImagePath={
+                          resolvedProductImages.productImagePath || currentMainProductImage
+                        }
+                        productName={productInfo.productName}
+                      />
+                      <div className="product-cutout-panel">
+                        <details>
+                          <summary>고급 효과 및 이전 호환 설정</summary>
+                          <p>
+                            상품 이미지는 불러온 직후 자동으로 배경을 제거합니다. 경계를 찾지 못하면
+                            원본을 안전하게 유지합니다.
+                          </p>
+                          <div className="background-style-grid">
+                            <button
+                              disabled={
+                                !productImageState.originalImagePath ||
+                                productImageProcessStatus.kind === "loading"
+                              }
+                              onClick={applyCutoutToProductImage}
+                              type="button"
+                            >
+                              누끼 다시 적용
+                            </button>
+                            <button
+                              disabled={
+                                !productImageState.cutoutImagePath ||
+                                productImageProcessStatus.kind === "loading"
+                              }
+                              onClick={applyEffectToCutout}
+                              type="button"
+                            >
+                              효과 적용
+                            </button>
+                          </div>
+                          <label>
+                            <span>효과 프리셋</span>
+                            <select
+                              onChange={(event) =>
+                                setProductImageState((current) => ({
+                                  ...current,
+                                  effectPreset: event.target.value as ProductImageEffectPreset,
+                                }))
+                              }
+                              value={productImageState.effectPreset || "commerce-shadow"}
+                            >
+                              <option value="none">none</option>
+                              <option value="clean-outline">clean-outline</option>
+                              <option value="soft-glow">soft-glow</option>
+                              <option value="commerce-shadow">commerce-shadow</option>
+                              <option value="outline-glow-shadow">outline-glow-shadow</option>
+                            </select>
+                          </label>
+                          <label>
+                            <span>배너 이미지 모드</span>
+                            <select
+                              onChange={(event) =>
+                                selectProductImageMode(event.target.value as ProductImageMode)
+                              }
+                              value={productImageState.selectedImageMode}
+                            >
+                              <option value="original">원본 이미지 사용</option>
+                              <option disabled={!productImageState.cutoutImagePath} value="cutout">
+                                누끼 이미지 사용
+                              </option>
+                              <option
+                                disabled={!productImageState.styledCutoutImagePath}
+                                value="styled-cutout"
+                              >
+                                효과 적용 누끼 사용
+                              </option>
+                            </select>
+                          </label>
+                          <div className={`mvp-status ${productImageProcessStatus.kind}`}>
+                            {productImageProcessStatus.message}
+                          </div>
+                          <div className="product-image-variant-grid">
+                            <button
+                              className={
+                                productImageState.selectedImageMode === "original" ? "selected" : ""
+                              }
+                              disabled={!productImageState.originalImagePath}
+                              onClick={() => selectProductImageMode("original")}
+                              type="button"
+                            >
+                              {productImageState.originalImagePath ? (
+                                <img alt="원본 이미지" src={productImageState.originalImagePath} />
+                              ) : null}
+                              <span>원본</span>
+                            </button>
+                            <button
+                              className={
+                                productImageState.selectedImageMode === "cutout" ? "selected" : ""
+                              }
+                              disabled={!productImageState.cutoutImagePath}
+                              onClick={() => selectProductImageMode("cutout")}
+                              type="button"
+                            >
+                              {productImageState.cutoutImagePath ? (
+                                <img alt="누끼 이미지" src={productImageState.cutoutImagePath} />
+                              ) : null}
+                              <span>누끼본</span>
+                            </button>
+                            <button
+                              className={
+                                productImageState.selectedImageMode === "styled-cutout"
+                                  ? "selected"
+                                  : ""
+                              }
+                              disabled={!productImageState.styledCutoutImagePath}
+                              onClick={() => selectProductImageMode("styled-cutout")}
+                              type="button"
+                            >
+                              {productImageState.styledCutoutImagePath ? (
+                                <img
+                                  alt="효과 적용 누끼 이미지"
+                                  src={productImageState.styledCutoutImagePath}
+                                />
+                              ) : null}
+                              <span>효과본</span>
+                            </button>
+                          </div>
+                        </details>
+                        {productImageState.cutoutImagePath ? (
+                          <details
+                            className="cutout-effect-controls"
+                            open={productImageState.selectedImageMode !== "original"}
+                          >
+                            <summary>누끼 이미지 효과</summary>
+                            <p className="strategy-empty">
+                              미리보기는 대략적인 효과이며, 최종 배너는 1200x1200 렌더링 결과를
+                              기준으로 확인해주세요.
+                            </p>
+                            <div className="cutout-effect-presets">
+                              {cutoutProductEffectPresets.map((preset) => (
+                                <button
+                                  key={preset.id}
+                                  onClick={() => setCutoutProductEffect(preset.effect)}
+                                  type="button"
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div
+                              className="cutout-effect-preview"
+                              style={{
+                                filter: `${cutoutProductEffect.shadow ? `drop-shadow(${cutoutProductEffect.shadowOffsetX}px ${cutoutProductEffect.shadowOffsetY}px ${cutoutProductEffect.shadowBlur}px ${normalizeProductRenderEffect(cutoutProductEffect).shadowColor})` : ""} ${cutoutProductEffect.glow ? `drop-shadow(0 0 ${cutoutProductEffect.glowBlur}px ${normalizeProductRenderEffect(cutoutProductEffect).glowColor})` : ""}`,
+                                transform: `translate(${cutoutProductEffect.productOffsetX / 8}px, ${cutoutProductEffect.productOffsetY / 8}px) rotate(${cutoutProductEffect.productRotation}deg) scale(${cutoutProductEffect.productScale})`,
+                              }}
+                            >
+                              <img
+                                alt="누끼 효과 미리보기"
+                                src={productImageState.cutoutImagePath}
+                                style={{
+                                  filter: cutoutProductEffect.outline
+                                    ? `drop-shadow(0 0 ${Math.max(1, cutoutProductEffect.outlineWidth / 2)}px ${cutoutProductEffect.outlineColor})`
+                                    : undefined,
+                                }}
+                              />
+                            </div>
+                            <div className="cutout-effect-grid">
+                              <label className="inline-check">
+                                <input
+                                  checked={cutoutProductEffect.outline}
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      outline: event.target.checked,
+                                    }))
+                                  }
+                                  type="checkbox"
+                                />
+                                테두리 사용
+                              </label>
+                              <label>
+                                <span>테두리 색상</span>
+                                <input
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      outlineColor: event.target.value,
+                                    }))
+                                  }
+                                  type="color"
+                                  value={cutoutProductEffect.outlineColor}
+                                />
+                              </label>
+                              <label>
+                                <span>테두리 두께 {cutoutProductEffect.outlineWidth}</span>
+                                <input
+                                  max="40"
+                                  min="0"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      outlineWidth: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.outlineWidth}
+                                />
+                              </label>
+                              <label className="inline-check">
+                                <input
+                                  checked={cutoutProductEffect.shadow}
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      shadow: event.target.checked,
+                                    }))
+                                  }
+                                  type="checkbox"
+                                />
+                                그림자 사용
+                              </label>
+                              <label>
+                                <span>그림자 색상</span>
+                                <input
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      shadowBaseColor: event.target.value,
+                                    }))
+                                  }
+                                  type="color"
+                                  value={cutoutProductEffect.shadowBaseColor || "#000000"}
+                                />
+                              </label>
+                              <label>
+                                <span>
+                                  그림자 투명도 {cutoutProductEffect.shadowOpacity ?? 0.45}
+                                </span>
+                                <input
+                                  max="1"
+                                  min="0"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      shadowOpacity: Number(event.target.value),
+                                    }))
+                                  }
+                                  step="0.05"
+                                  type="range"
+                                  value={cutoutProductEffect.shadowOpacity ?? 0.45}
+                                />
+                              </label>
+                              <label>
+                                <span>그림자 번짐 {cutoutProductEffect.shadowBlur}</span>
+                                <input
+                                  max="60"
+                                  min="0"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      shadowBlur: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.shadowBlur}
+                                />
+                              </label>
+                              <label>
+                                <span>그림자 X {cutoutProductEffect.shadowOffsetX}</span>
+                                <input
+                                  max="50"
+                                  min="-50"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      shadowOffsetX: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.shadowOffsetX}
+                                />
+                              </label>
+                              <label>
+                                <span>그림자 Y {cutoutProductEffect.shadowOffsetY}</span>
+                                <input
+                                  max="50"
+                                  min="-50"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      shadowOffsetY: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.shadowOffsetY}
+                                />
+                              </label>
+                              <label className="inline-check">
+                                <input
+                                  checked={cutoutProductEffect.glow}
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      glow: event.target.checked,
+                                    }))
+                                  }
+                                  type="checkbox"
+                                />
+                                글로우 사용
+                              </label>
+                              <label>
+                                <span>글로우 색상</span>
+                                <input
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      glowBaseColor: event.target.value,
+                                    }))
+                                  }
+                                  type="color"
+                                  value={cutoutProductEffect.glowBaseColor || "#ffffff"}
+                                />
+                              </label>
+                              <label>
+                                <span>글로우 투명도 {cutoutProductEffect.glowOpacity ?? 0.55}</span>
+                                <input
+                                  max="1"
+                                  min="0"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      glowOpacity: Number(event.target.value),
+                                    }))
+                                  }
+                                  step="0.05"
+                                  type="range"
+                                  value={cutoutProductEffect.glowOpacity ?? 0.55}
+                                />
+                              </label>
+                              <label>
+                                <span>글로우 강도 {cutoutProductEffect.glowBlur}</span>
+                                <input
+                                  max="80"
+                                  min="0"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      glowBlur: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.glowBlur}
+                                />
+                              </label>
+                              <label>
+                                <span>상품 크기 {cutoutProductEffect.productScale}</span>
+                                <input
+                                  max="1.6"
+                                  min="0.6"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      productScale: Number(event.target.value),
+                                    }))
+                                  }
+                                  step="0.01"
+                                  type="range"
+                                  value={cutoutProductEffect.productScale}
+                                />
+                              </label>
+                              <label>
+                                <span>좌우 위치 {cutoutProductEffect.productOffsetX}</span>
+                                <input
+                                  max="300"
+                                  min="-300"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      productOffsetX: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.productOffsetX}
+                                />
+                              </label>
+                              <label>
+                                <span>상하 위치 {cutoutProductEffect.productOffsetY}</span>
+                                <input
+                                  max="300"
+                                  min="-300"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      productOffsetY: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.productOffsetY}
+                                />
+                              </label>
+                              <label>
+                                <span>회전 {cutoutProductEffect.productRotation}</span>
+                                <input
+                                  max="20"
+                                  min="-20"
+                                  onChange={(event) =>
+                                    setCutoutProductEffect((current) => ({
+                                      ...current,
+                                      productRotation: Number(event.target.value),
+                                    }))
+                                  }
+                                  type="range"
+                                  value={cutoutProductEffect.productRotation}
+                                />
+                              </label>
+                            </div>
+                          </details>
+                        ) : null}
+                      </div>
+                    </details>
+                    <details className="background-settings render-settings source-image-dropdown">
+                      <summary>
+                        <div>
+                          <p className="eyebrow">Render Image</p>
+                          <strong>메인 이미지 / 누끼 설정</strong>
+                          <span>
+                            {currentMainProductImage
+                              ? productImageModeLabel(productImageState.selectedImageMode)
+                              : "이미지 선택 필요"}
+                          </span>
+                        </div>
+                        <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
+                      </summary>
+                      <div>
+                        <p className="eyebrow">Render Background</p>
+                        <h4>배경 이미지 설정</h4>
+                      </div>
+                      <label>
+                        <span>배경 모드</span>
+                        <select
+                          onChange={(event) => {
+                            setSelectedLibraryBackgroundId("");
+                            setProductInfo((current) => ({
+                              ...current,
+                              backgroundMode: event.target.value as BackgroundMode,
+                            }));
+                            setGeneratedBannerPath("");
+                          }}
+                          value={productInfo.backgroundMode || "none"}
+                        >
+                          <option value="none">배경 없음</option>
+                          <option value="auto-detail-blur-dark">대표 이미지 자동 배경</option>
+                          <option value="selected-detail-blur-dark">상세 이미지 선택 배경</option>
+                        </select>
                       </label>
                       <label>
-                        <span>굵기</span>
-                        <input
-                          onChange={(event) =>
-                            setHeadlineStyleOverride(
-                              "headlineFontWeight",
-                              event.target.value ? Number(event.target.value) : ""
-                            )
+                        <span>상세 이미지 선택</span>
+                        <select
+                          disabled={
+                            productInfo.backgroundMode !== "selected-detail-blur-dark" ||
+                            !backgroundImageOptions.length
                           }
-                          placeholder="900"
-                          type="number"
-                          value={headlineStyleOverrides.headlineFontWeight ?? ""}
-                        />
-                      </label>
-                      <label>
-                        <span>자간</span>
-                        <input
-                          onChange={(event) =>
-                            setHeadlineStyleOverride(
-                              "headlineLetterSpacing",
-                              event.target.value ? Number(event.target.value) : ""
-                            )
+                          onChange={(event) => {
+                            setSelectedLibraryBackgroundId("");
+                            setProductInfo((current) => ({
+                              ...current,
+                              selectedBackgroundSource: event.target.value,
+                            }));
+                            setGeneratedBannerPath("");
+                          }}
+                          value={
+                            productInfo.selectedBackgroundSource ||
+                            backgroundImageOptions[0]?.value ||
+                            ""
                           }
-                          placeholder="-4"
-                          type="number"
-                          value={headlineStyleOverrides.headlineLetterSpacing ?? ""}
-                        />
+                        >
+                          {backgroundImageOptions.length ? (
+                            backgroundImageOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="">추출된 상세 이미지 없음</option>
+                          )}
+                        </select>
                       </label>
-                      <label>
-                        <span>줄 간격</span>
-                        <input
-                          onChange={(event) =>
-                            setHeadlineStyleOverride(
-                              "headlineLineHeight",
-                              event.target.value ? Number(event.target.value) : ""
-                            )
+                      {productInfo.backgroundMode === "selected-detail-blur-dark" ? (
+                        <div className="detail-image-strip background-detail-strip">
+                          {backgroundImageOptions.map((option) => (
+                            <button
+                              aria-label={`${option.label} 배경 이미지로 선택`}
+                              className={
+                                (productInfo.selectedBackgroundSource ||
+                                  backgroundImageOptions[0]?.value) === option.value
+                                  ? "selected"
+                                  : ""
+                              }
+                              key={`background-${option.value}`}
+                              onClick={() => {
+                                setSelectedLibraryBackgroundId("");
+                                setProductInfo((current) => ({
+                                  ...current,
+                                  selectedBackgroundSource: option.value,
+                                }));
+                                setGeneratedBannerPath("");
+                              }}
+                              onMouseEnter={(event) =>
+                                setHoveredDetailImage({
+                                  src: option.value,
+                                  label: option.label,
+                                  x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                                  y: Math.max(20, event.clientY - 80),
+                                })
+                              }
+                              onMouseLeave={() => setHoveredDetailImage(null)}
+                              onMouseMove={(event) =>
+                                setHoveredDetailImage({
+                                  src: option.value,
+                                  label: option.label,
+                                  x: Math.min(event.clientX + 20, window.innerWidth - 300),
+                                  y: Math.max(20, event.clientY - 80),
+                                })
+                              }
+                              type="button"
+                            >
+                              <img alt={option.label} src={option.value} />
+                              <span>{option.label}</span>
+                              <img
+                                alt={`${option.label} 크게 보기`}
+                                className="detail-image-hover-preview"
+                                src={option.value}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="background-style-grid">
+                        <label>
+                          <span>흐림 강도</span>
+                          <select
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                blurLevel: event.target.value as BackgroundLevel,
+                              }))
+                            }
+                            value={backgroundStyle.blurLevel}
+                          >
+                            <option value="low">낮음</option>
+                            <option value="medium">중간</option>
+                            <option value="high">높음</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>어둡게</span>
+                          <select
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                dimLevel: event.target.value as BackgroundLevel,
+                              }))
+                            }
+                            value={backgroundStyle.dimLevel}
+                          >
+                            <option value="low">낮음</option>
+                            <option value="medium">중간</option>
+                            <option value="high">높음</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>배경 확대 {backgroundStyle.scale.toFixed(2)}×</span>
+                          <input
+                            max="1.45"
+                            min="1"
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                scale: Number(event.target.value),
+                              }))
+                            }
+                            step="0.01"
+                            type="range"
+                            value={backgroundStyle.scale}
+                          />
+                        </label>
+                        <label>
+                          <span>좌우 이동 {backgroundStyle.offsetX}px</span>
+                          <input
+                            max="220"
+                            min="-220"
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                offsetX: Number(event.target.value),
+                              }))
+                            }
+                            step="5"
+                            type="range"
+                            value={backgroundStyle.offsetX}
+                          />
+                        </label>
+                        <label>
+                          <span>상하 이동 {backgroundStyle.offsetY}px</span>
+                          <input
+                            max="220"
+                            min="-220"
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                offsetY: Number(event.target.value),
+                              }))
+                            }
+                            step="5"
+                            type="range"
+                            value={backgroundStyle.offsetY}
+                          />
+                        </label>
+                        <label>
+                          <span>밝기 {Math.round(backgroundStyle.brightness * 100)}%</span>
+                          <input
+                            max="1.35"
+                            min="0.55"
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                brightness: Number(event.target.value),
+                              }))
+                            }
+                            step="0.05"
+                            type="range"
+                            value={backgroundStyle.brightness}
+                          />
+                        </label>
+                        <label>
+                          <span>오버레이 {Math.round(backgroundStyle.overlayOpacity * 100)}%</span>
+                          <input
+                            max="0.72"
+                            min="0"
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                overlayOpacity: Number(event.target.value),
+                              }))
+                            }
+                            step="0.02"
+                            type="range"
+                            value={backgroundStyle.overlayOpacity}
+                          />
+                        </label>
+                        <label>
+                          <span>좌우 반전</span>
+                          <input
+                            checked={backgroundStyle.flipHorizontal}
+                            onChange={(event) =>
+                              setBackgroundStyle((current) => ({
+                                ...current,
+                                flipHorizontal: event.target.checked,
+                              }))
+                            }
+                            type="checkbox"
+                          />
+                        </label>
+                        <button
+                          onClick={() =>
+                            setBackgroundStyle({
+                              blurLevel: "low",
+                              dimLevel: "low",
+                              brightness: 1,
+                              overlayOpacity: 0.08,
+                              scale: 1.08,
+                              offsetX: 0,
+                              offsetY: 0,
+                              flipHorizontal: false,
+                            })
                           }
-                          placeholder="0.95"
-                          step="0.01"
-                          type="number"
-                          value={headlineStyleOverrides.headlineLineHeight ?? ""}
-                        />
-                      </label>
+                          type="button"
+                        >
+                          배경 위치 초기화
+                        </button>
+                      </div>
+                      {currentBackgroundSource ? (
+                        <div className="background-preview-thumb">
+                          <img
+                            alt="선택된 배경 이미지 미리보기"
+                            src={currentBackgroundSource}
+                            style={{
+                              filter: `brightness(${backgroundStyle.brightness})`,
+                              transform: `translate(${backgroundStyle.offsetX / 10}px, ${backgroundStyle.offsetY / 10}px) scale(${backgroundStyle.flipHorizontal ? -backgroundStyle.scale : backgroundStyle.scale}, ${backgroundStyle.scale})`,
+                            }}
+                          />
+                          <span>
+                            {productInfo.backgroundMode === "auto-detail-blur-dark"
+                              ? "대표 이미지 자동 배경"
+                              : "선택한 상세 이미지 배경"}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="strategy-empty">
+                          상품정보를 불러오면 상세페이지 이미지가 배경 후보로 표시됩니다.
+                        </p>
+                      )}
                       <label>
-                        <span>제목 색상</span>
+                        <span>헤드라인 색상</span>
                         <input
                           onChange={(event) =>
                             setHeadlineStyleOverride("headlineColor", event.target.value)
@@ -5357,2341 +7624,329 @@ export function MvpDashboard({
                         />
                       </label>
                       <label>
-                        <span>외곽선</span>
+                        <span>헤드라인 폰트</span>
                         <select
-                          onChange={(event) =>
-                            setHeadlineStrokeEnabled(event.target.value === "on")
-                          }
-                          value={headlineStyleOverrides.headlineTextStroke ? "on" : "off"}
+                          onChange={(event) => setSelectedHeadlineFontId(event.target.value)}
+                          value={selectedHeadlineFontId}
                         >
-                          <option value="off">끄기</option>
-                          <option value="on">켜기</option>
-                        </select>
-                      </label>
-                      <label>
-                        <span>외곽선 색상</span>
-                        <input
-                          onChange={(event) =>
-                            setHeadlineStyleOverride("headlineTextStrokeColor", event.target.value)
-                          }
-                          type="color"
-                          value={headlineStyleOverrides.headlineTextStrokeColor || "#111111"}
-                        />
-                      </label>
-                      <label>
-                        <span>외곽선 두께</span>
-                        <input
-                          onChange={(event) =>
-                            setHeadlineStyleOverride(
-                              "headlineTextStrokeWidth",
-                              event.target.value ? Number(event.target.value) : ""
-                            )
-                          }
-                          placeholder="0"
-                          type="number"
-                          value={headlineStyleOverrides.headlineTextStrokeWidth ?? ""}
-                        />
-                      </label>
-                      <label>
-                        <span>그림자</span>
-                        <select
-                          onChange={(event) =>
-                            setHeadlineStyleOverride("headlineShadow", event.target.value === "on")
-                          }
-                          value={headlineStyleOverrides.headlineShadow === false ? "off" : "on"}
-                        >
-                          <option value="on">켜기</option>
-                          <option value="off">끄기</option>
-                        </select>
-                      </label>
-                    </div>
-                  ) : null}
-                  <label>
-                    <span>
-                      price {copyVisibleLength(productInfo.price)}/{slotMaxChars("price")}자
-                    </span>
-                    <input
-                      onChange={(event) =>
-                        setProductInfo((current) => ({ ...current, price: event.target.value }))
-                      }
-                      value={productInfo.price}
-                    />
-                    {copyVisibleLength(productInfo.price) > slotMaxChars("price") ? (
-                      <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
-                    ) : null}
-                  </label>
-                  {templateFittedCopy?.slotFits.some((slot) => slot.status === "trimmed") ? (
-                    <p className="copy-validation-note">
-                      선택한 템플릿 제한에 맞춰 일부 문구가 자동 압축되었습니다.
-                    </p>
-                  ) : null}
-                  {copyResult ? <p className="strategy-empty">{copyResult.whyThisWorks}</p> : null}
-                  {copyResult?.copyGuideUsage ? (
-                    <details className="reference-pattern-usage">
-                      <summary>적용된 업체별 카피 가이드</summary>
-                      <dl>
-                        <div>
-                          <dt>가이드</dt>
-                          <dd>
-                            {copyResult.copyGuideUsage.brandName} /{" "}
-                            {copyResult.copyGuideUsage.guideId}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>참고 섹션</dt>
-                          <dd>{copyResult.copyGuideUsage.usedSections.join(", ")}</dd>
-                        </div>
-                        <div>
-                          <dt>적용 톤</dt>
-                          <dd>{copyResult.copyGuideUsage.toneApplied.join(", ")}</dd>
-                        </div>
-                      </dl>
-                    </details>
-                  ) : null}
-                  {copyResult?.copyVariants ? (
-                    <details className="reference-pattern-usage">
-                      <summary>길이별 문구 세트</summary>
-                      <dl>
-                        {(["short", "medium", "long"] as const).map((variantKey) => {
-                          const variant = copyResult.copyVariants?.[variantKey];
-                          if (!variant) return null;
-
-                          return (
-                            <div key={variantKey}>
-                              <dt>{variantKey}</dt>
-                              <dd>
-                                {[
-                                  variant.headline,
-                                  variant.bodyCopy,
-                                  variant.highlightCopy,
-                                  variant.bottomBarCopy,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" / ")}
-                              </dd>
-                            </div>
-                          );
-                        })}
-                      </dl>
-                    </details>
-                  ) : null}
-                  {copyResult?.copyValidation?.bodyCopy &&
-                  (!copyResult.copyValidation.bodyCopy.ok ||
-                    copyResult.copyValidation.bodyCopy.original !==
-                      copyResult.copyValidation.bodyCopy.normalized) ? (
-                    <p className="copy-validation-note">
-                      바디카피의 반말/비격식 표현이 존댓말형으로 보정되었습니다.
-                    </p>
-                  ) : null}
-                  {copyResult?.referencePatternUsage ? (
-                    <details className="reference-pattern-usage">
-                      <summary>참고한 레퍼런스 패턴</summary>
-                      <dl>
-                        {[
-                          [
-                            "적용 패턴",
-                            copyResult.referencePatternUsage.appliedPatterns?.join(", "),
-                          ],
-                          [
-                            "직접 복사 회피",
-                            copyResult.referencePatternUsage.avoidedDirectCopy ? "예" : "",
-                          ],
-                          ["후킹 패턴", copyResult.referencePatternUsage.usedHookPattern],
-                          ["문구 구조", copyResult.referencePatternUsage.usedCopyStructure],
-                          ["톤앤매너", copyResult.referencePatternUsage.usedToneOfVoice],
-                          ["소비자 인사이트", copyResult.referencePatternUsage.usedConsumerInsight],
-                          ["구매 트리거", copyResult.referencePatternUsage.usedPurchaseTrigger],
-                          [
-                            "재사용 문구 패턴",
-                            copyResult.referencePatternUsage.usedReusablePattern,
-                          ],
-                          [
-                            "비주얼/문구 관계",
-                            copyResult.referencePatternUsage.usedVisualCopyRelation,
-                          ],
-                        ]
-                          .filter(([, value]) => Boolean(value))
-                          .map(([label, value]) => (
-                            <div key={label}>
-                              <dt>{label}</dt>
-                              <dd>{value}</dd>
-                            </div>
-                          ))}
-                      </dl>
-                    </details>
-                  ) : null}
-                </section>
-
-                <section className="banner-preview-panel">
-                  <div>
-                    <p className="eyebrow">PNG Preview</p>
-                    <h4>
-                      {renderDiagnostics?.templateId ||
-                        (selectedAdaptivePlan
-                          ? `auto-${selectedAdaptivePlan.layoutType}`
-                          : "자동 템플릿 대기")}
-                    </h4>
-                    <small className="preview-context">
-                      1200×1200 · {creativeWorkflow.selectedStrategy?.title || "문구 자동 생성 전"}
-                    </small>
-                  </div>
-                  {generatedBannerPath ? (
-                    <img
-                      alt="현재 1200x1200 배너 미리보기"
-                      className="sticky-live-preview"
-                      src={generatedBannerPath}
-                    />
-                  ) : null}
-                  <details className="template-picker source-image-dropdown">
-                    <summary>
-                      <div>
-                        <p className="eyebrow">Template</p>
-                        <strong>고정 템플릿 비교 설정</strong>
-                        <span>{selectedTemplate?.name || "선택 안 함"}</span>
-                      </div>
-                      <b>고급</b>
-                    </summary>
-                    <div>
-                      <p className="eyebrow">Template</p>
-                      <h4>고정 템플릿 비교용 스타일 변경</h4>
-                    </div>
-                    <label className="copy-mode-selector">
-                      <span>문구 적용 방식</span>
-                      <select
-                        onChange={(event) =>
-                          setTemplateCopyMode(event.target.value as TemplateCopyApplyMode)
-                        }
-                        value={templateCopyMode}
-                      >
-                        <option value="auto-variant">길이별 자동 선택</option>
-                        <option value="original">원문 그대로</option>
-                        <option value="force-fit">강제 자동축약</option>
-                      </select>
-                      <small>
-                        {selectedTemplateCopyPreview
-                          ? `선택 variant: ${selectedTemplateCopyPreview.selectedVariant}${selectedTemplateCopyPreview.hasOverflow ? " / 일부 자동축약" : " / 맞음"}`
-                          : "문구 생성 후 템플릿별 적용 결과가 표시됩니다."}
-                      </small>
-                    </label>
-                    {categoryTemplates.length ? (
-                      <div className="template-card-list">
-                        {categoryTemplates.map((template, index) => (
-                          <button
-                            className={`${selectedTemplateId === template.id ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
-                            key={template.id}
-                            onClick={() => setSelectedTemplateId(template.id)}
-                            type="button"
-                          >
-                            <div>
-                              <strong>
-                                {index + 1}. {template.name}
-                              </strong>
-                              <span>{template.description.split(".")[0]}</span>
-                              <small>
-                                문구 제한: headline {template.copyLimits?.headline?.maxChars || 14}
-                                자 / body {template.copyLimits?.bodyCopy?.maxChars || 32}자 / 하단{" "}
-                                {template.copyLimits?.bottomBarCopy?.maxChars || 28}자 / CTA{" "}
-                                {template.copyLimits?.cta?.maxChars || 8}자
-                              </small>
-                            </div>
-                            {recommendedTemplateIds.includes(template.id) ? (
-                              <em className="analysis-template-badge">분석 추천</em>
-                            ) : null}
-                            {selectedTemplateId === template.id ? <b>선택됨</b> : null}
-                            <div className="template-palette" aria-hidden="true">
-                              {[
-                                "headlineColor",
-                                "highlightBackground",
-                                "bottomBarColor",
-                                "ctaBarColor",
-                              ].map((key) => (
-                                <i
-                                  key={key}
-                                  style={{ background: String(template.style[key] || "#ffffff") }}
-                                />
-                              ))}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                  </details>
-
-                  {creativeGenerationMode === "selected-background" ? (
-                    <details className="batch-render-panel reference-pattern-usage">
-                      <summary>고급: 선택한 배경으로 기존 템플릿 비교</summary>
-                      <div className="section-heading-row">
-                        <div>
-                          <p className="eyebrow">Batch Render</p>
-                          <h4>선택한 배경 고정 템플릿 비교</h4>
-                        </div>
-                        <strong>전체 {categoryTemplates.length}개 제작 가능</strong>
-                      </div>
-                      <div className="batch-actions">
-                        <button
-                          className="primary"
-                          disabled={!categoryTemplates.length || batchRenderStatus === "running"}
-                          onClick={() =>
-                            void renderSelectedTemplatesBatch(
-                              categoryTemplates.map((template) => template.id)
-                            )
-                          }
-                          type="button"
-                        >
-                          선택 배경으로 모든 템플릿 비교
-                        </button>
-                        <button
-                          disabled={
-                            batchRenderStatus === "running" || !selectedBatchTemplateIds.length
-                          }
-                          onClick={() => void renderSelectedTemplatesBatch()}
-                          type="button"
-                        >
-                          고른 템플릿만 생성 ({selectedBatchTemplateIds.length})
-                        </button>
-                        <button
-                          disabled={batchRenderStatus === "running"}
-                          onClick={() =>
-                            setSelectedBatchTemplateIds(
-                              categoryTemplates.map((template) => template.id)
-                            )
-                          }
-                          type="button"
-                        >
-                          전체 선택
-                        </button>
-                        <button
-                          disabled={batchRenderStatus === "running"}
-                          onClick={() => setSelectedBatchTemplateIds([])}
-                          type="button"
-                        >
-                          전체 해제
-                        </button>
-                        <button
-                          disabled={batchRenderStatus === "running" && !batchRenderResults.length}
-                          onClick={resetBatchRenderResults}
-                          type="button"
-                        >
-                          일괄 생성 결과 초기화
-                        </button>
-                      </div>
-                      {categoryTemplates.length ? (
-                        <details className="source-image-dropdown">
-                          <summary>
-                            일부 템플릿만 만들기 (선택사항 · {selectedBatchTemplateIds.length}개
-                            선택)
-                          </summary>
-                          <div className="template-card-list batch-template-list">
-                            {categoryTemplates.map((template, index) => {
-                              const checked = selectedBatchTemplateIds.includes(template.id);
-                              return (
-                                <label
-                                  className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
-                                  key={template.id}
-                                >
-                                  <input
-                                    checked={checked}
-                                    onChange={(event) => {
-                                      event.stopPropagation();
-                                      setSelectedBatchTemplateIds((current) =>
-                                        event.target.checked
-                                          ? Array.from(new Set([...current, template.id]))
-                                          : current.filter((id) => id !== template.id)
-                                      );
-                                    }}
-                                    onClick={(event) => event.stopPropagation()}
-                                    type="checkbox"
-                                  />
-                                  <span>
-                                    {index + 1}. {template.name}
-                                    {recommendedTemplateIds.includes(template.id)
-                                      ? " · 분석 추천"
-                                      : ""}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </details>
-                      ) : null}
-                      <div
-                        className={
-                          "mvp-status " +
-                          (batchRenderStatus === "error"
-                            ? "error"
-                            : batchRenderStatus === "running"
-                              ? "loading"
-                              : batchRenderStatus === "success" ||
-                                  batchRenderStatus === "partial-success"
-                                ? "success"
-                                : "idle")
-                        }
-                      >
-                        {batchProgressMessage || "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}
-                      </div>
-                      <section className="batch-result-panel">
-                        <div className="section-heading-row">
-                          <div>
-                            <p className="eyebrow">Batch Results</p>
-                            <h4>일괄 생성 결과</h4>
-                          </div>
-                          <strong>
-                            성공{" "}
-                            {
-                              batchRenderResults.filter((result) => result.status === "success")
-                                .length
-                            }
-                            개 / 실패{" "}
-                            {
-                              batchRenderResults.filter((result) => result.status === "error")
-                                .length
-                            }
-                            개
-                          </strong>
-                        </div>
-                        <button
-                          className="download-button"
-                          disabled={
-                            isZipDownloading ||
-                            !batchRenderResults.some((result) => result.status === "success")
-                          }
-                          onClick={downloadBatchResultsAsZip}
-                          type="button"
-                        >
-                          {isZipDownloading ? "ZIP 생성 중" : "ZIP 다운로드"}
-                        </button>
-                        {batchRenderResults.length ? (
-                          <div className="batch-result-grid">
-                            {batchRenderResults.map((result) => {
-                              const imageUrl = batchResultImageUrl(result);
-                              return (
-                                <article
-                                  className={"batch-result-card " + result.status}
-                                  key={result.id}
-                                >
-                                  <div>
-                                    <strong>{result.templateName}</strong>
-                                    <span>
-                                      {result.status === "pending"
-                                        ? "대기"
-                                        : result.status === "running"
-                                          ? "생성 중"
-                                          : result.status === "success"
-                                            ? "생성 완료"
-                                            : "실패"}
-                                    </span>
-                                  </div>
-                                  {imageUrl ? (
-                                    <img alt={result.templateName + " 배너"} src={imageUrl} />
-                                  ) : null}
-                                  {result.status === "success" ? (
-                                    <p>
-                                      적용 문구: {result.selectedVariant || "base"}
-                                      {result.hasOverflow ? " / 일부 자동축약" : ""}
-                                    </p>
-                                  ) : null}
-                                  {result.errorMessage ? (
-                                    <p className="copy-warning">{result.errorMessage}</p>
-                                  ) : null}
-                                  {result.creativeAsset ? (
-                                    <CreativeAssetActions
-                                      asset={result.creativeAsset}
-                                      compact
-                                      onMessage={setBatchProgressMessage}
-                                    />
-                                  ) : null}
-                                </article>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p className="strategy-empty">아직 일괄 생성 결과가 없습니다.</p>
-                        )}
-                      </section>
-                    </details>
-                  ) : null}
-                  <div className="hybrid-creative-flow">
-                    <CreativeQualityPanel score={creativeQualityScore} />
-                  </div>
-                  <details className="background-settings source-image-settings source-image-dropdown">
-                    <summary>
-                      <div>
-                        <p className="eyebrow">GPT Source</p>
-                        <strong>원본 기준 이미지 선택 / GPT 이미지 생성</strong>
-                        <span>
-                          GPT 생성이 필요할 때만 열어서 기준 이미지, 생성 옵션, 결과를 관리하세요.
-                        </span>
-                      </div>
-                      <b>{selectedSourceImagePath ? "기준 이미지 있음" : "선택 필요"}</b>
-                    </summary>
-                    <div className="source-image-panel-body">
-                      <label>
-                        <span>직접 업로드</span>
-                        <input
-                          accept="image/png,image/jpeg,image/webp"
-                          onChange={(event) => uploadSourceImage(event.target.files?.[0])}
-                          type="file"
-                        />
-                      </label>
-                      <div className={`mvp-status ${sourceImageStatus.kind}`}>
-                        {sourceImageStatus.message}
-                      </div>
-                      <div className="source-image-layout">
-                        <div className="source-image-candidates">
-                          {sourceImageCandidatesForDisplay.length ? (
-                            sourceImageCandidatesForDisplay.map((candidate) => (
-                              <button
-                                className={
-                                  candidate.id === selectedSourceImage?.id ? "selected" : ""
-                                }
-                                key={candidate.id}
-                                onClick={() => selectSourceImage(candidate)}
-                                type="button"
-                              >
-                                <img alt={candidate.label} src={candidate.imagePath} />
-                                <span>
-                                  {candidate.type === "hero"
-                                    ? "대표 이미지"
-                                    : candidate.type === "upload"
-                                      ? "직접 업로드"
-                                      : "상세 이미지"}
-                                </span>
-                                <strong>{candidate.label}</strong>
-                                {candidate.id === selectedSourceImage?.id ? (
-                                  <b>현재 원본 기준</b>
-                                ) : null}
-                              </button>
-                            ))
-                          ) : (
-                            <p className="strategy-empty">
-                              상품정보를 불러오면 상세페이지 이미지가 원본 기준 후보로 표시됩니다.
-                            </p>
-                          )}
-                        </div>
-                        <div className="source-image-preview">
-                          <strong>현재 GPT 생성 기준 이미지</strong>
-                          {selectedSourceImagePath ? (
-                            <>
-                              <img alt="현재 GPT 생성 기준 이미지" src={selectedSourceImagePath} />
-                              <span>{selectedSourceImage?.label || "기본 대표 이미지"}</span>
-                              <small>
-                                이 이미지를 기준으로 상품 원형, 색상, 포장, 표면 디테일을 최대한
-                                유지합니다.
-                              </small>
-                            </>
-                          ) : (
-                            <p className="strategy-empty">아직 선택된 기준 이미지가 없습니다.</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="gpt-reference-upload">
-                        <div>
-                          <strong>GPT 참고 이미지</strong>
-                          <small>
-                            원본 상품은 위 기준 이미지를 유지하고, 참고 이미지는 분위기/구도/조명만
-                            참고합니다. 최대 3장까지 첨부됩니다.
-                          </small>
-                        </div>
-                        <label>
-                          <span>참고 이미지 첨부</span>
-                          <input
-                            accept="image/png,image/jpeg,image/webp"
-                            onChange={(event) => {
-                              uploadGptReferenceImage(event.target.files?.[0]);
-                              event.currentTarget.value = "";
-                            }}
-                            type="file"
-                          />
-                        </label>
-                        {gptReferenceImages.length ? (
-                          <div className="gpt-reference-list">
-                            {gptReferenceImages.map((image) => (
-                              <article key={image.id}>
-                                <img alt={image.label} src={image.imagePath} />
-                                <span>{image.label}</span>
-                                <button
-                                  onClick={() =>
-                                    setGptReferenceImages((current) =>
-                                      current.filter((item) => item.id !== image.id)
-                                    )
-                                  }
-                                  type="button"
-                                >
-                                  제거
-                                </button>
-                              </article>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="strategy-empty">
-                            참고 이미지가 없으면 원본 기준 이미지만 사용합니다.
-                          </p>
-                        )}
-                        <p className={`mvp-status ${gptReferenceImageStatus.kind}`}>
-                          {gptReferenceImageStatus.message}
-                        </p>
-                      </div>
-                      <details className="gpt-generator-dropdown">
-                        <summary>
-                          <div>
-                            <p className="eyebrow">Optional GPT</p>
-                            <strong>GPT 이미지 생성</strong>
-                            <span>선택한 원본 기준 이미지로 광고용 이미지를 생성합니다.</span>
-                          </div>
-                          <b>{gptVisualAsset || gptTextAdAsset ? "생성 결과 있음" : "선택 사항"}</b>
-                        </summary>
-                        <div className="gpt-image-generator">
-                          <div>
-                            <p className="eyebrow">GPT Image</p>
-                            <h4>GPT 이미지 생성</h4>
-                            <p className="source-help">
-                              상품 원본을 최대한 유지하려면 “선택 이미지 기준 생성 + 상품 원본
-                              최대한 유지”를 사용하세요.
-                            </p>
-                          </div>
-                          <div className="gpt-compact-controls">
-                            <label>
-                              <span>이미지 생성 엔진</span>
-                              <select
-                                onChange={(event) =>
-                                  setImageGenerationProvider(
-                                    event.target.value as ImageGenerationProvider
-                                  )
-                                }
-                                value={imageGenerationProvider}
-                              >
-                                <option value="openai">GPT 이미지 생성</option>
-                                <option value="gemini">나노바나나</option>
-                              </select>
-                              <small>
-                                {imageGenerationProvider === "gemini"
-                                  ? "Gemini API Key로 나노바나나 이미지 생성을 사용합니다."
-                                  : "OpenAI 이미지 생성 API를 사용합니다."}
-                              </small>
-                            </label>
-                            <label>
-                              <span>생성 방식</span>
-                              <select
-                                onChange={(event) =>
-                                  setGptImageSourceMode(event.target.value as GptImageSourceMode)
-                                }
-                                value={gptImageSourceMode}
-                              >
-                                <option value="image-edit">선택 이미지 기준으로 생성</option>
-                                <option value="text-to-image">새 이미지 생성</option>
-                              </select>
-                              <small>
-                                {gptImageSourceMode === "image-edit"
-                                  ? "선택한 원본 기준 이미지를 바탕으로 배경/조명/무드를 보정합니다."
-                                  : "상품 정보를 바탕으로 새 이미지를 생성합니다. 원본 상품 유지력은 낮을 수 있습니다."}
-                              </small>
-                            </label>
-                            <label>
-                              <span>원본 유지</span>
-                              <select
-                                onChange={(event) =>
-                                  setGptPreservationMode(
-                                    event.target.value as GptImagePreservationMode
-                                  )
-                                }
-                                value={gptPreservationMode}
-                              >
-                                <option value="preserve-product">상품 원본 최대한 유지</option>
-                                <option value="free-generate">자유 생성</option>
-                              </select>
-                              <small>상품 형태, 포장, 색상, 개수, 라벨 위치 보존 여부입니다.</small>
-                            </label>
-                            <label>
-                              <span>프롬프트</span>
-                              <select
-                                onChange={(event) =>
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    promptMode: event.target.value as "auto" | "custom",
-                                    finalPrompt:
-                                      event.target.value === "custom" && current.customPrompt.trim()
-                                        ? current.customPrompt.trim()
-                                        : autoGptImagePrompt,
-                                  }))
-                                }
-                                value={gptPromptState.promptMode}
-                              >
-                                <option value="auto">자동 프롬프트</option>
-                                <option value="custom">직접 작성 프롬프트</option>
-                              </select>
-                              <small>
-                                {gptPromptState.promptMode === "custom"
-                                  ? "직접 작성한 프롬프트가 실제 생성에 우선 적용됩니다."
-                                  : "상품정보와 기준 이미지로 자동 생성합니다."}
-                              </small>
-                            </label>
-                            <label>
-                              <span>자동 프롬프트 목적</span>
-                              <select
-                                onChange={(event) => {
-                                  const templateMode = event.target.value as GptPromptTemplateMode;
-                                  setGptPromptTemplateMode(templateMode);
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    promptMode: "auto",
-                                    customPrompt: "",
-                                  }));
-                                }}
-                                value={gptPromptTemplateMode}
-                              >
-                                <option value="visual-only">글씨 없는 광고 비주얼</option>
-                                <option value="ad-image-with-copy">문구 포함 광고 배너</option>
-                              </select>
-                              <small>
-                                두 모드 모두 1200x1200 SNS 배너 기준으로 자동 작성됩니다.
-                              </small>
-                            </label>
-                            <label>
-                              <span>후보 개수</span>
-                              <select
-                                onChange={(event) =>
-                                  setNumImageCandidates(Number(event.target.value))
-                                }
-                                value={numImageCandidates}
-                              >
-                                <option value={1}>1개</option>
-                                <option value={2}>2개</option>
-                                <option value={3}>3개</option>
-                                <option value={4}>4개</option>
-                              </select>
-                              <small>빠르게 보려면 1개, 비교가 필요하면 2~4개를 선택하세요.</small>
-                            </label>
-                          </div>
-                          <details className="gpt-prompt-panel">
-                            <summary>프롬프트 설정 열기</summary>
-                            <label>
-                              <span>세부 수정 프롬프트</span>
-                              <textarea
-                                onChange={(event) =>
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    customPromptNote: event.target.value,
-                                  }))
-                                }
-                                placeholder="예: 배경은 더 어둡게, 고기 색감은 원본처럼 유지, 포장 트레이처럼 만들지 말 것."
-                                rows={3}
-                                value={gptPromptState.customPromptNote || ""}
-                              />
-                              <small>
-                                전체 프롬프트를 다시 쓰지 않고, 자동 프롬프트 뒤에 추가로 붙일
-                                지시만 적습니다.
-                              </small>
-                            </label>
-                            <label>
-                              <span>자동 생성 프롬프트</span>
-                              <textarea
-                                onChange={(event) =>
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    promptMode: "custom",
-                                    customPrompt: event.target.value,
-                                    finalPrompt: event.target.value,
-                                  }))
-                                }
-                                rows={9}
-                                value={
-                                  gptPromptState.promptMode === "custom" &&
-                                  gptPromptState.customPrompt
-                                    ? gptPromptState.customPrompt
-                                    : autoGptImagePrompt
-                                }
-                              />
-                              <small>
-                                자동 프롬프트를 직접 수정하면 직접 작성 프롬프트 모드로 전환됩니다.
-                              </small>
-                            </label>
-                            <label>
-                              <span>직접 작성 프롬프트</span>
-                              <textarea
-                                onChange={(event) =>
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    promptMode: "custom",
-                                    customPrompt: event.target.value,
-                                    finalPrompt: event.target.value,
-                                  }))
-                                }
-                                placeholder="예: 원본 이미지의 구운 고기 형태와 질감은 유지하고, 포장육 상품처럼 바꾸지 마세요. 배경과 조명만 광고스럽게 개선해주세요. 글씨는 넣지 마세요."
-                                rows={6}
-                                value={gptPromptState.customPrompt}
-                              />
-                            </label>
-                            <div className="gpt-prompt-actions">
-                              <button
-                                onClick={() =>
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    promptMode: "custom",
-                                    customPrompt: preserveSourcePromptTemplate,
-                                    finalPrompt: preserveSourcePromptTemplate,
-                                  }))
-                                }
-                                type="button"
-                              >
-                                원본 이미지 유지형 프롬프트 불러오기
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setGptPromptState((current) => ({
-                                    ...current,
-                                    promptMode: "custom",
-                                    customPrompt: noTextAdVisualPromptTemplate,
-                                    finalPrompt: noTextAdVisualPromptTemplate,
-                                  }))
-                                }
-                                type="button"
-                              >
-                                글씨 없는 광고 비주얼 프롬프트 불러오기
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setGptPromptState((current) => {
-                                    const base = current.customPrompt.trim() || autoGptImagePrompt;
-                                    const customPrompt =
-                                      `${base}\n\n${noPackageChangePromptTemplate}`.trim();
-                                    return {
-                                      ...current,
-                                      promptMode: "custom",
-                                      customPrompt,
-                                      finalPrompt: customPrompt,
-                                    };
-                                  })
-                                }
-                                type="button"
-                              >
-                                포장 변경 금지 프롬프트 추가
-                              </button>
-                            </div>
-                            <label>
-                              <span>실제 생성에 사용될 최종 프롬프트</span>
-                              <textarea readOnly rows={5} value={finalGptImagePrompt} />
-                            </label>
-                          </details>
-                          <label>
-                            <span>GPT 이미지 전용 결과 URL/경로</span>
-                            <input
-                              onChange={(event) => {
-                                setGptMainImagePath(event.target.value);
-                                if (event.target.value) setMainImageSourceMode("gpt");
-                              }}
-                              placeholder="/generated-product-images/example.png 또는 https://..."
-                              value={gptMainImagePath}
-                            />
-                          </label>
-                          <div className="gpt-image-actions">
-                            <button
-                              disabled={gptImageStatus.kind === "loading"}
-                              onClick={() => generateGptImage("visual-only")}
-                              type="button"
-                            >
-                              {gptImageStatus.kind === "loading"
-                                ? "이미지 생성 중..."
-                                : "이미지만 생성"}
-                            </button>
-                            <button
-                              disabled={gptTextAdStatus.kind === "loading"}
-                              onClick={() => generateGptImage("text-in-image")}
-                              type="button"
-                            >
-                              {gptTextAdStatus.kind === "loading"
-                                ? "광고 생성 중..."
-                                : "글씨까지 생성"}
-                            </button>
-                          </div>
-                          <p className={`mvp-status ${gptImageStatus.kind}`}>
-                            {gptImageStatus.message}
-                          </p>
-                          <p className={`mvp-status ${gptTextAdStatus.kind}`}>
-                            {gptTextAdStatus.message}
-                          </p>
-                        </div>
-                      </details>
-                      <details className="gpt-generator-dropdown gpt-result-dropdown">
-                        <summary>
-                          <div>
-                            <p className="eyebrow">Optional GPT</p>
-                            <strong>GPT 생성 결과</strong>
-                            <span>
-                              생성한 이미지가 있을 때만 열어서 메인 이미지나 최종 광고안으로
-                              채택하세요.
-                            </span>
-                          </div>
-                          <b>
-                            {gptImageCandidates.length ||
-                            gptVisualAsset ||
-                            gptTextAdAsset ||
-                            gptMainImagePath ||
-                            gptTextAdImagePath
-                              ? "결과 있음"
-                              : "비어 있음"}
-                          </b>
-                        </summary>
-                        <p className="source-help">
-                          이미지 생성 결과가 마음에 들지 않으면 실패 이유를 선택하고 다시 생성할 수
-                          있습니다. 정확한 상품 형태, 한글 문구, 가격, CTA는 이미지 생성보다 템플릿
-                          합성이 더 안정적입니다.
-                        </p>
-                        <div className="gpt-result-grid">
-                          <article className="gpt-image-result">
-                            <strong>GPT 이미지 생성 결과</strong>
-                            <span>글씨 없는 비주얼</span>
-                            {gptVisualAsset?.imagePath || gptMainImagePath ? (
-                              <>
-                                <img
-                                  alt="GPT 이미지 전용 결과"
-                                  src={gptVisualAsset?.imagePath || gptMainImagePath}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const imagePath = gptVisualAsset?.imagePath || gptMainImagePath;
-                                    setGptMainImagePath(imagePath);
-                                    setMainImageSourceMode("gpt");
-                                  }}
-                                  type="button"
-                                >
-                                  이 이미지를 메인 상품 이미지로 사용
-                                </button>
-                              </>
-                            ) : (
-                              <p className="strategy-empty">
-                                [이미지만 생성] 결과가 여기에 표시됩니다.
-                              </p>
-                            )}
-                          </article>
-                          <article className="gpt-image-result">
-                            <strong>GPT 글씨 포함 광고 생성 결과</strong>
-                            <span>완성형 광고안</span>
-                            {gptTextAdAsset?.imagePath || gptTextAdImagePath ? (
-                              <>
-                                <img
-                                  alt="GPT 글씨 포함 광고 결과"
-                                  src={gptTextAdAsset?.imagePath || gptTextAdImagePath}
-                                />
-                                <button
-                                  onClick={() => {
-                                    const imagePath =
-                                      gptTextAdAsset?.imagePath || gptTextAdImagePath;
-                                    setGeneratedBannerPath(imagePath);
-                                  }}
-                                  type="button"
-                                >
-                                  이 이미지를 최종 광고안으로 채택
-                                </button>
-                              </>
-                            ) : (
-                              <p className="strategy-empty">
-                                [글씨까지 생성] 결과가 여기에 표시됩니다.
-                              </p>
-                            )}
-                          </article>
-                        </div>
-                        {gptImageCandidates.length ? (
-                          <div className="gpt-candidate-panel">
-                            <div>
-                              <p className="eyebrow">Candidates</p>
-                              <h4>생성 후보</h4>
-                            </div>
-                            <div className="source-candidate-grid">
-                              {gptImageCandidates.map((candidate) => (
-                                <article
-                                  className={`source-candidate-card ${selectedGptImageCandidate?.id === candidate.id ? "selected" : ""}`}
-                                  key={candidate.id}
-                                >
-                                  <button
-                                    onClick={() => selectGptCandidate(candidate)}
-                                    type="button"
-                                  >
-                                    <img alt="GPT 생성 후보" src={candidate.imagePath} />
-                                    <span>
-                                      {candidate.imageGenerationMode === "text-in-image"
-                                        ? "글씨 포함"
-                                        : "이미지 전용"}{" "}
-                                      · {candidate.attempt}차
-                                    </span>
-                                    <small>
-                                      {candidate.imageSourceMode === "image-edit"
-                                        ? "원본 기준"
-                                        : "새 생성"}
-                                    </small>
-                                  </button>
-                                  <div className="gpt-prompt-actions">
-                                    <button
-                                      onClick={() => selectGptCandidate(candidate)}
-                                      type="button"
-                                    >
-                                      이 이미지 선택
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedGptImageCandidateId(candidate.id);
-                                        setSelectedImageFailureReasons(
-                                          candidate.failureReasons || []
-                                        );
-                                        setImageCustomFeedback(candidate.customFeedback || "");
-                                        setImageRevisionPrompt(candidate.revisionPrompt || "");
-                                      }}
-                                      type="button"
-                                    >
-                                      피드백 작성 기준
-                                    </button>
-                                  </div>
-                                  <details className="gpt-prompt-panel">
-                                    <summary>생성/수정 기록 보기</summary>
-                                    <textarea
-                                      readOnly
-                                      rows={8}
-                                      value={[
-                                        `id: ${candidate.id}`,
-                                        `imagePath: ${candidate.imagePath}`,
-                                        `sourceImagePath: ${candidate.sourceImagePath || candidate.selectedSourceImagePath || ""}`,
-                                        `promptTemplateMode: ${candidate.promptTemplateMode || ""}`,
-                                        `canvasPreset: ${candidate.canvasPreset || ""}`,
-                                        `attempt: ${candidate.attempt}`,
-                                        `imageGenerationMode: ${candidate.imageGenerationMode}`,
-                                        `imageSourceMode: ${candidate.imageSourceMode}`,
-                                        `preservationMode: ${candidate.preservationMode}`,
-                                        `selectedSourceImagePath: ${candidate.selectedSourceImagePath || ""}`,
-                                        `parentCandidateId: ${candidate.parentCandidateId || ""}`,
-                                        `productName: ${candidate.productName || ""}`,
-                                        `category: ${candidate.category || ""}`,
-                                        `createdAt: ${candidate.createdAt}`,
-                                        "",
-                                        "[autoPrompt]",
-                                        candidate.autoPrompt || "",
-                                        "",
-                                        "[customPromptNote]",
-                                        candidate.customPromptNote || "",
-                                        "",
-                                        "[basePrompt]",
-                                        candidate.basePrompt || "",
-                                        "",
-                                        "[revisionPrompt]",
-                                        candidate.revisionPrompt || "",
-                                        "",
-                                        "[failureReasons]",
-                                        (candidate.failureReasons || []).join(", "),
-                                        "",
-                                        "[customFeedback]",
-                                        candidate.customFeedback || "",
-                                        "",
-                                        "[promptUsed]",
-                                        candidate.promptUsed || "",
-                                      ].join("\n")}
-                                    />
-                                  </details>
-                                </article>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-                        <div className="gpt-candidate-panel">
-                          <div>
-                            <p className="eyebrow">Feedback Loop</p>
-                            <h4>실패 이유 선택 후 다시 생성</h4>
-                            <p className="source-help">
-                              선택한 후보의 원본 기준 이미지를 유지한 채, 아래 피드백을 수정
-                              프롬프트로 바꿔 재생성합니다.
-                            </p>
-                          </div>
-                          <div className="feedback-reason-list">
-                            {gptImageFailureReasonOptions.map((option) => (
-                              <label className="feedback-reason-option" key={option.value}>
-                                <input
-                                  checked={selectedImageFailureReasons.includes(option.value)}
-                                  onChange={() => toggleImageFailureReason(option.value)}
-                                  type="checkbox"
-                                />
-                                <span>{option.label}</span>
-                              </label>
-                            ))}
-                          </div>
-                          <label>
-                            <span>추가 피드백</span>
-                            <textarea
-                              onChange={(event) => setImageCustomFeedback(event.target.value)}
-                              placeholder="예: 고기 색감은 유지하고 배경만 더 깔끔하게. 포장 트레이처럼 만들지 말 것."
-                              rows={4}
-                              value={imageCustomFeedback}
-                            />
-                          </label>
-                          <label>
-                            <span>수정 프롬프트</span>
-                            <textarea readOnly rows={7} value={imageRevisionPrompt} />
-                          </label>
-                          <div className="gpt-image-actions">
-                            <button onClick={makeImageRevisionPrompt} type="button">
-                              수정 프롬프트 만들기
-                            </button>
-                            <button
-                              disabled={
-                                !selectedGptImageCandidate ||
-                                gptImageStatus.kind === "loading" ||
-                                gptTextAdStatus.kind === "loading"
-                              }
-                              onClick={regenerateImageWithFeedback}
-                              type="button"
-                            >
-                              이 피드백으로 다시 생성
-                            </button>
-                          </div>
-                        </div>
-                        {latestImagePrompt ? (
-                          <p className="prompt-summary">
-                            최근 GPT 이미지 프롬프트: {latestImagePrompt.slice(0, 220)}
-                            {latestImagePrompt.length > 220 ? "..." : ""}
-                          </p>
-                        ) : null}
-                      </details>
-                    </div>
-                  </details>
-                  <details className="background-settings render-settings source-image-dropdown">
-                    <summary>
-                      <div>
-                        <p className="eyebrow">Render Background</p>
-                        <strong>메인 이미지 / 누끼 설정</strong>
-                        <span>
-                          {currentMainProductImage
-                            ? productImageModeLabel(productImageState.selectedImageMode)
-                            : "이미지 선택 필요"}
-                        </span>
-                      </div>
-                      <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
-                    </summary>
-                    <div>
-                      <p className="eyebrow">Render Image</p>
-                      <h4>메인 상품 이미지 설정</h4>
-                    </div>
-                    <label>
-                      <span>메인 이미지 소스</span>
-                      <select
-                        onChange={(event) =>
-                          setMainImageSourceMode(event.target.value as MainImageSourceMode)
-                        }
-                        value={mainImageSourceMode}
-                      >
-                        <option value="detail">상세페이지 이미지 선택</option>
-                        <option value="upload">내 이미지 첨부</option>
-                        <option value="gpt">GPT 생성 이미지 경로</option>
-                      </select>
-                    </label>
-                    {mainImageSourceMode === "detail" ? (
-                      <>
-                        <label>
-                          <span>메인으로 쓸 상세 이미지</span>
-                          <select
-                            disabled={!backgroundImageOptions.length}
-                            onChange={(event) => setProductImageSlot(0, event.target.value)}
-                            value={
-                              currentProductImagePaths[0] || backgroundImageOptions[0]?.value || ""
-                            }
-                          >
-                            {backgroundImageOptions.length ? (
-                              backgroundImageOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))
-                            ) : (
-                              <option value="">추출된 상세 이미지 없음</option>
-                            )}
-                          </select>
-                        </label>
-                        <label>
-                          <span>선택 이미지 수</span>
-                          <small>
-                            선택한 이미지 개수만 배치합니다. 1개면 1장, 2개면 2장, 최대 4장까지
-                            들어갑니다.
-                          </small>
-                        </label>
-                        {[1, 2, 3].map((slotIndex) => (
-                          <label key={`product-image-slot-${slotIndex}`}>
-                            <span>{slotIndex + 1}번째 상품 이미지</span>
-                            <select
-                              disabled={!backgroundImageOptions.length}
-                              onChange={(event) =>
-                                setProductImageSlot(slotIndex, event.target.value)
-                              }
-                              value={currentProductImagePaths[slotIndex] || ""}
-                            >
-                              <option value="">선택 안 함</option>
-                              {backgroundImageOptions.map((option) => (
-                                <option
-                                  key={`slot-${slotIndex}-${option.value}`}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ))}
-                        <div className="main-detail-scroll-shell">
-                          <button
-                            aria-label="Scroll image candidates left"
-                            className="main-detail-scroll-button"
-                            onClick={() => moveMainDetailCandidates(-1)}
-                            type="button"
-                          >
-                            ‹
-                          </button>
-                          <div
-                            className="source-image-candidates main-detail-candidates"
-                            onScroll={updateMainDetailScrollPercent}
-                            ref={mainDetailCandidatesRef}
-                          >
-                            {backgroundImageOptions.map((option) => {
-                              const selectedOrder = selectedAdImages.selectedImagePaths.indexOf(
-                                option.value
-                              );
-                              return (
-                                <button
-                                  aria-label={`${option.label} 광고 이미지 선택 토글`}
-                                  className={selectedOrder >= 0 ? "selected" : ""}
-                                  key={`main-${option.value}`}
-                                  onClick={() => toggleSelectedAdImage(option.value)}
-                                  onMouseEnter={(event) =>
-                                    setHoveredDetailImage({
-                                      src: option.value,
-                                      label: option.label,
-                                      x: Math.min(event.clientX + 20, window.innerWidth - 300),
-                                      y: Math.max(20, event.clientY - 80),
-                                    })
-                                  }
-                                  onMouseLeave={() => setHoveredDetailImage(null)}
-                                  onMouseMove={(event) =>
-                                    setHoveredDetailImage({
-                                      src: option.value,
-                                      label: option.label,
-                                      x: Math.min(event.clientX + 20, window.innerWidth - 300),
-                                      y: Math.max(20, event.clientY - 80),
-                                    })
-                                  }
-                                  type="button"
-                                >
-                                  <img alt={option.label} src={option.value} />
-                                  <span>
-                                    {selectedOrder >= 0
-                                      ? `${selectedOrder + 1}. ${option.label}`
-                                      : option.label}
-                                  </span>
-                                  <img
-                                    alt={`${option.label} 크게 보기`}
-                                    className="detail-image-hover-preview"
-                                    src={option.value}
-                                  />
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <button
-                            aria-label="Scroll image candidates right"
-                            className="main-detail-scroll-button"
-                            onClick={() => moveMainDetailCandidates(1)}
-                            type="button"
-                          >
-                            ›
-                          </button>
-                        </div>
-                        <input
-                          aria-label="메인 이미지 후보 가로 스크롤"
-                          className="main-detail-scroll-range"
-                          max={100}
-                          min={0}
-                          onChange={(event) =>
-                            scrollMainDetailCandidates(Number(event.target.value))
-                          }
-                          onInput={(event) =>
-                            scrollMainDetailCandidates(Number(event.currentTarget.value))
-                          }
-                          type="range"
-                          value={mainDetailScrollPercent}
-                        />
-                        <div className="selected-ad-image-status">
-                          <div>
-                            <strong>
-                              선택된 광고 이미지: {selectedAdImages.selectedImagePaths.length}장
-                            </strong>
-                            <span>
-                              출처: {selectedAdImages.source} / 렌더 순서:{" "}
-                              {selectedAdImages.selectedImagePaths.length
-                                ? selectedAdImages.selectedImagePaths
-                                    .map((_, index) => index + 1)
-                                    .join(" → ")
-                                : "기본 상품 이미지 fallback"}
-                            </span>
-                            <small>
-                              선택한 상세 이미지가 모든 템플릿에 공통 적용됩니다. 첫 번째 선택
-                              이미지가 대표 이미지입니다.
-                            </small>
-                          </div>
-                          <button onClick={resetSelectedAdImages} type="button">
-                            이미지 선택 초기화
-                          </button>
-                        </div>
-                      </>
-                    ) : null}
-                    {mainImageSourceMode === "upload" ? (
-                      <label>
-                        <span>이미지 첨부</span>
-                        <input
-                          accept="image/png,image/jpeg,image/webp"
-                          onChange={(event) => selectUploadedMainImage(event.target.files?.[0])}
-                          type="file"
-                        />
-                      </label>
-                    ) : null}
-                    {currentMainProductImage ? (
-                      <div className="background-preview-thumb">
-                        <img alt="선택된 메인 상품 이미지 미리보기" src={currentMainProductImage} />
-                        <span>
-                          현재 배너에 사용하는 이미지:{" "}
-                          {productImageModeLabel(productImageState.selectedImageMode)}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="strategy-empty">
-                        상세페이지 이미지, 첨부 이미지, GPT 생성 이미지 중 하나를 선택해주세요.
-                      </p>
-                    )}
-                    <ProductImageWorkbench
-                      key={productImageState.originalImagePath || selectedSourceImagePath}
-                      busy={productImageProcessStatus.kind === "loading"}
-                      candidates={(sourceImageSelection.candidates.length
-                        ? sourceImageSelection.candidates
-                        : productInfo.sourceImageCandidates || []
-                      ).slice(0, 6)}
-                      imageState={productImageState}
-                      onManualResult={applyManualMaskResult}
-                      onReprocess={reprocessWorkbenchImage}
-                      onRepresentationChange={updateProductRepresentationType}
-                      onScopeChange={updateProductExtractionScope}
-                      onSourceChange={selectWorkbenchSource}
-                      onUpload={selectUploadedMainImage}
-                      onUseCutout={() => selectProductImageMode("cutout")}
-                      onUseOriginal={() => selectProductImageMode("original")}
-                      recommendedBackgroundPath={currentBackgroundSource}
-                      representation={activeProductRepresentation}
-                      selectedSourceImagePath={
-                        productImageState.originalImagePath || selectedSourceImagePath
-                      }
-                      statusMessage={productImageProcessStatus.message}
-                    />
-                    <ReviewCreativeWorkbench
-                      key={`review-${productInfo.landingUrl || "empty"}`}
-                      accentColor={bannerAccentColor}
-                      backgroundImagePath={currentBackgroundSource}
-                      initialCandidates={productInfo.reviewSources || []}
-                      productDescription={productInfo.extractedDescription}
-                      productImagePath={
-                        resolvedProductImages.productImagePath || currentMainProductImage
-                      }
-                      productName={productInfo.productName}
-                    />
-                    <div className="product-cutout-panel">
-                      <details>
-                        <summary>고급 효과 및 이전 호환 설정</summary>
-                        <p>
-                          상품 이미지는 불러온 직후 자동으로 배경을 제거합니다. 경계를 찾지 못하면
-                          원본을 안전하게 유지합니다.
-                        </p>
-                        <div className="background-style-grid">
-                          <button
-                            disabled={
-                              !productImageState.originalImagePath ||
-                              productImageProcessStatus.kind === "loading"
-                            }
-                            onClick={applyCutoutToProductImage}
-                            type="button"
-                          >
-                            누끼 다시 적용
-                          </button>
-                          <button
-                            disabled={
-                              !productImageState.cutoutImagePath ||
-                              productImageProcessStatus.kind === "loading"
-                            }
-                            onClick={applyEffectToCutout}
-                            type="button"
-                          >
-                            효과 적용
-                          </button>
-                        </div>
-                        <label>
-                          <span>효과 프리셋</span>
-                          <select
-                            onChange={(event) =>
-                              setProductImageState((current) => ({
-                                ...current,
-                                effectPreset: event.target.value as ProductImageEffectPreset,
-                              }))
-                            }
-                            value={productImageState.effectPreset || "commerce-shadow"}
-                          >
-                            <option value="none">none</option>
-                            <option value="clean-outline">clean-outline</option>
-                            <option value="soft-glow">soft-glow</option>
-                            <option value="commerce-shadow">commerce-shadow</option>
-                            <option value="outline-glow-shadow">outline-glow-shadow</option>
-                          </select>
-                        </label>
-                        <label>
-                          <span>배너 이미지 모드</span>
-                          <select
-                            onChange={(event) =>
-                              selectProductImageMode(event.target.value as ProductImageMode)
-                            }
-                            value={productImageState.selectedImageMode}
-                          >
-                            <option value="original">원본 이미지 사용</option>
-                            <option disabled={!productImageState.cutoutImagePath} value="cutout">
-                              누끼 이미지 사용
-                            </option>
-                            <option
-                              disabled={!productImageState.styledCutoutImagePath}
-                              value="styled-cutout"
-                            >
-                              효과 적용 누끼 사용
-                            </option>
-                          </select>
-                        </label>
-                        <div className={`mvp-status ${productImageProcessStatus.kind}`}>
-                          {productImageProcessStatus.message}
-                        </div>
-                        <div className="product-image-variant-grid">
-                          <button
-                            className={
-                              productImageState.selectedImageMode === "original" ? "selected" : ""
-                            }
-                            disabled={!productImageState.originalImagePath}
-                            onClick={() => selectProductImageMode("original")}
-                            type="button"
-                          >
-                            {productImageState.originalImagePath ? (
-                              <img alt="원본 이미지" src={productImageState.originalImagePath} />
-                            ) : null}
-                            <span>원본</span>
-                          </button>
-                          <button
-                            className={
-                              productImageState.selectedImageMode === "cutout" ? "selected" : ""
-                            }
-                            disabled={!productImageState.cutoutImagePath}
-                            onClick={() => selectProductImageMode("cutout")}
-                            type="button"
-                          >
-                            {productImageState.cutoutImagePath ? (
-                              <img alt="누끼 이미지" src={productImageState.cutoutImagePath} />
-                            ) : null}
-                            <span>누끼본</span>
-                          </button>
-                          <button
-                            className={
-                              productImageState.selectedImageMode === "styled-cutout"
-                                ? "selected"
-                                : ""
-                            }
-                            disabled={!productImageState.styledCutoutImagePath}
-                            onClick={() => selectProductImageMode("styled-cutout")}
-                            type="button"
-                          >
-                            {productImageState.styledCutoutImagePath ? (
-                              <img
-                                alt="효과 적용 누끼 이미지"
-                                src={productImageState.styledCutoutImagePath}
-                              />
-                            ) : null}
-                            <span>효과본</span>
-                          </button>
-                        </div>
-                      </details>
-                      {productImageState.cutoutImagePath ? (
-                        <details
-                          className="cutout-effect-controls"
-                          open={productImageState.selectedImageMode !== "original"}
-                        >
-                          <summary>누끼 이미지 효과</summary>
-                          <p className="strategy-empty">
-                            미리보기는 대략적인 효과이며, 최종 배너는 1200x1200 렌더링 결과를
-                            기준으로 확인해주세요.
-                          </p>
-                          <div className="cutout-effect-presets">
-                            {cutoutProductEffectPresets.map((preset) => (
-                              <button
-                                key={preset.id}
-                                onClick={() => setCutoutProductEffect(preset.effect)}
-                                type="button"
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-                          <div
-                            className="cutout-effect-preview"
-                            style={{
-                              filter: `${cutoutProductEffect.shadow ? `drop-shadow(${cutoutProductEffect.shadowOffsetX}px ${cutoutProductEffect.shadowOffsetY}px ${cutoutProductEffect.shadowBlur}px ${normalizeProductRenderEffect(cutoutProductEffect).shadowColor})` : ""} ${cutoutProductEffect.glow ? `drop-shadow(0 0 ${cutoutProductEffect.glowBlur}px ${normalizeProductRenderEffect(cutoutProductEffect).glowColor})` : ""}`,
-                              transform: `translate(${cutoutProductEffect.productOffsetX / 8}px, ${cutoutProductEffect.productOffsetY / 8}px) rotate(${cutoutProductEffect.productRotation}deg) scale(${cutoutProductEffect.productScale})`,
-                            }}
-                          >
-                            <img
-                              alt="누끼 효과 미리보기"
-                              src={productImageState.cutoutImagePath}
-                              style={{
-                                filter: cutoutProductEffect.outline
-                                  ? `drop-shadow(0 0 ${Math.max(1, cutoutProductEffect.outlineWidth / 2)}px ${cutoutProductEffect.outlineColor})`
-                                  : undefined,
-                              }}
-                            />
-                          </div>
-                          <div className="cutout-effect-grid">
-                            <label className="inline-check">
-                              <input
-                                checked={cutoutProductEffect.outline}
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    outline: event.target.checked,
-                                  }))
-                                }
-                                type="checkbox"
-                              />
-                              테두리 사용
-                            </label>
-                            <label>
-                              <span>테두리 색상</span>
-                              <input
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    outlineColor: event.target.value,
-                                  }))
-                                }
-                                type="color"
-                                value={cutoutProductEffect.outlineColor}
-                              />
-                            </label>
-                            <label>
-                              <span>테두리 두께 {cutoutProductEffect.outlineWidth}</span>
-                              <input
-                                max="40"
-                                min="0"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    outlineWidth: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.outlineWidth}
-                              />
-                            </label>
-                            <label className="inline-check">
-                              <input
-                                checked={cutoutProductEffect.shadow}
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    shadow: event.target.checked,
-                                  }))
-                                }
-                                type="checkbox"
-                              />
-                              그림자 사용
-                            </label>
-                            <label>
-                              <span>그림자 색상</span>
-                              <input
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    shadowBaseColor: event.target.value,
-                                  }))
-                                }
-                                type="color"
-                                value={cutoutProductEffect.shadowBaseColor || "#000000"}
-                              />
-                            </label>
-                            <label>
-                              <span>그림자 투명도 {cutoutProductEffect.shadowOpacity ?? 0.45}</span>
-                              <input
-                                max="1"
-                                min="0"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    shadowOpacity: Number(event.target.value),
-                                  }))
-                                }
-                                step="0.05"
-                                type="range"
-                                value={cutoutProductEffect.shadowOpacity ?? 0.45}
-                              />
-                            </label>
-                            <label>
-                              <span>그림자 번짐 {cutoutProductEffect.shadowBlur}</span>
-                              <input
-                                max="60"
-                                min="0"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    shadowBlur: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.shadowBlur}
-                              />
-                            </label>
-                            <label>
-                              <span>그림자 X {cutoutProductEffect.shadowOffsetX}</span>
-                              <input
-                                max="50"
-                                min="-50"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    shadowOffsetX: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.shadowOffsetX}
-                              />
-                            </label>
-                            <label>
-                              <span>그림자 Y {cutoutProductEffect.shadowOffsetY}</span>
-                              <input
-                                max="50"
-                                min="-50"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    shadowOffsetY: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.shadowOffsetY}
-                              />
-                            </label>
-                            <label className="inline-check">
-                              <input
-                                checked={cutoutProductEffect.glow}
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    glow: event.target.checked,
-                                  }))
-                                }
-                                type="checkbox"
-                              />
-                              글로우 사용
-                            </label>
-                            <label>
-                              <span>글로우 색상</span>
-                              <input
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    glowBaseColor: event.target.value,
-                                  }))
-                                }
-                                type="color"
-                                value={cutoutProductEffect.glowBaseColor || "#ffffff"}
-                              />
-                            </label>
-                            <label>
-                              <span>글로우 투명도 {cutoutProductEffect.glowOpacity ?? 0.55}</span>
-                              <input
-                                max="1"
-                                min="0"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    glowOpacity: Number(event.target.value),
-                                  }))
-                                }
-                                step="0.05"
-                                type="range"
-                                value={cutoutProductEffect.glowOpacity ?? 0.55}
-                              />
-                            </label>
-                            <label>
-                              <span>글로우 강도 {cutoutProductEffect.glowBlur}</span>
-                              <input
-                                max="80"
-                                min="0"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    glowBlur: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.glowBlur}
-                              />
-                            </label>
-                            <label>
-                              <span>상품 크기 {cutoutProductEffect.productScale}</span>
-                              <input
-                                max="1.6"
-                                min="0.6"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    productScale: Number(event.target.value),
-                                  }))
-                                }
-                                step="0.01"
-                                type="range"
-                                value={cutoutProductEffect.productScale}
-                              />
-                            </label>
-                            <label>
-                              <span>좌우 위치 {cutoutProductEffect.productOffsetX}</span>
-                              <input
-                                max="300"
-                                min="-300"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    productOffsetX: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.productOffsetX}
-                              />
-                            </label>
-                            <label>
-                              <span>상하 위치 {cutoutProductEffect.productOffsetY}</span>
-                              <input
-                                max="300"
-                                min="-300"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    productOffsetY: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.productOffsetY}
-                              />
-                            </label>
-                            <label>
-                              <span>회전 {cutoutProductEffect.productRotation}</span>
-                              <input
-                                max="20"
-                                min="-20"
-                                onChange={(event) =>
-                                  setCutoutProductEffect((current) => ({
-                                    ...current,
-                                    productRotation: Number(event.target.value),
-                                  }))
-                                }
-                                type="range"
-                                value={cutoutProductEffect.productRotation}
-                              />
-                            </label>
-                          </div>
-                        </details>
-                      ) : null}
-                    </div>
-                  </details>
-                  <details className="background-settings render-settings source-image-dropdown">
-                    <summary>
-                      <div>
-                        <p className="eyebrow">Render Image</p>
-                        <strong>메인 이미지 / 누끼 설정</strong>
-                        <span>
-                          {currentMainProductImage
-                            ? productImageModeLabel(productImageState.selectedImageMode)
-                            : "이미지 선택 필요"}
-                        </span>
-                      </div>
-                      <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
-                    </summary>
-                    <div>
-                      <p className="eyebrow">Render Background</p>
-                      <h4>배경 이미지 설정</h4>
-                    </div>
-                    <label>
-                      <span>배경 모드</span>
-                      <select
-                        onChange={(event) => {
-                          setSelectedLibraryBackgroundId("");
-                          setProductInfo((current) => ({
-                            ...current,
-                            backgroundMode: event.target.value as BackgroundMode,
-                          }));
-                          setGeneratedBannerPath("");
-                        }}
-                        value={productInfo.backgroundMode || "none"}
-                      >
-                        <option value="none">배경 없음</option>
-                        <option value="auto-detail-blur-dark">대표 이미지 자동 배경</option>
-                        <option value="selected-detail-blur-dark">상세 이미지 선택 배경</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>상세 이미지 선택</span>
-                      <select
-                        disabled={
-                          productInfo.backgroundMode !== "selected-detail-blur-dark" ||
-                          !backgroundImageOptions.length
-                        }
-                        onChange={(event) => {
-                          setSelectedLibraryBackgroundId("");
-                          setProductInfo((current) => ({
-                            ...current,
-                            selectedBackgroundSource: event.target.value,
-                          }));
-                          setGeneratedBannerPath("");
-                        }}
-                        value={
-                          productInfo.selectedBackgroundSource ||
-                          backgroundImageOptions[0]?.value ||
-                          ""
-                        }
-                      >
-                        {backgroundImageOptions.length ? (
-                          backgroundImageOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
+                          {systemFontOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
                               {option.label}
                             </option>
-                          ))
-                        ) : (
-                          <option value="">추출된 상세 이미지 없음</option>
-                        )}
-                      </select>
-                    </label>
-                    {productInfo.backgroundMode === "selected-detail-blur-dark" ? (
-                      <div className="detail-image-strip background-detail-strip">
-                        {backgroundImageOptions.map((option) => (
-                          <button
-                            aria-label={`${option.label} 배경 이미지로 선택`}
-                            className={
-                              (productInfo.selectedBackgroundSource ||
-                                backgroundImageOptions[0]?.value) === option.value
-                                ? "selected"
-                                : ""
-                            }
-                            key={`background-${option.value}`}
-                            onClick={() => {
-                              setSelectedLibraryBackgroundId("");
-                              setProductInfo((current) => ({
-                                ...current,
-                                selectedBackgroundSource: option.value,
-                              }));
-                              setGeneratedBannerPath("");
-                            }}
-                            onMouseEnter={(event) =>
-                              setHoveredDetailImage({
-                                src: option.value,
-                                label: option.label,
-                                x: Math.min(event.clientX + 20, window.innerWidth - 300),
-                                y: Math.max(20, event.clientY - 80),
-                              })
-                            }
-                            onMouseLeave={() => setHoveredDetailImage(null)}
-                            onMouseMove={(event) =>
-                              setHoveredDetailImage({
-                                src: option.value,
-                                label: option.label,
-                                x: Math.min(event.clientX + 20, window.innerWidth - 300),
-                                y: Math.max(20, event.clientY - 80),
-                              })
-                            }
-                            type="button"
-                          >
-                            <img alt={option.label} src={option.value} />
-                            <span>{option.label}</span>
-                            <img
-                              alt={`${option.label} 크게 보기`}
-                              className="detail-image-hover-preview"
-                              src={option.value}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div className="background-style-grid">
-                      <label>
-                        <span>흐림 강도</span>
-                        <select
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
-                              ...current,
-                              blurLevel: event.target.value as BackgroundLevel,
-                            }))
-                          }
-                          value={backgroundStyle.blurLevel}
-                        >
-                          <option value="low">낮음</option>
-                          <option value="medium">중간</option>
-                          <option value="high">높음</option>
+                          ))}
                         </select>
                       </label>
                       <label>
-                        <span>어둡게</span>
-                        <select
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
+                        <span>본문 문구 색상</span>
+                        <input
+                          onChange={(event) => {
+                            setManualTextColors(true);
+                            setBannerTextColors((current) => ({
                               ...current,
-                              dimLevel: event.target.value as BackgroundLevel,
-                            }))
-                          }
-                          value={backgroundStyle.dimLevel}
+                              bodyColor: event.target.value,
+                            }));
+                          }}
+                          type="color"
+                          value={bannerTextColors.bodyColor}
+                        />
+                      </label>
+                      <label>
+                        <span>배너 폰트</span>
+                        <select
+                          onChange={(event) => setSelectedBodyFontId(event.target.value)}
+                          value={selectedBodyFontId}
                         >
-                          <option value="low">낮음</option>
-                          <option value="medium">중간</option>
-                          <option value="high">높음</option>
+                          {systemFontOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </label>
                       <label>
-                        <span>배경 확대 {backgroundStyle.scale.toFixed(2)}×</span>
+                        <span>본문 문구 크기</span>
                         <input
-                          max="1.45"
-                          min="1"
+                          max="80"
+                          min="18"
                           onChange={(event) =>
-                            setBackgroundStyle((current) => ({
+                            setBannerTextColors((current) => ({
                               ...current,
-                              scale: Number(event.target.value),
+                              bodyFontSize: Number(event.target.value) || 50,
                             }))
                           }
-                          step="0.01"
-                          type="range"
-                          value={backgroundStyle.scale}
+                          type="number"
+                          value={bannerTextColors.bodyFontSize}
                         />
                       </label>
-                      <label>
-                        <span>좌우 이동 {backgroundStyle.offsetX}px</span>
-                        <input
-                          max="220"
-                          min="-220"
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
-                              ...current,
-                              offsetX: Number(event.target.value),
-                            }))
-                          }
-                          step="5"
-                          type="range"
-                          value={backgroundStyle.offsetX}
-                        />
-                      </label>
-                      <label>
-                        <span>상하 이동 {backgroundStyle.offsetY}px</span>
-                        <input
-                          max="220"
-                          min="-220"
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
-                              ...current,
-                              offsetY: Number(event.target.value),
-                            }))
-                          }
-                          step="5"
-                          type="range"
-                          value={backgroundStyle.offsetY}
-                        />
-                      </label>
-                      <label>
-                        <span>밝기 {Math.round(backgroundStyle.brightness * 100)}%</span>
-                        <input
-                          max="1.35"
-                          min="0.55"
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
-                              ...current,
-                              brightness: Number(event.target.value),
-                            }))
-                          }
-                          step="0.05"
-                          type="range"
-                          value={backgroundStyle.brightness}
-                        />
-                      </label>
-                      <label>
-                        <span>오버레이 {Math.round(backgroundStyle.overlayOpacity * 100)}%</span>
-                        <input
-                          max="0.72"
-                          min="0"
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
-                              ...current,
-                              overlayOpacity: Number(event.target.value),
-                            }))
-                          }
-                          step="0.02"
-                          type="range"
-                          value={backgroundStyle.overlayOpacity}
-                        />
-                      </label>
-                      <label>
-                        <span>좌우 반전</span>
-                        <input
-                          checked={backgroundStyle.flipHorizontal}
-                          onChange={(event) =>
-                            setBackgroundStyle((current) => ({
-                              ...current,
-                              flipHorizontal: event.target.checked,
-                            }))
-                          }
-                          type="checkbox"
-                        />
-                      </label>
-                      <button
-                        onClick={() =>
-                          setBackgroundStyle({
-                            blurLevel: "low",
-                            dimLevel: "low",
-                            brightness: 1,
-                            overlayOpacity: 0.08,
-                            scale: 1.08,
-                            offsetX: 0,
-                            offsetY: 0,
-                            flipHorizontal: false,
-                          })
-                        }
-                        type="button"
-                      >
-                        배경 위치 초기화
-                      </button>
-                    </div>
-                    {currentBackgroundSource ? (
-                      <div className="background-preview-thumb">
-                        <img
-                          alt="선택된 배경 이미지 미리보기"
-                          src={currentBackgroundSource}
-                          style={{
-                            filter: `brightness(${backgroundStyle.brightness})`,
-                            transform: `translate(${backgroundStyle.offsetX / 10}px, ${backgroundStyle.offsetY / 10}px) scale(${backgroundStyle.flipHorizontal ? -backgroundStyle.scale : backgroundStyle.scale}, ${backgroundStyle.scale})`,
-                          }}
-                        />
-                        <span>
-                          {productInfo.backgroundMode === "auto-detail-blur-dark"
-                            ? "대표 이미지 자동 배경"
-                            : "선택한 상세 이미지 배경"}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="strategy-empty">
-                        상품정보를 불러오면 상세페이지 이미지가 배경 후보로 표시됩니다.
-                      </p>
-                    )}
-                    <label>
-                      <span>헤드라인 색상</span>
-                      <input
-                        onChange={(event) =>
-                          setHeadlineStyleOverride("headlineColor", event.target.value)
-                        }
-                        type="color"
-                        value={headlineStyleOverrides.headlineColor || "#ff1f1f"}
-                      />
-                    </label>
-                    <label>
-                      <span>헤드라인 폰트</span>
-                      <select
-                        onChange={(event) => setSelectedHeadlineFontId(event.target.value)}
-                        value={selectedHeadlineFontId}
-                      >
-                        {systemFontOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>본문 문구 색상</span>
-                      <input
-                        onChange={(event) => {
-                          setManualTextColors(true);
-                          setBannerTextColors((current) => ({
-                            ...current,
-                            bodyColor: event.target.value,
-                          }));
-                        }}
-                        type="color"
-                        value={bannerTextColors.bodyColor}
-                      />
-                    </label>
-                    <label>
-                      <span>배너 폰트</span>
-                      <select
-                        onChange={(event) => setSelectedBodyFontId(event.target.value)}
-                        value={selectedBodyFontId}
-                      >
-                        {systemFontOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>본문 문구 크기</span>
-                      <input
-                        max="80"
-                        min="18"
-                        onChange={(event) =>
-                          setBannerTextColors((current) => ({
-                            ...current,
-                            bodyFontSize: Number(event.target.value) || 50,
-                          }))
-                        }
-                        type="number"
-                        value={bannerTextColors.bodyFontSize}
-                      />
-                    </label>
-                  </details>
-                  <details className="background-settings logo-settings source-image-dropdown">
-                    <summary>
-                      <div>
-                        <p className="eyebrow">Brand Logo</p>
-                        <strong>로고 설정</strong>
-                        <span>{brandLogoPath ? "로고 선택됨" : "선택 안 함"}</span>
-                      </div>
-                      <b>{brandLogoPath ? "사용" : "미사용"}</b>
-                    </summary>
-                    <div>
-                      <p className="eyebrow">Brand Logo</p>
-                      <h4>로고 설정</h4>
-                    </div>
-                    <label>
-                      <span>로고 파일 선택</span>
-                      <input
-                        accept="image/png,image/jpeg,image/webp"
-                        onChange={(event) => {
-                          uploadBrandLogo(event.target.files?.[0]);
-                          event.currentTarget.value = "";
-                        }}
-                        type="file"
-                      />
-                    </label>
-                    <label>
-                      <span>기본 로고 선택</span>
-                      <select
-                        onChange={(event) => {
-                          const logo = presetBrandLogos.find(
-                            (item) => item.imagePath === event.target.value
-                          );
-                          setBrandLogoPath(event.target.value);
-                          setBrandLogoStatus(
-                            event.target.value
-                              ? {
-                                  kind: "success",
-                                  message: `${logo?.label || "로고"}를 적용했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다.`,
-                                }
-                              : { kind: "idle", message: "로고를 선택하지 않았습니다." }
-                          );
-                        }}
-                        value={
-                          presetBrandLogos.some((item) => item.imagePath === brandLogoPath)
-                            ? brandLogoPath
-                            : ""
-                        }
-                      >
-                        <option value="">선택 안 함</option>
-                        {presetBrandLogos.map((logo) => (
-                          <option key={logo.id} value={logo.imagePath}>
-                            {logo.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <div className="preset-logo-grid">
-                      {presetBrandLogos.map((logo) => (
-                        <button
-                          className={brandLogoPath === logo.imagePath ? "selected" : ""}
-                          key={logo.id}
-                          onClick={() => {
-                            setBrandLogoPath(logo.imagePath);
-                            setBrandLogoStatus({
-                              kind: "success",
-                              message: `${logo.label}를 적용했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다.`,
-                            });
-                          }}
-                          type="button"
-                        >
-                          <img alt={logo.label} src={logo.imagePath} />
-                          <span>{logo.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                    {brandLogoPath ? (
-                      <div className="logo-preview-thumb">
-                        <img alt="선택한 로고" src={brandLogoPath} />
-                        <button onClick={() => setBrandLogoPath("")} type="button">
-                          로고 제거
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="strategy-empty">
-                        로고를 선택하면 템플릿 2 오른쪽 상단에 배치됩니다.
-                      </p>
-                    )}
-                    <div className={`mvp-status ${brandLogoStatus.kind}`}>
-                      {brandLogoStatus.message}
-                    </div>
-                  </details>
-                  <button
-                    disabled={!bannerCopy.headline || renderStatus.kind === "loading"}
-                    onClick={renderBanner}
-                    type="button"
-                  >
-                    {renderStatus.kind === "loading"
-                      ? "자동 템플릿 제작 중..."
-                      : "자동 템플릿으로 배너 생성"}
-                  </button>
-                  <details className="background-settings ai-disclosure-settings source-image-dropdown">
-                    <summary>
-                      <div>
-                        <p className="eyebrow">Caption</p>
-                        <strong>AI 고지 자막</strong>
-                        <span>{showAiDisclosure ? aiDisclosureText : "표시 안 함"}</span>
-                      </div>
-                      <b>{showAiDisclosure ? "표시" : "숨김"}</b>
-                    </summary>
-                    <div>
-                      <p className="eyebrow">Caption</p>
-                      <h4>AI 고지 자막</h4>
-                    </div>
-                    <label>
-                      <span>표시 여부</span>
-                      <select
-                        onChange={(event) => setShowAiDisclosure(event.target.value === "show")}
-                        value={showAiDisclosure ? "show" : "hide"}
-                      >
-                        <option value="hide">표시 안 함</option>
-                        <option value="show">가운데 하단에 표시</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>자막 문구</span>
-                      <input
-                        disabled={!showAiDisclosure}
-                        onChange={(event) => setAiDisclosureText(event.target.value)}
-                        value={aiDisclosureText}
-                      />
-                    </label>
-                    <p className="strategy-empty">
-                      선택한 경우에만 모든 템플릿의 가운데 하단에 아주 작게 들어갑니다.
-                    </p>
-                  </details>
-                  <div className={`mvp-status ${renderStatus.kind}`}>{renderStatus.message}</div>
-                  {renderDiagnostics ? (
-                    <details className="render-diagnostics" open>
+                    </details>
+                    <details className="background-settings logo-settings source-image-dropdown">
                       <summary>
                         <div>
-                          <p className="eyebrow">AUTO DESIGN QA</p>
-                          <strong>자동 디자인 최적화</strong>
+                          <p className="eyebrow">Brand Logo</p>
+                          <strong>로고 설정</strong>
+                          <span>{brandLogoPath ? "로고 선택됨" : "선택 안 함"}</span>
                         </div>
-                        <span className={`diagnostic-grade ${renderDiagnostics.qualityStatus}`}>
-                          {renderDiagnostics.qualityStatus === "stable"
-                            ? "안정"
-                            : renderDiagnostics.qualityStatus === "review"
-                              ? "검토 권장"
-                              : "수정 필요"}{" "}
-                          {renderDiagnostics.qualityScore}점
-                        </span>
+                        <b>{brandLogoPath ? "사용" : "미사용"}</b>
                       </summary>
-                      <div className="diagnostic-palette" aria-label="자동 추출 색상">
-                        {[
-                          renderDiagnostics.palette.primaryColor,
-                          renderDiagnostics.palette.secondaryColor,
-                          renderDiagnostics.palette.accentColor,
-                          renderDiagnostics.palette.highlightColor,
-                          renderDiagnostics.palette.backgroundColor,
-                        ].map((color, index) => (
-                          <span
-                            key={color + index}
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
+                      <div>
+                        <p className="eyebrow">Brand Logo</p>
+                        <h4>로고 설정</h4>
                       </div>
-                      <dl className="diagnostic-grid">
-                        <div>
-                          <dt>팔레트 정책</dt>
-                          <dd>{renderDiagnostics.palettePolicy || "fixed"}</dd>
-                        </div>
-                        <div>
-                          <dt>선택 문구</dt>
-                          <dd>{renderDiagnostics.selectedVariant || "base"}</dd>
-                        </div>
-                        <div>
-                          <dt>텍스트 맞춤</dt>
-                          <dd>
-                            {
-                              renderDiagnostics.fitResults.filter((item) => item.status !== "exact")
-                                .length
-                            }
-                            개 조정
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>사용 이미지</dt>
-                          <dd>{renderDiagnostics.imagePathsUsed.length}장</dd>
-                        </div>
-                      </dl>
-                      <div className="diagnostic-fit-list">
-                        {renderDiagnostics.fitResults.map((item) => (
-                          <span className={item.status} key={item.slotId}>
-                            {item.slotId}: {item.status}
-                          </span>
-                        ))}
-                      </div>
-                      <p className="diagnostic-reason">{renderDiagnostics.variantReason}</p>
-                      {renderDiagnostics.warnings.length ? (
-                        <p className="diagnostic-warning">
-                          {renderDiagnostics.warnings.join(" / ")}
-                        </p>
-                      ) : null}
-                    </details>
-                  ) : null}
-                  {generatedBannerPath ? (
-                    <>
-                      <CanvasPreview
-                        copy={bannerCopy}
-                        imagePath={generatedBannerPath}
-                        onCopyChange={(nextCopy) => {
-                          setBannerCopy(nextCopy);
-                          setActiveRenderCopy(nextCopy);
-                          creativeWorkflow.setMessageHierarchy(copyToMessageHierarchy(nextCopy));
-                        }}
-                        onProductEffectChange={setCutoutProductEffect}
-                        onRender={renderBanner}
-                        productEffect={cutoutProductEffect}
-                      />
-                      {generatedBannerAsset ? (
-                        <CreativeAssetActions asset={generatedBannerAsset} onMessage={(message) => setRenderStatus({ kind: "success", message })} />
-                      ) : (
-                        <div className="creative-asset-migration">
-                          <p>이전 생성 결과입니다. 다운로드 전에 소재코드를 한 번 발급해 주세요.</p>
+                      <label>
+                        <span>로고 파일 선택</span>
+                        <input
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={(event) => {
+                            uploadBrandLogo(event.target.files?.[0]);
+                            event.currentTarget.value = "";
+                          }}
+                          type="file"
+                        />
+                      </label>
+                      <label>
+                        <span>기본 로고 선택</span>
+                        <select
+                          onChange={(event) => {
+                            const logo = presetBrandLogos.find(
+                              (item) => item.imagePath === event.target.value
+                            );
+                            setBrandLogoPath(event.target.value);
+                            setBrandLogoStatus(
+                              event.target.value
+                                ? {
+                                    kind: "success",
+                                    message: `${logo?.label || "로고"}를 적용했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다.`,
+                                  }
+                                : { kind: "idle", message: "로고를 선택하지 않았습니다." }
+                            );
+                          }}
+                          value={
+                            presetBrandLogos.some((item) => item.imagePath === brandLogoPath)
+                              ? brandLogoPath
+                              : ""
+                          }
+                        >
+                          <option value="">선택 안 함</option>
+                          {presetBrandLogos.map((logo) => (
+                            <option key={logo.id} value={logo.imagePath}>
+                              {logo.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="preset-logo-grid">
+                        {presetBrandLogos.map((logo) => (
                           <button
-                            onClick={() => void issueCodeForExistingBanner().then(() => setRenderStatus({ kind: "success", message: "소재코드를 발급했습니다." })).catch((error) => setRenderStatus({ kind: "error", message: error instanceof Error ? error.message : "소재코드 발급에 실패했습니다." }))}
+                            className={brandLogoPath === logo.imagePath ? "selected" : ""}
+                            key={logo.id}
+                            onClick={() => {
+                              setBrandLogoPath(logo.imagePath);
+                              setBrandLogoStatus({
+                                kind: "success",
+                                message: `${logo.label}를 적용했습니다. 배너 생성 시 오른쪽 상단에 들어갑니다.`,
+                              });
+                            }}
                             type="button"
                           >
-                            소재코드 1회 발급
+                            <img alt={logo.label} src={logo.imagePath} />
+                            <span>{logo.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                      {brandLogoPath ? (
+                        <div className="logo-preview-thumb">
+                          <img alt="선택한 로고" src={brandLogoPath} />
+                          <button onClick={() => setBrandLogoPath("")} type="button">
+                            로고 제거
                           </button>
                         </div>
+                      ) : (
+                        <p className="strategy-empty">
+                          로고를 선택하면 템플릿 2 오른쪽 상단에 배치됩니다.
+                        </p>
                       )}
-                    </>
-                  ) : (
-                    <div className="empty-banner-preview">
-                      <strong>상품 USP 분석 후 후킹 생성</strong>
-                      <span>상세페이지에서 확인한 차별점을 먼저 찾습니다.</span>
-                      <em>가격·구성·혜택은 확인된 정보만 사용합니다.</em>
-                      <i aria-hidden="true" />
-                      <b>상품 누끼와 후킹별 강조 효과를 자동 적용합니다.</b>
-                      <small>상품 URL을 먼저 불러와주세요 &gt;</small>
-                    </div>
-                  )}
-                </section>
-              </div>
+                      <div className={`mvp-status ${brandLogoStatus.kind}`}>
+                        {brandLogoStatus.message}
+                      </div>
+                    </details>
+                    <button
+                      disabled={!bannerCopy.headline || renderStatus.kind === "loading"}
+                      onClick={renderBanner}
+                      type="button"
+                    >
+                      {renderStatus.kind === "loading"
+                        ? "자동 템플릿 제작 중..."
+                        : "자동 템플릿으로 배너 생성"}
+                    </button>
+                    <details className="background-settings ai-disclosure-settings source-image-dropdown">
+                      <summary>
+                        <div>
+                          <p className="eyebrow">Caption</p>
+                          <strong>AI 고지 자막</strong>
+                          <span>{showAiDisclosure ? aiDisclosureText : "표시 안 함"}</span>
+                        </div>
+                        <b>{showAiDisclosure ? "표시" : "숨김"}</b>
+                      </summary>
+                      <div>
+                        <p className="eyebrow">Caption</p>
+                        <h4>AI 고지 자막</h4>
+                      </div>
+                      <label>
+                        <span>표시 여부</span>
+                        <select
+                          onChange={(event) => setShowAiDisclosure(event.target.value === "show")}
+                          value={showAiDisclosure ? "show" : "hide"}
+                        >
+                          <option value="hide">표시 안 함</option>
+                          <option value="show">가운데 하단에 표시</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>자막 문구</span>
+                        <input
+                          disabled={!showAiDisclosure}
+                          onChange={(event) => setAiDisclosureText(event.target.value)}
+                          value={aiDisclosureText}
+                        />
+                      </label>
+                      <p className="strategy-empty">
+                        선택한 경우에만 모든 템플릿의 가운데 하단에 아주 작게 들어갑니다.
+                      </p>
+                    </details>
+                    <div className={`mvp-status ${renderStatus.kind}`}>{renderStatus.message}</div>
+                    {renderDiagnostics ? (
+                      <details className="render-diagnostics" open>
+                        <summary>
+                          <div>
+                            <p className="eyebrow">AUTO DESIGN QA</p>
+                            <strong>자동 디자인 최적화</strong>
+                          </div>
+                          <span className={`diagnostic-grade ${renderDiagnostics.qualityStatus}`}>
+                            {renderDiagnostics.qualityStatus === "stable"
+                              ? "안정"
+                              : renderDiagnostics.qualityStatus === "review"
+                                ? "검토 권장"
+                                : "수정 필요"}{" "}
+                            {renderDiagnostics.qualityScore}점
+                          </span>
+                        </summary>
+                        <div className="diagnostic-palette" aria-label="자동 추출 색상">
+                          {[
+                            renderDiagnostics.palette.primaryColor,
+                            renderDiagnostics.palette.secondaryColor,
+                            renderDiagnostics.palette.accentColor,
+                            renderDiagnostics.palette.highlightColor,
+                            renderDiagnostics.palette.backgroundColor,
+                          ].map((color, index) => (
+                            <span
+                              key={color + index}
+                              style={{ backgroundColor: color }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                        <dl className="diagnostic-grid">
+                          <div>
+                            <dt>팔레트 정책</dt>
+                            <dd>{renderDiagnostics.palettePolicy || "fixed"}</dd>
+                          </div>
+                          <div>
+                            <dt>선택 문구</dt>
+                            <dd>{renderDiagnostics.selectedVariant || "base"}</dd>
+                          </div>
+                          <div>
+                            <dt>텍스트 맞춤</dt>
+                            <dd>
+                              {
+                                renderDiagnostics.fitResults.filter(
+                                  (item) => item.status !== "exact"
+                                ).length
+                              }
+                              개 조정
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>사용 이미지</dt>
+                            <dd>{renderDiagnostics.imagePathsUsed.length}장</dd>
+                          </div>
+                        </dl>
+                        <div className="diagnostic-fit-list">
+                          {renderDiagnostics.fitResults.map((item) => (
+                            <span className={item.status} key={item.slotId}>
+                              {item.slotId}: {item.status}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="diagnostic-reason">{renderDiagnostics.variantReason}</p>
+                        {renderDiagnostics.warnings.length ? (
+                          <p className="diagnostic-warning">
+                            {renderDiagnostics.warnings.join(" / ")}
+                          </p>
+                        ) : null}
+                      </details>
+                    ) : null}
+                    {generatedBannerPath ? (
+                      <>
+                        <CanvasPreview
+                          copy={bannerCopy}
+                          imagePath={generatedBannerPath}
+                          onCopyChange={(nextCopy) => {
+                            setBannerCopy(nextCopy);
+                            setActiveRenderCopy(nextCopy);
+                            creativeWorkflow.setMessageHierarchy(copyToMessageHierarchy(nextCopy));
+                          }}
+                          onProductEffectChange={setCutoutProductEffect}
+                          onRender={renderBanner}
+                          productEffect={cutoutProductEffect}
+                        />
+                        {generatedBannerAsset ? (
+                          <CreativeAssetActions
+                            asset={generatedBannerAsset}
+                            onMessage={(message) => setRenderStatus({ kind: "success", message })}
+                          />
+                        ) : (
+                          <div className="creative-asset-migration">
+                            <p>
+                              이전 생성 결과입니다. 다운로드 전에 소재코드를 한 번 발급해 주세요.
+                            </p>
+                            <button
+                              onClick={() =>
+                                void issueCodeForExistingBanner()
+                                  .then(() =>
+                                    setRenderStatus({
+                                      kind: "success",
+                                      message: "소재코드를 발급했습니다.",
+                                    })
+                                  )
+                                  .catch((error) =>
+                                    setRenderStatus({
+                                      kind: "error",
+                                      message:
+                                        error instanceof Error
+                                          ? error.message
+                                          : "소재코드 발급에 실패했습니다.",
+                                    })
+                                  )
+                              }
+                              type="button"
+                            >
+                              소재코드 1회 발급
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="empty-banner-preview">
+                        <strong>상품 USP 분석 후 후킹 생성</strong>
+                        <span>상세페이지에서 확인한 차별점을 먼저 찾습니다.</span>
+                        <em>가격·구성·혜택은 확인된 정보만 사용합니다.</em>
+                        <i aria-hidden="true" />
+                        <b>상품 누끼와 후킹별 강조 효과를 자동 적용합니다.</b>
+                        <small>상품 URL을 먼저 불러와주세요 &gt;</small>
+                      </div>
+                    )}
+                  </section>
+                </div>
               </details>
             </div>
           </section>
@@ -7713,7 +7968,7 @@ export function MvpDashboard({
               ) : (
                 <article>
                   <strong>아직 저장된 이미지 생성 결과가 없습니다.</strong>
-                  <span>이번 단계는 전략/카피/프롬프트 생성까지만 제공합니다.</span>
+                  <span>광고 만들기에서 상품을 분석하고 첫 광고를 만들어 보세요.</span>
                 </article>
               )}
             </div>

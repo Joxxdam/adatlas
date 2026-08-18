@@ -174,9 +174,7 @@ export const defaultDiscoveryHookCodes: ExperimentHookCode[] = [
   "SEN",
   "CUR",
   "PRB",
-  "BRD",
   "PRC",
-  "REV",
   "USP",
   "EMP",
 ];
