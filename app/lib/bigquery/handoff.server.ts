@@ -15,7 +15,7 @@ function metricText(metric: BigQueryCandidateMetric) {
   return `${metric.label}: ${Math.round(metric.value).toLocaleString("ko-KR")}`;
 }
 
-function productInfo(candidate: BigQueryAdCandidate): ProductInfoForPrompt {
+export function bigQueryCandidateToProductInfo(candidate: BigQueryAdCandidate): ProductInfoForPrompt {
   const evidence = candidate.metrics.slice(0, 6).map(metricText);
   return {
     productName: candidate.productName,
@@ -68,7 +68,7 @@ export async function buildBigQueryProductCreationHandoff(
 ): Promise<ProductCreationHandoff | null> {
   const candidate = await getBigQueryCandidate(candidateId);
   if (!candidate) return null;
-  const info = productInfo(candidate);
+  const info = bigQueryCandidateToProductInfo(candidate);
   return {
     analysisId: `bigquery-${candidate.latestDataDate}`,
     productId: candidate.productId || candidate.id,

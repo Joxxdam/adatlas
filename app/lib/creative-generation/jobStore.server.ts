@@ -2,6 +2,7 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { GenerationJob, GenerationJobStatus } from "./types";
+import { executionResults } from "./jobRunnerPolicy";
 
 const jobsDirectory = path.join(process.cwd(), "data", "creative-generation-jobs");
 const globalKey = Symbol.for("daywiz.creative-generation.job-store-locks");
@@ -42,7 +43,7 @@ const terminalStatuses = new Set([
 
 export function summarizeGenerationJobStatus(job: GenerationJob): GenerationJob {
   if (job.status === "cancelled") return job;
-  const statuses = job.results.map((result) => result.status);
+  const statuses = executionResults(job).map((result) => result.status);
   const successCount = statuses.filter((status) => successfulStatuses.has(status)).length;
   const running = statuses.some((status) => status === "running");
   const pending = statuses.some((status) => status === "pending");

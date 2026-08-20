@@ -916,6 +916,11 @@ export type GenerationJob = {
     message: string;
     resultIds: string[];
   }>;
+  executionResultIds?: string[];
+  sourceType?: "manual" | "auto-production";
+  autoProductionRunId?: string;
+  autoProductionTaskId?: string;
+  hookLearningApplied?: boolean;
 };
 
 export type GenerationJobSummary = {

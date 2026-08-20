@@ -1,5 +1,16 @@
 [
   {
+    "id": "9c3f86a6-117e-460a-a172-8018c70fe3be",
+    "provider": "removebg",
+    "originalImagePath": "https://flexgcdn-zetenth77.moall.shop/data/goods/zetenth77/small/thum2/1_20250811105249651_1.jpg",
+    "processedImagePath": "/processed-products/removebg-1787091686856-5df1dab8.png",
+    "cacheKey": "baaff75f18db04f7cb669d4408ceac4e5a22196d547a21a5399537a8170ec89a",
+    "representationType": "irregular-product",
+    "extractionScope": "single-item",
+    "pipelineVersion": "sales-unit-v1",
+    "createdAt": "2026-08-18T22:21:26.857Z"
+  },
+  {
     "id": "fecd2bd7-d4b8-4aa1-a29a-9e5acdc479aa",
     "provider": "removebg",
     "originalImagePath": "https://spdy-flexg-main.flexgate.co.kr/data/goods/meatmania0726/small/thum2/KakaoTalk_64020260614_143916712.jpg",

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DaywizBrand } from "./DaywizBrand";
+import { AutoProductionStatusIndicator } from "./features/auto-production/AutoProductionStatusIndicator";
 import { CreativeJobStatusIndicator } from "./features/creative-generation/CreativeJobStatusIndicator";
 
 export type AppFeatureKey =
   | "store-analysis"
   | "product-creation"
+  | "auto-production"
   | "hook-experiments"
   | "creative-results"
   | "image-references"
@@ -33,16 +35,23 @@ const FEATURES: Array<{
     description: "상품 주소로 광고를 만듭니다",
   },
   {
+    key: "auto-production",
+    href: "/auto-production",
+    index: "03",
+    label: "자동 제작",
+    description: "매일 새 후킹 광고를 자동 제작합니다",
+  },
+  {
     key: "hook-experiments",
     href: "/hook-experiments",
-    index: "03",
+    index: "04",
     label: "후킹 테스트",
     description: "후킹별 광고 성과를 비교합니다",
   },
   {
     key: "creative-results",
     href: "/create-product?view=results",
-    index: "04",
+    index: "05",
     label: "제작 결과",
     description: "생성한 광고와 소재코드를 봅니다",
   },
@@ -129,6 +138,7 @@ export function FeaturePageShell({
           <h2>무엇을 시작할까요?</h2>
         </div>
         <AppFeatureNavigation activeFeature={activeFeature} />
+        <AutoProductionStatusIndicator />
         <CreativeJobStatusIndicator />
         <details className="feature-sidebar-tools">
           <summary>관리 도구</summary>

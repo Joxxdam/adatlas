@@ -44,9 +44,9 @@ test("analysis handoff keeps the selected product URL independently of cached de
   );
 });
 
-test("main navigation exposes the four beginner tasks and keeps auxiliary tools", async () => {
+test("main navigation exposes the five beginner tasks and keeps auxiliary tools", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
-  for (const label of ["광고 후보 찾기", "광고 만들기", "후킹 테스트", "제작 결과"]) {
+  for (const label of ["광고 후보 찾기", "광고 만들기", "자동 제작", "후킹 테스트", "제작 결과"]) {
     assert.match(navigation, new RegExp(label));
   }
   assert.match(navigation, /이미지 분석 레퍼런스/);

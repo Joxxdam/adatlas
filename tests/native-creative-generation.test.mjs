@@ -99,14 +99,15 @@ test("AI 전체 광고는 누끼 없이 상세페이지 원본만으로 생성 �
 });
 
 test("URL 분석과 native 작업 생성은 등록 누끼로 대표 이미지를 교체하지 않는다", async () => {
-  const [extractRoute, jobRoute, dashboard] = await Promise.all([
+  const [extractRoute, jobRoute, jobService, dashboard] = await Promise.all([
     readFile(new URL("../app/api/extract/product/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/creative-generation/jobs/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/components/MvpDashboard.tsx", import.meta.url), "utf8"),
   ]);
   assert.doesNotMatch(extractRoute, /applyKnownProductAssets/);
-  assert.doesNotMatch(jobRoute, /matchKnownProductAsset|등록된 상품 전용 누끼/);
-  assert.match(jobRoute, /originalProductReferencePaths/);
+  assert.doesNotMatch(`${jobRoute}\n${jobService}`, /matchKnownProductAsset|등록된 상품 전용 누끼/);
+  assert.match(jobService, /originalProductReferencePaths/);
   assert.doesNotMatch(dashboard, /automaticCutoutInFlightRef/);
   assert.match(dashboard, /누끼 없이 상세페이지 원본 이미지를 참조합니다/);
 });

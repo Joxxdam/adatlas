@@ -1,5 +1,6 @@
 import "server-only";
 import type { GenerationJob, GenerationJobSummary } from "./types";
+import { executionResults } from "./jobRunnerPolicy";
 
 const localPathPattern = /(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s"']+/g;
 const secretPattern = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/gi;
@@ -33,6 +34,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
 
 export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean): GenerationJobSummary {
   const publicJob = toPublicGenerationJob(job);
+  const scopedResults = executionResults(publicJob);
   const completedStatuses = new Set(["success", "failed", "korean-review", "product-review", "approved", "excluded"]);
   const failedStatuses = new Set(["failed", "korean-review", "product-review"]);
   return {
@@ -42,18 +44,18 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     productId: job.productTruth.productId,
     productName: job.productTruth.product.productName,
     productUrl: job.productTruth.product.landingUrl,
-    totalCount: job.results.length,
-    completedCount: job.results.filter((result) => completedStatuses.has(result.status)).length,
-    successCount: job.results.filter((result) => result.status === "success" || result.status === "approved").length,
-    failedCount: job.results.filter((result) => failedStatuses.has(result.status)).length,
-    currentHookCode: job.results.find((result) => result.status === "running")?.hookPlan.hookCode,
+    totalCount: scopedResults.length,
+    completedCount: scopedResults.filter((result) => completedStatuses.has(result.status)).length,
+    successCount: scopedResults.filter((result) => result.status === "success" || result.status === "approved").length,
+    failedCount: scopedResults.filter((result) => failedStatuses.has(result.status)).length,
+    currentHookCode: scopedResults.find((result) => result.status === "running")?.hookPlan.hookCode,
     status: job.status,
     runnerActive,
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     updatedAt: job.updatedAt,
     completedAt: job.completedAt,
-    completedResults: publicJob.results.filter((result) => completedStatuses.has(result.status)),
-    failedResults: publicJob.results.filter((result) => failedStatuses.has(result.status)),
+    completedResults: scopedResults.filter((result) => completedStatuses.has(result.status)),
+    failedResults: scopedResults.filter((result) => failedStatuses.has(result.status)),
   };
 }

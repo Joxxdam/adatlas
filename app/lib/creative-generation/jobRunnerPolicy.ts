@@ -8,9 +8,14 @@ export function isServerRunnableGenerationJob(job: GenerationJob) {
   );
 }
 
+export function executionResults(job: GenerationJob) {
+  const requested = job.executionResultIds?.length ? new Set(job.executionResultIds) : null;
+  return requested ? job.results.filter((result) => requested.has(result.id)) : job.results;
+}
+
 export function selectRunnableResult(job: GenerationJob, attempted: ReadonlySet<string>): GenerationResult | undefined {
   if (job.status === "cancelled" || !isServerRunnableGenerationJob(job)) return undefined;
-  return job.results.find(
+  return executionResults(job).find(
     (result) =>
       !attempted.has(result.id) &&
       (result.status === "pending" ||
@@ -49,5 +54,5 @@ export function resumeGenerationJob(job: GenerationJob, runnerActive: boolean, n
 export function staleRunningResultIds(job: GenerationJob, nowMs: number, staleMs: number, runnerActive: boolean) {
   if (runnerActive || job.status === "cancelled") return [];
   if (nowMs - new Date(job.updatedAt).getTime() < staleMs) return [];
-  return job.results.filter((result) => result.status === "running").map((result) => result.id);
+  return executionResults(job).filter((result) => result.status === "running").map((result) => result.id);
 }

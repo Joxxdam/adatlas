@@ -8,6 +8,8 @@ const storedJobKey = "daywiz-active-creative-job-id";
 
 function summarize(job: GenerationJob, runnerActive: boolean): GenerationJobSummary {
   const completed = new Set(["success", "failed", "korean-review", "product-review", "approved", "excluded"]);
+  const requested = job.executionResultIds?.length ? new Set(job.executionResultIds) : null;
+  const results = requested ? job.results.filter((result) => requested.has(result.id)) : job.results;
   return {
     jobId: job.id,
     advertiserId: job.advertiserId,
@@ -15,19 +17,19 @@ function summarize(job: GenerationJob, runnerActive: boolean): GenerationJobSumm
     productId: job.productTruth.productId,
     productName: job.productTruth.product.productName,
     productUrl: job.productTruth.product.landingUrl,
-    totalCount: job.results.length,
-    completedCount: job.results.filter((result) => completed.has(result.status)).length,
-    successCount: job.results.filter((result) => result.status === "success" || result.status === "approved").length,
-    failedCount: job.results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)).length,
-    currentHookCode: job.results.find((result) => result.status === "running")?.hookPlan.hookCode,
+    totalCount: results.length,
+    completedCount: results.filter((result) => completed.has(result.status)).length,
+    successCount: results.filter((result) => result.status === "success" || result.status === "approved").length,
+    failedCount: results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)).length,
+    currentHookCode: results.find((result) => result.status === "running")?.hookPlan.hookCode,
     status: job.status,
     runnerActive,
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     updatedAt: job.updatedAt,
     completedAt: job.completedAt,
-    completedResults: job.results.filter((result) => completed.has(result.status)),
-    failedResults: job.results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)),
+    completedResults: results.filter((result) => completed.has(result.status)),
+    failedResults: results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)),
   };
 }
 

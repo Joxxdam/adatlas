@@ -95,7 +95,7 @@ function contentAngle(candidate: SiteAdCandidate): ContentAngleRecommendation {
   };
 }
 
-function buildProductInfo(candidate: SiteAdCandidate): ProductInfoForPrompt {
+export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductInfoForPrompt {
   const product = candidate.product;
   const images = [product.representativeImage, ...product.additionalImages].filter(
     (image): image is string => Boolean(image)
@@ -167,7 +167,7 @@ export function buildSiteCandidateProductCreationHandoff(
   const selection = siteCandidateCache.getSelection(selectionId);
   if (!selection) return null;
   const candidate = selection.candidate;
-  const productInfo = buildProductInfo(candidate);
+  const productInfo = siteCandidateToProductInfo(candidate);
   const angle = contentAngle(candidate);
   return {
     analysisId: selection.analysisId,

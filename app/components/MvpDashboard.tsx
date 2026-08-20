@@ -106,6 +106,7 @@ import {
 } from "./AppFeatureNavigation";
 import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
 import { DaywizBrand } from "./DaywizBrand";
+import { AutoProductionStatusIndicator } from "./features/auto-production/AutoProductionStatusIndicator";
 import { CreativeJobStatusIndicator } from "./features/creative-generation/CreativeJobStatusIndicator";
 
 type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
@@ -4720,6 +4721,7 @@ export function MvpDashboard({
           <DaywizBrand subtitle="광고 콘텐츠 실험 시스템" />
         </Link>
         <AppFeatureNavigation activeFeature={activeFeature} />
+        <AutoProductionStatusIndicator />
         <CreativeJobStatusIndicator />
         <details className="mvp-management-tools">
           <summary>관리 도구</summary>

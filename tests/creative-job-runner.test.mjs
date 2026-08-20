@@ -32,8 +32,12 @@ function job(statuses = ["pending", "pending", "pending"]) {
 }
 
 test("1. 작업 생성 API는 저장 직후 서버 runner를 자동 시작하고 202를 반환한다", async () => {
-  const route = await read("app/api/creative-generation/jobs/route.ts");
-  assert.match(route, /enqueueGenerationJob\(job\.id\)/);
+  const [route, service] = await Promise.all([
+    read("app/api/creative-generation/jobs/route.ts"),
+    read("app/lib/creative-generation/createNativeGenerationJob.server.ts"),
+  ]);
+  assert.match(route, /createNativeGenerationJob\(body\)/);
+  assert.match(service, /enqueueGenerationJob\(job\.id\)/);
   assert.match(route, /status: 202/);
 });
 

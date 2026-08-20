@@ -119,3 +119,7 @@ public/video-collaboration/*
 # local Codex advertiser threads and AI-native final creatives
 .data/codex/
 public/generated/
+
+# automatic production mutable settings, runs and scheduler logs
+data/auto-production/runtime/*
+!data/auto-production/runtime/.gitkeep

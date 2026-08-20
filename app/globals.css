@@ -4270,6 +4270,40 @@ select {
   text-underline-offset: 3px;
 }
 
+.auto-production-indicator {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #bfd5f5;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: #f1f6ff;
+  color: #1756ad;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.auto-production-indicator.success {
+  border-color: #bfe6da;
+  background: #f1fcf8;
+  color: #08705d;
+}
+
+.auto-production-indicator.warning {
+  border-color: #f1d49b;
+  background: #fff9ed;
+  color: #8a5709;
+}
+
+.auto-production-indicator a {
+  width: fit-content;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .six-creative-runtime-help {
   margin: -2px 0 12px;
   color: #65758b;
