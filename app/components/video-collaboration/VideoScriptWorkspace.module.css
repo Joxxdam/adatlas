@@ -332,6 +332,27 @@
   background: #fff;
 }
 
+.scriptToolbar select {
+  min-width: 130px;
+  border: 1px solid #cdd6e4;
+  border-radius: 8px;
+  padding: 8px 9px;
+  color: #182235;
+  background: #fff;
+  font: inherit;
+  font-size: 11px;
+}
+
+.tableSection > h2 {
+  margin: 0;
+  padding: 14px 16px 0;
+  font-size: 15px;
+}
+
+.tableSection:first-of-type .scriptTable {
+  min-width: 1900px;
+}
+
 .referenceNotice {
   display: flex;
   align-items: center;

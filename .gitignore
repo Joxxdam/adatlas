@@ -118,6 +118,9 @@ public/video-collaboration/*
 
 # local Codex advertiser threads and AI-native final creatives
 .data/codex/
+/.data/generated/
+/.data/creative-generation/
+/.data/site-candidates/
 public/generated/
 
 # automatic production mutable settings, runs and scheduler logs

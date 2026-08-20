@@ -67,6 +67,7 @@ export function normalizeAdvertiserConfig(
     creativesPerProduct: numeric(input.creativesPerProduct ?? current?.creativesPerProduct, 1, 1, 6),
     fullHookTestForNewProducts: input.fullHookTestForNewProducts ?? current?.fullHookTestForNewProducts ?? false,
     productCooldownDays: numeric(input.productCooldownDays ?? current?.productCooldownDays, 7, 0, 90),
+    productFamilyCooldownDays: numeric(input.productFamilyCooldownDays ?? current?.productFamilyCooldownDays, 14, 0, 180),
     hookCooldownDays: numeric(input.hookCooldownDays ?? current?.hookCooldownDays, 14, 0, 180),
     maxImagesPerRun: numeric(input.maxImagesPerRun ?? current?.maxImagesPerRun, 4, 1, 24),
     dataSource: input.dataSource || current?.dataSource || "auto",

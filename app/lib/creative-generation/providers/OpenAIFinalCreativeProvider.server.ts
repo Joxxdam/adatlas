@@ -2,8 +2,9 @@ import "server-only";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { editImageFromSource } from "../../mvp/openaiImageClient.ts";
-import { buildNativeFinalCreativePrompt, buildNativeValidationPrompt } from "../nativeCreativePrompt.ts";
-import type { NativeCreativeValidation } from "../types.ts";
+import { buildNativeFinalCreativePrompt, buildNativeGroupValidationPrompt, buildNativeValidationPrompt } from "../nativeCreativePrompt.ts";
+import { readBrandMemory } from "../codexRegistry.server.ts";
+import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeGenerationInput } from "./CreativeGenerationProvider.ts";
 
 export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
@@ -12,7 +13,11 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
   async generate(input: NativeGenerationInput) {
     const state = await this.status(); if (!state.available) throw new Error(state.detail);
     const sourceImagePath = input.sourceImagePath || input.referencePaths[0];
-    const generated = await editImageFromSource({ sourceImagePath, referenceImagePaths: input.referencePaths.slice(1, 4), prompt: buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback), size: "1024x1024", quality: "high" });
+    const memory = await readBrandMemory(input.job.advertiserId || "unknown-advertiser");
+    const goldenPaths = [...new Set((input.goldenReferencePaths || []).slice(0, 2))];
+    const selectedGolden = new Set(goldenPaths);
+    const promptMemory = { ...memory, goldenReferences: memory.goldenReferences.filter((reference) => selectedGolden.has(reference.imagePath)) };
+    const generated = await editImageFromSource({ sourceImagePath, referenceImagePaths: [...input.referencePaths.filter((file) => file !== sourceImagePath).slice(0, 4), ...goldenPaths].slice(0, 5), prompt: buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback, promptMemory), size: "1024x1024", quality: "high" });
     await writeFile(input.outputPath, generated.imageBuffer);
     return { outputPath: input.outputPath };
   }
@@ -31,7 +36,7 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
       body: JSON.stringify({
         model: process.env.OPENAI_VISION_MODEL || process.env.OPENAI_TEXT_MODEL || "gpt-5.6-sol",
         input: [{ role: "user", content: [
-          { type: "input_text", text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,observedKoreanText,failures,recommendation}. recommendation은 approve, revise, manual-review 중 하나다.` },
+          { type: "input_text", text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,failures,recommendation}. recommendation은 approve, revise, manual-review 중 하나다.` },
           { type: "input_image", image_url: await imageUrl(input.imagePath), detail: "high" },
           ...await Promise.all(input.referencePaths.slice(0, 4).map(async (file) => ({ type: "input_image", image_url: await imageUrl(file), detail: "high" }))),
         ] }],
@@ -45,9 +50,44 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
     const score = (value: unknown) => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
     return {
       hookAlignment: score(parsed.hookAlignment), productIdentity: score(parsed.productIdentity), factualAccuracy: score(parsed.factualAccuracy), koreanTextAccuracy: score(parsed.koreanTextAccuracy), readability: score(parsed.readability), composition: score(parsed.composition), diversity: score(parsed.diversity), commercialQuality: score(parsed.commercialQuality), exportCompliance: score(parsed.exportCompliance),
+      productVisibility: score(parsed.productVisibility), humanNaturalness: score(parsed.humanNaturalness), categoryFit: score(parsed.categoryFit), foodAppetiteAppeal: score(parsed.foodAppetiteAppeal), sensoryExpression: score(parsed.sensoryExpression), mobileReadability: score(parsed.mobileReadability),
       observedKoreanText: Array.isArray(parsed.observedKoreanText) ? parsed.observedKoreanText.map(String).slice(0, 30) : [],
       failures: Array.isArray(parsed.failures) ? parsed.failures.map(String).slice(0, 20) : [],
       recommendation: ["approve", "revise", "manual-review"].includes(parsed.recommendation) ? parsed.recommendation : "manual-review",
+      checkedAt: new Date().toISOString(),
+    };
+  }
+  async validateGroup(input: { job: NativeGenerationInput["job"]; contactSheetPath: string }): Promise<NativeGroupValidation> {
+    const state = await this.status();
+    if (!state.available) throw new Error(state.detail);
+    const extension = path.extname(input.contactSheetPath).toLowerCase();
+    const mediaType = extension === ".png" ? "image/png" : "image/jpeg";
+    const imageUrl = `data:${mediaType};base64,${(await readFile(input.contactSheetPath)).toString("base64")}`;
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(Number(process.env.ADATLAS_OPENAI_VALIDATION_TIMEOUT_MS || 120_000)),
+      body: JSON.stringify({
+        model: process.env.OPENAI_VISION_MODEL || process.env.OPENAI_TEXT_MODEL || "gpt-5.6-sol",
+        input: [{ role: "user", content: [
+          { type: "input_text", text: `${buildNativeGroupValidationPrompt(input.job)}\nJSON만 반환한다.` },
+          { type: "input_image", image_url: imageUrl, detail: "high" },
+        ] }],
+        text: { format: { type: "json_object" } },
+      }),
+    });
+    if (!response.ok) throw new Error(`openai_api 그룹 검수 실패: HTTP ${response.status}`);
+    const payload = await response.json() as { output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> };
+    const text = payload.output_text || payload.output?.flatMap((item) => item.content || []).map((item) => item.text || "").join("\n") || "";
+    const parsed = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, "").trim()) as Omit<NativeGroupValidation, "checkedAt">;
+    const score = (value: unknown) => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    const hookCodes = new Set(["H01","H02","H03","H04","H05","H06"]);
+    return {
+      sceneDiversity: score(parsed.sceneDiversity), productPlacementDiversity: score(parsed.productPlacementDiversity), cameraDiversity: score(parsed.cameraDiversity), colorMoodDiversity: score(parsed.colorMoodDiversity), messageSeparation: score(parsed.messageSeparation), hookSceneAlignment: score(parsed.hookSceneAlignment), typographyDiversity: score(parsed.typographyDiversity), visualArchetypeDiversity: score(parsed.visualArchetypeDiversity), categoryFit: score(parsed.categoryFit),
+      duplicatePairs: Array.isArray(parsed.duplicatePairs) ? parsed.duplicatePairs.filter((pair) => hookCodes.has(pair.leftHookCode) && hookCodes.has(pair.rightHookCode)).slice(0, 15) : [],
+      reviseHookCodes: Array.isArray(parsed.reviseHookCodes) ? parsed.reviseHookCodes.filter((code) => hookCodes.has(code)).slice(0, 6) : [],
+      failures: Array.isArray(parsed.failures) ? parsed.failures.map(String).slice(0, 20) : [],
+      recommendation: ["approve","revise","manual-review"].includes(parsed.recommendation) ? parsed.recommendation : "manual-review",
       checkedAt: new Date().toISOString(),
     };
   }

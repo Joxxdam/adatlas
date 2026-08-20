@@ -108,6 +108,7 @@ import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeCont
 import { DaywizBrand } from "./DaywizBrand";
 import { AutoProductionStatusIndicator } from "./features/auto-production/AutoProductionStatusIndicator";
 import { CreativeJobStatusIndicator } from "./features/creative-generation/CreativeJobStatusIndicator";
+import { CreativeCreationSteps } from "./features/creative-generation/CreativeCreationSteps";
 
 type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
 
@@ -132,6 +133,7 @@ type RecentProductSummary = {
 };
 
 const recentProductsStorageKey = "adatlas-recent-products";
+const legacyManualProductionToolsAvailable = false;
 
 type HeadlineStyleOverrides = {
   headlineFontPreset?:
@@ -870,7 +872,7 @@ export function MvpDashboard({
   const [masterCopy, setMasterCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
   const [templateCopyMode, setTemplateCopyMode] = useState<TemplateCopyApplyMode>("auto-variant");
   const [templateCopyPreviews, setTemplateCopyPreviews] = useState<TemplateCopyPreview[]>([]);
-  const [activeRenderCopy, setActiveRenderCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
+  const [, setActiveRenderCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
   const [bannerCopy, setBannerCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
   const [showCta, setShowCta] = useState(true);
   const [headlineStyleOverrides, setHeadlineStyleOverrides] = useState<HeadlineStyleOverrides>({});
@@ -1286,13 +1288,6 @@ export function MvpDashboard({
         : null,
     [bannerCopy, currentProductImagePaths, productInfo, selectedVisualDirection]
   );
-  const selectedHeadlineFont =
-    systemFontOptions.find((option) => option.id === selectedHeadlineFontId) ??
-    systemFontOptions[0];
-  const selectedBodyFont =
-    systemFontOptions.find((option) => option.id === selectedBodyFontId) ??
-    systemFontOptions.find((option) => option.id === "noto-sans-kr") ??
-    systemFontOptions[0];
   const categoryTemplates = useMemo(() => {
     const category = productInfo.category || "";
     const productContext = [
@@ -4925,31 +4920,10 @@ export function MvpDashboard({
               </details>
             ) : null}
 
-            <ol className="creation-flow-overview" aria-label="광고 콘텐츠 제작 흐름">
-              <li className={currentProductLoaded ? "done" : "active"}>
-                <b>1</b>
-                <span>
-                  <strong>상품 확인</strong>
-                  <small>주소를 분석하고 상품을 확인합니다</small>
-                </span>
-              </li>
-              <li
-                className={generationPlanConfirmed ? "done" : currentProductLoaded ? "active" : ""}
-              >
-                <b>2</b>
-                <span>
-                  <strong>이미지 만들기</strong>
-                  <small>목표와 공통 디자인을 정합니다</small>
-                </span>
-              </li>
-              <li className={generationPlanConfirmed ? "active" : ""}>
-                <b>3</b>
-                <span>
-                  <strong>후킹 6종 완성</strong>
-                  <small>후킹마다 다른 AI 콘텐츠를 제작합니다</small>
-                </span>
-              </li>
-            </ol>
+            <CreativeCreationSteps
+              currentProductLoaded={currentProductLoaded}
+              generationPlanConfirmed={generationPlanConfirmed}
+            />
 
             <div className="ad-generation-flow">
               <div className="banner-builder">
@@ -5091,7 +5065,7 @@ export function MvpDashboard({
                     }
                   />
                 </div>
-                <details
+                {legacyManualProductionToolsAvailable ? <details
                   className="advanced-production-workspace"
                   hidden={!currentProductLoaded}
                   id="advanced-generation-settings"
@@ -5253,10 +5227,10 @@ export function MvpDashboard({
                       </span>
                     </div>
                   </div>
-                </details>
+                </details> : null}
               </div>
 
-              <details
+              {legacyManualProductionToolsAvailable ? <details
                 className="advanced-production-workspace advanced-editor-workspace"
                 hidden={!currentProductLoaded}
               >
@@ -7836,7 +7810,7 @@ export function MvpDashboard({
                     )}
                   </section>
                 </div>
-              </details>
+              </details> : null}
             </div>
           </section>
         ) : null}

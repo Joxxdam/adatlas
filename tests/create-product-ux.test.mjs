@@ -44,23 +44,31 @@ test("analysis handoff keeps the selected product URL independently of cached de
   );
 });
 
-test("main navigation exposes the five beginner tasks and keeps auxiliary tools", async () => {
+test("main navigation exposes only four beginner tasks and keeps auto production under management tools", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
-  for (const label of ["광고 후보 찾기", "광고 만들기", "자동 제작", "후킹 테스트", "제작 결과"]) {
+  for (const label of ["광고 후보 찾기", "상품 선택", "AI 광고 만들기", "제작 결과 확인"]) {
     assert.match(navigation, new RegExp(label));
   }
+  const mainBlock = navigation.slice(navigation.indexOf("const FEATURES"), navigation.indexOf("const AUXILIARY_FEATURES"));
+  assert.doesNotMatch(mainBlock, /자동 콘텐츠 제작|auto-production/);
+  assert.match(navigation, /\/admin\/auto-production/);
+  assert.match(navigation, /자동 콘텐츠 제작/);
+  assert.match(navigation, /광고주 기억/);
+  assert.match(navigation, /골든 레퍼런스/);
   assert.match(navigation, /이미지 분석 레퍼런스/);
   assert.match(navigation, /영상 제작 협업/);
 });
 
-test("공통 화면은 데이위즈 로고를 사용하고 제작 흐름은 후킹 6안을 안내한다", async () => {
+test("공통 화면은 데이위즈 로고와 AI 네이티브 4단계 제작 흐름을 안내한다", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
   const dashboard = await read("app/components/MvpDashboard.tsx");
+  const creationSteps = await read("app/components/features/creative-generation/CreativeCreationSteps.tsx");
   const brand = await read("app/components/DaywizBrand.tsx");
   const logo = await read("public/daywiz-logo.svg");
   assert.match(navigation, /DaywizBrand/);
-  assert.match(dashboard, /후킹 6종 완성/);
-  assert.match(dashboard, /후킹마다 다른 AI 콘텐츠/);
+  for (const label of ["상품 확인", "광고 목표 선택", "후킹 6개 선정", "AI 광고 6장 완성"]) assert.match(creationSteps, new RegExp(label));
+  assert.match(dashboard, /CreativeCreationSteps/);
+  assert.match(dashboard, /legacyManualProductionToolsAvailable = false/);
   assert.match(brand, /\/daywiz-logo\.svg/);
   assert.match(logo, /DAYWIZ/);
   assert.doesNotMatch(navigation, />AdAtlas</);
@@ -93,6 +101,8 @@ test("hook creatives are server-driven and deliver each completed card immediate
   assert.match(generator, /six-creative-grid/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
+  assert.doesNotMatch(generator, /setEdits|initialEdit|문구 수정·제작 정보/);
+  assert.match(generator, /AI에게 수정 요청/);
   for (const label of ["후킹", "소재코드", "권장 광고명", "UTM", "최종 랜딩 URL", "이미지 다운로드"]) {
     assert.match(assetActions, new RegExp(label));
   }

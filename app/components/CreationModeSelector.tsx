@@ -14,7 +14,6 @@ const modes = [
       "후기/USP 분석",
       "신상품 및 할인 상품 분석",
       "추천 콘텐츠 전략",
-      "추천 템플릿",
     ],
     href: "/analyze-store",
     button: "광고 기회 찾기",
@@ -27,10 +26,10 @@ const modes = [
     description: "제작할 상품이 정해져 있다면 상품 URL을 입력해 바로 광고 소재를 만듭니다.",
     features: [
       "상품정보 추출",
-      "업체별 문구 가이드 적용",
-      "이미지 선택",
-      "템플릿 선택",
-      "단일/일괄 소재 생성",
+      "상품 근거 기반 후킹 후보 기획",
+      "최종 후킹 6개 선정",
+      "후킹별 AI 완성 광고 생성",
+      "개별 검수·수정·다운로드",
     ],
     href: "/create-product",
     button: "상세페이지로 제작 시작",
@@ -50,10 +49,16 @@ export function CreationModeSelector() {
           <p className="eyebrow">CREATIVE OPERATIONS</p>
           <h1>광고 제작을 어디서 시작할까요?</h1>
           <p>
-            쇼핑몰에서 광고 후보를 먼저 찾거나, 준비된 상품으로 곧바로 기존 제작 엔진을 사용할 수
+            쇼핑몰에서 광고 후보를 먼저 찾거나, 준비된 상품으로 후킹별 AI 완성 광고를 바로 만들 수
             있습니다.
           </p>
         </section>
+        <ol className="mode-selector-flow" aria-label="기본 광고 제작 순서">
+          <li><b>1</b><span>광고 후보 찾기</span></li>
+          <li><b>2</b><span>상품 선택</span></li>
+          <li><b>3</b><span>AI 광고 만들기</span></li>
+          <li><b>4</b><span>제작 결과 확인</span></li>
+        </ol>
         <section className="mode-card-grid" aria-label="제작 방식 선택">
           {modes.map((mode, index) => (
             <article className={`mode-card ${mode.accent}`} key={mode.title}>
@@ -75,8 +80,7 @@ export function CreationModeSelector() {
           ))}
         </section>
         <p className="mode-selector-note">
-          두 방식 모두 동일한 상품 추출·카피 가이드·이미지 선택·템플릿·단일/일괄 렌더링 엔진을
-          사용합니다.
+          두 방식 모두 상품 근거를 확인한 뒤 로컬 Codex로 후킹을 기획하고, 후킹마다 서로 다른 완성 광고를 생성합니다.
         </p>
         <section className="reference-mode-entry" aria-labelledby="reference-mode-title">
           <div className="reference-mode-index">03</div>

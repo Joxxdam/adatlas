@@ -51,6 +51,23 @@ export function normalizeVideoCut(cut: Partial<VideoCut>, index: number): VideoC
           .slice(0, 2)
       : [],
     productionMemo: cleanText(cut.productionMemo, 3000),
+    sceneFormat: cleanText(cut.sceneFormat, 160),
+    cameraComposition: cleanText(cut.cameraComposition, 1000),
+    motionDirection: cleanText(cut.motionDirection, 1000),
+    transition: cleanText(cut.transition, 500),
+    generationPrompt: cleanText(cut.generationPrompt, 5000),
+    productLockInstruction: cut.productLockInstruction
+      ? {
+          useOriginalComposite: Boolean(cut.productLockInstruction.useOriginalComposite),
+          position: cleanText(cut.productLockInstruction.position, 240),
+          size: cleanText(cut.productLockInstruction.size, 240),
+          cameraAngle: cleanText(cut.productLockInstruction.cameraAngle, 240),
+          handInteraction: cleanText(cut.productLockInstruction.handInteraction, 500),
+          labelVisibility: cleanText(cut.productLockInstruction.labelVisibility, 500),
+          matchCut: cleanText(cut.productLockInstruction.matchCut, 500),
+          editMargin: cleanText(cut.productLockInstruction.editMargin, 500),
+        }
+      : undefined,
   };
 }
 
@@ -117,6 +134,11 @@ export function videoScriptClipboard(
       `내레이션: ${cut.narration || "없음"}`,
       `필요 소스: ${cut.requiredSources.join(", ") || "없음"}`,
       `추가 제작 메모: ${cut.productionMemo || "없음"}`,
+      `형식: ${cut.sceneFormat || "실사"}`,
+      `카메라·구도: ${cut.cameraComposition || "없음"}`,
+      `움직임·연출: ${cut.motionDirection || "없음"}`,
+      `전환: ${cut.transition || "없음"}`,
+      `생성 프롬프트: ${cut.generationPrompt || "없음"}`,
     ].join("\n");
   });
   return [
@@ -127,4 +149,40 @@ export function videoScriptClipboard(
   ]
     .join("\n")
     .trim();
+}
+
+function csvCell(value: unknown) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
+}
+
+export function videoScriptCsv(project: VideoProject) {
+  const script = getProjectScript(project);
+  if (!script) return "";
+  const header = [
+    "장면",
+    "시간",
+    "형식",
+    "화면 자막",
+    "내레이션",
+    "장면 구성",
+    "카메라·구도",
+    "움직임·연출",
+    "전환",
+    "필요 소스",
+    "생성 프롬프트",
+  ];
+  const rows = script.cuts.map((cut) => [
+    cut.sceneName,
+    `${cut.startSecond}-${cut.endSecond}초`,
+    cut.sceneFormat || "실사",
+    cut.caption,
+    cut.narration,
+    cut.sceneDescription,
+    cut.cameraComposition || "",
+    cut.motionDirection || "",
+    cut.transition || "",
+    cut.requiredSources.join(" | "),
+    cut.generationPrompt || "",
+  ]);
+  return [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
 }

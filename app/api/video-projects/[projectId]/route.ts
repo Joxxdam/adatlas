@@ -40,6 +40,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
       requestNote?: string;
       versionId?: string;
       commentId?: string;
+      revisionId?: string;
+      createRevision?: boolean;
       changes?: Partial<{
         projectName: string;
         advertiserName: string;
@@ -73,7 +75,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
         body.conceptId,
         body.concept,
         actor,
-        { productionNotes: body.changes?.productionNotes }
+        {
+          productionNotes: body.changes?.productionNotes,
+          createRevision: Boolean(body.createRevision),
+        }
       );
     } else if (body.action === "request-production") {
       if (!body.conceptId) throw new Error("제작 요청할 기획안을 선택해 주세요.");
@@ -87,6 +92,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
     } else if (body.action === "select-concept") {
       if (!body.conceptId) throw new Error("선택할 기획안을 확인해 주세요.");
       project = await videoProjectRepository.selectConcept(projectId, body.conceptId);
+    } else if (body.action === "restore-script-revision") {
+      if (!body.revisionId) throw new Error("복원할 대본 버전을 선택해 주세요.");
+      project = await videoProjectRepository.restoreScriptRevision(projectId, body.revisionId, actor);
     } else if (body.action === "start-production") {
       project = await videoProjectRepository.startProduction(projectId, actor);
     } else if (body.action === "resolve-comment") {

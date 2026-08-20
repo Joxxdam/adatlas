@@ -415,8 +415,81 @@ export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
             <span>금지 문구</span>
             <p>{project.brandGuideline.forbiddenPhrases.join(" · ") || "없음"}</p>
           </div>
+          <div>
+            <span>확인된 사실</span>
+            <p>
+              {project.productAnalysis.verifiedFacts
+                ?.map((fact) => `${fact.label}: ${fact.value}`)
+                .join(" · ") || "상세페이지에서 구조화된 사실을 추가 확인해야 합니다."}
+            </p>
+          </div>
+          <div>
+            <span>시스템 추천 해석</span>
+            <p>
+              {project.productAnalysis.inferredAngles?.map((fact) => fact.value).join(" · ") ||
+                "없음"}
+            </p>
+          </div>
+          <div>
+            <span>사용 금지·확인 필요</span>
+            <p>
+              {project.productAnalysis.unsupportedClaims?.map((fact) => fact.value).join(" · ") ||
+                project.productAnalysis.cautionPhrases.join(" · ") ||
+                "없음"}
+            </p>
+          </div>
+          <div>
+            <span>상품 원본 고정</span>
+            <p>
+              {project.productLockedAsset
+                ? `${project.productLockedAsset.originalFileName} · 형태·비율·뚜껑·로고·라벨·색상 유지`
+                : "원본 상품 이미지가 없어 제품 합성 전 추가 업로드가 필요합니다."}
+            </p>
+          </div>
         </div>
       </details>
+
+      {project.pipelineProgress?.length ? (
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2>기획 생성 진행 결과</h2>
+              <p>상품 분석부터 최종 검증까지 각 단계의 구조화 결과를 저장했습니다.</p>
+            </div>
+          </div>
+          <div className={styles.factGrid}>
+            {project.pipelineProgress.map((item, index) => (
+              <div key={item.stage}>
+                <span>{String(index + 1).padStart(2, "0")} · {item.stage}</span>
+                <p>{item.status === "warning" ? "확인 필요" : "완료"} · {item.message}</p>
+              </div>
+            ))}
+          </div>
+          <details className={styles.conceptDetail}>
+            <summary>내부 후킹 후보와 평가 점수 보기</summary>
+            {(project.hookCandidates || []).map((candidate) => (
+              <div className={styles.cutPreview} key={candidate.id}>
+                <strong>{VIDEO_HOOK_LABELS[candidate.hookType]} · {candidate.score.total}점</strong>
+                <span>{candidate.hook}</span>
+                <small>근거 {candidate.evidenceIds.length}개 · {candidate.visualIdea}</small>
+              </div>
+            ))}
+          </details>
+        </section>
+      ) : null}
+
+      {project.referenceAnalyses?.length ? (
+        <details className={styles.panel}>
+          <summary>참고 자료 분석 범위</summary>
+          {project.referenceAnalyses.map((analysis) => (
+            <div className={styles.cutPreview} key={analysis.assetId}>
+              <strong>{analysis.assetName} · {analysis.analysisStatus === "limited" ? "제한 분석" : "정지 이미지"}</strong>
+              <span>오프닝: {analysis.openingHookMethod} · 자막: {analysis.subtitlePosition}</span>
+              <small>{analysis.limitations.join(" · ")}</small>
+            </div>
+          ))}
+        </details>
+      ) : null}
 
       {project.status === "script_pending" ? (
         <section className={styles.panel}>
@@ -478,7 +551,22 @@ export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
                       {concept.cuts.length}개 · {project.duration}초
                     </dd>
                   </div>
+                  <div>
+                    <dt>기획 점수</dt>
+                    <dd>{concept.score?.total ?? "검증 전"}</dd>
+                  </div>
+                  <div>
+                    <dt>스타일</dt>
+                    <dd>{concept.visualBible?.visualMode || concept.creativeStyle || "자동"}</dd>
+                  </div>
                 </dl>
+                <p>{concept.narrativeSummary}</p>
+                <small>{concept.recommendationReason}</small>
+                {concept.validation ? (
+                  <small className={concept.validation.valid ? undefined : styles.warning}>
+                    자동 검증 {concept.validation.score}점 · {concept.validation.valid ? "통과" : "확인 필요"}
+                  </small>
+                ) : null}
                 <code>{concept.materialCode}</code>
                 {concept.generationWarnings.map((warning) => (
                   <small className={styles.warning} key={warning}>

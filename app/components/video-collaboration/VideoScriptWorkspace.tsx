@@ -8,6 +8,7 @@ import {
   getProjectScript,
   resequenceVideoCuts,
   videoScriptClipboard,
+  videoScriptCsv,
 } from "../../lib/video-collaboration/script";
 import {
   ALLOWED_SCENE_REFERENCE_TYPES,
@@ -55,6 +56,16 @@ function syncFullScript(concept: VideoConcept) {
       .filter(Boolean)
       .join(" "),
   };
+}
+
+function downloadText(name: string, value: string, type: string) {
+  const blob = new Blob([`\uFEFF${value}`], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 function ReferencePreview({
@@ -110,6 +121,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
+  const [selectedCutId, setSelectedCutId] = useState("");
   const draftRef = useRef<VideoConcept | null>(null);
   const productionNotesRef = useRef("");
   const savingRef = useRef(false);
@@ -125,6 +137,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
         const script = getProjectScript(nextProject);
         setProject(nextProject);
         setDraft(script ? structuredClone(script) : null);
+        setSelectedCutId(script?.cuts[0]?.id || "");
         setProductionNotes(nextProject.productionNotes || "");
         setDeadline(nextProject.deadline || "");
         setLastSavedAt(nextProject.updatedAt);
@@ -188,6 +201,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
             concept: syncFullScript(draft),
             actor: project.marketerName || "마케터",
             changes: { productionNotes },
+            createRevision: !silent,
           }),
         });
         const payload = await response.json();
@@ -205,7 +219,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
         }
         setLastSavedAt(nextProject.updatedAt);
         setSaveState("saved");
-        if (!silent) setNotice("제작 대본과 장면별 참고 이미지를 저장했습니다.");
+        if (!silent) setNotice("제작 대본을 복원 가능한 새 버전으로 저장했습니다.");
         return true;
       } catch (caught) {
         setSaveState("error");
@@ -253,6 +267,11 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       requiredSources: [],
       referenceImages: [],
       productionMemo: "",
+      sceneFormat: "실사",
+      cameraComposition: "세로 9:16 안전 영역 안에 핵심 피사체를 배치",
+      motionDirection: "장면 메시지와 같은 방향의 단일 동작",
+      transition: "하드컷",
+      generationPrompt: "실제 제작 가능한 세로형 광고 영상 장면. 제품과 자막이 겹치지 않게 구성.",
     };
     updateDraft((current) => ({
       ...current,
@@ -390,6 +409,43 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "요청 처리 실패");
       return null;
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function regenerate(mode: "all" | "hooks-only" | "selected-scene") {
+    if (!project || !draft) return;
+    if (dirty && !(await saveScript(false))) return;
+    setBusy(`regenerate-${mode}`);
+    setError("");
+    try {
+      const response = await fetch(`/api/video-projects/${projectId}/concepts`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          conceptId: mode === "hooks-only" ? undefined : draft.id,
+          cutId: mode === "selected-scene" ? selectedCutId : undefined,
+          actor: project.marketerName || "마케터",
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "대본 재생성 실패");
+      const nextProject = payload.project as VideoProject;
+      setProject(nextProject);
+      const nextDraft = getProjectScript(nextProject);
+      setDraft(nextDraft ? structuredClone(nextDraft) : null);
+      setDirty(false);
+      setNotice(
+        mode === "hooks-only"
+          ? "후킹 후보와 첫 장면 문구만 다시 생성했습니다."
+          : mode === "selected-scene"
+            ? "선택한 장면만 다시 생성했습니다."
+            : "전체 기획안을 다시 생성했습니다."
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "대본 재생성 실패");
     } finally {
       setBusy("");
     }
@@ -623,6 +679,31 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
         </section>
       ) : null}
 
+      <section className={styles.requestBox}>
+        <strong>선택 콘셉트 요약</strong>
+        <p><b>후킹</b> · {draft.openingHook}</p>
+        <p><b>타깃</b> · {draft.coreTarget}</p>
+        <p><b>고객 문제</b> · {draft.customerProblem || project.productAnalysis.customerProblems[0] || "추가 확인 필요"}</p>
+        <p><b>USP</b> · {draft.usp || project.productAnalysis.coreUsps[0] || "추가 확인 필요"}</p>
+        <p><b>스타일</b> · {draft.visualBible?.visualMode || draft.creativeStyle || "AI 자동"}</p>
+        <p><b>서사</b> · {draft.narrativeSummary || "문제→제품 공개→근거→CTA"}</p>
+        <p><b>추천 이유</b> · {draft.recommendationReason || "상품 근거와 장면화 가능성을 기준으로 선정"}</p>
+        <p><b>확인할 주장</b> · {draft.claimsToVerify?.join(" · ") || "없음"}</p>
+      </section>
+
+      {draft.visualBible ? (
+        <details className={styles.requestBox}>
+          <summary>비주얼 바이블·제품 원본 고정 규칙</summary>
+          <p><b>세계관</b> · {draft.visualBible.backgroundWorld}</p>
+          <p><b>카메라</b> · {draft.visualBible.cameraStyle}</p>
+          <p><b>제품 표현</b> · {draft.visualBible.productPresentation}</p>
+          <p><b>텍스트 안전 영역</b> · {draft.visualBible.textSafeArea}</p>
+          <p><b>연속성</b> · {draft.visualBible.continuityRules.join(" · ")}</p>
+          <p><b>금지 생성</b> · {draft.visualBible.negativePrompt.join(" · ")}</p>
+          <p><b>원본 파일</b> · {project.productLockedAsset?.originalFileName || "원본 추가 업로드 필요"}</p>
+        </details>
+      ) : null}
+
       <section className={styles.actionPanel}>
         <div>
           <span>현재 상태</span>
@@ -731,6 +812,27 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
           >
             장면 설명만 복사
           </button>
+          <button
+            onClick={() =>
+              downloadText(
+                `${draft.materialCode}.csv`,
+                videoScriptCsv({ ...project, finalScript: draft }),
+                "text/csv;charset=utf-8"
+              )
+            }
+          >
+            CSV 다운로드
+          </button>
+          {project.status === "script_review" ? (
+            <>
+              <button disabled={Boolean(busy)} onClick={() => void regenerate("all")}>전체 재생성</button>
+              <button disabled={Boolean(busy)} onClick={() => void regenerate("hooks-only")}>후킹만 재생성</button>
+              <select aria-label="부분 재생성 장면" value={selectedCutId} onChange={(event) => setSelectedCutId(event.target.value)}>
+                {draft.cuts.map((cut) => <option key={cut.id} value={cut.id}>{cut.sceneName}</option>)}
+              </select>
+              <button disabled={!selectedCutId || Boolean(busy)} onClick={() => void regenerate("selected-scene")}>선택 장면 재생성</button>
+            </>
+          ) : null}
         </div>
         <div>
           {editing ? (
@@ -750,7 +852,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                 편집 취소
               </button>
               <button disabled={!dirty || Boolean(busy)} onClick={() => void saveScript(false)}>
-                {saveState === "saving" ? "저장 중…" : "변경사항 저장"}
+                {saveState === "saving" ? "저장 중…" : "새 버전 저장"}
               </button>
               <button onClick={addScene}>장면 추가</button>
             </>
@@ -772,6 +874,54 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       </div>
 
       <section className={styles.tableSection}>
+        <div className={styles.tableScroll}>
+          <table className={styles.scriptTable}>
+            <thead>
+              <tr>
+                <th>장면</th>
+                <th>시간</th>
+                <th>형식</th>
+                <th>자막·내레이션</th>
+                <th>장면 구성</th>
+                <th>카메라·구도</th>
+                <th>움직임·연출</th>
+                <th>전환</th>
+                <th>필요 소스·생성 프롬프트</th>
+              </tr>
+            </thead>
+            <tbody>
+              {draft.cuts.map((cut) => (
+                <tr key={`plan-${cut.id}`}>
+                  <td><strong>{cut.sceneName}</strong></td>
+                  <td>{cut.startSecond}-{cut.endSecond}초</td>
+                  <td>
+                    {editing ? <textarea value={cut.sceneFormat || ""} onChange={(event) => updateCut(cut.id, { sceneFormat: event.target.value })} /> : cut.sceneFormat || "실사"}
+                  </td>
+                  <td>
+                    {editing ? (
+                      <>
+                        <textarea value={cut.caption} onChange={(event) => updateCut(cut.id, { caption: event.target.value })} />
+                        <textarea value={cut.narration} onChange={(event) => updateCut(cut.id, { narration: event.target.value })} />
+                      </>
+                    ) : <><b>{cut.caption}</b><p>{cut.narration}</p></>}
+                  </td>
+                  <td>{editing ? <textarea value={cut.sceneDescription} onChange={(event) => updateCut(cut.id, { sceneDescription: event.target.value })} /> : cut.sceneDescription}</td>
+                  <td>{editing ? <textarea value={cut.cameraComposition || ""} onChange={(event) => updateCut(cut.id, { cameraComposition: event.target.value })} /> : cut.cameraComposition}</td>
+                  <td>{editing ? <textarea value={cut.motionDirection || ""} onChange={(event) => updateCut(cut.id, { motionDirection: event.target.value })} /> : cut.motionDirection}</td>
+                  <td>{editing ? <textarea value={cut.transition || ""} onChange={(event) => updateCut(cut.id, { transition: event.target.value })} /> : cut.transition}</td>
+                  <td>
+                    <p>{cut.requiredSources.join(" · ")}</p>
+                    {editing ? <textarea value={cut.generationPrompt || ""} onChange={(event) => updateCut(cut.id, { generationPrompt: event.target.value })} /> : <small>{cut.generationPrompt}</small>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className={styles.tableSection}>
+        <h2>장면별 참고 이미지·제작 메모</h2>
         <div className={styles.tableScroll}>
           <table className={styles.scriptTable}>
             <colgroup>
@@ -1116,6 +1266,38 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
             최종 승인 <b>{formatDate(project.milestones.approvedAt)}</b>
           </span>
         </div>
+        <details>
+          <summary>저장된 대본 버전 보기·복원</summary>
+          {[...project.scriptRevisions]
+            .filter((revision) => revision.conceptId === draft.id)
+            .reverse()
+            .map((revision) => (
+              <div key={revision.id}>
+                <span>
+                  rev.{revision.revision} · {formatDate(revision.changedAt)} · {revision.changedBy}
+                </span>
+                <b>{revision.snapshot.openingHook}</b>
+                {project.status !== "approved" ? (
+                  <button
+                    disabled={Boolean(busy)}
+                    onClick={() =>
+                      window.confirm(`rev.${revision.revision} 대본으로 복원할까요?`) &&
+                      void patchProject(
+                        {
+                          action: "restore-script-revision",
+                          revisionId: revision.id,
+                          actor: project.marketerName,
+                        },
+                        `rev.${revision.revision} 대본을 새 버전으로 복원했습니다.`
+                      )
+                    }
+                  >
+                    이 버전 복원
+                  </button>
+                ) : null}
+              </div>
+            ))}
+        </details>
       </section>
 
       {previewImage ? (

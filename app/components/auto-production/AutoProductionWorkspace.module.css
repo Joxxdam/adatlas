@@ -71,6 +71,7 @@
 .hypothesis button { margin-top: 7px; border: 0; background: transparent; color: #1764d8; font-weight: 800; cursor: pointer; }
 .hypotheses > .buttonSecondary { margin-top: 10px; }
 .results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 13px; }
+.resultHeading { margin: 15px 0 -4px; font-size: 14px; }
 .result { border: 1px solid #dce4ef; border-radius: 12px; overflow: hidden; }
 .result img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #0f1828; }
 .resultMeta { padding: 10px; }
@@ -80,6 +81,16 @@
 .error { margin: 11px 0 0; color: #b13838; font-size: 13px; }
 .empty { padding: 42px 20px; border: 1px dashed #c9d6e8; border-radius: 17px; background: rgba(255,255,255,.68); text-align: center; color: #6d7b92; }
 .notice { margin: 0 0 16px; padding: 12px 14px; border-radius: 11px; background: #fff5d9; color: #795a14; }
+.progressList { display: grid; gap: 9px; }
+.progressCard { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(100px, .6fr) minmax(210px, 1fr) minmax(120px, 1fr) auto; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #d8e2f1; border-radius: 14px; background: white; }
+.progressCard span { color: #5f6f88; font-size: 13px; }
+.progressCard progress { width: 100%; accent-color: #1764d8; }
+.progressCard a, .productLink { color: #1764d8; font-size: 12px; font-weight: 800; text-decoration: none; }
+.settingsPanel { margin-top: 24px; border: 1px solid #d6e1f0; border-radius: 18px; background: white; box-shadow: 0 10px 30px rgba(42, 68, 111, .05); }
+.settingsPanel > summary { cursor: pointer; padding: 18px 20px; color: #174891; font-size: 16px; font-weight: 900; }
+.settingsPanel[open] > summary { border-bottom: 1px solid #e0e7f1; }
+.settingsPanel > .section { margin: 0; padding: 20px; }
+.limitControl input[type="checkbox"] { width: auto; }
 
 @media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, 1fr); } .grid { grid-template-columns: repeat(2, 1fr); } .formGrid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 760px) { .workspace { padding: 22px 15px 60px; } .hero { align-items: flex-start; flex-direction: column; } .stats, .grid, .tasks, .results, .formGrid { grid-template-columns: 1fr; } .actions { width: 100%; } .actions button { flex: 1; } }
+@media (max-width: 760px) { .workspace { padding: 22px 15px 60px; } .hero { align-items: flex-start; flex-direction: column; } .stats, .grid, .tasks, .results, .formGrid, .progressCard { grid-template-columns: 1fr; } .actions { width: 100%; } .actions button { flex: 1; } }

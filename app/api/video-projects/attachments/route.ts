@@ -3,10 +3,11 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import type { VideoReferenceAsset } from "../../../lib/video-collaboration/types";
+import { detectVideoType, extensionForVideoType } from "../../../lib/video-collaboration/videoFile";
 
 export const runtime = "nodejs";
 
-const MAX_REFERENCE_BYTES = 15 * 1024 * 1024;
+const MAX_REFERENCE_BYTES = 100 * 1024 * 1024;
 const outputDirectory = path.join(process.cwd(), "public", "video-collaboration", "references");
 
 function detectReferenceType(buffer: Buffer) {
@@ -25,26 +26,31 @@ function detectReferenceType(buffer: Buffer) {
     return "image/webp";
   if (buffer.length >= 5 && buffer.subarray(0, 5).toString("ascii") === "%PDF-")
     return "application/pdf";
-  return "";
+  return detectVideoType(buffer);
 }
 
 function extension(type: string) {
   if (type === "image/png") return "png";
   if (type === "image/jpeg") return "jpg";
   if (type === "image/webp") return "webp";
-  return "pdf";
+  if (type === "application/pdf") return "pdf";
+  return extensionForVideoType(type);
 }
 
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
+    const role = formData.get("role") === "product-original" ? "product-original" : "reference";
     if (!(file instanceof File)) throw new Error("첨부할 참고 파일을 선택해 주세요.");
     if (file.size <= 0 || file.size > MAX_REFERENCE_BYTES)
-      throw new Error("참고 파일은 15MB 이하만 업로드할 수 있습니다.");
+      throw new Error("참고 파일은 100MB 이하만 업로드할 수 있습니다.");
     const buffer = Buffer.from(await file.arrayBuffer());
     const detectedType = detectReferenceType(buffer);
-    if (!detectedType) throw new Error("PNG, JPG, WEBP, PDF 파일만 첨부할 수 있습니다.");
+    if (!detectedType)
+      throw new Error("PNG, JPG, WEBP, PDF, MP4, MOV, WEBM 파일만 첨부할 수 있습니다.");
+    if (role === "product-original" && !detectedType.startsWith("image/"))
+      throw new Error("상품 원본은 PNG, JPG, WEBP 이미지만 업로드할 수 있습니다.");
     const id = crypto.randomUUID();
     const fileName = `${id}.${extension(detectedType)}`;
     await fs.mkdir(outputDirectory, { recursive: true });
@@ -56,6 +62,7 @@ export async function POST(request: Request) {
       mimeType: detectedType,
       size: buffer.length,
       uploadedAt: new Date().toISOString(),
+      role,
     };
     return NextResponse.json({ ok: true, asset }, { status: 201 });
   } catch (error) {

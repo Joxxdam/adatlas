@@ -9,6 +9,8 @@ import type {
   VideoDuration,
   VideoFormat,
   VideoObjective,
+  VideoPlatform,
+  VideoCreativeStyle,
   VideoReferenceAsset,
 } from "../../lib/video-collaboration/types";
 import styles from "./VideoCollaboration.module.css";
@@ -43,13 +45,19 @@ export function NewVideoProjectWorkspace() {
   const [advertiserName, setAdvertiserName] = useState("");
   const [marketerName, setMarketerName] = useState("마케터");
   const [designerName, setDesignerName] = useState("");
-  const [duration, setDuration] = useState<VideoDuration>(15);
-  const [format, setFormat] = useState<VideoFormat>("short-form");
+  const [duration, setDuration] = useState<VideoDuration>(20);
+  const format: VideoFormat = "short-form";
   const [objective, setObjective] = useState<VideoObjective>("purchase");
+  const [platform, setPlatform] = useState<VideoPlatform>("meta");
+  const [creativeStyle, setCreativeStyle] = useState<VideoCreativeStyle>("auto");
+  const [advancedTarget, setAdvancedTarget] = useState("");
+  const [advancedTone, setAdvancedTone] = useState("");
   const [additionalRequests, setAdditionalRequests] = useState("");
   const [guideline, setGuideline] = useState<BrandGuideline>(emptyGuideline);
   const [references, setReferences] = useState<VideoReferenceAsset[]>([]);
+  const [productOriginal, setProductOriginal] = useState<VideoReferenceAsset | null>(null);
   const [referenceProgress, setReferenceProgress] = useState(0);
+  const [generationStage, setGenerationStage] = useState("");
 
   useEffect(() => {
     const handler = (event: BeforeUnloadEvent) => {
@@ -67,9 +75,14 @@ export function NewVideoProjectWorkspace() {
         projectName.trim() &&
         advertiserName.trim() &&
         marketerName.trim() &&
-        designerName.trim()
+        productOriginal &&
+        references.length &&
+        (analysis.coreUsps.length || analysis.keyFeatures.length)
       ),
-    [analysis, projectName, advertiserName, marketerName, designerName]
+    [analysis, projectName, advertiserName, marketerName, productOriginal, references.length]
+  );
+  const missingPlanningEvidence = Boolean(
+    analysis && !analysis.coreUsps.length && !analysis.keyFeatures.length
   );
 
   async function analyze() {
@@ -115,7 +128,7 @@ export function NewVideoProjectWorkspace() {
     setDirty(true);
   }
 
-  function uploadReference(file: File) {
+  function uploadReference(file: File, role: "product-original" | "reference" = "reference") {
     setError("");
     setReferenceProgress(1);
     const xhr = new XMLHttpRequest();
@@ -128,7 +141,8 @@ export function NewVideoProjectWorkspace() {
       if (xhr.status < 200 || xhr.status >= 300) {
         setError(payload.error || "참고 파일 업로드 실패");
       } else {
-        setReferences((current) => [...current, payload.asset]);
+        if (role === "product-original") setProductOriginal(payload.asset);
+        else setReferences((current) => [...current, payload.asset]);
         setDirty(true);
       }
       setReferenceProgress(0);
@@ -139,12 +153,14 @@ export function NewVideoProjectWorkspace() {
     };
     const form = new FormData();
     form.append("file", file);
+    form.append("role", role);
     xhr.send(form);
   }
 
   async function createProject() {
     if (!analysis || !canCreate) return;
     setBusy(true);
+    setGenerationStage("상품 근거를 잠그고 프로젝트를 저장하는 중");
     setError("");
     try {
       const response = await fetch("/api/video-projects", {
@@ -159,15 +175,22 @@ export function NewVideoProjectWorkspace() {
           duration,
           format,
           objective,
+          platform,
+          aspectRatio: "9:16",
+          creativeStyle,
+          advancedTarget,
+          advancedTone,
           additionalRequests,
           referenceAssets: references,
+          productOriginalAsset: productOriginal,
           productAnalysis: analysis,
           brandGuideline: guideline,
         }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "프로젝트 생성에 실패했습니다.");
-      setSuccess("프로젝트를 저장했습니다. 서로 다른 후킹의 대본 3개를 생성하고 있습니다.");
+      setGenerationStage("후킹 후보 5개 이상을 평가하고 상위 콘셉트 3개를 만드는 중");
+      setSuccess("프로젝트를 저장했습니다. 상품 근거 기반 영상 기획을 생성하고 있습니다.");
       const generation = await fetch(`/api/video-projects/${payload.project.id}/concepts`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -183,6 +206,7 @@ export function NewVideoProjectWorkspace() {
       setError(caught instanceof Error ? caught.message : "프로젝트 생성 실패");
     } finally {
       setBusy(false);
+      setGenerationStage("");
     }
   }
 
@@ -367,36 +391,26 @@ export function NewVideoProjectWorkspace() {
                 />
               </label>
               <label>
-                담당 디자이너
-                <input
-                  value={designerName}
-                  onChange={(event) => {
-                    setDesignerName(event.target.value);
-                    setDirty(true);
-                  }}
-                />
-              </label>
-              <label>
                 영상 길이
                 <select
                   value={duration}
                   onChange={(event) => setDuration(Number(event.target.value) as VideoDuration)}
                 >
                   <option value={15}>15초</option>
+                  <option value={20}>20초 (권장)</option>
                   <option value={30}>30초</option>
-                  <option value={60}>60초</option>
                 </select>
               </label>
               <label>
-                영상 형식
+                게시 플랫폼
                 <select
-                  value={format}
-                  onChange={(event) => setFormat(event.target.value as VideoFormat)}
+                  value={platform}
+                  onChange={(event) => setPlatform(event.target.value as VideoPlatform)}
                 >
-                  <option value="short-form">숏폼</option>
-                  <option value="reels">릴스</option>
-                  <option value="feed">피드</option>
-                  <option value="other">기타</option>
+                  <option value="meta">Meta</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="youtube-shorts">YouTube Shorts</option>
                 </select>
               </label>
               <label>
@@ -406,10 +420,42 @@ export function NewVideoProjectWorkspace() {
                   onChange={(event) => setObjective(event.target.value as VideoObjective)}
                 >
                   <option value="purchase">구매 전환</option>
-                  <option value="interest">관심 유도</option>
-                  <option value="new-product">신상품 소개</option>
-                  <option value="benefit">혜택 안내</option>
+                  <option value="new-customer-hook">신규 고객 후킹</option>
+                  <option value="retargeting">리타겟팅</option>
+                  <option value="usp">USP 강조</option>
+                  <option value="review-ugc">후기형 UGC</option>
                 </select>
+              </label>
+              <label>
+                영상 스타일
+                <select
+                  value={creativeStyle}
+                  onChange={(event) => setCreativeStyle(event.target.value as VideoCreativeStyle)}
+                >
+                  <option value="auto">AI 자동 추천</option>
+                  <option value="smartphone-ugc">스마트폰 UGC</option>
+                  <option value="ad-real">광고 실사</option>
+                  <option value="clay-miniature">클레이 미니어처</option>
+                  <option value="3d">3D</option>
+                  <option value="live-ai">실사+AI</option>
+                  <option value="mixed">혼합형</option>
+                </select>
+              </label>
+              <label className={styles.wide}>
+                상품 원본 이미지 (필수)
+                <input
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) =>
+                    event.target.files?.[0] &&
+                    uploadReference(event.target.files[0], "product-original")
+                  }
+                  type="file"
+                />
+                <small>
+                  {productOriginal
+                    ? `${productOriginal.name} · 제품 형태·라벨 고정에 사용`
+                    : "제품 정면과 라벨이 선명한 원본을 올려 주세요."}
+                </small>
               </label>
               <label className={styles.wide}>
                 추가 제작 요청
@@ -419,17 +465,38 @@ export function NewVideoProjectWorkspace() {
                 />
               </label>
               <label className={styles.wide}>
-                참고 이미지 또는 PDF (각 15MB 이하)
+                참고 이미지·영상·PDF (필수, 각 100MB 이하)
                 <input
-                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  accept="image/png,image/jpeg,image/webp,application/pdf,video/mp4,video/quicktime,video/webm,.mov"
                   onChange={(event) =>
                     event.target.files?.[0] && uploadReference(event.target.files[0])
                   }
                   type="file"
                 />
                 {referenceProgress ? <progress max={100} value={referenceProgress} /> : null}
-                <small>{references.length}개 업로드됨</small>
+                <small>{references.length}개 업로드됨 · 인물·브랜드·디자인을 복제하지 않고 연출 원칙만 참고합니다.</small>
               </label>
+              <details className={styles.wide}>
+                <summary>고급 설정</summary>
+                <div className={styles.formGrid}>
+                  <label>
+                    세부 타깃
+                    <input value={advancedTarget} onChange={(event) => setAdvancedTarget(event.target.value)} />
+                  </label>
+                  <label>
+                    톤앤매너 보완
+                    <input value={advancedTone} onChange={(event) => setAdvancedTone(event.target.value)} />
+                  </label>
+                  <label>
+                    담당 디자이너
+                    <input value={designerName} onChange={(event) => setDesignerName(event.target.value)} />
+                  </label>
+                  <label>
+                    출력 규격
+                    <input disabled value="9:16 세로형" />
+                  </label>
+                </div>
+              </details>
             </div>
           </section>
           <section className={styles.panel}>
@@ -512,9 +579,15 @@ export function NewVideoProjectWorkspace() {
                 disabled={!canCreate || busy}
                 onClick={createProject}
               >
-                {busy ? "저장·대본 생성 중…" : "프로젝트 저장 후 대본 3개 만들기"}
+                {busy ? generationStage || "영상 기획 생성 중…" : "광고 영상 기획하기"}
               </button>
             </div>
+            {missingPlanningEvidence ? (
+              <div className={styles.error}>
+                상세페이지에서 제품 특징을 충분히 확인하지 못했습니다. 확인 가능한 USP 또는 주요 특징을
+                하나 이상 입력해야 근거 없는 영상 기획을 만들지 않습니다.
+              </div>
+            ) : null}
           </section>
         </>
       ) : null}

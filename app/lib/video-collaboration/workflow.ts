@@ -36,6 +36,10 @@ export const VIDEO_FORMAT_LABELS = {
 
 export const VIDEO_OBJECTIVE_LABELS = {
   purchase: "구매 전환",
+  "new-customer-hook": "신규 고객 후킹",
+  retargeting: "리타겟팅",
+  usp: "USP 강조",
+  "review-ugc": "후기형 UGC",
   interest: "관심 유도",
   "new-product": "신상품 소개",
   benefit: "혜택 안내",
@@ -84,8 +88,14 @@ function readableSegment(value: string, fallback: string) {
 }
 
 function dateSegment(value: Date) {
-  const pad = (part: number) => String(part).padStart(2, "0");
-  return `${value.getFullYear()}${pad(value.getMonth() + 1)}${pad(value.getDate())}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${byType.year}${byType.month}${byType.day}`;
 }
 
 export function createVideoMaterialCode(input: {
@@ -168,6 +178,29 @@ export function buildVideoProductAnalysis(
     5
   );
   const features = compactUnique([...verified, ...ingredients, ...descriptionParts], 8);
+  const verifiedNumbers = compactUnique(
+    [product.price, product.originalPrice, product.discountInfo, ...verified, ...features].flatMap(
+      (value) => String(value || "").match(/[^\s,;]*\d[\d,.]*[^\s,;]*/g) || []
+    ),
+    12
+  );
+  const facts = [
+    ["상품명", product.productName, "상품 상세페이지"],
+    ["브랜드", product.brandName, "상품 상세페이지"],
+    ["가격", product.price, "상품 상세페이지"],
+    ["할인·혜택", product.discountInfo, "상품 상세페이지"],
+    ...verified.map((value) => ["확인된 혜택", value, "상품 상세페이지"]),
+    ...ingredients.map((value) => ["성분·원재료", value, "상품 상세페이지"]),
+    ...trustSignals.map((value) => ["공개 후기 문구", value, "공개 후기"]),
+  ]
+    .filter((item) => String(item[1] || "").trim())
+    .map((item, index) => ({
+      id: `fact-${index + 1}`,
+      label: String(item[0]),
+      value: String(item[1]).trim(),
+      source: String(item[2]),
+      bucket: "verified" as const,
+    }));
   return {
     productName: String(product.productName || "").trim(),
     brandName: String(product.brandName || "").trim(),
@@ -190,6 +223,17 @@ export function buildVideoProductAnalysis(
       16
     ),
     rawDescription: description.slice(0, 2400),
+    ingredients,
+    attributes: features,
+    expectedChanges: [],
+    verifiedNumbers,
+    repeatedReviewPhrases: trustSignals,
+    differentiators: verified,
+    useSituations: [],
+    visualizableElements: compactUnique([...ingredients, ...verified, ...features], 6),
+    verifiedFacts: facts,
+    inferredAngles: [],
+    unsupportedClaims: [],
     source: "existing-product-extractor",
     analyzedAt,
   };

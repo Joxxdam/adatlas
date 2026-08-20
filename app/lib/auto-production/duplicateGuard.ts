@@ -1,4 +1,5 @@
 import type { AutoHookHypothesis, AutoProductionProductTask, AutoProductionRun } from "./types";
+import { candidateIdentityKeys } from "./productIdentity.ts";
 
 function normalize(value: string) {
   return value.toLowerCase().replace(/[^0-9a-z가-힣]+/g, "");
@@ -30,14 +31,16 @@ export function recentTasks(runs: AutoProductionRun[], advertiserId: string, day
 }
 
 export function isProductRecentlyProduced(
-  candidate: { id: string; externalId?: string | null; productUrl: string },
+  candidate: AutoProductionProductTask["candidate"],
   tasks: AutoProductionProductTask[]
 ) {
+  const currentKeys = new Set(candidateIdentityKeys(candidate));
   return tasks.some((task) =>
     task.status === "completed" &&
     (task.candidate.id === candidate.id ||
       Boolean(candidate.externalId && task.candidate.externalId === candidate.externalId) ||
-      task.candidate.productUrl === candidate.productUrl)
+      task.candidate.productUrl === candidate.productUrl ||
+      candidateIdentityKeys(task.candidate).some((key) => currentKeys.has(key)))
   );
 }
 

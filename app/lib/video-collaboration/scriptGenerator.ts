@@ -8,9 +8,19 @@ import type {
   VideoDuration,
   VideoHookType,
   VideoObjective,
+  VideoCreativeStyle,
+  ProductLockedAsset,
 } from "./types.ts";
 import { preserveSceneReferences } from "./script.ts";
 import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } from "./workflow.ts";
+import {
+  buildVideoHookCandidates,
+  buildVisualBible,
+  conceptScoreFromHook,
+  selectTopDistinctHooks,
+  validateVideoPlan,
+} from "./planningPipeline.ts";
+import { buildVideoPlannerPrompt } from "./prompts.ts";
 
 function clean(value: unknown, max = 1200) {
   return String(value || "")
@@ -137,26 +147,41 @@ function timeWindows(duration: VideoDuration) {
     return [
       [0, 3],
       [3, 7],
-      [7, 11],
-      [11, 15],
+      [7, 10],
+      [10, 13],
+      [13, 15],
+    ] as const;
+  if (duration === 20)
+    return [
+      [0, 3],
+      [3, 7],
+      [7, 12],
+      [12, 18],
+      [18, 20],
     ] as const;
   if (duration === 30)
     return [
       [0, 3],
-      [3, 10],
-      [10, 21],
-      [21, 30],
+      [3, 7],
+      [7, 12],
+      [12, 22],
+      [22, 30],
     ] as const;
   return [
     [0, 3],
-    [3, 18],
-    [18, 43],
-    [43, 60],
+    [3, 7],
+    [7, 12],
+    [12, 30],
+    [30, 60],
   ] as const;
 }
 
 function objectiveCta(objective: VideoObjective) {
   if (objective === "purchase") return "상품 상세 확인하기";
+  if (objective === "retargeting") return "다시 상품 확인하기";
+  if (objective === "usp") return "제품 차이 확인하기";
+  if (objective === "review-ugc") return "후기와 상품 확인하기";
+  if (objective === "new-customer-hook") return "처음 보는 제품 자세히 보기";
   if (objective === "benefit") return "혜택 조건 확인하기";
   if (objective === "new-product") return "신상품 자세히 보기";
   return "제품 포인트 더 알아보기";
@@ -182,24 +207,50 @@ function buildCuts(input: {
       caption: input.opening,
       narration: input.opening,
       requiredSources: ["제품 대표 이미지 또는 실제 제품 영상"],
+      sceneFormat: "실사 후킹 숏",
+      cameraComposition: "세로 9:16 초근접 또는 문제 상황의 강한 클로즈업, 피사체는 중앙 안전 영역에 둔다.",
+      motionDirection: "0.5초 안에 손동작이나 카메라 푸시인으로 시선을 멈춘다.",
+      transition: "문제 행동의 방향을 이어 다음 장면으로 하드 매치컷",
     },
     {
       sceneDescription: `${target}이 제품을 사용하는 구체적인 상황을 보여준다.`,
       caption: input.analysis.customerProblems[0] || input.analysis.targetCustomers[0] || product,
       narration: input.bridge,
       requiredSources: ["타깃 사용 상황 컷", "실제 제품 사용 장면"],
+      sceneFormat: "문제 상황 실사",
+      cameraComposition: "인물의 불편한 행동과 표정을 허리 위 미디엄 숏으로 포착한다.",
+      motionDirection: "인물의 시선과 손동작이 제품 공개 방향으로 이동한다.",
+      transition: "행동 중간에 컷해 제품 등장으로 연결",
+    },
+    {
+      sceneDescription: "업로드한 상품 원본을 훼손하지 않고 정면 라벨이 보이도록 첫 제품 공개를 만든다.",
+      caption: `${product}, 답은 제품에 있습니다`,
+      narration: `${product}을 원본 그대로 확인해 보세요.`,
+      requiredSources: ["업로드한 상품 원본 이미지", "제품 정면 합성 여백"],
+      sceneFormat: "원본 제품 합성",
+      cameraComposition: "제품 원본을 화면 중앙 45~55% 크기로 배치하고 라벨 정면을 유지한다.",
+      motionDirection: "배경만 느리게 이동하고 제품 원본은 안정적으로 고정한다.",
+      transition: "문제 장면의 손 위치와 제품 중심을 맞춘 매치컷",
     },
     {
       sceneDescription: "확인된 상품 근거를 제품 디테일과 나란히 제시한다.",
       caption: proof,
       narration: `${product}에서 확인된 포인트는 ${proof}입니다.`,
       requiredSources: ["제품 디테일", "상세페이지 확인 근거"],
+      sceneFormat: "근거 설명 합성",
+      cameraComposition: "제품 원본은 우측 하단에 유지하고 좌측 안전 영역에 근거 하나만 표시한다.",
+      motionDirection: "근거 텍스트가 제품을 가리지 않게 짧게 등장하고 제품으로 시선을 유도한다.",
+      transition: "근거 키워드를 제품 라벨 위치로 축소하며 전환",
     },
     {
       sceneDescription: "제품 전체와 CTA를 안전 영역 안에 배치해 마무리한다.",
       caption: compact([required, input.cta], 2).join(" · "),
       narration: input.cta,
       requiredSources: ["제품 엔딩 컷", "투명 배경 브랜드 로고 원본"],
+      sceneFormat: "제품 엔딩·CTA",
+      cameraComposition: "제품 원본 정면을 중앙에 고정하고 CTA는 하단 18% 안전 영역 위에 배치한다.",
+      motionDirection: "제품에 짧은 푸시인 후 CTA를 1초 이상 고정한다.",
+      transition: "종료 프레임 고정",
     },
   ];
   return rows.map((row, index) => ({
@@ -210,6 +261,20 @@ function buildCuts(input: {
     endSecond: windows[index][1],
     referenceImages: [],
     productionMemo: "",
+    generationPrompt: `${row.sceneDescription} ${row.cameraComposition} ${row.motionDirection} 세로형 광고 영상, 실제 재질, 읽을 수 없는 텍스트나 왜곡된 제품을 만들지 않는다.`,
+    productLockInstruction:
+      index >= 2
+        ? {
+            useOriginalComposite: true,
+            position: index === 3 ? "우측 하단" : "중앙",
+            size: index === 4 ? "화면 높이의 52%" : "화면 높이의 45~55%",
+            cameraAngle: "업로드 원본 각도를 그대로 유지",
+            handInteraction: "원본에 손이 없으면 새 손으로 제품을 가리지 않음",
+            labelVisibility: "로고·라벨·상품명·표기 수치가 가려지지 않게 정면 노출",
+            matchCut: index === 2 ? "직전 손동작의 끝점과 제품 중심을 연결" : "제품 중심축 유지",
+            editMargin: "제품 외곽 8% 이상의 합성 여백 확보",
+          }
+        : undefined,
     ...row,
   }));
 }
@@ -249,21 +314,29 @@ export function generateGroundedVideoConcepts(input: {
   objective: VideoObjective;
   hookTypes?: VideoHookType[];
   existingConcepts?: VideoConcept[];
+  creativeStyle?: VideoCreativeStyle;
+  productLockedAsset?: ProductLockedAsset;
   now?: Date;
 }) {
   const nowDate = input.now || new Date();
   const now = nowDate.toISOString();
-  const types = input.hookTypes || hookPriority(input.analysis, input.objective);
+  const hookCandidates = buildVideoHookCandidates(input.analysis);
+  const selectedHooks = selectTopDistinctHooks(hookCandidates, 3);
+  const types = input.hookTypes ||
+    (selectedHooks.length === 3
+      ? selectedHooks.map((candidate) => candidate.hookType)
+      : hookPriority(input.analysis, input.objective));
   const occupied = (input.existingConcepts || []).map((concept) => concept.materialCode);
   const concepts = types.slice(0, 3).map((type): VideoConcept => {
     const previous = input.existingConcepts?.find((concept) => concept.hookType === type);
     const message = hookMessage(type, input.analysis);
+    const hookCandidate = hookCandidates.find((candidate) => candidate.hookType === type);
     const cta = objectiveCta(input.objective);
     const cuts = buildCuts({
       type,
       duration: input.duration,
       analysis: input.analysis,
-      opening: message.opening,
+      opening: hookCandidate?.hook || message.opening,
       bridge: message.bridge,
       cta,
       requiredPhrases: input.guideline.requiredPhrases,
@@ -308,7 +381,19 @@ export function generateGroundedVideoConcepts(input: {
       revision: (previous?.revision || 0) + 1,
       createdAt: previous?.createdAt || now,
       updatedAt: now,
+      customerProblem: hookCandidate?.customerProblem || input.analysis.customerProblems[0] || "",
+      usp: input.analysis.coreUsps[0] || input.analysis.keyFeatures[0] || "",
+      creativeStyle: input.creativeStyle || "auto",
+      narrativeSummary:
+        "첫 3초에 구체적인 문제나 근거로 멈추게 한 뒤 문제 상황→원본 제품 공개→검증 근거→CTA로 연결합니다.",
+      recommendationReason: hookCandidate
+        ? `후킹 점수 ${hookCandidate.score.total}점이며 상품 근거와 시각화 가능성이 높아 상위안으로 선정했습니다.`
+        : "확인된 상품 근거를 직접 장면화할 수 있어 선정했습니다.",
+      claimsToVerify: (input.analysis.unsupportedClaims || []).map((claim) => claim.value),
+      score: hookCandidate ? conceptScoreFromHook(hookCandidate) : undefined,
+      visualBible: buildVisualBible(input.analysis, input.creativeStyle || "auto"),
     };
+    concept.validation = validateVideoPlan(concept, input.analysis, input.duration);
     occupied.push(concept.materialCode);
     return preserveSceneReferences(
       applyForbidden(concept, input.guideline.forbiddenPhrases),
@@ -390,7 +475,7 @@ function fromAiConcept(
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Record<string, unknown>;
   const cuts = Array.isArray(value.cuts) ? value.cuts : [];
-  if (cuts.length < 3 || cuts.length > 8) return null;
+  if (cuts.length < 5 || cuts.length > 8) return null;
   const normalizedCuts: VideoCut[] = cuts.map((cut, index) => {
     const item = (cut || {}) as Record<string, unknown>;
     return {
@@ -407,6 +492,15 @@ function fromAiConcept(
       referenceImages: fallback.cuts[index]?.referenceImages || [],
       productionMemo:
         clean(item.productionMemo, 1200) || fallback.cuts[index]?.productionMemo || "",
+      sceneFormat: clean(item.sceneFormat, 160) || fallback.cuts[index]?.sceneFormat,
+      cameraComposition:
+        clean(item.cameraComposition, 1000) || fallback.cuts[index]?.cameraComposition,
+      motionDirection:
+        clean(item.motionDirection, 1000) || fallback.cuts[index]?.motionDirection,
+      transition: clean(item.transition, 500) || fallback.cuts[index]?.transition,
+      generationPrompt:
+        clean(item.generationPrompt, 5000) || fallback.cuts[index]?.generationPrompt,
+      productLockInstruction: fallback.cuts[index]?.productLockInstruction,
     };
   });
   if (
@@ -456,6 +550,8 @@ async function generateWithOpenAI(input: {
   duration: VideoDuration;
   objective: VideoObjective;
   fallbacks: VideoConcept[];
+  creativeStyle?: VideoCreativeStyle;
+  productLockedAsset?: ProductLockedAsset;
   copyGuideContent?: string;
 }) {
   const facts = {
@@ -477,7 +573,7 @@ async function generateWithOpenAI(input: {
     },
     body: JSON.stringify({
       model: process.env.OPENAI_TEXT_MODEL || "gpt-4o-mini",
-      input: `당신은 퍼포먼스 광고 영상 기획자입니다. 아래 확인된 상품 사실만 사용해 서로 다른 고객 심리의 영상 기획안 3개를 작성하세요. 가격·할인·성분·인증·리뷰·효능 수치는 입력에 있을 때만 사용하세요. 후킹 유형을 바꾸지 마세요. 금지 문구는 절대 사용하지 마세요. 각 컷은 제작자가 바로 편집할 수 있게 장면, 자막, 내레이션, 필요 소스를 구체적으로 작성하고 전체 종료 시간이 정확히 ${input.duration}초가 되게 하세요. JSON만 반환하세요.\n\n입력:\n${JSON.stringify(facts)}\n\n출력 스키마: {"concepts":[{"hookType":"requiredHookTypes 중 값","title":"","coreTarget":"","openingHook":"","fullScript":"","cuts":[{"startSecond":0,"endSecond":3,"sceneDescription":"","caption":"","narration":"","requiredSources":[""]}],"requiredSources":[""],"cta":"","productionCautions":[""]}]}`,
+      input: `${buildVideoPlannerPrompt(facts, input.duration)}\n\n출력 스키마: {"concepts":[{"hookType":"requiredHookTypes 중 값","title":"","coreTarget":"","openingHook":"","fullScript":"","cuts":[{"startSecond":0,"endSecond":3,"sceneDescription":"","caption":"","narration":"","requiredSources":[""]}],"requiredSources":[""],"cta":"","productionCautions":[""]}]}`,
       text: { format: { type: "json_object" } },
     }),
     signal: AbortSignal.timeout(45_000),
@@ -514,6 +610,17 @@ async function generateWithOpenAI(input: {
         ],
       };
     }
+    const validation = validateVideoPlan(candidate, input.analysis, input.duration);
+    if (!validation.valid) {
+      return {
+        ...fallback,
+        validation: fallback.validation
+          ? { ...fallback.validation, revised: true }
+          : fallback.validation,
+        generationWarnings: ["AI 대본이 장면·제품 고정 검증을 통과하지 못해 검증된 근거 기반 대본을 사용했습니다."],
+      };
+    }
+    candidate.validation = validation;
     return candidate;
   });
 }
@@ -526,6 +633,8 @@ export async function generateVideoConcepts(input: {
   objective: VideoObjective;
   hookTypes?: VideoHookType[];
   existingConcepts?: VideoConcept[];
+  creativeStyle?: VideoCreativeStyle;
+  productLockedAsset?: ProductLockedAsset;
 }) {
   const fallbacks = generateGroundedVideoConcepts(input);
   if (!process.env.OPENAI_API_KEY?.trim()) {
@@ -542,11 +651,19 @@ export async function generateVideoConcepts(input: {
       category: input.analysis.category,
       productName: input.analysis.productName,
     });
-    return await generateWithOpenAI({
-      ...input,
-      fallbacks,
-      copyGuideContent: copyGuide?.content,
-    });
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await generateWithOpenAI({
+          ...input,
+          fallbacks,
+          copyGuideContent: copyGuide?.content,
+        });
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError;
   } catch {
     return fallbacks.map((concept) => ({
       ...concept,

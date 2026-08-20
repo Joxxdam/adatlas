@@ -254,7 +254,7 @@ test("상품별 후킹 탐색은 후보 10~15개를 만든 뒤 서로 다른 근
   }
 });
 
-test("후킹 후보 점수는 100점 배점을 따르고 카테고리 prior는 최대 10점만 반영한다", () => {
+test("후킹 후보 점수는 사실성·구체성·차별성·주목도·장면화·광고 적합성을 함께 평가한다", () => {
   const truth = truthFor(fixtures[0].product);
   const profile = buildProductInsightProfile(truth);
   const neutral = generateHookHypothesisCandidates(truth, profile);
@@ -262,9 +262,11 @@ test("후킹 후보 점수는 100점 배점을 따르고 카테고리 prior는 �
   for (const candidate of neutral) {
     const score = candidate.score;
     const expected = Math.round(
-      score.evidenceStrength * 0.25 + score.purchaseReasonStrength * 0.2 +
-      score.distinctiveness * 0.15 + score.visualizability * 0.15 +
-      score.claimSafety * 0.1 + score.categoryPrior * 0.1 + score.novelty * 0.05
+      score.evidenceStrength * 0.18 + score.specificity * 0.12 +
+      score.purchaseReasonStrength * 0.12 + score.distinctiveness * 0.12 +
+      score.attentionPotential * 0.1 + score.visualizability * 0.12 +
+      score.advertisingFit * 0.09 + score.claimSafety * 0.1 +
+      score.categoryPrior * 0.03 + score.novelty * 0.02
     );
     assert.equal(score.total, expected);
     assert.ok(score.total >= 0 && score.total <= 100);
@@ -415,7 +417,10 @@ test("마스터 장면 캐시는 실제 선택한 상품 사진별로 분리된�
 });
 
 test("광고 콘셉트 탐색 모드는 6개 가설에 서로 다른 brief와 디자인을 연결한다", () => {
-  const truth = truthFor(fixtures[0].product);
+  const truth = truthFor({
+    ...fixtures[0].product,
+    creativeContext: { advertiserId: "advertiser-fixture", productId: "product-fixture" },
+  });
   const creativePlan = buildExplorationCreativePlan(truth);
   const scenes = planScenes(creativePlan, library, false);
   const job = createGenerationJob({ truth, creativePlan, scenes, planningMs: 1, concurrency: 2 });
@@ -423,6 +428,9 @@ test("광고 콘셉트 탐색 모드는 6개 가설에 서로 다른 brief와 �
   assert.equal(creativePlan.candidateHypotheses.length >= 10, true);
   assert.equal(job.results.length, 6);
   assert.equal(new Set(job.results.map((result) => result.hookPlan.creativeBrief.hypothesisId)).size, 6);
+  assert.ok(job.results.every((result) => result.hookPlan.creativeBrief.advertiserId === "advertiser-fixture"));
+  assert.ok(job.results.every((result) => result.hookPlan.creativeBrief.productId === "product-fixture"));
+  assert.ok(job.results.every((result) => result.hookPlan.creativeBrief.differentiationReason));
   assert.equal(new Set(job.results.map((result) => result.creativeDesign.designFingerprint)).size >= 4, true);
   assert.equal(new Set(job.results.map((result) => result.scenePlan.sceneAsset.id)).size >= 4, true);
 });

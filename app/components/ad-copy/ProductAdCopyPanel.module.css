@@ -1,0 +1,17 @@
+.panel { margin: 14px 0; padding: 16px; border: 1px solid #b9decf; border-radius: 14px; background: #effaf5; color: #173c31; }
+.panel header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.eyebrow { margin: 0 0 4px; color: #187052; font-size: 11px; font-weight: 900; letter-spacing: .05em; }
+.panel h5 { margin: 0; font-size: 16px; }
+.panel header span { border-radius: 999px; padding: 5px 8px; background: #d9eee5; color: #146146; font-size: 11px; font-weight: 900; }
+.panel header span[data-status="needs-review"] { background: #fff0dd; color: #9a5516; }
+.panel pre { margin: 13px 0; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14px; font-weight: 650; line-height: 1.65; }
+.help { margin: 13px 0; color: #5b6e68; font-size: 13px; line-height: 1.55; }
+.panel dl { display: grid; gap: 5px; margin: 12px 0; }
+.panel dl div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; font-size: 11px; }
+.panel dt { color: #658077; font-weight: 800; }
+.panel dd { margin: 0; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.actions button, .actions a { border: 1px solid #a6cfc0; border-radius: 9px; padding: 7px 9px; background: white; color: #176549; font: inherit; font-size: 11px; font-weight: 850; text-decoration: none; cursor: pointer; }
+.actions button:disabled { opacity: .5; cursor: wait; }
+.notice { margin: 10px 0 0; color: #176549; font-size: 12px; font-weight: 750; }
+@media (max-width: 640px) { .panel dl div { grid-template-columns: 1fr; } .panel header { align-items: flex-start; } }

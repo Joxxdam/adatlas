@@ -433,6 +433,27 @@
 
 .six-creative-card-actions {
   justify-content: flex-start;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.six-creative-card-actions label {
+  display: grid;
+  flex: 1 1 100%;
+  gap: 5px;
+  color: #576477;
+  font-size: 12px;
+}
+
+.six-creative-card-actions textarea {
+  min-height: 64px;
+  resize: vertical;
+  border: 1px solid #cbd5e4;
+  border-radius: 9px;
+  padding: 9px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
 }
 
 .six-creative-card-actions button,
@@ -6124,4 +6145,38 @@ select {
   .six-creative-actions { position: sticky; z-index: 4; bottom: 8px; padding: 8px; border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: 0 8px 24px rgba(15,23,42,.14); }
   .six-creative-actions .hook-results-download { width: 100%; }
   .hook-master-summary { grid-template-columns: 1fr; }
+}
+.mode-selector-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 22px 0;
+  padding: 0;
+}
+
+.mode-selector-flow li {
+  align-items: center;
+  background: #f5f8ff;
+  border: 1px solid #d9e5fa;
+  border-radius: 14px;
+  display: flex;
+  gap: 10px;
+  min-height: 58px;
+  padding: 12px;
+}
+
+.mode-selector-flow b {
+  align-items: center;
+  background: #1668dc;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  flex: 0 0 28px;
+  height: 28px;
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .mode-selector-flow { grid-template-columns: 1fr; }
 }

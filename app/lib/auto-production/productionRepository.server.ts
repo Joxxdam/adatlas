@@ -2,6 +2,7 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { AutoProductionRun, AutoProductionRunStatus } from "./types";
+import { normalizeAutoProductionTaskIds } from "./taskIdentity";
 
 const runtimeDirectory = path.join(process.cwd(), "data", "auto-production", "runtime");
 const runsDirectory = path.join(runtimeDirectory, "runs");
@@ -61,7 +62,9 @@ export const autoProductionRepository = {
   },
   async get(runId: string): Promise<AutoProductionRun | null> {
     try {
-      return JSON.parse(await fs.readFile(runFile(runId), "utf8")) as AutoProductionRun;
+      return normalizeAutoProductionTaskIds(
+        JSON.parse(await fs.readFile(runFile(runId), "utf8")) as AutoProductionRun
+      );
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
       throw error;
@@ -73,7 +76,9 @@ export const autoProductionRepository = {
       const files = (await fs.readdir(runsDirectory)).filter((file) => /^auto-run-.*\.json$/i.test(file));
       const runs = await Promise.all(files.map(async (file) => {
         try {
-          return JSON.parse(await fs.readFile(path.join(runsDirectory, file), "utf8")) as AutoProductionRun;
+          return normalizeAutoProductionTaskIds(
+            JSON.parse(await fs.readFile(path.join(runsDirectory, file), "utf8")) as AutoProductionRun
+          );
         } catch {
           return null;
         }

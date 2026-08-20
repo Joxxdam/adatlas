@@ -90,6 +90,29 @@ export async function enrichVideoProductAnalysis(
         8
       ),
       inferredFields: ["targetCustomers", "customerProblems"],
+      inferredAngles: [
+        ...targetCustomers.map((value, index) => ({
+          id: `inferred-target-${index + 1}`,
+          label: "추천 타깃",
+          value,
+          source: "공개 상품정보 기반 시스템 해석",
+          bucket: "inferred" as const,
+        })),
+        ...customerProblems.map((value, index) => ({
+          id: `inferred-problem-${index + 1}`,
+          label: "추천 고객 문제",
+          value,
+          source: "공개 상품정보 기반 시스템 해석",
+          bucket: "inferred" as const,
+        })),
+      ],
+      unsupportedClaims: cautionPhrases.map((value, index) => ({
+        id: `unsupported-${index + 1}`,
+        label: "사용 금지·확인 필요",
+        value,
+        source: "검증 규칙",
+        bucket: "unsupported" as const,
+      })),
       analysisNotes: [
         "상품명·가격·USP·후기 근거는 공개정보이며, 타깃과 고객 문제는 공개정보를 바탕으로 한 시스템 추천 해석입니다.",
       ],

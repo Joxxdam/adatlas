@@ -15,6 +15,7 @@ import type { AdBrief } from "../mvp/types";
 import { matchCategoryProfile } from "./profiles";
 import { readCategoryHookPrior } from "./hookLearning.server";
 import { enqueueGenerationJob } from "./jobRunner.server";
+import { planHooksWithCodexLocal } from "./CodexLocalHookPlanner.server";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -87,7 +88,10 @@ export async function createNativeGenerationJob(
     ...(product.extractedGalleryImages || []),
   ].map((value) => String(value || "").trim()).filter(Boolean)));
   const originals = allPaths.filter((value) => !isAutomaticCutoutPath(value));
-  const originalProductReferencePaths = (originals.length ? originals : allPaths).slice(0, 12);
+  if (!originals.length) {
+    throw new Error("AI 전체 광고 제작에는 자동 누끼가 아닌 상세페이지 원본 상품 이미지가 필요합니다.");
+  }
+  const originalProductReferencePaths = originals.slice(0, 12);
   const rawTruth = buildProductTruth({
     product,
     productImagePaths: originalProductReferencePaths,
@@ -102,7 +106,18 @@ export async function createNativeGenerationJob(
   const configuredConcurrency = Math.max(1, Math.min(3, Math.floor(Number(process.env.ADATLAS_CREATIVE_CONCURRENCY || input.concurrency || 2) || 2)));
   const experimentObjective = adBrief.adObjective === "awareness" ? "AWR" : adBrief.adObjective === "signup" ? "TRF" : "SLS";
   const categoryPrior = await readCategoryHookPrior({ categoryId: matchCategoryProfile(truth.product).id, objective: experimentObjective });
-  const creativePlan = buildExplorationCreativePlan(truth, { logoPath: input.logoPath, adBrief, categoryPrior, testCode: input.testCode });
+  const advertiser = resolveAdvertiserIdentity(product);
+  const advertiserId = product.creativeContext?.advertiserId || advertiser.id;
+  const advertiserName = product.advertiserName || advertiser.name;
+  const hookPlanning = await planHooksWithCodexLocal({ truth, advertiserId, advertiserName, prior: categoryPrior });
+  const creativePlan = buildExplorationCreativePlan(truth, {
+    logoPath: input.logoPath,
+    adBrief,
+    categoryPrior,
+    testCode: input.testCode,
+    exploration: hookPlanning.exploration,
+    copyGeneration: hookPlanning.copyGeneration,
+  });
   const scenes = planAiScenes(creativePlan, paidImageGenerationEnabled);
   const productReferenceProfile = await analyzeProductReferences(truth);
   const configuredRetries = Number(process.env.ADATLAS_IMAGE_MAX_RETRIES || process.env.ADATLAS_CREATIVE_RETRIES || "2");
@@ -116,11 +131,10 @@ export async function createNativeGenerationJob(
     productReferenceProfile,
     planningMs: Date.now() - started,
   });
-  const advertiser = resolveAdvertiserIdentity(product);
   job.engine = engine;
   job.paidApiUsed = engine === "openai_api";
-  job.advertiserId = product.creativeContext?.advertiserId || advertiser.id;
-  job.advertiserName = product.advertiserName || advertiser.name;
+  job.advertiserId = advertiserId;
+  job.advertiserName = advertiserName;
   job.codexThreadId = (await getAdvertiserThread(job.advertiserId))?.threadId;
   job.visualDiversityMatrix = buildVisualDiversityMatrix(job.results);
   const diversity = validateVisualDiversityMatrix(job.visualDiversityMatrix);
@@ -130,6 +144,7 @@ export async function createNativeGenerationJob(
   job.autoProductionRunId = options.autoProductionRunId;
   job.autoProductionTaskId = options.autoProductionTaskId;
   job.hookLearningApplied = Object.keys(categoryPrior).length > 0;
+  job.representativeResultId = job.results[0]?.id;
   await creativeGenerationJobStore.create(job);
   await writeNativeManifest(job);
   if (options.autoStart !== false) enqueueGenerationJob(job.id);

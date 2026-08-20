@@ -14,7 +14,10 @@ export async function GET(request: Request) {
     const advertiserId = url.searchParams.get("advertiserId") || undefined;
     const runs = await autoProductionRepository.list({ advertiserId, limit: Number(url.searchParams.get("limit") || 40) });
     const synced = [];
-    for (const run of runs) synced.push(["queued", "generating-creatives"].includes(run.status) ? await syncAutoProductionRun(run.id) : run);
+    for (const run of runs) {
+      const copyPending = run.tasks.some((task) => task.generationJobId && task.results.some((result) => ["success", "approved"].includes(result.status)) && (!task.adCopy || task.adCopy.status === "generating"));
+      synced.push(["queued", "generating-creatives"].includes(run.status) || copyPending ? await syncAutoProductionRun(run.id) : run);
+    }
     return NextResponse.json({ ok: true, runs: synced.filter(Boolean).map((run) => toPublicAutoProductionRun(run!)) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return NextResponse.json({ ok: false, error: publicAutoProductionError(error, "자동 제작 결과를 불러오지 못했습니다.") }, { status: 403 });

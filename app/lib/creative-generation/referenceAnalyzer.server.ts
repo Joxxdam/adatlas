@@ -77,6 +77,7 @@ async function analyzeOne(truth: ProductTruth, item: { path: string; asset?: Cre
     const tooLong = Math.max(width, height) / Math.max(1, Math.min(width, height)) > 4;
     const hasText = Boolean(item.asset?.hasText || candidate?.hasText);
     const contentHash = crypto.createHash("sha256").update(buffer).digest("hex");
+    const packageIdentityRole = ["primary-product", "front-package", "side-package", "back-package"].includes(role);
     return {
       id: `reference-${contentHash.slice(0, 12)}`,
       url: item.path,
@@ -84,7 +85,10 @@ async function analyzeOne(truth: ProductTruth, item: { path: string; asset?: Cre
       importance: Math.max(0, roleWeights[role] - (tooSmall ? 45 : 0) - (tooLong ? 35 : 0) - (hasText ? 18 : 0) - (watermarkRisk ? 30 : 0)),
       width,
       height,
-      usableForGeneration: !tooSmall && !tooLong && !watermarkRisk && !hasText,
+      // Package labels are identity evidence, not promotional text overlays.
+      // Keep clear package views usable while still rejecting text-heavy
+      // lifestyle/detail screenshots as native-generation references.
+      usableForGeneration: !tooSmall && !tooLong && !watermarkRisk && (!hasText || packageIdentityRole),
       description: `${role} · ${width}×${height}${hasText ? " · 이미지 내 문구 확인 필요" : ""}`,
       contentHash,
       watermarkRisk,
@@ -118,4 +122,3 @@ export async function analyzeProductReferences(truth: ProductTruth) {
   deduplicated.sort((left, right) => right.importance - left.importance || left.id.localeCompare(right.id));
   return buildProductReferenceProfile(truth, deduplicated);
 }
-

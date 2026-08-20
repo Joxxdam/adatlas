@@ -1,774 +1,214 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DAYWIZ AdAtlas
 
-## Getting Started
+DAYWIZ AdAtlas는 상품 상세페이지의 공개 근거를 바탕으로 광고 후킹을 기획하고, 후킹마다 서로 다른 완성 광고 이미지를 만드는 Next.js 기반 광고 콘텐츠 운영 도구입니다.
 
-First, run the development server:
+기본 제작 경로는 고정 템플릿에 문구를 끼우거나 배경과 누끼를 기계적으로 합성하지 않습니다. 상품 원본 사진을 참조한 AI가 장면, 제품 표현, 한국어 문구, CTA, 타이포그래피, 레이아웃을 한 번에 완성합니다.
+
+## 왜 만들었는가
+
+상품마다 고객이 반응하는 이유는 다르지만 기존 제작 방식은 동일 디자인의 문구 교체에 머무르기 쉽습니다. AdAtlas는 공개 상품 근거와 연결 데이터로 서로 다른 메시지 가설을 세우고, 실제 테스트 가능한 소재·광고명·UTM까지 한 흐름으로 연결하기 위해 만들었습니다.
+
+핵심 사용자는 광고할 상품을 찾는 퍼포먼스 마케터, 상품 근거를 광고 기획으로 바꾸는 콘텐츠 마케터, 그리고 승인 가능한 완성 소재를 빠르게 검토해야 하는 광고주·디자이너입니다.
+
+## 기본 제작 흐름
+
+```text
+상품 상세페이지 URL 분석
+→ ProductTruth 구성
+→ 로컬 Codex(gpt-5.6-sol, high)로 후킹 후보 12~15개 기획
+→ 상품 근거·구체성·차별성·주목도·시각화·광고 적합성 평가
+→ 최종 후킹 6개 선정
+→ 상품명·카테고리·상세설명·USP·고객문제·이미지·브랜드 분위기로 CategoryCreativeProfile 결정
+→ 후킹별 완성형 CreativeBrief 작성
+→ 후킹별 독립 광고 브리프와 독립 완성 이미지 생성
+→ 개별 AI QA 및 최대 2회 수정
+→ 6장 그룹 다양성 QA 및 중복 이미지만 재생성
+→ 1200×1200 JPEG, 800KB 이하 검증
+→ 소재코드·권장 광고명·UTM·랜딩 URL과 함께 전달
+```
+
+서비스의 기본 사용자 흐름은 다음 네 단계입니다.
+
+1. 광고 후보 찾기
+2. 상품 선택 또는 URL 입력
+3. AI 광고 6장 만들기
+4. 결과 확인 및 테스트
+
+제작 화면 안에서는 `상품 확인 → 광고 목표 선택 → 후킹 6개 선정 → AI 광고 6장 완성` 순서로 현재 상태를 보여줍니다.
+
+완성 카드에서는 문구를 직접 편집하지 않습니다. `이 광고 다시 만들기`, 자연어 `AI에게 수정 요청`, `승인`, `제외`로 관리합니다.
+
+## 카테고리별 AI 아트디렉션
+
+`food_meat`, `food_fresh`, `food_processed`, `beauty_cosmetics`, `personal_care`, `fashion`, `health`, `household`, `kids`, `general`을 지원합니다. 이 프로필은 고정 템플릿이 아니라 장면·사람 역할·제품 표현·색·조명·타이포그래피·금지 요소를 정하는 광고 문법입니다.
+
+- 육류·식품: 실제 부위·구성·패키지를 보존하면서 조리 행동, 육즙·김·윤기, 완성 메뉴, 식사 상황을 후킹에 맞게 선택합니다.
+- 화장품·퍼스널케어: 제품 히어로, 감각 몰입, 실제 사용 행동, 문제 해결, 검증된 성분·근거를 후킹별로 선택합니다.
+- 후기형은 실제 후기 근거가 있을 때만, 가격·효능·임상·인증은 검증 사실에 있을 때만 사용합니다.
+- 최종 6장은 최소 4개의 서로 다른 visualArchetype을 사용하고 그룹 QA에서 배경·구도·카메라·색·타이포그래피 반복을 검사합니다.
+
+각 CreativeBrief에는 고객 상황과 의도 반응, visualArchetype, 히어로 장면, 사람·제품 역할, 카메라, 구도, 색, 조명, 타이포그래피, 보조 요소, 검증 사실, 금지 주장, 다른 후킹과의 차이를 저장합니다.
+
+## AI 엔진 정책
+
+기본 엔진은 설치된 Codex CLI와 현재 ChatGPT 로그인을 사용하는 `codex_local`입니다.
+
+- 후킹 기획: `gpt-5.6-sol`, reasoning `high`
+- 광고 생성: 광고주별 생성 스레드
+- 개별 QA: 생성 스레드와 분리된 새 검수 스레드
+- 그룹 QA: 6장 콘택트시트를 검사하는 별도 검수 스레드
+- 로컬 Codex가 불가능할 때만 근거 기반 규칙 후킹으로 fallback하며 내부 기록에 남김
+- 유료 OpenAI API는 UI에서 `openai_api`를 명시 선택하고 서버 플래그를 켠 경우에만 사용
+- 로컬 Codex 실패를 유료 API로 자동 전환하지 않음
+
+## 상품 이미지 원칙
+
+- 상세페이지의 실제 상품 사진을 우선 사용합니다.
+- 패키지 형태, 라벨 인상, 색상, 옵션과 수량을 최대한 보존합니다.
+- 자동 누끼와 기존 광고 배너는 기본 참조에서 제외합니다.
+- 정면, 라벨, 실제 판매 구성, 손·사용 장면, 질감·원료 순으로 중복 없는 원본을 최대 5장 전달합니다.
+- 확인되지 않은 가격, 할인, 구성, 후기, 평점, 효능, 인증, 원산지와 성과 수치를 생성하지 않습니다.
+- 상품과 무관한 이미지를 fallback으로 사용하지 않습니다.
+
+## 생성 결과와 보안
+
+AI 생성 원본, 수정본, 프롬프트, ProductTruth 원문, 후킹 후보, QA 상세, Codex thread ID는 웹 공개 폴더에 두지 않습니다.
+
+```text
+.data/generated/{advertiserId}/{jobId}/
+  manifest.json
+  product-analysis.json
+  hook-hypotheses.json
+  diversity-matrix.json
+  references/
+  H01/ ... H06/
+  qa/
+
+.data/creative-generation/jobs/
+  creative-job-*.json
+
+.data/codex/golden-references/{advertiserId}/
+  golden-*.jpg
+```
+
+최종 광고도 `.data/generated`에 저장되며 localhost 접근 검사를 거치는 이미지·다운로드 API로만 전달됩니다. `public/generated`의 이전 native 결과는 다음 명령으로 비공개 저장소로 이전할 수 있습니다.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+node scripts/migrate-native-generated-assets.mjs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+사이트 URL 후보 분석 캐시는 `.data/site-candidates/cache.json`에 TTL, 원본 URL, 분석 결과, 선택 결과와 함께 저장되어 서버 재시작 후에도 복구됩니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 주요 기능
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 광고 후보 찾기
 
-## Learn More
+- 쇼핑몰 URL 기반 상품 발견과 공개정보 분석
+- BigQuery·크리마 데이터 연결 시 상품 기회 탐지
+- 콘텐츠 적합도와 추천 근거 표시
+- 선택 상품 URL을 제작 화면에 자동 전달
 
-To learn more about Next.js, take a look at the following resources:
+### 상세페이지로 광고 만들기
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- 상품 정보와 원본 이미지 추출
+- 광고 목표 확인
+- 상품별 후킹 후보 기획과 최종 6개 선정
+- 후킹별 독립 AI 완성 광고 생성
+- 실시간 카드 상태, 복구, 개별 수정·승인·제외·다운로드
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 자동 제작
 
-## Deploy on Vercel
+- 기본 운영값: 광고주 3곳, 매일 Asia/Seoul 오전 9시
+- 광고주별 상품 4개, 상품별 우선 광고 1장, 기본 일 12장
+- 관리자 설정, 중복 방지, 중단 작업 복구
+- SHA-256 기반 상품 작업 ID로 React key와 작업 기록의 고유성 보장
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 후킹 테스트와 성과 학습
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 동일 상품의 서로 다른 메시지 가설을 소재코드로 연결
+- 캠페인 목표별 성과 연결
+- 승인·제외·자연어 피드백은 표현 방향 학습에만 사용하며 판매 성과로 간주하지 않음
+- `골든 레퍼런스로 등록`한 광고는 광고주·카테고리·상품·시각 문법·추상 스타일 특성과 함께 비공개 저장
+- 다음 생성에서는 같은 카테고리와 성과 데이터가 있는 골든 레퍼런스를 우선하되 기존 문구나 레이아웃을 복사하지 않음
 
-# AdAtlas
+### 영상 제작 협업
 
-## 제품 기획서
+- 이미지 광고 생성과 분리된 프로젝트별 영상 대본·제작·검수 흐름
+- 소재코드 날짜는 서버 위치와 무관하게 Asia/Seoul 기준
+- 영상 자체를 AI로 생성하거나 편집하는 모듈은 아님
 
-MVP의 상품 탐지, 동일 디자인 후킹 실험, 소재코드, 광고 등록, 성과 연결 및 향후 고도화 범위는 [애드아틀란티스 MVP 최종 기획서](docs/adatlantis-mvp-plan.md)에서 확인할 수 있습니다.
+## 레거시 도구
 
-매일 광고주별 상품을 선정하고 새 후킹 콘텐츠를 만드는 `/auto-production`의 설정, 실행, 복구, macOS·Windows 예약 방법은 [자동 제작 운영 가이드](docs/auto-production-operations.md)를 참고하세요.
+배경 라이브러리, 템플릿 렌더러, 누끼, Canvas/SVG/Sharp 합성, 직접 문구 편집 코드는 기존 기록과 관리 기능의 호환성을 위해 격리되어 있습니다. `/create-product` 기본 제작 화면에는 노출되지 않으며 AI-native 작업 생성 경로에서 호출하지 않습니다.
 
-상품 상세페이지 URL을 분석해 광고 후킹 3안, 배경 추천, 상품 합성, 문구·가격·장식 렌더링과 다운로드를 연결하는 Next.js 기반 광고 소재 제작 도구입니다.
+## 기술 구성
 
-## 배경 라이브러리
+- Next.js App Router
+- TypeScript / React
+- `@openai/codex-sdk`
+- 선택형 OpenAI API
+- sharp
+- JSON 파일 저장(MVP)
+- BigQuery / Crema 선택 연동
 
-빠른 제작용 무료 배경 36개의 출처, 라이선스, 설치·검증 및 AI 생성 배경 관리 방법은 [광고 배경 라이브러리 문서](docs/background-library.md)를 참고하세요.
+## 로컬 실행
 
-AdAtlas는 광고 이미지 레퍼런스를 수집하고, 이미지별 후킹 방식·소구점·카피 뉘앙스·레이아웃 패턴을 라벨링한 뒤, 축적된 라벨 데이터를 기반으로 광고 문구와 배너를 자동 생성하는 내부 실무용 광고 크리에이티브 툴입니다.
+요구 사항:
 
-현재 목표는 단순 이미지 수집기가 아니라, 한국 이커머스 퍼포먼스 광고의 “왜 이 문구가 먹히는지”를 라벨 데이터로 축적하고, 이를 바탕으로 상품별 광고 소재를 빠르게 생성하는 것입니다.
-
----
-
-## 프로젝트 목표
-
-최종 목표 흐름은 아래와 같습니다.
-
-```text
-광고 이미지 수집
-→ 이미지별 AI 1차 분석
-→ 사용자가 라벨 수정/저장
-→ 라벨 데이터 축적
-→ 상품 정보 입력
-→ 저장된 라벨 데이터를 참고해 광고문구 생성
-→ Canvas/SVG 템플릿으로 광고 배너 생성
-→ 1200x1200 PNG 다운로드
-```
-
----
-
-## 핵심 방향
-
-AdAtlas는 브랜드 중심 수집 툴이 아니라, 아래 기준으로 광고 이미지를 분석합니다.
-
-```text
-카테고리
-후킹 유형
-소구점
-카피 뉘앙스
-타깃 감정
-시각 톤
-레이아웃 패턴
-왜 이 광고가 먹히는지
-어떤 상품에 재활용 가능한지
-```
-
-현재는 파인튜닝 단계가 아닙니다.
-먼저 라벨 데이터베이스를 만들고, 저장된 라벨을 참고하여 광고문구와 배너를 생성하는 구조로 개발합니다.
-
-나중에 라벨 데이터가 충분히 쌓이면 Qwen2.5-VL 같은 오픈소스 VLM 파인튜닝을 검토할 수 있습니다.
-
----
-
-## 기술 스택
-
-```text
-Next.js
-TypeScript
-React
-OpenAI API
-Canvas/SVG
-sharp
-JSON file storage
-```
-
-현재는 별도 DB 없이 `data` 폴더의 JSON 파일을 사용합니다.
-
-### 영상 제작 협업 모듈
-
-`/video-collaboration`은 기존 이미지 광고 제작 흐름과 분리된 영상 제작 협업 화면입니다.
-상품 URL을 기존 상품 추출 API로 분석한 뒤 서로 다른 후킹의 영상 대본 3개를 만들고,
-마케터의 대본 확정 → 디자이너 제작 → 버전 업로드 → 타임코드 피드백 → 수정본 → 최종
-승인 흐름을 관리합니다. 이 기능은 영상을 AI로 생성하거나 편집하지 않습니다.
-
-프로젝트별 제작 대본은 `/video-collaboration/{projectId}/script`에서 독립 작업지시서로
-열립니다. 장면·자막·영상 장면·참고 이미지 2열을 기본으로 표시하고, 장면 순서·내레이션·
-필요 소스·제작 메모를 편집할 수 있습니다. 디자이너 보기와 인쇄/PDF 출력도 지원합니다.
-
-현재 MVP 저장 방식은 다음과 같습니다.
-
-- 프로젝트·대본·상태·피드백: `data/video-collaboration/projects.json`
-- 참고 자료: `public/video-collaboration/references/`
-- 장면별 참고 이미지: `public/video-collaboration/script-references/{projectId}/`
-- 영상 버전: `public/video-collaboration/videos/{projectId}/`
-- 영상 업로드 형식: MP4, MOV, WEBM / 파일당 최대 200MB
-
-위 경로는 로컬 개발용 파일 저장소입니다. 서버리스 배포나 다중 서버 환경에서 영구성과
-동시 접근을 보장하지 않으므로, 운영 전에는 객체 스토리지와 데이터베이스로 교체해야 합니다.
-
----
-
-## 실행 방법
-
-패키지 설치:
+- Node.js 20 이상
+- Codex CLI 설치 및 `codex login`
 
 ```bash
 npm install
-```
-
-개발 서버 실행:
-
-```bash
+cp .env.example .env.local
 npm run dev
 ```
 
-브라우저 접속:
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다. native 광고 생성 API는 기본적으로 localhost에서만 허용됩니다.
 
-```text
-http://localhost:3000
-```
-
----
-
-## 환경 변수 설정
-
-OpenAI API를 사용하려면 프로젝트 루트에 `.env.local` 파일을 만들고 아래 값을 넣습니다.
+주요 환경변수:
 
 ```env
-OPENAI_API_KEY=<your_openai_api_key>
+ADATLAS_CODEX_MODEL=gpt-5.6-sol
+ADATLAS_CODEX_PLANNING_TIMEOUT_MS=180000
+ADATLAS_CODEX_IMAGE_TIMEOUT_MS=720000
+ADATLAS_CODEX_VALIDATION_TIMEOUT_MS=150000
+ADATLAS_CREATIVE_CONCURRENCY=2
+ADATLAS_CREATIVE_RETRIES=2
+ADATLAS_PAID_API_EXPLICIT_ENABLED=false
 ```
 
-후킹별 AI 광고 장면 생성은 비용이 발생하므로 서버에서 명시적으로 활성화합니다. 이 제작
-흐름에서는 설정이 없거나 생성이 실패해도 기존 배경으로 대체하지 않습니다. 실패한 후킹
-카드만 남겨 재시도하며 이미 완성된 카드는 그대로 유지합니다.
+유료 API 사용 시에만 `OPENAI_API_KEY`를 서버 환경에 두고 `ADATLAS_PAID_API_EXPLICIT_ENABLED=true`를 설정합니다. 어떠한 키도 `NEXT_PUBLIC_*`로 노출하지 않습니다.
 
-```env
-ADATLAS_IMAGE_GENERATION_ENABLED=true
-ADATLAS_IMAGE_MODEL=gpt-image-1.5
-ADATLAS_IMAGE_QUALITY=high
-ADATLAS_IMAGE_SIZE=1024x1024
-ADATLAS_CREATIVE_COUNT=6
-ADATLAS_CREATIVE_CONCURRENCY=1
-ADATLAS_IMAGE_MAX_RETRIES=2
-ADATLAS_MAX_SCENE_CANDIDATES=1
-ADATLAS_SCENE_IDENTITY_VISION_ENABLED=true
-```
-
-생성 흐름은 상세페이지 원본 이미지 수집·역할 분류 → 후킹별 `MasterSceneSpec` → 상품·사용·
-질감 레퍼런스를 high-fidelity 입력으로 사용한 완성형 AI 키비주얼 생성 → 상품 동일성 검사 →
-가격·혜택·CTA·한글 카피와 원본 로고 후처리 → QA 순서입니다. UI는 동시 생성하지 않고
-H01부터 한 장씩 완료 즉시 전달합니다. AI 생성물의 상품 형태·패키지·색상은 상세페이지
-레퍼런스와 비교하고, 정확한 한국어와 로고는 이미지 모델에 맡기지 않습니다. 최종 결과는
-1200×1200으로 정규화됩니다.
-
-주의:
-
-```text
-.env.local은 절대 GitHub에 올리면 안 됩니다.
-NEXT_PUBLIC_OPENAI_API_KEY를 사용하지 않습니다.
-OpenAI API Key는 서버 API route에서만 사용합니다.
-```
-
-`.gitignore`에는 아래 항목이 포함되어야 합니다.
-
-```gitignore
-.env*
-.env
-.env.local
-.env.production
-```
-
----
-
-## 현재 구현 기능
-
-### 1. 광고 이미지 수집/표시
-
-`public/collected-images` 폴더에 저장된 광고 이미지를 불러와 카드 형태로 보여줍니다.
-
-관련 파일:
-
-```text
-public/collected-images
-data/collected-ad-images.json
-app/api/collected-images/route.ts
-app/lib/mvp/collectedImageStore.ts
-```
-
----
-
-### 2. 광고 이미지 AI 분석
-
-각 광고 이미지에 대해 AI 분석을 실행할 수 있습니다.
-
-분석 결과는 아래 항목을 포함합니다.
-
-```text
-OCR 텍스트
-카테고리
-후킹 유형
-소구점
-타깃 감정
-카피 뉘앙스
-시각 톤
-레이아웃 패턴
-왜 먹히는지
-추천 활용 방식
-```
-
-관련 파일:
-
-```text
-app/api/analyze/ad-image/route.ts
-```
-
-OpenAI API 키가 없거나 quota/rate limit 문제가 있으면 앱이 멈추지 않고 mock 결과를 반환하거나 사용자에게 안내해야 합니다.
-
----
-
-### 3. 라벨 저장
-
-AI 분석 결과는 초안입니다.
-최종 데이터는 사용자가 수정한 `finalLabel`입니다.
-
-라벨은 `data/ad-image-labels.json`에 저장됩니다.
-
-관련 파일:
-
-```text
-data/ad-image-labels.json
-app/api/labels/ad-image/route.ts
-app/lib/mvp/labelStore.ts
-```
-
-라벨 구조 예시:
-
-```json
-{
-  "imageId": "",
-  "category": "",
-  "brandName": "",
-  "sourcePlatform": "",
-  "localImagePath": "",
-  "aiDraft": {
-    "ocrText": "",
-    "category": "",
-    "hookType": "",
-    "appealPoint": "",
-    "targetEmotion": "",
-    "copyNuance": "",
-    "visualTone": "",
-    "layoutPattern": "",
-    "whyItWorks": "",
-    "recommendedUse": ""
-  },
-  "finalLabel": {
-    "ocrText": "",
-    "category": "",
-    "hookType": "",
-    "appealPoint": "",
-    "targetEmotion": "",
-    "copyNuance": "",
-    "visualTone": "",
-    "layoutPattern": "",
-    "whyItWorks": "",
-    "recommendedUse": ""
-  },
-  "labeledAt": "ISO_DATE"
-}
-```
-
----
-
-## 기본 라벨 옵션
-
-### 카테고리
-
-```json
-[
-  "식품/선물",
-  "뷰티/스킨케어",
-  "패션/의류",
-  "생활용품",
-  "건강기능식품",
-  "디지털/앱",
-  "인테리어/리빙",
-  "기타"
-]
-```
-
-### 후킹 유형
-
-```json
-[
-  "가격정당화형",
-  "가격소구형",
-  "문제제기형",
-  "공감형",
-  "후기/리뷰형",
-  "UGC형",
-  "비포애프터형",
-  "전문가/권위형",
-  "선물명분형",
-  "긴급/한정형",
-  "반전/궁금증형",
-  "상황제안형"
-]
-```
-
-### 소구점
-
-```json
-[
-  "가성비",
-  "선물명분",
-  "고급감",
-  "실속",
-  "불편해소",
-  "체형보완",
-  "성분/효능",
-  "시간절약",
-  "후기신뢰",
-  "희소성",
-  "즉시혜택",
-  "자기관리",
-  "사회적 인정"
-]
-```
-
----
-
-## 광고문구 생성 기능
-
-라벨 완료된 광고 데이터를 참고하여 새 상품에 맞는 광고문구를 생성합니다.
-
-관련 API:
-
-```text
-app/api/strategy/generate-copy/route.ts
-```
-
-입력값 예시:
-
-```json
-{
-  "productInfo": {
-    "productName": "",
-    "category": "",
-    "price": "",
-    "discountInfo": "",
-    "mainBenefit": "",
-    "targetCustomer": "",
-    "landingUrl": "",
-    "productImagePath": "",
-    "backgroundImagePath": ""
-  },
-  "referenceLabels": []
-}
-```
-
-출력값 예시:
-
-```json
-{
-  "headline": "",
-  "bodyCopy": "",
-  "highlightCopy": "",
-  "bottomBarCopy": "",
-  "cta": "",
-  "price": "",
-  "hookType": "",
-  "appealPoint": "",
-  "whyThisWorks": ""
-}
-```
-
-문구 생성 원칙:
-
-```text
-기존 레퍼런스 문구를 그대로 복사하지 않습니다.
-라벨 데이터의 구조와 뉘앙스만 참고합니다.
-한국 이커머스 퍼포먼스 광고 톤으로 작성합니다.
-“할인 중입니다” 같은 일반적인 문구는 피합니다.
-가격정당화, 선물명분, 문제제기, 후기형, 공감형, 긴급특가형 등의 의도를 반영합니다.
-```
-
----
-
-## Canvas/SVG 배너 생성 기능
-
-AdAtlas는 Canva API가 아니라 내부 Canvas/SVG 기반 렌더링 방식으로 광고 배너를 생성합니다.
-
-목표:
-
-```text
-상품 정보
-+ 상품 이미지
-+ 배경 이미지
-+ 생성된 광고문구
-+ 템플릿
-+ 색상/폰트 스타일
-= 1200x1200 PNG 배너
-```
-
-관련 API:
-
-```text
-app/api/render/template-ad/route.ts
-```
-
-생성 결과 저장 위치:
-
-```text
-public/generated-ads
-```
-
----
-
-## 상품 이미지 업로드
-
-상품 이미지는 아래 폴더에 저장합니다.
-
-```text
-public/product-images
-```
-
-업로드 API:
-
-```text
-app/api/upload/product-image/route.ts
-```
-
-지원 형식:
-
-```text
-png
-jpg
-jpeg
-webp
-```
-
-투명 PNG를 사용하면 상품 외곽선/그림자 효과를 자연스럽게 적용할 수 있습니다.
-
----
-
-## 배경 이미지 업로드
-
-배경 이미지는 아래 폴더에 저장합니다.
-
-```text
-public/background-images
-```
-
-업로드 API:
-
-```text
-app/api/upload/background-image/route.ts
-```
-
-배경 이미지 처리 방식:
-
-```text
-1200x1200 캔버스 전체에 cover 방식 배치
-비율 유지
-중앙 기준 crop
-blur 적용 가능
-dark overlay 적용 가능
-opacity 조절 가능
-```
-
----
-
-## 상품 외곽선/그림자 효과
-
-투명 PNG 상품 이미지일 경우 알파 채널 기준으로 상품 모양을 따라 외곽선과 그림자를 적용합니다.
-
-옵션 예시:
-
-```json
-{
-  "productEffect": {
-    "outline": true,
-    "outlineColor": "#ffffff",
-    "outlineWidth": 10,
-    "shadow": true,
-    "shadowColor": "rgba(0,0,0,0.35)",
-    "shadowBlur": 18,
-    "shadowOffsetX": 0,
-    "shadowOffsetY": 8
-  }
-}
-```
-
-주의:
-
-```text
-Canvas/SVG는 상품 이미지를 자동으로 누끼 따는 기능이 아닙니다.
-이미 누끼가 따진 투명 PNG에 테두리와 그림자를 적용하는 기능입니다.
-자동 누끼 제거는 `REMOVE_BG_API_KEY`가 설정된 경우 remove.bg API로 처리하며, 결과 PNG는 `public/processed-products`에 저장됩니다.
-```
-
----
-
-## 배너 템플릿 10종
-
-템플릿 설정 파일:
-
-```text
-lib/bannerTemplates.ts
-```
-
-각 템플릿은 레이아웃뿐 아니라 색감, 폰트 스타일, 강조 박스, CTA 스타일을 포함합니다.
-
-### 1. shock-headline-001
-
-감탄 후킹형
-
-```text
-용도: 식품, 특가, 신제품, 후기형 광고
-스타일: 흰 배경, 빨강 headline, 노란 강조 박스, 빨간 하단 바, CTA 연한 레드
-```
-
-### 2. price-proof-002
-
-가격정당화형
-
-```text
-용도: 한우, 선물세트, 식품, 공구 상품
-스타일: 빨강/노랑/검정, 가격 크게, 정상가 취소선, 할인가 강조
-```
-
-### 3. review-reaction-003
-
-후기 반응형
-
-```text
-용도: 앱, 뷰티, 생활용품, UGC형 광고
-스타일: 후기 카드, 말풍선, 밝은 회색/화이트, 자연스러운 굵기
-```
-
-### 4. problem-solution-004
-
-문제제기 해결형
-
-```text
-용도: 뷰티, 건강식품, 기능성 제품
-스타일: 문제 문구 강한 색상, 해결 문구 안정감 있는 색상, pill 태그
-```
-
-### 5. ugc-meme-005
-
-밈/공감형
-
-```text
-용도: 건강식품, 간식, MZ 타깃
-스타일: 짤 느낌, 큰 문구, 외곽선/그림자 텍스트
-```
-
-### 6. premium-gift-006
-
-선물명분 고급감형
-
-```text
-용도: 한우, 과일세트, 화장품, 명절/부모님 선물
-스타일: 블랙/딥브라운/골드, 고급감, 과한 형광색 금지
-```
-
-### 7. benefit-tags-007
-
-기능 태그형
-
-```text
-용도: 뷰티, 스킨케어, 건강기능식품
-스타일: 민트/블루/라벤더/베이지, 원형/캡슐형 효능 태그
-```
-
-### 8. lifestyle-scene-008
-
-상황 제안형
-
-```text
-용도: 패션, 리빙, 식품, 캠핑/여행
-스타일: 배경 이미지 활용, 반투명 텍스트 박스, 감성적이지만 전환형
-```
-
-### 9. comparison-before-after-009
-
-비교 전후형
-
-```text
-용도: 앱, 정리 서비스, 뷰티, 생활 개선 상품
-스타일: 좌우 분할, Before 회색/어두운 톤, After 밝은 톤, VS/화살표 요소
-```
-
-### 10. home-shopping-max-010
-
-홈쇼핑 강전환형
-
-```text
-용도: 공구, 특가, 식품, 생활용품, 긴급 프로모션
-스타일: 빨강/노랑/검정 고대비, 매우 굵은 글씨, 혜택 박스 여러 개
-```
-
----
-
-## 스타일 조정 기능
-
-광고 생성 섹션에서 아래 스타일을 조정할 수 있습니다.
-
-```text
-backgroundColor
-headlineColor
-highlightBackground
-bottomBarColor
-ctaBarColor
-headlineFontSize
-bodyFontSize
-highlightFontSize
-priceFontSize
-backgroundBlur
-backgroundDarkOverlay
-backgroundOpacity
-textShadow
-textStroke
-product outline
-product outline color
-product outline width
-product shadow
-product shadow strength
-```
-
-기본은 템플릿 스타일을 사용하고, 사용자가 수정한 값만 `styleOverrides`로 전달합니다.
-
----
-
-## 프론트 광고 생성 흐름
-
-광고 생성 섹션의 목표 흐름:
-
-```text
-1. 상품 정보 입력
-2. 상품 이미지 업로드
-3. 배경 이미지 업로드
-4. 라벨 완료된 레퍼런스 1~3개 선택
-5. 광고문구 생성
-6. 생성된 문구 수정
-7. 템플릿 10종 중 선택
-8. 색감/글씨 크기/배경/테두리 효과 조정
-9. 배너 생성
-10. 1200x1200 PNG 미리보기
-11. PNG 다운로드
-```
-
----
-
-## 비용 관리
-
-OpenAI API는 아래 기능에서만 호출합니다.
-
-```text
-AI 이미지 분석
-광고문구 생성
-```
-
-아래 기능에서는 OpenAI API를 호출하지 않습니다.
-
-```text
-템플릿 선택
-색상 변경
-폰트 크기 변경
-Canvas/SVG 배너 생성
-PNG 다운로드
-```
-
----
-
-## 현재 단계에서 하지 않는 것
-
-아래 기능은 현재 단계에서 구현하지 않습니다.
-
-```text
-Canva API 연동
-Figma API 연동
-GPT 이미지 API 호출
-ComfyUI 연결
-상품 URL 자동 추출
-자동 크롤링 수정
-Qwen 파인튜닝
-자동 누끼 제거
-유료 폰트 파일 추가
-```
-
----
-
-## Git 주의사항
-
-절대 커밋하면 안 되는 파일:
-
-```text
-.env
-.env.local
-.env.production
-```
-
-생성 결과물 폴더는 Git에 올리지 않는 것을 권장합니다.
-
-```gitignore
-public/generated-ads/*
-!public/generated-ads/.gitkeep
-```
-
----
-
-## 커밋 예시
+## 검증
 
 ```bash
-git add .
-git status
-git commit -m "feat: implement ad image labeling and banner generation"
-git push
+npm run typecheck
+npm run lint
+npm test
+npm run build
 ```
 
-커밋 전 반드시 확인:
+기능 변경은 기존 URL 안전성, 사이트 후보 분석, 자동 제작, 영상 협업, 소재코드, 후킹 실험 테스트를 함께 통과해야 합니다.
 
-```text
-.env.local이 git status에 나오면 커밋하지 말 것
-Changes not staged for commit이 남아있으면 git add . 다시 실행
-```
+## 운영 문서
 
----
+- [자동 제작 운영 가이드](docs/auto-production-operations.md)
+- [MVP 테스트 기획서](docs/adatlantis-mvp-plan.md)
+- [레거시 배경 라이브러리 문서](docs/background-library.md)
 
-## 앞으로의 개발 우선순위
+## 현재 한계
 
-1. 광고 이미지 라벨링 안정화
-2. finalLabel 기반 문구 생성 정확도 개선
-3. 상품 이미지/배경 이미지 업로드 안정화
-4. Canvas/SVG 템플릿 10종 완성
-5. 스타일 조정 패널 개선
-6. PNG 생성 품질 개선
-7. 라벨 데이터가 충분히 쌓인 뒤 파인튜닝 검토
+- AI가 만든 패키지 라벨과 한국어가 매번 완벽하다고 보장할 수 없어 독립 QA와 사용자 승인이 필요합니다.
+- 로컬 Codex 로그인, 이미지 생성 기능, 충분한 실행 시간이 필요합니다.
+- 사이트 URL 분석은 공개 페이지에서 확인되는 사실만 사용하며 판매량·전환율·ROAS를 예측하지 않습니다.
+- JSON 파일 저장은 단일 서버 MVP에 적합하며 다중 인스턴스 운영에는 공유 데이터베이스와 작업 큐가 필요합니다.
+- 사이트 내부 알림만 구현되어 있으며 Slack·메일 알림은 아직 제공하지 않습니다.
+
+## 향후 고도화 방향
+
+- 다중 서버용 영속 작업 큐와 객체 저장소
+- 승인·제외·실제 광고 성과를 결합한 광고주별 장기 학습
+- 소재 피로와 재테스트 시점 탐지
+- Slack·메일 알림과 팀 승인 워크플로
+- 상품 동일성·한국어 가독성 자동 평가의 정밀도 향상

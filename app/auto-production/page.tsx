@@ -1,12 +1,7 @@
-import { FeaturePageShell } from "../components/AppFeatureNavigation";
-import { AutoProductionWorkspace } from "../components/auto-production/AutoProductionWorkspace";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default function AutoProductionPage() {
-  return (
-    <FeaturePageShell activeFeature="auto-production">
-      <AutoProductionWorkspace />
-    </FeaturePageShell>
-  );
+  redirect("/admin/auto-production");
 }

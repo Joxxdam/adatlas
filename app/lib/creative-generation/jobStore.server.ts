@@ -4,7 +4,7 @@ import path from "node:path";
 import type { GenerationJob, GenerationJobStatus } from "./types";
 import { executionResults } from "./jobRunnerPolicy";
 
-const jobsDirectory = path.join(process.cwd(), "data", "creative-generation-jobs");
+const jobsDirectory = path.join(process.cwd(), ".data", "creative-generation", "jobs");
 const globalKey = Symbol.for("daywiz.creative-generation.job-store-locks");
 const globalState = globalThis as typeof globalThis & {
   [globalKey]?: Map<string, Promise<unknown>>;
@@ -37,6 +37,8 @@ const terminalStatuses = new Set([
   "cancelled",
   "korean-review",
   "product-review",
+  "quality-review",
+  "group-review",
   "approved",
   "excluded",
 ]);

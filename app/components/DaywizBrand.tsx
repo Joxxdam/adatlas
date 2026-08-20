@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export function DaywizBrand({
   className = "",
   subtitle,
@@ -7,7 +9,7 @@ export function DaywizBrand({
 }) {
   return (
     <span className={`daywiz-logo-lockup ${className}`.trim()}>
-      <img alt="DAYWIZ" src="/daywiz-logo.svg?v=3" />
+      <Image alt="DAYWIZ" height={64} priority src="/daywiz-logo.svg" width={228} />
       {subtitle ? <small>{subtitle}</small> : null}
     </span>
   );

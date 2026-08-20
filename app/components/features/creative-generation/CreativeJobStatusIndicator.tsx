@@ -7,7 +7,7 @@ import type { GenerationJob, GenerationJobSummary } from "../../../lib/creative-
 const storedJobKey = "daywiz-active-creative-job-id";
 
 function summarize(job: GenerationJob, runnerActive: boolean): GenerationJobSummary {
-  const completed = new Set(["success", "failed", "korean-review", "product-review", "approved", "excluded"]);
+  const completed = new Set(["success", "failed", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"]);
   const requested = job.executionResultIds?.length ? new Set(job.executionResultIds) : null;
   const results = requested ? job.results.filter((result) => requested.has(result.id)) : job.results;
   return {
@@ -20,7 +20,7 @@ function summarize(job: GenerationJob, runnerActive: boolean): GenerationJobSumm
     totalCount: results.length,
     completedCount: results.filter((result) => completed.has(result.status)).length,
     successCount: results.filter((result) => result.status === "success" || result.status === "approved").length,
-    failedCount: results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)).length,
+    failedCount: results.filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)).length,
     currentHookCode: results.find((result) => result.status === "running")?.hookPlan.hookCode,
     status: job.status,
     runnerActive,
@@ -29,7 +29,7 @@ function summarize(job: GenerationJob, runnerActive: boolean): GenerationJobSumm
     updatedAt: job.updatedAt,
     completedAt: job.completedAt,
     completedResults: results.filter((result) => completed.has(result.status)),
-    failedResults: results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)),
+    failedResults: results.filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)),
   };
 }
 

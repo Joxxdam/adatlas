@@ -1,20 +1,16 @@
 import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { readCreativeRasterAsset } from "./assets.server.ts";
-import type { GenerationJob } from "./types.ts";
+import type { CreativeImageAsset, GenerationJob } from "./types.ts";
 import { buildNativeFinalCreativePrompt, NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt.ts";
 
-type PromptBrandMemory = {
-  advertiserId: string;
-  approvedDirections: string[];
-  rejectedDirections: string[];
-  feedback: string[];
-  updatedAt: string;
-};
+type PromptBrandMemory = import("./codexRegistry.server.ts").AdvertiserBrandMemory;
 
-const PUBLIC_ROOT = path.resolve(process.cwd(), "public");
-const GENERATED_ROOT = path.join(PUBLIC_ROOT, "generated");
+const PUBLIC_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "public");
+const LEGACY_GENERATED_ROOT = path.join(PUBLIC_ROOT, "generated");
+const GENERATED_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), ".data", "generated");
 const SAFE = /^[a-zA-Z0-9가-힣._-]+$/;
 export const MAX_FINAL_BYTES = 800 * 1024;
 const TARGET_BYTES = 790 * 1024;
@@ -24,29 +20,50 @@ function segment(value: string) {
   return value;
 }
 export function nativeJobDirectory(advertiserId: string, jobId: string) {
-  return path.join(GENERATED_ROOT, segment(advertiserId), segment(jobId));
+  return path.join(/* turbopackIgnore: true */ GENERATED_ROOT, segment(advertiserId), segment(jobId));
 }
 export function nativeHookDirectory(advertiserId: string, jobId: string, hookCode: string) {
-  return path.join(nativeJobDirectory(advertiserId, jobId), segment(hookCode));
+  return path.join(/* turbopackIgnore: true */ nativeJobDirectory(advertiserId, jobId), segment(hookCode));
 }
-export function publicPathFor(file: string) {
-  const resolved = path.resolve(file);
-  if (!resolved.startsWith(`${PUBLIC_ROOT}${path.sep}`)) throw new Error("public 외부 결과는 노출할 수 없습니다.");
-  return `/${path.relative(PUBLIC_ROOT, resolved).split(path.sep).join("/")}`;
+export function nativeResultImageUrl(jobId: string, resultId: string) {
+  return `/api/creative-generation/jobs/${encodeURIComponent(jobId)}/results/${encodeURIComponent(resultId)}/image`;
 }
 
-export async function prepareNativeReferenceImages(job: GenerationJob) {
-  const advertiserId = job.advertiserId || "unknown-advertiser";
-  const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references");
-  await mkdir(directory, { recursive: true });
-  const unique = [...job.productTruth.imageAssets, ...job.productTruth.referenceImages]
+export function selectNativeReferenceSources(job: GenerationJob): CreativeImageAsset[] {
+  const rolePriority = new Map([
+    ["primary-product", 700],
+    ["front-package", 650],
+    ["option", 560],
+    ["size-reference", 530],
+    ["usage", 500],
+    ["worn", 500],
+    ["cooked", 500],
+    ["lifestyle", 460],
+    ["texture", 420],
+    ["ingredient", 380],
+    ["product-detail", 350],
+  ]);
+  const profileSources: CreativeImageAsset[] = (job.productReferenceProfile?.referenceImages || [])
+    .filter((image) => image.usableForGeneration && !image.duplicateOf && !image.watermarkRisk)
+    .filter((image) => !/\/(?:processed-products|product-cutouts)\//i.test(image.url))
+    .sort((left, right) => (rolePriority.get(right.role) || 0) + right.importance - (rolePriority.get(left.role) || 0) - left.importance)
+    .map((image) => ({
+      id: image.id,
+      path: image.url,
+      role: image.role === "lifestyle" || image.role === "usage" || image.role === "worn" || image.role === "cooked" ? "product-lifestyle" as const : image.role === "product-detail" || image.role === "texture" || image.role === "ingredient" ? "detail-image" as const : "product-packshot" as const,
+      source: "product-page" as const,
+      verified: true,
+      reason: image.description,
+      validationStatus: "confirmed" as const,
+    }));
+  const unique = [...profileSources, ...job.productTruth.imageAssets, ...job.productTruth.referenceImages]
     .filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index);
   const originals = unique.filter(
     (asset) =>
       asset.role !== "product-cutout" &&
       !/\/(?:processed-products|product-cutouts)\//i.test(asset.path)
   );
-  const sources = (originals.length ? originals : unique)
+  return originals
     .sort((left, right) => {
       const score = (asset: (typeof unique)[number]) => {
         if (asset.role === "product-packshot") return 500;
@@ -58,7 +75,14 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
       };
       return score(right) - score(left);
     })
-    .slice(0, 4);
+    .slice(0, 5);
+}
+
+export async function prepareNativeReferenceImages(job: GenerationJob) {
+  const advertiserId = job.advertiserId || "unknown-advertiser";
+  const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references");
+  await mkdir(directory, { recursive: true });
+  const sources = selectNativeReferenceSources(job);
   const files: string[] = [];
   for (let index = 0; index < sources.length; index += 1) {
     const file = path.join(directory, `reference-${index + 1}.png`);
@@ -98,6 +122,26 @@ export async function optimizeNativeFinalImage(inputFile: string, outputFile: st
   await writeFile(temporary, final);
   await rename(temporary, outputFile);
   return { file: outputFile, bytes: final.length, width: 1200 as const, height: 1200 as const, format: "jpeg" as const, quality: selectedQuality, colorSpace: "srgb" as const };
+}
+
+export async function createNativeContactSheet(job: GenerationJob) {
+  const entries = job.results
+    .filter((result) => result.nativeCreative?.finalPath && ["success", "approved"].includes(result.status))
+    .slice(0, 6);
+  if (entries.length !== 6) throw new Error("그룹 검수에는 검증된 광고 6장이 필요합니다.");
+  const tileSize = 400;
+  const composites = await Promise.all(entries.map(async (result, index) => {
+    const input = await sharp(result.nativeCreative!.finalPath!).resize(tileSize, tileSize, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
+    return { input, left: (index % 3) * tileSize, top: Math.floor(index / 3) * tileSize };
+  }));
+  const directory = path.join(nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id), "qa");
+  const file = path.join(directory, `group-contact-sheet-${Date.now()}.jpg`);
+  await mkdir(directory, { recursive: true });
+  await sharp({ create: { width: 1200, height: 800, channels: 3, background: "#ffffff" } })
+    .composite(composites)
+    .jpeg({ quality: 88, mozjpeg: true })
+    .toFile(file);
+  return file;
 }
 
 async function atomicJson(file: string, value: unknown) {
@@ -193,9 +237,22 @@ export async function writeNativeManifest(job: GenerationJob, brandMemory?: Prom
 
 export function resolveValidatedNativeDownload(job: GenerationJob, resultId: string) {
   const result = job.results.find((item) => item.id === resultId);
-  if (!result?.imagePath || !result.imagePath.startsWith("/generated/")) throw new Error("검증된 생성 결과가 없습니다.");
-  const file = path.resolve(PUBLIC_ROOT, result.imagePath.replace(/^\/+/, ""));
   const expected = nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id);
+  const legacyExpected = path.join(LEGACY_GENERATED_ROOT, segment(job.advertiserId || "unknown-advertiser"), segment(job.id));
+  let file = result?.nativeCreative?.finalPath ? path.resolve(result.nativeCreative.finalPath) : "";
+  if (file.startsWith(`${legacyExpected}${path.sep}`)) {
+    const migrated = path.join(/* turbopackIgnore: true */ expected, path.relative(legacyExpected, file));
+    if (existsSync(migrated)) file = migrated;
+  }
+  if (!file && result?.imagePath?.startsWith("/generated/")) {
+    const legacy = path.resolve(PUBLIC_ROOT, result.imagePath.replace(/^\/+/, ""));
+    const migrated = path.join(/* turbopackIgnore: true */ expected, path.relative(legacyExpected, legacy));
+    file = existsSync(migrated) ? migrated : legacy;
+  }
+  if (!file) throw new Error("검증된 생성 결과가 없습니다.");
+  if (file.startsWith(`${legacyExpected}${path.sep}`)) {
+    throw new Error("공개 폴더의 이전 생성물을 비공개 저장소로 이전해야 합니다.");
+  }
   if (!file.startsWith(`${expected}${path.sep}`)) throw new Error("결과 파일 경로가 작업 범위를 벗어났습니다.");
   return file;
 }

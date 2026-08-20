@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -28,6 +29,16 @@ import {
   clearSiteAnalysisRateLimits,
   SiteAnalysisRateLimitError,
 } from "../app/lib/site-candidates/rateLimit.server.ts";
+
+test("사이트 후보 분석 캐시는 TTL·원본 URL·분석·선택 결과를 서버 파일에 영속화한다", async () => {
+  const source = await readFile(new URL("../app/lib/site-candidates/cache.server.ts", import.meta.url), "utf8");
+  assert.match(source, /\.data", "site-candidates", "cache\.json/);
+  assert.match(source, /savedAt/);
+  assert.match(source, /discoveryByUrl/);
+  assert.match(source, /selections/);
+  assert.match(source, /expiresAt/);
+  assert.match(source, /renameSync/);
+});
 
 const PRODUCT_HTML = `
 <!doctype html>

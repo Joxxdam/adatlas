@@ -239,28 +239,36 @@ function rawScores(input: {
   variant: number;
 }): HookHypothesisScore {
   const evidenceStrength = Math.min(100, Math.max(20, factStrength(input.truth, input.factIds)));
+  const specificity = Math.min(96, 48 + input.factIds.length * 12);
   const purchaseReasonStrength = ["problem-solution", "price-value", "feature-usp", "convenience", "bundle-choice"].includes(input.primaryTag)
     ? 82
     : 68;
   const distinctiveness = Math.min(94, 58 + input.factIds.length * 9 + input.variant * 3);
+  const attentionPotential = Math.min(94, 68 + input.variant * 5);
   const visualizability = ["sensory-experience", "usage-occasion", "problem-solution", "bundle-choice"].includes(input.primaryTag) ? 90 : 76;
+  const advertisingFit = Math.min(96, Math.round((purchaseReasonStrength + visualizability) / 2));
   const claimSafety = input.factIds.length ? 96 : 72;
   const categoryPrior = Math.max(0, Math.min(100, input.prior?.[input.primaryTag] ?? 50));
   const novelty = Math.min(92, 64 + input.variant * 6 + (input.sceneKey.includes("detail") ? 8 : 0));
   const total = Math.round(
-    evidenceStrength * 0.25 +
-      purchaseReasonStrength * 0.2 +
-      distinctiveness * 0.15 +
-      visualizability * 0.15 +
+    evidenceStrength * 0.18 +
+      specificity * 0.12 +
+      purchaseReasonStrength * 0.12 +
+      distinctiveness * 0.12 +
+      attentionPotential * 0.1 +
+      visualizability * 0.12 +
+      advertisingFit * 0.09 +
       claimSafety * 0.1 +
-      categoryPrior * 0.1 +
-      novelty * 0.05
+      categoryPrior * 0.03 +
+      novelty * 0.02
   );
-  return { evidenceStrength, purchaseReasonStrength, distinctiveness, visualizability, claimSafety, categoryPrior, novelty, total };
+  return { evidenceStrength, specificity, purchaseReasonStrength, distinctiveness, attentionPotential, visualizability, advertisingFit, claimSafety, categoryPrior, novelty, total };
 }
 
-function makeBrief(input: {
+export function buildHookCreativeBrief(input: {
   id: string;
+  advertiserId?: string;
+  productId?: string;
   tag: HookTaxonomyTag;
   mainHook: string;
   subCopy: string;
@@ -271,6 +279,9 @@ function makeBrief(input: {
 }): HookCreativeBrief {
   return {
     creativeId: `creative-${input.id}`,
+    advertiserId: input.advertiserId || "unassigned-advertiser",
+    productId: input.productId || "unassigned-product",
+    hookId: input.id,
     hookCode: "candidate",
     hypothesisId: input.id,
     mainHook: input.mainHook,
@@ -303,6 +314,20 @@ function makeBrief(input: {
     textRendering: "ai-native-final",
     requiredKoreanText: [input.mainHook, input.subCopy],
     negativePrompt: ["배경만 생성", "빈 텍스트 박스", "상품 사후 합성", "템플릿 반복"],
+    targetCustomer: "상품 상세페이지에서 확인되는 핵심 고객",
+    customerSituation: input.customerReason,
+    intendedReaction: `${tagLabels[input.tag]} 메시지를 즉시 이해하고 상품에 관심을 보임`,
+    visualArchetype: "product-hero",
+    heroScene: input.scene,
+    humanRole: "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+    cameraAngle: "상품 형태를 왜곡하지 않는 상업 광고 시점",
+    colorPalette: "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+    lighting: "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+    typographyDirection: "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+    supportingElements: [],
+    prohibitedClaims: ["확인되지 않은 효능·가격·구성·후기·수치"],
+    differentiationReason: `${input.id}의 고객 긴장과 장면을 다른 후킹과 구분`,
+    differentiationFromOtherHooks: `${input.id}의 고객 긴장과 장면을 다른 후킹과 구분`,
   };
 }
 
@@ -517,7 +542,14 @@ export function generateHookHypothesisCandidates(
       visualStory: draft.visualStory,
       score,
       status: "candidate" as const,
-      creativeBrief: makeBrief({
+      customerTension: draft.reason,
+      verifiedEvidence: evidence.map((item) => item.fact),
+      intendedReaction: `${tagLabels[draft.tag]} 메시지에 즉시 관심을 보이고 상품 이유를 이해`,
+      visualConcept: draft.scene,
+      prohibitedClaims: ["확인되지 않은 효능·가격·구성·후기·수치", "실제 상품과 다른 패키지·옵션"],
+      confidence: score.evidenceStrength >= 75 ? "high" as const : score.evidenceStrength >= 48 ? "medium" as const : "low" as const,
+      generationSource: "fallback" as const,
+      creativeBrief: buildHookCreativeBrief({
         id,
         tag: draft.tag,
         mainHook: words(draft.main, 28),
@@ -534,15 +566,12 @@ export function generateHookHypothesisCandidates(
 export function selectDiverseHookHypotheses(candidates: HookHypothesisCandidate[], count = 6) {
   const sorted = [...candidates].sort((left, right) => right.score.total - left.score.total || left.id.localeCompare(right.id));
   const selected: HookHypothesisCandidate[] = [];
-  const tagCounts = new Map<HookTaxonomyTag, number>();
   const reasons = new Set<string>();
   const scenes = new Set<string>();
   const trySelect = (candidate: HookHypothesisCandidate, strict: boolean) => {
-    if ((tagCounts.get(candidate.primaryTag) || 0) >= 2) return false;
     if (strict && (reasons.has(candidate.customerReason) || scenes.has(candidate.sceneKey))) return false;
     if (selected.some((item) => item.mainHook === candidate.mainHook)) return false;
     selected.push({ ...candidate, status: "selected" });
-    tagCounts.set(candidate.primaryTag, (tagCounts.get(candidate.primaryTag) || 0) + 1);
     reasons.add(candidate.customerReason);
     scenes.add(candidate.sceneKey);
     return true;

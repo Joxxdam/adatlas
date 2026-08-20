@@ -12,6 +12,8 @@ import { loadAutoProductionCandidates } from "./productSource.server";
 import { selectAutoProductionCandidates } from "./productSelector";
 import { autoProductionRepository } from "./productionRepository.server";
 import { nextScheduledAt, scheduledRunKey, seoulClock } from "./schedule";
+import { createAutoProductionTaskId } from "./taskIdentity";
+import { candidateIdentityKeys } from "./productIdentity";
 import type {
   AutoProductionAdvertiserConfig,
   AutoProductionPreview,
@@ -31,10 +33,6 @@ function wait(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function taskId(runId: string, productId: string) {
-  return `auto-task-${Buffer.from(`${runId}:${productId}`).toString("base64url").slice(0, 32)}`;
-}
-
 function safeMessage(error: unknown, fallback: string) {
   return (error instanceof Error ? error.message : fallback)
     .replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일")
@@ -44,7 +42,7 @@ function safeMessage(error: unknown, fallback: string) {
 function productTask(runId: string, candidate: Awaited<ReturnType<typeof loadAutoProductionCandidates>>["candidates"][number]): AutoProductionProductTask {
   const now = new Date().toISOString();
   return {
-    id: taskId(runId, candidate.id),
+    id: createAutoProductionTaskId(runId, candidate.id),
     candidate,
     status: "selected",
     selectedRole: candidate.recommendationRole,
@@ -96,8 +94,20 @@ export async function previewAutoProduction(config: AutoProductionAdvertiserConf
   const runs = await autoProductionRepository.list({ advertiserId: config.advertiserId, limit: 100 });
   const recent = recentTasks(runs, config.advertiserId, config.productCooldownDays, now)
     .filter((task) => task.status === "completed");
-  const recentIds = new Set(recent.flatMap((task) => [task.candidate.id, task.candidate.externalId || ""]).filter(Boolean));
+  const recentFamilies = recentTasks(runs, config.advertiserId, config.productFamilyCooldownDays, now)
+    .filter((task) => task.status === "completed");
+  const recentIds = new Set(recent.flatMap((task) => [
+    task.candidate.id,
+    task.candidate.externalId || "",
+    ...candidateIdentityKeys(task.candidate).filter((key) => !key.startsWith("family:")),
+  ]).filter(Boolean));
+  for (const task of recentFamilies) {
+    for (const key of candidateIdentityKeys(task.candidate)) if (key.startsWith("family:")) recentIds.add(key);
+  }
   const candidates = selectAutoProductionCandidates(source.candidates, config, recentIds);
+  const imageWarnings = source.candidates
+    .filter((candidate) => candidate.imageVerificationStatus && candidate.imageVerificationStatus !== "verified")
+    .map((candidate) => `${candidate.productName}: 상품 이미지 확인 필요 · ${candidate.imageVerificationReasons?.[0] || "정확한 판매 구성 이미지를 확인하지 못했습니다."}`);
   const maxPerProduct = Math.max(1, Math.min(6, config.creativesPerProduct));
   const expectedImages = candidates.reduce(
     (sum, candidate) => sum + (config.fullHookTestForNewProducts && candidate.isNew ? 6 : maxPerProduct),
@@ -111,7 +121,7 @@ export async function previewAutoProduction(config: AutoProductionAdvertiserConf
     fallbackReason: source.fallbackReason,
     expectedImages: Math.min(config.maxImagesPerRun, expectedImages),
     candidates,
-    warnings: source.warnings,
+    warnings: [...source.warnings, ...imageWarnings],
   };
 }
 
@@ -175,6 +185,7 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
   const queuedJob = await creativeGenerationJobStore.update(job.id, (current) => ({
     ...current,
     executionResultIds,
+    representativeResultId: executionResultIds[0],
     status: "pending",
   }));
   await autoProductionRepository.update(run.id, (current) => ({
@@ -265,23 +276,26 @@ export async function syncAutoProductionRun(runId: string) {
   const run = await autoProductionRepository.get(runId);
   if (!run) return null;
   const tasks = await Promise.all(run.tasks.map(async (task) => {
-    if (!task.generationJobId || terminalProductStatuses.has(task.status)) return task;
+    if (!task.generationJobId || (terminalProductStatuses.has(task.status) && task.adCopy && task.adCopy.status !== "generating")) return task;
     const job = await creativeGenerationJobStore.get(task.generationJobId);
     if (!job) return { ...task, status: "failed" as const, error: "연결된 광고 생성 작업을 찾지 못했습니다.", updatedAt: new Date().toISOString() };
     const scoped = executionResults(job);
     const successful = scoped.filter((result) => ["success", "approved"].includes(result.status)).length;
-    const failed = scoped.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)).length;
-    const pending = scoped.some((result) => ["pending", "running"].includes(result.status));
+    const failed = scoped.filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)).length;
+    const imagePending = scoped.some((result) => ["pending", "running"].includes(result.status));
+    const copyPending = successful > 0 && (!job.adCopy || job.adCopy.status === "generating");
+    const pending = imagePending || copyPending;
     return {
       ...task,
       status: pending ? (scoped.some((result) => result.status === "running") ? "generating" as const : "queued" as const) : successful ? "completed" as const : failed ? "failed" as const : task.status,
       results: resultsFromJob(job),
+      adCopy: job.adCopy,
       error: failed && !successful ? scoped.find((result) => result.error)?.error : task.error,
       updatedAt: new Date().toISOString(),
     };
   }));
   const completedImages = tasks.flatMap((task) => task.results).filter((result) => ["success", "approved"].includes(result.status)).length;
-  const failedImages = tasks.flatMap((task) => task.results).filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)).length;
+  const failedImages = tasks.flatMap((task) => task.results).filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)).length;
   const allTerminal = tasks.every((task) => terminalProductStatuses.has(task.status));
   const status = allTerminal
     ? completedImages && failedImages ? "partial" : completedImages ? "completed" : tasks.every((task) => task.status.startsWith("skipped")) ? "skipped" : "failed"

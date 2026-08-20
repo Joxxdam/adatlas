@@ -9,6 +9,9 @@ import { eligibleAutoProductionCandidates, plannedImageCount, selectAutoProducti
 import { isTrustedAutoProductionRequest } from "../app/lib/auto-production/requestPolicy.ts";
 import { dueAdvertisers, isScheduleDue, scheduledRunKey, seoulClock } from "../app/lib/auto-production/schedule.ts";
 import { runCandidateSourceFallback } from "../app/lib/auto-production/sourceFallback.ts";
+import { createAutoProductionTaskId, normalizeAutoProductionTaskIds } from "../app/lib/auto-production/taskIdentity.ts";
+import { candidateIdentityKeys, normalizedProductFamilyName, productFamilyKey } from "../app/lib/auto-production/productIdentity.ts";
+import { verifyAutoProductionProductImages } from "../app/lib/auto-production/productImageValidation.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -25,6 +28,7 @@ function config(overrides = {}) {
     creativesPerProduct: 1,
     fullHookTestForNewProducts: false,
     productCooldownDays: 7,
+    productFamilyCooldownDays: 14,
     hookCooldownDays: 14,
     maxImagesPerRun: 4,
     dataSource: "auto",
@@ -156,6 +160,18 @@ test("1. 오전 9시 Asia/Seoul에 활성 광고주가 실행 대상으로 선�
   assert.equal(isScheduleDue(config(), at), true);
 });
 
+test("서로 다른 상품 작업은 같은 실행에서도 고유한 React key를 갖고 기존 중복 ID도 복구된다", () => {
+  const first = createAutoProductionTaskId("auto-run-same", "product-a");
+  const second = createAutoProductionTaskId("auto-run-same", "product-b");
+  assert.notEqual(first, second);
+  const run = {
+    id: "auto-run-same",
+    tasks: [candidate("a"), candidate("b")].map((item) => ({ id: "auto-task-duplicated", candidate: item })),
+  };
+  const normalized = normalizeAutoProductionTaskIds(run);
+  assert.equal(new Set(normalized.tasks.map((task) => task.id)).size, 2);
+});
+
 test("2. 비활성 광고주는 실행되지 않는다", () => {
   assert.equal(isScheduleDue(config({ enabled: false }), new Date("2026-08-20T01:00:00Z")), false);
 });
@@ -170,6 +186,62 @@ test("4. 동일 runKey는 두 번 실행 대상으로 선택되지 않는다", (
   const key = scheduledRunKey(active, at);
   assert.equal(dueAdvertisers([active], new Set([key]), at).length, 0);
   assert.equal(hasDuplicateRunKey([{ runKey: key }], key), true);
+});
+
+test("자동제작은 관리 도구 경로로 분리되고 기존 경로는 redirect 된다", async () => {
+  const navigation = await read("app/components/AppFeatureNavigation.tsx");
+  const legacyPage = await read("app/auto-production/page.tsx");
+  const adminPage = await read("app/admin/auto-production/page.tsx");
+  const mainBlock = navigation.slice(navigation.indexOf("const FEATURES"), navigation.indexOf("const AUXILIARY_FEATURES"));
+  assert.doesNotMatch(mainBlock, /auto-production/);
+  assert.match(navigation, /\/admin\/auto-production/);
+  assert.match(legacyPage, /redirect\("\/admin\/auto-production"\)/);
+  assert.match(adminPage, /AutoProductionWorkspace/);
+});
+
+test("기본 광고주 3곳은 매일 오전 9시, 상품 4개, 기본 이미지 1장으로 설정된다", async () => {
+  const seeds = JSON.parse(await read("data/auto-production/advertiser-seed.json"));
+  assert.deepEqual(seeds.map((item) => item.advertiserName), ["국대한우", "대한한우", "힘내라농가"]);
+  for (const item of seeds) {
+    assert.equal(item.scheduleTime, "09:00");
+    assert.deepEqual(item.scheduleDays, [0, 1, 2, 3, 4, 5, 6]);
+    assert.equal(item.productsPerRun, 4);
+    assert.equal(item.creativesPerProduct, 1);
+  }
+});
+
+test("동일 상품군의 용량·수량·옵션 변형은 실행당 한 번만 선정된다", () => {
+  assert.equal(normalizedProductFamilyName("알등심 250g 2팩 [선물용]"), normalizedProductFamilyName("알등심 1kg 4팩"));
+  const variants = [
+    candidate("sirloin-250", { productName: "알등심 250g 2팩" }),
+    candidate("sirloin-1kg", { productName: "알등심 1kg 세트" }),
+    candidate("rib", { productName: "갈비살 500g" }),
+  ];
+  assert.equal(productFamilyKey(variants[0]), productFamilyKey(variants[1]));
+  const selected = selectAutoProductionCandidates(variants, config({ productsPerRun: 3, maxImagesPerRun: 3 }));
+  assert.equal(selected.filter((item) => item.productName.includes("알등심")).length, 1);
+  assert.equal(new Set(selected.flatMap(candidateIdentityKeys)).size > 0, true);
+});
+
+test("관련상품·배너·배송 이미지는 참조에서 제외된다", () => {
+  const product = candidate("images").productInfo;
+  product.sourceImageCandidates = [
+    { id: "hero", type: "hero", imagePath: "https://cdn.example.com/product-front.jpg", label: "제품 정면 라벨", selected: false, createdAt: "2026-08-20", sourceType: "product-gallery", sourceImageQualityScore: 90, salesUnitMatchScore: 95 },
+    { id: "related", type: "detail", imagePath: "https://cdn.example.com/related.jpg", label: "함께 구매한 추천 상품", selected: false, createdAt: "2026-08-20" },
+    { id: "banner", type: "detail", imagePath: "https://cdn.example.com/event-banner.jpg", label: "쿠폰 배송 이벤트 배너", selected: false, createdAt: "2026-08-20" },
+  ];
+  const verified = verifyAutoProductionProductImages("민트 샤워젤", product);
+  assert.equal(verified.status, "verified");
+  assert.deepEqual(verified.selectedPaths, ["https://cdn.example.com/product-front.jpg", "https://cdn.example.com/images.jpg"]);
+  assert.equal(verified.rejectedPaths.length, 2);
+});
+
+test("세트 상품은 실제 판매 구성 이미지가 없으면 확인 필요로 남긴다", () => {
+  const product = candidate("set").productInfo;
+  product.sourceImageCandidates = [{ id: "single", type: "hero", imagePath: "https://cdn.example.com/single-product.jpg", label: "단품 정면", selected: false, createdAt: "2026-08-20", sourceType: "product-gallery" }];
+  assert.equal(verifyAutoProductionProductImages("한우 4팩 세트", product).status, "needs-review");
+  product.sourceImageCandidates.push({ id: "set", type: "detail", imagePath: "https://cdn.example.com/full-set.jpg", label: "4팩 전체 판매 구성", selected: false, createdAt: "2026-08-20", sourceType: "detail-content", multipleObjectsAreSalesUnit: true });
+  assert.equal(verifyAutoProductionProductImages("한우 4팩 세트", product).status, "verified");
 });
 
 test("예약 CLI는 도래한 광고주만 실행하고 force를 API에 명시적으로 전달한다", async () => {
@@ -362,8 +434,28 @@ test("25. 광고주 추가·수정·일시정지 기능이 API와 화면에 연�
   assert.match(collectionRoute, /export async function PATCH/);
   assert.match(itemRoute, /export async function PATCH/);
   assert.match(workspace, /광고주 추가/);
-  assert.match(workspace, /전체 자동 제작 일시정지/);
+  assert.match(workspace, /전체 일시정지/);
   assert.match(workspace, /설정 수정/);
+});
+
+test("27. 공개 자동제작 응답은 원본 분석 후보와 로컬 비공개 정보를 제거한다", async () => {
+  const source = await read("app/lib/auto-production/publicAutoProduction.server.ts");
+  assert.match(source, /sourceImageCandidates: \[\]/);
+  assert.match(source, /selectionScore: 0/);
+  assert.match(source, /currentSales: null/);
+  assert.match(source, /dataEvidence: \[\]/);
+  assert.match(source, /tasks: run\.tasks\.map/);
+  assert.match(source, /\[비공개 인증정보\]/);
+});
+
+test("28. UI는 단순 현황·선정 상품·완성 결과·접힌 설정을 제공한다", async () => {
+  const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
+  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "오늘 선정 상품", "완성 결과", "자동제작 설정", "골든 레퍼런스로 등록"]) {
+    assert.match(workspace, new RegExp(label));
+  }
+  assert.match(workspace, /settingsPanel/);
+  assert.match(workspace, /서버가 켜져 있을 때/);
+  assert.match(workspace, /Meta 게시는 자동으로 수행하지 않습니다/);
 });
 
 test("26. 결과 화면에서 후킹 6개 전체 제작으로 연결된다", async () => {

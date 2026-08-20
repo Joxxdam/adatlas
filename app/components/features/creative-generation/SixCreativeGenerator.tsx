@@ -10,14 +10,12 @@ import { getGenerationPlanSummary } from "../../../lib/mvp/adObjective";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import {
   CREATIVE_PLANNER_VERSION,
-  type CopyPlan,
   type CreativeExplorationMode,
   type GenerationJob,
   type GenerationResult,
 } from "../../../lib/creative-generation/types";
 import { buildGenerationSummary } from "../../../lib/creative-generation/generationSummary";
-
-type EditableCopy = Pick<CopyPlan, "headline" | "body" | "proof" | "offer" | "cta">;
+import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
 
 type Props = {
   product: ProductInfoForPrompt;
@@ -41,15 +39,17 @@ const resultStatusLabels: Record<GenerationResult["status"], string> = {
   cancelled: "취소됨",
   "korean-review": "한국어 검수 필요",
   "product-review": "상품 확인 필요",
+  "quality-review": "완성도 검토 필요",
+  "group-review": "그룹 다양성 확인 필요",
   approved: "승인",
   excluded: "제외",
 };
 
 const generationStageLabels: Record<NonNullable<GenerationResult["generationStage"]>, string> = {
   planned: "장면 제작 대기",
-  "scene-generating": "상세페이지 사진으로 전체 키비주얼 제작 중",
-  compositing: "상품 동일성·구도 확인 중",
-  "copy-rendering": "한국어 문구 적용 중",
+  "scene-generating": "후킹별 완성 광고 장면 제작 중",
+  compositing: "완성 광고의 상품 동일성·구도 확인 중",
+  "copy-rendering": "한국어 타이포그래피 생성 중",
   "quality-check": "품질 확인 중",
   completed: "제작 완료",
   "reference-preparing": "상품 사진 준비 중",
@@ -73,22 +73,12 @@ function mergeResult(current: GenerationJob | null, incoming: GenerationJob, res
   };
 }
 
-function initialEdit(result: GenerationResult): EditableCopy {
-  return {
-    headline: result.hookPlan.headline,
-    body: result.hookPlan.body,
-    proof: result.hookPlan.proof,
-    offer: result.hookPlan.offer,
-    cta: result.hookPlan.cta,
-  };
-}
-
 export function HookExperimentCreativeGenerator(props: Props) {
   const [job, setJob] = useState<GenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [message, setMessage] = useState("상품정보를 확인하고 광고 목표와 제작 방식을 확정해 주세요.");
-  const [edits, setEdits] = useState<Record<string, EditableCopy>>({});
+  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
   const generationModePreference = "ai-full-scene" as const;
   const [strategyVariation, setStrategyVariation] = useState(0);
   const [explorationMode, setExplorationMode] = useState<CreativeExplorationMode>("concept-exploration");
@@ -103,10 +93,10 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const progress = useMemo(() => {
     if (!job) return { completed: 0, total: 6, success: 0, failed: 0 };
     return {
-      completed: job.results.filter((result) => ["success", "failed", "korean-review", "product-review", "approved", "excluded"].includes(result.status)).length,
+      completed: job.results.filter((result) => ["success", "failed", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"].includes(result.status)).length,
       total: job.results.length,
       success: job.results.filter((result) => result.status === "success" || result.status === "approved").length,
-      failed: job.results.filter((result) => ["failed", "korean-review", "product-review"].includes(result.status)).length,
+      failed: job.results.filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)).length,
     };
   }, [job]);
 
@@ -156,7 +146,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   }, []);
 
   useEffect(() => {
-    if (!job || !["pending", "running"].includes(job.status)) return;
+    if (!job || (!["pending", "running"].includes(job.status) && job.adCopy?.status !== "generating")) return;
     let active = true;
     let consecutiveErrors = 0;
     const poll = async () => {
@@ -180,12 +170,11 @@ export function HookExperimentCreativeGenerator(props: Props) {
     };
     // 동일 작업의 진행 상태만 polling하며 페이지 이동 시 타이머만 정리한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id, job?.status]);
+  }, [job?.id, job?.status, job?.adCopy?.status]);
 
   async function generateOne(
     activeJob: GenerationJob,
     resultId: string,
-    copy?: EditableCopy,
     options: { regenerateScene?: boolean; action?: "generate" | "regenerate" | "revise"; feedback?: string } = {}
   ) {
     const generationRequestId = requestId();
@@ -195,7 +184,6 @@ export function HookExperimentCreativeGenerator(props: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...(copy ? { copy } : {}),
           requestId: generationRequestId,
           regenerateScene: Boolean(options.regenerateScene),
           action: options.action || "generate",
@@ -247,7 +235,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
     }
     setLoading(true);
     setJob(null);
-    setEdits({});
+    setFeedbacks({});
     setMessage(
       mode === "scene"
           ? "제품 모습은 유지하면서 후킹마다 다른 전체 콘텐츠를 다시 만들고 있어요."
@@ -338,7 +326,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
     if (!job) return;
     setLoading(true);
     try {
-      await generateOne(job, result.id, edits[result.id], { regenerateScene: true, action: "regenerate" });
+      await generateOne(job, result.id, { regenerateScene: true, action: "regenerate" });
       await refreshJob(job.id);
       setMessage(`${result.blueprintLabel} 카드를 다시 생성했습니다.`);
     } catch (error) {
@@ -348,18 +336,18 @@ export function HookExperimentCreativeGenerator(props: Props) {
     }
   }
 
-  async function sendResultAction(result: GenerationResult, action: "approve" | "exclude" | "feedback", feedback?: string) {
+  async function sendResultAction(result: GenerationResult, action: "approve" | "exclude" | "feedback" | "golden-reference", feedback?: string) {
     if (!job) return;
     const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/results/${encodeURIComponent(result.id)}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action, feedback }) });
     const payload = await response.json() as { job?: GenerationJob; error?: string };
     if (!response.ok || !payload.job) throw new Error(payload.error || "피드백 저장 실패");
     setJob(payload.job);
-    setMessage(action === "approve" ? "광고주 선호 방향으로 저장했습니다. 성과 데이터로 간주하지 않습니다." : action === "exclude" ? "다음 제작의 제외 방향으로 저장했습니다. 성과 데이터로 간주하지 않습니다." : "광고주 피드백을 저장했습니다.");
+    setMessage(action === "approve" ? "광고주 선호 방향으로 저장했습니다. 성과 데이터로 간주하지 않습니다." : action === "exclude" ? "다음 제작의 제외 방향으로 저장했습니다. 성과 데이터로 간주하지 않습니다." : action === "golden-reference" ? "골든 레퍼런스로 등록했습니다. 다음 제작에서는 추상적인 스타일 특성만 참고합니다." : "광고주 피드백을 저장했습니다.");
   }
 
   async function downloadAll(requireAllResults = false) {
     if (!job) return;
-    const completedResults = job.results.filter((result) => result.status === "success" && result.imagePath);
+    const completedResults = job.results.filter((result) => ["success", "approved"].includes(result.status) && result.imagePath);
     if (!completedResults.length || (requireAllResults && completedResults.length !== job.results.length)) return;
     setDownloading(true);
     try {
@@ -389,6 +377,12 @@ export function HookExperimentCreativeGenerator(props: Props) {
           2
         )
       );
+      if (job.adCopy?.primaryText && job.adCopy.status !== "needs-review") {
+        const copyResponse = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/ad-copy?format=txt`);
+        if (copyResponse.ok) zip.file("meta-primary-text.txt", await copyResponse.blob());
+        const csvResponse = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/ad-copy?format=csv`);
+        if (csvResponse.ok) zip.file("meta-ad-settings.csv", await csvResponse.blob());
+      }
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -416,7 +410,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
     <section className="six-creative-generator" id="creative-results">
       <div className="six-creative-head">
         <div>
-          <p className="eyebrow">3 · 광고 콘텐츠 생성</p>
+          <p className="eyebrow">4 · 광고 콘텐츠 생성</p>
           <h4>{generationPlan.objectiveLabel} 목표의 후킹별 AI 광고 만들기</h4>
           <p>후킹마다 장면·제품·한국어 문구·타이포그래피·레이아웃 전체를 AI가 별도로 완성합니다.</p>
           <label><span>생성 엔진</span><select value={engine} onChange={(event) => setEngine(event.target.value as "codex_local" | "openai_api")} disabled={loading}><option value="codex_local">Codex 로컬 로그인 (기본·API 키 미사용)</option><option value="openai_api">OpenAI 유료 API (명시 선택)</option></select><small>{providerStatus}</small></label>
@@ -476,8 +470,8 @@ export function HookExperimentCreativeGenerator(props: Props) {
             </div>
             <div>
               <strong>제작 방식</strong>
-              <span>후킹별 AI 전체 콘텐츠</span>
-              <small>기존 배경 라이브러리 미사용</small>
+              <span>{job.creativePlan.categoryCreativeProfile?.label || "상품별"} AI 전체 콘텐츠</span>
+              <small>{job.creativePlan.categoryCreativeProfile?.reason || "후킹마다 장면·구도·디자인 전체를 독립 제작"}</small>
             </div>
             <div>
               <strong>상세페이지 레퍼런스</strong>
@@ -490,9 +484,20 @@ export function HookExperimentCreativeGenerator(props: Props) {
               <small>완성된 카드부터 즉시 다운로드 가능</small>
             </div>
           </div>
+          {job.groupValidation ? (
+            <div className={`six-creative-qa ${job.groupValidation.recommendation === "approve" ? "pass" : "review"}`}>
+              그룹 다양성 검수 · 장면 {job.groupValidation.sceneDiversity} · 배치 {job.groupValidation.productPlacementDiversity} · 카메라 {job.groupValidation.cameraDiversity} · 타이포 {job.groupValidation.typographyDiversity} · 문법 {job.groupValidation.visualArchetypeDiversity} · 메시지 분리 {job.groupValidation.messageSeparation}
+              <small>{job.groupValidation.recommendation === "approve" ? "6개 후킹이 서로 다른 완성 광고로 확인됐습니다." : "중복 가능성이 있는 광고만 다시 만들거나 확인합니다."}</small>
+            </div>
+          ) : null}
+          <ProductAdCopyPanel
+            adCopy={job.adCopy}
+            jobId={job.id}
+            onChanged={(changed) => setJob(changed)}
+            productName={job.productTruth.product.productName}
+          />
           <div className="six-creative-grid">
             {job.results.map((result) => {
-              const edit = edits[result.id] || initialEdit(result);
               return (
                 <article className={`six-creative-card ${result.status} ${result.id === latestCompletedResultId ? "latest" : ""}`} key={result.id}>
                   <div className="six-creative-card-head">
@@ -536,6 +541,8 @@ export function HookExperimentCreativeGenerator(props: Props) {
                       <span>{result.hookPlan.selectionReason}</span>
                       <b>광고 장면</b>
                       <span>{result.hookPlan.creativeBrief?.visualStory}</span>
+                      <b>시각 광고 문법</b>
+                      <span>{result.hookPlan.creativeBrief?.visualArchetype} · {result.hookPlan.creativeBrief?.humanRole}</span>
                     </> : null}
                     <small>확인 근거 · {result.hookPlan.factIds.map((id) => job.productTruth.facts.find((fact) => fact.id === id)?.value).filter(Boolean).join(" · ") || "확인 가능한 상품 사실"}</small>
                   </div>
@@ -560,29 +567,24 @@ export function HookExperimentCreativeGenerator(props: Props) {
                     </div>
                   ) : null}
                   <div className="six-creative-card-actions">
-                    <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">이 광고만 새 장면으로 재생성</button>
-                    <button disabled={loading || !result.imagePath} onClick={() => job && void generateOne(job, result.id, undefined, { action: "revise", feedback: "한국어 철자·가독성·제품 동일성·상업 완성도를 검수 결과에 맞춰 수정" }).then(() => refreshJob(job.id)).catch((error) => setMessage(error instanceof Error ? error.message : "AI 수정 실패"))} type="button">이 광고만 AI로 수정</button>
-                    <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"approve").catch((error)=>setMessage(error instanceof Error ? error.message : "승인 저장 실패"))} type="button">이 방향 승인</button>
-                    <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"exclude").catch((error)=>setMessage(error instanceof Error ? error.message : "제외 저장 실패"))} type="button">다음 제작에서 제외</button>
+                    <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">AI로 다시 만들기</button>
+                    <label>
+                      <span>AI 수정 요청</span>
+                      <textarea value={feedbacks[result.id] || ""} onChange={(event) => setFeedbacks((current) => ({ ...current, [result.id]: event.target.value }))} placeholder="예: 제품을 더 크게, 모델 없이 시원한 샤워 장면으로 바꿔줘" rows={2} />
+                    </label>
+                    <button disabled={loading || !result.imagePath || !feedbacks[result.id]?.trim()} onClick={() => job && void generateOne(job, result.id, { action: "revise", feedback: feedbacks[result.id].trim() }).then(() => refreshJob(job.id)).catch((error) => setMessage(error instanceof Error ? error.message : "AI 수정 실패"))} type="button">AI에게 수정 요청</button>
+                    <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"approve").catch((error)=>setMessage(error instanceof Error ? error.message : "승인 저장 실패"))} type="button">승인</button>
+                    <button disabled={!result.imagePath || !["success", "approved"].includes(result.status)} onClick={() => void sendResultAction(result,"golden-reference", feedbacks[result.id]?.trim()).catch((error)=>setMessage(error instanceof Error ? error.message : "골든 레퍼런스 등록 실패"))} type="button">골든 레퍼런스로 등록</button>
+                    <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"exclude").catch((error)=>setMessage(error instanceof Error ? error.message : "제외 저장 실패"))} type="button">제외</button>
                   </div>
                   <details className="six-creative-edit">
-                    <summary>문구 수정·제작 정보 보기</summary>
+                    <summary>후킹·제작 정보 보기</summary>
                     {result.hookPlan.score ? <div className="hook-score-details">
                       <span>내부 태그 · {result.hookPlan.primaryTag}{result.hookPlan.secondaryTags?.length ? ` / ${result.hookPlan.secondaryTags.join(", ")}` : ""}</span>
                       <span>후보 점수 · {result.hookPlan.score.total}/100</span>
                       <span>근거 {result.hookPlan.score.evidenceStrength} · 구매이유 {result.hookPlan.score.purchaseReasonStrength} · 차별성 {result.hookPlan.score.distinctiveness} · 시각화 {result.hookPlan.score.visualizability} · 안전성 {result.hookPlan.score.claimSafety} · 과거 성과 보조값 {result.hookPlan.score.categoryPrior} · 새로움 {result.hookPlan.score.novelty}</span>
                     </div> : null}
                     {result.contentNoteCompliance ? <small>콘텐츠 참고사항 · {result.contentNoteCompliance.state === "passed" ? "준수" : result.contentNoteCompliance.state === "repaired" ? "자동 보정" : "확인 필요"}</small> : null}
-                    {(["headline", "body"] as const).map((key) => (
-                      <label key={key}>
-                        <span>{key}</span>
-                        <textarea
-                          onChange={(event) => setEdits((current) => ({ ...current, [result.id]: { ...edit, [key]: event.target.value } }))}
-                          rows={key === "headline" ? 2 : 1}
-                          value={edit[key]}
-                        />
-                      </label>
-                    ))}
                   </details>
                 </article>
               );

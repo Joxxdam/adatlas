@@ -1,5 +1,6 @@
 import type { ProductInfoForPrompt } from "../mvp/types";
 import type { GenerationResultStatus, HookMessageCode } from "../creative-generation/types";
+import type { ProductAdCopy } from "../ad-copy/types";
 
 export const autoProductionRoles = [
   "core-expansion",
@@ -27,6 +28,7 @@ export type AutoProductionAdvertiserConfig = {
   creativesPerProduct: number;
   fullHookTestForNewProducts: boolean;
   productCooldownDays: number;
+  productFamilyCooldownDays: number;
   hookCooldownDays: number;
   maxImagesPerRun: number;
   dataSource: AutoProductionDataSource;
@@ -49,6 +51,10 @@ export type AutoProductionAdvertiserConfig = {
 export type AutoProductionProductCandidate = {
   id: string;
   externalId?: string | null;
+  productCode?: string | null;
+  sku?: string | null;
+  canonicalProductUrl?: string;
+  productFamilyKey?: string;
   advertiserId: string;
   productName: string;
   productUrl: string;
@@ -74,6 +80,8 @@ export type AutoProductionProductCandidate = {
   isSeasonal: boolean;
   siteVisible: boolean | null;
   soldOut: boolean;
+  imageVerificationStatus?: "verified" | "needs-review" | "rejected";
+  imageVerificationReasons?: string[];
   productInfo: ProductInfoForPrompt;
 };
 
@@ -85,9 +93,15 @@ export type AutoHookHypothesis = {
   subCopy: string;
   messageHypothesis: string;
   customerInsight: string;
+  targetCustomer: string;
+  customerSituation: string;
   productEvidence: string[];
+  verifiedEvidence: string[];
+  intendedReaction: string;
+  visualConcept: string;
   recommendedScene: string;
   selectionReason: string;
+  prohibitedClaims: string[];
 };
 
 export const autoProductionRunStatuses = [
@@ -142,6 +156,7 @@ export type AutoProductionProductTask = {
   hookSelectionReason?: string;
   generationJobId?: string;
   results: AutoProductionResult[];
+  adCopy?: ProductAdCopy;
   error?: string;
   createdAt: string;
   updatedAt: string;

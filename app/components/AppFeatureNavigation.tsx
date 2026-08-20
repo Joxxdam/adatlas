@@ -6,8 +6,11 @@ import { CreativeJobStatusIndicator } from "./features/creative-generation/Creat
 
 export type AppFeatureKey =
   | "store-analysis"
+  | "product-selection"
   | "product-creation"
   | "auto-production"
+  | "advertiser-memory"
+  | "golden-references"
   | "hook-experiments"
   | "creative-results"
   | "image-references"
@@ -28,31 +31,24 @@ const FEATURES: Array<{
     description: "쇼핑몰과 상품을 분석합니다",
   },
   {
+    key: "product-selection",
+    href: "/create-product?step=product",
+    index: "02",
+    label: "상품 선택",
+    description: "제작할 상품을 확인합니다",
+  },
+  {
     key: "product-creation",
     href: "/create-product",
-    index: "02",
-    label: "광고 만들기",
-    description: "상품 주소로 광고를 만듭니다",
-  },
-  {
-    key: "auto-production",
-    href: "/auto-production",
     index: "03",
-    label: "자동 제작",
-    description: "매일 새 후킹 광고를 자동 제작합니다",
-  },
-  {
-    key: "hook-experiments",
-    href: "/hook-experiments",
-    index: "04",
-    label: "후킹 테스트",
-    description: "후킹별 광고 성과를 비교합니다",
+    label: "AI 광고 만들기",
+    description: "상품 근거로 완성 광고를 만듭니다",
   },
   {
     key: "creative-results",
     href: "/create-product?view=results",
-    index: "05",
-    label: "제작 결과",
+    index: "04",
+    label: "제작 결과 확인",
     description: "생성한 광고와 소재코드를 봅니다",
   },
 ];
@@ -62,6 +58,26 @@ const AUXILIARY_FEATURES: Array<{
   href: string;
   label: string;
 }> = [
+  {
+    key: "auto-production",
+    href: "/admin/auto-production",
+    label: "자동 콘텐츠 제작",
+  },
+  {
+    key: "advertiser-memory",
+    href: "/admin/auto-production#advertiser-memory",
+    label: "광고주 기억",
+  },
+  {
+    key: "golden-references",
+    href: "/admin/auto-production#golden-references",
+    label: "골든 레퍼런스",
+  },
+  {
+    key: "hook-experiments",
+    href: "/hook-experiments",
+    label: "후킹 성과 테스트",
+  },
   {
     key: "image-references",
     href: "/image-analysis-references",

@@ -9,6 +9,10 @@ import type {
   VideoProject,
   VideoProjectStatus,
   VideoVersion,
+  VideoHookCandidate,
+  VideoPipelineProgress,
+  ProductLockedAsset,
+  ReferenceVideoAnalysis,
 } from "./types.ts";
 import { normalizeVideoCut } from "./script.ts";
 import {
@@ -57,11 +61,19 @@ function normalizeProject(project: VideoProject): VideoProject {
     marketerName: clean(project.marketerName, 80) || "마케터",
     designerName: clean(project.designerName, 80) || "디자이너 미지정",
     additionalRequests: clean(project.additionalRequests, 5000),
+    platform: project.platform || "meta",
+    aspectRatio: "9:16",
+    creativeStyle: project.creativeStyle || "auto",
+    advancedTarget: clean(project.advancedTarget, 500),
+    advancedTone: clean(project.advancedTone, 500),
     productionNotes: clean(project.productionNotes, 5000),
     deadline: clean(project.deadline, 40),
     concepts: Array.isArray(project.concepts)
       ? project.concepts.map((concept) => normalizeConcept(concept))
       : [],
+    hookCandidates: Array.isArray(project.hookCandidates) ? project.hookCandidates : [],
+    pipelineProgress: Array.isArray(project.pipelineProgress) ? project.pipelineProgress : [],
+    referenceAnalyses: Array.isArray(project.referenceAnalyses) ? project.referenceAnalyses : [],
     finalScript: project.finalScript ? normalizeConcept(project.finalScript) : undefined,
     scriptRevisions: Array.isArray(project.scriptRevisions)
       ? project.scriptRevisions.map((revision) => ({
@@ -257,14 +269,26 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           duration: input.duration,
           format: input.format,
           objective: input.objective,
+          platform: input.platform || "meta",
+          aspectRatio: "9:16",
+          creativeStyle: input.creativeStyle || "auto",
+          advancedTarget: clean(input.advancedTarget, 500),
+          advancedTone: clean(input.advancedTone, 500),
           additionalRequests: clean(input.additionalRequests, 5000),
           productionNotes: "",
           deadline: "",
           referenceAssets: clone(input.referenceAssets || []),
+          productOriginalAsset: input.productOriginalAsset
+            ? clone(input.productOriginalAsset)
+            : undefined,
+          productLockedAsset: undefined,
+          referenceAnalyses: [],
           productAnalysis: clone(input.productAnalysis),
           brandGuideline: clone(input.brandGuideline),
           status: "script_pending",
           concepts: [],
+          hookCandidates: [],
+          pipelineProgress: [],
           scriptRevisions: [],
           versions: [],
           comments: [],
@@ -331,7 +355,14 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
     async saveGeneratedConcepts(
       projectId: string,
       concepts: VideoConcept[],
-      options: { conceptId?: string; actor?: string } = {}
+      options: {
+        conceptId?: string;
+        actor?: string;
+        hookCandidates?: VideoHookCandidate[];
+        pipelineProgress?: VideoPipelineProgress[];
+        productLockedAsset?: ProductLockedAsset;
+        referenceAnalyses?: ReferenceVideoAnalysis[];
+      } = {}
     ) {
       return update(projectId, (project) => {
         if (!concepts.length) throw new Error("저장할 영상 기획안이 없습니다.");
@@ -374,6 +405,10 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           transition(project, "script_review", "시스템", "서로 다른 후킹 기획안 생성");
         }
         project.milestones.scriptCreatedAt ||= new Date().toISOString();
+        if (options.hookCandidates) project.hookCandidates = clone(options.hookCandidates);
+        if (options.pipelineProgress) project.pipelineProgress = clone(options.pipelineProgress);
+        if (options.productLockedAsset) project.productLockedAsset = clone(options.productLockedAsset);
+        if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
         project.scriptLastEditedBy = clean(options.actor, 80) || "시스템";
       });
     },
@@ -421,7 +456,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
       conceptId: string,
       concept: VideoConcept,
       actor: string,
-      options: { productionNotes?: string } = {}
+      options: { productionNotes?: string; createRevision?: boolean } = {}
     ) {
       return update(projectId, (project) => {
         if (project.status === "script_pending") throw new Error("먼저 영상 대본을 생성해 주세요.");
@@ -444,7 +479,17 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           updatedAt: new Date().toISOString(),
         });
         validateConceptForProject(project, normalized);
-        if (project.status !== "script_review") {
+        if (options.createRevision) {
+          project.scriptRevisions.push({
+            id: crypto.randomUUID(),
+            conceptId: current.id,
+            revision: current.revision,
+            changedAt: new Date().toISOString(),
+            changedBy: clean(actor, 80) || project.marketerName,
+            reason: "manual-edit",
+            snapshot: clone(current),
+          });
+        } else if (project.status !== "script_review") {
           const latestRevision = {
             id: crypto.randomUUID(),
             conceptId: current.id,
@@ -468,6 +513,49 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (options.productionNotes !== undefined)
           project.productionNotes = clean(options.productionNotes, 5000);
         project.scriptLastEditedBy = clean(actor, 80) || project.marketerName;
+      });
+    },
+
+    async restoreScriptRevision(
+      projectId: string,
+      revisionId: string,
+      actor: string
+    ) {
+      return update(projectId, (project) => {
+        if (project.status === "approved")
+          throw new Error("최종 승인된 대본은 복제한 뒤 복원해 주세요.");
+        const revision = project.scriptRevisions.find((item) => item.id === revisionId);
+        if (!revision) throw new Error("복원할 대본 버전을 찾지 못했습니다.");
+        const index = project.concepts.findIndex((item) => item.id === revision.conceptId);
+        const current =
+          index >= 0
+            ? project.concepts[index]
+            : project.finalScript?.id === revision.conceptId
+              ? project.finalScript
+              : undefined;
+        if (!current) throw new Error("복원 대상 기획안을 찾지 못했습니다.");
+        const restored = normalizeConcept({
+          ...clone(revision.snapshot),
+          id: current.id,
+          hookType: current.hookType,
+          materialCode: current.materialCode,
+          revision: current.revision + 1,
+          createdAt: current.createdAt,
+          updatedAt: new Date().toISOString(),
+        });
+        validateConceptForProject(project, restored);
+        project.scriptRevisions.push({
+          id: crypto.randomUUID(),
+          conceptId: current.id,
+          revision: current.revision,
+          changedAt: new Date().toISOString(),
+          changedBy: clean(actor, 80) || "사용자",
+          reason: "manual-edit",
+          snapshot: clone(current),
+        });
+        if (index >= 0) project.concepts[index] = clone(restored);
+        if (project.finalScript?.id === current.id) project.finalScript = clone(restored);
+        project.scriptLastEditedBy = clean(actor, 80) || "사용자";
       });
     },
 
@@ -698,7 +786,6 @@ export function validateCreateVideoProjectInput(input: Partial<CreateVideoProjec
     ["projectName", "프로젝트명"],
     ["advertiserName", "업체명"],
     ["productUrl", "상품 URL"],
-    ["designerName", "담당 디자이너"],
     ["duration", "영상 길이"],
     ["format", "영상 형식"],
     ["objective", "영상 목적"],
@@ -711,13 +798,22 @@ export function validateCreateVideoProjectInput(input: Partial<CreateVideoProjec
     }
   }
   if (!input.productAnalysis?.productName) throw new Error("분석된 상품명을 확인해 주세요.");
-  if (![15, 30, 60].includes(Number(input.duration)))
-    throw new Error("영상 길이는 15초, 30초, 60초만 지원합니다.");
+  if (![15, 20, 30, 60].includes(Number(input.duration)))
+    throw new Error("영상 길이는 15초, 20초, 30초, 60초만 지원합니다.");
   if (!input.format || !["short-form", "reels", "feed", "other"].includes(input.format))
     throw new Error("영상 형식이 올바르지 않습니다.");
   if (
     !input.objective ||
-    !["purchase", "interest", "new-product", "benefit"].includes(input.objective)
+    ![
+      "purchase",
+      "new-customer-hook",
+      "retargeting",
+      "usp",
+      "review-ugc",
+      "interest",
+      "new-product",
+      "benefit",
+    ].includes(input.objective)
   )
     throw new Error("영상 목적이 올바르지 않습니다.");
   if (
@@ -725,11 +821,21 @@ export function validateCreateVideoProjectInput(input: Partial<CreateVideoProjec
       (asset) =>
         !asset.filePath.startsWith("/video-collaboration/references/") ||
         asset.size <= 0 ||
-        asset.size > 15 * 1024 * 1024
+        asset.size > 100 * 1024 * 1024
     )
   ) {
     throw new Error("참고 파일 정보가 올바르지 않습니다.");
   }
+  if (input.platform && !["meta", "instagram", "tiktok", "youtube-shorts"].includes(input.platform))
+    throw new Error("영상 플랫폼이 올바르지 않습니다.");
+  if (input.platform && !input.productOriginalAsset)
+    throw new Error("상품 형태와 라벨을 보존할 원본 상품 이미지를 업로드해 주세요.");
+  if (
+    input.productOriginalAsset &&
+    (!input.productOriginalAsset.mimeType.startsWith("image/") ||
+      !input.productOriginalAsset.filePath.startsWith("/video-collaboration/references/"))
+  )
+    throw new Error("상품 원본 이미지 정보가 올바르지 않습니다.");
   let url: URL;
   try {
     url = new URL(String(input.productUrl));

@@ -22,7 +22,7 @@ export async function POST(
       copy?: Partial<CopyPlan>;
       requestId?: string;
       regenerateScene?: boolean;
-      action?: "generate" | "regenerate" | "revise" | "revalidate" | "approve" | "exclude" | "feedback";
+      action?: "generate" | "regenerate" | "revise" | "revalidate" | "approve" | "exclude" | "feedback" | "golden-reference";
       feedback?: string;
     };
     let job = await creativeGenerationJobStore.get(jobId);
@@ -32,7 +32,7 @@ export async function POST(
     if (!target) return NextResponse.json({ ok: false, error: "결과 항목을 찾지 못했습니다." }, { status: 404 });
     if (job.engine) {
       const native = await handleNativeResultGeneration({ jobId, resultId, requestId: body.requestId, action: body.action, feedback: body.feedback });
-      const ok = ["success", "approved", "excluded"].includes(native.result.status) || body.action === "feedback";
+      const ok = ["success", "approved", "excluded"].includes(native.result.status) || body.action === "feedback" || body.action === "golden-reference";
       const publicJob = toPublicGenerationJob(native.job);
       return NextResponse.json({
         ok,

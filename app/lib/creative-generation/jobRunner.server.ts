@@ -4,7 +4,7 @@ import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import type { GenerationJob } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
-import { isServerRunnableGenerationJob, selectRunnableResult, staleRunningResultIds } from "./jobRunnerPolicy";
+import { executionResults, isServerRunnableGenerationJob, selectRunnableResult, staleRunningResultIds } from "./jobRunnerPolicy";
 
 const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v2");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
@@ -20,6 +20,12 @@ function staleAfterMs() {
 
 function runnerErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "AI 광고 생성 중 알 수 없는 오류가 발생했습니다.";
+  if (
+    (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) ||
+    /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)
+  ) {
+    return "AI 전체 광고 생성이 제한시간을 초과했습니다. 해당 카드의 ‘AI로 다시 만들기’로 재시도해 주세요.";
+  }
   return message.replace(/(?:\/Users|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 600);
 }
 
@@ -82,7 +88,13 @@ export async function runGenerationJob(jobId: string) {
     const job = await creativeGenerationJobStore.get(jobId);
     if (!job || !isServerRunnableGenerationJob(job) || job.status === "cancelled") return;
     const next = selectRunnableResult(job, attempted);
-    if (!next) return;
+    if (!next) {
+      if (executionResults(job).some((result) => result.status === "pending") && attempted.size) {
+        attempted.clear();
+        continue;
+      }
+      return;
+    }
     attempted.add(next.id);
     try {
       await handleNativeResultGeneration({
@@ -90,6 +102,7 @@ export async function runGenerationJob(jobId: string) {
         resultId: next.id,
         requestId: `server-runner:${jobId}:${next.id}:${next.attempts + 1}`,
         action: next.attempts > 0 ? "regenerate" : "generate",
+        feedback: next.userFeedback,
       });
     } catch (error) {
       await markResultFailed(jobId, next.id, error);

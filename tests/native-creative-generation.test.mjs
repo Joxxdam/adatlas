@@ -6,7 +6,7 @@ import test from "node:test";
 import sharp from "sharp";
 
 import { resolveAdvertiserIdentity } from "../app/lib/creative-generation/advertiserIdentity.ts";
-import { buildNativeFinalCreativePrompt, buildNativeValidationPrompt } from "../app/lib/creative-generation/nativeCreativePrompt.ts";
+import { buildNativeFinalCreativePrompt, buildNativeGroupValidationPrompt, buildNativeValidationPrompt } from "../app/lib/creative-generation/nativeCreativePrompt.ts";
 import { buildVisualDiversityMatrix, validateVisualDiversityMatrix } from "../app/lib/creative-generation/visualDiversity.ts";
 import { optimizeNativeFinalImage } from "../app/lib/creative-generation/nativeCreativeStorage.server.ts";
 import { passesNativeCreativeValidation } from "../app/lib/creative-generation/nativeCreativeValidation.ts";
@@ -56,11 +56,19 @@ test("source-backed 공개 사실도 AI 검수 프롬프트의 허용 근거로 
 });
 
 test("검수 기준은 한국어·사실·상품·상업 품질 임계치를 모두 요구한다", () => {
-  const good = {hookAlignment:80,productIdentity:80,factualAccuracy:95,koreanTextAccuracy:95,readability:80,composition:80,diversity:75,commercialQuality:80,exportCompliance:100};
+  const good = {hookAlignment:80,productIdentity:80,factualAccuracy:95,koreanTextAccuracy:95,readability:80,composition:80,diversity:75,commercialQuality:80,exportCompliance:100,productVisibility:80,humanNaturalness:100,categoryFit:80,foodAppetiteAppeal:100,sensoryExpression:100,mobileReadability:82};
   assert.equal(passesNativeCreativeValidation(good), true);
   assert.equal(passesNativeCreativeValidation({...good,koreanTextAccuracy:94}), false);
   assert.equal(passesNativeCreativeValidation({...good,productIdentity:79}), false);
   assert.equal(passesNativeCreativeValidation({...good,factualAccuracy:94}), false);
+});
+
+test("카테고리별 QA는 관련 품질 항목만 필수로 검사한다", () => {
+  const good = {hookAlignment:80,productIdentity:80,factualAccuracy:95,koreanTextAccuracy:95,readability:80,composition:80,diversity:75,commercialQuality:80,exportCompliance:100,productVisibility:80,humanNaturalness:100,categoryFit:80,foodAppetiteAppeal:0,sensoryExpression:90,mobileReadability:82};
+  assert.equal(passesNativeCreativeValidation(good,"personal_care"), true);
+  assert.equal(passesNativeCreativeValidation({...good,sensoryExpression:77},"personal_care"), false);
+  assert.equal(passesNativeCreativeValidation({...good,foodAppetiteAppeal:77,sensoryExpression:0},"food_meat"), false);
+  assert.equal(passesNativeCreativeValidation({...good,foodAppetiteAppeal:78,sensoryExpression:0},"food_meat"), true);
 });
 
 test("codex_local이 기본이며 openai_api는 명시 선택할 때만 만들어진다", () => {
@@ -133,10 +141,49 @@ test("resume 실패나 긴 업체 스레드는 공통 기억만 유지한 새 �
 });
 
 test("native 저장소는 상품·후킹·다양성·브리프·프롬프트·검수 파일을 분리 저장한다", async () => {
-  const source=await readFile(new URL("../app/lib/creative-generation/nativeCreativeStorage.server.ts",import.meta.url),"utf8");
+  const [source, jobStore]=await Promise.all([
+    readFile(new URL("../app/lib/creative-generation/nativeCreativeStorage.server.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/lib/creative-generation/jobStore.server.ts",import.meta.url),"utf8"),
+  ]);
   for (const name of ["product-analysis.json","hook-hypotheses.json","diversity-matrix.json","creative-brief.json","generation-prompt.json","validation.json"]) assert.match(source,new RegExp(name.replace(".","\\.")));
   assert.match(source,/fileSizeBytes/);
   assert.match(source,/jpegQuality/);
+  assert.match(source,/\.data", "generated/);
+  assert.doesNotMatch(source,/const GENERATED_ROOT = path\.join\(PUBLIC_ROOT/);
+  assert.match(jobStore,/\.data", "creative-generation", "jobs/);
+  assert.doesNotMatch(jobStore,/const jobsDirectory = path\.join\(process\.cwd\(\), "data"/);
+});
+
+test("후킹 기획은 로컬 gpt-5.6-sol high reasoning으로 12~15개 후보를 만들고 규칙 fallback을 기록한다", async () => {
+  const source = await readFile(new URL("../app/lib/creative-generation/CodexLocalHookPlanner.server.ts", import.meta.url), "utf8");
+  assert.match(source, /gpt-5\.6-sol/);
+  assert.match(source, /modelReasoningEffort: "high"/);
+  assert.match(source, /minItems: 12/);
+  assert.match(source, /maxItems: 15/);
+  assert.match(source, /provider: "fallback"/);
+});
+
+test("개별 QA는 생성 스레드와 분리되고 그룹 콘택트시트 QA를 수행한다", async () => {
+  const [provider, runner, storage] = await Promise.all([
+    readFile(new URL("../app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/creative-generation/nativeCreativeStorage.server.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(provider, /const qaThread = this\.codex\.startThread/);
+  assert.match(provider, /validateGroup/);
+  assert.match(runner, /applyNativeGroupValidation/);
+  assert.match(storage, /createNativeContactSheet/);
+  assert.match(buildNativeGroupValidationPrompt({ results }), /그룹 다양성/);
+});
+
+test("공개 작업 응답은 스레드·로컬 경로·후킹 후보·QA 상세를 제거한다", async () => {
+  const source = await readFile(new URL("../app/lib/creative-generation/publicJob.server.ts", import.meta.url), "utf8");
+  assert.match(source, /codexThreadId: undefined/);
+  assert.match(source, /candidateHypotheses: undefined/);
+  assert.match(source, /verifiedClaims: \[\]/);
+  assert.match(source, /masterScene: undefined/);
+  assert.match(source, /observedKoreanText: \[\]/);
+  assert.match(source, /nativeResultImageUrl/);
 });
 
 test("동일 광고주 생성은 하나의 Codex 스레드에서 직렬 처리되어 문맥 충돌을 막는다", async () => {

@@ -1,6 +1,7 @@
 import type { AdBrief, ProductInfoForPrompt } from "../mvp/types";
 import type { CreativeAssetSnapshot } from "../creative-assets/types";
 import type { CreativeNoteCompliance } from "../creative-content-notes/types";
+import type { ProductAdCopy } from "../ad-copy/types";
 
 export const CREATIVE_PLANNER_VERSION = "creative-planner-v7-ai-hook-parallel-repair";
 
@@ -352,9 +353,12 @@ export type ProductInsightProfile = {
 
 export type HookHypothesisScore = {
   evidenceStrength: number;
+  specificity: number;
   purchaseReasonStrength: number;
   distinctiveness: number;
+  attentionPotential: number;
   visualizability: number;
+  advertisingFit: number;
   claimSafety: number;
   categoryPrior: number;
   novelty: number;
@@ -363,6 +367,9 @@ export type HookHypothesisScore = {
 
 export type HookCreativeBrief = {
   creativeId: string;
+  advertiserId: string;
+  productId: string;
+  hookId: string;
   hookCode: string;
   hypothesisId: string;
   mainHook: string;
@@ -398,6 +405,52 @@ export type HookCreativeBrief = {
   visualMetaphor?: string;
   requiredKoreanText?: string[];
   negativePrompt?: string[];
+  targetCustomer: string;
+  customerSituation: string;
+  intendedReaction: string;
+  visualArchetype: string;
+  heroScene: string;
+  humanRole: string;
+  cameraAngle: string;
+  colorPalette: string;
+  lighting: string;
+  typographyDirection: string;
+  supportingElements: string[];
+  prohibitedClaims: string[];
+  differentiationReason: string;
+  differentiationFromOtherHooks: string;
+};
+
+export const categoryCreativeProfileIds = [
+  "food_meat",
+  "food_fresh",
+  "food_processed",
+  "beauty_cosmetics",
+  "personal_care",
+  "fashion",
+  "health",
+  "household",
+  "kids",
+  "general",
+] as const;
+
+export type CategoryCreativeProfileId = (typeof categoryCreativeProfileIds)[number];
+
+/** Category guidance for AI art direction. It never defines a fixed layout. */
+export type CategoryCreativeProfile = {
+  category: CategoryCreativeProfileId;
+  label: string;
+  visualObjectives: string[];
+  recommendedScenes: string[];
+  recommendedHumanUsage: string[];
+  productPresentation: string[];
+  typographyDirection: string[];
+  colorDirection: string[];
+  compositionDirection: string[];
+  preferredVisualArchetypes: string[];
+  avoidList: string[];
+  reason: string;
+  matchedSignals: string[];
 };
 
 export type CreativeGenerationEngine = "codex_local" | "openai_api";
@@ -412,6 +465,8 @@ export type VisualDiversityMatrixEntry = {
   typographyStyle: string;
   emotionalTone: string;
   visualMetaphor: string;
+  visualArchetype: string;
+  humanUsage: string;
 };
 
 export type NativeCreativeValidation = {
@@ -424,7 +479,30 @@ export type NativeCreativeValidation = {
   diversity: number;
   commercialQuality: number;
   exportCompliance: number;
+  productVisibility: number;
+  humanNaturalness: number;
+  categoryFit: number;
+  foodAppetiteAppeal: number;
+  sensoryExpression: number;
+  mobileReadability: number;
   observedKoreanText: string[];
+  failures: string[];
+  recommendation: "approve" | "revise" | "manual-review";
+  checkedAt: string;
+};
+
+export type NativeGroupValidation = {
+  sceneDiversity: number;
+  productPlacementDiversity: number;
+  cameraDiversity: number;
+  colorMoodDiversity: number;
+  messageSeparation: number;
+  hookSceneAlignment: number;
+  typographyDiversity: number;
+  visualArchetypeDiversity: number;
+  categoryFit: number;
+  duplicatePairs: Array<{ leftHookCode: HookMessageCode; rightHookCode: HookMessageCode; reason: string }>;
+  reviseHookCodes: HookMessageCode[];
   failures: string[];
   recommendation: "approve" | "revise" | "manual-review";
   checkedAt: string;
@@ -456,6 +534,13 @@ export type HookHypothesisCandidate = {
   mainHook: string;
   subCopy: string;
   customerReason: string;
+  customerTension: string;
+  verifiedEvidence: string[];
+  intendedReaction: string;
+  visualConcept: string;
+  prohibitedClaims: string[];
+  confidence: "high" | "medium" | "low";
+  generationSource: "codex-local" | "fallback";
   selectionReason: string;
   evidenceSummary: string;
   evidence: Array<{ fact: string; sourceReference: string }>;
@@ -634,6 +719,7 @@ export type CreativePlan = {
   productTruth: ProductTruth;
   brandProfile: BrandProfile;
   categoryProfile: CategoryProfile;
+  categoryCreativeProfile?: CategoryCreativeProfile;
   hookPlans: HookPlan[];
   blueprintIds: CreativeBlueprintId[];
   masterDesign: MasterCreativeDirection;
@@ -643,7 +729,7 @@ export type CreativePlan = {
   selectedHypotheses?: HookHypothesisCandidate[];
   testCode: `T${string}`;
   copyGeneration: {
-    provider: "openai" | "mixed" | "fallback";
+    provider: "openai" | "mixed" | "codex-local" | "fallback";
     model?: string;
     repairAttempts?: number;
     warnings: string[];
@@ -849,7 +935,7 @@ export type QAResult = {
   checkedAt: string;
 };
 
-export type GenerationResultStatus = "pending" | "running" | "success" | "failed" | "cancelled" | "korean-review" | "product-review" | "approved" | "excluded";
+export type GenerationResultStatus = "pending" | "running" | "success" | "failed" | "cancelled" | "korean-review" | "product-review" | "quality-review" | "group-review" | "approved" | "excluded";
 
 export type GenerationResult = {
   id: string;
@@ -911,6 +997,8 @@ export type GenerationJob = {
   advertiserName?: string;
   codexThreadId?: string;
   visualDiversityMatrix?: VisualDiversityMatrixEntry[];
+  groupValidation?: NativeGroupValidation;
+  groupRevisionCount?: number;
   recoveryLog?: Array<{
     at: string;
     message: string;
@@ -921,6 +1009,10 @@ export type GenerationJob = {
   autoProductionRunId?: string;
   autoProductionTaskId?: string;
   hookLearningApplied?: boolean;
+  /** 상품 단위 대표 이미지. 여러 이미지가 있어도 광고 기본 문구는 이 결과를 기준으로 하나만 생성합니다. */
+  representativeResultId?: string;
+  /** Meta 기본 문구. 결과 이미지 수와 관계없이 작업(상품)당 최대 하나입니다. */
+  adCopy?: ProductAdCopy;
 };
 
 export type GenerationJobSummary = {

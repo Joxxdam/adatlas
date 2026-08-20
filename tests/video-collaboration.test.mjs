@@ -6,8 +6,18 @@ import path from "node:path";
 import test from "node:test";
 
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
-import { resequenceVideoCuts } from "../app/lib/video-collaboration/script.ts";
+import {
+  resequenceVideoCuts,
+  videoScriptCsv,
+} from "../app/lib/video-collaboration/script.ts";
 import { generateGroundedVideoConcepts } from "../app/lib/video-collaboration/scriptGenerator.ts";
+import {
+  buildProductLockedAsset,
+  buildVideoHookCandidates,
+  buildVisualBible,
+  selectTopDistinctHooks,
+  validateVideoPlan,
+} from "../app/lib/video-collaboration/planningPipeline.ts";
 import { detectSceneReferenceType } from "../app/lib/video-collaboration/referenceImage.ts";
 import { detectVideoType } from "../app/lib/video-collaboration/videoFile.ts";
 import {
@@ -65,6 +75,16 @@ test("영상 소재코드는 지정 형식과 프로젝트 내 순번을 지킨�
   assert.equal(second.endsWith("_02"), true);
 });
 
+test("영상 소재코드 날짜는 서버 위치와 관계없이 Asia/Seoul 기준이다", () => {
+  const code = createVideoMaterialCode({
+    advertiserName: "Original Source",
+    productName: "Mint Shower Gel",
+    hookType: "feature-usp",
+    createdAt: new Date("2026-08-18T15:30:00.000Z"),
+  });
+  assert.match(code, /_20260819_01$/);
+});
+
 test("서로 다른 후킹 3개가 근거와 금지 문구 규칙을 지켜 생성된다", () => {
   const concepts = generateGroundedVideoConcepts({
     advertiserName: "오리지널소스",
@@ -85,6 +105,71 @@ test("서로 다른 후킹 3개가 근거와 금지 문구 규칙을 지켜 생�
     concepts.some((item) => JSON.stringify(item).includes("무조건 1위")),
     false
   );
+});
+
+test("후킹 후보는 5개 이상 평가하고 서로 다른 상위 3개만 선택한다", () => {
+  const grounded = {
+    ...analysis,
+    verifiedFacts: [
+      { id: "fact-price", label: "가격", value: "12,000원", source: "상품 상세페이지", bucket: "verified" },
+      { id: "fact-usp", label: "USP", value: "민트와 티트리의 상쾌한 사용감", source: "상품 상세페이지", bucket: "verified" },
+    ],
+    verifiedNumbers: ["12,000원"],
+    unsupportedClaims: [
+      { id: "unsupported-1", label: "사용 금지", value: "체감온도 -8.9도", source: "검증 규칙", bucket: "unsupported" },
+    ],
+  };
+  const candidates = buildVideoHookCandidates(grounded);
+  const selected = selectTopDistinctHooks(candidates);
+  assert.equal(candidates.length >= 5, true);
+  assert.equal(selected.length, 3);
+  assert.equal(new Set(selected.map((item) => item.hookType)).size, 3);
+  assert.equal(candidates.every((item) => item.score.total >= 0 && item.score.total <= 100), true);
+  assert.equal(candidates.some((item) => item.hook.includes("체감온도 -8.9도")), false);
+});
+
+test("20초 기획은 후킹→문제→제품→근거→CTA가 빈 시간 없이 이어진다", () => {
+  const concept = generateGroundedVideoConcepts({
+    advertiserName: "오리지널소스",
+    analysis,
+    guideline,
+    duration: 20,
+    objective: "purchase",
+    now: new Date("2026-08-18T00:00:00.000Z"),
+  })[0];
+  assert.deepEqual(
+    concept.cuts.map((cut) => [cut.startSecond, cut.endSecond]),
+    [[0, 3], [3, 7], [7, 12], [12, 18], [18, 20]]
+  );
+  assert.equal(concept.cuts.every((cut) => cut.cameraComposition && cut.motionDirection && cut.transition && cut.generationPrompt), true);
+  assert.equal(concept.cuts.slice(2).every((cut) => cut.productLockInstruction?.useOriginalComposite), true);
+  assert.equal(validateVideoPlan(concept, analysis, 20).valid, true);
+  const csv = videoScriptCsv({
+    projectName: "CSV 테스트",
+    advertiserName: "오리지널소스",
+    productAnalysis: analysis,
+    concepts: [concept],
+    selectedConceptId: concept.id,
+  });
+  assert.match(csv, /카메라·구도/);
+  assert.match(csv, /생성 프롬프트/);
+});
+
+test("카테고리별 비주얼 바이블과 상품 원본 고정 규칙을 만든다", () => {
+  const food = buildVisualBible({ ...analysis, category: "식품·육류" }, "auto");
+  const beauty = buildVisualBible({ ...analysis, category: "뷰티·바디케어" }, "auto");
+  assert.notEqual(food.visualMode, beauty.visualMode);
+  const locked = buildProductLockedAsset({
+    id: "asset-1",
+    name: "product.png",
+    filePath: "/video-collaboration/references/product.png",
+    mimeType: "image/png",
+    size: 2000,
+    uploadedAt: "2026-08-20T00:00:00.000Z",
+    role: "product-original",
+  });
+  assert.equal(locked?.filePath, "/video-collaboration/references/product.png");
+  assert.equal(locked?.preserveRules.some((rule) => rule.includes("로고")), true);
 });
 
 test("상태 전이는 제작 시작과 업로드 검수를 건너뛰지 않는다", () => {
@@ -191,6 +276,61 @@ test("장면별 참고 이미지와 메모가 재조회와 대본 재생성 후�
       afterRegeneration?.concepts[0].cuts[0].referenceImages[0].description,
       "제품이 중앙에 보이는 구도"
     );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("수동 저장 버전은 이전 내용을 덮어쓰지 않고 복원할 수 있다", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "adatlas-video-revision-"));
+  try {
+    const repository = createVideoProjectRepository({ dataDirectory: directory });
+    const created = await repository.create({
+      projectName: "대본 버전 복원 테스트",
+      advertiserName: "오리지널소스",
+      productUrl: analysis.productUrl,
+      marketerName: "박마케팅",
+      designerName: "",
+      duration: 20,
+      format: "short-form",
+      objective: "purchase",
+      additionalRequests: "",
+      referenceAssets: [],
+      productAnalysis: analysis,
+      brandGuideline: guideline,
+    });
+    const [concept] = generateGroundedVideoConcepts({
+      advertiserName: created.advertiserName,
+      analysis,
+      guideline,
+      duration: 20,
+      objective: "purchase",
+      now: new Date("2026-08-20T00:00:00.000Z"),
+    });
+    await repository.saveGeneratedConcepts(created.id, [concept]);
+
+    const second = structuredClone(concept);
+    second.openingHook = "운동 뒤에도 남는 찝찝함, 샤워 순서부터 보세요";
+    second.cuts[0].caption = second.openingHook;
+    await repository.saveScript(created.id, concept.id, second, "박마케팅", {
+      createRevision: true,
+    });
+    const third = structuredClone(second);
+    third.openingHook = "운동복 입기 전, 이 샤워 장면을 확인하세요";
+    third.cuts[0].caption = third.openingHook;
+    await repository.saveScript(created.id, concept.id, third, "박마케팅", {
+      createRevision: true,
+    });
+
+    const saved = await repository.get(created.id);
+    const secondRevision = saved?.scriptRevisions.find(
+      (revision) => revision.snapshot.openingHook === second.openingHook
+    );
+    assert.ok(secondRevision);
+    await repository.restoreScriptRevision(created.id, secondRevision.id, "박마케팅");
+    const restored = await createVideoProjectRepository({ dataDirectory: directory }).get(created.id);
+    assert.equal(restored?.concepts[0].openingHook, second.openingHook);
+    assert.equal(restored?.concepts[0].revision, 4);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

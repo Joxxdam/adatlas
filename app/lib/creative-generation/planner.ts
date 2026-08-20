@@ -14,6 +14,11 @@ import {
   designFingerprintForMaster,
   selectMasterCreativeDirection,
 } from "./masterDesign.ts";
+import {
+  applyCategoryCreativeDirection,
+  countDistinctVisualArchetypes,
+  resolveCategoryCreativeProfile,
+} from "./categoryCreativeRouter.ts";
 import { matchBrandProfile, matchCategoryProfile, withRequestedLogo } from "./profiles.ts";
 import { extractNumericTokens } from "./productTruth.ts";
 import {
@@ -178,7 +183,7 @@ function hookPlansForExploration(
       naturalnessScore: candidate.score.claimSafety,
       validationStatus: "valid",
       validationErrors: [],
-      generationSource: "fallback",
+      generationSource: candidate.generationSource === "codex-local" ? "ai" : "fallback",
       repairCount: 0,
       customerReason: candidate.customerReason,
       selectionReason: candidate.selectionReason,
@@ -186,6 +191,9 @@ function hookPlansForExploration(
       creativeBrief: {
         ...candidate.creativeBrief,
         creativeId: `creative-${truth.productId}-${hookCode}-C${String(index + 1).padStart(2, "0")}`,
+        advertiserId: truth.product.creativeContext?.advertiserId || "unassigned-advertiser",
+        productId: truth.product.creativeContext?.productId || truth.productId,
+        hookId: hookCode,
         hookCode,
         mainHook: candidate.mainHook,
         subCopy: candidate.subCopy,
@@ -195,6 +203,7 @@ function hookPlansForExploration(
         referenceImageIds: truth.imageAssets
           .filter((asset) => asset.verified && asset.validationStatus !== "excluded")
           .map((asset) => asset.id),
+        differentiationReason: candidate.creativeBrief.differentiationReason || candidate.creativeBrief.differentiationFromOtherHooks,
       },
     };
   });
@@ -207,15 +216,26 @@ export function buildExplorationCreativePlan(
     adBrief?: AdBrief;
     categoryPrior?: CategoryHookPrior;
     testCode?: `T${string}`;
+    exploration?: ReturnType<typeof buildProductHookExploration>;
+    copyGeneration?: CreativePlan["copyGeneration"];
   } = {}
 ): CreativePlan {
   const brandProfile = withRequestedLogo(matchBrandProfile(truth.product), options.logoPath);
   const categoryProfile = matchCategoryProfile(truth.product);
-  const exploration = buildProductHookExploration(truth, options.categoryPrior);
+  const exploration = options.exploration || buildProductHookExploration(truth, options.categoryPrior);
   if (exploration.selected.length < 6) {
     throw new Error("상품 근거로 구분 가능한 후킹 가설이 6개보다 적습니다. 상세정보를 추가해 주세요.");
   }
-  const hookPlans = hookPlansForExploration(truth, exploration.selected, options.adBrief);
+  const categoryCreativeProfile = resolveCategoryCreativeProfile(truth);
+  const selectedWithDirection = applyCategoryCreativeDirection(
+    truth,
+    exploration.selected,
+    categoryCreativeProfile
+  );
+  if (countDistinctVisualArchetypes(selectedWithDirection) < 4) {
+    throw new Error("후킹 6개에 필요한 시각 문법 다양성을 확보하지 못했습니다.");
+  }
+  const hookPlans = hookPlansForExploration(truth, selectedWithDirection, options.adBrief);
   const firstBlueprint = hookPlans[0].blueprintId;
   const masterDesign = selectMasterCreativeDirection({
     truth,
@@ -228,15 +248,16 @@ export function buildExplorationCreativePlan(
     productTruth: truth,
     brandProfile,
     categoryProfile,
+    categoryCreativeProfile,
     hookPlans,
     blueprintIds: Array.from(new Set(hookPlans.map((hook) => hook.blueprintId))),
     masterDesign,
     mode: "concept-exploration",
     productInsightProfile: exploration.profile,
     candidateHypotheses: exploration.candidates,
-    selectedHypotheses: exploration.selected,
+    selectedHypotheses: selectedWithDirection,
     testCode: options.testCode || "T01",
-    copyGeneration: {
+    copyGeneration: options.copyGeneration || {
       provider: "fallback",
       warnings: ["상품 공개정보와 검증된 입력만 사용해 후킹 가설 후보를 점수화했습니다."],
     },
@@ -349,9 +370,9 @@ function productPhotoSceneCandidates(creativePlan: CreativePlan): SceneAsset[] {
 }
 
 /**
- * Creates empty per-hook scene slots for the AI-only production pipeline.
- * No background file is selected here: each result route must generate its
- * own scene plate before the verified product layer and Korean copy are added.
+ * Creates empty per-hook slots for the AI-native production pipeline.
+ * No background file is selected here: the image model creates the product,
+ * scene, Korean copy, typography and final layout together in one pass.
  */
 export function planAiScenes(
   creativePlan: CreativePlan,

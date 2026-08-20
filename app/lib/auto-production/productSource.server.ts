@@ -15,6 +15,28 @@ import type {
   AutoProductionRole,
 } from "./types";
 import { runCandidateSourceFallback } from "./sourceFallback";
+import { canonicalProductUrl, productFamilyKey } from "./productIdentity";
+import { verifyAutoProductionProductImages } from "./productImageValidation";
+
+function verifiedCandidate(candidate: AutoProductionProductCandidate): AutoProductionProductCandidate {
+  const verification = verifyAutoProductionProductImages(candidate.productName, candidate.productInfo);
+  const selected = verification.selectedPaths;
+  const next = {
+    ...candidate,
+    canonicalProductUrl: candidate.canonicalProductUrl || canonicalProductUrl(candidate.productUrl),
+    imageUrl: selected[0] || "",
+    imageVerificationStatus: verification.status,
+    imageVerificationReasons: verification.reasons,
+    productInfo: {
+      ...candidate.productInfo,
+      productImagePath: selected[0] || "",
+      productImagePaths: selected,
+      extractedMainImage: selected[0] || "",
+      extractedGalleryImages: selected.slice(1),
+    },
+  };
+  return { ...next, productFamilyKey: candidate.productFamilyKey || productFamilyKey(next) };
+}
 
 function matchesBrand(config: AutoProductionAdvertiserConfig, value: string) {
   const normalized = value.toLowerCase().replace(/\s+/g, "");
@@ -35,6 +57,9 @@ function bigQueryCandidate(config: AutoProductionAdvertiserConfig, candidate: Bi
   return {
     id: candidate.productId || candidate.id,
     externalId: candidate.productId,
+    productCode: candidate.productId,
+    sku: candidate.productId,
+    productFamilyKey: candidate.productFamilyId || undefined,
     advertiserId: config.advertiserId,
     productName: candidate.productName,
     productUrl: candidate.productUrl || "",
@@ -82,6 +107,8 @@ function siteCandidate(config: AutoProductionAdvertiserConfig, candidate: SiteAd
   const info = siteCandidateToProductInfo(candidate);
   return {
     id: product.id,
+    productCode: product.id,
+    sku: product.id,
     advertiserId: config.advertiserId,
     productName: product.productName,
     productUrl: product.productUrl,
@@ -106,7 +133,7 @@ function siteCandidate(config: AutoProductionAdvertiserConfig, candidate: SiteAd
     isNew: candidate.recommendationTypes.includes("new-product-test"),
     isSeasonal: candidate.recommendationTypes.includes("seasonal-test"),
     siteVisible: true,
-    soldOut: product.stockStatus === "sold-out",
+    soldOut: product.stockStatus !== "in-stock",
     productInfo: {
       ...info,
       advertiserName: config.advertiserName,
@@ -174,6 +201,8 @@ function cremaCandidates(config: AutoProductionAdvertiserConfig, dataset: CremaM
     return {
       id: product.id,
       externalId: product.externalId,
+      productCode: product.productCode || product.code,
+      sku: product.productCode || product.code || product.externalId,
       advertiserId: config.advertiserId,
       productName: product.productName || product.name,
       productUrl: info.landingUrl,
@@ -236,5 +265,9 @@ export async function loadAutoProductionCandidates(config: AutoProductionAdverti
     if (["auto", "site", "bigquery", "crema"].includes(config.dataSource)) attempts.push(async () => ({ ...(await fromSite(config)), source: "site" as const }));
     for (const url of config.adminProductUrls) attempts.push(async () => ({ ...(await fromSite(config, url, "admin")), source: "admin" as const }));
   }
-  return runCandidateSourceFallback(attempts, "site" as const);
+  const result = await runCandidateSourceFallback(attempts, "site" as const);
+  return {
+    ...result,
+    candidates: result.candidates.map(verifiedCandidate),
+  };
 }
