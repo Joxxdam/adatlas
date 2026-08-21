@@ -108,6 +108,10 @@ export function buildCreativeArchiveEntries(input: {
       resultUrl: context
         ? `/create-product?view=results&jobId=${encodeURIComponent(context.job.id)}#creative-results`
         : undefined,
+      landingUrl: product?.landingUrl,
+      utmContent: asset.utmContent,
+      recommendedAdName: asset.recommendedAdName,
+      templateId: asset.templateId || context?.result.hookPlan.performanceTemplateId,
       createdAt: asset.createdAt,
       updatedAt: asset.updatedAt,
       ...metadataFor(id, metadata),
@@ -157,6 +161,10 @@ export function buildCreativeArchiveEntries(input: {
         jobId: job.id,
         resultId: result.id,
         resultUrl: urls.resultUrl,
+        landingUrl: product.landingUrl,
+        utmContent: result.creativeAsset?.utmContent,
+        recommendedAdName: result.creativeAsset?.recommendedAdName,
+        templateId: result.hookPlan.performanceTemplateId,
         createdAt: result.completedAt || result.startedAt || job.createdAt,
         updatedAt: result.completedAt || job.updatedAt,
         ...metadataFor(id, metadata),

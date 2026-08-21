@@ -91,17 +91,25 @@ test("7. cancelled 작업에서는 다음 결과를 시작하지 않는다", () 
   assert.equal(selectRunnableResult(current, new Set()), undefined);
 });
 
-test("7-1. concurrency 2 작업은 서로 다른 후킹 두 개를 한 번에 선택한다", () => {
+test("7-1. 고속 제작은 서로 다른 후킹 세 개를 동시에 선택하고 상한을 넘지 않는다", () => {
   const current = job(["pending", "pending", "pending"]);
-  current.concurrency = 2;
+  current.concurrency = 3;
   assert.deepEqual(
     selectRunnableResults(current, new Set()).map((item) => item.id),
-    ["h01", "h02"]
+    ["h01", "h02", "h03"]
   );
   assert.deepEqual(
     selectRunnableResults(current, new Set(["h01"])).map((item) => item.id),
     ["h02", "h03"]
   );
+  assert.equal(selectRunnableResults(current, new Set(), 9).length, 3);
+});
+
+test("7-2. 빠른 로컬 합성 v7 작업도 서버 runner가 복구·실행할 수 있다", () => {
+  const current = job(["pending", "pending", "pending"]);
+  current.version = "generation-job-v7-fast-local-composition";
+  current.concurrency = 3;
+  assert.deepEqual(selectRunnableResults(current, new Set()).map((item) => item.id), ["h01", "h02", "h03"]);
 });
 
 test("8. resume은 완료 결과를 유지하고 미완료 결과만 pending으로 되돌린다", () => {

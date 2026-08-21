@@ -1,11 +1,11 @@
 import "server-only";
 import { access } from "node:fs/promises";
-import { Codex, type Thread } from "@openai/codex-sdk";
-import { codexProductThreadKey, getAdvertiserThread, readBrandMemory, resetAdvertiserThread, saveAdvertiserThread, type AdvertiserThreadRecord } from "../codexRegistry.server.ts";
+import { Codex } from "@openai/codex-sdk";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "../codexLocalRuntime.server.ts";
 import { buildNativeFinalCreativePrompt, buildNativeGroupValidationPrompt, buildNativeValidationPrompt } from "../nativeCreativePrompt.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeGenerationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
+import { resolveFastCreativeRuntime } from "../fastCreativeRuntime";
 
 const DEFAULT_IMAGE_GENERATION_TIMEOUT_MS = 12 * 60 * 1000;
 const validationSchema = {
@@ -39,75 +39,22 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
     return { engine: this.engine, available: authenticated, authenticated, paidApiUsed: false, detail: authenticated ? "로컬 Codex · ChatGPT 로그인 연결됨" : "Codex CLI를 찾지 못했거나 로컬 로그인이 필요합니다." };
   }
 
-  private threadIdentity(input: NativeGenerationInput) {
-    return `${codexProductThreadKey(input.job.advertiserId || "unknown-advertiser", input.job.productTruth.productId)}--creative-${input.result.hookPlan.hookCode.toLowerCase()}`;
-  }
-
-  private async thread(input: NativeGenerationInput, forceNew = false): Promise<{ thread: Thread; record?: AdvertiserThreadRecord; resumed: boolean }> {
-    const registryId = this.threadIdentity(input);
-    const record = await getAdvertiserThread(registryId);
-    const options = {
-      workingDirectory: process.cwd(),
-      sandboxMode: "workspace-write" as const,
-      approvalPolicy: "never" as const,
-      networkAccessEnabled: false,
-      model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
-      modelReasoningEffort: "high" as const,
-    };
-    const maximumTurns = Math.max(10, Number(process.env.ADATLAS_CODEX_THREAD_MAX_TURNS || 60));
-    const shouldRotate = Boolean(record?.threadId && (record.turnCount || 0) >= maximumTurns);
-    if (record?.threadId && !forceNew && !shouldRotate) return { thread: this.codex.resumeThread(record.threadId, options), record, resumed: true };
-    if (record?.threadId && (forceNew || shouldRotate)) await resetAdvertiserThread(registryId);
-    return { thread: this.codex.startThread(options), record: { ...record, threadId: undefined, turnCount: 0 } as AdvertiserThreadRecord, resumed: false };
-  }
-
-  private threadFailure(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    return /bad request|(?:thread|conversation|rollout|resume).*(?:not found|missing|invalid|unknown|expired)|(?:not found|missing|invalid|unknown|expired).*(?:thread|conversation|rollout|resume)/i.test(message);
-  }
-
-  private async saveThread(input: NativeGenerationInput, thread: Thread, record?: AdvertiserThreadRecord) {
-    const advertiserId = this.threadIdentity(input);
-    const threadId = thread.id || undefined;
-    await saveAdvertiserThread({ advertiserId, advertiserName: `${input.job.advertiserName || "상품"} · ${input.job.productTruth.product.productName} · ${input.result.hookPlan.hookCode}`, domain: (() => { try { return new URL(input.job.productTruth.product.landingUrl).hostname; } catch { return ""; } })(), threadId, turnCount: (record?.turnCount || 0) + 1 });
-    return threadId;
-  }
-
   async generate(input: NativeGenerationInput) {
     const state = await this.status();
     if (!state.available) throw new Error(`codex_local 사용 불가: ${state.detail} 유료 API로 자동 전환하지 않았습니다.`);
-    let current = await this.thread(input);
-    const memory = await readBrandMemory(input.job.advertiserId || "unknown-advertiser");
-    const goldenPaths = [...new Set((input.goldenReferencePaths || []).slice(0, 2))];
-    const selectedGolden = new Set(goldenPaths);
-    const promptMemory = { ...memory, goldenReferences: memory.goldenReferences.filter((reference) => selectedGolden.has(reference.imagePath)) };
-    const prompt = buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback, promptMemory);
-    const productPaths = [...new Set(input.referencePaths.slice(0, 5))];
-    const content = [
-      { type: "text" as const, text: prompt },
-      ...productPaths.flatMap((file, index) => [
-        { type: "text" as const, text: `[상품 원본 참조 ${index + 1}] 제품 동일성·라벨·실제 판매 구성 기준` },
-        { type: "local_image" as const, path: file },
-      ]),
-      ...(input.sourceImagePath ? [
-        { type: "text" as const, text: "[수정 대상 광고] 전체 광고를 부분 합성하지 말고 브리프에 맞게 새 완성 광고로 다시 생성" },
-        { type: "local_image" as const, path: input.sourceImagePath },
-      ] : []),
-      ...goldenPaths.flatMap((file, index) => [
-        { type: "text" as const, text: `[골든 레퍼런스 ${index + 1}] 추상적 스타일 특성만 참고하고 문구·레이아웃은 복사 금지` },
-        { type: "local_image" as const, path: file },
-      ]),
-    ];
-    try {
-      await current.thread.run(content, { signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS || DEFAULT_IMAGE_GENERATION_TIMEOUT_MS)) });
-    } catch (error) {
-      if (!current.resumed || !this.threadFailure(error)) throw error;
-      current = await this.thread(input, true);
-      await current.thread.run(content, { signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS || DEFAULT_IMAGE_GENERATION_TIMEOUT_MS)) });
-    }
+    const runtime = resolveFastCreativeRuntime();
+    const thread = this.codex.startThread({
+      workingDirectory: process.cwd(),
+      sandboxMode: "workspace-write",
+      approvalPolicy: "never",
+      networkAccessEnabled: false,
+      model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
+      modelReasoningEffort: runtime.imageReasoning,
+    });
+    const prompt = buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback);
+    await thread.run(prompt, { signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS || DEFAULT_IMAGE_GENERATION_TIMEOUT_MS)) });
     await access(input.outputPath);
-    const threadId = await this.saveThread(input, current.thread, current.record);
-    return { outputPath: input.outputPath, threadId };
+    return { outputPath: input.outputPath };
   }
 
   async validate(input: { job: NativeGenerationInput["job"]; result: NativeGenerationInput["result"]; imagePath: string; referencePaths: string[] }) {

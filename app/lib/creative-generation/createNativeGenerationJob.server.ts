@@ -15,6 +15,10 @@ import { matchCategoryProfile } from "./profiles";
 import { readCategoryHookPrior } from "./hookLearning.server";
 import { enqueueGenerationJob } from "./jobRunner.server";
 import { planHooksWithCodexLocal } from "./CodexLocalHookPlanner.server";
+import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
+import { buildCreativePlanFingerprint, readCreativePlanCache, writeCreativePlanCache } from "./creativePlanCache.server";
+import { PERFORMANCE_TEMPLATE_REGISTRY_VERSION, selectPerformanceTemplates, unusedPerformanceTemplates } from "./performanceTemplateRegistry";
+import { assertCreativeCopyAllowed, repairBannedCreativeSentence } from "./bannedCreativePhrases";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -88,7 +92,7 @@ export async function createNativeGenerationJob(
   ].map((value) => String(value || "").trim()).filter(Boolean)));
   const originals = allPaths.filter((value) => !isAutomaticCutoutPath(value));
   if (!originals.length) {
-    throw new Error("AI 전체 광고 제작에는 자동 누끼가 아닌 상세페이지 원본 상품 이미지가 필요합니다.");
+    throw new Error("광고 제작에는 자동 누끼가 아닌 상세페이지 원본 상품 이미지가 필요합니다.");
   }
   const originalProductReferencePaths = originals.slice(0, 12);
   const rawTruth = buildProductTruth({
@@ -102,13 +106,17 @@ export async function createNativeGenerationJob(
   assertNativeProductReferenceReady(truth);
   const adBrief = resolveAdBrief(input.adBrief);
   const paidImageGenerationEnabled = engine === "openai_api";
-  const configuredConcurrency = Math.max(1, Math.min(3, Math.floor(Number(process.env.ADATLAS_CREATIVE_CONCURRENCY || input.concurrency || 2) || 2)));
+  const runtime = resolveFastCreativeRuntime();
+  const configuredConcurrency = runtime.concurrency;
   const experimentObjective = adBrief.adObjective === "awareness" ? "AWR" : adBrief.adObjective === "signup" ? "TRF" : "SLS";
   const categoryPrior = await readCategoryHookPrior({ categoryId: matchCategoryProfile(truth.product).id, objective: experimentObjective });
   const advertiser = resolveAdvertiserIdentity(product);
   const advertiserId = product.creativeContext?.advertiserId || advertiser.id;
   const advertiserName = product.advertiserName || advertiser.name;
-  const hookPlanning = await planHooksWithCodexLocal({ truth, advertiserId, advertiserName, prior: categoryPrior });
+  const planningFingerprint = buildCreativePlanFingerprint(truth);
+  const cachedPlanning = await readCreativePlanCache(planningFingerprint);
+  const hookPlanning = cachedPlanning || await planHooksWithCodexLocal({ truth, advertiserId, advertiserName, prior: categoryPrior });
+  if (!cachedPlanning) await writeCreativePlanCache({ fingerprint: planningFingerprint, ...hookPlanning, createdAt:new Date().toISOString() });
   const creativePlan = buildExplorationCreativePlan(truth, {
     logoPath: input.logoPath,
     adBrief,
@@ -117,9 +125,23 @@ export async function createNativeGenerationJob(
     exploration: hookPlanning.exploration,
     copyGeneration: hookPlanning.copyGeneration,
   });
+  creativePlan.hookPlans = creativePlan.hookPlans.slice(0, runtime.maxCreatives).map((hookPlan) => {
+    const headline = repairBannedCreativeSentence(hookPlan.headline) || hookPlan.factIds.map((id) => truth.facts.find((fact) => fact.id === id)?.value).find(Boolean) || truth.product.productName;
+    const body = repairBannedCreativeSentence(hookPlan.body) || truth.product.mainBenefit || truth.product.productName;
+    assertCreativeCopyAllowed(`${headline} ${body} ${hookPlan.offer} ${hookPlan.cta}`);
+    return {
+      ...hookPlan,
+      headline,
+      body,
+      creativeBrief: hookPlan.creativeBrief ? { ...hookPlan.creativeBrief, mainHook:headline, subCopy:body, textRendering:"post-render-exact-korean" as const } : hookPlan.creativeBrief,
+    };
+  });
+  const selectedTemplates = selectPerformanceTemplates(truth, creativePlan.hookPlans, runtime.maxCreatives);
+  creativePlan.hookPlans = creativePlan.hookPlans.map((hookPlan,index) => ({ ...hookPlan, performanceTemplateId:selectedTemplates[index]?.id }));
+  creativePlan.blueprintIds = creativePlan.hookPlans.map((hookPlan) => hookPlan.blueprintId);
   const scenes = planAiScenes(creativePlan, paidImageGenerationEnabled);
   const productReferenceProfile = await analyzeProductReferences(truth);
-  const configuredRetries = Number(process.env.ADATLAS_IMAGE_MAX_RETRIES || process.env.ADATLAS_CREATIVE_RETRIES || "2");
+  const configuredRetries = runtime.autoRevisionLimit;
   const job = createGenerationJob({
     truth,
     creativePlan,
@@ -145,6 +167,10 @@ export async function createNativeGenerationJob(
   job.autoProductionTaskId = options.autoProductionTaskId;
   job.hookLearningApplied = Object.keys(categoryPrior).length > 0;
   job.representativeResultId = job.results[0]?.id;
+  job.planningFingerprint = planningFingerprint;
+  job.templateRegistryVersion = PERFORMANCE_TEMPLATE_REGISTRY_VERSION;
+  job.unusedPerformanceTemplateIds = unusedPerformanceTemplates(selectedTemplates.map((template) => template.id), truth).map((template) => template.id);
+  job.version = "generation-job-v7-fast-local-composition";
   await creativeGenerationJobStore.create(job);
   await writeNativeManifest(job);
   if (options.autoStart !== false) enqueueGenerationJob(job.id);

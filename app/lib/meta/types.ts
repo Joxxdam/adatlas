@@ -72,6 +72,8 @@ export type MetaCreativeDraft = {
   approved: boolean;
 };
 
+export type PerformanceTestType = "hook-only" | "creative-combination";
+
 export type MetaDraftRegistrationInput = {
   requestKey: string;
   advertiserId: string;
@@ -79,6 +81,8 @@ export type MetaDraftRegistrationInput = {
   productId: string;
   productName: string;
   testRound: number;
+  testType?: PerformanceTestType;
+  archiveEntryIds?: string[];
   adAccount: MetaAccount;
   campaign: MetaCampaign;
   baselineAdSet: MetaBaselineAdSet;
@@ -132,6 +136,8 @@ export type MetaRegistrationJob = {
   adAccountId: string;
   campaignId: string;
   baselineAdSetId: string;
+  testType?: PerformanceTestType;
+  archiveEntryIds?: string[];
   adSetId?: string;
   status: "pending" | "success" | "partial" | "failed" | "safety_verification_incomplete";
   items: MetaRegistrationItem[];
@@ -181,6 +187,8 @@ export type PerformanceExperiment = {
   productName: string;
   landingUrl?: string;
   testRound?: number;
+  testType?: PerformanceTestType;
+  archiveEntryIds?: string[];
   source?: "meta" | "legacy-hook-experiment";
   adAccountId: string;
   adAccountName: string;

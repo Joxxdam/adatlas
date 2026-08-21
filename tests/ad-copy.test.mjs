@@ -133,14 +133,16 @@ test("광고 설정 CSV는 문구 줄바꿈과 UTF-8 BOM을 포함한다", () =>
   assert.match(csv, /저녁 메뉴 고민/);
 });
 
-test("자동·수동 제작은 같은 공용 문구 서비스를 쓰고 내부 프롬프트는 공개 응답에서 제거한다", async () => {
+test("이미지 제작은 Meta 문구를 지연 생성하고 내부 프롬프트는 공개 응답에서 제거한다", async () => {
   const native = await read("app/lib/creative-generation/nativeResultGeneration.server.ts");
   const publicJob = await read("app/lib/creative-generation/publicJob.server.ts");
   const manualUi = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
+  const adCopyPanel = await read("app/components/ad-copy/ProductAdCopyPanel.tsx");
   const autoUi = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   const autoRunner = await read("app/lib/auto-production/productionRunner.server.ts");
-  assert.match(native, /ensureProductAdCopy/);
+  assert.doesNotMatch(native, /ensureProductAdCopy/);
   assert.match(manualUi, /ProductAdCopyPanel/);
+  assert.match(adCopyPanel, /Meta 문구 만들기/);
   assert.match(autoRunner, /createNativeGenerationJob/);
   assert.match(autoUi, /\/create-product\?view=results/);
   assert.doesNotMatch(autoUi, /ProductAdCopyPanel/);

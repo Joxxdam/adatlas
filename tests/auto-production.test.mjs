@@ -373,15 +373,16 @@ test("17. 한 상품 실패가 다음 상품 작업을 막지 않는다", async 
   assert.deepEqual(seen, ["failed-product", "next-product"]);
 });
 
-test("18. 상품과 후킹별 Codex 문맥을 분리하고 한 상품에서 최대 2장을 병렬 처리한다", async () => {
+test("18. 후킹별 일회성 실행을 분리하고 한 상품에서 최대 3장을 병렬 처리한다", async () => {
   const [generation, provider, runner] = await Promise.all([
     read("app/lib/creative-generation/nativeResultGeneration.server.ts"),
     read("app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts"),
     read("app/lib/creative-generation/jobRunner.server.ts"),
   ]);
-  assert.match(generation, /codexProductThreadKey/);
+  assert.doesNotMatch(generation, /codexProductThreadKey|resumeThread|saveAdvertiserThread/);
   assert.doesNotMatch(generation, /advertiserLocks/);
-  assert.match(provider, /creative-\$\{input\.result\.hookPlan\.hookCode\.toLowerCase\(\)\}/);
+  assert.match(provider, /this\.codex\.startThread/);
+  assert.doesNotMatch(provider, /resumeThread|saveAdvertiserThread|codexProductThreadKey/);
   assert.match(runner, /selectRunnableResults/);
   assert.match(runner, /Promise\.all/);
 });

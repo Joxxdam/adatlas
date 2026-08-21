@@ -102,8 +102,6 @@ import type { ProductCreationHandoff } from "../lib/store-analysis/types";
 import { AppSidebar, type AppFeatureKey } from "./AppFeatureNavigation";
 import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
 import { CreativeCreationSteps } from "./features/creative-generation/CreativeCreationSteps";
-import { MetaDraftRegistrationPanel } from "./meta/MetaDraftRegistrationPanel";
-import type { MetaCreativeDraft } from "../lib/meta/types";
 
 type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
 
@@ -114,7 +112,7 @@ type Props = {
   initialCreationHandoff?: ProductCreationHandoff | null;
   initialProductUrl?: string;
   initialActiveMenu?: MvpMenu;
-  initialWorkflowStep?: "product" | "hooks" | "creative" | "results" | "meta";
+  initialWorkflowStep?: "product" | "hooks" | "creative" | "results";
   activeFeature?: AppFeatureKey;
 };
 
@@ -4666,42 +4664,6 @@ export function MvpDashboard({
     window.requestAnimationFrame(updateMainDetailScrollPercent);
   }
 
-  const metaApprovedCreatives: MetaCreativeDraft[] = generated
-    .filter(
-      (item) =>
-        item.productName === productInfo.productName &&
-        Boolean(item.dataUrl) &&
-        Boolean(productInfo.landingUrl)
-    )
-    .slice(0, 6)
-    .map((item, index) => {
-      const hookNumber = Math.min(6, index + 1) as 1 | 2 | 3 | 4 | 5 | 6;
-      const hookCode = `H0${hookNumber}` as MetaCreativeDraft["hookCode"];
-      const productCode =
-        String(productInfo.creativeContext?.productId || productInfo.landingUrl || "PRODUCT")
-          .replace(/[^A-Za-z0-9]/g, "")
-          .slice(-18) || "PRODUCT";
-      const materialCode = `AT-${
-        String(productInfo.brandName || "DAY")
-          .replace(/[^A-Za-z0-9]/g, "")
-          .slice(0, 3)
-          .toUpperCase() || "DAY"
-      }-${productCode}-${hookCode}-T01`;
-      return {
-        hookCode,
-        materialCode,
-        mediaPath: item.dataUrl,
-        mediaType: "image" as const,
-        mediaRatio: "1:1",
-        primaryText: item.description || productInfo.mainBenefit || productInfo.productName,
-        headline: item.description || productInfo.productName,
-        description: productInfo.discountInfo || productInfo.mainBenefit || "",
-        landingUrl: productInfo.landingUrl,
-        utm: `utm_source=meta&utm_medium=paid_social&utm_campaign=adatlas_t01&utm_content=${materialCode}`,
-        approved: true,
-      };
-    });
-
   return (
     <main className="mvp-shell mvp-shell-simplified">
       {hoveredDetailImage ? (
@@ -4875,7 +4837,6 @@ export function MvpDashboard({
                 ["hooks", "02 상품 고유 후킹"],
                 ["creative", "03 AI 광고 제작"],
                 ["results", "04 제작 결과"],
-                ["meta", "05 Meta 등록"],
               ].map(([step, label]) => (
                 <Link
                   aria-current={initialWorkflowStep === step ? "step" : undefined}
@@ -4891,30 +4852,7 @@ export function MvpDashboard({
                 </Link>
               ))}
             </nav>
-            {initialWorkflowStep === "meta" ? (
-              <MetaDraftRegistrationPanel
-                advertiserId={
-                  productInfo.creativeContext?.advertiserId ||
-                  selectedAdvertiserName ||
-                  "advertiser-unmapped"
-                }
-                advertiserName={
-                  selectedAdvertiserName ||
-                  productInfo.advertiserName ||
-                  productInfo.brandName ||
-                  ""
-                }
-                approvedCreatives={metaApprovedCreatives}
-                landingUrl={productInfo.landingUrl}
-                productId={
-                  productInfo.creativeContext?.productId ||
-                  productInfo.landingUrl ||
-                  "product-unmapped"
-                }
-                productName={productInfo.productName}
-              />
-            ) : null}
-            <div hidden={initialWorkflowStep === "meta"}>
+            <div>
               {initialCreationHandoff ? (
                 <details className="analysis-handoff-notice">
                   <summary>
@@ -7934,13 +7872,9 @@ export function MvpDashboard({
               </div>
               <Link
                 className="mvp-primary-link"
-                href={`/create-product?step=meta${
-                  productInfo.landingUrl
-                    ? `&productUrl=${encodeURIComponent(productInfo.landingUrl)}`
-                    : ""
-                }`}
+                href="/archive"
               >
-                Meta PAUSED 초안 등록
+                아카이브에서 성과 테스트 설정
               </Link>
             </div>
             <nav className="create-product-step-navigation" aria-label="광고 제작 단계">
@@ -7949,7 +7883,6 @@ export function MvpDashboard({
                 ["hooks", "02 후킹 및 방향"],
                 ["creative", "03 AI 광고 제작"],
                 ["results", "04 제작 결과"],
-                ["meta", "05 Meta 등록"],
               ].map(([step, label]) => (
                 <Link
                   aria-current={step === "results" ? "step" : undefined}

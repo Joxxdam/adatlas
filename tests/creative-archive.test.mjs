@@ -6,6 +6,10 @@ import test from "node:test";
 
 import { buildCreativeArchiveEntries } from "../app/lib/creative-archive/archive.ts";
 import { createCreativeArchiveMetadataRepository } from "../app/lib/creative-archive/metadataRepository.server.ts";
+import {
+  archiveEntriesToMetaDrafts,
+  prepareArchivePerformanceSelection,
+} from "../app/lib/meta/archivePerformanceSelection.ts";
 
 const createdAt = "2026-08-21T01:00:00.000Z";
 
@@ -91,6 +95,7 @@ function job(results) {
         category: "바디케어",
         advertiserName: "오리지널소스",
         brandName: "오리지널소스",
+        landingUrl: "https://originalsource.example/mint",
       },
     },
     creativePlan: {},
@@ -149,6 +154,7 @@ test("아카이브는 소재 자산과 과거 AI 결과를 합치되 동일 이�
   assert.equal(legacyResult.savedAsReference, true);
   assert.deepEqual(legacyResult.tags, ["쿨링", "미팅 우선안"]);
   assert.match(legacyResult.resultUrl, /create-product\?view=results&jobId=/);
+  assert.equal(entries.find((entry) => entry.hookCode === "H01").landingUrl, "https://originalsource.example/mint");
 });
 
 test("아카이브 레퍼런스 메타데이터는 태그와 메모를 정리해 영구 저장한다", async (context) => {
@@ -180,4 +186,43 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /업체 레퍼런스만/);
   assert.match(workspace, /태그·메모/);
   assert.match(workspace, /제작 결과 열기/);
+  assert.match(workspace, /선택 소재로 성과 설정/);
+});
+
+test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차이를 소재 조합 테스트로 표시한다", () => {
+  const base = buildCreativeArchiveEntries({ assets: [asset()], jobs: [], metadata: {} })[0];
+  const second = {
+    ...base,
+    id: "asset:asset-002",
+    assetCode: "AT-ORS-MINT-T01-H02",
+    hookCode: "H02",
+    visualDirection: "제품을 크게 보여주는 다른 장면",
+  };
+  const combination = prepareArchivePerformanceSelection([base, second]);
+  assert.equal(combination.valid, true);
+  assert.equal(combination.testType, "creative-combination");
+  assert.match(combination.message, /전체 소재 조합/);
+
+  const hookOnly = prepareArchivePerformanceSelection([
+    { ...base, templateId: "fixed-design", visualDirection: "동일 디자인" },
+    { ...second, templateId: "fixed-design", visualDirection: "동일 디자인" },
+  ]);
+  assert.equal(hookOnly.testType, "hook-only");
+  assert.equal(hookOnly.hookOnlyEligible, true);
+
+  const mixed = prepareArchivePerformanceSelection([
+    base,
+    { ...second, productId: "another-product", productName: "다른 상품" },
+  ]);
+  assert.equal(mixed.valid, false);
+  assert.match(mixed.message, /같은 광고주·같은 상품/);
+});
+
+test("아카이브 소재는 소재코드·후킹·UTM을 보존한 Meta 초안으로 변환된다", () => {
+  const entry = buildCreativeArchiveEntries({ assets: [asset()], jobs: [], metadata: {} })[0];
+  const [draft] = archiveEntriesToMetaDrafts([entry], "https://shop.example/product");
+  assert.equal(draft.hookCode, "H01");
+  assert.equal(draft.materialCode, entry.assetCode);
+  assert.equal(draft.utm, entry.utmContent);
+  assert.equal(draft.landingUrl, "https://shop.example/product");
 });

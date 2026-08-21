@@ -2,6 +2,7 @@ import type { AdBrief, ProductInfoForPrompt } from "../mvp/types";
 import type { CreativeAssetSnapshot } from "../creative-assets/types";
 import type { CreativeNoteCompliance } from "../creative-content-notes/types";
 import type { ProductAdCopy } from "../ad-copy/types";
+import type { PerformanceTemplateId } from "./performanceTemplateRegistry";
 
 export const CREATIVE_PLANNER_VERSION = "creative-planner-v7-ai-hook-parallel-repair";
 
@@ -510,6 +511,8 @@ export type NativeGroupValidation = {
 
 export type NativeCreativeArtifact = {
   engine: CreativeGenerationEngine;
+  /** Text-free AI scene used as the immutable input for local product/copy composition. */
+  backgroundPath?: string;
   originalPath?: string;
   revisionPaths: string[];
   finalPath?: string;
@@ -519,9 +522,18 @@ export type NativeCreativeArtifact = {
   timing?: {
     referenceMs: number;
     generationMs: number;
+    compositionMs?: number;
     validationMs: number;
     exportMs: number;
     totalMs: number;
+  };
+  composition?: {
+    version: string;
+    templateId: PerformanceTemplateId;
+    paletteId: string;
+    productSource: string;
+    productComposed: boolean;
+    exactKoreanComposed: boolean;
   };
   export?: {
     width: 1200;
@@ -635,6 +647,8 @@ export type HookPlan = {
   selectionReason?: string;
   score?: HookHypothesisScore;
   creativeBrief?: HookCreativeBrief;
+  /** Automatically selected performance grammar. It is internal metadata, not ad copy. */
+  performanceTemplateId?: PerformanceTemplateId;
 };
 
 export type DynamicTextBox = PlacementBox & {
@@ -1020,6 +1034,9 @@ export type GenerationJob = {
   representativeResultId?: string;
   /** Meta 기본 문구. 결과 이미지 수와 관계없이 작업(상품)당 최대 하나입니다. */
   adCopy?: ProductAdCopy;
+  planningFingerprint?: string;
+  templateRegistryVersion?: string;
+  unusedPerformanceTemplateIds?: PerformanceTemplateId[];
 };
 
 export type GenerationJobSummary = {

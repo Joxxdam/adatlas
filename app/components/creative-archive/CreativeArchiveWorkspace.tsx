@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { CreativeArchiveEntry, CreativeArchiveResponse } from "../../lib/creative-archive/types";
+import {
+  isArchivePerformanceEligible,
+  prepareArchivePerformanceSelection,
+} from "../../lib/meta/archivePerformanceSelection";
 import styles from "./CreativeArchiveWorkspace.module.css";
 
 const statusLabels: Record<string, string> = {
@@ -40,10 +44,14 @@ function downloadFileName(entry: CreativeArchiveEntry) {
 
 function ArchiveCard({
   entry,
+  selected,
+  onSelect,
   onUpdate,
   onNotice,
 }: {
   entry: CreativeArchiveEntry;
+  selected: boolean;
+  onSelect: (entry: CreativeArchiveEntry) => void;
   onUpdate: (entry: CreativeArchiveEntry) => void;
   onNotice: (message: string) => void;
 }) {
@@ -97,7 +105,7 @@ function ArchiveCard({
   }
 
   return (
-    <article className={`${styles.card}${entry.savedAsReference ? ` ${styles.referenceCard}` : ""}`}>
+    <article className={`${styles.card}${entry.savedAsReference ? ` ${styles.referenceCard}` : ""}${selected ? ` ${styles.selectedCard}` : ""}`}>
       <div className={styles.media}>
         {/* Runtime-generated local files intentionally bypass Next image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -114,6 +122,16 @@ function ArchiveCard({
           type="button"
         >
           {entry.savedAsReference ? "★ 레퍼런스" : "☆ 레퍼런스 저장"}
+        </button>
+        <button
+          aria-pressed={selected}
+          className={`${styles.performanceSelect}${selected ? ` ${styles.performanceSelected}` : ""}`}
+          disabled={!isArchivePerformanceEligible(entry)}
+          onClick={() => onSelect(entry)}
+          title={isArchivePerformanceEligible(entry) ? "성과 테스트에 사용할 소재 선택" : "소재코드와 H01~H06이 필요합니다"}
+          type="button"
+        >
+          {selected ? "✓ 테스트 선택됨" : "+ 성과 테스트"}
         </button>
       </div>
       <div className={styles.cardBody}>
@@ -184,6 +202,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
   const [referencesOnly, setReferencesOnly] = useState(false);
   const [notice, setNotice] = useState("생성 결과를 복제하지 않고 원본 작업과 소재코드에 연결해 보관합니다.");
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const advertisers = useMemo(() => unique(entries.map((entry) => entry.advertiserName)), [entries]);
   const products = useMemo(
@@ -231,9 +250,47 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
     advertisers: unique(entries.map((entry) => entry.advertiserName)).length,
     products: unique(entries.map((entry) => `${entry.advertiserName}:${entry.productName}`)).length,
   }), [entries]);
+  const selectedEntries = useMemo(
+    () => selectedIds.map((id) => entries.find((entry) => entry.id === id)).filter((entry): entry is CreativeArchiveEntry => Boolean(entry)),
+    [entries, selectedIds]
+  );
+  const performanceSelection = useMemo(
+    () => prepareArchivePerformanceSelection(selectedEntries),
+    [selectedEntries]
+  );
 
   function updateEntry(next: CreativeArchiveEntry) {
     setEntries((current) => current.map((entry) => entry.id === next.id ? next : entry));
+  }
+
+  function togglePerformanceSelection(entry: CreativeArchiveEntry) {
+    if (!isArchivePerformanceEligible(entry)) {
+      setNotice("소재코드와 H01~H06이 발급된 완성 이미지만 성과 테스트에 사용할 수 있습니다.");
+      return;
+    }
+    if (selectedIds.includes(entry.id)) {
+      setSelectedIds((current) => current.filter((id) => id !== entry.id));
+      setNotice(`${entry.hookCode} 소재를 성과 테스트에서 제외했습니다.`);
+      return;
+    }
+    const base = selectedEntries[0];
+    const sameAdvertiser = !base || (base.advertiserId || base.advertiserName) === (entry.advertiserId || entry.advertiserName);
+    const sameProduct = !base || (base.productId || base.productName) === (entry.productId || entry.productName);
+    if (!sameAdvertiser || !sameProduct) {
+      setSelectedIds([entry.id]);
+      setNotice("다른 상품을 선택해 기존 선택을 비우고 새 성과 테스트 묶음을 시작했습니다.");
+      return;
+    }
+    if (selectedEntries.some((item) => item.hookCode === entry.hookCode)) {
+      setNotice(`${entry.hookCode}은 이미 선택했습니다. 후킹별 한 장만 선택할 수 있습니다.`);
+      return;
+    }
+    if (selectedIds.length >= 6) {
+      setNotice("한 번에 최대 6장까지 성과 테스트에 사용할 수 있습니다.");
+      return;
+    }
+    setSelectedIds((current) => [...current, entry.id]);
+    setNotice(`${entry.hookCode} 소재를 성과 테스트에 추가했습니다.`);
   }
 
   async function refresh() {
@@ -257,7 +314,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         <div>
           <p className="eyebrow">CREATIVE ARCHIVE</p>
           <h1>이미지 콘텐츠 아카이브</h1>
-          <p>완성한 광고 이미지를 업체와 상품별로 모아보고, 다시 쓸 레퍼런스에는 태그와 메모를 남깁니다.</p>
+          <p>완성한 광고 이미지를 업체와 상품별로 보관하고, 같은 상품 소재를 골라 성과 테스트 설정으로 이어갑니다.</p>
         </div>
         <button disabled={refreshing} onClick={() => void refresh()} type="button">
           {refreshing ? "새로고침 중…" : "최신 결과 불러오기"}
@@ -314,6 +371,33 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         <span>{groups.length}개 업체·상품 묶음</span>
       </div>
 
+      {selectedEntries.length ? (
+        <section className={styles.performanceTray} aria-label="성과 테스트 선택 소재">
+          <div>
+            <p>PERFORMANCE SETUP</p>
+            <strong>{selectedEntries[0].productName} · {selectedEntries.length}/6장 선택</strong>
+            <span>{performanceSelection.message}</span>
+          </div>
+          <div className={styles.selectedHooks}>
+            {performanceSelection.entries.map((entry) => (
+              <button key={entry.id} onClick={() => togglePerformanceSelection(entry)} type="button">
+                {entry.hookCode} ×
+              </button>
+            ))}
+          </div>
+          <div className={styles.performanceTrayActions}>
+            <button onClick={() => setSelectedIds([])} type="button">선택 초기화</button>
+            {performanceSelection.valid ? (
+              <Link href={`/performance?setup=archive&entryIds=${encodeURIComponent(performanceSelection.entries.map((entry) => entry.id).join(","))}`}>
+                선택 소재로 성과 설정
+              </Link>
+            ) : (
+              <span>2장 이상 선택</span>
+            )}
+          </div>
+        </section>
+      ) : null}
+
       {groups.length ? (
         <div className={styles.groups}>
           {groups.map((group) => (
@@ -324,7 +408,14 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
               </header>
               <div className={styles.grid}>
                 {group.entries.map((entry) => (
-                  <ArchiveCard entry={entry} key={entry.id} onNotice={setNotice} onUpdate={updateEntry} />
+                  <ArchiveCard
+                    entry={entry}
+                    key={entry.id}
+                    onNotice={setNotice}
+                    onSelect={togglePerformanceSelection}
+                    onUpdate={updateEntry}
+                    selected={selectedIds.includes(entry.id)}
+                  />
                 ))}
               </div>
             </section>

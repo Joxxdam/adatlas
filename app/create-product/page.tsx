@@ -7,6 +7,7 @@ import { buildOpportunityProductCreationHandoff } from "../lib/crema-market/hand
 import { buildBigQueryProductCreationHandoff } from "../lib/bigquery/handoff.server";
 import { buildSiteCandidateProductCreationHandoff } from "../lib/site-candidates/handoff.server";
 import { normalizeProductCreationUrl } from "../lib/product-creation/handoffUrl";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +30,14 @@ export default async function CreateProductPage({
   const initialProductUrl = normalizeProductCreationUrl(single(params.productUrl));
   const view = single(params.view);
   const requestedStep = single(params.step);
+  if (requestedStep === "meta") {
+    redirect("/archive");
+  }
   const initialWorkflowStep =
     view === "results"
       ? "results"
-      : ["product", "hooks", "creative", "meta"].includes(requestedStep || "")
-        ? (requestedStep as "product" | "hooks" | "creative" | "meta")
+      : ["product", "hooks", "creative"].includes(requestedStep || "")
+        ? (requestedStep as "product" | "hooks" | "creative")
         : "product";
   const [brands, images, generated] = await Promise.all([
     readBrands(),

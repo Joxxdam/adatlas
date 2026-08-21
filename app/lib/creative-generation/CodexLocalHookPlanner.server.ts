@@ -8,9 +8,10 @@ import {
   selectDiverseHookHypotheses,
   type CategoryHookPrior,
 } from "./hookHypothesisEngine";
-import { codexProductThreadKey, getAdvertiserThread, resetAdvertiserThread, saveAdvertiserThread } from "./codexRegistry.server";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
 import { hookTaxonomyTags, type CreativePlan, type HookHypothesisCandidate, type HookTaxonomyTag, type ProductTruth } from "./types";
+import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
+import { assertCreativeCopyAllowed, repairBannedCreativeSentence } from "./bannedCreativePhrases";
 
 const PLANNER_VERSION = "codex-local-hook-planner-v1";
 
@@ -90,10 +91,6 @@ function visibleLength(value: string) {
   return Array.from(value.replace(/\s/g, "")).length;
 }
 
-function planningIdentity(advertiserId: string, productId: string) {
-  return `${codexProductThreadKey(advertiserId, productId)}--hook-planning`;
-}
-
 function safeError(error: unknown) {
   return (error instanceof Error ? error.message : String(error))
     .replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일")
@@ -124,50 +121,26 @@ ${JSON.stringify({ productName: truth.product.productName, brandName: truth.prod
 JSON 스키마에 맞춰 후보만 반환한다.`;
 }
 
-async function planningThread(codex: Codex, advertiserId: string, productId: string) {
-  const registryId = planningIdentity(advertiserId, productId);
-  const record = await getAdvertiserThread(registryId);
+async function planningThread(codex: Codex) {
+  const runtime = resolveFastCreativeRuntime();
   const options = {
     workingDirectory: process.cwd(),
     sandboxMode: "workspace-write" as const,
     approvalPolicy: "never" as const,
     networkAccessEnabled: false,
     model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
-    modelReasoningEffort: "high" as const,
+    modelReasoningEffort: runtime.plannerReasoning,
   };
-  const limit = Math.max(10, Number(process.env.ADATLAS_CODEX_THREAD_MAX_TURNS || 60));
-  if (record?.threadId && (record.turnCount || 0) < limit) {
-    return { thread: codex.resumeThread(record.threadId, options), record, registryId, resumed: true };
-  }
-  if (record?.threadId) await resetAdvertiserThread(registryId);
-  return { thread: codex.startThread(options), record, registryId, resumed: false };
+  return codex.startThread(options);
 }
 
-async function runPlanner(truth: ProductTruth, advertiserId: string, advertiserName: string) {
+async function runPlanner(truth: ProductTruth) {
   if (!(await codexLocalAuthenticated())) throw new Error("로컬 Codex 로그인 상태를 확인할 수 없습니다.");
   const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: resolveCodexLocalExecutable() });
-  let current = await planningThread(codex, advertiserId, truth.productId);
-  let response;
-  try {
-    response = await current.thread.run(plannerPrompt(truth), {
-      outputSchema,
-      signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_PLANNING_TIMEOUT_MS || 180_000)),
-    });
-  } catch (error) {
-    if (!current.resumed) throw error;
-    await resetAdvertiserThread(current.registryId);
-    current = await planningThread(codex, advertiserId, truth.productId);
-    response = await current.thread.run(plannerPrompt(truth), {
-      outputSchema,
-      signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_PLANNING_TIMEOUT_MS || 180_000)),
-    });
-  }
-  await saveAdvertiserThread({
-    advertiserId: current.registryId,
-    advertiserName: `${advertiserName} · 후킹 기획`,
-    domain: "local-planning",
-    threadId: current.thread.id || undefined,
-    turnCount: (current.record?.turnCount || 0) + 1,
+  const thread = await planningThread(codex);
+  const response = await thread.run(plannerPrompt(truth), {
+    outputSchema,
+    signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_PLANNING_TIMEOUT_MS || 180_000)),
   });
   return JSON.parse(response.finalResponse) as PlannerResponse;
 }
@@ -190,11 +163,14 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
     const novelty = distinctiveness;
     const total = Math.round(evidenceStrength * .2 + specificity * .15 + distinctiveness * .15 + attentionPotential * .15 + visualizability * .15 + advertisingFit * .15 + claimSafety * .05);
     const id = `codex-hypothesis-${String(index + 1).padStart(2, "0")}`;
-    const mainHook = candidate.mainHook.trim().slice(0, 80);
-    const subCopy = candidate.subCopy.trim().slice(0, 120);
+    const verifiedEvidence = evidence.map((item) => item.fact);
+    const originalMainHook = candidate.mainHook.trim().slice(0, 80);
+    const originalSubCopy = candidate.subCopy.trim().slice(0, 120);
+    const mainHook = repairBannedCreativeSentence(originalMainHook) || `지금 가장 먼저 달라질 한 가지`;
+    const subCopy = repairBannedCreativeSentence(originalSubCopy) || verifiedEvidence[0] || truth.product.productName;
+    assertCreativeCopyAllowed(`${mainHook} ${subCopy}`);
     if (!mainHook || !subCopy || visibleLength(mainHook) > 44) throw new Error(`후킹 후보 ${index + 1}의 문구 형식이 올바르지 않습니다.`);
     const score = { evidenceStrength, specificity, purchaseReasonStrength, distinctiveness, attentionPotential, visualizability, advertisingFit, claimSafety, categoryPrior, novelty, total };
-    const verifiedEvidence = evidence.map((item) => item.fact);
     return {
       id,
       primaryTag: hookTaxonomyTags.includes(candidate.primaryTag) ? candidate.primaryTag : "other",
@@ -240,7 +216,7 @@ export async function planHooksWithCodexLocal(input: {
 }): Promise<{ exploration: ReturnType<typeof buildProductHookExploration>; copyGeneration: CreativePlan["copyGeneration"] }> {
   const prior = input.prior || {};
   try {
-    const response = await runPlanner(input.truth, input.advertiserId, input.advertiserName);
+    const response = await runPlanner(input.truth);
     const candidates = toCandidates(input.truth, response, prior);
     if (candidates.length < 12) throw new Error("Codex가 12개 미만의 후보를 반환했습니다.");
     const selected = selectDiverseHookHypotheses(candidates, 6);

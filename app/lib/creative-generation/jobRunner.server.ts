@@ -24,7 +24,7 @@ function runnerErrorMessage(error: unknown) {
     (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) ||
     /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)
   ) {
-    return "AI 전체 광고 생성이 제한시간을 초과했습니다. 해당 카드의 ‘AI로 다시 만들기’로 재시도해 주세요.";
+    return "AI 장면 생성이 제한시간을 초과했습니다. 해당 카드의 ‘다시 만들기’로 재시도해 주세요.";
   }
   return message.replace(/(?:\/Users|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 600);
 }

@@ -35,6 +35,10 @@ export type CreativeArchiveEntry = {
   jobId?: string;
   resultId?: string;
   resultUrl?: string;
+  landingUrl?: string;
+  utmContent?: string;
+  recommendedAdName?: string;
+  templateId?: string;
   createdAt: string;
   updatedAt: string;
   savedAsReference: boolean;

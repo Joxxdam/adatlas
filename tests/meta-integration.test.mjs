@@ -15,7 +15,7 @@ import { buildPausedAdRequest, buildPausedAdSetRequest, buildSingleMediaCreative
 
 function input(overrides = {}) {
   const creative = (index = 1) => ({ hookCode: `H0${index}`, materialCode: `AT-ORS-65-H0${index}-T01`, mediaPath: `/creative-${index}.jpg`, mediaType: "image", mediaRatio: "1:1", primaryText: `문구 ${index}`, headline: `후킹 ${index}`, description: "확인된 상품 근거", landingUrl: "https://shop.example.com/product/65", utm: `utm_source=meta&utm_content=H0${index}`, approved: true });
-  return { requestKey: "adv:product:T01:H01", advertiserId: "adv", advertiserName: "광고주", productId: "65", productName: "상품", testRound: 1, adAccount: { id: "act_1", name: "계정", currency: "USD", timezoneName: "Asia/Seoul" }, campaign: { id: "cmp_1", accountId: "act_1", name: "판매", objective: "OUTCOME_SALES", status: "PAUSED", budgetMode: "ABO", specialAdCategories: [] }, baselineAdSet: { id: "base_1", accountId: "act_1", campaignId: "cmp_1", name: "기준", targeting: { publisher_platforms: ["facebook"] }, placements: ["facebook_feed"], promotedObject: { pixelId: "px_1", customEventType: "PURCHASE" }, optimizationGoal: "OFFSITE_CONVERSIONS", billingEvent: "IMPRESSIONS", attributionSpec: [{ event_type: "CLICK_THROUGH", window_days: 7 }] }, pageId: "page_1", pixelId: "px_1", conversionEvent: "PURCHASE", creatives: [creative(1)], ...overrides };
+  return { requestKey: "adv:product:T01:H01", advertiserId: "adv", advertiserName: "광고주", productId: "65", productName: "상품", testRound: 1, testType: "creative-combination", archiveEntryIds: ["asset:one"], adAccount: { id: "act_1", name: "계정", currency: "USD", timezoneName: "Asia/Seoul" }, campaign: { id: "cmp_1", accountId: "act_1", name: "판매", objective: "OUTCOME_SALES", status: "PAUSED", budgetMode: "ABO", specialAdCategories: [] }, baselineAdSet: { id: "base_1", accountId: "act_1", campaignId: "cmp_1", name: "기준", targeting: { publisher_platforms: ["facebook"] }, placements: ["facebook_feed"], promotedObject: { pixelId: "px_1", customEventType: "PURCHASE" }, optimizationGoal: "OFFSITE_CONVERSIONS", billingEvent: "IMPRESSIONS", attributionSpec: [{ event_type: "CLICK_THROUGH", window_days: 7 }] }, pageId: "page_1", pixelId: "px_1", conversionEvent: "PURCHASE", creatives: [creative(1)], ...overrides };
 }
 
 const config = { defaultDailyBudgetUsd: 5, budgetByAccount: {}, maxAdsPerRequest: 6 };
@@ -96,6 +96,11 @@ test("mock registration is sequential, idempotent, and never creates ACTIVE", as
     assert.equal(result.status, "success");
     assert.deepEqual(provider.calls.map((call) => call.operation), ["adset.create", "media.upload", "creative.create", "ad.create", "adsets", "ads"]);
     assert.doesNotMatch(JSON.stringify(provider.calls), /ACTIVE/);
+    const stored = await repository.read();
+    assert.equal(stored.performance.length, 1);
+    assert.equal(stored.performance[0].testType, "creative-combination");
+    assert.deepEqual(stored.performance[0].archiveEntryIds, ["asset:one"]);
+    assert.equal(stored.performance[0].rows[0].materialCode, "AT-ORS-65-H01-T01");
     const second = await service.register(value, service.issueConfirmation(value).token);
     assert.equal(second.id, result.id);
     assert.equal(provider.calls.length, 6);

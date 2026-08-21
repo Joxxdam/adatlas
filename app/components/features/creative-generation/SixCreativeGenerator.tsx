@@ -10,11 +10,13 @@ import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import {
   CREATIVE_PLANNER_VERSION,
   type CreativeExplorationMode,
+  type CopyPlan,
   type GenerationJob,
   type GenerationResult,
 } from "../../../lib/creative-generation/types";
 import { buildGenerationSummary } from "../../../lib/creative-generation/generationSummary";
 import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
+import { performanceTemplateRegistry } from "../../../lib/creative-generation/performanceTemplateRegistry";
 
 type Props = {
   product: ProductInfoForPrompt;
@@ -45,16 +47,16 @@ const resultStatusLabels: Record<GenerationResult["status"], string> = {
 };
 
 const generationStageLabels: Record<NonNullable<GenerationResult["generationStage"]>, string> = {
-  planned: "장면 제작 대기",
-  "scene-generating": "후킹별 완성 광고 장면 제작 중",
-  compositing: "완성 광고의 상품 동일성·구도 확인 중",
-  "copy-rendering": "한국어 타이포그래피 생성 중",
-  "quality-check": "품질 확인 중",
-  completed: "제작 완료",
-  "reference-preparing": "상품 사진 준비 중",
-  "ai-generating": "후킹에 맞춰 완성 광고 AI 생성 중",
-  "ai-revising": "AI가 문구·제품을 직접 수정 중",
-  exporting: "1200×1200 JPG 검증·압축 중",
+  planned: "생성 대기",
+  "scene-generating": "배경 이미지 생성 중",
+  compositing: "상품·문구 합성 중",
+  "copy-rendering": "상품·문구 합성 중",
+  "quality-check": "로컬 품질 확인 중",
+  completed: "완료",
+  "reference-preparing": "상품 분석 중",
+  "ai-generating": "배경 이미지 생성 중",
+  "ai-revising": "배경 장면 다시 생성 중",
+  exporting: "1200×1200 다운로드 파일 준비 중",
 };
 
 function requestId() {
@@ -78,6 +80,8 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const [downloading, setDownloading] = useState(false);
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 고유 후킹 6개와 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
+  const [copyEdits, setCopyEdits] = useState<Record<string, Partial<CopyPlan>>>({});
+  const [showMoreConcepts, setShowMoreConcepts] = useState(false);
   const generationModePreference = "ai-full-scene" as const;
   const [strategyVariation, setStrategyVariation] = useState(0);
   const [explorationMode, setExplorationMode] = useState<CreativeExplorationMode>("concept-exploration");
@@ -173,7 +177,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   async function generateOne(
     activeJob: GenerationJob,
     resultId: string,
-    options: { regenerateScene?: boolean; action?: "generate" | "regenerate" | "revise"; feedback?: string } = {}
+    options: { regenerateScene?: boolean; action?: "generate" | "regenerate" | "revise" | "copy-update"; feedback?: string; copy?: Partial<CopyPlan> } = {}
   ) {
     const generationRequestId = requestId();
     const response = await fetch(
@@ -186,6 +190,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
           regenerateScene: Boolean(options.regenerateScene),
           action: options.action || "generate",
           feedback: options.feedback,
+          copy: options.copy,
         }),
       }
     );
@@ -250,7 +255,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
           selectedAdImages: props.selectedAdImages,
           logoPath: props.logoPath,
           source: props.source,
-          concurrency: 2,
+          concurrency: 3,
           testCode: job?.creativePlan.testCode || "T01",
           generationModePreference,
           strategyVariation: mode === "scene" ? strategyVariation + 1 : strategyVariation,
@@ -334,6 +339,20 @@ export function HookExperimentCreativeGenerator(props: Props) {
     }
   }
 
+  async function applyCopyUpdate(result: GenerationResult) {
+    if (!job) return;
+    setLoading(true);
+    try {
+      await generateOne(job, result.id, { action:"copy-update", copy:copyEdits[result.id] || {} });
+      await refreshJob(job.id);
+      setMessage(`${result.hookPlan.hookCode} 문구를 AI 재생성 없이 다시 합성했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "문구 적용 실패");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function sendResultAction(result: GenerationResult, action: "approve" | "exclude" | "feedback" | "golden-reference", feedback?: string) {
     if (!job) return;
     const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/results/${encodeURIComponent(result.id)}`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ action, feedback }) });
@@ -412,8 +431,8 @@ export function HookExperimentCreativeGenerator(props: Props) {
         <div>
           <p className="eyebrow">3 · 광고 콘텐츠 생성</p>
           <h4>상세페이지 고유 후킹 6개로 AI 광고 만들기</h4>
-          <p>흔한 상품명형 문구를 제외하고, 후킹마다 장면·제품·한국어 문구·타이포그래피·레이아웃 전체를 AI가 별도로 완성합니다.</p>
-          <small>{providerStatus} · 상품별 독립 작업에서 최대 2장을 동시에 제작합니다.</small>
+          <p>상세페이지 근거로 후킹 6개를 만들고, AI 장면 위에 원본 상품과 정확한 한국어 문구를 안전하게 합성합니다.</p>
+          <small>{providerStatus} · 후킹별 장면을 최대 3장 동시에 제작하며 완성된 카드부터 바로 보여드립니다.</small>
         </div>
         <button disabled={!canStart || loading} onClick={() => void startGeneration()} type="button">
           {loading
@@ -426,8 +445,8 @@ export function HookExperimentCreativeGenerator(props: Props) {
         </button>
       </div>
       <div className="six-creative-plan-summary">
-        <span><b>제작</b>후킹마다 전체 콘텐츠를 AI로 개별 생성</span>
-        <span><b>보존</b>상세페이지 상품 형태·패키지·색상·확인된 사실</span>
+        <span><b>제작</b>후킹마다 글자 없는 AI 장면을 개별 생성</span>
+        <span><b>보존</b>원본 상품 픽셀·정확한 한글·확인된 가격과 혜택</span>
         <span><b>전달</b>이미지·후킹·소재코드·광고명·UTM</span>
         <span><b>후킹</b>상세페이지 고유 근거·상황·감각·반전</span>
       </div>
@@ -469,8 +488,8 @@ export function HookExperimentCreativeGenerator(props: Props) {
             </div>
             <div>
               <strong>제작 방식</strong>
-              <span>{job.creativePlan.categoryCreativeProfile?.label || "상품별"} AI 전체 콘텐츠</span>
-              <small>{job.creativePlan.categoryCreativeProfile?.reason || "후킹마다 장면·구도·디자인 전체를 독립 제작"}</small>
+              <span>{job.creativePlan.categoryCreativeProfile?.label || "상품별"} 후킹 광고 6종</span>
+              <small>{job.creativePlan.categoryCreativeProfile?.reason || "후킹마다 AI 장면을 만들고 원본 상품·정확한 한글을 로컬 합성"}</small>
             </div>
             <div>
               <strong>상세페이지 레퍼런스</strong>
@@ -489,12 +508,15 @@ export function HookExperimentCreativeGenerator(props: Props) {
               <small>{job.groupValidation.recommendation === "approve" ? "6개 후킹이 서로 다른 완성 광고로 확인됐습니다." : "중복 가능성이 있는 광고만 다시 만들거나 확인합니다."}</small>
             </div>
           ) : null}
-          <ProductAdCopyPanel
-            adCopy={job.adCopy}
-            jobId={job.id}
-            onChanged={(changed) => setJob(changed)}
-            productName={job.productTruth.product.productName}
-          />
+          <div className="six-creative-actions">
+            <button onClick={() => setShowMoreConcepts((value) => !value)} type="button">다른 콘셉트 더 보기</button>
+          </div>
+          {showMoreConcepts ? <div className="six-creative-plan-summary">
+            {(job.unusedPerformanceTemplateIds || []).length
+              ? (job.unusedPerformanceTemplateIds || []).map((id) => <span key={id}><b>{id.slice(0,3)}</b>{performanceTemplateRegistry.find((template) => template.id === id)?.label || id}</span>)
+              : <span>현재 상품 근거로 안전하게 제안할 수 있는 콘셉트를 모두 사용했습니다.</span>}
+            <small>제안만 표시하며 이미지를 미리 생성하지 않습니다.</small>
+          </div> : null}
           <div className="six-creative-grid">
             {job.results.map((result) => {
               return (
@@ -514,36 +536,11 @@ export function HookExperimentCreativeGenerator(props: Props) {
                       </div>
                     )}
                   </div>
-                  {result.qa ? (
-                    <div className={`six-creative-qa ${result.qa.passed ? "pass" : "review"}`}>
-                      이미지 품질 {result.qa.score}점 · {result.qa.width}×{result.qa.height} · {Math.ceil(result.qa.fileSizeBytes / 1024)}KB
-                      <small>제품 확인 {result.masterScene?.productIdentityScore ?? job.masterScene?.productIdentityScore ?? "실제 상품 유지"}</small>
-                    </div>
-                  ) : null}
-                  {result.nativeCreative?.validation ? (
-                    <div className={`six-creative-qa ${["success", "approved"].includes(result.status) ? "pass" : "review"}`}>
-                      한국어 {result.nativeCreative.validation.koreanTextAccuracy} · 상품 일치 {result.nativeCreative.validation.productIdentity} · 후킹 일치 {result.nativeCreative.validation.hookAlignment}
-                      <small>
-                        {result.nativeCreative.export
-                          ? `${result.nativeCreative.export.width}×${result.nativeCreative.export.height} · ${Math.ceil(result.nativeCreative.export.fileSizeBytes / 1024)}KB · AI 수정 ${result.nativeCreative.revisionCount}회`
-                          : `AI 수정 ${result.nativeCreative.revisionCount}회`}
-                      </small>
-                    </div>
-                  ) : null}
                   <div className="hook-hypothesis">
                     <b>메인 후킹</b>
                     <strong>{result.hookPlan.headline}</strong>
                     <b>서브 문구</b>
                     <span>{result.hookPlan.body}</span>
-                    {conceptMode ? <>
-                      <b>선정 이유</b>
-                      <span>{result.hookPlan.selectionReason}</span>
-                      <b>광고 장면</b>
-                      <span>{result.hookPlan.creativeBrief?.visualStory}</span>
-                      <b>시각 광고 문법</b>
-                      <span>{result.hookPlan.creativeBrief?.visualArchetype} · {result.hookPlan.creativeBrief?.humanRole}</span>
-                    </> : null}
-                    <small>확인 근거 · {result.hookPlan.factIds.map((id) => job.productTruth.facts.find((fact) => fact.id === id)?.value).filter(Boolean).join(" · ") || "확인 가능한 상품 사실"}</small>
                   </div>
                   {result.error ? <p className="six-creative-error">{result.error}</p> : null}
                   {result.creativeAsset ? (
@@ -566,18 +563,32 @@ export function HookExperimentCreativeGenerator(props: Props) {
                     </div>
                   ) : null}
                   <div className="six-creative-card-actions">
-                    <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">AI로 다시 만들기</button>
+                    <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">이 콘텐츠 다시 만들기</button>
                     <label>
-                      <span>AI 수정 요청</span>
+                      <span>장면 수정 요청</span>
                       <textarea value={feedbacks[result.id] || ""} onChange={(event) => setFeedbacks((current) => ({ ...current, [result.id]: event.target.value }))} placeholder="예: 제품을 더 크게, 모델 없이 시원한 샤워 장면으로 바꿔줘" rows={2} />
                     </label>
-                    <button disabled={loading || !result.imagePath || !feedbacks[result.id]?.trim()} onClick={() => job && void generateOne(job, result.id, { action: "revise", feedback: feedbacks[result.id].trim() }).then(() => refreshJob(job.id)).catch((error) => setMessage(error instanceof Error ? error.message : "AI 수정 실패"))} type="button">AI에게 수정 요청</button>
+                    <button disabled={loading || !result.imagePath || !feedbacks[result.id]?.trim()} onClick={() => job && void generateOne(job, result.id, { action: "revise", feedback: feedbacks[result.id].trim() }).then(() => refreshJob(job.id)).catch((error) => setMessage(error instanceof Error ? error.message : "장면 수정 실패"))} type="button">장면 다시 만들기</button>
                     <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"approve").catch((error)=>setMessage(error instanceof Error ? error.message : "승인 저장 실패"))} type="button">승인</button>
                     <button disabled={!result.imagePath || !["success", "approved"].includes(result.status)} onClick={() => void sendResultAction(result,"golden-reference", feedbacks[result.id]?.trim()).catch((error)=>setMessage(error instanceof Error ? error.message : "골든 레퍼런스 등록 실패"))} type="button">골든 레퍼런스로 등록</button>
                     <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"exclude").catch((error)=>setMessage(error instanceof Error ? error.message : "제외 저장 실패"))} type="button">제외</button>
                   </div>
                   <details className="six-creative-edit">
-                    <summary>후킹·제작 정보 보기</summary>
+                    <summary>문구 수정·제작 정보 보기</summary>
+                    <div className="six-creative-copy-editor">
+                      <label><span>메인 후킹</span><input value={copyEdits[result.id]?.headline ?? result.hookPlan.headline} onChange={(event)=>setCopyEdits((current)=>({...current,[result.id]:{...current[result.id],headline:event.target.value}}))} /></label>
+                      <label><span>서브 문구</span><textarea rows={2} value={copyEdits[result.id]?.body ?? result.hookPlan.body} onChange={(event)=>setCopyEdits((current)=>({...current,[result.id]:{...current[result.id],body:event.target.value}}))} /></label>
+                      <label><span>혜택·가격</span><input value={copyEdits[result.id]?.offer ?? result.hookPlan.offer} onChange={(event)=>setCopyEdits((current)=>({...current,[result.id]:{...current[result.id],offer:event.target.value}}))} /></label>
+                      <label><span>CTA</span><input value={copyEdits[result.id]?.cta ?? result.hookPlan.cta} onChange={(event)=>setCopyEdits((current)=>({...current,[result.id]:{...current[result.id],cta:event.target.value}}))} /></label>
+                      <button disabled={loading || !result.nativeCreative?.backgroundPath} onClick={()=>void applyCopyUpdate(result)} type="button">문구만 적용</button>
+                      <small>AI 장면을 다시 호출하지 않고 원본 상품과 수정 문구만 즉시 합성합니다.</small>
+                    </div>
+                    {conceptMode ? <div className="hook-score-details">
+                      <span>선정 이유 · {result.hookPlan.selectionReason}</span>
+                      <span>장면 · {result.hookPlan.creativeBrief?.visualStory}</span>
+                      <span>템플릿 · {performanceTemplateRegistry.find((template)=>template.id===result.hookPlan.performanceTemplateId)?.label || "자동 선택"}</span>
+                      <span>확인 근거 · {result.hookPlan.factIds.map((id) => job.productTruth.facts.find((fact) => fact.id === id)?.value).filter(Boolean).join(" · ") || "확인 가능한 상품 사실"}</span>
+                    </div> : null}
                     {result.hookPlan.score ? <div className="hook-score-details">
                       <span>내부 태그 · {result.hookPlan.primaryTag}{result.hookPlan.secondaryTags?.length ? ` / ${result.hookPlan.secondaryTags.join(", ")}` : ""}</span>
                       <span>후보 점수 · {result.hookPlan.score.total}/100</span>
@@ -589,6 +600,10 @@ export function HookExperimentCreativeGenerator(props: Props) {
               );
             })}
           </div>
+          <details className="six-creative-edit six-creative-meta-copy">
+            <summary>Meta 광고 문구·광고명·UTM 만들기</summary>
+            <ProductAdCopyPanel adCopy={job.adCopy} jobId={job.id} onChanged={(changed) => setJob(changed)} productName={job.productTruth.product.productName} />
+          </details>
         </>
       ) : null}
     </section>

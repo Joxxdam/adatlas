@@ -49,6 +49,70 @@ export function createMetaDraftRegistrationService(options?: {
     dryRun: config.dryRun,
   });
 
+  async function ensurePerformanceExperiment(
+    input: MetaDraftRegistrationInput,
+    job: MetaRegistrationJob
+  ) {
+    if (!job.adSetId) return;
+    const creativeByMaterialCode = new Map(
+      input.creatives.map((creative) => [creative.materialCode, creative])
+    );
+    const rows = job.items
+      .filter((item) => Boolean(item.adId))
+      .map((item) => {
+        const creative = creativeByMaterialCode.get(item.materialCode);
+        return {
+          hookCode: item.hookCode,
+          materialCode: item.materialCode,
+          adId: String(item.adId),
+          adName: creative?.materialCode || `${item.hookCode} ${input.productName}`,
+          impressions: 0,
+          spend: 0,
+          outboundClicks: 0,
+          landingPageViews: 0,
+          purchases: 0,
+          purchaseValue: 0,
+          ctr: 0,
+          cpc: 0,
+          cpa: 0,
+          roas: 0,
+          spendShare: 0,
+          status: "추가 데이터 필요",
+        };
+      });
+    if (!rows.length) return;
+    const experimentId = `meta-performance-${job.id}`;
+    const alreadyLinked = (await repository.read()).performance.find(
+      (experiment) => experiment.adSetId === job.adSetId && experiment.id !== experimentId
+    );
+    if (alreadyLinked) return;
+    await repository.upsertPerformance({
+      id: experimentId,
+      advertiserId: input.advertiserId,
+      advertiserName: input.advertiserName,
+      productId: input.productId,
+      productName: input.productName,
+      landingUrl: input.creatives[0]?.landingUrl,
+      testRound: input.testRound,
+      testType: input.testType || "creative-combination",
+      archiveEntryIds: input.archiveEntryIds,
+      source: "meta",
+      adAccountId: input.adAccount.id,
+      adAccountName: input.adAccount.name,
+      currency: input.adAccount.currency,
+      campaignId: input.campaign.id,
+      campaignName: input.campaign.name,
+      adSetId: job.adSetId,
+      adSetName: `${input.productName} T${String(input.testRound).padStart(2, "0")} PAUSED`,
+      metaStatus: job.status.toUpperCase(),
+      trackingEnabled: false,
+      trackingStatus: "prelaunch",
+      timezoneName: input.adAccount.timezoneName,
+      attributionSetting: JSON.stringify(input.baselineAdSet.attributionSpec || []),
+      rows,
+    });
+  }
+
   async function verifyCreatedDraft(
     input: MetaDraftRegistrationInput,
     job: MetaRegistrationJob,
@@ -90,7 +154,10 @@ export function createMetaDraftRegistrationService(options?: {
       if (!metaConfirmationTokens.consume(confirmationToken, input))
         throw new Error("최종 확인 토큰이 없거나 만료되었거나 등록 내용이 변경되었습니다.");
       const existing = await repository.findRegistrationByRequestKey(input.requestKey);
-      if (existing) return existing;
+      if (existing) {
+        await ensurePerformanceExperiment(input, existing);
+        return existing;
+      }
       if (!repository.acquireLock(input.requestKey))
         throw new Error("동일한 Meta 등록 요청이 이미 처리 중입니다.");
       const now = new Date().toISOString();
@@ -102,6 +169,8 @@ export function createMetaDraftRegistrationService(options?: {
         adAccountId: input.adAccount.id,
         campaignId: input.campaign.id,
         baselineAdSetId: input.baselineAdSet.id,
+        testType: input.testType || "creative-combination",
+        archiveEntryIds: input.archiveEntryIds,
         status: "pending",
         items: [],
         createdAt: now,
@@ -182,6 +251,7 @@ export function createMetaDraftRegistrationService(options?: {
         }
         job.updatedAt = new Date().toISOString();
         await repository.saveRegistration(job);
+        await ensurePerformanceExperiment(input, job);
         return job;
       } finally {
         repository.releaseLock(input.requestKey);

@@ -9,6 +9,7 @@ import type {
   MetaCreativeDraft,
   MetaDraftRegistrationInput,
   MetaPreflightResult,
+  PerformanceTestType,
 } from "../../lib/meta/types";
 import styles from "./MetaOperations.module.css";
 
@@ -19,6 +20,8 @@ type Props = {
   productName: string;
   landingUrl: string;
   approvedCreatives: MetaCreativeDraft[];
+  testType?: PerformanceTestType;
+  archiveEntryIds?: string[];
 };
 
 type Capability = {
@@ -85,7 +88,8 @@ export function MetaDraftRegistrationPanel(props: Props) {
         props.advertiserId,
         props.productId,
         "T01",
-        props.approvedCreatives.map((creative) => creative.hookCode).join("-"),
+        props.testType || "creative-combination",
+        props.approvedCreatives.map((creative) => creative.materialCode).join("-"),
         new Date().toISOString().slice(0, 10),
       ].join(":"),
       advertiserId: props.advertiserId,
@@ -93,6 +97,8 @@ export function MetaDraftRegistrationPanel(props: Props) {
       productId: props.productId,
       productName: props.productName,
       testRound: 1,
+      testType: props.testType || "creative-combination",
+      archiveEntryIds: props.archiveEntryIds,
       adAccount: account,
       campaign,
       baselineAdSet,
@@ -194,7 +200,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
     try {
       await api("/api/meta/drafts/register", { input, confirmationToken });
       setConfirmationToken("");
-      setStatus("PAUSED 초안을 생성했습니다. 사후 안전 검증 결과를 확인해 주세요.");
+      setStatus("PAUSED 초안을 생성하고 성과 확인 목록에 연결했습니다. 사후 안전 검증 결과를 확인해 주세요.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "PAUSED 초안 등록 실패");
     } finally {
@@ -206,8 +212,8 @@ export function MetaDraftRegistrationPanel(props: Props) {
     <section className={styles.panel} id="meta-draft-registration">
       <header className={styles.header}>
         <div>
-          <p className="eyebrow">STEP 5 · META DRAFT</p>
-          <h3>기존 캠페인에 PAUSED 초안 등록</h3>
+          <p className="eyebrow">PERFORMANCE SETUP · META DRAFT</p>
+          <h3>선택 소재를 기존 캠페인에 PAUSED로 설정</h3>
           <p>
             캠페인과 기준 광고 세트는 읽기 전용이며, 새 광고 세트 1개와 광고 최대 6개만 PAUSED로
             만듭니다.
@@ -234,6 +240,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
           승인 결과 {props.approvedCreatives.filter((item) => item.approved).length}/6 · CTA 지금
           구매하기 / SHOP_NOW
         </span>
+        <span>{props.testType === "hook-only" ? "후킹만 비교" : "전체 소재 조합 비교"}</span>
       </div>
 
       {!capability?.configured || !capability.readEnabled ? (

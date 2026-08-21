@@ -45,7 +45,13 @@ export function ProductAdCopyPanel({
     setNotice(successMessage);
   }
 
-  if (!adCopy) return <section className={styles.panel}><p className={styles.eyebrow}>META 기본 문구 · 상품당 1개</p><strong>대표 이미지의 최종 QA가 끝나면 자동으로 생성됩니다.</strong></section>;
+  if (!adCopy) return <section className={styles.panel}>
+    <p className={styles.eyebrow}>META 기본 문구 · 상품당 1개</p>
+    <strong>이미지 생성과 분리되어 있습니다.</strong>
+    <p className={styles.help}>필요할 때만 대표 이미지와 후킹을 기준으로 광고 문구·광고명·UTM을 만듭니다.</p>
+    <div className={styles.actions}><button disabled={working} onClick={() => void action("regenerate")} type="button">Meta 문구 만들기</button></div>
+    {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
+  </section>;
   const visible = Boolean(adCopy.primaryText) && adCopy.status !== "needs-review";
   return (
     <section className={styles.panel} aria-label={`${productName} Meta 기본 문구`}>

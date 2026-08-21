@@ -25,14 +25,7 @@ export const IMAGE_CONTENT_FEATURES = [
     href: "/create-product?step=product",
     index: "02",
     label: "광고 제작",
-    description: "상품 분석부터 Meta 초안까지 진행합니다",
-  },
-  {
-    key: "performance" as const,
-    href: "/performance",
-    index: "04",
-    label: "성과 확인",
-    description: "후킹별 Meta 운영 성과를 확인합니다",
+    description: "상품 분석부터 이미지 6장 제작까지 진행합니다",
   },
 ];
 
@@ -47,10 +40,22 @@ export const ARCHIVE_FEATURE = {
   key: "archive" as const,
   href: "/archive",
   label: "아카이브",
-  description: "완성한 이미지 콘텐츠와 업체 레퍼런스를 보관합니다",
+  description: "완성 콘텐츠를 보관하고 테스트 소재를 선택합니다",
 };
 
-export const MAIN_FEATURES = [...IMAGE_CONTENT_FEATURES, VIDEO_PLANNING_FEATURE, ARCHIVE_FEATURE];
+export const PERFORMANCE_FEATURE = {
+  key: "performance" as const,
+  href: "/performance",
+  label: "성과 확인",
+  description: "선택 소재를 설정하고 Meta 성과를 비교합니다",
+};
+
+export const MAIN_FEATURES = [
+  ...IMAGE_CONTENT_FEATURES,
+  VIDEO_PLANNING_FEATURE,
+  ARCHIVE_FEATURE,
+  PERFORMANCE_FEATURE,
+];
 
 export const MANAGEMENT_FEATURES = [
   { key: "auto-production" as const, href: "/admin/auto-production", label: "자동 제작 관리" },
@@ -116,6 +121,24 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
           <div>
             <strong>{ARCHIVE_FEATURE.label}</strong>
             <small>{ARCHIVE_FEATURE.description}</small>
+          </div>
+        </Link>
+      </section>
+
+      <section className="feature-navigation-group feature-navigation-performance" aria-labelledby="performance-navigation-label">
+        <div className="feature-navigation-group-label" id="performance-navigation-label">
+          <span>PERFORMANCE</span>
+          <strong>광고 성과 운영</strong>
+        </div>
+        <Link
+          aria-current={activeFeature === PERFORMANCE_FEATURE.key ? "page" : undefined}
+          className={`feature-navigation-performance-link${activeFeature === PERFORMANCE_FEATURE.key ? " active" : ""}`}
+          href={PERFORMANCE_FEATURE.href}
+        >
+          <span>META</span>
+          <div>
+            <strong>{PERFORMANCE_FEATURE.label}</strong>
+            <small>{PERFORMANCE_FEATURE.description}</small>
           </div>
         </Link>
       </section>

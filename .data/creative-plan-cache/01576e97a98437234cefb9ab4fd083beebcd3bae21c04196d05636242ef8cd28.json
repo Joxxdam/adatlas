@@ -1,0 +1,2864 @@
+{
+  "fingerprint": "01576e97a98437234cefb9ab4fd083beebcd3bae21c04196d05636242ef8cd28",
+  "exploration": {
+    "profile": {
+      "productId": "product-192u257",
+      "productName": "오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+      "category": "food-meat",
+      "brandName": "",
+      "primaryBenefit": "마블링 적당해요(육이 숙성되어 감칠맛2배)",
+      "customerReasons": [
+        {
+          "id": "reason-fact-main-benefit-1b3kajr",
+          "reason": "마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "factIds": [
+            "fact-main-benefit-1b3kajr"
+          ],
+          "strength": 89
+        },
+        {
+          "id": "reason-fact-verified-benefit-1-1xf68nf",
+          "reason": "오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "factIds": [
+            "fact-verified-benefit-1-1xf68nf"
+          ],
+          "strength": 92
+        },
+        {
+          "id": "reason-fact-verified-benefit-2-1b3kajr",
+          "reason": "마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "factIds": [
+            "fact-verified-benefit-2-1b3kajr"
+          ],
+          "strength": 89
+        },
+        {
+          "id": "reason-fact-verified-benefit-3-34tgye",
+          "reason": "설록우(찰진등심)",
+          "factIds": [
+            "fact-verified-benefit-3-34tgye"
+          ],
+          "strength": 63
+        },
+        {
+          "id": "reason-fact-verified-benefit-4-m1omjm",
+          "reason": "국내산 /설록우",
+          "factIds": [
+            "fact-verified-benefit-4-m1omjm"
+          ],
+          "strength": 63
+        },
+        {
+          "id": "reason-fact-verified-benefit-5-1fqse7d",
+          "reason": "마블링 정도",
+          "factIds": [
+            "fact-verified-benefit-5-1fqse7d"
+          ],
+          "strength": 62
+        }
+      ],
+      "problems": [
+        {
+          "value": "마블링 적당해요(육이 숙성되어",
+          "factIds": [
+            "fact-main-benefit-1b3kajr"
+          ]
+        }
+      ],
+      "outcomes": [
+        {
+          "value": "마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "factIds": [
+            "fact-main-benefit-1b3kajr"
+          ]
+        }
+      ],
+      "useOccasions": [
+        {
+          "value": "주말 식사나 선물을 고를 때",
+          "factIds": [
+            "fact-main-benefit-1b3kajr"
+          ]
+        }
+      ],
+      "targets": [],
+      "ingredients": [
+        {
+          "value": "국내산 /설록우",
+          "factIds": [
+            "fact-ingredient-1-m1omjm"
+          ]
+        }
+      ],
+      "priceSignals": [
+        {
+          "value": "49,800원",
+          "factIds": [
+            "fact-price-196dovi"
+          ]
+        },
+        {
+          "value": "148,000원",
+          "factIds": [
+            "fact-original-price-u5xy78"
+          ]
+        },
+        {
+          "value": "66% 할인",
+          "factIds": [
+            "fact-discount-1fdheg0"
+          ]
+        }
+      ],
+      "reviewSignals": [],
+      "optionSignals": [],
+      "originSignals": [],
+      "seasonSignals": [],
+      "visualAssets": [
+        {
+          "id": "image-product-packshot-rgtric",
+          "role": "product-packshot",
+          "path": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260525011906428537bb8e929b-8cea-4c6b-a98a-63cfad66ca2d.png"
+        },
+        {
+          "id": "image-product-packshot-1tkcopx",
+          "role": "product-packshot",
+          "path": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202606120310461044718f8e06ce-881c-44c5-9558-3a4a7d430b6a.jpg"
+        },
+        {
+          "id": "image-product-packshot-17szgss",
+          "role": "product-packshot",
+          "path": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240127023517918810945f4275-081e-4e92-943c-ea539a352f49.jpg"
+        },
+        {
+          "id": "image-product-packshot-1vpswxp",
+          "role": "product-packshot",
+          "path": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202401270257390763062025aabe-3d95-4e47-981a-eeefef033a43.jpg"
+        },
+        {
+          "id": "image-product-packshot-1i5uret",
+          "role": "product-packshot",
+          "path": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2024012501232421937622b6c3e9-e180-4a2d-9cd5-1fd2c52712d5.jpg"
+        },
+        {
+          "id": "image-product-packshot-nxpsvu",
+          "role": "product-packshot",
+          "path": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20250414124933085320d5802e74-f45d-4f25-a3b8-7f75334ecf65.jpg"
+        }
+      ],
+      "dataSufficiency": 100
+    },
+    "candidates": [
+      {
+        "id": "codex-hypothesis-01",
+        "primaryTag": "sensory-experience",
+        "secondaryTags": [],
+        "hypothesis": "등심을 고를 때 과한 지방보다 씹는 맛과 감칠맛의 균형을 원하는 고객에게 숙성과 적당한 마블링을 함께 제시하면 관심이 높아진다.",
+        "mainHook": "기름진 등심 말고, 찰지게 감기는 쪽",
+        "subCopy": "적당한 마블링의 등심을 숙성해 감칠맛을 살렸어요.",
+        "customerReason": "부드러운 고기를 원하지만 지방이 지나치게 많은 등심은 부담스럽다.",
+        "customerTension": "부드러운 고기를 원하지만 지방이 지나치게 많은 등심은 부담스럽다.",
+        "verifiedEvidence": [
+          "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 설록우(찰진등심)",
+          "상세페이지 혜택: 마블링 정도"
+        ],
+        "intendedReaction": "마블링이 과하지 않으면서도 맛있게 먹을 수 있는 등심이라고 느낀다.",
+        "visualConcept": "뜨거운 팬 위에서 구워지는 등심과 집게로 들어 올린 찰진 단면을 한 화면에 배치하고, 지방 결은 과장 없이 실제 상품 이미지에 맞춰 표현한다.",
+        "prohibitedClaims": [
+          "무지방 또는 저지방이라는 표현",
+          "특정 지방 함량 수치",
+          "입에서 녹는다는 보장",
+          "등급 미확인 표현"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "적당한 마블링과 찰진 등심이라는 상품 고유 표현을 고객의 지방 부담과 직접 연결할 수 있다.",
+        "evidenceSummary": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 설록우(찰진등심) · 상세페이지 혜택: 마블링 정도",
+        "evidence": [
+          {
+            "fact": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 정도",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-main-benefit-1b3kajr",
+          "fact-verified-benefit-3-34tgye",
+          "fact-verified-benefit-5-1fqse7d"
+        ],
+        "sceneKey": "balanced-marbling-chewy-bite",
+        "visualStory": "뜨거운 팬 위에서 구워지는 등심과 집게로 들어 올린 찰진 단면을 한 화면에 배치하고, 지방 결은 과장 없이 실제 상품 이미지에 맞춰 표현한다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 9,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 8,
+          "attentionPotential": 8,
+          "visualizability": 9,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-01",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-01",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-01",
+          "mainHook": "기름진 등심 말고, 찰지게 감기는 쪽",
+          "subCopy": "적당한 마블링의 등심을 숙성해 감칠맛을 살렸어요.",
+          "customerInsight": "부드러운 고기를 원하지만 지방이 지나치게 많은 등심은 부담스럽다.",
+          "messageHypothesis": "감각 경험 가설: 부드러운 고기를 원하지만 지방이 지나치게 많은 등심은 부담스럽다.",
+          "verifiedFacts": [
+            "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 설록우(찰진등심)",
+            "상세페이지 혜택: 마블링 정도"
+          ],
+          "objective": "감각 경험 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "뜨거운 팬 위에서 구워지는 등심과 집게로 들어 올린 찰진 단면을 한 화면에 배치하고, 지방 결은 과장 없이 실제 상품 이미지에 맞춰 표현한다.",
+          "sceneDescription": "뜨거운 팬 위에서 구워지는 등심과 집게로 들어 올린 찰진 단면을 한 화면에 배치하고, 지방 결은 과장 없이 실제 상품 이미지에 맞춰 표현한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "기름진 등심 말고, 찰지게 감기는 쪽",
+            "적당한 마블링의 등심을 숙성해 감칠맛을 살렸어요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "부드러운 고기를 원하지만 지방이 지나치게 많은 등심은 부담스럽다.",
+          "intendedReaction": "감각 경험 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "뜨거운 팬 위에서 구워지는 등심과 집게로 들어 올린 찰진 단면을 한 화면에 배치하고, 지방 결은 과장 없이 실제 상품 이미지에 맞춰 표현한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-01의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-01의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-02",
+        "primaryTag": "feature-usp",
+        "secondaryTags": [],
+        "hypothesis": "숙성 전후의 맛 차이를 궁금해하는 고객에게 상세페이지가 명시한 감칠맛 2배를 전면에 내세우면 제품 선택 이유가 선명해진다.",
+        "mainHook": "같은 등심인데, 감칠맛은 2배",
+        "subCopy": "숙성으로 맛을 끌어올린 찰진 등심입니다.",
+        "customerReason": "등심은 겉모습이 비슷해 보여 무엇이 더 맛있는지 판단하기 어렵다.",
+        "customerTension": "등심은 겉모습이 비슷해 보여 무엇이 더 맛있는지 판단하기 어렵다.",
+        "verifiedEvidence": [
+          "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 설록우(찰진등심)"
+        ],
+        "intendedReaction": "일반적인 등심과 구별되는 구체적인 맛의 근거가 있다고 받아들인다.",
+        "visualConcept": "동일한 식탁을 좌우로 나누고 한쪽에는 생등심, 다른 쪽에는 육즙이 맺힌 구운 등심을 배치해 숙성 후 깊어진 맛을 대비시킨다.",
+        "prohibitedClaims": [
+          "감칠맛 측정 방식의 임의 설명",
+          "모든 고기 대비 2배라는 확대 해석",
+          "숙성 기간 또는 방식의 임의 생성",
+          "육질 개선 효능 보장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "검증된 수치형 혜택인 감칠맛 2배가 즉시 이해되고 강한 기억점을 만든다.",
+        "evidenceSummary": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 설록우(찰진등심)",
+        "evidence": [
+          {
+            "fact": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-main-benefit-1b3kajr",
+          "fact-verified-benefit-2-1b3kajr",
+          "fact-verified-benefit-3-34tgye"
+        ],
+        "sceneKey": "aged-umami-double-contrast",
+        "visualStory": "동일한 식탁을 좌우로 나누고 한쪽에는 생등심, 다른 쪽에는 육즙이 맺힌 구운 등심을 배치해 숙성 후 깊어진 맛을 대비시킨다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 10,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 9,
+          "visualizability": 8,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-02",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-02",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-02",
+          "mainHook": "같은 등심인데, 감칠맛은 2배",
+          "subCopy": "숙성으로 맛을 끌어올린 찰진 등심입니다.",
+          "customerInsight": "등심은 겉모습이 비슷해 보여 무엇이 더 맛있는지 판단하기 어렵다.",
+          "messageHypothesis": "기능·USP 가설: 등심은 겉모습이 비슷해 보여 무엇이 더 맛있는지 판단하기 어렵다.",
+          "verifiedFacts": [
+            "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 설록우(찰진등심)"
+          ],
+          "objective": "기능·USP 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "동일한 식탁을 좌우로 나누고 한쪽에는 생등심, 다른 쪽에는 육즙이 맺힌 구운 등심을 배치해 숙성 후 깊어진 맛을 대비시킨다.",
+          "sceneDescription": "동일한 식탁을 좌우로 나누고 한쪽에는 생등심, 다른 쪽에는 육즙이 맺힌 구운 등심을 배치해 숙성 후 깊어진 맛을 대비시킨다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "같은 등심인데, 감칠맛은 2배",
+            "숙성으로 맛을 끌어올린 찰진 등심입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "등심은 겉모습이 비슷해 보여 무엇이 더 맛있는지 판단하기 어렵다.",
+          "intendedReaction": "기능·USP 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "동일한 식탁을 좌우로 나누고 한쪽에는 생등심, 다른 쪽에는 육즙이 맺힌 구운 등심을 배치해 숙성 후 깊어진 맛을 대비시킨다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-02의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-02의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-03",
+        "primaryTag": "price-value",
+        "secondaryTags": [],
+        "hypothesis": "명절용 소고기의 높은 가격을 걱정하는 고객에게 기존가와 판매가의 큰 차이를 명확히 보여주면 구매 검토를 앞당길 수 있다.",
+        "mainHook": "14만8천 원 등심이 지금 4만9천8백 원",
+        "subCopy": "확인된 판매가 기준 66% 할인 중입니다.",
+        "customerReason": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+        "customerTension": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+        "verifiedEvidence": [
+          "판매가: 49,800원",
+          "기존가: 148,000원",
+          "할인 정보: 66% 할인"
+        ],
+        "intendedReaction": "예산 안에서 등심을 준비할 수 있는 기회라고 인식한다.",
+        "visualConcept": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+        "prohibitedClaims": [
+          "역대 최저가",
+          "최저가 보장",
+          "할인 종료 시각",
+          "추가 할인 또는 무료배송",
+          "다른 판매처와의 가격 우위"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "가격과 할인율이 모두 확인되어 있어 가장 직접적인 전환 메시지로 사용할 수 있다.",
+        "evidenceSummary": "판매가: 49,800원 · 기존가: 148,000원 · 할인 정보: 66% 할인",
+        "evidence": [
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "기존가: 148,000원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "할인 정보: 66% 할인",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-price-196dovi",
+          "fact-original-price-u5xy78",
+          "fact-discount-1fdheg0"
+        ],
+        "sceneKey": "price-drop-receipt-table",
+        "visualStory": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 7,
+          "attentionPotential": 10,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 7,
+          "total": 14
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-03",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-03",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-03",
+          "mainHook": "14만8천 원 등심이 지금 4만9천8백 원",
+          "subCopy": "확인된 판매가 기준 66% 할인 중입니다.",
+          "customerInsight": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+          "messageHypothesis": "가격·가치 가설: 명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+          "verifiedFacts": [
+            "판매가: 49,800원",
+            "기존가: 148,000원",
+            "할인 정보: 66% 할인"
+          ],
+          "objective": "가격·가치 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+          "sceneDescription": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "14만8천 원 등심이 지금 4만9천8백 원",
+            "확인된 판매가 기준 66% 할인 중입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+          "intendedReaction": "가격·가치 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-03의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-03의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-04",
+        "primaryTag": "season-newness",
+        "secondaryTags": [],
+        "hypothesis": "명절 직전에 가격과 배송을 걱정하는 고객에게 추석 사전예약 가능 여부를 알려주면 준비를 미루는 부담을 낮출 수 있다.",
+        "mainHook": "추석 코앞에서 고기 찾지 마세요",
+        "subCopy": "찰진 등심 1kg 박스를 미리 예약할 수 있어요.",
+        "customerReason": "명절 직전에 소고기를 구하려다 선택지가 줄거나 가격이 오를까 걱정된다.",
+        "customerTension": "명절 직전에 소고기를 구하려다 선택지가 줄거나 가격이 오를까 걱정된다.",
+        "verifiedEvidence": [
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)"
+        ],
+        "intendedReaction": "나중에 서두르기보다 지금 예약 가능 여부를 확인하고 싶어진다.",
+        "visualConcept": "달력의 추석 날짜와 비어 있는 냉장고 장면을 앞뒤로 배치하고, 예약 완료 표시가 붙은 실제 1kg 상품 박스를 식탁에 준비된 모습으로 보여준다.",
+        "prohibitedClaims": [
+          "배송일 보장",
+          "품절 임박",
+          "예약 마감일 임의 생성",
+          "가격 인상 시점 단정",
+          "명절 전 도착 보장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "추석 사전예약이라는 시기성 높은 사실을 명절 직전 구매 불안과 연결한다.",
+        "evidenceSummary": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+        "evidence": [
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-1-1xf68nf"
+        ],
+        "sceneKey": "chuseok-preorder-calendar",
+        "visualStory": "달력의 추석 날짜와 비어 있는 냉장고 장면을 앞뒤로 배치하고, 예약 완료 표시가 붙은 실제 1kg 상품 박스를 식탁에 준비된 모습으로 보여준다.",
+        "score": {
+          "evidenceStrength": 8,
+          "specificity": 9,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 8,
+          "attentionPotential": 8,
+          "visualizability": 9,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-04",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-04",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-04",
+          "mainHook": "추석 코앞에서 고기 찾지 마세요",
+          "subCopy": "찰진 등심 1kg 박스를 미리 예약할 수 있어요.",
+          "customerInsight": "명절 직전에 소고기를 구하려다 선택지가 줄거나 가격이 오를까 걱정된다.",
+          "messageHypothesis": "시즌·신상품 가설: 명절 직전에 소고기를 구하려다 선택지가 줄거나 가격이 오를까 걱정된다.",
+          "verifiedFacts": [
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)"
+          ],
+          "objective": "시즌·신상품 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "달력의 추석 날짜와 비어 있는 냉장고 장면을 앞뒤로 배치하고, 예약 완료 표시가 붙은 실제 1kg 상품 박스를 식탁에 준비된 모습으로 보여준다.",
+          "sceneDescription": "달력의 추석 날짜와 비어 있는 냉장고 장면을 앞뒤로 배치하고, 예약 완료 표시가 붙은 실제 1kg 상품 박스를 식탁에 준비된 모습으로 보여준다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "추석 코앞에서 고기 찾지 마세요",
+            "찰진 등심 1kg 박스를 미리 예약할 수 있어요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "명절 직전에 소고기를 구하려다 선택지가 줄거나 가격이 오를까 걱정된다.",
+          "intendedReaction": "시즌·신상품 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "달력의 추석 날짜와 비어 있는 냉장고 장면을 앞뒤로 배치하고, 예약 완료 표시가 붙은 실제 1kg 상품 박스를 식탁에 준비된 모습으로 보여준다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-04의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-04의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-05",
+        "primaryTag": "bundle-choice",
+        "secondaryTags": [],
+        "hypothesis": "포장 장식보다 먹을 고기의 양과 가격을 중시하는 고객에게 1kg 실속도매팩을 보여주면 합리적인 명절 준비 상품으로 인식될 수 있다.",
+        "mainHook": "포장보다 고기에 예산을 쓰고 싶다면",
+        "subCopy": "찰진 등심을 1kg 박스의 실속도매팩으로 준비했어요.",
+        "customerReason": "선물용 포장 비용은 아깝지만 명절에 내놓을 소고기의 양과 품질은 포기하고 싶지 않다.",
+        "customerTension": "선물용 포장 비용은 아깝지만 명절에 내놓을 소고기의 양과 품질은 포기하고 싶지 않다.",
+        "verifiedEvidence": [
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 설록우(찰진등심)"
+        ],
+        "intendedReaction": "화려한 포장보다 내용물 중심으로 구성된 실속형 선택지라고 느낀다.",
+        "visualConcept": "리본과 장식이 많은 빈 선물 포장 옆에 실제 1kg 등심 박스를 열어 고기 중심의 구성을 대비해 보여준다.",
+        "prohibitedClaims": [
+          "포장비가 전혀 없다는 주장",
+          "정확한 팩 수 또는 조각 수",
+          "선물 포장 제공 여부 단정",
+          "타 상품보다 고기 양이 많다는 비교"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "실속도매팩이라는 상세페이지 표현을 명절 포장 비용에 대한 현실적인 불만과 연결한다.",
+        "evidenceSummary": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 설록우(찰진등심)",
+        "evidence": [
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-1-1xf68nf",
+          "fact-verified-benefit-3-34tgye"
+        ],
+        "sceneKey": "meat-over-decoration",
+        "visualStory": "리본과 장식이 많은 빈 선물 포장 옆에 실제 1kg 등심 박스를 열어 고기 중심의 구성을 대비해 보여준다.",
+        "score": {
+          "evidenceStrength": 8,
+          "specificity": 9,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 8,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-05",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-05",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-05",
+          "mainHook": "포장보다 고기에 예산을 쓰고 싶다면",
+          "subCopy": "찰진 등심을 1kg 박스의 실속도매팩으로 준비했어요.",
+          "customerInsight": "선물용 포장 비용은 아깝지만 명절에 내놓을 소고기의 양과 품질은 포기하고 싶지 않다.",
+          "messageHypothesis": "세트·선택 가설: 선물용 포장 비용은 아깝지만 명절에 내놓을 소고기의 양과 품질은 포기하고 싶지 않다.",
+          "verifiedFacts": [
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 설록우(찰진등심)"
+          ],
+          "objective": "세트·선택 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "리본과 장식이 많은 빈 선물 포장 옆에 실제 1kg 등심 박스를 열어 고기 중심의 구성을 대비해 보여준다.",
+          "sceneDescription": "리본과 장식이 많은 빈 선물 포장 옆에 실제 1kg 등심 박스를 열어 고기 중심의 구성을 대비해 보여준다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "포장보다 고기에 예산을 쓰고 싶다면",
+            "찰진 등심을 1kg 박스의 실속도매팩으로 준비했어요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "선물용 포장 비용은 아깝지만 명절에 내놓을 소고기의 양과 품질은 포기하고 싶지 않다.",
+          "intendedReaction": "세트·선택 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "리본과 장식이 많은 빈 선물 포장 옆에 실제 1kg 등심 박스를 열어 고기 중심의 구성을 대비해 보여준다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-05의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-05의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-06",
+        "primaryTag": "brand-origin",
+        "secondaryTags": [],
+        "hypothesis": "원산지를 먼저 확인하는 식품 구매자에게 국내산 설록우라는 사실을 간결하게 제시하면 낯선 상품에 대한 불안을 낮출 수 있다.",
+        "mainHook": "고기 살 때 원산지부터 뒤집어 보시죠?",
+        "subCopy": "확인된 원산지는 국내산, 품목은 설록우 찰진등심입니다.",
+        "customerReason": "온라인에서 소고기를 살 때 사진만으로는 원산지를 믿고 고르기 어렵다.",
+        "customerTension": "온라인에서 소고기를 살 때 사진만으로는 원산지를 믿고 고르기 어렵다.",
+        "verifiedEvidence": [
+          "상세페이지 혜택: 설록우(찰진등심)",
+          "상세페이지 혜택: 국내산 /설록우",
+          "성분: 국내산 /설록우"
+        ],
+        "intendedReaction": "원산지가 명시된 상품이라 비교 목록에 남겨둘 만하다고 생각한다.",
+        "visualConcept": "온라인 주문 화면을 보던 손이 실제 상품 라벨의 국내산 표기를 확인하는 순간을 클로즈업하고, 옆에 생등심을 자연스럽게 배치한다.",
+        "prohibitedClaims": [
+          "특정 지역 생산 주장",
+          "한우 등급 주장",
+          "농장 또는 생산자 정보 임의 생성",
+          "국내산이 더 우수하다는 절대 비교",
+          "인증 마크 임의 사용"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "국내산이라는 확인된 사실을 온라인 육류 구매의 대표적인 불안 요소와 직접 연결한다.",
+        "evidenceSummary": "상세페이지 혜택: 설록우(찰진등심) · 상세페이지 혜택: 국내산 /설록우 · 성분: 국내산 /설록우",
+        "evidence": [
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "성분: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-verified-benefit-3-34tgye",
+          "fact-verified-benefit-4-m1omjm",
+          "fact-ingredient-1-m1omjm"
+        ],
+        "sceneKey": "check-domestic-origin-label",
+        "visualStory": "온라인 주문 화면을 보던 손이 실제 상품 라벨의 국내산 표기를 확인하는 순간을 클로즈업하고, 옆에 생등심을 자연스럽게 배치한다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 8,
+          "purchaseReasonStrength": 8,
+          "distinctiveness": 7,
+          "attentionPotential": 7,
+          "visualizability": 9,
+          "advertisingFit": 8,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 7,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-06",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-06",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-06",
+          "mainHook": "고기 살 때 원산지부터 뒤집어 보시죠?",
+          "subCopy": "확인된 원산지는 국내산, 품목은 설록우 찰진등심입니다.",
+          "customerInsight": "온라인에서 소고기를 살 때 사진만으로는 원산지를 믿고 고르기 어렵다.",
+          "messageHypothesis": "브랜드·원산지 가설: 온라인에서 소고기를 살 때 사진만으로는 원산지를 믿고 고르기 어렵다.",
+          "verifiedFacts": [
+            "상세페이지 혜택: 설록우(찰진등심)",
+            "상세페이지 혜택: 국내산 /설록우",
+            "성분: 국내산 /설록우"
+          ],
+          "objective": "브랜드·원산지 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "온라인 주문 화면을 보던 손이 실제 상품 라벨의 국내산 표기를 확인하는 순간을 클로즈업하고, 옆에 생등심을 자연스럽게 배치한다.",
+          "sceneDescription": "온라인 주문 화면을 보던 손이 실제 상품 라벨의 국내산 표기를 확인하는 순간을 클로즈업하고, 옆에 생등심을 자연스럽게 배치한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "고기 살 때 원산지부터 뒤집어 보시죠?",
+            "확인된 원산지는 국내산, 품목은 설록우 찰진등심입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "온라인에서 소고기를 살 때 사진만으로는 원산지를 믿고 고르기 어렵다.",
+          "intendedReaction": "브랜드·원산지 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "온라인 주문 화면을 보던 손이 실제 상품 라벨의 국내산 표기를 확인하는 순간을 클로즈업하고, 옆에 생등심을 자연스럽게 배치한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-06의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-06의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-07",
+        "primaryTag": "usage-occasion",
+        "secondaryTags": [],
+        "hypothesis": "명절 선물보다 가족 식탁에 직접 구워 먹을 고기를 찾는 고객에게 1kg 박스와 찰진 식감을 보여주면 사용 장면이 구체화된다.",
+        "mainHook": "선물함보다 불판 위가 먼저 떠오르는 등심",
+        "subCopy": "국내산 설록우 찰진등심을 1kg 박스로 만나보세요.",
+        "customerReason": "명절 소고기는 선물용 이미지가 강하지만 정작 집에서 함께 구워 먹기 좋은 상품을 찾고 있다.",
+        "customerTension": "명절 소고기는 선물용 이미지가 강하지만 정작 집에서 함께 구워 먹기 좋은 상품을 찾고 있다.",
+        "verifiedEvidence": [
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 설록우(찰진등심)",
+          "상세페이지 혜택: 국내산 /설록우"
+        ],
+        "intendedReaction": "이 상품을 명절 식탁에서 직접 구워 먹는 모습을 자연스럽게 상상한다.",
+        "visualConcept": "닫힌 선물 상자는 배경에 두고 중앙의 불판에서 실제 등심을 굽는 가족 식탁을 중심 장면으로 구성한다.",
+        "prohibitedClaims": [
+          "몇 명이 먹을 수 있다는 인분 주장",
+          "가족 만족 보장",
+          "명절 배송 보장",
+          "특정 조리 시간 또는 굽기 결과 보장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "식품·선물 카테고리를 실제 취식 장면으로 전환해 상품 사용 목적을 선명하게 만든다.",
+        "evidenceSummary": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 설록우(찰진등심) · 상세페이지 혜택: 국내산 /설록우",
+        "evidence": [
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-3-34tgye",
+          "fact-verified-benefit-4-m1omjm"
+        ],
+        "sceneKey": "chuseok-family-grill-table",
+        "visualStory": "닫힌 선물 상자는 배경에 두고 중앙의 불판에서 실제 등심을 굽는 가족 식탁을 중심 장면으로 구성한다.",
+        "score": {
+          "evidenceStrength": 8,
+          "specificity": 8,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 8,
+          "attentionPotential": 8,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-07",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-07",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-07",
+          "mainHook": "선물함보다 불판 위가 먼저 떠오르는 등심",
+          "subCopy": "국내산 설록우 찰진등심을 1kg 박스로 만나보세요.",
+          "customerInsight": "명절 소고기는 선물용 이미지가 강하지만 정작 집에서 함께 구워 먹기 좋은 상품을 찾고 있다.",
+          "messageHypothesis": "사용 상황 가설: 명절 소고기는 선물용 이미지가 강하지만 정작 집에서 함께 구워 먹기 좋은 상품을 찾고 있다.",
+          "verifiedFacts": [
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 설록우(찰진등심)",
+            "상세페이지 혜택: 국내산 /설록우"
+          ],
+          "objective": "사용 상황 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "닫힌 선물 상자는 배경에 두고 중앙의 불판에서 실제 등심을 굽는 가족 식탁을 중심 장면으로 구성한다.",
+          "sceneDescription": "닫힌 선물 상자는 배경에 두고 중앙의 불판에서 실제 등심을 굽는 가족 식탁을 중심 장면으로 구성한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "선물함보다 불판 위가 먼저 떠오르는 등심",
+            "국내산 설록우 찰진등심을 1kg 박스로 만나보세요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "명절 소고기는 선물용 이미지가 강하지만 정작 집에서 함께 구워 먹기 좋은 상품을 찾고 있다.",
+          "intendedReaction": "사용 상황 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "닫힌 선물 상자는 배경에 두고 중앙의 불판에서 실제 등심을 굽는 가족 식탁을 중심 장면으로 구성한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-07의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-07의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-08",
+        "primaryTag": "comparison-alternative",
+        "secondaryTags": [],
+        "hypothesis": "마블링이 많을수록 무조건 좋다는 통념에 부담을 느끼는 고객에게 적당한 마블링이라는 선별 기준을 반전 메시지로 제시하면 차별화할 수 있다.",
+        "mainHook": "마블링, 많아야만 맛있을까요?",
+        "subCopy": "적당한 마블링과 숙성 감칠맛을 함께 고른 등심입니다.",
+        "customerReason": "마블링이 많은 고기는 비싸고 느끼할 수 있지만, 적으면 맛이 부족할까 걱정된다.",
+        "customerTension": "마블링이 많은 고기는 비싸고 느끼할 수 있지만, 적으면 맛이 부족할까 걱정된다.",
+        "verifiedEvidence": [
+          "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 마블링 정도"
+        ],
+        "intendedReaction": "마블링의 양보다 균형과 숙성을 살펴봐야겠다고 관점을 바꾼다.",
+        "visualConcept": "지방이 과도하게 강조된 추상적 고기 패턴과 실제 상품의 적당한 마블링 단면을 양쪽 접시 위에서 비교한다.",
+        "prohibitedClaims": [
+          "저지방 또는 건강식 표현",
+          "다른 등심이 느끼하다는 단정",
+          "마블링 등급 임의 부여",
+          "콜레스테롤 관련 효능"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "상세페이지의 적당한 마블링을 일반적인 마블링 경쟁과 반대로 풀어 주목도를 만든다.",
+        "evidenceSummary": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 마블링 정도",
+        "evidence": [
+          {
+            "fact": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 정도",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-main-benefit-1b3kajr",
+          "fact-verified-benefit-2-1b3kajr",
+          "fact-verified-benefit-5-1fqse7d"
+        ],
+        "sceneKey": "marbling-more-is-not-always",
+        "visualStory": "지방이 과도하게 강조된 추상적 고기 패턴과 실제 상품의 적당한 마블링 단면을 양쪽 접시 위에서 비교한다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 9,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-08",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-08",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-08",
+          "mainHook": "마블링, 많아야만 맛있을까요?",
+          "subCopy": "적당한 마블링과 숙성 감칠맛을 함께 고른 등심입니다.",
+          "customerInsight": "마블링이 많은 고기는 비싸고 느끼할 수 있지만, 적으면 맛이 부족할까 걱정된다.",
+          "messageHypothesis": "비교·대안 가설: 마블링이 많은 고기는 비싸고 느끼할 수 있지만, 적으면 맛이 부족할까 걱정된다.",
+          "verifiedFacts": [
+            "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 마블링 정도"
+          ],
+          "objective": "비교·대안 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "지방이 과도하게 강조된 추상적 고기 패턴과 실제 상품의 적당한 마블링 단면을 양쪽 접시 위에서 비교한다.",
+          "sceneDescription": "지방이 과도하게 강조된 추상적 고기 패턴과 실제 상품의 적당한 마블링 단면을 양쪽 접시 위에서 비교한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "마블링, 많아야만 맛있을까요?",
+            "적당한 마블링과 숙성 감칠맛을 함께 고른 등심입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "마블링이 많은 고기는 비싸고 느끼할 수 있지만, 적으면 맛이 부족할까 걱정된다.",
+          "intendedReaction": "비교·대안 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "지방이 과도하게 강조된 추상적 고기 패턴과 실제 상품의 적당한 마블링 단면을 양쪽 접시 위에서 비교한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-08의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-08의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-09",
+        "primaryTag": "price-value",
+        "secondaryTags": [],
+        "hypothesis": "1kg 소고기의 단가를 빠르게 비교하는 실속 구매자에게 중량과 판매가를 한 문장에 함께 제시하면 계산 부담을 줄일 수 있다.",
+        "mainHook": "등심 1kg, 5만 원을 넘지 않았습니다",
+        "subCopy": "1kg 박스 판매가는 49,800원입니다.",
+        "customerReason": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+        "customerTension": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+        "verifiedEvidence": [
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "판매가: 49,800원"
+        ],
+        "intendedReaction": "중량 대비 지출 규모를 즉시 이해하고 상세 구성을 확인하고 싶어진다.",
+        "visualConcept": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+        "prohibitedClaims": [
+          "100g당 가격의 반올림 또는 임의 계산",
+          "정확한 고기 순중량 단정",
+          "배송비 포함 주장",
+          "업계 최저가",
+          "최고 가성비"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "중량과 판매가라는 두 가지 확인 사실만으로 즉시 이해되는 실속 메시지를 만들 수 있다.",
+        "evidenceSummary": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 판매가: 49,800원",
+        "evidence": [
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-product-name-1xf68nf",
+          "fact-price-196dovi"
+        ],
+        "sceneKey": "one-kilo-under-fifty",
+        "visualStory": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 8,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 14
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-09",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-09",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-09",
+          "mainHook": "등심 1kg, 5만 원을 넘지 않았습니다",
+          "subCopy": "1kg 박스 판매가는 49,800원입니다.",
+          "customerInsight": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+          "messageHypothesis": "가격·가치 가설: 온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+          "verifiedFacts": [
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "판매가: 49,800원"
+          ],
+          "objective": "가격·가치 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+          "sceneDescription": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "등심 1kg, 5만 원을 넘지 않았습니다",
+            "1kg 박스 판매가는 49,800원입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+          "intendedReaction": "가격·가치 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-09의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-09의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-10",
+        "primaryTag": "convenience",
+        "secondaryTags": [],
+        "hypothesis": "명절 메뉴 준비와 선물 구매를 따로 처리하기 번거로운 고객에게 식품·선물용 1kg 박스를 보여주면 탐색 시간을 줄이는 선택지로 받아들일 수 있다.",
+        "mainHook": "명절 고기, 장보기 목록에서 먼저 지워두세요",
+        "subCopy": "추석 사전예약이 가능한 찰진등심 1kg 박스입니다.",
+        "customerReason": "명절이 가까워질수록 장보기 항목이 늘어나 소고기 구매까지 미루게 된다.",
+        "customerTension": "명절이 가까워질수록 장보기 항목이 늘어나 소고기 구매까지 미루게 된다.",
+        "verifiedEvidence": [
+          "카테고리: 식품/선물",
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)"
+        ],
+        "intendedReaction": "미룰 필요 없이 예약 가능한 상품부터 확인해 두고 싶어진다.",
+        "visualConcept": "빼곡한 명절 장보기 메모에서 ‘등심’ 항목에 체크하는 손과 예약된 실제 상품 박스를 한 장면에 담는다.",
+        "prohibitedClaims": [
+          "즉시 예약 확정",
+          "원하는 날짜 지정 가능",
+          "배송 지연 없음",
+          "재고 확보 보장",
+          "준비 시간이 실제로 단축된다는 수치"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "사전예약의 편의성을 명절 준비 목록이라는 생활 장면으로 구체화한다.",
+        "evidenceSummary": "카테고리: 식품/선물 · 상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+        "evidence": [
+          {
+            "fact": "카테고리: 식품/선물",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-category-fr7sht",
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-1-1xf68nf"
+        ],
+        "sceneKey": "cross-off-chuseok-shopping-list",
+        "visualStory": "빼곡한 명절 장보기 메모에서 ‘등심’ 항목에 체크하는 손과 예약된 실제 상품 박스를 한 장면에 담는다.",
+        "score": {
+          "evidenceStrength": 8,
+          "specificity": 8,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 8,
+          "attentionPotential": 8,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 13
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-10",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-10",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-10",
+          "mainHook": "명절 고기, 장보기 목록에서 먼저 지워두세요",
+          "subCopy": "추석 사전예약이 가능한 찰진등심 1kg 박스입니다.",
+          "customerInsight": "명절이 가까워질수록 장보기 항목이 늘어나 소고기 구매까지 미루게 된다.",
+          "messageHypothesis": "편의 가설: 명절이 가까워질수록 장보기 항목이 늘어나 소고기 구매까지 미루게 된다.",
+          "verifiedFacts": [
+            "카테고리: 식품/선물",
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)"
+          ],
+          "objective": "편의 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "빼곡한 명절 장보기 메모에서 ‘등심’ 항목에 체크하는 손과 예약된 실제 상품 박스를 한 장면에 담는다.",
+          "sceneDescription": "빼곡한 명절 장보기 메모에서 ‘등심’ 항목에 체크하는 손과 예약된 실제 상품 박스를 한 장면에 담는다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "명절 고기, 장보기 목록에서 먼저 지워두세요",
+            "추석 사전예약이 가능한 찰진등심 1kg 박스입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "명절이 가까워질수록 장보기 항목이 늘어나 소고기 구매까지 미루게 된다.",
+          "intendedReaction": "편의 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "빼곡한 명절 장보기 메모에서 ‘등심’ 항목에 체크하는 손과 예약된 실제 상품 박스를 한 장면에 담는다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-10의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-10의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-11",
+        "primaryTag": "sensory-experience",
+        "secondaryTags": [],
+        "hypothesis": "숙성육의 차이를 말보다 구운 단면과 식감으로 확인하고 싶은 고객에게 찰진 식감과 감칠맛을 함께 묘사하면 식욕을 자극할 수 있다.",
+        "mainHook": "씹을수록 찰지고, 뒤늦게 감칠맛이 옵니다",
+        "subCopy": "숙성으로 감칠맛을 살린 설록우 찰진등심입니다.",
+        "customerReason": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+        "customerTension": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+        "verifiedEvidence": [
+          "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 설록우(찰진등심)"
+        ],
+        "intendedReaction": "구웠을 때의 식감과 풍미를 생생하게 상상하며 먹어보고 싶어진다.",
+        "visualConcept": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+        "prohibitedClaims": [
+          "육즙이 반드시 풍부하다는 보장",
+          "입에서 녹는다는 표현",
+          "특정 숙성 기간",
+          "맛에 대한 소비자 전원 만족 주장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "찰진등심과 숙성 감칠맛이라는 두 근거를 시간차가 느껴지는 감각 문장으로 결합한다.",
+        "evidenceSummary": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 설록우(찰진등심)",
+        "evidence": [
+          {
+            "fact": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-main-benefit-1b3kajr",
+          "fact-verified-benefit-2-1b3kajr",
+          "fact-verified-benefit-3-34tgye"
+        ],
+        "sceneKey": "chewy-then-savory-bite",
+        "visualStory": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 9,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 9,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 14
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-11",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-11",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-11",
+          "mainHook": "씹을수록 찰지고, 뒤늦게 감칠맛이 옵니다",
+          "subCopy": "숙성으로 감칠맛을 살린 설록우 찰진등심입니다.",
+          "customerInsight": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+          "messageHypothesis": "감각 경험 가설: 숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+          "verifiedFacts": [
+            "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 설록우(찰진등심)"
+          ],
+          "objective": "감각 경험 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+          "sceneDescription": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "씹을수록 찰지고, 뒤늦게 감칠맛이 옵니다",
+            "숙성으로 감칠맛을 살린 설록우 찰진등심입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+          "intendedReaction": "감각 경험 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-11의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-11의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-12",
+        "primaryTag": "review-trust",
+        "secondaryTags": [],
+        "hypothesis": "온라인 육류 구매 실패를 걱정하는 고객에게 상세페이지에 표시된 후기 1등 표현을 출처 범위 안에서 제시하면 탐색을 시작할 사회적 단서가 된다.",
+        "mainHook": "온라인 등심, 후기가 먼저 걸러줬다면?",
+        "subCopy": "상세페이지에서 ‘후기 1등’으로 소개된 찰진등심입니다.",
+        "customerReason": "직접 보고 고를 수 없는 온라인 고기는 사진과 설명만 믿고 주문하기 불안하다.",
+        "customerTension": "직접 보고 고를 수 없는 온라인 고기는 사진과 설명만 믿고 주문하기 불안하다.",
+        "verifiedEvidence": [
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)"
+        ],
+        "intendedReaction": "후기 근거가 무엇인지 상세페이지에서 직접 확인해 보고 싶어진다.",
+        "visualConcept": "휴대폰으로 상품 후기를 살펴보는 손 뒤에 실제 등심 박스와 구운 고기 접시를 배치하되, 별점이나 후기 수는 표시하지 않는다.",
+        "prohibitedClaims": [
+          "후기 수 임의 생성",
+          "평점 임의 생성",
+          "판매처 전체 1위로 확대 해석",
+          "고객 만족도 수치",
+          "모든 구매자의 호평"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "상품명에 명시된 후기 1등 표현을 과장하지 않고 온라인 육류 구매 불안과 연결한다.",
+        "evidenceSummary": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+        "evidence": [
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-1-1xf68nf"
+        ],
+        "sceneKey": "reviews-before-online-meat",
+        "visualStory": "휴대폰으로 상품 후기를 살펴보는 손 뒤에 실제 등심 박스와 구운 고기 접시를 배치하되, 별점이나 후기 수는 표시하지 않는다.",
+        "score": {
+          "evidenceStrength": 6,
+          "specificity": 8,
+          "purchaseReasonStrength": 7,
+          "distinctiveness": 8,
+          "attentionPotential": 8,
+          "visualizability": 9,
+          "advertisingFit": 7,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 12
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-12",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-12",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-12",
+          "mainHook": "온라인 등심, 후기가 먼저 걸러줬다면?",
+          "subCopy": "상세페이지에서 ‘후기 1등’으로 소개된 찰진등심입니다.",
+          "customerInsight": "직접 보고 고를 수 없는 온라인 고기는 사진과 설명만 믿고 주문하기 불안하다.",
+          "messageHypothesis": "후기·신뢰 가설: 직접 보고 고를 수 없는 온라인 고기는 사진과 설명만 믿고 주문하기 불안하다.",
+          "verifiedFacts": [
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)"
+          ],
+          "objective": "후기·신뢰 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "휴대폰으로 상품 후기를 살펴보는 손 뒤에 실제 등심 박스와 구운 고기 접시를 배치하되, 별점이나 후기 수는 표시하지 않는다.",
+          "sceneDescription": "휴대폰으로 상품 후기를 살펴보는 손 뒤에 실제 등심 박스와 구운 고기 접시를 배치하되, 별점이나 후기 수는 표시하지 않는다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "온라인 등심, 후기가 먼저 걸러줬다면?",
+            "상세페이지에서 ‘후기 1등’으로 소개된 찰진등심입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "직접 보고 고를 수 없는 온라인 고기는 사진과 설명만 믿고 주문하기 불안하다.",
+          "intendedReaction": "후기·신뢰 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "휴대폰으로 상품 후기를 살펴보는 손 뒤에 실제 등심 박스와 구운 고기 접시를 배치하되, 별점이나 후기 수는 표시하지 않는다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-12의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-12의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-13",
+        "primaryTag": "price-value",
+        "secondaryTags": [],
+        "hypothesis": "큰 할인율을 의심하는 고객에게 기존가·할인율·판매가를 동시에 공개하면 가격 메시지의 구체성이 높아진다.",
+        "mainHook": "66% 할인, 그래서 49,800원입니다",
+        "subCopy": "기존가 148,000원에서 내려간 확인 판매가예요.",
+        "customerReason": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+        "customerTension": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+        "verifiedEvidence": [
+          "판매가: 49,800원",
+          "기존가: 148,000원",
+          "할인 정보: 66% 할인"
+        ],
+        "intendedReaction": "할인의 기준과 결과 금액을 함께 확인해 가격 정보를 명확하게 받아들인다.",
+        "visualConcept": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+        "prohibitedClaims": [
+          "상시가 또는 정상가의 법적 성격 단정",
+          "추가 쿠폰 적용",
+          "할인 종료일",
+          "한정 수량",
+          "가격 재인상 확정"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "세 가지 확인된 가격 사실을 한 흐름으로 연결해 할인율만 강조한 소재보다 신뢰 있게 전달한다.",
+        "evidenceSummary": "판매가: 49,800원 · 기존가: 148,000원 · 할인 정보: 66% 할인",
+        "evidence": [
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "기존가: 148,000원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "할인 정보: 66% 할인",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-price-196dovi",
+          "fact-original-price-u5xy78",
+          "fact-discount-1fdheg0"
+        ],
+        "sceneKey": "discount-math-explained",
+        "visualStory": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 7,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 7,
+          "total": 14
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-13",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-13",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-13",
+          "mainHook": "66% 할인, 그래서 49,800원입니다",
+          "subCopy": "기존가 148,000원에서 내려간 확인 판매가예요.",
+          "customerInsight": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+          "messageHypothesis": "가격·가치 가설: 할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+          "verifiedFacts": [
+            "판매가: 49,800원",
+            "기존가: 148,000원",
+            "할인 정보: 66% 할인"
+          ],
+          "objective": "가격·가치 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+          "sceneDescription": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "66% 할인, 그래서 49,800원입니다",
+            "기존가 148,000원에서 내려간 확인 판매가예요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+          "intendedReaction": "가격·가치 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-13의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-13의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-14",
+        "primaryTag": "target-identity",
+        "secondaryTags": [],
+        "hypothesis": "소고기를 브랜드나 등급보다 원산지·마블링·중량·가격을 따져 사는 실속형 고객에게 확인 가능한 선택 기준을 한 장면에 모으면 자기 관련성이 높아진다.",
+        "mainHook": "소고기 살 때 네 가지만 보는 분께",
+        "subCopy": "국내산·적당한 마블링·1kg·49,800원을 확인하세요.",
+        "customerReason": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+        "customerTension": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+        "verifiedEvidence": [
+          "상세페이지 혜택: 국내산 /설록우",
+          "상세페이지 혜택: 마블링 정도",
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "판매가: 49,800원"
+        ],
+        "intendedReaction": "자신이 평소 확인하는 조건들이 명확히 제시됐다고 느끼며 상품을 검토한다.",
+        "visualConcept": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+        "prohibitedClaims": [
+          "한우 등급",
+          "정확한 마블링 수치",
+          "타 상품 대비 우수성",
+          "배송비 포함",
+          "품질 보증"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "검증된 네 가지 구매 기준을 실속 구매자의 행동과 연결해 정보 밀도와 타깃 적합성을 확보한다.",
+        "evidenceSummary": "상세페이지 혜택: 국내산 /설록우 · 상세페이지 혜택: 마블링 정도 · 상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 판매가: 49,800원",
+        "evidence": [
+          {
+            "fact": "상세페이지 혜택: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 정도",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-verified-benefit-4-m1omjm",
+          "fact-verified-benefit-5-1fqse7d",
+          "fact-product-name-1xf68nf",
+          "fact-price-196dovi"
+        ],
+        "sceneKey": "four-checks-practical-buyer",
+        "visualStory": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 8,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 14
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-14",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-14",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-14",
+          "mainHook": "소고기 살 때 네 가지만 보는 분께",
+          "subCopy": "국내산·적당한 마블링·1kg·49,800원을 확인하세요.",
+          "customerInsight": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+          "messageHypothesis": "타깃 정체성 가설: 화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+          "verifiedFacts": [
+            "상세페이지 혜택: 국내산 /설록우",
+            "상세페이지 혜택: 마블링 정도",
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "판매가: 49,800원"
+          ],
+          "objective": "타깃 정체성 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+          "sceneDescription": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "소고기 살 때 네 가지만 보는 분께",
+            "국내산·적당한 마블링·1kg·49,800원을 확인하세요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+          "intendedReaction": "타깃 정체성 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-14의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-14의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-15",
+        "primaryTag": "gift-purpose",
+        "secondaryTags": [],
+        "hypothesis": "명절 선물을 준비하면서 가격 부담과 원산지 불안을 동시에 느끼는 고객에게 국내산 1kg 박스와 확인 가격을 함께 제시하면 선물 후보로 검토될 수 있다.",
+        "mainHook": "추석 소고기 선물, 5만 원 안에서 찾았다면",
+        "subCopy": "국내산 설록우 찰진등심 1kg 박스가 49,800원입니다.",
+        "customerReason": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+        "customerTension": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+        "verifiedEvidence": [
+          "카테고리: 식품/선물",
+          "판매가: 49,800원",
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 국내산 /설록우"
+        ],
+        "intendedReaction": "예산과 원산지 조건에 맞는 명절 선물 후보라고 판단한다.",
+        "visualConcept": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+        "prohibitedClaims": [
+          "선물 포장 포함",
+          "무료배송",
+          "지정일 도착",
+          "수령인 만족 보장",
+          "5만 원 이하의 모든 경쟁 상품보다 우수하다는 주장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "식품·선물 카테고리, 국내산, 중량, 판매가를 명절 선물 예산이라는 구체적인 상황에 결합한다.",
+        "evidenceSummary": "카테고리: 식품/선물 · 판매가: 49,800원 · 상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 국내산 /설록우",
+        "evidence": [
+          {
+            "fact": "카테고리: 식품/선물",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-category-fr7sht",
+          "fact-price-196dovi",
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-4-m1omjm"
+        ],
+        "sceneKey": "chuseok-gift-under-fifty",
+        "visualStory": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 8,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 14
+        },
+        "status": "candidate",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-15",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-15",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-15",
+          "mainHook": "추석 소고기 선물, 5만 원 안에서 찾았다면",
+          "subCopy": "국내산 설록우 찰진등심 1kg 박스가 49,800원입니다.",
+          "customerInsight": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+          "messageHypothesis": "선물 목적 가설: 추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+          "verifiedFacts": [
+            "카테고리: 식품/선물",
+            "판매가: 49,800원",
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 국내산 /설록우"
+          ],
+          "objective": "선물 목적 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+          "sceneDescription": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "추석 소고기 선물, 5만 원 안에서 찾았다면",
+            "국내산 설록우 찰진등심 1kg 박스가 49,800원입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+          "intendedReaction": "선물 목적 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-15의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-15의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      }
+    ],
+    "selected": [
+      {
+        "id": "codex-hypothesis-03",
+        "primaryTag": "price-value",
+        "secondaryTags": [],
+        "hypothesis": "명절용 소고기의 높은 가격을 걱정하는 고객에게 기존가와 판매가의 큰 차이를 명확히 보여주면 구매 검토를 앞당길 수 있다.",
+        "mainHook": "14만8천 원 등심이 지금 4만9천8백 원",
+        "subCopy": "확인된 판매가 기준 66% 할인 중입니다.",
+        "customerReason": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+        "customerTension": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+        "verifiedEvidence": [
+          "판매가: 49,800원",
+          "기존가: 148,000원",
+          "할인 정보: 66% 할인"
+        ],
+        "intendedReaction": "예산 안에서 등심을 준비할 수 있는 기회라고 인식한다.",
+        "visualConcept": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+        "prohibitedClaims": [
+          "역대 최저가",
+          "최저가 보장",
+          "할인 종료 시각",
+          "추가 할인 또는 무료배송",
+          "다른 판매처와의 가격 우위"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "가격과 할인율이 모두 확인되어 있어 가장 직접적인 전환 메시지로 사용할 수 있다.",
+        "evidenceSummary": "판매가: 49,800원 · 기존가: 148,000원 · 할인 정보: 66% 할인",
+        "evidence": [
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "기존가: 148,000원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "할인 정보: 66% 할인",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-price-196dovi",
+          "fact-original-price-u5xy78",
+          "fact-discount-1fdheg0"
+        ],
+        "sceneKey": "price-drop-receipt-table",
+        "visualStory": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 7,
+          "attentionPotential": 10,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 7,
+          "total": 14
+        },
+        "status": "selected",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-03",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-03",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-03",
+          "mainHook": "14만8천 원 등심이 지금 4만9천8백 원",
+          "subCopy": "확인된 판매가 기준 66% 할인 중입니다.",
+          "customerInsight": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+          "messageHypothesis": "가격·가치 가설: 명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+          "verifiedFacts": [
+            "판매가: 49,800원",
+            "기존가: 148,000원",
+            "할인 정보: 66% 할인"
+          ],
+          "objective": "가격·가치 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+          "sceneDescription": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "14만8천 원 등심이 지금 4만9천8백 원",
+            "확인된 판매가 기준 66% 할인 중입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "명절에 소고기를 준비하고 싶지만 선물용 고기의 높은 가격이 부담스럽다.",
+          "intendedReaction": "가격·가치 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "식탁 위 가격표 두 장을 실제 고기 박스 옆에 놓아 148,000원에서 49,800원으로 바뀐 가격을 영수증처럼 명료하게 보여준다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-03의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-03의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-09",
+        "primaryTag": "price-value",
+        "secondaryTags": [],
+        "hypothesis": "1kg 소고기의 단가를 빠르게 비교하는 실속 구매자에게 중량과 판매가를 한 문장에 함께 제시하면 계산 부담을 줄일 수 있다.",
+        "mainHook": "등심 1kg, 5만 원을 넘지 않았습니다",
+        "subCopy": "1kg 박스 판매가는 49,800원입니다.",
+        "customerReason": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+        "customerTension": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+        "verifiedEvidence": [
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "판매가: 49,800원"
+        ],
+        "intendedReaction": "중량 대비 지출 규모를 즉시 이해하고 상세 구성을 확인하고 싶어진다.",
+        "visualConcept": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+        "prohibitedClaims": [
+          "100g당 가격의 반올림 또는 임의 계산",
+          "정확한 고기 순중량 단정",
+          "배송비 포함 주장",
+          "업계 최저가",
+          "최고 가성비"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "중량과 판매가라는 두 가지 확인 사실만으로 즉시 이해되는 실속 메시지를 만들 수 있다.",
+        "evidenceSummary": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 판매가: 49,800원",
+        "evidence": [
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-product-name-1xf68nf",
+          "fact-price-196dovi"
+        ],
+        "sceneKey": "one-kilo-under-fifty",
+        "visualStory": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 8,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 14
+        },
+        "status": "selected",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-09",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-09",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-09",
+          "mainHook": "등심 1kg, 5만 원을 넘지 않았습니다",
+          "subCopy": "1kg 박스 판매가는 49,800원입니다.",
+          "customerInsight": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+          "messageHypothesis": "가격·가치 가설: 온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+          "verifiedFacts": [
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "판매가: 49,800원"
+          ],
+          "objective": "가격·가치 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+          "sceneDescription": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "등심 1kg, 5만 원을 넘지 않았습니다",
+            "1kg 박스 판매가는 49,800원입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "온라인 소고기는 포장 단위가 제각각이라 실제 가격 수준을 빠르게 비교하기 어렵다.",
+          "intendedReaction": "가격·가치 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "주방 저울에 1kg 박스를 올린 장면과 49,800원이 표시된 계산기 화면을 나란히 배치한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-09의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-09의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-11",
+        "primaryTag": "sensory-experience",
+        "secondaryTags": [],
+        "hypothesis": "숙성육의 차이를 말보다 구운 단면과 식감으로 확인하고 싶은 고객에게 찰진 식감과 감칠맛을 함께 묘사하면 식욕을 자극할 수 있다.",
+        "mainHook": "씹을수록 찰지고, 뒤늦게 감칠맛이 옵니다",
+        "subCopy": "숙성으로 감칠맛을 살린 설록우 찰진등심입니다.",
+        "customerReason": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+        "customerTension": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+        "verifiedEvidence": [
+          "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+          "상세페이지 혜택: 설록우(찰진등심)"
+        ],
+        "intendedReaction": "구웠을 때의 식감과 풍미를 생생하게 상상하며 먹어보고 싶어진다.",
+        "visualConcept": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+        "prohibitedClaims": [
+          "육즙이 반드시 풍부하다는 보장",
+          "입에서 녹는다는 표현",
+          "특정 숙성 기간",
+          "맛에 대한 소비자 전원 만족 주장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "찰진등심과 숙성 감칠맛이라는 두 근거를 시간차가 느껴지는 감각 문장으로 결합한다.",
+        "evidenceSummary": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배) · 상세페이지 혜택: 설록우(찰진등심)",
+        "evidence": [
+          {
+            "fact": "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 설록우(찰진등심)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-main-benefit-1b3kajr",
+          "fact-verified-benefit-2-1b3kajr",
+          "fact-verified-benefit-3-34tgye"
+        ],
+        "sceneKey": "chewy-then-savory-bite",
+        "visualStory": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 9,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 9,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 14
+        },
+        "status": "selected",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-11",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-11",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-11",
+          "mainHook": "씹을수록 찰지고, 뒤늦게 감칠맛이 옵니다",
+          "subCopy": "숙성으로 감칠맛을 살린 설록우 찰진등심입니다.",
+          "customerInsight": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+          "messageHypothesis": "감각 경험 가설: 숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+          "verifiedFacts": [
+            "핵심 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 마블링 적당해요(육이 숙성되어 감칠맛2배)",
+            "상세페이지 혜택: 설록우(찰진등심)"
+          ],
+          "objective": "감각 경험 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+          "sceneDescription": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "씹을수록 찰지고, 뒤늦게 감칠맛이 옵니다",
+            "숙성으로 감칠맛을 살린 설록우 찰진등심입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "숙성육이라는 설명은 많지만 실제로 어떤 식감과 맛인지 쉽게 떠올리기 어렵다.",
+          "intendedReaction": "감각 경험 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "젓가락으로 구운 등심 한 점을 집어 단면의 결을 보여주고, 뒤쪽에는 육즙이 남은 불판을 얕은 심도로 표현한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-11의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-11의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-13",
+        "primaryTag": "price-value",
+        "secondaryTags": [],
+        "hypothesis": "큰 할인율을 의심하는 고객에게 기존가·할인율·판매가를 동시에 공개하면 가격 메시지의 구체성이 높아진다.",
+        "mainHook": "66% 할인, 그래서 49,800원입니다",
+        "subCopy": "기존가 148,000원에서 내려간 확인 판매가예요.",
+        "customerReason": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+        "customerTension": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+        "verifiedEvidence": [
+          "판매가: 49,800원",
+          "기존가: 148,000원",
+          "할인 정보: 66% 할인"
+        ],
+        "intendedReaction": "할인의 기준과 결과 금액을 함께 확인해 가격 정보를 명확하게 받아들인다.",
+        "visualConcept": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+        "prohibitedClaims": [
+          "상시가 또는 정상가의 법적 성격 단정",
+          "추가 쿠폰 적용",
+          "할인 종료일",
+          "한정 수량",
+          "가격 재인상 확정"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "세 가지 확인된 가격 사실을 한 흐름으로 연결해 할인율만 강조한 소재보다 신뢰 있게 전달한다.",
+        "evidenceSummary": "판매가: 49,800원 · 기존가: 148,000원 · 할인 정보: 66% 할인",
+        "evidence": [
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "기존가: 148,000원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "할인 정보: 66% 할인",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-price-196dovi",
+          "fact-original-price-u5xy78",
+          "fact-discount-1fdheg0"
+        ],
+        "sceneKey": "discount-math-explained",
+        "visualStory": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 7,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 7,
+          "total": 14
+        },
+        "status": "selected",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-13",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-13",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-13",
+          "mainHook": "66% 할인, 그래서 49,800원입니다",
+          "subCopy": "기존가 148,000원에서 내려간 확인 판매가예요.",
+          "customerInsight": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+          "messageHypothesis": "가격·가치 가설: 할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+          "verifiedFacts": [
+            "판매가: 49,800원",
+            "기존가: 148,000원",
+            "할인 정보: 66% 할인"
+          ],
+          "objective": "가격·가치 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+          "sceneDescription": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "66% 할인, 그래서 49,800원입니다",
+            "기존가 148,000원에서 내려간 확인 판매가예요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "할인율만 크게 적힌 상품은 기준 가격이나 최종 결제 금액이 불분명할까 경계하게 된다.",
+          "intendedReaction": "가격·가치 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "정육점 칠판을 연상시키는 배경에 기존가, 66%, 판매가를 세 단계로 배치하고 실제 등심 박스를 하단 식탁에 놓는다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-13의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-13의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-14",
+        "primaryTag": "target-identity",
+        "secondaryTags": [],
+        "hypothesis": "소고기를 브랜드나 등급보다 원산지·마블링·중량·가격을 따져 사는 실속형 고객에게 확인 가능한 선택 기준을 한 장면에 모으면 자기 관련성이 높아진다.",
+        "mainHook": "소고기 살 때 네 가지만 보는 분께",
+        "subCopy": "국내산·적당한 마블링·1kg·49,800원을 확인하세요.",
+        "customerReason": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+        "customerTension": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+        "verifiedEvidence": [
+          "상세페이지 혜택: 국내산 /설록우",
+          "상세페이지 혜택: 마블링 정도",
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "판매가: 49,800원"
+        ],
+        "intendedReaction": "자신이 평소 확인하는 조건들이 명확히 제시됐다고 느끼며 상품을 검토한다.",
+        "visualConcept": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+        "prohibitedClaims": [
+          "한우 등급",
+          "정확한 마블링 수치",
+          "타 상품 대비 우수성",
+          "배송비 포함",
+          "품질 보증"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "검증된 네 가지 구매 기준을 실속 구매자의 행동과 연결해 정보 밀도와 타깃 적합성을 확보한다.",
+        "evidenceSummary": "상세페이지 혜택: 국내산 /설록우 · 상세페이지 혜택: 마블링 정도 · 상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 판매가: 49,800원",
+        "evidence": [
+          {
+            "fact": "상세페이지 혜택: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 마블링 정도",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-verified-benefit-4-m1omjm",
+          "fact-verified-benefit-5-1fqse7d",
+          "fact-product-name-1xf68nf",
+          "fact-price-196dovi"
+        ],
+        "sceneKey": "four-checks-practical-buyer",
+        "visualStory": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+        "score": {
+          "evidenceStrength": 10,
+          "specificity": 10,
+          "purchaseReasonStrength": 9,
+          "distinctiveness": 9,
+          "attentionPotential": 8,
+          "visualizability": 10,
+          "advertisingFit": 9,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 9,
+          "total": 14
+        },
+        "status": "selected",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-14",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-14",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-14",
+          "mainHook": "소고기 살 때 네 가지만 보는 분께",
+          "subCopy": "국내산·적당한 마블링·1kg·49,800원을 확인하세요.",
+          "customerInsight": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+          "messageHypothesis": "타깃 정체성 가설: 화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+          "verifiedFacts": [
+            "상세페이지 혜택: 국내산 /설록우",
+            "상세페이지 혜택: 마블링 정도",
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "판매가: 49,800원"
+          ],
+          "objective": "타깃 정체성 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+          "sceneDescription": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "소고기 살 때 네 가지만 보는 분께",
+            "국내산·적당한 마블링·1kg·49,800원을 확인하세요."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "화려한 수식어보다 비교 가능한 정보로 고르고 싶지만 필요한 사실이 여러 곳에 흩어져 있다.",
+          "intendedReaction": "타깃 정체성 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "식탁 위 실제 상품을 중심으로 원산지 라벨, 마블링 단면, 1kg 박스 표기, 49,800원 가격표를 네 개의 실물 단서처럼 배치한다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-14의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-14의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      },
+      {
+        "id": "codex-hypothesis-15",
+        "primaryTag": "gift-purpose",
+        "secondaryTags": [],
+        "hypothesis": "명절 선물을 준비하면서 가격 부담과 원산지 불안을 동시에 느끼는 고객에게 국내산 1kg 박스와 확인 가격을 함께 제시하면 선물 후보로 검토될 수 있다.",
+        "mainHook": "추석 소고기 선물, 5만 원 안에서 찾았다면",
+        "subCopy": "국내산 설록우 찰진등심 1kg 박스가 49,800원입니다.",
+        "customerReason": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+        "customerTension": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+        "verifiedEvidence": [
+          "카테고리: 식품/선물",
+          "판매가: 49,800원",
+          "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+          "상세페이지 혜택: 국내산 /설록우"
+        ],
+        "intendedReaction": "예산과 원산지 조건에 맞는 명절 선물 후보라고 판단한다.",
+        "visualConcept": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+        "prohibitedClaims": [
+          "선물 포장 포함",
+          "무료배송",
+          "지정일 도착",
+          "수령인 만족 보장",
+          "5만 원 이하의 모든 경쟁 상품보다 우수하다는 주장"
+        ],
+        "confidence": "low",
+        "generationSource": "codex-local",
+        "selectionReason": "식품·선물 카테고리, 국내산, 중량, 판매가를 명절 선물 예산이라는 구체적인 상황에 결합한다.",
+        "evidenceSummary": "카테고리: 식품/선물 · 판매가: 49,800원 · 상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩) · 상세페이지 혜택: 국내산 /설록우",
+        "evidence": [
+          {
+            "fact": "카테고리: 식품/선물",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "판매가: 49,800원",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          },
+          {
+            "fact": "상세페이지 혜택: 국내산 /설록우",
+            "sourceReference": "https://kookdae.co.kr/Goods/Detail/SME86870248"
+          }
+        ],
+        "factIds": [
+          "fact-category-fr7sht",
+          "fact-price-196dovi",
+          "fact-product-name-1xf68nf",
+          "fact-verified-benefit-4-m1omjm"
+        ],
+        "sceneKey": "chuseok-gift-under-fifty",
+        "visualStory": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+        "score": {
+          "evidenceStrength": 9,
+          "specificity": 10,
+          "purchaseReasonStrength": 10,
+          "distinctiveness": 8,
+          "attentionPotential": 9,
+          "visualizability": 9,
+          "advertisingFit": 10,
+          "claimSafety": 96,
+          "categoryPrior": 50,
+          "novelty": 8,
+          "total": 14
+        },
+        "status": "selected",
+        "creativeBrief": {
+          "creativeId": "creative-codex-hypothesis-15",
+          "advertiserId": "unassigned-advertiser",
+          "productId": "unassigned-product",
+          "hookId": "codex-hypothesis-15",
+          "hookCode": "candidate",
+          "hypothesisId": "codex-hypothesis-15",
+          "mainHook": "추석 소고기 선물, 5만 원 안에서 찾았다면",
+          "subCopy": "국내산 설록우 찰진등심 1kg 박스가 49,800원입니다.",
+          "customerInsight": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+          "messageHypothesis": "선물 목적 가설: 추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+          "verifiedFacts": [
+            "카테고리: 식품/선물",
+            "판매가: 49,800원",
+            "상품명: 오르기전 가격에 추석 사전예약가능-후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
+            "상세페이지 혜택: 국내산 /설록우"
+          ],
+          "objective": "선물 목적 가설이 실제 고객의 반응을 만드는지 탐색",
+          "visualStory": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+          "sceneDescription": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+          "productRole": "실제 판매 상품을 장면의 핵심 피사체로 사용",
+          "composition": "가설에 맞는 장면과 실제 상품이 한눈에 연결되는 1:1 광고 구도",
+          "cameraDirection": "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
+          "lightingDirection": "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
+          "colorDirection": "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
+          "graphicDirection": "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+          "copySafeZone": "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
+          "referenceImageIds": [],
+          "forbiddenElements": [
+            "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
+            "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
+            "실제 상품과 다른 패키지·수량·옵션",
+            "지정하지 않은 임의의 한글·숫자·가격·로고"
+          ],
+          "productDirection": "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
+          "backgroundDirection": "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
+          "copySafeDirection": "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+          "mustUseReferenceImages": true,
+          "forbidPromotionalBannerCutouts": true,
+          "textRendering": "ai-native-final",
+          "requiredKoreanText": [
+            "추석 소고기 선물, 5만 원 안에서 찾았다면",
+            "국내산 설록우 찰진등심 1kg 박스가 49,800원입니다."
+          ],
+          "negativePrompt": [
+            "배경만 생성",
+            "빈 텍스트 박스",
+            "상품 사후 합성",
+            "템플릿 반복"
+          ],
+          "targetCustomer": "상품 상세페이지에서 확인되는 핵심 고객",
+          "customerSituation": "추석에 소고기를 선물하고 싶지만 예산을 넘기거나 원산지가 불명확한 상품은 피하고 싶다.",
+          "intendedReaction": "선물 목적 메시지를 즉시 이해하고 상품에 관심을 보임",
+          "visualArchetype": "product-hero",
+          "heroScene": "명절 인사 자리에 놓인 실제 1kg 상품 박스와 국내산 표시, 49,800원 가격 카드를 절제된 상차림 안에 함께 보여준다.",
+          "humanRole": "후킹에 도움이 될 때만 자연스러운 사람 또는 손을 사용",
+          "cameraAngle": "상품 형태를 왜곡하지 않는 상업 광고 시점",
+          "colorPalette": "상품 대표 색상과 후킹 감정을 연결한 고대비 팔레트",
+          "lighting": "상품 재질과 장면을 자연스럽게 연결하는 상업 조명",
+          "typographyDirection": "모바일에서 1초 안에 읽히는 크고 명확한 한국어 위계",
+          "supportingElements": [],
+          "prohibitedClaims": [
+            "확인되지 않은 효능·가격·구성·후기·수치"
+          ],
+          "differentiationReason": "codex-hypothesis-15의 고객 긴장과 장면을 다른 후킹과 구분",
+          "differentiationFromOtherHooks": "codex-hypothesis-15의 고객 긴장과 장면을 다른 후킹과 구분"
+        }
+      }
+    ]
+  },
+  "copyGeneration": {
+    "provider": "codex-local",
+    "model": "gpt-5.6-sol",
+    "warnings": []
+  },
+  "createdAt": "2026-08-21T14:51:53.618Z"
+}

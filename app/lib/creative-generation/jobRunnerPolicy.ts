@@ -3,7 +3,7 @@ import type { GenerationJob, GenerationResult } from "./types";
 export function isServerRunnableGenerationJob(job: GenerationJob) {
   return Boolean(
     job.engine &&
-    job.version === "generation-job-v6-ai-native-final" &&
+    ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition"].includes(job.version) &&
     job.results.length === 6
   );
 }

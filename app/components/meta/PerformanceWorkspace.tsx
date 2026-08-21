@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import type { CreativeArchiveEntry } from "../../lib/creative-archive/types";
 import type {
   MetaAccount,
   MetaBaselineAdSet,
   MetaCampaign,
   PerformanceExperiment,
+  PerformanceTestType,
 } from "../../lib/meta/types";
 import { spendImbalanceWarning } from "../../lib/meta/performance";
+import { ArchivePerformanceSetup } from "./ArchivePerformanceSetup";
 import styles from "./MetaOperations.module.css";
 
 type LegacyExperimentSummary = {
@@ -49,14 +52,20 @@ function money(value: number, currency: string) {
 
 function PerformanceTable({ experiment }: { experiment: PerformanceExperiment }) {
   const warning = spendImbalanceWarning(experiment.rows);
+  const hookOnly = experiment.testType === "hook-only";
   return (
     <>
+      <p className={styles.interpretation}>
+        {hookOnly
+          ? "동일한 디자인 조건에서 후킹 문구 성과를 비교합니다."
+          : "후킹·장면·레이아웃이 함께 다른 완성 소재의 성과입니다. 후킹 단독 효과로 해석하지 않습니다."}
+      </p>
       {warning ? <p className={styles.warning}>{warning}</p> : null}
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>후킹</th>
+              <th>{hookOnly ? "후킹" : "소재"}</th>
               <th>상태</th>
               <th>노출</th>
               <th>광고비</th>
@@ -90,9 +99,11 @@ function PerformanceTable({ experiment }: { experiment: PerformanceExperiment })
 export function PerformanceWorkspace({
   initialExperiments,
   legacyExperiments,
+  selectedArchiveEntries,
 }: {
   initialExperiments: PerformanceExperiment[];
   legacyExperiments: LegacyExperimentSummary[];
+  selectedArchiveEntries: CreativeArchiveEntry[];
 }) {
   const [experiments, setExperiments] = useState(initialExperiments);
   const [query, setQuery] = useState("");
@@ -102,6 +113,7 @@ export function PerformanceWorkspace({
   const [advertiserName, setAdvertiserName] = useState("");
   const [productName, setProductName] = useState("");
   const [landingUrl, setLandingUrl] = useState("");
+  const [testType, setTestType] = useState<PerformanceTestType>("creative-combination");
   const [accounts, setAccounts] = useState<MetaAccount[]>([]);
   const [campaigns, setCampaigns] = useState<MetaCampaign[]>([]);
   const [adSets, setAdSets] = useState<MetaBaselineAdSet[]>([]);
@@ -213,6 +225,7 @@ export function PerformanceWorkspace({
       productName: productName.trim(),
       landingUrl: landingUrl.trim() || undefined,
       testRound: 1,
+      testType,
       source: "meta",
       adAccountId: account.id,
       adAccountName: account.name,
@@ -246,9 +259,10 @@ export function PerformanceWorkspace({
         <div>
           <p className="eyebrow">04 PERFORMANCE</p>
           <h1>성과 확인</h1>
-          <p>기존 광고 세트를 읽기 전용으로 연결하고 H01~H06 성과를 비교합니다.</p>
+          <p>아카이브 소재를 광고로 설정하고, Meta에서 수집한 성과를 안전하게 비교합니다.</p>
         </div>
       </header>
+      <ArchivePerformanceSetup entries={selectedArchiveEntries} />
       <p className={styles.notice}>{status}</p>
       <div className={styles.toolbar}>
         <input
@@ -297,6 +311,13 @@ export function PerformanceWorkspace({
               onChange={(event) => setLandingUrl(event.target.value)}
               value={landingUrl}
             />
+          </label>
+          <label>
+            성과 해석 단위
+            <select onChange={(event) => setTestType(event.target.value as PerformanceTestType)} value={testType}>
+              <option value="creative-combination">전체 소재 조합 비교</option>
+              <option value="hook-only">후킹만 비교(동일 디자인 확인 시)</option>
+            </select>
           </label>
           <button
             disabled={!advertiserId || Boolean(busy)}
@@ -417,6 +438,9 @@ export function PerformanceWorkspace({
                 <p>
                   {experiment.campaignName} · {experiment.adSetName}
                 </p>
+                <small>
+                  {experiment.testType === "hook-only" ? "후킹만 비교" : "전체 소재 조합 비교"}
+                </small>
               </div>
               <span>{experiment.trackingStatus}</span>
             </header>

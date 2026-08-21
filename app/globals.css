@@ -491,6 +491,29 @@
   font: inherit;
 }
 
+.six-creative-copy-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f7fafc;
+}
+
+.six-creative-copy-editor input {
+  width: 100%;
+  border: 1px solid #cbd5e4;
+  border-radius: 9px;
+  padding: 9px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+.six-creative-copy-editor button { justify-self: start; }
+.six-creative-copy-editor small { color: #64748b; line-height: 1.55; }
+.six-creative-meta-copy { margin-top: 18px; border: 1px solid #dbe4f0; border-radius: 16px; background: #fff; padding: 16px; }
+
 .creative-asset-meta {
   position: relative;
   display: grid;
@@ -4236,7 +4259,8 @@ select {
   padding-top: 16px;
 }
 
-.feature-navigation-archive {
+.feature-navigation-archive,
+.feature-navigation-performance {
   border-top: 1px solid #e4e9f1;
   padding-top: 16px;
 }
@@ -4337,6 +4361,27 @@ select {
 
 .app-feature-navigation .feature-navigation-archive-link.active strong {
   color: #08705d;
+}
+
+.app-feature-navigation .feature-navigation-performance-link {
+  grid-template-columns: 42px minmax(0, 1fr);
+  border-color: #eadfc8;
+  background: linear-gradient(135deg, #fffaf1 0%, #fff6e7 100%);
+}
+
+.app-feature-navigation .feature-navigation-performance-link > span {
+  color: #92723d;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+.app-feature-navigation .feature-navigation-performance-link strong {
+  color: #694817;
+  font-size: 14px;
+}
+
+.app-feature-navigation .feature-navigation-performance-link.active strong {
+  color: #a05c00;
 }
 
 .feature-sidebar-home {
@@ -5715,12 +5760,12 @@ select {
   }
 
   .feature-sidebar .app-feature-navigation {
-    grid-template-columns: minmax(0, 3fr) repeat(2, minmax(200px, 1fr));
+    grid-template-columns: minmax(0, 2fr) repeat(3, minmax(180px, 1fr));
     align-items: start;
   }
 
   .feature-sidebar .feature-navigation-image .feature-navigation-links {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .mvp-sidebar > .app-feature-navigation {

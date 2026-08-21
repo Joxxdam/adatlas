@@ -44,19 +44,21 @@ test("analysis handoff keeps the selected product URL independently of cached de
   );
 });
 
-test("main navigation separates three image-content tasks from video planning and keeps three management tools", async () => {
+test("main navigation separates image creation, video planning, archive, and performance operations", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
   for (const label of ["광고 후보 찾기", "광고 제작", "영상 기획", "성과 확인"]) {
     assert.match(navigation, new RegExp(label));
   }
   const imageBlock = navigation.slice(navigation.indexOf("IMAGE_CONTENT_FEATURES"), navigation.indexOf("VIDEO_PLANNING_FEATURE"));
-  assert.equal((imageBlock.match(/index: "0[124]"/g) || []).length, 3);
-  assert.doesNotMatch(imageBlock, /영상 기획|video-planning|자동 콘텐츠 제작|auto-production/);
+  assert.equal((imageBlock.match(/index: "0[12]"/g) || []).length, 2);
+  assert.doesNotMatch(imageBlock, /영상 기획|video-planning|성과 확인|performance|자동 콘텐츠 제작|auto-production/);
   assert.match(navigation, /IMAGE CONTENT/);
   assert.match(navigation, />이미지 콘텐츠</);
   assert.match(navigation, /VIDEO CONTENT/);
   assert.match(navigation, />영상 콘텐츠</);
   assert.match(navigation, /VIDEO_PLANNING_FEATURE/);
+  assert.match(navigation, /ARCHIVE_FEATURE/);
+  assert.match(navigation, /PERFORMANCE_FEATURE/);
   assert.match(navigation, /\/admin\/auto-production/);
   assert.match(navigation, /\/admin\/advertisers/);
   assert.match(navigation, /\/admin\/references/);
@@ -118,8 +120,8 @@ test("hook creatives are server-driven and deliver each completed card immediate
   assert.match(generator, /six-creative-grid/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
-  assert.doesNotMatch(generator, /setEdits|initialEdit|문구 수정·제작 정보/);
-  assert.match(generator, /AI에게 수정 요청/);
+  assert.match(generator, /copyEdits|문구만 적용|문구 수정·제작 정보/);
+  assert.match(generator, /장면 다시 만들기/);
   for (const label of ["후킹", "소재코드", "권장 광고명", "UTM", "최종 랜딩 URL", "이미지 다운로드"]) {
     assert.match(assetActions, new RegExp(label));
   }
