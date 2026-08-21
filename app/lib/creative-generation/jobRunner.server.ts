@@ -4,7 +4,7 @@ import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import type { GenerationJob } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
-import { executionResults, isServerRunnableGenerationJob, selectRunnableResult, staleRunningResultIds } from "./jobRunnerPolicy";
+import { executionResults, isServerRunnableGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 
 const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v2");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
@@ -87,26 +87,30 @@ export async function runGenerationJob(jobId: string) {
   while (true) {
     const job = await creativeGenerationJobStore.get(jobId);
     if (!job || !isServerRunnableGenerationJob(job) || job.status === "cancelled") return;
-    const next = selectRunnableResult(job, attempted);
-    if (!next) {
+    const batch = selectRunnableResults(job, attempted, job.concurrency);
+    if (!batch.length) {
       if (executionResults(job).some((result) => result.status === "pending") && attempted.size) {
         attempted.clear();
         continue;
       }
       return;
     }
-    attempted.add(next.id);
-    try {
-      await handleNativeResultGeneration({
-        jobId,
-        resultId: next.id,
-        requestId: `server-runner:${jobId}:${next.id}:${next.attempts + 1}`,
-        action: next.attempts > 0 ? "regenerate" : "generate",
-        feedback: next.userFeedback,
-      });
-    } catch (error) {
-      await markResultFailed(jobId, next.id, error);
-    }
+    batch.forEach((result) => attempted.add(result.id));
+    await Promise.all(
+      batch.map(async (next) => {
+        try {
+          await handleNativeResultGeneration({
+            jobId,
+            resultId: next.id,
+            requestId: `server-runner:${jobId}:${next.id}:${next.attempts + 1}`,
+            action: next.attempts > 0 ? "regenerate" : "generate",
+            feedback: next.userFeedback,
+          });
+        } catch (error) {
+          await markResultFailed(jobId, next.id, error);
+        }
+      })
+    );
   }
 }
 

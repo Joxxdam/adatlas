@@ -1,9 +1,5 @@
 import "server-only";
 
-import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
-import { promisify } from "node:util";
 import { Codex } from "@openai/codex-sdk";
 import {
   buildHookCreativeBrief,
@@ -12,10 +8,10 @@ import {
   selectDiverseHookHypotheses,
   type CategoryHookPrior,
 } from "./hookHypothesisEngine";
-import { getAdvertiserThread, resetAdvertiserThread, saveAdvertiserThread } from "./codexRegistry.server";
+import { codexProductThreadKey, getAdvertiserThread, resetAdvertiserThread, saveAdvertiserThread } from "./codexRegistry.server";
+import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
 import { hookTaxonomyTags, type CreativePlan, type HookHypothesisCandidate, type HookTaxonomyTag, type ProductTruth } from "./types";
 
-const execFileAsync = promisify(execFile);
 const PLANNER_VERSION = "codex-local-hook-planner-v1";
 
 const outputSchema = {
@@ -86,24 +82,6 @@ type PlannerResponse = {
   }>;
 };
 
-function cleanEnvironment() {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      ([key, value]) => value !== undefined && !["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY"].includes(key)
-    )
-  ) as Record<string, string>;
-}
-
-function resolveCodexExecutable() {
-  const explicit = process.env.CODEX_CLI_PATH?.trim();
-  if (explicit && existsSync(explicit)) return explicit;
-  for (const directory of (process.env.PATH || "").split(path.delimiter)) {
-    const candidate = path.join(directory, process.platform === "win32" ? "codex.exe" : "codex");
-    if (existsSync(candidate)) return candidate;
-  }
-  return undefined;
-}
-
 function clamp(value: unknown) {
   return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
 }
@@ -112,28 +90,14 @@ function visibleLength(value: string) {
   return Array.from(value.replace(/\s/g, "")).length;
 }
 
-function planningIdentity(advertiserId: string) {
-  return `${advertiserId}--hook-planning`;
+function planningIdentity(advertiserId: string, productId: string) {
+  return `${codexProductThreadKey(advertiserId, productId)}--hook-planning`;
 }
 
 function safeError(error: unknown) {
   return (error instanceof Error ? error.message : String(error))
     .replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일")
     .slice(0, 300);
-}
-
-async function authenticated() {
-  try {
-    const executable = resolveCodexExecutable();
-    if (!executable) return false;
-    const { stdout, stderr } = await execFileAsync(executable, ["login", "status"], {
-      timeout: 10_000,
-      env: cleanEnvironment() as NodeJS.ProcessEnv,
-    });
-    return /logged in/i.test(`${stdout}\n${stderr}`);
-  } catch {
-    return false;
-  }
 }
 
 function plannerPrompt(truth: ProductTruth) {
@@ -146,6 +110,9 @@ function plannerPrompt(truth: ProductTruth) {
 필수 원칙:
 - 확인된 fact id에 연결되지 않은 가격, 할인, 구성, 수량, 후기, 평점, 효능, 인증, 원산지 수치를 만들지 않는다.
 - 상품명을 다시 쓰는 수준의 제목, 내부 전략 용어, 'USP 점검', '랜딩 조건', '광고 가설' 같은 문구를 금지한다.
+- '사용하는 순간', '이 선택', '핵심 이유', '고를 이유', '한눈에', '새로운 사용 이유'처럼 어느 상품에도 붙일 수 있는 상투 문구를 금지한다.
+- mainHook은 상품명보다 고객이 실제로 겪는 의외의 상황·감각·대조·질문을 앞세우고, 상세페이지에서만 발견할 수 있는 구체 근거와 연결한다.
+- 여섯 최종 후보가 모두 같은 문장 구조가 되지 않도록 질문형·상황 묘사형·반전형·수치/근거형·대화형 등 문장 리듬도 다르게 설계한다.
 - mainHook은 모바일에서 한눈에 읽히는 자연스러운 한국어, subCopy는 그 가설을 보완하는 한 줄이다.
 - 각 후보는 고객 긴장, 의도한 반응, 실제로 시각화할 독립 장면을 구체적으로 다르게 만든다.
 - 상세페이지 광고 배너를 복제하거나 자동 누끼를 전제로 하지 않는다.
@@ -157,8 +124,8 @@ ${JSON.stringify({ productName: truth.product.productName, brandName: truth.prod
 JSON 스키마에 맞춰 후보만 반환한다.`;
 }
 
-async function planningThread(codex: Codex, advertiserId: string) {
-  const registryId = planningIdentity(advertiserId);
+async function planningThread(codex: Codex, advertiserId: string, productId: string) {
+  const registryId = planningIdentity(advertiserId, productId);
   const record = await getAdvertiserThread(registryId);
   const options = {
     workingDirectory: process.cwd(),
@@ -177,9 +144,9 @@ async function planningThread(codex: Codex, advertiserId: string) {
 }
 
 async function runPlanner(truth: ProductTruth, advertiserId: string, advertiserName: string) {
-  if (!(await authenticated())) throw new Error("로컬 Codex 로그인 상태를 확인할 수 없습니다.");
-  const codex = new Codex({ env: cleanEnvironment(), codexPathOverride: resolveCodexExecutable() });
-  let current = await planningThread(codex, advertiserId);
+  if (!(await codexLocalAuthenticated())) throw new Error("로컬 Codex 로그인 상태를 확인할 수 없습니다.");
+  const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: resolveCodexLocalExecutable() });
+  let current = await planningThread(codex, advertiserId, truth.productId);
   let response;
   try {
     response = await current.thread.run(plannerPrompt(truth), {
@@ -189,7 +156,7 @@ async function runPlanner(truth: ProductTruth, advertiserId: string, advertiserN
   } catch (error) {
     if (!current.resumed) throw error;
     await resetAdvertiserThread(current.registryId);
-    current = await planningThread(codex, advertiserId);
+    current = await planningThread(codex, advertiserId, truth.productId);
     response = await current.thread.run(plannerPrompt(truth), {
       outputSchema,
       signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_PLANNING_TIMEOUT_MS || 180_000)),

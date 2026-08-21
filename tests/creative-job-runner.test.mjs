@@ -6,6 +6,7 @@ import {
   cancelGenerationJob,
   resumeGenerationJob,
   selectRunnableResult,
+  selectRunnableResults,
   staleRunningResultIds,
 } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 
@@ -88,6 +89,19 @@ test("7. cancelled 작업에서는 다음 결과를 시작하지 않는다", () 
   assert.equal(current.results[0].status, "running");
   assert.equal(current.results[1].status, "cancelled");
   assert.equal(selectRunnableResult(current, new Set()), undefined);
+});
+
+test("7-1. concurrency 2 작업은 서로 다른 후킹 두 개를 한 번에 선택한다", () => {
+  const current = job(["pending", "pending", "pending"]);
+  current.concurrency = 2;
+  assert.deepEqual(
+    selectRunnableResults(current, new Set()).map((item) => item.id),
+    ["h01", "h02"]
+  );
+  assert.deepEqual(
+    selectRunnableResults(current, new Set(["h01"])).map((item) => item.id),
+    ["h02", "h03"]
+  );
 });
 
 test("8. resume은 완료 결과를 유지하고 미완료 결과만 pending으로 되돌린다", () => {

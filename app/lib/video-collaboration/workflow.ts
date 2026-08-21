@@ -8,13 +8,14 @@ import type {
 } from "./types.ts";
 
 export const VIDEO_STATUS_LABELS: Record<VideoProjectStatus, string> = {
-  script_pending: "대본 생성 전",
-  script_review: "대본 검토 중",
+  script_pending: "기획 중",
+  script_review: "기획안 검토",
+  concept_selected: "기획안 선택",
   production_requested: "제작 요청",
-  in_production: "영상 제작 중",
-  marketer_review: "마케터 검수",
-  revision_requested: "수정 요청",
-  approved: "최종 승인",
+  in_production: "제작 중",
+  marketer_review: "검수 요청",
+  revision_requested: "수정 중",
+  approved: "완료",
 };
 
 export const VIDEO_HOOK_LABELS: Record<VideoHookType, string> = {
@@ -25,6 +26,13 @@ export const VIDEO_HOOK_LABELS: Record<VideoHookType, string> = {
   curiosity: "궁금증형",
   "review-trust": "후기·신뢰형",
   "brand-message": "브랜드 메시지형",
+  "loss-aversion": "손해 회피형",
+  "unexpected-comparison": "예상 밖 비교형",
+  "origin-material": "원산지·원물형",
+  "before-after": "사용 전후형",
+  "seasonal-situation": "계절·상황형",
+  "myth-busting": "상식 뒤집기형",
+  "user-monologue": "사용자 독백형",
 };
 
 export const VIDEO_FORMAT_LABELS = {
@@ -47,7 +55,8 @@ export const VIDEO_OBJECTIVE_LABELS = {
 
 const transitions: Record<VideoProjectStatus, VideoProjectStatus[]> = {
   script_pending: ["script_review"],
-  script_review: ["production_requested"],
+  script_review: ["concept_selected", "production_requested"],
+  concept_selected: ["script_review", "production_requested"],
   production_requested: ["in_production"],
   in_production: ["marketer_review"],
   marketer_review: ["revision_requested", "approved"],
@@ -75,6 +84,13 @@ const hookCode: Record<VideoHookType, string> = {
   curiosity: "CURIOSITY",
   "review-trust": "REVIEW",
   "brand-message": "BRAND",
+  "loss-aversion": "LOSS",
+  "unexpected-comparison": "COMPARE",
+  "origin-material": "ORIGIN",
+  "before-after": "CHANGE",
+  "seasonal-situation": "SEASON",
+  "myth-busting": "MYTH",
+  "user-monologue": "MONOLOGUE",
 };
 
 function readableSegment(value: string, fallback: string) {
@@ -123,7 +139,7 @@ export function createVideoMaterialCode(input: {
 }
 
 export function validateVideoMaterialCode(value: string) {
-  return /^VIDEO_[A-Z0-9_]{2,24}_[A-Z0-9_]{2,24}_(?:PROBLEM|BENEFIT|USP|SENSORY|CURIOSITY|REVIEW|BRAND)_\d{8}_\d{2}$/.test(
+  return /^VIDEO_[A-Z0-9_]{2,24}_[A-Z0-9_]{2,24}_(?:PROBLEM|BENEFIT|USP|SENSORY|CURIOSITY|REVIEW|BRAND|LOSS|COMPARE|ORIGIN|CHANGE|SEASON|MYTH|MONOLOGUE)_\d{8}_\d{2}$/.test(
     value
   );
 }
@@ -251,10 +267,15 @@ export function videoProjectSummary(project: VideoProject) {
     productUrl: project.productUrl,
     marketerName: project.marketerName,
     designerName: project.designerName,
-    status: project.status,
+    duration: project.duration,
+    status:
+      project.status === "script_review" && project.selectedConceptId
+        ? ("concept_selected" as const)
+        : project.status,
     selectedConceptId: project.selectedConceptId,
     deadline: project.deadline,
     hookType: selected?.hookType,
+    conceptFormat: project.conceptFormat || selected?.conceptFormat,
     materialCode: selected?.materialCode,
     latestVersionNumber: project.versions.at(-1)?.versionNumber,
     createdAt: project.createdAt,

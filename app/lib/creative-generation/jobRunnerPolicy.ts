@@ -23,6 +23,23 @@ export function selectRunnableResult(job: GenerationJob, attempted: ReadonlySet<
   );
 }
 
+export function selectRunnableResults(
+  job: GenerationJob,
+  attempted: ReadonlySet<string>,
+  limit = job.concurrency
+): GenerationResult[] {
+  if (job.status === "cancelled" || !isServerRunnableGenerationJob(job)) return [];
+  const maximum = Math.max(1, Math.min(3, Math.floor(limit) || 1));
+  return executionResults(job)
+    .filter(
+      (result) =>
+        !attempted.has(result.id) &&
+        (result.status === "pending" ||
+          (result.status === "failed" && result.attempts <= Math.max(0, job.retryLimit)))
+    )
+    .slice(0, maximum);
+}
+
 export function cancelGenerationJob(job: GenerationJob, now = new Date().toISOString()): GenerationJob {
   return {
     ...job,

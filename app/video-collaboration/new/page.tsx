@@ -1,10 +1,5 @@
-import { FeaturePageShell } from "../../components/AppFeatureNavigation";
-import { NewVideoProjectWorkspace } from "../../components/video-collaboration/NewVideoProjectWorkspace";
+import { redirect } from "next/navigation";
 
 export default function NewVideoProjectPage() {
-  return (
-    <FeaturePageShell activeFeature="video-collaboration">
-      <NewVideoProjectWorkspace />
-    </FeaturePageShell>
-  );
+  redirect("/video-planning/new");
 }

@@ -73,6 +73,7 @@ function sourceFingerprint(job: GenerationJob, result: GenerationResult) {
     result.hookPlan.id,
     result.hookPlan.headline,
     result.hookPlan.body,
+    ...(result.nativeCreative?.validation?.observedKoreanText || []),
   ]);
 }
 

@@ -1,128 +1,106 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DaywizBrand } from "./DaywizBrand";
-import { AutoProductionStatusIndicator } from "./features/auto-production/AutoProductionStatusIndicator";
-import { CreativeJobStatusIndicator } from "./features/creative-generation/CreativeJobStatusIndicator";
 
 export type AppFeatureKey =
   | "store-analysis"
-  | "product-selection"
-  | "product-creation"
+  | "creative-production"
+  | "video-planning"
+  | "performance"
   | "auto-production"
-  | "advertiser-memory"
-  | "golden-references"
-  | "hook-experiments"
-  | "creative-results"
-  | "image-references"
-  | "video-collaboration";
+  | "advertisers"
+  | "references";
 
-const FEATURES: Array<{
-  key: AppFeatureKey;
-  href: string;
-  index: string;
-  label: string;
-  description: string;
-}> = [
+export const IMAGE_CONTENT_FEATURES = [
   {
-    key: "store-analysis",
+    key: "store-analysis" as const,
     href: "/analyze-store",
     index: "01",
     label: "광고 후보 찾기",
-    description: "쇼핑몰과 상품을 분석합니다",
+    description: "데이터와 쇼핑몰에서 기회를 찾습니다",
   },
   {
-    key: "product-selection",
+    key: "creative-production" as const,
     href: "/create-product?step=product",
     index: "02",
-    label: "상품 선택",
-    description: "제작할 상품을 확인합니다",
+    label: "광고 제작",
+    description: "상품 분석부터 Meta 초안까지 진행합니다",
   },
   {
-    key: "product-creation",
-    href: "/create-product",
-    index: "03",
-    label: "AI 광고 만들기",
-    description: "상품 근거로 완성 광고를 만듭니다",
-  },
-  {
-    key: "creative-results",
-    href: "/create-product?view=results",
+    key: "performance" as const,
+    href: "/performance",
     index: "04",
-    label: "제작 결과 확인",
-    description: "생성한 광고와 소재코드를 봅니다",
+    label: "성과 확인",
+    description: "후킹별 Meta 운영 성과를 확인합니다",
   },
 ];
 
-const AUXILIARY_FEATURES: Array<{
-  key: AppFeatureKey;
-  href: string;
-  label: string;
-}> = [
-  {
-    key: "auto-production",
-    href: "/admin/auto-production",
-    label: "자동 콘텐츠 제작",
-  },
-  {
-    key: "advertiser-memory",
-    href: "/admin/auto-production#advertiser-memory",
-    label: "광고주 기억",
-  },
-  {
-    key: "golden-references",
-    href: "/admin/auto-production#golden-references",
-    label: "골든 레퍼런스",
-  },
-  {
-    key: "hook-experiments",
-    href: "/hook-experiments",
-    label: "후킹 성과 테스트",
-  },
-  {
-    key: "image-references",
-    href: "/image-analysis-references",
-    label: "이미지 분석 레퍼런스",
-  },
-  {
-    key: "video-collaboration",
-    href: "/video-collaboration",
-    label: "영상 제작 협업",
-  },
+export const VIDEO_PLANNING_FEATURE = {
+  key: "video-planning" as const,
+  href: "/video-planning",
+  label: "영상 기획",
+  description: "상품 기반 대본과 장면 제작안을 별도로 기획합니다",
+};
+
+export const MAIN_FEATURES = [...IMAGE_CONTENT_FEATURES, VIDEO_PLANNING_FEATURE];
+
+export const MANAGEMENT_FEATURES = [
+  { key: "auto-production" as const, href: "/admin/auto-production", label: "자동 제작 관리" },
+  { key: "advertisers" as const, href: "/admin/advertisers", label: "광고주 설정" },
+  { key: "references" as const, href: "/admin/references", label: "레퍼런스 관리" },
 ];
 
-export function AppFeatureNavigation({
-  activeFeature,
-}: {
-  activeFeature?: AppFeatureKey;
-}) {
+export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFeatureKey }) {
   return (
-    <nav className="app-feature-navigation" aria-label="데이위즈 주요 기능">
-      {FEATURES.map((feature) => (
+    <nav className="app-feature-navigation" aria-label="데이위즈 콘텐츠 제작 영역">
+      <section className="feature-navigation-group feature-navigation-image" aria-labelledby="image-content-navigation-label">
+        <div className="feature-navigation-group-label" id="image-content-navigation-label">
+          <span>IMAGE CONTENT</span>
+          <strong>이미지 콘텐츠</strong>
+        </div>
+        <div className="feature-navigation-links">
+          {IMAGE_CONTENT_FEATURES.map((feature) => (
+            <Link
+              aria-current={activeFeature === feature.key ? "page" : undefined}
+              className={activeFeature === feature.key ? "active" : ""}
+              href={feature.href}
+              key={feature.key}
+            >
+              <span>{feature.index}</span>
+              <div>
+                <strong>{feature.label}</strong>
+                <small>{feature.description}</small>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="feature-navigation-group feature-navigation-video" aria-labelledby="video-planning-navigation-label">
+        <div className="feature-navigation-group-label" id="video-planning-navigation-label">
+          <span>VIDEO CONTENT</span>
+          <strong>영상 콘텐츠</strong>
+        </div>
         <Link
-          aria-current={activeFeature === feature.key ? "page" : undefined}
-          className={activeFeature === feature.key ? "active" : ""}
-          href={feature.href}
-          key={feature.key}
+          aria-current={activeFeature === VIDEO_PLANNING_FEATURE.key ? "page" : undefined}
+          className={`feature-navigation-video-link${activeFeature === VIDEO_PLANNING_FEATURE.key ? " active" : ""}`}
+          href={VIDEO_PLANNING_FEATURE.href}
         >
-          <span>{feature.index}</span>
+          <span>VIDEO</span>
           <div>
-            <strong>{feature.label}</strong>
-            <small>{feature.description}</small>
+            <strong>{VIDEO_PLANNING_FEATURE.label}</strong>
+            <small>{VIDEO_PLANNING_FEATURE.description}</small>
           </div>
         </Link>
-      ))}
+      </section>
     </nav>
   );
 }
 
-export function AuxiliaryFeatureNavigation({
-  activeFeature,
-}: {
-  activeFeature?: AppFeatureKey;
-}) {
+export function AuxiliaryFeatureNavigation({ activeFeature }: { activeFeature?: AppFeatureKey }) {
   return (
-    <nav className="app-auxiliary-navigation" aria-label="데이위즈 보조 기능">
-      {AUXILIARY_FEATURES.map((feature) => (
+    <nav className="app-auxiliary-navigation" aria-label="관리 도구">
+      {MANAGEMENT_FEATURES.map((feature) => (
         <Link
           aria-current={activeFeature === feature.key ? "page" : undefined}
           className={activeFeature === feature.key ? "active" : ""}
@@ -136,6 +114,37 @@ export function AuxiliaryFeatureNavigation({
   );
 }
 
+export function AppSidebar({
+  activeFeature,
+  className = "feature-sidebar",
+  id,
+}: {
+  activeFeature?: AppFeatureKey;
+  className?: string;
+  id?: string;
+}) {
+  return (
+    <aside className={className} id={id}>
+      <Link className="feature-sidebar-brand adatlas-sidebar-brand" href="/">
+        <DaywizBrand subtitle="Creative Operations" />
+      </Link>
+      <div className="feature-sidebar-heading">
+        <p className="eyebrow">CONTENT WORKSPACE</p>
+        <h2>제작 영역을 선택하세요</h2>
+      </div>
+      <AppFeatureNavigation activeFeature={activeFeature} />
+      <details className="feature-sidebar-tools mvp-management-tools">
+        <summary>관리 도구</summary>
+        <AuxiliaryFeatureNavigation activeFeature={activeFeature} />
+      </details>
+      <details className="mvp-sidebar-help">
+        <summary>도움말</summary>
+        <p>상품을 고른 뒤 파란색 버튼을 따라가면 광고 6장을 만들고 결과를 저장할 수 있습니다.</p>
+      </details>
+    </aside>
+  );
+}
+
 export function FeaturePageShell({
   activeFeature,
   children,
@@ -145,25 +154,7 @@ export function FeaturePageShell({
 }) {
   return (
     <div className="feature-page-shell">
-      <aside className="feature-sidebar">
-        <Link className="feature-sidebar-brand" href="/">
-          <DaywizBrand subtitle="Creative Operations" />
-        </Link>
-        <div className="feature-sidebar-heading">
-          <p className="eyebrow">WORKSPACE</p>
-          <h2>무엇을 시작할까요?</h2>
-        </div>
-        <AppFeatureNavigation activeFeature={activeFeature} />
-        <AutoProductionStatusIndicator />
-        <CreativeJobStatusIndicator />
-        <details className="feature-sidebar-tools">
-          <summary>관리 도구</summary>
-          <AuxiliaryFeatureNavigation activeFeature={activeFeature} />
-        </details>
-        <Link className="feature-sidebar-home" href="/">
-          도움말 · 전체 기능 홈
-        </Link>
-      </aside>
+      <AppSidebar activeFeature={activeFeature} />
       {children}
     </div>
   );

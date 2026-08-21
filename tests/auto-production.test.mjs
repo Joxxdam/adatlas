@@ -373,11 +373,17 @@ test("17. 한 상품 실패가 다음 상품 작업을 막지 않는다", async 
   assert.deepEqual(seen, ["failed-product", "next-product"]);
 });
 
-test("18. 동일 광고주의 Codex 생성은 직렬 처리된다", async () => {
-  const source = await read("app/lib/creative-generation/nativeResultGeneration.server.ts");
-  assert.match(source, /const advertiserLocks = new Map/);
-  assert.match(source, /job\?\.advertiserId \|\| input\.jobId/);
-  assert.match(source, /await previous/);
+test("18. 상품과 후킹별 Codex 문맥을 분리하고 한 상품에서 최대 2장을 병렬 처리한다", async () => {
+  const [generation, provider, runner] = await Promise.all([
+    read("app/lib/creative-generation/nativeResultGeneration.server.ts"),
+    read("app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts"),
+    read("app/lib/creative-generation/jobRunner.server.ts"),
+  ]);
+  assert.match(generation, /codexProductThreadKey/);
+  assert.doesNotMatch(generation, /advertiserLocks/);
+  assert.match(provider, /creative-\$\{input\.result\.hookPlan\.hookCode\.toLowerCase\(\)\}/);
+  assert.match(runner, /selectRunnableResults/);
+  assert.match(runner, /Promise\.all/);
 });
 
 test("19. 서버 복구는 완료 결과를 재생성하지 않고 실행 범위의 미완료만 복구한다", () => {
@@ -448,20 +454,28 @@ test("27. 공개 자동제작 응답은 원본 분석 후보와 로컬 비공개
   assert.match(source, /\[비공개 인증정보\]/);
 });
 
-test("28. UI는 단순 현황·선정 상품·완성 결과·접힌 설정을 제공한다", async () => {
+test("28. UI는 현황·후보·작업 큐와 접힌 설정만 제공하고 공통 결과로 연결한다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
-  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "오늘 선정 상품", "완성 결과", "자동제작 설정", "골든 레퍼런스로 등록"]) {
+  for (const label of [
+    "자동 콘텐츠 제작",
+    "오늘의 제작 현황",
+    "오늘 후보 미리보기",
+    "자동제작 설정",
+    "공통 제작 결과에서 보기",
+  ]) {
     assert.match(workspace, new RegExp(label));
   }
   assert.match(workspace, /settingsPanel/);
-  assert.match(workspace, /서버가 켜져 있을 때/);
-  assert.match(workspace, /Meta 게시는 자동으로 수행하지 않습니다/);
+  assert.match(workspace, /일정·후보·제외조건·작업 큐만 관리합니다/);
+  assert.match(workspace, /\/create-product\?view=results/);
+  assert.doesNotMatch(workspace, /골든 레퍼런스로 등록/);
 });
 
-test("26. 결과 화면에서 후킹 6개 전체 제작으로 연결된다", async () => {
+test("26. 후킹 6개 전체 제작은 공용 엔진을 사용하고 자동제작 화면은 결과를 복제하지 않는다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
-  assert.match(workspace, /후킹 가설 6개 보기/);
-  assert.match(workspace, /6개 후킹 모두 제작/);
+  assert.match(workspace, /공통 제작 결과에서 보기/);
+  assert.doesNotMatch(workspace, /후킹 가설 6개 보기/);
+  assert.doesNotMatch(workspace, /6개 후킹 모두 제작/);
   assert.match(runner, /hookCodes\.length \? hookCodes : allHookCodes\(job\)/);
 });

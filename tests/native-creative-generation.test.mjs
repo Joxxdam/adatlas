@@ -121,9 +121,13 @@ test("URL 분석과 native 작업 생성은 등록 누끼로 대표 이미지를
 });
 
 test("로컬 공급자는 API 키 환경변수를 Codex 자식 프로세스에 전달하지 않는다", async () => {
-  const source=await readFile(new URL("../app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts",import.meta.url),"utf8");
-  assert.match(source,/OPENAI_API_KEY/); assert.match(source,/CODEX_API_KEY/); assert.match(source,/filter/);
-  assert.doesNotMatch(source,/apiKey\s*:/);
+  const [provider,runtime]=await Promise.all([
+    readFile(new URL("../app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/lib/creative-generation/codexLocalRuntime.server.ts",import.meta.url),"utf8"),
+  ]);
+  assert.match(runtime,/OPENAI_API_KEY/); assert.match(runtime,/CODEX_API_KEY/); assert.match(runtime,/filter/);
+  assert.match(provider,/codexLocalEnvironment/);
+  assert.doesNotMatch(`${provider}\n${runtime}`,/apiKey\s*:/);
 });
 
 test("광고주 스레드 레지스트리는 원자 저장과 손상 JSON 복구를 구현한다", async () => {
@@ -161,6 +165,9 @@ test("후킹 기획은 로컬 gpt-5.6-sol high reasoning으로 12~15개 후보�
   assert.match(source, /minItems: 12/);
   assert.match(source, /maxItems: 15/);
   assert.match(source, /provider: "fallback"/);
+  assert.match(source, /상투 문구를 금지/);
+  assert.match(source, /상세페이지에서만 발견할 수 있는 구체 근거/);
+  assert.match(source, /질문형·상황 묘사형·반전형/);
 });
 
 test("개별 QA는 생성 스레드와 분리되고 그룹 콘택트시트 QA를 수행한다", async () => {
@@ -186,7 +193,14 @@ test("공개 작업 응답은 스레드·로컬 경로·후킹 후보·QA 상세
   assert.match(source, /nativeResultImageUrl/);
 });
 
-test("동일 광고주 생성은 하나의 Codex 스레드에서 직렬 처리되어 문맥 충돌을 막는다", async () => {
-  const source=await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts",import.meta.url),"utf8");
-  assert.match(source,/advertiserLocks/); assert.match(source,/await previous/); assert.match(source,/job\?\.advertiserId/);
+test("상품별 계획 문맥과 후킹별 생성 문맥을 분리해 병렬 생성 중 사실 혼입을 막는다", async () => {
+  const [planner,provider,generation]=await Promise.all([
+    readFile(new URL("../app/lib/creative-generation/CodexLocalHookPlanner.server.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts",import.meta.url),"utf8"),
+  ]);
+  assert.match(planner,/codexProductThreadKey/);
+  assert.match(provider,/codexProductThreadKey/);
+  assert.match(provider,/hookCode\.toLowerCase/);
+  assert.doesNotMatch(generation,/advertiserLocks/);
 });

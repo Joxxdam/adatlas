@@ -1,12 +1,7 @@
-import { FeaturePageShell } from "../components/AppFeatureNavigation";
-import { VideoProjectList } from "../components/video-collaboration/VideoProjectList";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default function VideoCollaborationPage() {
-  return (
-    <FeaturePageShell activeFeature="video-collaboration">
-      <VideoProjectList />
-    </FeaturePageShell>
-  );
+  redirect("/video-planning");
 }

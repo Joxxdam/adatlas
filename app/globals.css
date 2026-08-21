@@ -4195,7 +4195,45 @@ select {
 
 .app-feature-navigation {
   display: grid;
-  gap: 9px;
+  gap: 18px;
+}
+
+.feature-navigation-group,
+.feature-navigation-links {
+  display: grid;
+  min-width: 0;
+}
+
+.feature-navigation-group {
+  gap: 8px;
+}
+
+.feature-navigation-links {
+  gap: 7px;
+}
+
+.feature-navigation-group-label {
+  display: grid;
+  gap: 2px;
+  padding: 0 10px;
+}
+
+.feature-navigation-group-label span {
+  color: #8b98aa;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.feature-navigation-group-label strong {
+  color: #28384e;
+  font-size: 13px;
+  letter-spacing: -0.02em;
+}
+
+.feature-navigation-video {
+  border-top: 1px solid #e4e9f1;
+  padding-top: 16px;
 }
 
 .app-feature-navigation a {
@@ -4252,6 +4290,27 @@ select {
   color: #8993a5;
   font-size: 10px;
   line-height: 1.45;
+}
+
+.app-feature-navigation .feature-navigation-video-link {
+  grid-template-columns: 42px minmax(0, 1fr);
+  border-color: #dfe6f2;
+  background: linear-gradient(135deg, #f8faff 0%, #f2f6ff 100%);
+}
+
+.app-feature-navigation .feature-navigation-video-link > span {
+  color: #5f73a2;
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+.app-feature-navigation .feature-navigation-video-link strong {
+  color: #1a3158;
+  font-size: 14px;
+}
+
+.app-feature-navigation .feature-navigation-video-link.active strong {
+  color: #1747c9;
 }
 
 .feature-sidebar-home {
@@ -5629,9 +5688,17 @@ select {
     display: none;
   }
 
-  .feature-sidebar .app-feature-navigation,
-  .mvp-sidebar > .app-feature-navigation {
+  .feature-sidebar .app-feature-navigation {
+    grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr);
+    align-items: start;
+  }
+
+  .feature-sidebar .feature-navigation-image .feature-navigation-links {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mvp-sidebar > .app-feature-navigation {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -5723,6 +5790,10 @@ select {
 
   .feature-sidebar .app-feature-navigation,
   .mvp-sidebar > .app-feature-navigation {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-sidebar .feature-navigation-image .feature-navigation-links {
     grid-template-columns: 1fr;
   }
 
@@ -5863,12 +5934,31 @@ select {
 .mvp-management-tools .app-auxiliary-navigation { margin-top: 7px; border-top: 1px dashed #e4e9f1; padding-top: 7px; }
 
 .mvp-shell-simplified .mvp-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   gap: 14px;
   padding: 32px clamp(20px, 3.5vw, 52px) 64px;
   background: transparent;
+}
+
+.mvp-shell-simplified .mvp-workspace > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.meta-crawl-panel,
+.meta-crawl-panel > *,
+.meta-crawl-panel p {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.meta-crawl-panel p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mvp-shell-simplified .mvp-hero {
@@ -5891,11 +5981,18 @@ select {
 }
 
 .mvp-shell-simplified .create-product-panel {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 18px;
   border: 0;
   padding: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.mvp-shell-simplified .create-product-panel > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .analysis-handoff-notice {

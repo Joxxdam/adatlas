@@ -8,7 +8,6 @@ import type { CreateGenerationJobInput, GenerationJob } from "./types";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 import { resolveAdvertiserIdentity } from "./advertiserIdentity";
 import { buildVisualDiversityMatrix, validateVisualDiversityMatrix } from "./visualDiversity";
-import { getAdvertiserThread } from "./codexRegistry.server";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import { defaultAdBrief } from "../mvp/adBrief";
 import type { AdBrief } from "../mvp/types";
@@ -135,7 +134,8 @@ export async function createNativeGenerationJob(
   job.paidApiUsed = engine === "openai_api";
   job.advertiserId = advertiserId;
   job.advertiserName = advertiserName;
-  job.codexThreadId = (await getAdvertiserThread(job.advertiserId))?.threadId;
+  // 생성 컨텍스트는 상품·후킹별로 격리하며, 광고주 공용 대화는 재사용하지 않는다.
+  job.codexThreadId = undefined;
   job.visualDiversityMatrix = buildVisualDiversityMatrix(job.results);
   const diversity = validateVisualDiversityMatrix(job.visualDiversityMatrix);
   if (!diversity.valid) throw new Error(diversity.errors.join(" "));

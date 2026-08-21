@@ -343,6 +343,7 @@ export async function queueAutoProductionHooks(runId: string, taskIdValue: strin
   const updated = await creativeGenerationJobStore.update(job.id, (current) => ({
     ...current,
     executionResultIds: Array.from(new Set([...(current.executionResultIds || []), ...requestedIds])),
+    representativeResultId: requestedIds[0] || current.representativeResultId,
     status: "running",
     completedAt: undefined,
     results: current.results.map((result) => requestedIds.includes(result.id) && ["cancelled", "failed"].includes(result.status) ? { ...result, status: "pending", error: undefined, startedAt: undefined } : result),

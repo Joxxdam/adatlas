@@ -138,9 +138,12 @@ test("자동·수동 제작은 같은 공용 문구 서비스를 쓰고 내부 �
   const publicJob = await read("app/lib/creative-generation/publicJob.server.ts");
   const manualUi = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
   const autoUi = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
+  const autoRunner = await read("app/lib/auto-production/productionRunner.server.ts");
   assert.match(native, /ensureProductAdCopy/);
   assert.match(manualUi, /ProductAdCopyPanel/);
-  assert.match(autoUi, /ProductAdCopyPanel/);
+  assert.match(autoRunner, /createNativeGenerationJob/);
+  assert.match(autoUi, /\/create-product\?view=results/);
+  assert.doesNotMatch(autoUi, /ProductAdCopyPanel/);
   assert.match(publicJob, /promptVersion:\s*""/);
   assert.doesNotMatch(publicJob, /buildAdCopyPrompt/);
 });

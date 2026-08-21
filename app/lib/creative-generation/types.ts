@@ -516,6 +516,13 @@ export type NativeCreativeArtifact = {
   promptVersion: string;
   revisionCount: number;
   validation?: NativeCreativeValidation;
+  timing?: {
+    referenceMs: number;
+    generationMs: number;
+    validationMs: number;
+    exportMs: number;
+    totalMs: number;
+  };
   export?: {
     width: 1200;
     height: 1200;

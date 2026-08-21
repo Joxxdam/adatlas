@@ -63,6 +63,7 @@ function lines(value: string) {
 const statusStep = {
   script_pending: 1,
   script_review: 2,
+  concept_selected: 2,
   production_requested: 3,
   in_production: 3,
   marketer_review: 4,

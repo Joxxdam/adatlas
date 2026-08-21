@@ -6,7 +6,6 @@
 import JSZip from "jszip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
-import { getGenerationPlanSummary } from "../../../lib/mvp/adObjective";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import {
   CREATIVE_PLANNER_VERSION,
@@ -77,17 +76,16 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const [job, setJob] = useState<GenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [message, setMessage] = useState("상품정보를 확인하고 광고 목표와 제작 방식을 확정해 주세요.");
+  const [message, setMessage] = useState("상품 상세페이지를 확인하면 고유 후킹 6개와 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
   const generationModePreference = "ai-full-scene" as const;
   const [strategyVariation, setStrategyVariation] = useState(0);
   const [explorationMode, setExplorationMode] = useState<CreativeExplorationMode>("concept-exploration");
-  const [engine, setEngine] = useState<"codex_local" | "openai_api">("codex_local");
+  const engine = "codex_local" as const;
   const [providerStatus, setProviderStatus] = useState("로컬 Codex 상태 확인 중…");
   const [latestCompletedResultId, setLatestCompletedResultId] = useState<string>();
   const [runnerActive, setRunnerActive] = useState(false);
   const previousPlanConfirmed = useRef(props.planConfirmed);
-  const generationPlan = getGenerationPlanSummary(props.adBrief);
   const canGenerate = Boolean(props.product.productName.trim() && props.productImagePaths.length);
   const canStart = canGenerate && props.planConfirmed;
   const progress = useMemo(() => {
@@ -105,7 +103,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
       const payload = await response.json() as { status?: { detail?: string } };
       setProviderStatus(payload.status?.detail || (response.ok ? "사용 가능" : "사용 불가"));
     }).catch(() => setProviderStatus("연결 상태를 확인하지 못했습니다."));
-  }, [engine]);
+  }, []);
   const conceptMode = job
     ? job.creativePlan.mode === "concept-exploration"
     : explorationMode === "concept-exploration";
@@ -230,7 +228,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
       return;
     }
     if (!props.planConfirmed) {
-      setMessage("광고 목표와 제작 방식을 먼저 확정해 주세요.");
+      setMessage("상세페이지 상품 분석을 먼저 완료해 주세요.");
       return;
     }
     setLoading(true);
@@ -398,7 +396,9 @@ export function HookExperimentCreativeGenerator(props: Props) {
   }
 
   if (!props.productLoaded && !job) return null;
-  const currentHookCode = job?.results.find((result) => result.status === "running")?.hookPlan.hookCode;
+  const currentHookCodes = job?.results
+    .filter((result) => result.status === "running")
+    .map((result) => result.hookPlan.hookCode) || [];
   const recoverable = Boolean(
     job &&
     job.status === "running" &&
@@ -410,11 +410,10 @@ export function HookExperimentCreativeGenerator(props: Props) {
     <section className="six-creative-generator" id="creative-results">
       <div className="six-creative-head">
         <div>
-          <p className="eyebrow">4 · 광고 콘텐츠 생성</p>
-          <h4>{generationPlan.objectiveLabel} 목표의 후킹별 AI 광고 만들기</h4>
-          <p>후킹마다 장면·제품·한국어 문구·타이포그래피·레이아웃 전체를 AI가 별도로 완성합니다.</p>
-          <label><span>생성 엔진</span><select value={engine} onChange={(event) => setEngine(event.target.value as "codex_local" | "openai_api")} disabled={loading}><option value="codex_local">Codex 로컬 로그인 (기본·API 키 미사용)</option><option value="openai_api">OpenAI 유료 API (명시 선택)</option></select><small>{providerStatus}</small></label>
-          {engine === "openai_api" ? <p role="alert">유료 API를 명시적으로 선택했습니다. 기본 6회 이미지 생성과 품질 미달 이미지의 AI 수정 호출이 추가될 수 있으며, 자동 선택이나 자동 전환은 하지 않습니다.</p> : null}
+          <p className="eyebrow">3 · 광고 콘텐츠 생성</p>
+          <h4>상세페이지 고유 후킹 6개로 AI 광고 만들기</h4>
+          <p>흔한 상품명형 문구를 제외하고, 후킹마다 장면·제품·한국어 문구·타이포그래피·레이아웃 전체를 AI가 별도로 완성합니다.</p>
+          <small>{providerStatus} · 상품별 독립 작업에서 최대 2장을 동시에 제작합니다.</small>
         </div>
         <button disabled={!canStart || loading} onClick={() => void startGeneration()} type="button">
           {loading
@@ -423,19 +422,19 @@ export function HookExperimentCreativeGenerator(props: Props) {
               ? job
                 ? "후킹 광고 새로 만들기"
                 : "후킹 6개로 광고 만들기"
-              : "제작 계획을 먼저 확정해 주세요"}
+              : "상품 확인을 먼저 완료해 주세요"}
         </button>
       </div>
       <div className="six-creative-plan-summary">
         <span><b>제작</b>후킹마다 전체 콘텐츠를 AI로 개별 생성</span>
         <span><b>보존</b>상세페이지 상품 형태·패키지·색상·확인된 사실</span>
         <span><b>전달</b>이미지·후킹·소재코드·광고명·UTM</span>
-        <span><b>CTA</b>{generationPlan.cta}</span>
+        <span><b>후킹</b>상세페이지 고유 근거·상황·감각·반전</span>
       </div>
       <div className="six-creative-status" role="status" aria-live="polite">
         <span>
-          {job?.status === "running" && currentHookCode && runnerActive
-            ? `광고 콘텐츠 생성 중 · ${currentHookCode} 제작 중 · ${progress.completed}/${progress.total} 완료`
+          {job?.status === "running" && currentHookCodes.length && runnerActive
+            ? `광고 콘텐츠 생성 중 · ${currentHookCodes.join(" · ")} ${currentHookCodes.length > 1 ? "병렬 " : ""}제작 중 · ${progress.completed}/${progress.total} 완료`
             : recoverable
               ? "서버 실행이 멈춘 작업입니다. 중단 지점부터 재개할 수 있습니다."
               : message}

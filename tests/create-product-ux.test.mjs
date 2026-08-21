@@ -44,29 +44,46 @@ test("analysis handoff keeps the selected product URL independently of cached de
   );
 });
 
-test("main navigation exposes only four beginner tasks and keeps auto production under management tools", async () => {
+test("main navigation separates three image-content tasks from video planning and keeps three management tools", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
-  for (const label of ["광고 후보 찾기", "상품 선택", "AI 광고 만들기", "제작 결과 확인"]) {
+  for (const label of ["광고 후보 찾기", "광고 제작", "영상 기획", "성과 확인"]) {
     assert.match(navigation, new RegExp(label));
   }
-  const mainBlock = navigation.slice(navigation.indexOf("const FEATURES"), navigation.indexOf("const AUXILIARY_FEATURES"));
-  assert.doesNotMatch(mainBlock, /자동 콘텐츠 제작|auto-production/);
+  const imageBlock = navigation.slice(navigation.indexOf("IMAGE_CONTENT_FEATURES"), navigation.indexOf("VIDEO_PLANNING_FEATURE"));
+  assert.equal((imageBlock.match(/index: "0[124]"/g) || []).length, 3);
+  assert.doesNotMatch(imageBlock, /영상 기획|video-planning|자동 콘텐츠 제작|auto-production/);
+  assert.match(navigation, /IMAGE CONTENT/);
+  assert.match(navigation, />이미지 콘텐츠</);
+  assert.match(navigation, /VIDEO CONTENT/);
+  assert.match(navigation, />영상 콘텐츠</);
+  assert.match(navigation, /VIDEO_PLANNING_FEATURE/);
   assert.match(navigation, /\/admin\/auto-production/);
-  assert.match(navigation, /자동 콘텐츠 제작/);
-  assert.match(navigation, /광고주 기억/);
-  assert.match(navigation, /골든 레퍼런스/);
-  assert.match(navigation, /이미지 분석 레퍼런스/);
-  assert.match(navigation, /영상 제작 협업/);
+  assert.match(navigation, /\/admin\/advertisers/);
+  assert.match(navigation, /\/admin\/references/);
+  assert.doesNotMatch(navigation, /상품 선택[\s\S]*IMAGE_CONTENT_FEATURES|AI 광고 만들기[\s\S]*IMAGE_CONTENT_FEATURES/);
 });
 
-test("공통 화면은 데이위즈 로고와 AI 네이티브 4단계 제작 흐름을 안내한다", async () => {
+test("auto production manages orchestration and links to the shared creative result", async () => {
+  const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
+  const runner = await read("app/lib/auto-production/productionRunner.server.ts");
+  assert.doesNotMatch(workspace, /ProductAdCopyPanel|ResultActions|next\/image/);
+  assert.match(workspace, /공통 제작 결과에서 보기/);
+  assert.match(workspace, /\/create-product\?view=results/);
+  assert.match(runner, /createNativeGenerationJob|runCreativeGenerationJob/);
+});
+
+test("공통 화면은 데이위즈 로고와 설정 없는 AI 네이티브 3단계 제작 흐름을 안내한다", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
   const dashboard = await read("app/components/MvpDashboard.tsx");
   const creationSteps = await read("app/components/features/creative-generation/CreativeCreationSteps.tsx");
   const brand = await read("app/components/DaywizBrand.tsx");
   const logo = await read("public/daywiz-logo.svg");
   assert.match(navigation, /DaywizBrand/);
-  for (const label of ["상품 확인", "광고 목표 선택", "후킹 6개 선정", "AI 광고 6장 완성"]) assert.match(creationSteps, new RegExp(label));
+  for (const label of ["상품 확인", "상품 고유 후킹 6개", "AI 광고 6장 완성"]) assert.match(creationSteps, new RegExp(label));
+  assert.doesNotMatch(creationSteps, /광고 목표 선택/);
+  const briefForm = await read("app/components/features/product-brief/ProductBriefForm.tsx");
+  assert.match(briefForm, /상세페이지에서만 나올 수 있는 후킹 6개/);
+  assert.doesNotMatch(briefForm, /제작 설정 변경|productionSettings|objectiveOptions/);
   assert.match(dashboard, /CreativeCreationSteps/);
   assert.match(dashboard, /legacyManualProductionToolsAvailable = false/);
   assert.match(brand, /\/daywiz-logo\.svg/);
@@ -84,7 +101,7 @@ test("create-product defaults to URL analysis and preserves admin entry points",
   assert.match(dashboard, /카테고리 관리/);
   assert.match(dashboard, /이미지 수집/);
   assert.match(dashboard, /이미지 분석/);
-  assert.match(dashboard, /생성 설정·상태/);
+  assert.match(dashboard, /AppSidebar/);
 });
 
 test("hook creatives are server-driven and deliver each completed card immediately", async () => {

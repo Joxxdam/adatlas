@@ -1,209 +1,146 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import type {
-  BrandGuideline,
-  ProductAnalysisSnapshot,
-  VideoDuration,
-  VideoFormat,
-  VideoObjective,
-  VideoPlatform,
-  VideoCreativeStyle,
-  VideoReferenceAsset,
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
+import {
+  VIDEO_CONCEPT_FORMAT_OPTIONS,
+  type BrandGuideline,
+  type ProductAnalysisSnapshot,
+  type VideoConceptFormat,
 } from "../../lib/video-collaboration/types";
-import styles from "./VideoCollaboration.module.css";
+import { useVideoPlanningOptions } from "../video-planning/useVideoPlanningOptions";
+import styles from "../video-planning/VideoPlanning.module.css";
 
-const emptyGuideline: BrandGuideline = {
-  toneAndManner: "",
-  primaryAudience: "",
-  coreUsps: "",
-  requiredPhrases: [],
-  forbiddenPhrases: [],
-  advertiserRequests: "",
-  designerNotes: "",
-};
-
-function lines(value: string) {
-  return value
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+function guidelineFor(analysis: ProductAnalysisSnapshot): BrandGuideline {
+  return {
+    toneAndManner: "상품 상세페이지의 실제 표현을 살리되 짧고 자연스러운 한국어 자막으로 작성",
+    primaryAudience: analysis.targetCustomers[0] || "",
+    coreUsps: analysis.coreUsps.join(" · "),
+    requiredPhrases: [],
+    forbiddenPhrases: analysis.cautionPhrases,
+    advertiserRequests: "",
+    designerNotes: "이미지를 만들지 말고 자막과 구체적인 영상 장면 설명만 작성",
+  };
 }
 
 export function NewVideoProjectWorkspace() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [dirty, setDirty] = useState(false);
+  const searchParams = useSearchParams();
+  const { products } = useVideoPlanningOptions();
+  const [step, setStep] = useState<1 | 2>(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [productUrl, setProductUrl] = useState("");
+  const [productUrl, setProductUrl] = useState(searchParams.get("productUrl") || "");
   const [analysis, setAnalysis] = useState<ProductAnalysisSnapshot | null>(null);
-  const [projectName, setProjectName] = useState("");
   const [advertiserName, setAdvertiserName] = useState("");
-  const [marketerName, setMarketerName] = useState("마케터");
-  const [designerName, setDesignerName] = useState("");
-  const [duration, setDuration] = useState<VideoDuration>(20);
-  const format: VideoFormat = "short-form";
-  const [objective, setObjective] = useState<VideoObjective>("purchase");
-  const [platform, setPlatform] = useState<VideoPlatform>("meta");
-  const [creativeStyle, setCreativeStyle] = useState<VideoCreativeStyle>("auto");
-  const [advancedTarget, setAdvancedTarget] = useState("");
-  const [advancedTone, setAdvancedTone] = useState("");
-  const [additionalRequests, setAdditionalRequests] = useState("");
-  const [guideline, setGuideline] = useState<BrandGuideline>(emptyGuideline);
-  const [references, setReferences] = useState<VideoReferenceAsset[]>([]);
-  const [productOriginal, setProductOriginal] = useState<VideoReferenceAsset | null>(null);
-  const [referenceProgress, setReferenceProgress] = useState(0);
+  const [selectedFormat, setSelectedFormat] = useState<VideoConceptFormat | "">("");
   const [generationStage, setGenerationStage] = useState("");
+  const analysisAbortController = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    const handler = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
-      event.preventDefault();
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  const selectedOption = useMemo(
+    () => VIDEO_CONCEPT_FORMAT_OPTIONS.find((option) => option.id === selectedFormat),
+    [selectedFormat]
+  );
+  const hasEvidence = Boolean(analysis?.coreUsps.length || analysis?.keyFeatures.length);
 
-  const canCreate = useMemo(
-    () =>
-      Boolean(
-        analysis?.productName &&
-        projectName.trim() &&
-        advertiserName.trim() &&
-        marketerName.trim() &&
-        productOriginal &&
-        references.length &&
-        (analysis.coreUsps.length || analysis.keyFeatures.length)
-      ),
-    [analysis, projectName, advertiserName, marketerName, productOriginal, references.length]
-  );
-  const missingPlanningEvidence = Boolean(
-    analysis && !analysis.coreUsps.length && !analysis.keyFeatures.length
-  );
+  function applyAnalysis(next: ProductAnalysisSnapshot, nextAdvertiser = "") {
+    analysisAbortController.current?.abort();
+    analysisAbortController.current = null;
+    setBusy(false);
+    setGenerationStage("");
+    setError("");
+    setAnalysis(next);
+    setProductUrl(next.productUrl || "");
+    setAdvertiserName(nextAdvertiser || next.brandName || "업체 미확인");
+    setSelectedFormat("");
+    setStep(2);
+  }
 
   async function analyze() {
+    analysisAbortController.current?.abort();
+    const controller = new AbortController();
+    analysisAbortController.current = controller;
     setBusy(true);
     setError("");
-    setSuccess("");
     try {
       const response = await fetch("/api/video-projects/analyze", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ productUrl }),
+        signal: controller.signal,
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "상품 분석에 실패했습니다.");
-      const next = payload.snapshot as ProductAnalysisSnapshot;
-      setAnalysis(next);
-      setAdvertiserName(next.brandName || "");
-      setProjectName(`${next.productName} 영상 제작`);
-      setGuideline((current) => ({
-        ...current,
-        primaryAudience: next.targetCustomers[0] || "",
-        coreUsps: next.coreUsps.join(" · "),
-      }));
-      setDirty(true);
-      setStep(2);
-      setSuccess(
-        "기존 상품 분석 기능으로 공개정보를 불러왔습니다. 확인되지 않은 항목은 비워두거나 직접 보완해 주세요."
-      );
+      applyAnalysis(payload.snapshot as ProductAnalysisSnapshot);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "상품 분석 실패");
+      if (!(caught instanceof DOMException && caught.name === "AbortError")) {
+        setError(caught instanceof Error ? caught.message : "상품 분석 실패");
+      }
     } finally {
-      setBusy(false);
+      if (analysisAbortController.current === controller) {
+        analysisAbortController.current = null;
+        setBusy(false);
+      }
     }
   }
 
-  function updateAnalysis<K extends keyof ProductAnalysisSnapshot>(
-    key: K,
-    value: ProductAnalysisSnapshot[K]
-  ) {
-    setAnalysis((current) =>
-      current ? { ...current, [key]: value, editedAt: new Date().toISOString() } : current
-    );
-    setDirty(true);
-  }
-
-  function uploadReference(file: File, role: "product-original" | "reference" = "reference") {
-    setError("");
-    setReferenceProgress(1);
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/video-projects/attachments");
-    xhr.upload.onprogress = (event) =>
-      event.lengthComputable &&
-      setReferenceProgress(Math.round((event.loaded / event.total) * 100));
-    xhr.onload = () => {
-      const payload = JSON.parse(xhr.responseText || "{}");
-      if (xhr.status < 200 || xhr.status >= 300) {
-        setError(payload.error || "참고 파일 업로드 실패");
-      } else {
-        if (role === "product-original") setProductOriginal(payload.asset);
-        else setReferences((current) => [...current, payload.asset]);
-        setDirty(true);
-      }
-      setReferenceProgress(0);
-    };
-    xhr.onerror = () => {
-      setError("참고 파일 업로드 중 연결이 끊겼습니다.");
-      setReferenceProgress(0);
-    };
-    const form = new FormData();
-    form.append("file", file);
-    form.append("role", role);
-    xhr.send(form);
-  }
-
-  async function createProject() {
-    if (!analysis || !canCreate) return;
+  async function createPlanning() {
+    if (!analysis || !selectedOption || !hasEvidence) return;
     setBusy(true);
-    setGenerationStage("상품 근거를 잠그고 프로젝트를 저장하는 중");
     setError("");
     try {
+      setGenerationStage("상품 근거와 선택한 콘셉트를 정리하는 중");
       const response = await fetch("/api/video-projects", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          projectName,
-          advertiserName,
+          projectName: `${analysis.productName} · ${selectedOption.title}`,
+          advertiserName: advertiserName || analysis.brandName || "업체 미확인",
           productUrl,
-          marketerName,
-          designerName,
-          duration,
-          format,
-          objective,
-          platform,
+          marketerName: "마케터",
+          designerName: "",
+          duration: 20,
+          format: "short-form",
+          objective: "new-customer-hook",
+          platform: "meta",
           aspectRatio: "9:16",
-          creativeStyle,
-          advancedTarget,
-          advancedTone,
-          additionalRequests,
-          referenceAssets: references,
-          productOriginalAsset: productOriginal,
+          creativeStyle: selectedOption.creativeStyle,
+          conceptFormat: selectedOption.id,
+          advancedTarget: "",
+          advancedTone: "",
+          additionalRequests: "",
+          deadline: "",
+          referenceAssets: [],
           productAnalysis: analysis,
-          brandGuideline: guideline,
+          brandGuideline: guidelineFor(analysis),
         }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "프로젝트 생성에 실패했습니다.");
-      setGenerationStage("후킹 후보 5개 이상을 평가하고 상위 콘셉트 3개를 만드는 중");
-      setSuccess("프로젝트를 저장했습니다. 상품 근거 기반 영상 기획을 생성하고 있습니다.");
-      const generation = await fetch(`/api/video-projects/${payload.project.id}/concepts`, {
+      if (!response.ok) throw new Error(payload.error || "영상 기획을 시작하지 못했습니다.");
+
+      setGenerationStage(`${selectedOption.title} 자막과 장면 흐름을 설계하는 중`);
+      const conceptResponse = await fetch(`/api/video-projects/${payload.project.id}/concepts`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ actor: "마케터" }),
       });
-      setDirty(false);
-      if (!generation.ok) {
-        router.push(`/video-collaboration/${payload.project.id}?generation=retry`);
-      } else {
-        router.push(`/video-collaboration/${payload.project.id}`);
+      const conceptPayload = await conceptResponse.json();
+      if (!conceptResponse.ok || !conceptPayload.concepts?.[0]) {
+        router.push(`/video-planning/${payload.project.id}?generation=retry`);
+        return;
       }
+
+      const conceptId = conceptPayload.concepts[0].id as string;
+      setGenerationStage("자막과 영상 장면안을 구간별로 작성하는 중");
+      await fetch(`/api/video-projects/${payload.project.id}/concepts/${conceptId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "generate-detail", actor: "마케터" }),
+      });
+      router.push(`/video-planning/${payload.project.id}/concept/${conceptId}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "프로젝트 생성 실패");
+      setError(caught instanceof Error ? caught.message : "영상 기획 생성 실패");
     } finally {
       setBusy(false);
       setGenerationStage("");
@@ -212,382 +149,76 @@ export function NewVideoProjectWorkspace() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.compactHero}>
+      <header className={styles.detailHero}>
         <div>
-          <Link href="/video-collaboration">← 프로젝트 목록</Link>
-          <p className={styles.eyebrow}>NEW VIDEO PROJECT</p>
-          <h1>새 영상 기획 만들기</h1>
+          <Link href="/video-planning">← 영상 기획 목록</Link>
+          <p className={styles.eyebrow}>NEW VIDEO PLAN</p>
+          <h1>어떤 방식의 영상으로 만들까요?</h1>
+          <p>상품을 분석한 뒤 콘셉트 하나를 크게 선택하면 자막과 촬영 가능한 장면안만 만듭니다.</p>
         </div>
-        <ol className={styles.steps}>
-          <li data-active={step >= 1}>1 상품 분석</li>
-          <li data-active={step >= 2}>2 분석 확인</li>
-          <li data-active={step >= 3}>3 제작 정보</li>
-        </ol>
+        <div className={styles.planningSteps} aria-label="영상 기획 단계">
+          <span data-active={step >= 1}>1 상품 분석</span>
+          <span data-active={step >= 2}>2 콘셉트 선택</span>
+          <span>3 자막·장면안</span>
+        </div>
       </header>
+
       {error ? <div className={styles.error}>{error}</div> : null}
-      {success ? <div className={styles.success}>{success}</div> : null}
+      {busy && generationStage ? (
+        <div className={styles.generationNotice}>
+          <span className={styles.loadingDot} />
+          <div><strong>{generationStage}</strong><p>이미지나 영상을 생성하지 않고 기획 문서만 작성합니다.</p></div>
+        </div>
+      ) : null}
 
       {step === 1 ? (
-        <section className={styles.panel}>
-          <div className={styles.sectionTitle}>
-            <span>01</span>
-            <div>
-              <h2>상품 URL 분석</h2>
-              <p>기존 상품 추출 API로 상품명·가격·USP·이미지와 공개된 후기 근거를 불러옵니다.</p>
+        <section className={styles.summaryPanel}>
+          <div className={styles.sectionHead}>
+            <div><p className={styles.eyebrow}>STEP 1</p><h2>기획할 상품을 알려주세요</h2><p>상세페이지의 실제 상품 특징과 표현 근거를 영상 기획에 사용합니다.</p></div>
+          </div>
+          <div className={styles.videoUrlRow}>
+            <input aria-label="상품 URL" onChange={(event) => setProductUrl(event.target.value)} placeholder="https://shop.example.com/product/..." type="url" value={productUrl} />
+            <button className={styles.primaryButton} disabled={busy || !productUrl.trim()} onClick={analyze}>{busy ? "상품 분석 중…" : "상품 분석하기"}</button>
+          </div>
+          {products.length ? (
+            <div className={styles.recentProducts}>
+              <strong>최근 분석 상품</strong>
+              <div>{products.slice(0, 6).map((product) => <button key={product.id} onClick={() => applyAnalysis(product.analysis, product.advertiserName)}><span>{product.advertiserName}</span>{product.productName}</button>)}</div>
             </div>
-          </div>
-          <div className={styles.urlRow}>
-            <input
-              onChange={(event) => {
-                setProductUrl(event.target.value);
-                setDirty(true);
-              }}
-              placeholder="https://shop.example.com/product/..."
-              type="url"
-              value={productUrl}
-            />
-            <button disabled={busy || !productUrl.trim()} onClick={analyze}>
-              {busy ? "분석 중…" : "상품 분석하기"}
-            </button>
-          </div>
+          ) : null}
         </section>
       ) : null}
 
       {step === 2 && analysis ? (
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <h2>분석 결과 확인</h2>
-              <p>확인된 사실과 직접 입력한 보완 정보를 구분해 저장합니다.</p>
-            </div>
-            <button className={styles.secondaryButton} onClick={() => setStep(1)}>
-              URL 다시 분석
-            </button>
-          </div>
-          {analysis.analysisNotes?.length ? (
-            <div className={styles.analysisNote}>{analysis.analysisNotes.join(" ")}</div>
-          ) : null}
-          <div className={styles.formGrid}>
-            <label>
-              상품명
-              <input
-                value={analysis.productName}
-                onChange={(event) => updateAnalysis("productName", event.target.value)}
-              />
-            </label>
-            <label>
-              브랜드
-              <input
-                value={analysis.brandName}
-                onChange={(event) => updateAnalysis("brandName", event.target.value)}
-              />
-            </label>
-            <label>
-              판매가
-              <input
-                placeholder="확인 불가 시 비워두기"
-                value={analysis.price}
-                onChange={(event) => updateAnalysis("price", event.target.value)}
-              />
-            </label>
-            <label>
-              할인·혜택
-              <input
-                placeholder="확인 불가 시 비워두기"
-                value={analysis.discountInfo}
-                onChange={(event) => updateAnalysis("discountInfo", event.target.value)}
-              />
-            </label>
-            <label className={styles.wide}>
-              핵심 USP (줄바꿈 구분)
-              <textarea
-                value={analysis.coreUsps.join("\n")}
-                onChange={(event) => updateAnalysis("coreUsps", lines(event.target.value))}
-              />
-            </label>
-            <label>
-              주요 특징
-              <textarea
-                value={analysis.keyFeatures.join("\n")}
-                onChange={(event) => updateAnalysis("keyFeatures", lines(event.target.value))}
-              />
-            </label>
-            <label>
-              후기·신뢰 근거
-              <textarea
-                value={analysis.trustSignals.join("\n")}
-                onChange={(event) => updateAnalysis("trustSignals", lines(event.target.value))}
-              />
-            </label>
-            <label>
-              핵심 타깃
-              <textarea
-                value={analysis.targetCustomers.join("\n")}
-                onChange={(event) => updateAnalysis("targetCustomers", lines(event.target.value))}
-              />
-            </label>
-            <label>
-              해결할 고객 문제
-              <textarea
-                value={analysis.customerProblems.join("\n")}
-                onChange={(event) => updateAnalysis("customerProblems", lines(event.target.value))}
-              />
-            </label>
-            <label className={styles.wide}>
-              주의사항·표현 제한
-              <textarea
-                value={analysis.cautionPhrases.join("\n")}
-                onChange={(event) => updateAnalysis("cautionPhrases", lines(event.target.value))}
-              />
-            </label>
-          </div>
-          <div className={styles.formActions}>
-            <button className={styles.primaryButton} onClick={() => setStep(3)}>
-              제작 정보 입력
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {step === 3 && analysis ? (
         <>
-          <section className={styles.panel}>
-            <div className={styles.sectionTitle}>
-              <span>02</span>
-              <div>
-                <h2>프로젝트 제작 정보</h2>
-                <p>담당자와 영상 규격, 목적을 지정합니다.</p>
-              </div>
-            </div>
-            <div className={styles.formGrid}>
-              <label>
-                프로젝트명
-                <input
-                  value={projectName}
-                  onChange={(event) => {
-                    setProjectName(event.target.value);
-                    setDirty(true);
-                  }}
-                />
-              </label>
-              <label>
-                업체명
-                <input
-                  value={advertiserName}
-                  onChange={(event) => {
-                    setAdvertiserName(event.target.value);
-                    setDirty(true);
-                  }}
-                />
-              </label>
-              <label>
-                담당 마케터
-                <input
-                  value={marketerName}
-                  onChange={(event) => {
-                    setMarketerName(event.target.value);
-                    setDirty(true);
-                  }}
-                />
-              </label>
-              <label>
-                영상 길이
-                <select
-                  value={duration}
-                  onChange={(event) => setDuration(Number(event.target.value) as VideoDuration)}
-                >
-                  <option value={15}>15초</option>
-                  <option value={20}>20초 (권장)</option>
-                  <option value={30}>30초</option>
-                </select>
-              </label>
-              <label>
-                게시 플랫폼
-                <select
-                  value={platform}
-                  onChange={(event) => setPlatform(event.target.value as VideoPlatform)}
-                >
-                  <option value="meta">Meta</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="youtube-shorts">YouTube Shorts</option>
-                </select>
-              </label>
-              <label>
-                영상 목적
-                <select
-                  value={objective}
-                  onChange={(event) => setObjective(event.target.value as VideoObjective)}
-                >
-                  <option value="purchase">구매 전환</option>
-                  <option value="new-customer-hook">신규 고객 후킹</option>
-                  <option value="retargeting">리타겟팅</option>
-                  <option value="usp">USP 강조</option>
-                  <option value="review-ugc">후기형 UGC</option>
-                </select>
-              </label>
-              <label>
-                영상 스타일
-                <select
-                  value={creativeStyle}
-                  onChange={(event) => setCreativeStyle(event.target.value as VideoCreativeStyle)}
-                >
-                  <option value="auto">AI 자동 추천</option>
-                  <option value="smartphone-ugc">스마트폰 UGC</option>
-                  <option value="ad-real">광고 실사</option>
-                  <option value="clay-miniature">클레이 미니어처</option>
-                  <option value="3d">3D</option>
-                  <option value="live-ai">실사+AI</option>
-                  <option value="mixed">혼합형</option>
-                </select>
-              </label>
-              <label className={styles.wide}>
-                상품 원본 이미지 (필수)
-                <input
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) =>
-                    event.target.files?.[0] &&
-                    uploadReference(event.target.files[0], "product-original")
-                  }
-                  type="file"
-                />
-                <small>
-                  {productOriginal
-                    ? `${productOriginal.name} · 제품 형태·라벨 고정에 사용`
-                    : "제품 정면과 라벨이 선명한 원본을 올려 주세요."}
-                </small>
-              </label>
-              <label className={styles.wide}>
-                추가 제작 요청
-                <textarea
-                  value={additionalRequests}
-                  onChange={(event) => setAdditionalRequests(event.target.value)}
-                />
-              </label>
-              <label className={styles.wide}>
-                참고 이미지·영상·PDF (필수, 각 100MB 이하)
-                <input
-                  accept="image/png,image/jpeg,image/webp,application/pdf,video/mp4,video/quicktime,video/webm,.mov"
-                  onChange={(event) =>
-                    event.target.files?.[0] && uploadReference(event.target.files[0])
-                  }
-                  type="file"
-                />
-                {referenceProgress ? <progress max={100} value={referenceProgress} /> : null}
-                <small>{references.length}개 업로드됨 · 인물·브랜드·디자인을 복제하지 않고 연출 원칙만 참고합니다.</small>
-              </label>
-              <details className={styles.wide}>
-                <summary>고급 설정</summary>
-                <div className={styles.formGrid}>
-                  <label>
-                    세부 타깃
-                    <input value={advancedTarget} onChange={(event) => setAdvancedTarget(event.target.value)} />
-                  </label>
-                  <label>
-                    톤앤매너 보완
-                    <input value={advancedTone} onChange={(event) => setAdvancedTone(event.target.value)} />
-                  </label>
-                  <label>
-                    담당 디자이너
-                    <input value={designerName} onChange={(event) => setDesignerName(event.target.value)} />
-                  </label>
-                  <label>
-                    출력 규격
-                    <input disabled value="9:16 세로형" />
-                  </label>
-                </div>
-              </details>
-            </div>
+          <section className={styles.productSummaryBar}>
+            <div><span>분석 상품</span><strong>{analysis.productName}</strong><small>{advertiserName || analysis.brandName}</small></div>
+            <div className={styles.productFactChips}>{[...analysis.coreUsps, ...analysis.keyFeatures].slice(0, 4).map((fact) => <span key={fact}>{fact}</span>)}</div>
+            <button className={styles.ghostButton} onClick={() => setStep(1)}>상품 바꾸기</button>
           </section>
-          <section className={styles.panel}>
-            <div className={styles.sectionTitle}>
-              <span>03</span>
-              <div>
-                <h2>업체 참고정보</h2>
-                <p>필수·금지 문구는 대본 생성과 검증에 반영됩니다.</p>
-              </div>
+
+          <section className={styles.summaryPanel}>
+            <div className={styles.sectionHead}>
+              <div><p className={styles.eyebrow}>STEP 2</p><h2>영상 콘셉트 선택</h2><p>드롭다운 없이 원하는 제작 방식을 카드에서 바로 선택하세요.</p></div>
+              {selectedOption ? <span className={styles.selectedBadge}>{selectedOption.title} 선택됨</span> : null}
             </div>
-            <div className={styles.formGrid}>
-              <label>
-                브랜드 톤앤매너
-                <textarea
-                  value={guideline.toneAndManner}
-                  onChange={(event) =>
-                    setGuideline({ ...guideline, toneAndManner: event.target.value })
-                  }
-                />
-              </label>
-              <label>
-                주요 고객층
-                <textarea
-                  value={guideline.primaryAudience}
-                  onChange={(event) =>
-                    setGuideline({ ...guideline, primaryAudience: event.target.value })
-                  }
-                />
-              </label>
-              <label className={styles.wide}>
-                핵심 USP
-                <textarea
-                  value={guideline.coreUsps}
-                  onChange={(event) => setGuideline({ ...guideline, coreUsps: event.target.value })}
-                />
-              </label>
-              <label>
-                필수 포함 문구
-                <textarea
-                  value={guideline.requiredPhrases.join("\n")}
-                  onChange={(event) =>
-                    setGuideline({ ...guideline, requiredPhrases: lines(event.target.value) })
-                  }
-                />
-              </label>
-              <label>
-                금지 문구
-                <textarea
-                  value={guideline.forbiddenPhrases.join("\n")}
-                  onChange={(event) =>
-                    setGuideline({ ...guideline, forbiddenPhrases: lines(event.target.value) })
-                  }
-                />
-              </label>
-              <label>
-                광고주 요청사항
-                <textarea
-                  value={guideline.advertiserRequests}
-                  onChange={(event) =>
-                    setGuideline({ ...guideline, advertiserRequests: event.target.value })
-                  }
-                />
-              </label>
-              <label>
-                디자이너 제작 참고사항
-                <textarea
-                  value={guideline.designerNotes}
-                  onChange={(event) =>
-                    setGuideline({ ...guideline, designerNotes: event.target.value })
-                  }
-                />
-              </label>
+            <div className={styles.formatGrid} role="group" aria-label="영상 콘셉트 형식">
+              {VIDEO_CONCEPT_FORMAT_OPTIONS.map((option, index) => (
+                <button aria-pressed={selectedFormat === option.id} className={styles.formatCard} data-selected={selectedFormat === option.id} key={option.id} onClick={() => setSelectedFormat(option.id)}>
+                  <span className={styles.formatNumber}>{String(index + 1).padStart(2, "0")}</span>
+                  <span className={styles.formatKicker}>{option.kicker}</span>
+                  <strong>{option.title}</strong>
+                  <p>{option.description}</p>
+                  <small>{option.flow}</small>
+                  <span className={styles.cardCheck}>{selectedFormat === option.id ? "선택 완료" : "이 방식 선택"}</span>
+                </button>
+              ))}
             </div>
-            <div className={styles.formActions}>
-              <button className={styles.secondaryButton} onClick={() => setStep(2)}>
-                분석 정보로 돌아가기
-              </button>
-              <button
-                className={styles.primaryButton}
-                disabled={!canCreate || busy}
-                onClick={createProject}
-              >
-                {busy ? generationStage || "영상 기획 생성 중…" : "광고 영상 기획하기"}
-              </button>
+            <div className={styles.stickyAction}>
+              <div><strong>{selectedOption ? selectedOption.title : "콘셉트를 하나 선택해 주세요"}</strong><span>{selectedOption ? "20초 기준 자막과 구체적인 영상 장면안을 생성합니다." : "선택한 콘셉트에 맞춰 전체 전개가 달라집니다."}</span></div>
+              <button className={styles.primaryButton} disabled={busy || !selectedOption || !hasEvidence} onClick={createPlanning}>{busy ? generationStage || "기획 생성 중…" : "이 콘셉트로 자막·장면안 만들기"}</button>
             </div>
-            {missingPlanningEvidence ? (
-              <div className={styles.error}>
-                상세페이지에서 제품 특징을 충분히 확인하지 못했습니다. 확인 가능한 USP 또는 주요 특징을
-                하나 이상 입력해야 근거 없는 영상 기획을 만들지 않습니다.
-              </div>
-            ) : null}
+            {!hasEvidence ? <div className={styles.error}>상세페이지에서 영상 기획에 사용할 상품 특징을 충분히 확인하지 못했습니다. 다른 상품 URL로 다시 분석해 주세요.</div> : null}
           </section>
         </>
       ) : null}

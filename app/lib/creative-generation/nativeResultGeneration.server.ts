@@ -7,7 +7,7 @@ import { createNativeContactSheet, nativeHookDirectory, nativeResultImageUrl, op
 import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt.ts";
 import { createAssetFromGenerationResult } from "../creative-assets/fromGeneration.server.ts";
 import { toCreativeAssetSnapshot } from "../creative-assets/types.ts";
-import { readBrandMemory, saveGoldenReference, selectGoldenReferences, updateBrandMemory } from "./codexRegistry.server.ts";
+import { codexProductThreadKey, readBrandMemory, saveGoldenReference, selectGoldenReferences, updateBrandMemory } from "./codexRegistry.server.ts";
 import { passesNativeCreativeValidation, passesNativeGroupValidation } from "./nativeCreativeValidation.ts";
 import { executionResults } from "./jobRunnerPolicy.ts";
 import type { CreativeGenerationProvider } from "./providers/CreativeGenerationProvider.ts";
@@ -15,7 +15,24 @@ import type { GenerationJob } from "./types.ts";
 import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server.ts";
 
 type NativeResultInput = { jobId: string; resultId: string; requestId?: string; action?: "generate"|"regenerate"|"revise"|"revalidate"|"approve"|"exclude"|"feedback"|"golden-reference"; feedback?: string };
-const advertiserLocks = new Map<string, Promise<void>>();
+const resultLocks = new Map<string, Promise<void>>();
+const referenceCacheKey = Symbol.for("daywiz.native-creative-reference-cache-v1");
+const referenceGlobal = globalThis as typeof globalThis & { [referenceCacheKey]?: Map<string, Promise<string[]>> };
+const referenceCache = referenceGlobal[referenceCacheKey] ?? new Map<string, Promise<string[]>>();
+referenceGlobal[referenceCacheKey] = referenceCache;
+
+async function preparedReferences(job: GenerationJob) {
+  const cached = referenceCache.get(job.id);
+  if (cached) return cached;
+  const pending = prepareNativeReferenceImages(job);
+  referenceCache.set(job.id, pending);
+  try {
+    return await pending;
+  } catch (error) {
+    if (referenceCache.get(job.id) === pending) referenceCache.delete(job.id);
+    throw error;
+  }
+}
 
 async function applyNativeGroupValidation(job: GenerationJob, provider: CreativeGenerationProvider) {
   const scoped = executionResults(job);
@@ -78,6 +95,10 @@ async function applyNativeGroupValidation(job: GenerationJob, provider: Creative
 
 async function runNativeResultGeneration(input: NativeResultInput) {
   const started = Date.now();
+  let referenceMs = 0;
+  let generationMs = 0;
+  let validationMs = 0;
+  let exportMs = 0;
   let job = await creativeGenerationJobStore.get(input.jobId);
   if (!job) throw new Error("작업을 찾지 못했습니다.");
   const initial = job.results.find((item) => item.id === input.resultId);
@@ -133,7 +154,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
   job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, status: "running", startedAt: current.startedAt || new Date().toISOString(), results: current.results.map((result) => result.id === input.resultId ? { ...result, status: "running", generationStage: "reference-preparing", attempts: result.attempts + 1, error: undefined, startedAt: new Date().toISOString() } : result) }));
   const provider = createCreativeGenerationProvider(job.engine || "codex_local");
-  const references = await prepareNativeReferenceImages(job);
+  const referenceStarted = Date.now();
+  const references = await preparedReferences(job);
+  referenceMs += Date.now() - referenceStarted;
   const memory = await readBrandMemory(job.advertiserId || "unknown-advertiser");
   const goldenReferences = selectGoldenReferences(memory, {
     category: job.creativePlan.categoryCreativeProfile?.category || job.productTruth.product.category || "general",
@@ -152,31 +175,39 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     generatedPath = initial.nativeCreative.finalPath;
     const active = job.results.find((item) => item.id === input.resultId)!;
     job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, results: current.results.map((result) => result.id === input.resultId ? { ...result, generationStage: "quality-check" } : result) }));
+    const validationStarted = Date.now();
     validation = await provider.validate({ job, result: active, imagePath: generatedPath, referencePaths: references });
+    validationMs += Date.now() - validationStarted;
   } else for (let revision = 0; revision <= 2; revision += 1) {
     const isRevision = revision > 0 || action === "revise";
     job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, results: current.results.map((result) => result.id === input.resultId ? { ...result, generationStage: isRevision ? "ai-revising" : "ai-generating" } : result) }));
     generatedPath = path.join(directory, isRevision ? `revision-${Date.now()}-${revision}.png` : `original-${Date.now()}.png`);
     const active = job.results.find((item) => item.id === input.resultId)!;
+    const generationStarted = Date.now();
     const generated = await provider.generate({ job, result: active, outputPath: generatedPath, referencePaths: references, goldenReferencePaths: goldenReferences.map((reference) => reference.imagePath), sourceImagePath, feedback: isRevision ? input.feedback || validation?.failures.join(" · ") || "한국어 문구와 제품 동일성을 정확히 수정" : input.feedback });
+    generationMs += Date.now() - generationStarted;
     if (!isRevision) originalPath = generatedPath;
     threadId = generated.threadId || threadId;
     if (isRevision) revisionPaths.push(generatedPath);
     job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, codexThreadId: threadId, results: current.results.map((result) => result.id === input.resultId ? { ...result, generationStage: "quality-check" } : result) }));
+    const validationStarted = Date.now();
     validation = await provider.validate({ job, result: active, imagePath: generatedPath, referencePaths: references });
+    validationMs += Date.now() - validationStarted;
     if (passesNativeCreativeValidation(validation, creativeCategory)) break;
     sourceImagePath = generatedPath;
   }
   if (!validation) throw new Error("AI 광고 검수 결과가 없습니다.");
   const finalFile = path.join(directory, "final.jpg");
   job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, results: current.results.map((result) => result.id === input.resultId ? { ...result, generationStage: "exporting" } : result) }));
+  const exportStarted = Date.now();
   const exported = await optimizeNativeFinalImage(generatedPath, finalFile);
+  exportMs += Date.now() - exportStarted;
   const successful = passesNativeCreativeValidation(validation, creativeCategory);
   const status = successful ? "success" : validation.koreanTextAccuracy < 95 ? "korean-review" : validation.productIdentity < 80 ? "product-review" : "quality-review";
   const publicImage = nativeResultImageUrl(job.id, input.resultId);
   const latest = job.results.find((item) => item.id === input.resultId)!;
   const assetResult = successful ? await createAssetFromGenerationResult({ job, result: latest, generatedImageUrl: publicImage, generationRequestKey: `native:${job.id}:${latest.id}:${input.requestId || Date.now()}`, copy: { headline: latest.hookPlan.headline, body: latest.hookPlan.body, proof: latest.hookPlan.proof, offer: latest.hookPlan.offer } }) : undefined;
-  job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, paidApiUsed: current.engine === "openai_api", results: current.results.map((result) => result.id === input.resultId ? { ...result, status, generationStage: successful ? "completed" : "quality-check", imagePath: publicImage, downloadName: assetResult?.asset.fileName || `${current.advertiserId}-${result.hookPlan.hookCode}.jpg`, creativeAsset: assetResult ? toCreativeAssetSnapshot(assetResult.asset) : result.creativeAsset, nativeCreative: { engine: current.engine || "codex_local", originalPath, revisionPaths, finalPath: finalFile, promptVersion: NATIVE_FINAL_PROMPT_VERSION, revisionCount: revisionPaths.length, validation, export: { width: exported.width, height: exported.height, fileSizeBytes: exported.bytes, jpegQuality: exported.quality, colorSpace: exported.colorSpace, format: exported.format } }, error: successful ? undefined : validation.failures.join(" · ") || "AI 품질 기준을 통과하지 못했습니다.", completedAt: new Date().toISOString(), durationMs: Date.now() - started } : result) }));
+  job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, paidApiUsed: current.engine === "openai_api", results: current.results.map((result) => result.id === input.resultId ? { ...result, status, generationStage: successful ? "completed" : "quality-check", imagePath: publicImage, downloadName: assetResult?.asset.fileName || `${current.advertiserId}-${result.hookPlan.hookCode}.jpg`, creativeAsset: assetResult ? toCreativeAssetSnapshot(assetResult.asset) : result.creativeAsset, nativeCreative: { engine: current.engine || "codex_local", originalPath, revisionPaths, finalPath: finalFile, promptVersion: NATIVE_FINAL_PROMPT_VERSION, revisionCount: revisionPaths.length, validation, timing: { referenceMs, generationMs, validationMs, exportMs, totalMs: Date.now() - started }, export: { width: exported.width, height: exported.height, fileSizeBytes: exported.bytes, jpegQuality: exported.quality, colorSpace: exported.colorSpace, format: exported.format } }, error: successful ? undefined : validation.failures.join(" · ") || "AI 품질 기준을 통과하지 못했습니다.", completedAt: new Date().toISOString(), durationMs: Date.now() - started } : result) }));
   const complete = executionResults(job).every((result) => !["pending","running"].includes(result.status));
   if (complete) job = await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, status: executionResults(current).every((result) => ["success","approved"].includes(result.status)) ? "completed" : "partial", completedAt: new Date().toISOString(), timing: { ...current.timing, totalMs: Date.now() - new Date(current.createdAt).getTime() } }));
   if (complete) job = await applyNativeGroupValidation(job, provider);
@@ -187,13 +218,16 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
 export async function handleNativeResultGeneration(input: NativeResultInput) {
   const job = await creativeGenerationJobStore.get(input.jobId);
-  const key = job?.advertiserId || input.jobId;
-  const previous = advertiserLocks.get(key) || Promise.resolve();
+  const result = job?.results.find((item) => item.id === input.resultId);
+  const key = job && result
+    ? `${codexProductThreadKey(job.advertiserId || "unknown-advertiser", job.productTruth.productId)}--${result.hookPlan.hookCode}`
+    : `${input.jobId}--${input.resultId}`;
+  const previous = resultLocks.get(key) || Promise.resolve();
   let release!: () => void;
   const current = new Promise<void>((resolve) => { release = resolve; });
   const queued = previous.then(() => current);
-  advertiserLocks.set(key, queued);
+  resultLocks.set(key, queued);
   await previous;
   try { return await runNativeResultGeneration(input); }
-  finally { release(); if (advertiserLocks.get(key) === queued) advertiserLocks.delete(key); }
+  finally { release(); if (resultLocks.get(key) === queued) resultLocks.delete(key); }
 }

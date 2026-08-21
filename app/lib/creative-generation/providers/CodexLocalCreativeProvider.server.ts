@@ -1,16 +1,12 @@
 import "server-only";
 import { access } from "node:fs/promises";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { existsSync } from "node:fs";
-import path from "node:path";
 import { Codex, type Thread } from "@openai/codex-sdk";
-import { getAdvertiserThread, readBrandMemory, resetAdvertiserThread, saveAdvertiserThread, type AdvertiserThreadRecord } from "../codexRegistry.server.ts";
+import { codexProductThreadKey, getAdvertiserThread, readBrandMemory, resetAdvertiserThread, saveAdvertiserThread, type AdvertiserThreadRecord } from "../codexRegistry.server.ts";
+import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "../codexLocalRuntime.server.ts";
 import { buildNativeFinalCreativePrompt, buildNativeGroupValidationPrompt, buildNativeValidationPrompt } from "../nativeCreativePrompt.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeGenerationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
 
-const execFileAsync = promisify(execFile);
 const DEFAULT_IMAGE_GENERATION_TIMEOUT_MS = 12 * 60 * 1000;
 const validationSchema = {
   type: "object", additionalProperties: false,
@@ -32,39 +28,24 @@ const groupValidationSchema = {
   }
 };
 
-function cleanEnvironment() {
-  return Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY"].includes(key))) as Record<string,string>;
-}
-
-function resolveCodexExecutable() {
-  const explicit = process.env.CODEX_CLI_PATH?.trim();
-  if (explicit && existsSync(explicit)) return explicit;
-  for (const directory of (process.env.PATH || "").split(path.delimiter)) {
-    const candidate = path.join(directory, process.platform === "win32" ? "codex.exe" : "codex");
-    if (existsSync(candidate)) return candidate;
-  }
-  return undefined;
-}
-
 export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
   readonly engine = "codex_local" as const;
-  private codex = new Codex({ env: cleanEnvironment(), codexPathOverride: resolveCodexExecutable() });
+  private codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: resolveCodexLocalExecutable() });
+  private authenticated?: Promise<boolean>;
 
   async status(): Promise<ProviderStatus> {
-    try {
-      const executable = resolveCodexExecutable();
-      if (!executable) throw new Error("Codex CLI not found");
-      const { stdout, stderr } = await execFileAsync(executable, ["login", "status"], { timeout: 10_000, env: cleanEnvironment() as NodeJS.ProcessEnv });
-      const authenticated = /logged in/i.test(`${stdout}\n${stderr}`);
-      return { engine: this.engine, available: authenticated, authenticated, paidApiUsed: false, detail: authenticated ? "로컬 Codex · ChatGPT 로그인 연결됨" : "로컬 Codex 로그인이 필요합니다." };
-    } catch {
-      return { engine: this.engine, available: false, authenticated: false, paidApiUsed: false, detail: "Codex CLI를 찾지 못했거나 로그인 상태를 확인할 수 없습니다." };
-    }
+    this.authenticated ??= codexLocalAuthenticated();
+    const authenticated = await this.authenticated;
+    return { engine: this.engine, available: authenticated, authenticated, paidApiUsed: false, detail: authenticated ? "로컬 Codex · ChatGPT 로그인 연결됨" : "Codex CLI를 찾지 못했거나 로컬 로그인이 필요합니다." };
+  }
+
+  private threadIdentity(input: NativeGenerationInput) {
+    return `${codexProductThreadKey(input.job.advertiserId || "unknown-advertiser", input.job.productTruth.productId)}--creative-${input.result.hookPlan.hookCode.toLowerCase()}`;
   }
 
   private async thread(input: NativeGenerationInput, forceNew = false): Promise<{ thread: Thread; record?: AdvertiserThreadRecord; resumed: boolean }> {
-    const advertiserId = input.job.advertiserId || "unknown-advertiser";
-    const record = await getAdvertiserThread(advertiserId);
+    const registryId = this.threadIdentity(input);
+    const record = await getAdvertiserThread(registryId);
     const options = {
       workingDirectory: process.cwd(),
       sandboxMode: "workspace-write" as const,
@@ -76,7 +57,7 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
     const maximumTurns = Math.max(10, Number(process.env.ADATLAS_CODEX_THREAD_MAX_TURNS || 60));
     const shouldRotate = Boolean(record?.threadId && (record.turnCount || 0) >= maximumTurns);
     if (record?.threadId && !forceNew && !shouldRotate) return { thread: this.codex.resumeThread(record.threadId, options), record, resumed: true };
-    if (record?.threadId && (forceNew || shouldRotate)) await resetAdvertiserThread(advertiserId);
+    if (record?.threadId && (forceNew || shouldRotate)) await resetAdvertiserThread(registryId);
     return { thread: this.codex.startThread(options), record: { ...record, threadId: undefined, turnCount: 0 } as AdvertiserThreadRecord, resumed: false };
   }
 
@@ -86,9 +67,9 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
   }
 
   private async saveThread(input: NativeGenerationInput, thread: Thread, record?: AdvertiserThreadRecord) {
-    const advertiserId = input.job.advertiserId || "unknown-advertiser";
+    const advertiserId = this.threadIdentity(input);
     const threadId = thread.id || undefined;
-    await saveAdvertiserThread({ advertiserId, advertiserName: input.job.advertiserName || "", domain: (() => { try { return new URL(input.job.productTruth.product.landingUrl).hostname; } catch { return ""; } })(), threadId, turnCount: (record?.turnCount || 0) + 1 });
+    await saveAdvertiserThread({ advertiserId, advertiserName: `${input.job.advertiserName || "상품"} · ${input.job.productTruth.product.productName} · ${input.result.hookPlan.hookCode}`, domain: (() => { try { return new URL(input.job.productTruth.product.landingUrl).hostname; } catch { return ""; } })(), threadId, turnCount: (record?.turnCount || 0) + 1 });
     return threadId;
   }
 

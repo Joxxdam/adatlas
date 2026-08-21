@@ -138,6 +138,48 @@ function hookMessage(type: VideoHookType, analysis: ProductAnalysisSnapshot) {
       bridge: `브랜드 톤으로 ${usp}와 제품 선택 이유를 차분하게 연결합니다.`,
       firstScene: "브랜드와 제품의 디테일을 한 프레임에서 차분하게 연결한다.",
     },
+    "loss-aversion": {
+      title: "놓치고 있던 비용을 먼저 보여주는 기획",
+      opening: `${problem}, 계속 넘기면 더 아까운 건 따로 있습니다.`,
+      bridge: `${product}의 확인된 조건으로 놓치고 있던 선택 기준을 설명합니다.`,
+      firstScene: "고객이 반복해서 손해를 체감하는 실제 사용 장소와 행동을 보여준다.",
+    },
+    "unexpected-comparison": {
+      title: "예상 밖의 비교로 차이를 보이는 기획",
+      opening: `${evidence}, 익숙한 선택과 나란히 놓으면 다르게 보입니다.`,
+      bridge: `${product}의 확인된 근거를 같은 조건에서 비교합니다.`,
+      firstScene: "두 선택의 결과가 다른 실제 상황을 같은 화면 안에서 대비한다.",
+    },
+    "origin-material": {
+      title: "원산지와 원물의 이유를 따라가는 기획",
+      opening: `${usp}, 어디서 시작됐는지 보면 이유가 보입니다.`,
+      bridge: `${product}의 확인된 원산지·원료 정보를 사용 맥락과 연결합니다.`,
+      firstScene: "원물이나 성분이 등장하는 구체적인 장소와 손동작부터 보여준다.",
+    },
+    "before-after": {
+      title: "사용 전후의 행동 변화를 따라가는 기획",
+      opening: `${problem}, 바뀌는 건 행동에서 먼저 보입니다.`,
+      bridge: `${product} 사용 전후의 구체적인 상황 변화를 보여줍니다.`,
+      firstScene: "같은 인물과 장소에서 사용 전의 불편한 행동을 먼저 포착한다.",
+    },
+    "seasonal-situation": {
+      title: "계절과 상황의 순간을 잡는 기획",
+      opening: `${evidence}, 바로 이 순간 필요한 이유가 있습니다.`,
+      bridge: `${product}이 필요한 계절·행사·일상 상황을 구체화합니다.`,
+      firstScene: "날씨나 행사 상황을 알 수 있는 배경과 인물의 즉각적인 반응을 보여준다.",
+    },
+    "myth-busting": {
+      title: "익숙한 상식을 뒤집는 기획",
+      opening: `${problem}, 익숙한 답이 늘 맞는 건 아닙니다.`,
+      bridge: `${product}의 확인된 근거로 기존 선택 기준을 다시 봅니다.`,
+      firstScene: "익숙한 해결 방법이 기대와 다르게 끝나는 실제 행동을 먼저 보여준다.",
+    },
+    "user-monologue": {
+      title: "실제 사용자 독백으로 시작하는 기획",
+      opening: `저도 ${problem} 때문에 매번 망설였어요.`,
+      bridge: `사용자가 ${product}의 확인된 차이를 발견하는 흐름으로 말합니다.`,
+      firstScene: "사용자가 실제 생활 공간에서 카메라를 보며 문제 행동을 직접 보여준다.",
+    },
   };
   return messages[type];
 }

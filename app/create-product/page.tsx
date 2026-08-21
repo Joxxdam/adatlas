@@ -28,6 +28,13 @@ export default async function CreateProductPage({
   const siteCandidateId = single(params.siteCandidateId);
   const initialProductUrl = normalizeProductCreationUrl(single(params.productUrl));
   const view = single(params.view);
+  const requestedStep = single(params.step);
+  const initialWorkflowStep =
+    view === "results"
+      ? "results"
+      : ["product", "hooks", "creative", "meta"].includes(requestedStep || "")
+        ? (requestedStep as "product" | "hooks" | "creative" | "meta")
+        : "product";
   const [brands, images, generated] = await Promise.all([
     readBrands(),
     readCollectedAdImages(),
@@ -68,8 +75,9 @@ export default async function CreateProductPage({
   }
   return (
     <MvpDashboard
-      activeFeature={view === "results" ? "creative-results" : "product-creation"}
+      activeFeature="creative-production"
       initialActiveMenu={view === "results" ? "결과 다운로드" : "광고 생성"}
+      initialWorkflowStep={initialWorkflowStep}
       initialBrands={brands}
       initialCreationHandoff={initialCreationHandoff}
       initialProductUrl={initialProductUrl}

@@ -1,5 +1,4 @@
-import { FeaturePageShell } from "../../components/AppFeatureNavigation";
-import { VideoProjectWorkspace } from "../../components/video-collaboration/VideoProjectWorkspace";
+import { redirect } from "next/navigation";
 
 export default async function VideoProjectPage({
   params,
@@ -7,9 +6,5 @@ export default async function VideoProjectPage({
   params: Promise<{ projectId: string }>;
 }) {
   const { projectId } = await params;
-  return (
-    <FeaturePageShell activeFeature="video-collaboration">
-      <VideoProjectWorkspace projectId={projectId} />
-    </FeaturePageShell>
-  );
+  redirect(`/video-planning/${projectId}`);
 }

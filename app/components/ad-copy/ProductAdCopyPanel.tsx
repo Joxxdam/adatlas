@@ -39,10 +39,10 @@ export function ProductAdCopyPanel({
     }
   }
 
-  async function copyText() {
-    if (!adCopy?.primaryText) return;
-    await navigator.clipboard.writeText(adCopy.primaryText);
-    setNotice("Meta 기본 문구를 줄바꿈 그대로 복사했습니다.");
+  async function copyValue(value: string | undefined, successMessage: string) {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    setNotice(successMessage);
   }
 
   if (!adCopy) return <section className={styles.panel}><p className={styles.eyebrow}>META 기본 문구 · 상품당 1개</p><strong>대표 이미지의 최종 QA가 끝나면 자동으로 생성됩니다.</strong></section>;
@@ -56,13 +56,14 @@ export function ProductAdCopyPanel({
       {visible ? <pre>{adCopy.primaryText}</pre> : <p className={styles.help}>{adCopy.status === "needs-review" ? "독립 문구 QA에서 사실성 또는 가독성을 통과하지 못해 문구를 숨겼습니다." : "완성 이미지와 대표 후킹을 분석하고 있습니다."}</p>}
       <dl>
         <div><dt>소재코드</dt><dd>{adCopy.assetCode || "발급 대기"}</dd></div>
-        <div><dt>광고명</dt><dd>{adCopy.adName || "발급 대기"}</dd></div>
-        <div><dt>UTM</dt><dd>{adCopy.utm || "발급 대기"}</dd></div>
+        <div><dt>광고명</dt><dd>{adCopy.adName || "발급 대기"}{adCopy.adName ? <button className={styles.inlineCopy} onClick={() => void copyValue(adCopy.adName, "광고명을 복사했습니다.")} type="button">복사</button> : null}</dd></div>
+        <div><dt>UTM</dt><dd>{adCopy.utm || "발급 대기"}{adCopy.utm ? <button className={styles.inlineCopy} onClick={() => void copyValue(adCopy.utm, "UTM을 복사했습니다.")} type="button">복사</button> : null}</dd></div>
       </dl>
       <div className={styles.actions}>
-        <button disabled={!visible || working} onClick={() => void copyText()} type="button">광고문구 복사</button>
+        <button disabled={!visible || working} onClick={() => void copyValue(adCopy.primaryText, "광고문구를 복사했습니다.")} type="button">광고문구 복사</button>
         <button disabled={working || adCopy.status === "generating"} onClick={() => void action("regenerate")} type="button">AI로 문구 다시 만들기</button>
         <button disabled={!visible || working || adCopy.status === "approved"} onClick={() => void action("approve")} type="button">문구 승인</button>
+        <button disabled={working || adCopy.status === "excluded"} onClick={() => void action("exclude")} type="button">문구 제외</button>
         {visible ? <><a href={`/api/creative-generation/jobs/${encodeURIComponent(jobId)}/ad-copy?format=txt`}>TXT</a><a href={`/api/creative-generation/jobs/${encodeURIComponent(jobId)}/ad-copy?format=json`}>JSON</a><a href={`/api/creative-generation/jobs/${encodeURIComponent(jobId)}/ad-copy?format=csv`}>CSV</a></> : null}
       </div>
       {notice ? <p className={styles.notice} role="status">{notice}</p> : null}

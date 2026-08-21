@@ -25,6 +25,7 @@ import {
   createVideoMaterialCode,
   validateVideoMaterialCode,
 } from "../app/lib/video-collaboration/workflow.ts";
+import { validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
 
 const analysis = {
   productName: "민트 티트리 샤워젤 250ml",
@@ -371,9 +372,45 @@ test("프로젝트·버전·피드백·승인 이력이 재조회 후에도 유�
       ),
       /금지 문구/
     );
+    const detailed = structuredClone(concepts[0]);
+    const actions = [
+      "젖은 운동복을 내려놓는다", "이마의 땀을 닦는다", "샤워기 손잡이를 돌린다",
+      "거울 속 표정을 바라본다", "선반 문을 천천히 연다", "상품을 손으로 꺼낸다",
+      "손바닥에 내용물을 덜어낸다", "손가락으로 질감을 펼친다", "양손으로 거품을 만든다",
+      "어깨를 따라 거품을 문지른다", "샤워기 물로 씻어낸다", "수건을 들고 웃는다",
+      "깨끗한 옷을 가방에 넣는다", "현관에서 신발을 신는다", "상세 화면을 손으로 누른다",
+    ];
+    const captions = [
+      "씻고도 금방 찝찝했죠", "운동 뒤엔 더 빨랐고요", "샤워 순서부터 봐요",
+      "익숙한 방식은 잠깐", "남은 답답함을 보고", "상쾌함이 필요한 순간",
+      "민트와 티트리가 보여요", "사용감부터 확인해요", "손에 덜어 살펴봐요",
+      "거품이 부드럽게 퍼져요", "물과 함께 산뜻하게", "표정도 한결 편안해져요",
+      "다음 운동도 가볍게", "샤워 루틴을 바꾼다면", concepts[0].cta,
+    ];
+    detailed.cuts = actions.map((action, index) => ({
+      ...structuredClone(concepts[0].cuts[0]),
+      id: crypto.randomUUID(),
+      cutNumber: index + 1,
+      sceneName: `구간 ${index + 1}`,
+      startSecond: index,
+      endSecond: index + 1,
+      caption: captions[index],
+      narration: "",
+      sceneDescription: `밝은 욕실과 샤워실 배경에서 운동을 마친 인물이 ${action} 손의 움직임과 편안해지는 표정을 먼저 보여준다. 화면은 이 행동이 자막의 의미로 이어지는 순간을 가까이 담고 다음 구간의 다른 행동으로 자연스럽게 전환한다.`,
+      referenceImages: [],
+      requiredSources: [],
+      productionMemo: "",
+    }));
+    detailed.fullScript = detailed.cuts.map((cut) => cut.caption).join(" ");
+    detailed.validation = validateDetailedPlanning(detailed, analysis, 15);
+    assert.equal(detailed.validation.valid, true);
+    await repository.saveGeneratedConcepts(created.id, [detailed], {
+      conceptId: detailed.id,
+      actor: "마케터",
+    });
     await repository.requestProduction({
       projectId: created.id,
-      conceptId: concepts[0].id,
+      conceptId: detailed.id,
       deadline: "2026-08-25",
       actor: "마케터",
     });

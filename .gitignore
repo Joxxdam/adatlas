@@ -118,6 +118,7 @@ public/video-collaboration/*
 
 # local Codex advertiser threads and AI-native final creatives
 .data/codex/
+/.data/ad-copy/
 /.data/generated/
 /.data/creative-generation/
 /.data/site-candidates/

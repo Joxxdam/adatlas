@@ -1,5 +1,6 @@
 import "server-only";
 import { access, copyFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 export type AdvertiserThreadRecord = { advertiserId: string; advertiserName: string; domain: string; threadId?: string; turnCount?: number; updatedAt: string };
@@ -23,6 +24,12 @@ export type AdvertiserBrandMemory = { advertiserId: string; approvedDirections: 
 const locks = new Map<string, Promise<void>>();
 const root = () => path.join(process.cwd(), ".data", "codex");
 const registryPath = () => path.join(root(), "advertisers.json");
+
+export function codexProductThreadKey(advertiserId: string, productId: string) {
+  const advertiser = advertiserId.trim().replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80) || "unknown-advertiser";
+  const productHash = createHash("sha256").update(productId.trim() || "unknown-product").digest("hex").slice(0, 16);
+  return `${advertiser}--product-${productHash}`;
+}
 
 async function atomicJson(file: string, value: unknown) {
   await mkdir(path.dirname(file), { recursive: true });

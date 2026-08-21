@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { VIDEO_CONCEPT_FORMATS } from "./types.ts";
 import type {
   CreateVideoProjectInput,
   ReviewComment,
@@ -13,8 +14,10 @@ import type {
   VideoPipelineProgress,
   ProductLockedAsset,
   ReferenceVideoAnalysis,
+  VideoGenerationFailure,
 } from "./types.ts";
 import { normalizeVideoCut } from "./script.ts";
+import { validateConceptDiversity, validateDetailedPlanning } from "./planningValidation.ts";
 import {
   assertVideoProjectTransition,
   createVideoMaterialCode,
@@ -46,11 +49,14 @@ function clean(value: unknown, max = 4000) {
 }
 
 function normalizeConcept(concept: VideoConcept): VideoConcept {
+  const cuts = Array.isArray(concept.cuts)
+    ? concept.cuts.map((cut, index) => normalizeVideoCut(cut, index))
+    : [];
   return {
     ...concept,
-    cuts: Array.isArray(concept.cuts)
-      ? concept.cuts.map((cut, index) => normalizeVideoCut(cut, index))
-      : [],
+    cuts,
+    detailStatus: concept.detailStatus || (cuts.length >= 15 ? "ready" : "not-generated"),
+    evidenceIds: Array.isArray(concept.evidenceIds) ? concept.evidenceIds : [],
   };
 }
 
@@ -64,6 +70,9 @@ function normalizeProject(project: VideoProject): VideoProject {
     platform: project.platform || "meta",
     aspectRatio: "9:16",
     creativeStyle: project.creativeStyle || "auto",
+    conceptFormat: project.conceptFormat && VIDEO_CONCEPT_FORMATS.includes(project.conceptFormat)
+      ? project.conceptFormat
+      : undefined,
     advancedTarget: clean(project.advancedTarget, 500),
     advancedTone: clean(project.advancedTone, 500),
     productionNotes: clean(project.productionNotes, 5000),
@@ -84,6 +93,9 @@ function normalizeProject(project: VideoProject): VideoProject {
     versions: Array.isArray(project.versions) ? project.versions : [],
     comments: Array.isArray(project.comments) ? project.comments : [],
     statusHistory: Array.isArray(project.statusHistory) ? project.statusHistory : [],
+    designerAssignmentHistory: Array.isArray(project.designerAssignmentHistory)
+      ? project.designerAssignmentHistory
+      : [],
     milestones: project.milestones || {},
     scriptLastEditedBy: clean(project.scriptLastEditedBy, 80) || "시스템",
     createdAt,
@@ -272,11 +284,12 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           platform: input.platform || "meta",
           aspectRatio: "9:16",
           creativeStyle: input.creativeStyle || "auto",
+          conceptFormat: input.conceptFormat,
           advancedTarget: clean(input.advancedTarget, 500),
           advancedTone: clean(input.advancedTone, 500),
           additionalRequests: clean(input.additionalRequests, 5000),
           productionNotes: "",
-          deadline: "",
+          deadline: clean(input.deadline, 40),
           referenceAssets: clone(input.referenceAssets || []),
           productOriginalAsset: input.productOriginalAsset
             ? clone(input.productOriginalAsset)
@@ -302,6 +315,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
               changedAt: now,
             },
           ],
+          designerAssignmentHistory: [],
           milestones: {},
           scriptLastEditedBy: "시스템",
           createdAt: now,
@@ -337,7 +351,20 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (changes.marketerName !== undefined)
           project.marketerName = clean(changes.marketerName, 80) || "마케터";
         if (changes.designerName !== undefined)
-          project.designerName = clean(changes.designerName, 80);
+          {
+            const nextDesigner = clean(changes.designerName, 80);
+            if (nextDesigner !== project.designerName) {
+              project.designerAssignmentHistory ||= [];
+              project.designerAssignmentHistory.push({
+                id: crypto.randomUUID(),
+                previousDesigner: project.designerName,
+                nextDesigner,
+                changedBy: clean(changes.marketerName, 80) || project.marketerName || "사용자",
+                changedAt: new Date().toISOString(),
+              });
+              project.designerName = nextDesigner;
+            }
+          }
         if (changes.additionalRequests !== undefined)
           project.additionalRequests = clean(changes.additionalRequests, 5000);
         if (changes.productionNotes !== undefined)
@@ -349,6 +376,80 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           project.productAnalysis = clone(changes.productAnalysis);
         }
         if (changes.brandGuideline) project.brandGuideline = clone(changes.brandGuideline);
+      });
+    },
+
+    async saveConceptSummaries(
+      projectId: string,
+      concepts: VideoConcept[],
+      options: {
+        actor?: string;
+        hookCandidates?: VideoHookCandidate[];
+        referenceAnalyses?: ReferenceVideoAnalysis[];
+        replaceConceptId?: string;
+      } = {}
+    ) {
+      return update(projectId, (project) => {
+        if (!concepts.length) throw new Error("저장할 영상 기획안 요약이 없습니다.");
+        const incomingCodes = new Set<string>();
+        for (const concept of concepts) {
+          uniqueMaterialCode(project, concept.materialCode, concept.id);
+          if (incomingCodes.has(concept.materialCode)) {
+            throw new Error("생성된 기획안 사이에 중복 소재코드가 있습니다.");
+          }
+          incomingCodes.add(concept.materialCode);
+          if (!clean(concept.title) || !clean(concept.openingHook) || !clean(concept.cta)) {
+            throw new Error("기획안 요약의 제목, 후킹, CTA를 확인해 주세요.");
+          }
+          if (concept.cuts.length) throw new Error("요약 단계에는 상세 대본을 함께 저장하지 않습니다.");
+        }
+        if (!options.replaceConceptId && concepts.length > 1 && !validateConceptDiversity(concepts).valid) {
+          throw new Error("서로 다른 후킹 유형과 광고 가설의 기획안 3개가 필요합니다.");
+        }
+        if (options.replaceConceptId) {
+          const index = project.concepts.findIndex((concept) => concept.id === options.replaceConceptId);
+          if (index < 0) throw new Error("다시 생성할 기획안을 찾지 못했습니다.");
+          project.concepts[index] = clone({
+            ...concepts[0],
+            id: project.concepts[index].id,
+            materialCode: project.concepts[index].materialCode,
+          });
+        } else {
+          project.concepts = clone(concepts);
+          project.selectedConceptId = undefined;
+          project.finalScript = undefined;
+        }
+        if (options.hookCandidates) project.hookCandidates = clone(options.hookCandidates);
+        if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
+        project.generationFailure = undefined;
+        if (project.status === "script_pending") {
+          transition(
+            project,
+            "script_review",
+            "시스템",
+            concepts.length === 1 ? "선택한 영상 콘셉트 기획안 생성" : "후킹 평가 및 기획안 요약 3개 생성"
+          );
+        } else if (project.status === "concept_selected") {
+          transition(project, "script_review", options.actor || "사용자", "기획안 요약 다시 생성");
+        }
+        project.scriptLastEditedBy = clean(options.actor, 80) || "시스템";
+      });
+    },
+
+    async saveGenerationFailure(
+      projectId: string,
+      failure: VideoGenerationFailure,
+      options: { conceptId?: string } = {}
+    ) {
+      return update(projectId, (project) => {
+        project.generationFailure = clone(failure);
+        if (options.conceptId) {
+          const concept = project.concepts.find((item) => item.id === options.conceptId);
+          if (concept) {
+            concept.detailStatus = "failed";
+            concept.generationFailure = clone(failure);
+          }
+        }
       });
     },
 
@@ -409,6 +510,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (options.pipelineProgress) project.pipelineProgress = clone(options.pipelineProgress);
         if (options.productLockedAsset) project.productLockedAsset = clone(options.productLockedAsset);
         if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
+        project.generationFailure = undefined;
         project.scriptLastEditedBy = clean(options.actor, 80) || "시스템";
       });
     },
@@ -420,7 +522,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
       actor: string
     ) {
       return update(projectId, (project) => {
-        if (project.status !== "script_review")
+        if (!["script_review", "concept_selected"].includes(project.status))
           throw new Error("대본 검토 중에만 기획안을 수정할 수 있습니다.");
         const index = project.concepts.findIndex((item) => item.id === conceptId);
         if (index < 0) throw new Error("수정할 기획안을 찾지 못했습니다.");
@@ -478,6 +580,13 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           createdAt: current.createdAt,
           updatedAt: new Date().toISOString(),
         });
+        if (normalized.cuts.length >= 15) {
+          normalized.validation = validateDetailedPlanning(
+            normalized,
+            project.productAnalysis,
+            project.duration
+          );
+        }
         validateConceptForProject(project, normalized);
         if (options.createRevision) {
           project.scriptRevisions.push({
@@ -561,11 +670,14 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
 
     async selectConcept(projectId: string, conceptId: string) {
       return update(projectId, (project) => {
-        if (project.status !== "script_review")
+        if (!["script_review", "concept_selected"].includes(project.status))
           throw new Error("대본 검토 중에만 기획안을 선택할 수 있습니다.");
         if (!project.concepts.some((item) => item.id === conceptId))
           throw new Error("선택할 기획안을 찾지 못했습니다.");
         project.selectedConceptId = conceptId;
+        if (project.status === "script_review") {
+          transition(project, "concept_selected", project.marketerName, "상세 검토 후 기획안 선택");
+        }
       });
     },
 
@@ -577,16 +689,26 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
       requestNote?: string;
     }) {
       return update(input.projectId, (project) => {
-        if (project.status !== "script_review")
+        if (!["script_review", "concept_selected"].includes(project.status))
           throw new Error("대본 검토 중인 프로젝트만 제작 요청할 수 있습니다.");
+        if (!clean(project.designerName) || project.designerName === "디자이너 미지정") {
+          throw new Error("제작을 요청하려면 담당 디자이너를 지정해 주세요.");
+        }
         const concept = project.concepts.find((item) => item.id === input.conceptId);
         if (!concept) throw new Error("확정할 기획안을 선택해 주세요.");
+        const validation = concept.cuts.length >= 15
+          ? validateDetailedPlanning(concept, project.productAnalysis, project.duration)
+          : undefined;
+        concept.validation = validation;
+        if (concept.cuts.length < 15 || !validation?.valid) {
+          throw new Error("자동 품질 검수를 통과한 최소 15개 구간의 상세 대본이 필요합니다.");
+        }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(clean(input.deadline)))
           throw new Error("올바른 제작 마감일을 입력해 주세요.");
         project.selectedConceptId = concept.id;
         project.finalScript = clone(concept);
         project.deadline = clean(input.deadline, 40);
-        project.scriptRevisions.push({
+        const finalizedRevision = {
           id: crypto.randomUUID(),
           conceptId: concept.id,
           revision: concept.revision,
@@ -595,11 +717,22 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           reason: "finalized",
           stage: "marketer-final",
           snapshot: clone(concept),
-        });
+        } as const;
+        project.scriptRevisions.push(finalizedRevision);
         const requestedAt = new Date().toISOString();
         project.milestones.scriptFinalizedAt = requestedAt;
         project.milestones.productionRequestedAt = requestedAt;
         project.scriptLastEditedBy = clean(input.actor, 80) || project.marketerName;
+        project.productionRequest = {
+          requestedAt,
+          requestedBy: clean(input.actor, 80) || project.marketerName,
+          designerName: project.designerName,
+          deadline: project.deadline,
+          note: clean(input.requestNote, 500),
+          conceptId: concept.id,
+          scriptRevisionId: finalizedRevision.id,
+          referenceAssetIds: project.referenceAssets.map((asset) => asset.id),
+        };
         transition(
           project,
           "production_requested",
@@ -828,8 +961,8 @@ export function validateCreateVideoProjectInput(input: Partial<CreateVideoProjec
   }
   if (input.platform && !["meta", "instagram", "tiktok", "youtube-shorts"].includes(input.platform))
     throw new Error("영상 플랫폼이 올바르지 않습니다.");
-  if (input.platform && !input.productOriginalAsset)
-    throw new Error("상품 형태와 라벨을 보존할 원본 상품 이미지를 업로드해 주세요.");
+  if (input.conceptFormat && !VIDEO_CONCEPT_FORMATS.includes(input.conceptFormat))
+    throw new Error("영상 콘셉트 형식이 올바르지 않습니다.");
   if (
     input.productOriginalAsset &&
     (!input.productOriginalAsset.mimeType.startsWith("image/") ||
