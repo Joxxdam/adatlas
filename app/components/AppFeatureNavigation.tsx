@@ -7,6 +7,7 @@ export type AppFeatureKey =
   | "creative-production"
   | "video-planning"
   | "performance"
+  | "archive"
   | "auto-production"
   | "advertisers"
   | "references";
@@ -42,7 +43,14 @@ export const VIDEO_PLANNING_FEATURE = {
   description: "상품 기반 대본과 장면 제작안을 별도로 기획합니다",
 };
 
-export const MAIN_FEATURES = [...IMAGE_CONTENT_FEATURES, VIDEO_PLANNING_FEATURE];
+export const ARCHIVE_FEATURE = {
+  key: "archive" as const,
+  href: "/archive",
+  label: "아카이브",
+  description: "완성한 이미지 콘텐츠와 업체 레퍼런스를 보관합니다",
+};
+
+export const MAIN_FEATURES = [...IMAGE_CONTENT_FEATURES, VIDEO_PLANNING_FEATURE, ARCHIVE_FEATURE];
 
 export const MANAGEMENT_FEATURES = [
   { key: "auto-production" as const, href: "/admin/auto-production", label: "자동 제작 관리" },
@@ -90,6 +98,24 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
           <div>
             <strong>{VIDEO_PLANNING_FEATURE.label}</strong>
             <small>{VIDEO_PLANNING_FEATURE.description}</small>
+          </div>
+        </Link>
+      </section>
+
+      <section className="feature-navigation-group feature-navigation-archive" aria-labelledby="archive-navigation-label">
+        <div className="feature-navigation-group-label" id="archive-navigation-label">
+          <span>ASSET LIBRARY</span>
+          <strong>콘텐츠 보관</strong>
+        </div>
+        <Link
+          aria-current={activeFeature === ARCHIVE_FEATURE.key ? "page" : undefined}
+          className={`feature-navigation-archive-link${activeFeature === ARCHIVE_FEATURE.key ? " active" : ""}`}
+          href={ARCHIVE_FEATURE.href}
+        >
+          <span>ALL</span>
+          <div>
+            <strong>{ARCHIVE_FEATURE.label}</strong>
+            <small>{ARCHIVE_FEATURE.description}</small>
           </div>
         </Link>
       </section>

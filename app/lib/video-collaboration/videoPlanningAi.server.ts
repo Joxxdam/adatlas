@@ -6,6 +6,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { Codex } from "@openai/codex-sdk";
 import type { VideoGenerationFailure, VideoGenerationStage } from "./types.ts";
+import { assertStructuredVideoPlanningResponse } from "./structuredSchema.ts";
 
 const execFileAsync = promisify(execFile);
 let authenticatedExecutablePromise: Promise<string> | undefined;
@@ -134,6 +135,7 @@ export async function runVideoPlanningAi<T>(input: {
       } catch (error) {
         throw new Error(`JSON parsing failed: ${safeMessage(error)}`);
       }
+      assertStructuredVideoPlanningResponse(parsed, input.outputSchema);
       logStage({
         stage: input.stage,
         event: "success",

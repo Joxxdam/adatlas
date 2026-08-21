@@ -120,7 +120,7 @@ export const creativeGenerationJobStore = {
       .filter((job) => !options.advertiserId || job.advertiserId === options.advertiserId)
       .filter((job) => !options.productId || job.productTruth.productId === options.productId)
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-      .slice(0, Math.max(1, Math.min(100, options.limit || 20)));
+      .slice(0, Math.max(1, Math.min(500, options.limit || 20)));
   },
 
   async active(limit = 20) {

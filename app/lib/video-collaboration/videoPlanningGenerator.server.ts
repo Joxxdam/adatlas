@@ -7,6 +7,7 @@ import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader.ts";
 import {
   VIDEO_HOOK_TYPES,
   VIDEO_CONCEPT_FORMAT_OPTIONS,
+  VIDEO_CONCEPT_ARCHETYPE_OPTIONS,
   type HookScore,
   type ProductAnalysisSnapshot,
   type VideoConcept,
@@ -20,10 +21,12 @@ import {
   type VideoReferenceAsset,
   type ReferenceVideoAnalysis,
   type VideoConceptFormat,
+  type VideoConceptArchetype,
 } from "./types.ts";
 import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } from "./workflow.ts";
 import {
   assignPlanningTimeline,
+  hasVerifiedVideoBenefit,
   segmentRange,
   validateConceptDiversity,
   validateDetailedPlanning,
@@ -59,8 +62,14 @@ function promptFacts(analysis: ProductAnalysisSnapshot) {
     price: analysis.price,
     promotion: analysis.promotion || analysis.discountInfo,
     volumeOrOption: analysis.volumeOrOption || "",
+    composition: compact(analysis.composition || [], 8),
+    minimumOrderQuantity: analysis.minimumOrderQuantity || "",
+    shippingConditions: compact(analysis.shippingConditions || [], 6),
     origin: analysis.countryOfOrigin || "",
     ingredients: compact(analysis.ingredients || [], 8),
+    manufacturingProcess: compact(analysis.manufacturingProcess || [], 8),
+    certifications: compact(analysis.certifications || [], 6),
+    actualBenefits: compact(analysis.actualBenefits || [], 8),
     verifiedBenefits: compact(analysis.coreUsps, 8),
     productFeatures: compact(analysis.keyFeatures, 10),
     customerProblems: compact(analysis.customerProblems, 6),
@@ -206,36 +215,59 @@ export async function analyzeVideoReferencesAi(assets: VideoReferenceAsset[]) {
     }));
   if (!videoAssets.length) return nonVideos;
 
-  const payload = await runVideoPlanningAi<{ analyses: AiReferenceAnalysis[] }>({
-    stage: "reference-analysis",
-    outputSchema: referenceAnalysisSchema as unknown as Record<string, unknown>,
-    timeoutMs: Number(process.env.VIDEO_PLANNING_REFERENCE_TIMEOUT_MS || 180_000),
-    prompt: `당신은 숏폼 퍼포먼스 광고 편집 분석가다. 아래 로컬 참고 영상을 ffprobe와 필요한 경우 ffmpeg의 샘플 프레임으로만 분석한다. 새 이미지나 영상을 생성하지 않는다. 원본 파일을 수정하지 않는다.
+  try {
+    const payload = await runVideoPlanningAi<{ analyses: AiReferenceAnalysis[] }>({
+      stage: "reference-analysis",
+      outputSchema: referenceAnalysisSchema as unknown as Record<string, unknown>,
+      timeoutMs: Number(process.env.VIDEO_PLANNING_REFERENCE_TIMEOUT_MS || 180_000),
+      prompt: `당신은 숏폼 퍼포먼스 광고 편집 분석가다. 아래 로컬 참고 영상을 운영체제에서 사용할 수 있는 읽기 전용 미디어 정보 도구와 샘플 프레임으로 분석한다. 특정 명령어가 없으면 다른 읽기 전용 도구를 사용하고, 확인하지 못한 값은 추측하지 않는다. 새 이미지나 영상을 생성하지 않으며 원본 파일을 수정하지 않는다.
 
 [로컬 참고 영상]
 ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: asset.name, localPath: asset.localPath })))}
 
 각 파일의 첫 장면 후킹 방식, 컷 전환 속도, 평균 자막 길이, 문제 제기 시점, 상품 등장 시점, 인물 말투를 추정할 수 있는 화면 리듬, 장면 구성, 시각 변화, USP와 CTA 시점을 분석한다. 브랜드·인물·장면을 복제할 지시가 아니라 현재 상품에 재사용할 구조·속도·자막 리듬만 reusablePrinciples에 쓴다. 실제로 확인하지 못한 항목은 추측하지 말고 analysisStatus를 limited로 두고 limitations에 이유를 쓴다. JSON만 반환한다.`,
-  });
-  const allowed = new Set(videoAssets.map((asset) => asset.id));
-  const analyses = payload.analyses
-    .filter((analysis) => allowed.has(analysis.assetId))
-    .map((analysis): ReferenceVideoAnalysis => ({
-      ...analysis,
-      cutCount: analysis.cutCount || null,
-      averageCutLength: analysis.averageCutLength || null,
-    }));
-  if (analyses.length !== videoAssets.length) {
-    throw new VideoPlanningGenerationError({
-      stage: "reference-analysis",
-      code: "REFERENCE_ANALYSIS_INCOMPLETE",
-      message: "일부 참고 영상의 구조 분석 결과를 확인하지 못했습니다.",
-      retryable: true,
-      attempts: 1,
-      failedAt: new Date().toISOString(),
     });
+    const allowed = new Set(videoAssets.map((asset) => asset.id));
+    const analyses = payload.analyses
+      .filter((analysis) => allowed.has(analysis.assetId))
+      .map((analysis): ReferenceVideoAnalysis => ({
+        ...analysis,
+        cutCount: analysis.cutCount || null,
+        averageCutLength: analysis.averageCutLength || null,
+      }));
+    const completed = videoAssets.map((asset) => analyses.find((analysis) => analysis.assetId === asset.id) || ({
+      assetId: asset.id,
+      assetName: asset.name,
+      analysisStatus: "limited" as const,
+      openingHookMethod: "확인 불가",
+      openingTiming: "확인 불가",
+      cutCount: null,
+      averageCutLength: null,
+      cameraAndGaze: [], actions: [], informationDensity: "확인 불가", subtitlePosition: "확인 불가",
+      transitions: [], timingMap: { problem: "확인 불가", product: "확인 불가", usp: "확인 불가", cta: "확인 불가" },
+      compositionRatio: { liveAction: null, animation: null, composite: null }, emotionalTone: "확인 불가",
+      reusablePrinciples: [], limitations: ["참고 영상의 프레임 구조를 완전히 확인하지 못했습니다."],
+    }));
+    return [...completed, ...nonVideos];
+  } catch (error) {
+    console.info(`[video-planning] stage=reference-analysis event=limited code=${error instanceof VideoPlanningGenerationError ? error.failure.code : "REFERENCE_ANALYSIS_LIMITED"}`);
+    return [
+      ...videoAssets.map((asset): ReferenceVideoAnalysis => ({
+        assetId: asset.id,
+        assetName: asset.name,
+        analysisStatus: "limited",
+        openingHookMethod: "첨부 영상 확인 필요",
+        openingTiming: "확인 불가",
+        cutCount: null,
+        averageCutLength: null,
+        cameraAndGaze: [], actions: [], informationDensity: "확인 불가", subtitlePosition: "확인 불가",
+        transitions: [], timingMap: { problem: "확인 불가", product: "확인 불가", usp: "확인 불가", cta: "확인 불가" },
+        compositionRatio: { liveAction: null, animation: null, composite: null }, emotionalTone: "확인 불가",
+        reusablePrinciples: [], limitations: ["참고 영상 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다."],
+      })),
+      ...nonVideos,
+    ];
   }
-  return [...analyses, ...nonVideos];
 }
 
 function scoreTotal(score: Omit<HookScore, "total">) {
@@ -391,6 +423,7 @@ ${JSON.stringify(referenceAnalyses.filter((item) => item.analysisStatus === "ana
 }
 
 type AiConceptSummary = {
+  conceptArchetype: VideoConceptArchetype;
   hookId: string;
   hookType: VideoHookType;
   title: string;
@@ -406,9 +439,16 @@ type AiConceptSummary = {
   evidenceIds: string[];
   claimsToVerify: string[];
   cta: string;
+  centralIncident: string;
+  speakerPointOfView: string;
+  keyAppeal: string;
+  recommendedVisualStyle: string;
+  supportingDevices: string[];
+  differenceFromPrevious: string;
+  benefitAvailability: "verified" | "insufficient";
 };
 
-function conceptSummarySchema(count: 1 | 3) {
+function conceptSummarySchema(archetype?: VideoConceptArchetype) {
   return {
     type: "object",
     additionalProperties: false,
@@ -416,17 +456,20 @@ function conceptSummarySchema(count: 1 | 3) {
     properties: {
       concepts: {
         type: "array",
-        minItems: count,
-        maxItems: count,
+        minItems: 1,
+        maxItems: 1,
         items: {
           type: "object",
           additionalProperties: false,
           required: [
-            "hookId", "hookType", "title", "openingHook", "coreTarget", "customerProblem",
+            "conceptArchetype", "hookId", "hookType", "title", "openingHook", "coreTarget", "customerProblem",
             "usp", "speaker", "creativeStyle", "narrativeStructure", "narrativeSummary",
-            "recommendationReason", "evidenceIds", "claimsToVerify", "cta",
+            "recommendationReason", "evidenceIds", "claimsToVerify", "cta", "centralIncident",
+            "speakerPointOfView", "keyAppeal", "recommendedVisualStyle", "supportingDevices",
+            "differenceFromPrevious", "benefitAvailability",
           ],
           properties: {
+            conceptArchetype: { type: "string", enum: archetype ? [archetype] : ["parody", "real-review", "usp-focus", "secret-benefit"] },
             hookId: { type: "string" },
             hookType: hookTypeSchema,
             title: { type: "string", minLength: 6, maxLength: 70 },
@@ -439,9 +482,16 @@ function conceptSummarySchema(count: 1 | 3) {
             narrativeStructure: { type: "string", minLength: 12, maxLength: 180 },
             narrativeSummary: { type: "string", minLength: 30, maxLength: 400 },
             recommendationReason: { type: "string", minLength: 20, maxLength: 300 },
-            evidenceIds: { type: "array", minItems: 1, maxItems: 6, items: { type: "string" } },
+            evidenceIds: { type: "array", maxItems: 6, items: { type: "string" } },
             claimsToVerify: { type: "array", maxItems: 6, items: { type: "string" } },
             cta: { type: "string", minLength: 4, maxLength: 50 },
+            centralIncident: { type: "string", minLength: 12, maxLength: 240 },
+            speakerPointOfView: { type: "string", minLength: 4, maxLength: 100 },
+            keyAppeal: { type: "string", minLength: 4, maxLength: 140 },
+            recommendedVisualStyle: { type: "string", minLength: 4, maxLength: 140 },
+            supportingDevices: { type: "array", maxItems: 4, items: { type: "string", maxLength: 100 } },
+            differenceFromPrevious: { type: "string", minLength: 8, maxLength: 180 },
+            benefitAvailability: { type: "string", enum: ["verified", "insufficient"] },
           },
         },
       },
@@ -468,6 +518,9 @@ export async function generateVideoConceptSummariesAi(input: {
   existingConcepts?: VideoConcept[];
   referenceAnalyses?: ReferenceVideoAnalysis[];
   conceptFormat?: VideoConceptFormat;
+  planningMode?: "legacy" | "four-concepts";
+  requiredContent?: string;
+  excludedContent?: string;
 }) {
   const candidates = [...input.hooks]
     .filter((hook) => !hook.rejectionReasons.length)
@@ -482,11 +535,15 @@ export async function generateVideoConceptSummariesAi(input: {
     productName: input.analysis.productName,
   });
   const selectedFormat = VIDEO_CONCEPT_FORMAT_OPTIONS.find((item) => item.id === input.conceptFormat);
-  const conceptCount: 1 | 3 = selectedFormat ? 1 : 3;
-  const request = async (correction = "") => runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
+  const fourConceptMode = input.planningMode === "four-concepts" || !selectedFormat;
+  const archetypes: Array<VideoConceptArchetype | undefined> = fourConceptMode
+    ? VIDEO_CONCEPT_ARCHETYPE_OPTIONS.map((item) => item.id)
+    : [undefined];
+  const hasVerifiedBenefit = hasVerifiedVideoBenefit(input.analysis);
+  const request = async (archetype: VideoConceptArchetype | undefined, correction = "") => runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
     stage: "concept-summaries",
-    outputSchema: conceptSummarySchema(conceptCount) as unknown as Record<string, unknown>,
-    prompt: `당신은 한국 퍼포먼스 광고 영상 기획자다. 아래 상품 근거와 평가된 후킹을 사용해 ${selectedFormat ? "사용자가 선택한 형식의 기획안 1개" : "방향이 가장 다른 기획안 3개"}를 만든다.
+    outputSchema: conceptSummarySchema(archetype) as unknown as Record<string, unknown>,
+    prompt: `당신은 한국 퍼포먼스 광고 영상 기획자다. 아래 상품 근거와 평가된 후킹을 사용해 ${archetype ? `${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label} 기획안 1개` : "사용자가 선택한 형식의 기획안 1개"}만 만든다.
 
 [상품]
 ${JSON.stringify(promptFacts(input.analysis))}
@@ -499,16 +556,26 @@ ${selectedFormat.title} · ${selectedFormat.description}
 전개: ${selectedFormat.flow}
 연출 규칙: ${selectedFormat.direction}
 creativeStyle은 반드시 ${selectedFormat.creativeStyle}을 사용한다.` : ""}
+${archetype ? `[반드시 지킬 중심 유형]
+${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label}: ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.direction}
+conceptArchetype은 반드시 ${archetype}이다.` : ""}
 [카테고리 연출 원칙]
 ${stylePrinciples(input.analysis.category)}
 [브랜드 가이드]
 ${clean(copyGuide?.content || input.guideline.toneAndManner, 3000)}
 [참고 영상의 구조·속도·자막 리듬]
 ${JSON.stringify((input.referenceAnalyses || []).filter((item) => item.analysisStatus === "analyzed").map((item) => ({ opening: item.openingHookMethod, timing: item.timingMap, pace: item.averageCutLength, principles: item.reusablePrinciples })))}
+[반드시 넣을 내용]
+${clean(input.requiredContent, 1500) || "없음"}
+[제외할 내용]
+${clean(input.excludedContent, 1500) || "없음"}
+[이 프로젝트의 기존 기획안]
+${JSON.stringify((input.existingConcepts || []).map((item) => ({ opening: item.openingHook, incident: item.centralIncident, speaker: item.speakerPointOfView || item.speaker, appeal: item.keyAppeal || item.usp })))}
 
-${selectedFormat ? "선택한 형식의 문법이 제목, 화자, 서사, 장면 전개에 분명히 드러나야 한다. 다른 형식을 섞지 않는다." : "세 안은 첫 후킹, 고객 문제, USP, 화자, 스타일, 서사, 근거, CTA, 장면 전개가 달라야 한다."} 첫 문장부터 상품명을 소개하지 않는다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓰고 확정 문구로 쓰지 않는다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다. 실제 이미지나 영상을 생성하지 않으며 상세 대본은 아직 만들지 않는다. ${correction} JSON만 반환한다.`,
+첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 멈춰 볼 센 사건이나 한마디로 시작한다. 상품 사실은 바꾸지 않되 표현과 상황은 과감하게 창작한다. 첫 자막, 중심 사건, 화자 시점, 갈등 원인, 상품 등장 방식, 핵심 소구, 결말·CTA, 화면 스타일을 기존 기획안과 다르게 만든다. 참고 영상은 첫 1~3초 강한 인물/상품/가격 후킹, 6초 전후 B-roll 전환, 상품의 이른 반복 노출, 중반의 원산지·과정·가격 근거, 마지막 직접 CTA라는 편집 원리만 참고하고 원문은 복제하지 않는다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓰고 확정 문구로 쓰지 않는다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다. 실제 이미지나 영상을 생성하지 않으며 상세 대본은 아직 만들지 않는다.
+${archetype === "secret-benefit" && !hasVerifiedBenefit ? "확인된 혜택이 없으므로 benefitAvailability는 insufficient, keyAppeal과 narrativeSummary에는 ‘확인 가능한 혜택 정보가 부족합니다’를 포함하고 가격·할인·배송·증정을 창작하지 않는다." : ""}
+${correction} JSON만 반환한다.`,
   });
-  let payload = await request();
   const toConcepts = (rows: AiConceptSummary[]) => {
     const occupiedCodes = [...(input.existingConcepts || []).map((item) => item.materialCode)];
     return rows.map((row): VideoConcept => {
@@ -555,19 +622,36 @@ ${selectedFormat ? "선택한 형식의 문법이 제목, 화자, 서사, 장면
       score: { ...conceptScore(hook), total: hook?.score.total || 0 },
       detailStatus: "not-generated",
       conceptFormat: input.conceptFormat,
+      conceptArchetype: row.conceptArchetype,
+      centralIncident: clean(row.centralIncident, 320),
+      speakerPointOfView: clean(row.speakerPointOfView, 140),
+      keyAppeal: clean(row.keyAppeal, 200),
+      recommendedVisualStyle: clean(row.recommendedVisualStyle, 200),
+      supportingDevices: compact(row.supportingDevices, 4, 120),
+      differenceFromPrevious: clean(row.differenceFromPrevious, 240),
+      benefitAvailability: row.benefitAvailability,
     };
     });
   };
-  let concepts = toConcepts(payload.concepts);
-  if (conceptCount === 3 && !validateConceptDiversity(concepts).valid) {
-    payload = await request("이전 시도는 세 안의 화자·문제·USP·서사·CTA가 비슷했다. 세 안을 서로 완전히 다른 광고 가설로 다시 구성한다.");
-    concepts = toConcepts(payload.concepts);
+  const rows: AiConceptSummary[] = [];
+  for (const archetype of archetypes) {
+    const payload = await request(archetype);
+    rows.push(...payload.concepts);
   }
-  if (conceptCount === 3 && !validateConceptDiversity(concepts).valid) {
+  let concepts = toConcepts(rows);
+  if (fourConceptMode && !validateConceptDiversity(concepts).valid) {
+    const retryRows: AiConceptSummary[] = [];
+    for (const archetype of archetypes) {
+      const payload = await request(archetype, "이전 결과와 첫 자막·중심 사건·화자·갈등·상품 등장·핵심 소구·결말·화면 스타일이 겹쳤다. 이 중심 유형의 문법을 유지하면서 완전히 다른 사건으로 다시 구성한다.");
+      retryRows.push(...payload.concepts);
+    }
+    concepts = toConcepts(retryRows);
+  }
+  if (fourConceptMode && !validateConceptDiversity(concepts).valid) {
     throw new VideoPlanningGenerationError({
       stage: "schema-validation",
       code: "CONCEPTS_NOT_DISTINCT",
-      message: "AI가 서로 충분히 다른 기획안 3개를 만들지 못했습니다.",
+      message: "AI가 서로 충분히 다른 기획안 4개를 만들지 못했습니다.",
       retryable: true,
       attempts: 2,
       failedAt: new Date().toISOString(),
@@ -627,6 +711,7 @@ function detailedPrompt(input: {
   duration: VideoDuration;
   correction?: string;
   referenceAnalyses?: ReferenceVideoAnalysis[];
+  revisionFeedback?: string;
 }) {
   const count = segmentRange(input.duration).preferred;
   return `당신은 촬영팀이 추가 질문 없이 실행할 수 있는 한국 퍼포먼스 광고 숏폼 대본을 쓴다.
@@ -644,22 +729,34 @@ ${JSON.stringify({
     speaker: input.concept.speaker,
     style: input.concept.creativeStyle,
     selectedConceptFormat: input.concept.conceptFormat,
+    conceptArchetype: input.concept.conceptArchetype,
     narrative: input.concept.narrativeStructure,
+    incident: input.concept.centralIncident,
+    pointOfView: input.concept.speakerPointOfView,
+    keyAppeal: input.concept.keyAppeal,
+    visualStyle: input.concept.recommendedVisualStyle,
+    supportingDevices: input.concept.supportingDevices,
     cta: input.concept.cta,
   evidenceIds: input.concept.evidenceIds,
 })}
 ${input.concept.conceptFormat ? `[선택 형식 연출 규칙]
 ${VIDEO_CONCEPT_FORMAT_OPTIONS.find((item) => item.id === input.concept.conceptFormat)?.direction || "선택 형식의 연출 문법을 일관되게 유지한다."}` : ""}
+${input.concept.conceptArchetype ? `[중심 콘셉트 규칙]
+${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === input.concept.conceptArchetype)?.direction || "선택된 중심 유형의 사건과 시점을 끝까지 유지한다."}` : ""}
 [브랜드 기준]
 ${JSON.stringify({ tone: input.guideline.toneAndManner, required: input.guideline.requiredPhrases, forbidden: input.guideline.forbiddenPhrases })}
 [카테고리 원칙]
 ${stylePrinciples(input.analysis.category)}
 [참고 영상에서 재사용할 전개 원칙]
 ${JSON.stringify((input.referenceAnalyses || []).filter((item) => item.analysisStatus === "analyzed").map((item) => ({ opening: item.openingHookMethod, timing: item.timingMap, pace: item.averageCutLength, principles: item.reusablePrinciples })))}
+[사용자 수정 요청]
+${clean(input.revisionFeedback, 1600) || "없음"}
 
-정확히 ${count}개 구간을 만든다. 첫 3개 행은 각각 첫 1초, 2초, 3초에 해당하고 최소 2번 화면이 확실히 바뀐다. ${input.concept.conceptFormat ? "사용자가 선택한 형식의 전개와 화면 문법을 처음부터 끝까지 유지하면서 상품의 검증 근거와 CTA로 연결한다." : "나머지는 문제 확대→기존 방식의 한계→상품 등장→차이와 검증 근거→사용·섭취→감각→변화→신뢰→구매 이유→자연스러운 CTA로 이어지는 한 이야기다."} 첫 자막부터 상품명을 소개하지 않는다. 자막은 보통 6~22자의 자연스러운 구어체이며 같은 문장과 상품명을 반복하지 않는다. 마지막 행의 caption에는 기획안의 CTA 문구를 정확히 포함한다.
+정확히 ${count}개 구간을 만든다. 첫 3개 행은 각각 첫 1초, 2초, 3초에 해당하고 최소 2번 화면이 확실히 바뀐다. 강한 첫마디→사건 또는 의심→갈등 확대→상품 등장→확인된 근거→반전 또는 납득→확인된 혜택→CTA를 중심 유형에 맞게 변주한다. 첫 자막부터 상품명을 설명하지 않는다. 자막은 보통 6~22자의 실제 릴스 구어체이며 같은 문장과 상품명을 반복하지 않는다. 상세페이지 문장을 잘라 붙이지 않고 한 화면에 하나의 행동과 한 문장만 둔다. 마지막 행의 caption에는 기획안의 CTA 문구를 정확히 포함한다.
 
-각 sceneDescription은 80자 이상이며 촬영팀이 그대로 실행할 수 있게 다음 세 문장 구조를 지킨다. 1) “{구체적인 장소·배경}에서 {인물 또는 상품}이 {구체적 행동}을 한다.” 2) “첫 시각 요소는 {대상}이며, 반응은 {표정 또는 화면에서 보이는 상태 변화}로 나타난다.” 3) “{자막과 연결되는 시각적 사건} 뒤 다음 구간은 {구체적 화면 변화}로 전환한다.” 각 중괄호는 실제 내용으로 바꾸고 ‘첫 시각 요소는’, ‘반응은’, ‘다음 구간은’, ‘전환한다’라는 연결 표현을 반드시 유지한다. 카메라·행동·전환은 이 설명 안에만 쓴다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다', '사용 전후를 비교한다', '제품 전체와 CTA를 보여준다' 같은 추상 문장은 금지한다.
+참고 영상의 품질 원칙처럼 첫 1~3초에는 인물·상품·검증된 가격 중 하나를 강하게 노출하고, 6초 전에는 다른 피사체 또는 B-roll로 전환한다. 발표자와 원물·생산·사용·가격·신뢰 장면을 교차하고 상품은 초반부터 반복 노출한다. 원문 자막과 특정 인물·장면은 복제하지 않는다.
+
+각 sceneDescription은 100자 이상이며 촬영팀이 그대로 실행할 수 있게 등장인물·사물, 장소·배경, 구체 행동, 표정·반응, 카메라 구도, 필요한 제품 노출, 활용 B-roll, 전환·편집 방식, 기존 촬영본 재사용 가능 여부를 자연스러운 문장으로 모두 쓴다. 반드시 무엇이 먼저 보이고 다음 구간에서 무엇으로 바뀌는지도 명시한다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다', '사용 전후를 비교한다', '제품 전체와 CTA를 보여준다' 같은 추상 문장은 금지한다.
 
 검증된 사실에 없는 숫자·효능·원산지·후기·성과는 쓰지 않는다. 이미지, 이미지 프롬프트, 이미지 생성, visualBible, productLockedAsset은 만들지 않는다. ${input.correction || ""} JSON만 반환한다.`;
 }
@@ -671,6 +768,7 @@ async function requestDetailedRows(input: {
   duration: VideoDuration;
   correction?: string;
   referenceAnalyses?: ReferenceVideoAnalysis[];
+  revisionFeedback?: string;
 }) {
   return runVideoPlanningAi<{ rows: AiScriptRow[]; fullScript: string }>({
     stage: input.correction ? "automatic-revision" : "detailed-script",
@@ -685,6 +783,7 @@ export async function generateDetailedVideoScriptAi(input: {
   concept: VideoConcept;
   duration: VideoDuration;
   referenceAnalyses?: ReferenceVideoAnalysis[];
+  revisionFeedback?: string;
 }) {
   let payload = await requestDetailedRows(input);
   let concept: VideoConcept = {
@@ -697,12 +796,12 @@ export async function generateDetailedVideoScriptAi(input: {
     updatedAt: new Date().toISOString(),
   };
   concept.validation = validateDetailedPlanning(concept, input.analysis, input.duration);
-  if (!concept.validation.valid) {
+  for (let revisionAttempt = 1; revisionAttempt <= 2 && !concept.validation.valid; revisionAttempt += 1) {
     const failures = concept.validation.checks.filter((check) => !check.passed).map((check) => check.message);
     payload = await requestDetailedRows({
       ...input,
       concept,
-      correction: `자동 검수에서 다음 문제가 발견됐다. 모두 수정해 전체 대본을 다시 반환한다: ${failures.join(" / ")}`,
+      correction: `자동 검수 ${revisionAttempt}차에서 다음 문제가 발견됐다. 다른 항목은 유지하고 문제를 모두 수정해 전체 대본을 다시 반환한다: ${failures.join(" / ")}`,
       referenceAnalyses: input.referenceAnalyses,
     });
     concept = {
@@ -720,7 +819,7 @@ export async function generateDetailedVideoScriptAi(input: {
       code: "SCRIPT_QUALITY_FAILED",
       message: concept.validation.checks.filter((check) => !check.passed).map((check) => check.message).join(" "),
       retryable: true,
-      attempts: 2,
+      attempts: 3,
       failedAt: new Date().toISOString(),
     });
   }

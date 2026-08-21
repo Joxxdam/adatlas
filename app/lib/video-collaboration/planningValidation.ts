@@ -30,7 +30,16 @@ export function segmentRange(duration: VideoDuration) {
   if (duration === 15) return { min: 15, max: 16, preferred: 15 };
   if (duration === 20) return { min: 15, max: 18, preferred: 16 };
   if (duration === 30) return { min: 18, max: 24, preferred: 20 };
-  return { min: 20, max: 30, preferred: 24 };
+  if (duration === 45) return { min: 22, max: 30, preferred: 24 };
+  return { min: 22, max: 34, preferred: 26 };
+}
+
+export function hasVerifiedVideoBenefit(analysis: ProductAnalysisSnapshot) {
+  return Boolean(
+    analysis.discountInfo || analysis.promotion || analysis.originalPrice ||
+    analysis.minimumOrderQuantity || analysis.shippingConditions?.length || analysis.composition?.length ||
+    (analysis.verifiedFacts || []).some((fact) => /가격|할인|혜택|배송|증정|구성|쿠폰/i.test(`${fact.label} ${fact.value}`))
+  );
 }
 
 export function assignPlanningTimeline<T extends { caption: string; narration?: string; sceneDescription: string }>(
@@ -130,6 +139,11 @@ export function validateDetailedPlanning(
       message: `첫 3초에는 2~3개 구간이 필요합니다. 현재 ${firstThree.length}개입니다.`,
     },
     {
+      key: "opening-strength",
+      passed: !concept.conceptArchetype || firstThree.slice(0, 2).some((cut) => /[?!]|왜|설마|잠깐|진짜|누가|또|처음|비밀|공개|혼나|냄새|가격|말이 돼/i.test(`${cut.caption} ${cut.narration}`)),
+      message: "첫 1~2개 자막에는 질문·갈등·의외성·감각 반응 중 하나가 필요합니다.",
+    },
+    {
       key: "visual-changes",
       passed: new Set(firstThree.map((cut) => cut.sceneDescription)).size >= 2,
       message: "첫 3초에 서로 다른 시각적 변화가 2개 이상 필요합니다.",
@@ -178,6 +192,11 @@ export function validateDetailedPlanning(
         : "근거 없는 수치가 없습니다.",
     },
     {
+      key: "policy-safety",
+      passed: !concept.conceptArchetype || !/(치료|완치|질병을? 예방|무조건 낫|의사가 보증|실제 고객 인터뷰)/i.test(audienceCopy),
+      message: "근거 없는 의학적 효능이나 실제 고객을 사칭하는 표현은 사용할 수 없습니다.",
+    },
+    {
       key: "cta",
       passed: Boolean(concept.cta && cuts.at(-1)?.caption && combined.includes(concept.cta)),
       message: "앞의 구매 이유와 연결되는 CTA가 마지막 구간에 필요합니다.",
@@ -195,10 +214,12 @@ export function validateConceptDiversity(concepts: VideoConcept[]) {
   const hookTypes = new Set(concepts.map((concept) => concept.hookType));
   const fields = concepts.map((concept) => [
     concept.hookType,
+    concept.openingHook,
+    concept.centralIncident,
     concept.customerProblem,
     concept.usp,
-    concept.speaker,
-    concept.creativeStyle,
+    concept.speakerPointOfView || concept.speaker,
+    concept.recommendedVisualStyle || concept.creativeStyle,
     concept.narrativeStructure,
     concept.cta,
   ]);
@@ -209,11 +230,14 @@ export function validateConceptDiversity(concepts: VideoConcept[]) {
       pairSimilarities.push(same / fields[left].length);
     }
   }
+  const archetypes = new Set<string>(concepts.map((concept) => concept.conceptArchetype).filter((value): value is NonNullable<typeof value> => Boolean(value)));
+  const requiredArchetypes = new Set(["parody", "real-review", "usp-focus", "secret-benefit"]);
+  const isFourConceptPlanning = concepts.length === 4 || archetypes.size > 0;
+  const hasAllArchetypes = [...requiredArchetypes].every((item) => archetypes.has(item));
   return {
-    valid:
-      concepts.length === 3 &&
-      hookTypes.size === concepts.length &&
-      pairSimilarities.every((score) => score < 0.45),
+    valid: isFourConceptPlanning
+      ? concepts.length === 4 && hasAllArchetypes && pairSimilarities.every((score) => score < 0.45)
+      : concepts.length === 3 && hookTypes.size === concepts.length && pairSimilarities.every((score) => score < 0.45),
     similarities: pairSimilarities,
   };
 }

@@ -8,12 +8,14 @@ import test from "node:test";
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
 import {
   assignPlanningTimeline,
+  hasVerifiedVideoBenefit,
   segmentRange,
   validateConceptDiversity,
   validateDetailedPlanning,
 } from "../app/lib/video-collaboration/planningValidation.ts";
 import { extractVideoTitleMetadata, normalizeVideoProductName } from "../app/lib/video-collaboration/productName.ts";
 import { createVideoMaterialCode } from "../app/lib/video-collaboration/workflow.ts";
+import { assertStructuredVideoPlanningResponse } from "../app/lib/video-collaboration/structuredSchema.ts";
 
 const beautyAnalysis = {
   productName: "민트 티트리 샤워젤 250ml",
@@ -449,13 +451,14 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
   }
 });
 
-test("영상 기획은 큰 콘셉트 카드에서 한 형식을 선택하고 자막·장면안만 보여준다", async () => {
-  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, typesSource] = await Promise.all([
+test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한 안의 자막·장면안만 보여준다", async () => {
+  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource] = await Promise.all([
     readFile("app/components/AppFeatureNavigation.tsx", "utf8"),
     readFile("app/video-planning/page.tsx", "utf8"),
     readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"),
     readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"),
     readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"),
+    readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"),
     readFile("app/lib/video-collaboration/types.ts", "utf8"),
   ]);
   assert.match(navigation, /VIDEO_PLANNING_FEATURE[\s\S]*label: "영상 기획"/);
@@ -463,10 +466,10 @@ test("영상 기획은 큰 콘셉트 카드에서 한 형식을 선택하고 자
   assert.doesNotMatch(navigation, /IMAGE_CONTENT_FEATURES[\s\S]*index: "03"/);
   assert.match(listPage, /VideoPlanningList/);
   assert.match(detailPage, /VideoPlanningConceptWorkspace/);
-  assert.match(newWorkspace, /영상 콘셉트 선택/);
-  assert.match(newWorkspace, /VIDEO_CONCEPT_FORMAT_OPTIONS\.map/);
-  assert.match(newWorkspace, /이 콘셉트로 자막·장면안 만들기/);
-  assert.doesNotMatch(newWorkspace, /<select|타깃 설정|목표 설정|플랫폼 설정/);
+  assert.match(newWorkspace, /4개 콘셉트 생성/);
+  assert.match(newWorkspace, /planningMode: "four-concepts"/);
+  assert.match(newWorkspace, /패러디 · 리얼 사용\/후기 · USP 집중 · 시크릿 혜택/);
+  assert.doesNotMatch(newWorkspace, /VIDEO_CONCEPT_FORMAT_OPTIONS\.map|타깃 설정|목표 설정|플랫폼 설정/);
   assert.match(typesSource, /드라마·영화 패러디/);
   assert.match(typesSource, /게임·퀘스트 형식/);
   assert.match(typesSource, /인플루언서 상품소개/);
@@ -477,6 +480,8 @@ test("영상 기획은 큰 콘셉트 카드에서 한 형식을 선택하고 자
   assert.match(detailWorkspace, /자막과 영상 장면안/);
   assert.match(detailWorkspace, /scenePlanList/);
   assert.match(detailWorkspace, /이미지 생성 없음/);
+  assert.match(detailWorkspace, /제작·검수 화면 열기/);
+  assert.match(productionPage, /VideoProjectWorkspace/);
   assert.doesNotMatch(detailWorkspace, /이미지 프롬프트|장면 이미지|visualBible|productLockedAsset|coreTarget|customerProblem|recommendationReason/);
 });
 
@@ -485,4 +490,58 @@ test("육류와 바디케어 상품 모두 같은 품질 규칙을 통과한다"
   const food = makeDetailed(makeSummary(foodAnalysis, 0, "problem-solution"), foodAnalysis, 20);
   assert.equal(beauty.validation.valid, true);
   assert.equal(food.validation.valid, true);
+});
+
+test("45초와 60초 대본은 최소 22개 행을 요구한다", () => {
+  assert.deepEqual(segmentRange(45), { min: 22, max: 30, preferred: 24 });
+  assert.deepEqual(segmentRange(60), { min: 22, max: 34, preferred: 26 });
+});
+
+test("네 콘셉트는 고정 유형과 서로 다른 사건·화자·화면 스타일을 가져야 한다", () => {
+  const archetypes = ["parody", "real-review", "usp-focus", "secret-benefit"];
+  const hookTypes = ["unexpected-comparison", "review-trust", "feature-usp", "price-benefit"];
+  const concepts = archetypes.map((archetype, index) => ({
+    ...makeSummary(beautyAnalysis, index % 3, hookTypes[index]),
+    conceptArchetype: archetype,
+    openingHook: [`누가 이 가격표 붙였어요?`, `처음엔 광고인 줄 알았죠`, `민트잎 수가 왜 적혀 있죠?`, `이 구성, 공개해도 돼요?`][index],
+    centralIncident: [`담당자와 판매자가 가격표를 두고 실랑이한다`, `운동 후 사용자가 냄새를 의심하며 직접 써본다`, `원료 수치를 추적하는 실험을 시작한다`, `감춰진 배송 구성을 하나씩 공개한다`][index],
+    speakerPointOfView: [`가격 담당자 1인칭`, `실사용자 셀프카메라`, `원료를 확인하는 진행자`, `구성을 공개하는 판매자`][index],
+    recommendedVisualStyle: [`뉴스 속보 상황극`, `스마트폰 UGC`, `원료 매크로 다큐`, `가격 협상 라이브`][index],
+  }));
+  assert.equal(validateConceptDiversity(concepts).valid, true);
+});
+
+test("확인된 가격·구성·배송이 없는 상품은 시크릿 혜택 근거가 없다", () => {
+  const noBenefit = { ...beautyAnalysis, price: "", originalPrice: "", discountInfo: "", promotion: "", verifiedFacts: beautyAnalysis.verifiedFacts.filter((fact) => fact.label !== "가격") };
+  assert.equal(hasVerifiedVideoBenefit(noBenefit), false);
+  assert.equal(hasVerifiedVideoBenefit(beautyAnalysis), true);
+});
+
+test("구조화 AI 응답은 누락·잘림·잘못된 배열 길이를 성공으로 처리하지 않는다", () => {
+  const schema = {
+    type: "object",
+    additionalProperties: false,
+    required: ["concepts"],
+    properties: {
+      concepts: {
+        type: "array",
+        minItems: 4,
+        maxItems: 4,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["title", "archetype"],
+          properties: {
+            title: { type: "string", minLength: 4 },
+            archetype: { type: "string", enum: ["parody", "real-review", "usp-focus", "secret-benefit"] },
+          },
+        },
+      },
+    },
+  };
+  const valid = ["parody", "real-review", "usp-focus", "secret-benefit"].map((archetype) => ({ title: `${archetype} 콘셉트`, archetype }));
+  assert.doesNotThrow(() => assertStructuredVideoPlanningResponse({ concepts: valid }, schema));
+  assert.throws(() => assertStructuredVideoPlanningResponse({ concepts: valid.slice(0, 3) }, schema), /too few items/);
+  assert.throws(() => assertStructuredVideoPlanningResponse({ concepts: [...valid, { title: "초과", archetype: "parody" }] }, schema), /too many items/);
+  assert.throws(() => assertStructuredVideoPlanningResponse({ concepts: valid.map(({ archetype }) => ({ archetype })) }, schema), /title is required/);
 });

@@ -4236,6 +4236,11 @@ select {
   padding-top: 16px;
 }
 
+.feature-navigation-archive {
+  border-top: 1px solid #e4e9f1;
+  padding-top: 16px;
+}
+
 .app-feature-navigation a {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
@@ -4311,6 +4316,27 @@ select {
 
 .app-feature-navigation .feature-navigation-video-link.active strong {
   color: #1747c9;
+}
+
+.app-feature-navigation .feature-navigation-archive-link {
+  grid-template-columns: 42px minmax(0, 1fr);
+  border-color: #d9e7df;
+  background: linear-gradient(135deg, #f7fcf9 0%, #f1faf6 100%);
+}
+
+.app-feature-navigation .feature-navigation-archive-link > span {
+  color: #53806f;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.app-feature-navigation .feature-navigation-archive-link strong {
+  color: #194f40;
+  font-size: 14px;
+}
+
+.app-feature-navigation .feature-navigation-archive-link.active strong {
+  color: #08705d;
 }
 
 .feature-sidebar-home {
@@ -5689,7 +5715,7 @@ select {
   }
 
   .feature-sidebar .app-feature-navigation {
-    grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr);
+    grid-template-columns: minmax(0, 3fr) repeat(2, minmax(200px, 1fr));
     align-items: start;
   }
 

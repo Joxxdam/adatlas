@@ -71,7 +71,13 @@ const statusStep = {
   approved: 5,
 } as const;
 
-export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
+export function VideoProjectWorkspace({
+  projectId,
+  basePath = "/video-collaboration",
+}: {
+  projectId: string;
+  basePath?: "/video-collaboration" | "/video-planning";
+}) {
   const [project, setProject] = useState<VideoProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -295,7 +301,7 @@ export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
     return (
       <main className={styles.page}>
         <div className={styles.error}>{error || "프로젝트를 찾지 못했습니다."}</div>
-        <Link className={styles.primaryButton} href="/video-collaboration">
+        <Link className={styles.primaryButton} href={basePath}>
           목록으로 돌아가기
         </Link>
       </main>
@@ -304,12 +310,15 @@ export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
 
   const currentStep = statusStep[project.status];
   const canUpload = ["in_production", "revision_requested"].includes(project.status);
+  const scriptHref = basePath === "/video-planning" && project.selectedConceptId
+    ? `/video-planning/${project.id}/concept/${project.selectedConceptId}`
+    : `${basePath}/${project.id}${basePath === "/video-collaboration" ? "/script" : ""}`;
 
   return (
     <main className={styles.page}>
       <header className={styles.compactHero}>
         <div>
-          <Link href="/video-collaboration">← 프로젝트 목록</Link>
+          <Link href={basePath}>← 프로젝트 목록</Link>
           <p className={styles.eyebrow}>VIDEO PROJECT</p>
           <h1>{project.projectName}</h1>
           <p>
@@ -321,7 +330,7 @@ export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
           {project.concepts.length ? (
             <Link
               className={styles.primaryButton}
-              href={`/video-collaboration/${project.id}/script`}
+              href={scriptHref}
             >
               제작 대본 보기
             </Link>
@@ -864,7 +873,7 @@ export function VideoProjectWorkspace({ projectId }: { projectId: string }) {
             <div className={styles.headerActions}>
               <Link
                 className={styles.primaryButton}
-                href={`/video-collaboration/${project.id}/script`}
+                href={scriptHref}
               >
                 제작 대본 보기
               </Link>

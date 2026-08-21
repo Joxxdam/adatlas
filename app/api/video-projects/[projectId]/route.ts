@@ -48,6 +48,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
         marketerName: string;
         designerName: string;
         additionalRequests: string;
+        requiredContent: string;
+        excludedContent: string;
         productionNotes: string;
         deadline: string;
         productAnalysis: ProductAnalysisSnapshot;

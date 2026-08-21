@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  VIDEO_CONCEPT_FORMAT_OPTIONS,
-  type VideoProjectSummary,
-} from "../../lib/video-collaboration/types";
+import type { VideoProjectSummary } from "../../lib/video-collaboration/types";
 import { VIDEO_STATUS_LABELS } from "../../lib/video-collaboration/workflow";
 import styles from "./VideoPlanning.module.css";
 
@@ -35,7 +32,7 @@ export function VideoPlanningList() {
         <div>
           <p className={styles.eyebrow}>VIDEO PLANNING</p>
           <h1>영상 기획</h1>
-          <p>원하는 영상 콘셉트를 먼저 선택하고, 실제 제작에 필요한 자막과 장면 설명을 만듭니다.</p>
+          <p>상품을 분석해 서로 다른 4개 콘셉트를 비교하고, 선택한 안의 자막과 장면 설명을 완성합니다.</p>
         </div>
         <Link className={styles.primaryButton} href="/video-planning/new">새 영상 기획</Link>
       </header>
@@ -46,19 +43,9 @@ export function VideoPlanningList() {
         {error ? <div className={styles.error}>{error}</div> : null}
         {!loading && !error && !projects.length ? <div className={styles.empty}>아직 영상 기획이 없습니다. 상품을 분석하고 콘셉트를 선택해 첫 기획을 만들어 보세요.</div> : null}
         {projects.length ? (
-          <div className={styles.planningProjectGrid}>
-            {projects.map((project) => {
-              const format = VIDEO_CONCEPT_FORMAT_OPTIONS.find((option) => option.id === project.conceptFormat);
-              return (
-                <Link className={styles.planningProjectCard} href={`/video-planning/${project.id}`} key={project.id}>
-                  <div><span className={styles.status}>{format?.title || "기존 영상 기획"}</span><small>{date(project.updatedAt)}</small></div>
-                  <strong>{project.projectName}</strong>
-                  <p>{project.productName}</p>
-                  <footer><span>{project.duration}초</span><span>{VIDEO_STATUS_LABELS[project.status]}</span><b>기획 열기 →</b></footer>
-                </Link>
-              );
-            })}
-          </div>
+          <div className={styles.tableWrap}><table className={styles.projectTable}><thead><tr><th>업체·브랜드</th><th>상품명</th><th>담당 마케터</th><th>담당 디자이너</th><th>선택 콘셉트</th><th>상태</th><th>생성일</th><th>마감일</th><th>최근 수정</th></tr></thead><tbody>{projects.map((project) => <tr key={project.id}>
+            <td>{project.advertiserName}</td><td><Link href={`/video-planning/${project.id}`}>{project.productName}</Link></td><td>{project.marketerName || "미지정"}</td><td>{project.designerName || "미지정"}</td><td>{project.selectedConceptTitle || "검토 중"}</td><td><span className={styles.status}>{VIDEO_STATUS_LABELS[project.status]}</span></td><td>{date(project.createdAt)}</td><td>{project.deadline || "미정"}</td><td>{date(project.updatedAt)}</td>
+          </tr>)}</tbody></table></div>
         ) : null}
       </section>
     </main>

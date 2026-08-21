@@ -248,6 +248,17 @@ export function buildVideoProductAnalysis(
     useSituations: [],
     visualizableElements: compactUnique([...ingredients, ...verified, ...features], 6),
     verifiedFacts: facts,
+    productType: String(product.category || "").trim(),
+    composition: compactUnique(verified.filter((value) => /구성|세트|입|개|팩|병|묶음/i.test(value)), 6),
+    shippingConditions: compactUnique(
+      [product.discountInfo, ...verified].filter((value) => /배송|출고|택배|도착/i.test(String(value || ""))),
+      5
+    ),
+    manufacturingProcess: compactUnique(descriptionParts.filter((value) => /제조|생산|가공|착즙|숙성|수확|배합|공정/i.test(value)), 6),
+    certifications: compactUnique(descriptionParts.filter((value) => /인증|검사|HACCP|비건|유기/i.test(value)), 6),
+    actualBenefits: compactUnique([String(product.discountInfo || ""), ...verified].filter(Boolean), 8),
+    adUsableFacts: facts,
+    evidenceCoverage: facts.length >= 4 ? "sufficient" : "limited",
     inferredAngles: [],
     unsupportedClaims: [],
     source: "existing-product-extractor",
@@ -278,6 +289,7 @@ export function videoProjectSummary(project: VideoProject) {
     conceptFormat: project.conceptFormat || selected?.conceptFormat,
     materialCode: selected?.materialCode,
     latestVersionNumber: project.versions.at(-1)?.versionNumber,
+    selectedConceptTitle: selected?.title,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };

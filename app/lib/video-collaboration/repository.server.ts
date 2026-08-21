@@ -57,6 +57,7 @@ function normalizeConcept(concept: VideoConcept): VideoConcept {
     cuts,
     detailStatus: concept.detailStatus || (cuts.length >= 15 ? "ready" : "not-generated"),
     evidenceIds: Array.isArray(concept.evidenceIds) ? concept.evidenceIds : [],
+    supportingDevices: Array.isArray(concept.supportingDevices) ? concept.supportingDevices : [],
   };
 }
 
@@ -67,9 +68,13 @@ function normalizeProject(project: VideoProject): VideoProject {
     marketerName: clean(project.marketerName, 80) || "마케터",
     designerName: clean(project.designerName, 80) || "디자이너 미지정",
     additionalRequests: clean(project.additionalRequests, 5000),
+    requiredContent: clean(project.requiredContent, 3000),
+    excludedContent: clean(project.excludedContent, 3000),
     platform: project.platform || "meta",
     aspectRatio: "9:16",
     creativeStyle: project.creativeStyle || "auto",
+    planningMode: project.planningMode || "legacy",
+    durationMode: project.durationMode || "fixed",
     conceptFormat: project.conceptFormat && VIDEO_CONCEPT_FORMATS.includes(project.conceptFormat)
       ? project.conceptFormat
       : undefined,
@@ -284,10 +289,14 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           platform: input.platform || "meta",
           aspectRatio: "9:16",
           creativeStyle: input.creativeStyle || "auto",
+          planningMode: input.planningMode || "legacy",
+          durationMode: input.durationMode || "fixed",
           conceptFormat: input.conceptFormat,
           advancedTarget: clean(input.advancedTarget, 500),
           advancedTone: clean(input.advancedTone, 500),
           additionalRequests: clean(input.additionalRequests, 5000),
+          requiredContent: clean(input.requiredContent, 3000),
+          excludedContent: clean(input.excludedContent, 3000),
           productionNotes: "",
           deadline: clean(input.deadline, 40),
           referenceAssets: clone(input.referenceAssets || []),
@@ -336,6 +345,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           | "marketerName"
           | "designerName"
           | "additionalRequests"
+          | "requiredContent"
+          | "excludedContent"
           | "productionNotes"
           | "deadline"
           | "productAnalysis"
@@ -367,6 +378,10 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           }
         if (changes.additionalRequests !== undefined)
           project.additionalRequests = clean(changes.additionalRequests, 5000);
+        if (changes.requiredContent !== undefined)
+          project.requiredContent = clean(changes.requiredContent, 3000);
+        if (changes.excludedContent !== undefined)
+          project.excludedContent = clean(changes.excludedContent, 3000);
         if (changes.productionNotes !== undefined)
           project.productionNotes = clean(changes.productionNotes, 5000);
         if (changes.deadline !== undefined) project.deadline = clean(changes.deadline, 40);
@@ -403,8 +418,20 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           }
           if (concept.cuts.length) throw new Error("요약 단계에는 상세 대본을 함께 저장하지 않습니다.");
         }
-        if (!options.replaceConceptId && concepts.length > 1 && !validateConceptDiversity(concepts).valid) {
-          throw new Error("서로 다른 후킹 유형과 광고 가설의 기획안 3개가 필요합니다.");
+        if (
+          project.planningMode === "four-concepts" &&
+          !options.replaceConceptId &&
+          (concepts.length !== 4 || !validateConceptDiversity(concepts).valid)
+        ) {
+          throw new Error("패러디·리얼 사용·USP·시크릿 혜택의 서로 다른 기획안 4개가 필요합니다.");
+        }
+        if (
+          project.planningMode !== "four-concepts" &&
+          !options.replaceConceptId &&
+          concepts.length > 1 &&
+          !validateConceptDiversity(concepts).valid
+        ) {
+          throw new Error("서로 다른 후킹 유형과 광고 가설의 기획안이 필요합니다.");
         }
         if (options.replaceConceptId) {
           const index = project.concepts.findIndex((concept) => concept.id === options.replaceConceptId);
@@ -427,7 +454,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
             project,
             "script_review",
             "시스템",
-            concepts.length === 1 ? "선택한 영상 콘셉트 기획안 생성" : "후킹 평가 및 기획안 요약 3개 생성"
+            concepts.length === 1 ? "선택한 영상 콘셉트 기획안 생성" : `후킹 평가 및 기획안 요약 ${concepts.length}개 생성`
           );
         } else if (project.status === "concept_selected") {
           transition(project, "script_review", options.actor || "사용자", "기획안 요약 다시 생성");
@@ -450,6 +477,12 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
             concept.generationFailure = clone(failure);
           }
         }
+      });
+    },
+
+    async updatePipelineProgress(projectId: string, progress: VideoPipelineProgress[]) {
+      return update(projectId, (project) => {
+        project.pipelineProgress = clone(progress);
       });
     },
 
@@ -931,8 +964,8 @@ export function validateCreateVideoProjectInput(input: Partial<CreateVideoProjec
     }
   }
   if (!input.productAnalysis?.productName) throw new Error("분석된 상품명을 확인해 주세요.");
-  if (![15, 20, 30, 60].includes(Number(input.duration)))
-    throw new Error("영상 길이는 15초, 20초, 30초, 60초만 지원합니다.");
+  if (![15, 20, 30, 45, 60].includes(Number(input.duration)))
+    throw new Error("영상 길이는 15초, 20초, 30초, 45초, 60초만 지원합니다.");
   if (!input.format || !["short-form", "reels", "feed", "other"].includes(input.format))
     throw new Error("영상 형식이 올바르지 않습니다.");
   if (

@@ -29,7 +29,8 @@ export const VIDEO_HOOK_TYPES = [
 ] as const;
 
 export type VideoHookType = (typeof VIDEO_HOOK_TYPES)[number];
-export type VideoDuration = 15 | 20 | 30 | 60;
+export type VideoDuration = 15 | 20 | 30 | 45 | 60;
+export type VideoDurationMode = "auto" | "fixed";
 export type VideoFormat = "short-form" | "reels" | "feed" | "other";
 export type VideoObjective =
   | "purchase"
@@ -59,6 +60,46 @@ export const VIDEO_CONCEPT_FORMATS = [
   "clay-animation",
 ] as const;
 export type VideoConceptFormat = (typeof VIDEO_CONCEPT_FORMATS)[number];
+
+export const VIDEO_CONCEPT_ARCHETYPES = [
+  "parody",
+  "real-review",
+  "usp-focus",
+  "secret-benefit",
+] as const;
+export type VideoConceptArchetype = (typeof VIDEO_CONCEPT_ARCHETYPES)[number];
+
+export const VIDEO_CONCEPT_ARCHETYPE_OPTIONS: Array<{
+  id: VideoConceptArchetype;
+  label: string;
+  description: string;
+  direction: string;
+}> = [
+  {
+    id: "parody",
+    label: "패러디형",
+    description: "사건과 갈등으로 시작해 상품을 반전의 해결 장치로 등장시킵니다.",
+    direction: "특정 작품·대사·인물은 복제하지 않고 뉴스, 재판, 협상, 오디션 같은 장르 문법만 활용한다.",
+  },
+  {
+    id: "real-review",
+    label: "리얼 사용·후기형",
+    description: "소비자의 의심과 실제 사용 상황, 솔직한 반응을 중심으로 전개합니다.",
+    direction: "실존 후기인 것처럼 꾸미지 않고 광고용 UGC 상황극임이 자연스럽게 드러나게 한다.",
+  },
+  {
+    id: "usp-focus",
+    label: "USP 집중형",
+    description: "확인된 수치·원료·산지·제조방식·구성 중 가장 강한 하나를 장면으로 증명합니다.",
+    direction: "특징을 나열하지 않고 하나의 질문이나 의외의 사실에서 출발해 검증 근거를 시각화한다.",
+  },
+  {
+    id: "secret-benefit",
+    label: "시크릿 혜택형",
+    description: "확인된 가격·구성·배송·증정 혜택을 협상이나 공개 사건처럼 풀어냅니다.",
+    direction: "확인된 혜택이 없으면 임의 생성하지 말고 정보 부족 상태를 명시한다.",
+  },
+];
 
 export const VIDEO_CONCEPT_FORMAT_OPTIONS: Array<{
   id: VideoConceptFormat;
@@ -225,6 +266,16 @@ export type ProductAnalysisSnapshot = {
   verifiedFacts?: ProductEvidence[];
   inferredAngles?: ProductEvidence[];
   unsupportedClaims?: ProductEvidence[];
+  productType?: string;
+  composition?: string[];
+  weightOrVolume?: string;
+  minimumOrderQuantity?: string;
+  shippingConditions?: string[];
+  manufacturingProcess?: string[];
+  certifications?: string[];
+  actualBenefits?: string[];
+  adUsableFacts?: ProductEvidence[];
+  evidenceCoverage?: "sufficient" | "limited";
 };
 
 export type VideoGenerationStage =
@@ -398,6 +449,14 @@ export type VideoConcept = {
   speaker?: string;
   narrativeStructure?: string;
   conceptFormat?: VideoConceptFormat;
+  conceptArchetype?: VideoConceptArchetype;
+  centralIncident?: string;
+  speakerPointOfView?: string;
+  keyAppeal?: string;
+  recommendedVisualStyle?: string;
+  supportingDevices?: string[];
+  differenceFromPrevious?: string;
+  benefitAvailability?: "verified" | "insufficient";
 };
 
 export type VideoScriptRevision = {
@@ -490,9 +549,13 @@ export type VideoProject = {
   aspectRatio?: "9:16";
   creativeStyle?: VideoCreativeStyle;
   conceptFormat?: VideoConceptFormat;
+  planningMode?: "legacy" | "four-concepts";
+  durationMode?: VideoDurationMode;
   advancedTarget?: string;
   advancedTone?: string;
   additionalRequests: string;
+  requiredContent?: string;
+  excludedContent?: string;
   productionNotes: string;
   deadline: string;
   referenceAssets: VideoReferenceAsset[];
@@ -542,6 +605,7 @@ export type VideoProjectSummary = Pick<
   conceptFormat?: VideoConceptFormat;
   materialCode?: string;
   latestVersionNumber?: number;
+  selectedConceptTitle?: string;
 };
 
 export type CreateVideoProjectInput = Pick<
@@ -557,9 +621,13 @@ export type CreateVideoProjectInput = Pick<
   | "aspectRatio"
   | "creativeStyle"
   | "conceptFormat"
+  | "planningMode"
+  | "durationMode"
   | "advancedTarget"
   | "advancedTone"
   | "additionalRequests"
+  | "requiredContent"
+  | "excludedContent"
   | "referenceAssets"
   | "productOriginalAsset"
   | "productAnalysis"

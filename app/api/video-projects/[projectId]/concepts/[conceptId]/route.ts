@@ -33,6 +33,7 @@ export async function POST(
       action?: "generate-detail" | "regenerate-detail" | "regenerate-caption" | "regenerate-scene";
       cutId?: string;
       actor?: string;
+      feedback?: string;
     };
     const project = await videoProjectRepository.get(projectId);
     const concept = project?.concepts.find((item) => item.id === conceptId);
@@ -63,6 +64,7 @@ export async function POST(
       concept,
       duration: project.duration,
       referenceAnalyses: project.referenceAnalyses,
+      revisionFeedback: body.feedback,
     });
     const updated = await videoProjectRepository.saveGeneratedConcepts(projectId, [generated], {
       conceptId,

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   VIDEO_CONCEPT_FORMAT_OPTIONS,
@@ -8,6 +9,8 @@ import {
   type VideoProject,
 } from "../../lib/video-collaboration/types";
 import { VIDEO_HOOK_LABELS } from "../../lib/video-collaboration/workflow";
+import { assignPlanningTimeline } from "../../lib/video-collaboration/planningValidation";
+import { useVideoPlanningOptions } from "./useVideoPlanningOptions";
 import styles from "./VideoPlanning.module.css";
 
 function formatTime(value: number) {
@@ -15,6 +18,8 @@ function formatTime(value: number) {
 }
 
 export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projectId: string; conceptId: string }) {
+  const router = useRouter();
+  const { people } = useVideoPlanningOptions();
   const [project, setProject] = useState<VideoProject | null>(null);
   const [concept, setConcept] = useState<VideoConcept | null>(null);
   const [draft, setDraft] = useState<VideoConcept | null>(null);
@@ -23,6 +28,10 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editing, setEditing] = useState(false);
+  const [designerName, setDesignerName] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [requestNote, setRequestNote] = useState("");
+  const [revisionFeedback, setRevisionFeedback] = useState("");
   const generationStarted = useRef(false);
 
   const load = useCallback(async () => {
@@ -32,6 +41,8 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
     setProject(payload.project);
     setConcept(payload.concept);
     setDraft(payload.concept);
+    setDesignerName(payload.project.designerName || "");
+    setDeadline(payload.project.deadline || "");
     return { project: payload.project as VideoProject, concept: payload.concept as VideoConcept };
   }, [projectId, conceptId]);
 
@@ -43,7 +54,7 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
       const response = await fetch(`/api/video-projects/${projectId}/concepts/${conceptId}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action, actor }),
+        body: JSON.stringify({ action, actor, feedback: action === "regenerate-detail" ? revisionFeedback : "" }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "자막·장면안 생성에 실패했습니다.");
@@ -57,7 +68,7 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
     } finally {
       setBusy("");
     }
-  }, [conceptId, load, projectId]);
+  }, [conceptId, load, projectId, revisionFeedback]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -78,12 +89,84 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
     setDraft((current) => current ? { ...current, cuts: current.cuts.map((cut) => cut.id === cutId ? { ...cut, [field]: value } : cut) } : current);
   }
 
+  function moveCut(index: number, offset: -1 | 1) {
+    setDraft((current) => {
+      if (!current) return current;
+      const nextIndex = index + offset;
+      if (nextIndex < 0 || nextIndex >= current.cuts.length) return current;
+      const cuts = [...current.cuts];
+      [cuts[index], cuts[nextIndex]] = [cuts[nextIndex], cuts[index]];
+      return { ...current, cuts: cuts.map((cut, cutIndex) => ({ ...cut, cutNumber: cutIndex + 1 })) };
+    });
+  }
+
+  function deleteCut(cutId: string) {
+    setDraft((current) => current ? { ...current, cuts: current.cuts.filter((cut) => cut.id !== cutId).map((cut, index) => ({ ...cut, cutNumber: index + 1 })) } : current);
+  }
+
+  function addCut() {
+    setDraft((current) => {
+      if (!current) return current;
+      const previous = current.cuts.at(-1);
+      return { ...current, cuts: [...current.cuts, {
+        id: crypto.randomUUID(), cutNumber: current.cuts.length + 1, sceneName: "추가 장면",
+        startSecond: previous?.endSecond || 0, endSecond: previous?.endSecond || 0,
+        sceneDescription: "등장인물·장소·행동·표정·구도·제품 노출·B-roll·전환·재사용 여부를 입력하세요.",
+        caption: "새 자막", narration: "", requiredSources: [], referenceImages: [], productionMemo: "",
+      }] };
+    });
+  }
+
+  async function persistAssignment() {
+    if (!project) throw new Error("프로젝트 정보를 불러오지 못했습니다.");
+    const response = await fetch(`/api/video-projects/${projectId}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "update-details", actor: project.marketerName, changes: { designerName, deadline } }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "담당 정보를 저장하지 못했습니다.");
+    setProject(payload.project);
+    return payload.project as VideoProject;
+  }
+
+  async function updateAssignment() {
+    setBusy("assignment"); setError("");
+    try {
+      await persistAssignment();
+      setSuccess("담당 디자이너와 마감일을 저장했습니다.");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "담당 정보 저장 실패"); }
+    finally { setBusy(""); }
+  }
+
+  async function selectOrRequest(action: "select-concept" | "request-production") {
+    if (!project) return;
+    setBusy(action); setError("");
+    try {
+      if (action === "request-production" && !designerName) throw new Error("제작 요청 전에 담당 디자이너를 지정해 주세요.");
+      if (action === "request-production" && (project.designerName !== designerName || project.deadline !== deadline)) await persistAssignment();
+      const response = await fetch(`/api/video-projects/${projectId}`, {
+        method: "PATCH", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action, actor: project.marketerName, conceptId, deadline, requestNote }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "요청을 처리하지 못했습니다.");
+      setProject(payload.project);
+      if (action === "select-concept") {
+        setSuccess("이 콘셉트를 선택했습니다.");
+      } else {
+        router.push(`/video-planning/${projectId}/production`);
+      }
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "요청 처리 실패"); }
+    finally { setBusy(""); }
+  }
+
   async function saveDraft() {
     if (!project || !draft) return;
     setBusy("save");
     setError("");
     try {
-      const next = { ...draft, fullScript: draft.cuts.map((cut) => cut.caption).join(" ") };
+      const cuts = assignPlanningTimeline(draft.cuts, project.duration);
+      const next = { ...draft, cuts, fullScript: cuts.map((cut) => cut.caption).join(" ") };
       const response = await fetch(`/api/video-projects/${projectId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
@@ -148,6 +231,7 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
           <p>완성 영상이 아니라 제작자가 실행할 자막과 영상 장면 설명입니다.</p>
         </div>
         <div className={styles.topActions}>
+          <button className={styles.secondaryButton} disabled={project.selectedConceptId === conceptId || Boolean(busy)} onClick={() => selectOrRequest("select-concept")}>{project.selectedConceptId === conceptId ? "선택된 콘셉트" : "이 콘셉트 선택"}</button>
           <button className={styles.primaryButton} onClick={copyPlan}>자막·장면안 복사</button>
           <button className={styles.ghostButton} disabled={!concept.cuts.length} onClick={() => setEditing((value) => !value)}>{editing ? "수정 취소" : "직접 수정"}</button>
           <button className={styles.secondaryButton} disabled={Boolean(busy)} onClick={() => generateDetail("regenerate-detail", project.marketerName)}>전체 다시 만들기</button>
@@ -161,7 +245,7 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
       <section className={styles.summaryPanel}>
         <div className={styles.sectionHead}>
           <div><h2>자막과 영상 장면안</h2><p>{concept.cuts.length ? `${concept.cuts.length}개 구간 · 이미지 생성 없음` : "기획안을 생성하고 있습니다."}</p></div>
-          {editing ? <button className={styles.primaryButton} disabled={busy === "save"} onClick={saveDraft}>{busy === "save" ? "저장 중…" : "수정 내용 저장"}</button> : null}
+          {editing ? <div className={styles.conceptActions}><button className={styles.ghostButton} onClick={addCut}>행 추가</button><button className={styles.primaryButton} disabled={busy === "save"} onClick={saveDraft}>{busy === "save" ? "저장 중…" : "수정 내용 저장"}</button></div> : null}
         </div>
         {concept.cuts.length ? (
           <div className={styles.scenePlanList}>
@@ -172,6 +256,7 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
                   <strong>자막</strong>
                   {editing ? <textarea aria-label={`${index + 1}번 자막`} value={cut.caption} onChange={(event) => updateCut(cut.id, "caption", event.target.value)} /> : <p>{cut.caption}</p>}
                   <button disabled={Boolean(busy)} onClick={() => regenerateCut(cut.id, "regenerate-caption")}>{busy === `regenerate-caption:${cut.id}` ? "생성 중…" : "자막 다시 생성"}</button>
+                  {editing ? <div className={styles.rowActions}><button onClick={() => moveCut(index, -1)}>위로</button><button onClick={() => moveCut(index, 1)}>아래로</button><button onClick={() => deleteCut(cut.id)}>행 삭제</button></div> : null}
                 </div>
                 <div className={styles.sceneDescriptionColumn}>
                   <strong>영상 장면</strong>
@@ -182,6 +267,21 @@ export function VideoPlanningConceptWorkspace({ projectId, conceptId }: { projec
             ))}
           </div>
         ) : <div className={styles.empty}>{busy === "detail" ? "자막과 영상 장면안을 생성하고 있습니다." : "아직 생성된 기획안이 없습니다."}</div>}
+      </section>
+      <section className={styles.requestPanel}>
+        <div className={styles.sectionHead}><div><h2>수정 요청 반영 재생성</h2><p>유지할 부분과 바꿀 부분을 적으면 선택한 콘셉트 안에서 전체 대본을 다시 구성합니다.</p></div></div>
+        <div className={styles.formGrid}><label className={styles.wide}>수정 요청<textarea value={revisionFeedback} onChange={(event) => setRevisionFeedback(event.target.value)} placeholder="예: 첫 사건은 유지하고 중반 원산지 설명을 더 짧게, 제품은 3초 안에 등장" /></label></div>
+        <button className={styles.secondaryButton} disabled={Boolean(busy) || !revisionFeedback.trim()} onClick={() => generateDetail("regenerate-detail", project.marketerName)}>수정 요청으로 전체 재생성</button>
+      </section>
+      <section className={styles.requestPanel}>
+        <div className={styles.sectionHead}><div><h2>제작 요청</h2><p>콘셉트 검토는 디자이너 없이 가능하지만 제작 요청에는 담당자가 필요합니다.</p></div></div>
+        <div className={styles.formGrid}>
+          <label>담당 디자이너<select value={designerName} onChange={(event) => setDesignerName(event.target.value)}><option value="">디자이너 미지정</option>{people.filter((person) => person.role === "designer").map((person) => <option key={person.name} value={person.name}>{person.name}</option>)}</select></label>
+          <label>제작 마감일<input type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></label>
+          <label className={styles.wide}>제작 메모<textarea value={requestNote} onChange={(event) => setRequestNote(event.target.value)} /></label>
+        </div>
+        <div className={styles.conceptActions}><button className={styles.ghostButton} disabled={Boolean(busy)} onClick={updateAssignment}>담당 정보 저장</button><button className={styles.primaryButton} disabled={Boolean(busy) || project.selectedConceptId !== conceptId} onClick={() => selectOrRequest("request-production")}>현재 대본 버전으로 제작 요청</button></div>
+        {["production_requested", "in_production", "marketer_review", "revision_requested", "approved"].includes(project.status) ? <Link className={styles.secondaryButton} href={`/video-planning/${projectId}/production`}>제작·검수 화면 열기</Link> : null}
       </section>
     </main>
   );

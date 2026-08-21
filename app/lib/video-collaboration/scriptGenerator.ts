@@ -634,33 +634,21 @@ async function generateWithOpenAI(input: {
     );
     const candidate = fromAiConcept(raw, fallback, input.duration);
     if (!candidate) {
-      return {
-        ...fallback,
-        generationWarnings: ["AI 응답 구조가 불완전해 근거 기반 대본을 사용했습니다."],
-      };
+      throw new Error(`AI response schema validation failed for ${fallback.hookType}`);
     }
     const forbidden = input.guideline.forbiddenPhrases.filter((phrase) =>
       textFields(candidate).includes(phrase)
     );
     if (forbidden.length || unsupportedNumber(candidate, allowed)) {
-      return {
-        ...fallback,
-        generationWarnings: [
-          forbidden.length
-            ? "금지 문구가 포함된 AI 결과를 제외하고 근거 기반 대본을 사용했습니다."
-            : "확인되지 않은 수치가 포함된 AI 결과를 제외하고 근거 기반 대본을 사용했습니다.",
-        ],
-      };
+      throw new Error(
+        forbidden.length
+          ? `AI response contains forbidden phrase for ${fallback.hookType}`
+          : `AI response contains an unsupported number for ${fallback.hookType}`
+      );
     }
     const validation = validateVideoPlan(candidate, input.analysis, input.duration);
     if (!validation.valid) {
-      return {
-        ...fallback,
-        validation: fallback.validation
-          ? { ...fallback.validation, revised: true }
-          : fallback.validation,
-        generationWarnings: ["AI 대본이 장면·제품 고정 검증을 통과하지 못해 검증된 근거 기반 대본을 사용했습니다."],
-      };
+      throw new Error(`AI response quality validation failed for ${fallback.hookType}`);
     }
     candidate.validation = validation;
     return candidate;
@@ -680,10 +668,7 @@ export async function generateVideoConcepts(input: {
 }) {
   const fallbacks = generateGroundedVideoConcepts(input);
   if (!process.env.OPENAI_API_KEY?.trim()) {
-    return fallbacks.map((concept) => ({
-      ...concept,
-      generationWarnings: ["OPENAI_API_KEY가 없어 확인된 상품 근거 기반 대본을 생성했습니다."],
-    }));
+    throw new Error("영상 대본 생성에 필요한 AI 설정을 확인해 주세요.");
   }
   try {
     const copyGuide = await loadCopyGuideForProduct({
@@ -706,10 +691,7 @@ export async function generateVideoConcepts(input: {
       }
     }
     throw lastError;
-  } catch {
-    return fallbacks.map((concept) => ({
-      ...concept,
-      generationWarnings: ["AI 대본 생성에 실패해 확인된 상품 근거 기반 대본을 사용했습니다."],
-    }));
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("AI 영상 대본 생성에 실패했습니다.");
   }
 }

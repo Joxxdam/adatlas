@@ -138,15 +138,24 @@
 .tagList { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
 .tag { border-radius: 999px; padding: 7px 10px; color: #385476; background: #edf4fc; font-size: 12px; font-weight: 700; }
 
-.conceptGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.conceptGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .singleConceptGrid { display: grid; grid-template-columns: minmax(0, 760px); }
 .conceptCard { min-width: 0; padding: 22px; box-shadow: none; }
+.conceptCard[data-selected="true"] { border: 2px solid #1268d5; padding: 21px; background: linear-gradient(145deg, #f4f9ff, #fff); }
+.conceptCardHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.conceptCardHead b { color: #1268d5; font-size: 12px; }
 .conceptCard h3 { margin: 10px 0; font-size: 21px; line-height: 1.35; }
+.conceptCard blockquote { margin: 12px 0 18px; border-left: 4px solid #1268d5; padding: 9px 13px; color: #142b4b; background: #f2f7fd; font-size: 18px; font-weight: 850; line-height: 1.5; }
 .conceptCard dl { margin: 16px 0; }
 .conceptCard dl div { padding: 9px 0; border-bottom: 1px solid #edf1f6; }
 .conceptCard dt { color: #7a879c; font-size: 12px; font-weight: 700; }
 .conceptCard dd { margin: 4px 0 0; line-height: 1.5; }
 .conceptActions { display: flex; flex-wrap: wrap; gap: 8px; }
+.benefitWarning { margin: 12px 0; border-radius: 10px; padding: 11px 12px; color: #8c5b16; background: #fff7df; font-size: 13px; line-height: 1.5; }
+.pipelineProgress { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.pipelineProgress span { border-radius: 999px; padding: 7px 10px; color: #65758c; background: #eef2f7; font-size: 12px; font-weight: 800; }
+.pipelineProgress span[data-status="complete"] { color: #116258; background: #e7f7f3; }
+.pipelineProgress span[data-status="running"] { color: #125dbc; background: #edf6ff; }
 .score { color: #1268d5; font-size: 20px; font-weight: 900; }
 .conceptHook { margin: 12px 0 18px; color: #162b49; font-size: 20px; font-weight: 850; line-height: 1.5; }
 .planPreview { margin: 0 0 18px; border-radius: 14px; padding: 14px; background: #f4f7fb; }
