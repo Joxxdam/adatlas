@@ -19,7 +19,10 @@ export async function GET(request: Request) {
     const today = seoulClock().date;
     const runs = await autoProductionRepository.list({ businessDate: today, limit: 100 });
     const synced = [];
-    for (const run of runs) synced.push(["queued", "generating-creatives"].includes(run.status) ? await syncAutoProductionRun(run.id) : run);
+    for (const run of runs) {
+      const packagePending = run.completedImages > 0 && run.packageStatus !== "ready";
+      synced.push(["queued", "generating-creatives"].includes(run.status) || packagePending ? await syncAutoProductionRun(run.id) : run);
+    }
     const validRuns = synced.filter((run): run is NonNullable<typeof run> => Boolean(run));
     const active = validRuns.filter((run) => ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"].includes(run.status));
     const nextRunAt = advertisers.filter((config) => config.enabled && config.nextRunAt).map((config) => config.nextRunAt).sort()[0];

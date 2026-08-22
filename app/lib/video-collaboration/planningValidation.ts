@@ -94,7 +94,15 @@ function repeatedPhrases(cuts: VideoCut[]) {
   return [...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key);
 }
 
-function missingSceneSignals(cut: VideoCut) {
+export type SceneProductionSignal =
+  | "setting"
+  | "subject"
+  | "action"
+  | "reaction"
+  | "firstFocus"
+  | "transition";
+
+export function missingSceneSignals(cut: VideoCut): SceneProductionSignal[] {
   const scene = cut.sceneDescription;
   const signals = {
     setting: /(?:식탁|주방|욕실|현관|거실|사무실|헬스장|야외|캠핑|침실|매장|팬|조리대|세면대|샤워실|샤워부스|도로|엘리베이터|테이블|선반|타일|바닥|문앞|창가|공간|프레임|화면|배경)/i.test(scene),
@@ -104,7 +112,94 @@ function missingSceneSignals(cut: VideoCut) {
     firstFocus: /(?:먼저|첫|처음|시작|오프닝|가장 먼저|전면|중앙|클로즈업|화면을 채우|시선을 끌|눈에 들어|전경)/i.test(scene),
     transition: /(?:다음|전환|이어|컷|넘어|바뀌|밀며|당기며|줌|페이드|패닝|닫히|열리|끝나|연결|교차|분할|슬라이드|디졸브|매치컷|후경|밖으로|안으로|흐르며|남기며)/i.test(scene),
   };
-  return Object.entries(signals).filter(([, present]) => !present).map(([key]) => key);
+  return Object.entries(signals)
+    .filter(([, present]) => !present)
+    .map(([key]) => key as SceneProductionSignal);
+}
+
+function sceneSetting(analysis: ProductAnalysisSnapshot) {
+  const category = `${analysis.category} ${analysis.productType || ""} ${analysis.productName}`;
+  if (/육류|축산|고기|식품|먹거리|과일|채소|농산|수산|음료/i.test(category)) {
+    return "밝은 주방 조리대와 식탁";
+  }
+  if (/뷰티|바디|샤워|화장|세정|생활/i.test(category)) {
+    return "자연광이 드는 욕실 세면대 앞";
+  }
+  if (/패션|의류|신발|가방|주얼리/i.test(category)) {
+    return "전신 거울과 상품 선반이 있는 밝은 실내";
+  }
+  return "자연광이 드는 제품 촬영 테이블";
+}
+
+function observableReaction(analysis: ProductAnalysisSnapshot) {
+  const category = `${analysis.category} ${analysis.productType || ""} ${analysis.productName}`;
+  if (/육류|축산|고기/i.test(category)) {
+    return "반응은 원물 표면의 윤기와 익어가는 색감이 선명해지는 변화로 보여주고, 인물이 있으면 만족한 표정과 고개 끄덕임을 함께 잡는다.";
+  }
+  if (/식품|먹거리|과일|채소|농산|수산|음료/i.test(category)) {
+    return "반응은 원물이나 내용물의 촉촉한 질감과 색감이 선명해지는 변화로 보여주고, 인물이 있으면 만족한 표정과 고개 끄덕임을 함께 잡는다.";
+  }
+  if (/뷰티|바디|샤워|화장|세정|생활/i.test(category)) {
+    return "반응은 제품을 사용한 부위의 질감과 색감, 물방울이나 거품이 선명해지는 변화로 보여주고, 인물이 있으면 상쾌한 표정과 고개 끄덕임을 함께 잡는다.";
+  }
+  if (/패션|의류|신발|가방|주얼리/i.test(category)) {
+    return "반응은 움직임에 따라 핏과 소재의 실루엣이 선명해지는 변화로 보여주고, 인물이 거울을 보며 만족한 표정으로 고개를 끄덕이는 모습을 잡는다.";
+  }
+  return "반응은 제품의 질감과 색감이 선명해지는 변화로 보여주고, 인물이 있으면 만족한 표정과 고개 끄덕임을 함께 잡는다.";
+}
+
+function compactTransitionCaption(value: string) {
+  return value.replace(/\s+/g, " ").trim().slice(0, 24) || "다음 행동";
+}
+
+/**
+ * AI가 작성한 장면의 의미와 순서는 유지하면서 촬영 지시에 꼭 필요한 누락 신호만
+ * 결정적으로 보완한다. 장면 신호 한두 개 누락 때문에 20개 대본 전체를 다시 생성하는
+ * 느린 경로를 피하고, 제품 전용 B-roll처럼 사람이 없는 컷도 관찰 가능한 시각 반응으로
+ * 명확하게 표현하기 위한 서버 측 정규화 단계다.
+ */
+export function repairDetailedPlanningSceneDescriptions(
+  concept: VideoConcept,
+  analysis: ProductAnalysisSnapshot
+) {
+  let changed = false;
+  const cuts = concept.cuts.map((cut, index) => {
+    const missing = missingSceneSignals(cut);
+    const additions: string[] = [];
+    if (missing.includes("setting")) {
+      additions.push(`장소는 ${sceneSetting(analysis)}다.`);
+    }
+    if (missing.includes("subject")) {
+      additions.push("화면의 주체는 제품 패키지와 제품을 다루는 손이다.");
+    }
+    if (missing.includes("action")) {
+      additions.push("손이 제품을 들어 화면 중앙에 놓고 정면 라벨을 카메라에 비춘다.");
+    }
+    if (missing.includes("reaction")) {
+      additions.push(observableReaction(analysis));
+    }
+    if (missing.includes("firstFocus")) {
+      additions.push("첫 화면에는 제품 패키지 또는 핵심 행동이 중앙 클로즈업으로 가장 먼저 보인다.");
+    }
+    if (missing.includes("transition")) {
+      const nextCaption = compactTransitionCaption(concept.cuts[index + 1]?.caption || "마지막 제품 화면");
+      additions.push(`동작이 끝나면 다음 구간의 '${nextCaption}' 화면으로 매치컷 전환한다.`);
+    }
+    if (!additions.length && cut.sceneDescription.length >= 75) return cut;
+    if (cut.sceneDescription.length < 75 && !additions.length) {
+      additions.push(
+        `첫 화면은 ${sceneSetting(analysis)} 중앙의 제품 패키지 클로즈업으로 시작하고, 손이 제품을 들어 정면 라벨을 비춘다.`,
+        observableReaction(analysis),
+        "동작이 끝나면 다음 구간 화면으로 매치컷 전환한다."
+      );
+    }
+    changed = true;
+    return {
+      ...cut,
+      sceneDescription: `${cut.sceneDescription.trim()} ${additions.join(" ")}`.trim().slice(0, 950),
+    };
+  });
+  return changed ? { ...concept, cuts } : concept;
 }
 
 export type PlanningQualityCheck = { key: string; passed: boolean; message: string };
@@ -121,12 +216,15 @@ export function validateDetailedPlanning(
   const firstThree = cuts.filter((cut) => cut.startSecond < 3 && cut.endSecond <= 3);
   const allowed = allowedNumbers(analysis);
   const unknownNumbers = normalizedNumbers(audienceCopy).filter((value) => !allowed.has(value));
-  const abstract = cuts.filter(
-    (cut) => cut.sceneDescription.length < 75 || ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription))
-  );
   const sceneSignalFailures = cuts
     .map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut) }))
     .filter((item) => item.missing.length > 0);
+  const abstract = cuts.filter(
+    (cut) =>
+      cut.sceneDescription.length < 75 ||
+      (ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription)) &&
+        missingSceneSignals(cut).length >= 2)
+  );
   const checks: PlanningQualityCheck[] = [
     {
       key: "segment-count",

@@ -12,6 +12,7 @@ import {
   generateGeminiImageFromText,
 } from "../../../lib/mvp/geminiImageClient";
 import { editImageFromSource, generateImageFromText } from "../../../lib/mvp/openaiImageClient";
+import { isPaidImageGenerationEnabled } from "../../../lib/image-generation/SceneGenerationProvider";
 import type {
   AdImageLabel,
   GeneratedAdCopy,
@@ -68,6 +69,8 @@ type Body = {
   attempt?: number;
   numCandidates?: number;
   imageProvider?: ImageGenerationProvider;
+  /** Legacy advanced route only. The default Codex flow never sends this flag. */
+  paidApiExplicitlySelected?: boolean;
 };
 
 const outputDir = path.join(process.cwd(), "public", "generated-product-images");
@@ -158,6 +161,7 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => ({}))) as Body;
     const imageProvider = normalizeImageProvider(body.imageProvider);
+    const explicitPaidSelection = body.paidApiExplicitlySelected === true;
     const promptTemplateMode = normalizePromptTemplateMode(
       body.promptTemplateMode,
       normalizeMode(body.imageGenerationMode)
@@ -194,6 +198,16 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: "선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다." },
         { status: 400 }
+      );
+    }
+    if (!explicitPaidSelection || !isPaidImageGenerationEnabled()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "유료 이미지 API는 별도 공급자 선택과 작업별 동의 전에는 사용할 수 없습니다. 기본 광고 제작의 Codex·ChatGPT 로그인 생성을 이용해 주세요.",
+        },
+        { status: 403 }
       );
     }
     if (imageProvider === "openai" && !process.env.OPENAI_API_KEY) {
@@ -297,8 +311,12 @@ export async function POST(request: Request) {
                   sourceImagePath: fallbackSourceImagePath,
                   referenceImagePaths: body.referenceImagePaths,
                   prompt: promptUsed,
+                  explicitPaidApiAuthorization: explicitPaidSelection,
                 })
-              : await generateImageFromText({ prompt: promptUsed });
+              : await generateImageFromText({
+                  prompt: promptUsed,
+                  explicitPaidApiAuthorization: explicitPaidSelection,
+                });
         const { imageBuffer, promptUsed: apiPromptUsed } = imageResult;
         const fileName = `${prefix}-${Date.now()}-${index + 1}-${crypto.randomBytes(4).toString("hex")}.png`;
         const filePath = path.join(outputDir, fileName);

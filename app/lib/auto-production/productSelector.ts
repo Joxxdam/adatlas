@@ -1,6 +1,7 @@
 import type { AutoProductionAdvertiserConfig, AutoProductionProductCandidate, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types.ts";
 import { candidateIdentityKeys, productFamilyKey } from "./productIdentity.ts";
+import { automaticImageCountForConfig } from "./policy.ts";
 
 export const autoProductionRoleLabels: Record<AutoProductionRole, string> = {
   "core-expansion": "꾸준히 잘 팔리는 주력상품",
@@ -55,7 +56,7 @@ export function selectAutoProductionCandidates(
   recentProductIds: ReadonlySet<string> = new Set()
 ) {
   const eligible = eligibleAutoProductionCandidates(candidates, config, recentProductIds);
-  const limit = Math.min(config.productsPerRun, config.maxImagesPerRun);
+  const limit = config.productsPerRun;
   const selected: AutoProductionProductCandidate[] = [];
   const selectedIds = new Set<string>();
   const selectedFamilies = new Set<string>();
@@ -101,7 +102,6 @@ export function plannedImageCount(configs: AutoProductionAdvertiserConfig[]) {
   return configs
     .filter((config) => config.enabled)
     .reduce((sum, config) => {
-      const perProduct = config.fullHookTestForNewProducts ? 6 : config.creativesPerProduct;
-      return sum + Math.min(config.productsPerRun * perProduct, config.maxImagesPerRun);
+      return sum + automaticImageCountForConfig(config);
     }, 0);
 }

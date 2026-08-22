@@ -33,6 +33,9 @@
 .form { padding: 22px; margin-bottom: 18px; }
 .formGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .form label { display: grid; gap: 6px; color: #596984; font-size: 12px; font-weight: 800; }
+.standardPolicy { display: grid; gap: 5px; align-content: center; grid-column: span 2; border: 1px solid #b9d8ca; border-radius: 12px; padding: 12px 14px; background: #effaf5; }
+.standardPolicy span, .standardPolicy small { color: #4d7767; font-size: 11px; font-weight: 700; }
+.standardPolicy strong { color: #126849; font-size: 15px; }
 .form input, .form select { min-width: 0; border: 1px solid #cbd7e8; border-radius: 10px; padding: 10px 11px; background: white; color: #1b2942; }
 .weekdays { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; border: 1px solid #cbd7e8; border-radius: 10px; margin: 0; padding: 8px 10px; }
 .weekdays legend { padding: 0 4px; color: #596984; font-size: 12px; font-weight: 800; }
@@ -53,6 +56,7 @@
 .runHeader p { margin: 7px 0 0; color: #66758d; }
 .runHeader > div:last-child { display: flex; align-items: flex-start; gap: 8px; }
 .status { background: #e9f2ff; color: #175ebf; }
+.packagePending { border-radius: 999px; padding: 7px 10px; background: #fff4d8; color: #7a5913; font-size: 11px; font-weight: 800; }
 .tasks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #dfe7f1; }
 .task { min-width: 0; padding: 18px; background: white; }
 .taskHead { display: grid; grid-template-columns: 74px 1fr; gap: 13px; }

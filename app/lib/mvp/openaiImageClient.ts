@@ -14,6 +14,18 @@ type ImageClientResult = {
   promptUsed: string;
 };
 
+function assertExplicitPaidImageAuthorization(explicitlyAuthorized: boolean | undefined) {
+  const serverEnabled = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED === "true";
+  if (explicitlyAuthorized !== true || !serverEnabled) {
+    throw new Error(
+      "유료 OpenAI 이미지 API는 사용자가 해당 작업에서 별도로 공급자를 선택하고 서버 허용이 켜진 경우에만 사용할 수 있습니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다."
+    );
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("선택한 유료 OpenAI 이미지 공급자의 서버 인증정보를 확인해 주세요.");
+  }
+}
+
 export function getOpenAIImageModel() {
   return process.env.ADATLAS_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || "gpt-image-1.5";
 }
@@ -69,7 +81,9 @@ export async function generateImageFromText(params: {
   quality?: ImageQuality;
   background?: ImageBackground;
   outputFormat?: ImageOutputFormat;
+  explicitPaidApiAuthorization?: boolean;
 }): Promise<ImageClientResult> {
+  assertExplicitPaidImageAuthorization(params.explicitPaidApiAuthorization);
   const body: Record<string, unknown> = {
     model: getOpenAIImageModel(),
     prompt: params.prompt,
@@ -105,7 +119,9 @@ export async function editImageFromSource(params: {
   prompt: string;
   size?: ImageSize;
   quality?: ImageQuality;
+  explicitPaidApiAuthorization?: boolean;
 }): Promise<ImageClientResult> {
+  assertExplicitPaidImageAuthorization(params.explicitPaidApiAuthorization);
   if (!params.sourceImagePath) {
     throw new Error("선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다.");
   }

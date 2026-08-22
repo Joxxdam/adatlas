@@ -8,10 +8,90 @@ import type {
   ProductTruth,
 } from "./types";
 
-export const PRODUCT_TRUTH_VERSION = "product-truth-v1";
+export const PRODUCT_TRUTH_VERSION = "product-truth-v2-structured";
 
 function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
+}
+
+const titleNoisePattern = /(?:\[[^\]]{0,40}(?:특가|한정|무료배송|이벤트|증정|쿠폰)[^\]]*\]|[★☆◆◇♥♡●■▶▷✔✓🔥🚨]|(?:^|\s)(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가)(?:\s|$))/giu;
+
+export function cleanProductTitle(rawTitle: string, brandName = "") {
+  let value = String(rawTitle || "")
+    .normalize("NFKC")
+    .replace(/<[^>]*>/g, " ")
+    .replace(titleNoisePattern, " ")
+    .replace(/(?:^|\s)\d+\s*\+\s*\d+(?:\s|$)/g, " ")
+    .replace(/(?:^|\s)\d{1,3}\s*%\s*(?:할인|OFF)?(?:\s|$)/gi, " ")
+    .replace(/(?:^|\s)\d[\d,.]*\s*원(?:\s|$)/g, " ")
+    .replace(/\s*\(\d+\)\s*$/g, " ");
+  if (brandName.trim()) {
+    const escaped = brandName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    value = value.replace(new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`, "giu"), " ");
+  }
+  return value.replace(/\s+/g, " ").trim() || String(rawTitle || "").replace(/\s+/g, " ").trim();
+}
+
+function firstMatch(value: string, pattern: RegExp) {
+  return String(value || "").match(pattern)?.[0]?.trim();
+}
+
+function isOriginLike(value: string) {
+  return /(?:원산지|산지|국내산|국산|[가-힣]{2,12}산(?:\s|$))/u.test(String(value || ""));
+}
+
+function isPromotionLike(value: string) {
+  return /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%|할인|쿠폰|증정|특가|무료\s*배송|한정\s*판매)/iu.test(String(value || ""));
+}
+
+function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string) {
+  const rawProductTitle = String(rawTitle || product.productName || "").replace(/\s+/g, " ").trim();
+  const cleanProductName = cleanProductTitle(rawProductTitle, product.brandName || product.advertiserName || "");
+  const description = [product.extractedDescription, product.mainBenefit, ...(product.verifiedBenefits || [])].filter(Boolean).join(" · ");
+  const ingredientValues = compact(product.ingredients || []).filter((value) => !isOriginLike(value) && !isPromotionLike(value));
+  const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value));
+  const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg|개|팩|병|박스|세트|종)/i);
+  const composition = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
+  const shipping = firstMatch(`${rawProductTitle} ${description}`, /(?:무료\s*배송|당일\s*출고|오늘\s*출발|새벽\s*배송)/i);
+  const promotion = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%\s*할인|쿠폰|증정|한정\s*(?:특가|판매)|무료\s*배송)/i);
+  const origin = firstMatch(`${description} ${(product.ingredients || []).join(" ")}`, /(?:원산지\s*[:：]?\s*)?(?:국내산|국산|[가-힣]{2,12}산)(?=\s|[,·/]|$)/u);
+  const seasonOrEvent = firstMatch(`${rawProductTitle} ${description}`, /(?:봄|여름|가을|겨울|명절|설날|추석|크리스마스|신상품|시즌|\d{1,2}일\s*한정|한정\s*판매)/u);
+  const packageOrOption = product.packageType || composition || firstMatch(`${rawProductTitle} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
+  const reviewEvidence = compact([
+    ...(product.reviewSources || []).map((review) => review.keySentence || review.sourceContext),
+    ...(product.creativeContext?.reviewInsightSummaries || []),
+  ]).slice(0, 6);
+  return {
+    rawProductTitle,
+    cleanProductName,
+    brandName: String(product.brandName || product.advertiserName || "").trim(),
+    category: String(product.category || "").trim(),
+    price: product.price || undefined,
+    originalPrice: product.originalPrice || product.oldPrice || undefined,
+    discount: product.discountInfo || undefined,
+    discountInfo: product.discountInfo || undefined,
+    promotion,
+    quantity,
+    composition,
+    shipping,
+    origin,
+    ingredients: ingredientValues,
+    verifiedBenefits,
+    seasonOrEvent,
+    packageOrOption,
+    uspCandidates: compact([...verifiedBenefits, ...ingredientValues]).slice(0, 8),
+    reviewEvidence,
+    targetCustomer: product.targetCustomer || undefined,
+    target: product.targetCustomer || undefined,
+    usageOccasions: compact([
+      product.targetCustomer,
+      ...(product.verifiedBenefits || []).filter((value) => /(?:때|후|전|매일|운동|출근|퇴근|외출|여행|식사|샤워)/u.test(value)),
+    ]).slice(0, 5),
+    useSituations: compact([
+      product.targetCustomer,
+      ...(product.verifiedBenefits || []).filter((value) => /(?:때|후|전|매일|운동|출근|퇴근|외출|여행|식사|샤워)/u.test(value)),
+    ]).slice(0, 5),
+  };
 }
 
 export function extractNumericTokens(value: string) {
@@ -301,6 +381,16 @@ function fact(
     ? "review"
     : key.startsWith("ingredient")
       ? "ingredient"
+      : key === "origin"
+        ? "origin"
+          : key === "quantity"
+          ? "quantity"
+          : key === "package-option"
+            ? /(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|포함)/iu.test(normalized)
+              ? "composition"
+              : "other"
+            : key === "season-event"
+              ? "usage"
       : key === "price" || key === "original-price"
         ? "price"
         : key === "discount" || key.includes("promotion")
@@ -350,18 +440,22 @@ function freeTextClaims(product: ProductInfoForPrompt) {
   return compact([
     product.mainBenefit,
     ...(product.verifiedBenefits || []),
-    ...(product.ingredients || []).map((ingredient) => `${ingredient} 함유`),
+    ...(product.ingredients || [])
+      .filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient))
+      .map((ingredient) => `${ingredient} 함유`),
   ]);
 }
 
 export function buildProductTruth(input: {
   product: ProductInfoForPrompt;
+  rawProductTitle?: string;
   productImagePaths?: string[];
   selectedAdImages?: string[];
   imageAssets?: CreativeImageAsset[];
   source?: "landing-page" | "user-input";
 }): ProductTruth {
   const product = input.product;
+  const normalizedTruth = normalizedProductTruth(product, input.rawProductTitle);
   const contentNotes = product.creativeContext?.appliedContentNotes || [];
   const landingSource = input.source === "landing-page" && Boolean(product.landingUrl);
   const verification: FactVerification = landingSource ? "source-backed" : "user-provided";
@@ -385,9 +479,13 @@ export function buildProductTruth(input: {
     ...(product.verifiedBenefits || []).map((benefit, index) =>
       fact(`verified-benefit-${index + 1}`, "상세페이지 혜택", benefit, verification, source, product.landingUrl)
     ),
-    ...(product.ingredients || []).map((ingredient, index) =>
+    ...normalizedTruth.ingredients.map((ingredient, index) =>
       fact(`ingredient-${index + 1}`, "성분", ingredient, verification, source, product.landingUrl)
     ),
+    fact("origin", "원산지", normalizedTruth.origin, verification, source, product.landingUrl),
+    fact("quantity", "판매 단위", normalizedTruth.quantity, verification, source, product.landingUrl),
+    fact("package-option", "패키지·옵션", normalizedTruth.packageOrOption, verification, source, product.landingUrl),
+    fact("season-event", "시즌·이벤트", normalizedTruth.seasonOrEvent, verification, source, product.landingUrl),
     ...(product.reviewSources || [])
       .map((review) => review.keySentence || review.sourceContext || "")
       .filter(Boolean)
@@ -445,6 +543,7 @@ export function buildProductTruth(input: {
   return {
     productId: product.creativeContext?.productId || `product-${stableId(product.landingUrl || product.productName)}`,
     product,
+    normalized: normalizedTruth,
     facts: candidates,
     verifiedClaims,
     unverifiedClaims,

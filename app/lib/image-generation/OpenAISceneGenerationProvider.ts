@@ -13,9 +13,18 @@ import {
 
 export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   readonly id = "openai" as const;
+  private readonly explicitPaidApiAuthorization: boolean;
+
+  constructor(options: { explicitPaidApiAuthorization?: boolean } = {}) {
+    this.explicitPaidApiAuthorization = options.explicitPaidApiAuthorization === true;
+  }
 
   isConfigured() {
-    return Boolean(process.env.OPENAI_API_KEY) && isPaidImageGenerationEnabled();
+    return Boolean(
+      this.explicitPaidApiAuthorization &&
+        process.env.OPENAI_API_KEY &&
+        isPaidImageGenerationEnabled()
+    );
   }
 
   supports(feature: ImageGenerationFeature) {
@@ -26,7 +35,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   async generateScene(input: SceneGenerationInput): Promise<SceneGenerationResult> {
     if (!this.isConfigured()) {
       throw new Error(
-        "OPENAI_API_KEY와 PAID_IMAGE_GENERATION_ENABLED=true가 모두 설정되어야 합니다."
+        "유료 OpenAI 이미지 공급자 선택, 작업별 동의, 서버 허용이 모두 필요합니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다."
       );
     }
     const prompt = [
@@ -45,6 +54,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
       quality: getOpenAIImageQuality(),
       background: "opaque",
       outputFormat: "png",
+      explicitPaidApiAuthorization: true,
     });
     return {
       imageBuffer: result.imageBuffer,
@@ -63,7 +73,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   async generateReferenceImage(input: SceneGenerationInput): Promise<SceneGenerationResult> {
     if (!this.isConfigured()) {
       throw new Error(
-        "OPENAI_API_KEY와 PAID_IMAGE_GENERATION_ENABLED=true가 모두 설정되어야 합니다."
+        "유료 OpenAI 이미지 공급자 선택, 작업별 동의, 서버 허용이 모두 필요합니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다."
       );
     }
     const [sourceImagePath, ...referenceImagePaths] = input.referenceImages || [];
@@ -74,6 +84,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
       prompt: [input.prompt, input.negativePrompt].filter(Boolean).join("\n\n"),
       size: "1024x1024",
       quality: getOpenAIImageQuality(),
+      explicitPaidApiAuthorization: true,
     });
     return {
       imageBuffer: result.imageBuffer,

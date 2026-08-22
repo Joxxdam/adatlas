@@ -8,6 +8,12 @@ import type {
   AutoProductionProductTask,
   AutoProductionRun,
 } from "../../lib/auto-production/types";
+import {
+  AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
+  AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
+  AUTO_PRODUCTION_IMAGES_PER_MALL,
+  AUTO_PRODUCTION_PRODUCTS_PER_MALL,
+} from "../../lib/auto-production/policy";
 import styles from "./AutoProductionWorkspace.module.css";
 
 type GlobalSettings = {
@@ -42,10 +48,10 @@ const emptyForm: FormState = {
   advertiserName: "",
   bigQueryBrandMatch: "",
   siteUrl: "",
-  scheduleTime: "09:00",
+  scheduleTime: AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
   scheduleDays: [0, 1, 2, 3, 4, 5, 6],
   productsPerRun: "4",
-  creativesPerProduct: "1",
+  creativesPerProduct: String(AUTO_PRODUCTION_CREATIVES_PER_PRODUCT),
   productCooldownDays: "7",
   productFamilyCooldownDays: "14",
   hookCooldownDays: "14",
@@ -123,20 +129,15 @@ function toForm(config: AutoProductionAdvertiserConfig): FormState {
 }
 
 function formPayload(form: FormState) {
-  const productsPerRun = Number(form.productsPerRun);
-  const creativesPerProduct = Number(form.creativesPerProduct);
   return {
     advertiserName: form.advertiserName,
     bigQueryBrandMatch: form.bigQueryBrandMatch || form.advertiserName,
     siteUrl: form.siteUrl,
     scheduleTime: form.scheduleTime,
     scheduleDays: form.scheduleDays,
-    productsPerRun,
-    creativesPerProduct,
-    maxImagesPerRun: Math.min(
-      24,
-      productsPerRun * (form.fullHookTestForNewProducts ? 6 : creativesPerProduct)
-    ),
+    productsPerRun: AUTO_PRODUCTION_PRODUCTS_PER_MALL,
+    creativesPerProduct: AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
+    maxImagesPerRun: AUTO_PRODUCTION_IMAGES_PER_MALL,
     productCooldownDays: Number(form.productCooldownDays),
     productFamilyCooldownDays: Number(form.productFamilyCooldownDays),
     hookCooldownDays: Number(form.hookCooldownDays),
@@ -146,7 +147,7 @@ function formPayload(form: FormState) {
     adminProductUrls: list(form.adminProductUrls),
     adObjective: form.adObjective,
     productVisibilityMode: form.productVisibilityMode,
-    fullHookTestForNewProducts: form.fullHookTestForNewProducts,
+    fullHookTestForNewProducts: false,
     explorationRatio: Math.max(0, Math.min(1, Number(form.explorationRatio) / 100)),
     enabled: form.enabled,
   };
@@ -180,7 +181,7 @@ export function AutoProductionWorkspace() {
   const [advertisers, setAdvertisers] = useState<AutoProductionAdvertiserConfig[]>([]);
   const [settings, setSettings] = useState<GlobalSettings>({
     paused: false,
-    maxImagesPerDay: 12,
+    maxImagesPerDay: 48,
     globalConcurrency: 2,
   });
   const [status, setStatus] = useState<AutoProductionDashboardStatus | null>(null);
@@ -299,7 +300,7 @@ export function AutoProductionWorkspace() {
         <div>
           <p className={styles.eyebrow}>DAILY CREATIVE OPERATIONS</p>
           <h1>자동 콘텐츠 제작</h1>
-          <p>한 번 설정하면 매일 상품 선정부터 광고 제작까지 자동으로 준비합니다.</p>
+          <p>매일 오전 7시, 몰별 상품 4개와 AI 완성 광고 16장을 출근 전에 준비합니다.</p>
         </div>
         <div className={styles.actions}>
           <button
@@ -328,8 +329,8 @@ export function AutoProductionWorkspace() {
       ) : null}
       <p className={styles.notice}>
         서버가 켜져 있을 때 백그라운드에서 계속 실행됩니다. 로컬 PC와 서버가 모두 꺼져 있으면
-        실행되지 않으며, 같은 날 다시 켜면 누락된 예약을 한 번만 보충합니다. Meta 게시는 자동으로
-        수행하지 않습니다.
+        실행되지 않으며, 같은 날 다시 켜면 누락된 예약을 한 번만 보충합니다. 수기 제작과 동일한
+        Codex 로컬 AI 네이티브 엔진만 사용하며 유료 API로 자동 전환하거나 Meta에 자동 게시하지 않습니다.
       </p>
 
       <section className={styles.stats} aria-label="자동 제작 현황">
@@ -400,7 +401,7 @@ export function AutoProductionWorkspace() {
           <div className={styles.sectionHeader}>
             <div>
               <h2>광고주 자동 제작 설정</h2>
-              <p>요일, 시간, 상품 수와 제외 조건을 한 번만 저장합니다.</p>
+              <p>요일·시간·제외 조건을 저장합니다. 제작량은 몰당 4상품 × 4장으로 고정됩니다.</p>
             </div>
             <div className={styles.actions}>
               <label className={styles.limitControl}>
@@ -408,11 +409,14 @@ export function AutoProductionWorkspace() {
                 <input
                   aria-label="하루 최대 자동 제작 이미지 수"
                   max="120"
-                  min="1"
+                  min={Math.max(16, status?.plannedProductCount || 16)}
                   onChange={(event) =>
                     setSettings((current) => ({
                       ...current,
-                      maxImagesPerDay: Math.max(1, Math.min(120, Number(event.target.value) || 1)),
+                        maxImagesPerDay: Math.max(
+                          Math.max(16, status?.plannedProductCount || 16),
+                          Math.min(120, Number(event.target.value) || 48)
+                        ),
                     }))
                   }
                   type="number"
@@ -518,28 +522,11 @@ export function AutoProductionWorkspace() {
                     </label>
                   ))}
                 </fieldset>
-                <label>
-                  실행당 상품 수
-                  <input
-                    max="12"
-                    min="1"
-                    type="number"
-                    value={form.productsPerRun}
-                    onChange={(event) => setForm({ ...form, productsPerRun: event.target.value })}
-                  />
-                </label>
-                <label>
-                  상품당 콘텐츠 수
-                  <input
-                    max="6"
-                    min="1"
-                    type="number"
-                    value={form.creativesPerProduct}
-                    onChange={(event) =>
-                      setForm({ ...form, creativesPerProduct: event.target.value })
-                    }
-                  />
-                </label>
+                <div className={styles.standardPolicy}>
+                  <span>고정 제작 기준</span>
+                  <strong>상품 4개 × 상품별 광고 4장 = 몰당 16장</strong>
+                  <small>후킹·장면·타이포그래피가 서로 다른 광고 전체를 AI가 생성합니다.</small>
+                </div>
                 <label>
                   상품 재선정 제한(일)
                   <input
@@ -654,16 +641,6 @@ export function AutoProductionWorkspace() {
                         setForm({ ...form, explorationRatio: event.target.value })
                       }
                     />
-                  </label>
-                  <label className={styles.checkControl}>
-                    <input
-                      checked={form.fullHookTestForNewProducts}
-                      onChange={(event) =>
-                        setForm({ ...form, fullHookTestForNewProducts: event.target.checked })
-                      }
-                      type="checkbox"
-                    />
-                    신규 상품은 후킹 6개 전체 제작
                   </label>
                   <label className={styles.checkControl}>
                     <input
@@ -850,13 +827,17 @@ export function AutoProductionWorkspace() {
               </div>
               <div>
                 <span className={styles.status}>{runStatusLabels[productionRun.status]}</span>
-                {productionRun.completedImages ? (
+                {productionRun.packageStatus === "ready" ? (
                   <a
                     className={styles.buttonSecondary}
                     href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/download`}
                   >
-                    결과 ZIP
+                    준비 완료 ZIP
                   </a>
+                ) : productionRun.completedImages ? (
+                  <span className={styles.packagePending}>
+                    {productionRun.packageStatus === "failed" ? "ZIP 재준비 필요" : "ZIP 준비 중"}
+                  </span>
                 ) : null}
                 {!terminalRunStatuses.has(productionRun.status) ? (
                   <button

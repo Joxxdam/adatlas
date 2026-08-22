@@ -186,6 +186,8 @@ function hookPlansForExploration(
       generationSource: candidate.generationSource === "codex-local" ? "ai" : "fallback",
       repairCount: 0,
       customerReason: candidate.customerReason,
+      coreClaim: candidate.coreClaim,
+      sentenceStyle: candidate.sentenceStyle,
       selectionReason: candidate.selectionReason,
       score: candidate.score,
       creativeBrief: {

@@ -9,6 +9,7 @@ import type {
   ProductInsightProfile,
   ProductTruth,
 } from "./types.ts";
+import { selectQualityDiverseHooks } from "./hookQuality.ts";
 
 export type CategoryHookPrior = Partial<Record<HookTaxonomyTag, number>>;
 
@@ -147,7 +148,7 @@ function usageMoment(target: string, category: string) {
   if (/아침|시리얼|그래놀라/.test(source)) return "바쁜 아침을 준비할 때";
   if (/수납|정리|생활/.test(source)) return "집 안을 정리하는 날";
   if (/농산|과일|사과/.test(source)) return "제철 과일을 고를 때";
-  return "매일 사용하는 순간";
+  return "일상에서 자주 손이 갈 때";
 }
 
 export function buildProductInsightProfile(truth: ProductTruth): ProductInsightProfile {
@@ -161,8 +162,8 @@ export function buildProductInsightProfile(truth: ProductTruth): ProductInsightP
     (fact) =>
       fact.evidenceType !== "identity" &&
       (
-      fact.evidenceType === "quantity" ||
-      /(?:option|quantity)/i.test(fact.key) ||
+      fact.evidenceType === "composition" ||
+      /(?:option|composition)/i.test(fact.key) && /(?:택\s*\d+|옵션|\d+\s*(?:개|팩|병|세트|종)|구성|묶음|포함)/iu.test(fact.value) ||
       /(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|파우치\s*포함)/i.test(fact.value)
       )
   );
@@ -297,7 +298,7 @@ export function buildHookCreativeBrief(input: {
     cameraDirection: "상품 비율과 라벨 정면을 왜곡하지 않는 상업 사진 구도",
     lightingDirection: "실제 상품의 색과 재질을 유지하고 접촉 그림자가 자연스러운 조명",
     colorDirection: "상품 대표 색상과 카테고리 맥락을 기준으로 한 고대비 팔레트",
-    graphicDirection: "장면·상품·한국어 타이포그래피·그래픽을 한 번의 AI 이미지 생성에서 완성",
+    graphicDirection: "AI가 실제 상품 레퍼런스를 보존하면서 장면·한국어 타이포그래피·그래픽을 하나의 완성 광고로 통합 생성",
     copySafeZone: "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
     referenceImageIds: [],
     forbiddenElements: [
@@ -308,12 +309,12 @@ export function buildHookCreativeBrief(input: {
     ],
     productDirection: "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
     backgroundDirection: "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
-    copySafeDirection: "메인·서브·CTA를 AI 생성 단계에서 자연스럽게 조판",
+    copySafeDirection: "AI 완성 이미지 안에서 메인·서브·CTA가 정확하고 크게 읽히도록 구성",
     mustUseReferenceImages: true,
     forbidPromotionalBannerCutouts: true,
     textRendering: "ai-native-final",
     requiredKoreanText: [input.mainHook, input.subCopy],
-    negativePrompt: ["배경만 생성", "빈 텍스트 박스", "상품 사후 합성", "템플릿 반복"],
+    negativePrompt: ["의미 없는 빈 배경", "가짜 상품 패키지", "고정 좌표 템플릿 반복", "가짜 한글"],
     targetCustomer: "상품 상세페이지에서 확인되는 핵심 고객",
     customerSituation: input.customerReason,
     intendedReaction: `${tagLabels[input.tag]} 메시지를 즉시 이해하고 상품에 관심을 보임`,
@@ -341,6 +342,7 @@ type Draft = {
   sceneKey: string;
   visualStory: string;
   scene: string;
+  coreClaim?: string;
 };
 
 export function generateHookHypothesisCandidates(
@@ -353,7 +355,7 @@ export function generateHookHypothesisCandidates(
   const reason = profile.customerReasons[0];
   const factIds = reason?.factIds || [];
   const problem = words(profile.problems[0]?.value || benefit, 17);
-  const occasion = words(profile.useOccasions[0]?.value || "매일 사용하는 순간", 18);
+  const occasion = words(profile.useOccasions[0]?.value || "일상에서 자주 손이 갈 때", 18);
   const target = words(profile.targets[0]?.value || "", 22);
   const targetHook = words(
     target
@@ -433,45 +435,69 @@ export function generateHookHypothesisCandidates(
   ];
   const genericDrafts: Draft[] = [
     {
-      tag: "feature-usp", main: benefit, sub: `${product}에서 확인한 핵심 선택 이유`,
-      reason: benefit, factIds, sceneKey: "usp-detail", visualStory: "상품의 핵심 특징을 가까운 디테일로 보여준다", scene: "제품 정면과 핵심 성분·구조 디테일이 함께 읽히는 상업 제품 사진",
+      tag: "feature-usp", main: `${benefit}, 어디서 차이가 날까?`, sub: `${product}의 디테일을 가까이 보면 답이 보여요`,
+      reason: benefit, coreClaim:`기능 차이: ${benefit}`, factIds, sceneKey: "usp-detail", visualStory: "상품의 핵심 특징을 가까운 디테일로 보여준다", scene: "제품 정면과 핵심 성분·구조 디테일이 함께 읽히는 상업 제품 사진",
     },
     {
-      tag: "problem-solution", main: `${problem}, 아직도 번거롭게?`, sub: benefit,
-      reason: problem, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "problem-before-after", visualStory: "고객의 불편과 해결 뒤의 장면을 한 화면 안에서 대비한다", scene: "불편한 사용 전 상황과 상품을 사용한 뒤의 정돈된 상황을 자연스럽게 대비",
+      tag: "problem-solution", main: `${problem}, 아직도 그대로 두세요?`, sub: `${benefit}으로 바뀌는 다음 장면`,
+      reason: problem, coreClaim:`불편 해소: ${problem}`, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "problem-before-after", visualStory: "고객의 불편과 해결 뒤의 장면을 한 화면 안에서 대비한다", scene: "불편한 사용 전 상황과 상품을 사용한 뒤의 정돈된 상황을 자연스럽게 대비",
     },
     {
-      tag: "usage-occasion", main: `${occasion}, 이 선택`, sub: benefit,
-      reason: occasion, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "usage-moment", visualStory: "상품이 필요한 구체적인 순간을 실제 생활 장면으로 보여준다", scene: `${occasion}의 실제 생활 맥락, 상품은 손이 닿는 위치에 자연스럽게 배치`,
+      tag: "usage-occasion", main: `${occasion}, 먼저 손이 가는 쪽`, sub: `${benefit}, 일상 장면에서 더 또렷해져요`,
+      reason: occasion, coreClaim:`사용 상황: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "usage-moment", visualStory: "상품이 필요한 구체적인 순간을 실제 생활 장면으로 보여준다", scene: `${occasion}의 실제 생활 맥락, 상품은 손이 닿는 위치에 자연스럽게 배치`,
     },
     {
-      tag: "comparison-alternative", main: `${product}, 무엇부터 볼까?`, sub: `${benefit}부터 비교해보세요`,
-      reason: benefit, factIds, sceneKey: "comparison-criteria", visualStory: "구매 전에 비교할 한 가지 기준을 상품 디테일로 설명한다", scene: "상품 전체와 비교 기준이 되는 디테일을 좌우로 나눠 보여주는 사진형 장면",
+      tag: "comparison-alternative", main: `${product}, 이름보다 먼저 볼 것`, sub: `비교 기준은 ${benefit}`,
+      reason: benefit, coreClaim:`비교 기준: ${benefit}`, factIds, sceneKey: "comparison-criteria", visualStory: "구매 전에 비교할 한 가지 기준을 상품 디테일로 설명한다", scene: "상품 전체와 비교 기준이 되는 디테일을 좌우로 나눠 보여주는 사진형 장면",
     },
     {
-      tag: "convenience", main: `${occasion}, 챙길 것은 간단하게`, sub: benefit,
-      reason: `${occasion} 준비 편의`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "convenience-routine", visualStory: "상품이 일상의 준비 과정을 단순하게 만드는 순간을 보여준다", scene: "사용 직전과 직후의 동선이 이해되는 정돈된 생활 사진",
+      tag: "convenience", main: `${occasion}, 준비는 더 짧게`, sub: `${benefit} 하나로 동선을 줄여보세요`,
+      reason: `${occasion} 준비 편의`, coreClaim:`준비 편의: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "convenience-routine", visualStory: "상품이 일상의 준비 과정을 단순하게 만드는 순간을 보여준다", scene: "사용 직전과 직후의 동선이 이해되는 정돈된 생활 사진",
     },
     {
-      tag: "feature-usp", main: `${koreanObject(product)} 고를 이유`, sub: benefit,
-      reason: benefit, factIds, sceneKey: "feature-hero", visualStory: "상품의 형태와 확인된 특징을 히어로 컷으로 집중시킨다", scene: "상품 라벨이 정면으로 보이는 대형 히어로 제품 사진과 절제된 관련 소품",
+      tag: "feature-usp", main: `${benefit}, 크게 보면 더 선명해요`, sub: `${koreanObject(product)} 쓰는 순간 드러나는 한 가지 차이`,
+      reason: benefit, coreClaim:`제품 특징 확대: ${benefit}`, factIds, sceneKey: "feature-hero", visualStory: "상품의 형태와 확인된 특징을 히어로 컷으로 집중시킨다", scene: "상품 라벨이 정면으로 보이는 대형 히어로 제품 사진과 절제된 관련 소품",
     },
     {
-      tag: "problem-solution", main: `${problem}, 바꿀 방법은?`, sub: benefit,
-      reason: problem, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "solution-action", visualStory: "고객이 상품을 사용해 불편을 해결하는 행동을 보여준다", scene: "문제 상황 속 손의 행동과 상품 사용이 동시에 이해되는 사진형 장면",
+      tag: "problem-solution", main: `${problem}, 바뀌는 건 한 장면이면 충분해요`, sub: `${benefit}, 써보는 순간부터 달라져요`,
+      reason: problem, coreClaim:`해결 행동: ${problem}`, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "solution-action", visualStory: "고객이 상품을 사용해 불편을 해결하는 행동을 보여준다", scene: "문제 상황 속 손의 행동과 상품 사용이 동시에 이해되는 사진형 장면",
     },
     {
-      tag: "usage-occasion", main: `${occasion} 떠오르는 상품`, sub: benefit,
-      reason: occasion, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "occasion-editorial", visualStory: "특정 사용 순간의 분위기와 상품을 에디토리얼로 연결한다", scene: `${occasion}를 연상시키는 자연광 에디토리얼 장면과 선명한 실제 상품`,
+      tag: "usage-occasion", main: `${occasion}, 분위기부터 달라져요`, sub: `그때 필요한 건 ${benefit}`,
+      reason: occasion, coreClaim:`사용 분위기: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "occasion-editorial", visualStory: "특정 사용 순간의 분위기와 상품을 에디토리얼로 연결한다", scene: `${occasion}를 연상시키는 자연광 에디토리얼 장면과 선명한 실제 상품`,
+    },
+    {
+      tag: "comparison-alternative", main: `비슷해 보여도, ${benefit}에서 갈려요`, sub: `${product}, 이름 대신 사용감을 비교해보세요`,
+      reason: benefit, coreClaim:`대안 대비: ${benefit}`, factIds, sceneKey: "alternative-contrast", visualStory: "비슷한 대안 사이에서 확인된 차이가 드러나는 순간을 대비한다", scene: "고객이 망설이는 대안 장면과 실제 상품 디테일을 과장 없이 대비한 사진",
+    },
+    {
+      tag: "problem-solution", main: `${problem}, 익숙해졌다고 괜찮은 건 아니죠`, sub: `${benefit}으로 불편한 루틴을 끊어보세요`,
+      reason: problem, coreClaim:`익숙한 불편 중단: ${problem}`, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "routine-interruption", visualStory: "반복되는 불편을 상품 사용으로 끊는 결정적 행동을 보여준다", scene: "익숙한 불편을 멈추고 상품을 집어 드는 자연스러운 손과 생활 공간",
+    },
+    {
+      tag: "usage-occasion", main: `${occasion}, 한 번 덜 망설이게`, sub: `${benefit}을 바로 꺼내 쓰는 타이밍`,
+      reason: occasion, coreClaim:`사용 타이밍: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "routine-timing", visualStory: "상품이 필요한 정확한 타이밍을 짧은 행동으로 설명한다", scene: `${occasion} 직전의 손동작과 실제 상품이 같은 초점에 들어오는 생활 사진`,
+    },
+    {
+      tag: "feature-usp", main: `${benefit}, 숨기지 않고 크게`, sub: `${product}의 차이를 바로 앞에서 보여드릴게요`,
+      reason: benefit, coreClaim:`확대 증거: ${benefit}`, factIds, sceneKey: "evidence-macro", visualStory: "확인된 특징을 상품 재질과 매크로 디테일로 크게 증명한다", scene: "실제 상품의 재질·형태와 확인된 특징을 연결한 초근접 상업 사진",
     },
   ];
-  const drafts: Draft[] = isAgriculture ? agricultureDrafts : genericDrafts;
+  const baseDrafts: Draft[] = isAgriculture
+    ? [
+        ...agricultureDrafts,
+        ...genericDrafts.filter(
+          (draft) => !agricultureDrafts.some((agriculture) => agriculture.sceneKey === draft.sceneKey)
+        ),
+      ].slice(0, 12)
+    : genericDrafts;
+  const drafts: Draft[] = [...baseDrafts];
   if (target) drafts.push({
     tag: "target-identity", main: targetHook, sub: `핵심 기준은 ${benefit}`,
     reason: target, factIds: unique([...factIds, ...(profile.targets[0]?.factIds || [])]), sceneKey: "target-lifestyle", visualStory: "명확한 타깃의 하루 속에 상품을 배치한다", scene: `${target}의 행동과 공간을 과장 없이 보여주는 라이프스타일 사진`,
   });
   if (ingredient) drafts.push(
-    { tag: "sensory-experience", main: `${ingredient}, 사용하는 순간`, sub: benefit, reason: ingredient, factIds: unique(profile.ingredients.flatMap((item) => item.factIds)), sceneKey: "sensory-splash", visualStory: "성분이 연상시키는 감각을 질감과 움직임으로 전달한다", scene: `${ingredient}의 색·질감과 제품, 정확한 한국어 카피를 연결한 물성 중심의 완성 광고` },
+    { tag: "sensory-experience", main: `${ingredient}, 닿자마자 어떤 느낌일까?`, sub: benefit, reason: ingredient, coreClaim:`성분 감각: ${ingredient}`, factIds: unique(profile.ingredients.flatMap((item) => item.factIds)), sceneKey: "sensory-splash", visualStory: "성분이 연상시키는 감각을 질감과 움직임으로 전달한다", scene: `${ingredient}의 색·질감과 제품, 정확한 한국어 카피를 연결한 물성 중심의 완성 광고` },
     { tag: "sensory-experience", main: `${ingredient}가 만든 사용감`, sub: benefit, reason: ingredient, factIds: unique(profile.ingredients.flatMap((item) => item.factIds)), sceneKey: "ingredient-macro", visualStory: "성분의 매크로 질감과 패키지를 하나의 장면으로 구성한다", scene: `${ingredient}의 실제 재료 디테일과 상품 정면이 함께 보이는 근접 사진` },
   );
   if (profile.priceSignals.length) {
@@ -481,7 +507,7 @@ export function generateHookHypothesisCandidates(
       : evidence;
     const sub = isAgriculture
       ? [originalPrice && `${originalPrice}에서`, discount].filter(Boolean).join(" ") || benefit
-      : `${product} 구매 조건을 한눈에`;
+      : `${product}, ${evidence}`;
     drafts.push({ tag: "price-value", main, sub, reason: evidence, factIds: unique(profile.priceSignals.flatMap((item) => item.factIds)), sceneKey: "price-value", visualStory: "확인된 구매 혜택과 상품 구성을 선명하게 보여준다", scene: "실제 상품과 구성, 확인된 가격 문구를 한 화면에 조판한 완성형 커머스 광고" });
   }
   if (profile.reviewSignals.length) {
@@ -507,10 +533,13 @@ export function generateHookHypothesisCandidates(
     const evidence = words(profile.seasonSignals.map((item) => item.value).join(" · "), 22);
     drafts.push({ tag: "season-newness", main: isAgriculture ? `여름에만 만나는 ${product}` : evidence, sub: isAgriculture ? "이번 기간이 지나면 다음 여름까지" : `${occasion} 먼저 만나는 ${product}`, reason: evidence, factIds: unique(profile.seasonSignals.flatMap((item) => item.factIds)), sceneKey: "season-arrival", visualStory: "확인된 시즌·신상품 신호를 사용 순간과 연결한다", scene: "해당 시즌의 실제 빛과 소품, 상품과 정확한 카피가 결합된 완성 광고" });
   }
-  // Signal-specific candidates must not disappear merely because generic
-  // hypotheses happened to be appended first. Keep at most 15 after all
-  // product-backed candidates have been assembled.
-  const capped = drafts.slice(0, 15);
+  // Product-specific signals outrank general angle exploration. A rich detail
+  // page therefore keeps its price/review/option/origin/season hypotheses,
+  // while a sparse page still receives 12 independent, fact-safe angles.
+  const signalDrafts = drafts.slice(baseDrafts.length);
+  const capped = [...signalDrafts, ...baseDrafts]
+    .filter((draft,index,all)=>all.findIndex((item)=>item.sceneKey===draft.sceneKey)===index)
+    .slice(0,15);
   return capped.map((draft, index) => {
     const id = `hypothesis-${String(index + 1).padStart(2, "0")}-${draft.tag}`;
     const score = rawScores({ truth, factIds: draft.factIds, primaryTag: draft.tag, sceneKey: draft.sceneKey, prior, variant: index % 3 });
@@ -533,6 +562,18 @@ export function generateHookHypothesisCandidates(
       hypothesis: `${tagLabels[draft.tag]} 가설: ${draft.reason}`,
       mainHook: words(draft.main, 28),
       subCopy: words(draft.sub, 42),
+      coreClaim: draft.coreClaim || draft.reason || evidence[0]?.fact,
+      sentenceStyle: /\?/.test(draft.main)
+        ? "question" as const
+        : draft.tag === "sensory-experience"
+          ? "sensory" as const
+          : draft.tag === "price-value"
+            ? "contrast" as const
+            : draft.tag === "scarcity-urgency" || draft.tag === "season-newness"
+              ? "urgency" as const
+              : draft.tag === "review-trust"
+                ? "dialogue" as const
+                : "declaration" as const,
       customerReason: draft.reason,
       selectionReason: `${draft.reason} 근거가 확인되고 '${draft.visualStory}' 표현이 가능해 ${score.total}점으로 선정`,
       evidenceSummary,
@@ -564,27 +605,7 @@ export function generateHookHypothesisCandidates(
 }
 
 export function selectDiverseHookHypotheses(candidates: HookHypothesisCandidate[], count = 6) {
-  const sorted = [...candidates].sort((left, right) => right.score.total - left.score.total || left.id.localeCompare(right.id));
-  const selected: HookHypothesisCandidate[] = [];
-  const reasons = new Set<string>();
-  const scenes = new Set<string>();
-  const trySelect = (candidate: HookHypothesisCandidate, strict: boolean) => {
-    if (strict && (reasons.has(candidate.customerReason) || scenes.has(candidate.sceneKey))) return false;
-    if (selected.some((item) => item.mainHook === candidate.mainHook)) return false;
-    selected.push({ ...candidate, status: "selected" });
-    reasons.add(candidate.customerReason);
-    scenes.add(candidate.sceneKey);
-    return true;
-  };
-  for (const candidate of sorted) {
-    if (selected.length >= count) break;
-    trySelect(candidate, true);
-  }
-  for (const candidate of sorted) {
-    if (selected.length >= count) break;
-    if (!selected.some((item) => item.id === candidate.id)) trySelect(candidate, false);
-  }
-  return selected.slice(0, count);
+  return selectQualityDiverseHooks(candidates,count);
 }
 
 export function buildProductHookExploration(truth: ProductTruth, prior: CategoryHookPrior = {}) {

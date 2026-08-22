@@ -2,7 +2,11 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { GenerationJob, GenerationJobStatus } from "./types";
-import { executionResults } from "./jobRunnerPolicy";
+import {
+  cancelGenerationJob,
+  executionResults,
+  normalizeCreativeProductUrl,
+} from "./jobRunnerPolicy";
 
 const jobsDirectory = path.join(process.cwd(), ".data", "creative-generation", "jobs");
 const globalKey = Symbol.for("daywiz.creative-generation.job-store-locks");
@@ -129,6 +133,36 @@ export const creativeGenerationJobStore = {
 
   async recentFor(input: { advertiserId?: string; productId?: string; limit?: number }) {
     return this.list(input);
+  },
+
+  async supersedeActiveForProduct(productUrl: string, exceptJobId?: string) {
+    const normalizedUrl = normalizeCreativeProductUrl(productUrl);
+    if (!normalizedUrl) return [] as GenerationJob[];
+    const candidates = (await this.active(200)).filter(
+      (job) =>
+        job.id !== exceptJobId &&
+        normalizeCreativeProductUrl(job.productTruth.product.landingUrl) === normalizedUrl
+    );
+    return Promise.all(
+      candidates.map((candidate) =>
+        this.update(candidate.id, (current) => {
+          const cancelled = cancelGenerationJob(current);
+          return {
+            ...cancelled,
+            recoveryLog: [
+              ...(cancelled.recoveryLog || []),
+              {
+                at: new Date().toISOString(),
+                message: "같은 상품의 새 후킹 광고 작업으로 교체",
+                resultIds: cancelled.results
+                  .filter((result) => result.status === "cancelled")
+                  .map((result) => result.id),
+              },
+            ].slice(-20),
+          };
+        })
+      )
+    );
   },
 
   async update(jobId: string, mutate: (job: GenerationJob) => GenerationJob | Promise<GenerationJob>) {

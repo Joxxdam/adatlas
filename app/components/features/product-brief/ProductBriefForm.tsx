@@ -30,13 +30,13 @@ export function ProductBriefForm(props: {
       <div className={`${styles.confirmBar} ${props.confirmed ? styles.confirmBarDone : ""}`}>
         <span>
           {props.confirmed
-            ? "상세페이지 고유 후킹으로 광고 이미지를 만들고 있습니다."
+            ? "상품 분석이 완료되었습니다. 아래 제작 영역에서 진행 상태와 결과를 확인할 수 있습니다."
             : props.canConfirm
               ? "별도 설정 없이 상품 분석 결과로 바로 제작합니다."
               : "먼저 상품 정보와 광고용 이미지를 불러와 주세요."}
         </span>
         <button disabled={!props.canConfirm || props.confirmed} onClick={props.onConfirm} type="button">
-          {props.confirmed ? "광고 이미지 제작 중" : "광고 이미지 만들기"}
+          {props.confirmed ? "상품 분석 완료" : "광고 이미지 만들기"}
         </button>
       </div>
     </section>

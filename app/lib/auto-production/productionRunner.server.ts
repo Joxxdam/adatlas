@@ -14,6 +14,7 @@ import { autoProductionRepository } from "./productionRepository.server";
 import { nextScheduledAt, scheduledRunKey, seoulClock } from "./schedule";
 import { createAutoProductionTaskId } from "./taskIdentity";
 import { candidateIdentityKeys } from "./productIdentity";
+import { buildAutoProductionPackage } from "./package.server";
 import type {
   AutoProductionAdvertiserConfig,
   AutoProductionPreview,
@@ -141,6 +142,7 @@ function runRecord(config: AutoProductionAdvertiserConfig, trigger: AutoProducti
     expectedImages: 0,
     completedImages: 0,
     failedImages: 0,
+    packageStatus: "pending",
     tasks: [],
     warnings: [],
     errors: [],
@@ -300,7 +302,50 @@ export async function syncAutoProductionRun(runId: string) {
   const status = allTerminal
     ? completedImages && failedImages ? "partial" : completedImages ? "completed" : tasks.every((task) => task.status.startsWith("skipped")) ? "skipped" : "failed"
     : "generating-creatives";
-  return autoProductionRepository.update(runId, (current) => ({ ...current, tasks, completedImages, failedImages, status, completedAt: allTerminal ? current.completedAt || new Date().toISOString() : undefined }));
+  let updated = await autoProductionRepository.update(runId, (current) => ({
+    ...current,
+    tasks,
+    completedImages,
+    failedImages,
+    status,
+    packageStatus:
+      allTerminal && completedImages > 0 && current.packageImageCount === completedImages
+        ? current.packageStatus
+        : "pending",
+    packageReadyAt:
+      current.packageImageCount === completedImages ? current.packageReadyAt : undefined,
+    packageFileName:
+      current.packageImageCount === completedImages ? current.packageFileName : undefined,
+    packageImageCount:
+      current.packageImageCount === completedImages ? current.packageImageCount : undefined,
+    packageError: undefined,
+    completedAt: allTerminal ? current.completedAt || new Date().toISOString() : undefined,
+  }));
+  if (allTerminal && completedImages > 0 && updated.packageStatus !== "ready") {
+    updated = await autoProductionRepository.update(runId, (current) => ({
+      ...current,
+      packageStatus: "building",
+      packageError: undefined,
+    }));
+    try {
+      const artifact = await buildAutoProductionPackage(runId);
+      updated = await autoProductionRepository.update(runId, (current) => ({
+        ...current,
+        packageStatus: "ready",
+        packageReadyAt: artifact.generatedAt,
+        packageFileName: artifact.fileName,
+        packageImageCount: artifact.imageCount,
+        packageError: undefined,
+      }));
+    } catch (error) {
+      updated = await autoProductionRepository.update(runId, (current) => ({
+        ...current,
+        packageStatus: "failed",
+        packageError: safeMessage(error, "다운로드 패키지를 준비하지 못했습니다."),
+      }));
+    }
+  }
+  return updated;
 }
 
 export function ensureAutoProductionRunMonitor(runId: string) {
@@ -348,7 +393,18 @@ export async function queueAutoProductionHooks(runId: string, taskIdValue: strin
     completedAt: undefined,
     results: current.results.map((result) => requestedIds.includes(result.id) && ["cancelled", "failed"].includes(result.status) ? { ...result, status: "pending", error: undefined, startedAt: undefined } : result),
   }));
-  await autoProductionRepository.update(runId, (current) => ({ ...current, status: "generating-creatives", expectedImages: current.expectedImages + additionalIds.length, completedAt: undefined, tasks: current.tasks.map((item) => item.id === taskIdValue ? { ...item, status: "queued", results: resultsFromJob(updated), updatedAt: new Date().toISOString() } : item) }));
+  await autoProductionRepository.update(runId, (current) => ({
+    ...current,
+    status: "generating-creatives",
+    expectedImages: current.expectedImages + additionalIds.length,
+    completedAt: undefined,
+    packageStatus: "pending",
+    packageReadyAt: undefined,
+    packageFileName: undefined,
+    packageImageCount: undefined,
+    packageError: undefined,
+    tasks: current.tasks.map((item) => item.id === taskIdValue ? { ...item, status: "queued", results: resultsFromJob(updated), updatedAt: new Date().toISOString() } : item),
+  }));
   enqueueGenerationJob(updated.id);
   ensureAutoProductionRunMonitor(runId);
   return updated;

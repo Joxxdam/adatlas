@@ -178,13 +178,19 @@ export function VideoProjectWorkspace({
         body: JSON.stringify({ conceptId, actor: "마케터" }),
       });
       const payload = await response.json();
+      if (!response.ok && payload.failure?.code === "GENERATION_ALREADY_RUNNING") {
+        setNotice(
+          "같은 영상 기획 생성이 이미 진행 중입니다. 완료 후 저장 결과를 다시 확인해 주세요."
+        );
+        return;
+      }
       if (!response.ok) throw new Error(payload.error || "기획안 생성에 실패했습니다.");
       setProject(payload.project);
       setEditing(null);
       setNotice(
         conceptId
           ? "선택한 후킹 기획안을 다시 생성했습니다."
-          : "서로 다른 후킹 기획안 3개를 생성했습니다."
+          : "서로 다른 후킹 기획안 4개를 생성했습니다."
       );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "기획안 생성 실패");
@@ -310,9 +316,10 @@ export function VideoProjectWorkspace({
 
   const currentStep = statusStep[project.status];
   const canUpload = ["in_production", "revision_requested"].includes(project.status);
-  const scriptHref = basePath === "/video-planning" && project.selectedConceptId
-    ? `/video-planning/${project.id}/concept/${project.selectedConceptId}`
-    : `${basePath}/${project.id}${basePath === "/video-collaboration" ? "/script" : ""}`;
+  const scriptHref =
+    basePath === "/video-planning" && project.selectedConceptId
+      ? `/video-planning/${project.id}/concept/${project.selectedConceptId}`
+      : `${basePath}/${project.id}${basePath === "/video-collaboration" ? "/script" : ""}`;
 
   return (
     <main className={styles.page}>
@@ -328,10 +335,7 @@ export function VideoProjectWorkspace({
         </div>
         <div className={styles.headerActions}>
           {project.concepts.length ? (
-            <Link
-              className={styles.primaryButton}
-              href={scriptHref}
-            >
+            <Link className={styles.primaryButton} href={scriptHref}>
               제작 대본 보기
             </Link>
           ) : null}
@@ -470,8 +474,12 @@ export function VideoProjectWorkspace({
           <div className={styles.factGrid}>
             {project.pipelineProgress.map((item, index) => (
               <div key={item.stage}>
-                <span>{String(index + 1).padStart(2, "0")} · {item.stage}</span>
-                <p>{item.status === "warning" ? "확인 필요" : "완료"} · {item.message}</p>
+                <span>
+                  {String(index + 1).padStart(2, "0")} · {item.stage}
+                </span>
+                <p>
+                  {item.status === "warning" ? "확인 필요" : "완료"} · {item.message}
+                </p>
               </div>
             ))}
           </div>
@@ -479,9 +487,13 @@ export function VideoProjectWorkspace({
             <summary>내부 후킹 후보와 평가 점수 보기</summary>
             {(project.hookCandidates || []).map((candidate) => (
               <div className={styles.cutPreview} key={candidate.id}>
-                <strong>{VIDEO_HOOK_LABELS[candidate.hookType]} · {candidate.score.total}점</strong>
+                <strong>
+                  {VIDEO_HOOK_LABELS[candidate.hookType]} · {candidate.score.total}점
+                </strong>
                 <span>{candidate.hook}</span>
-                <small>근거 {candidate.evidenceIds.length}개 · {candidate.visualIdea}</small>
+                <small>
+                  근거 {candidate.evidenceIds.length}개 · {candidate.visualIdea}
+                </small>
               </div>
             ))}
           </details>
@@ -493,8 +505,13 @@ export function VideoProjectWorkspace({
           <summary>참고 자료 분석 범위</summary>
           {project.referenceAnalyses.map((analysis) => (
             <div className={styles.cutPreview} key={analysis.assetId}>
-              <strong>{analysis.assetName} · {analysis.analysisStatus === "limited" ? "제한 분석" : "정지 이미지"}</strong>
-              <span>오프닝: {analysis.openingHookMethod} · 자막: {analysis.subtitlePosition}</span>
+              <strong>
+                {analysis.assetName} ·{" "}
+                {analysis.analysisStatus === "limited" ? "제한 분석" : "정지 이미지"}
+              </strong>
+              <span>
+                오프닝: {analysis.openingHookMethod} · 자막: {analysis.subtitlePosition}
+              </span>
               <small>{analysis.limitations.join(" · ")}</small>
             </div>
           ))}
@@ -574,7 +591,8 @@ export function VideoProjectWorkspace({
                 <small>{concept.recommendationReason}</small>
                 {concept.validation ? (
                   <small className={concept.validation.valid ? undefined : styles.warning}>
-                    자동 검증 {concept.validation.score}점 · {concept.validation.valid ? "통과" : "확인 필요"}
+                    자동 검증 {concept.validation.score}점 ·{" "}
+                    {concept.validation.valid ? "통과" : "확인 필요"}
                   </small>
                 ) : null}
                 <code>{concept.materialCode}</code>
@@ -871,10 +889,7 @@ export function VideoProjectWorkspace({
               <p>확정 대본과 제작 조건을 한 화면에서 확인합니다.</p>
             </div>
             <div className={styles.headerActions}>
-              <Link
-                className={styles.primaryButton}
-                href={scriptHref}
-              >
+              <Link className={styles.primaryButton} href={scriptHref}>
                 제작 대본 보기
               </Link>
               <code>{project.finalScript.materialCode}</code>

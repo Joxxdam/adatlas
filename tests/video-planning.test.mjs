@@ -405,6 +405,39 @@ test("수동 수정 뒤 품질 검수를 다시 계산하고 불합격 대본의
   }
 });
 
+test("내부 제작 주의사항은 광고 금지 문구의 공개 카피 검사 대상이 아니다", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "adatlas-video-planning-cautions-"));
+  try {
+    const repository = createVideoProjectRepository({ dataDirectory: directory });
+    const caution = "상세페이지에서 확인되지 않은 효능·수치·판매 성과를 추가하지 않습니다.";
+    const project = await repository.create({
+      projectName: "내부 제작 주의사항 저장",
+      advertiserName: "오리지널소스",
+      productUrl: beautyAnalysis.productUrl,
+      marketerName: "박마케터",
+      designerName: "",
+      duration: 20,
+      format: "short-form",
+      objective: "purchase",
+      referenceAssets: [],
+      productAnalysis: beautyAnalysis,
+      brandGuideline: { ...guideline, forbiddenPhrases: [caution] },
+    });
+    const summary = makeSummary(beautyAnalysis, 0, "problem-solution");
+    summary.productionCautions = [caution];
+    await repository.saveConceptSummaries(project.id, [summary]);
+    const detailed = makeDetailed(summary, beautyAnalysis, 20);
+    detailed.productionCautions = [caution];
+    const saved = await repository.saveGeneratedConcepts(project.id, [detailed], {
+      conceptId: detailed.id,
+    });
+    assert.equal(saved.concepts[0].productionCautions[0], caution);
+    assert.equal(saved.concepts[0].cuts.length, 16);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저장한다", async () => {
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-video-planning-request-"));
   try {

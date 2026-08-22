@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { createBrandCode, createProductCode } from "../creative-assets/code.ts";
 import type {
   ProductAnalysisSnapshot,
@@ -296,5 +295,5 @@ export function videoProjectSummary(project: VideoProject) {
 }
 
 export function newHistoryId() {
-  return crypto.randomUUID();
+  return globalThis.crypto.randomUUID();
 }

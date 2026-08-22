@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
@@ -45,6 +45,11 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
   ]);
   const profileSources: CreativeImageAsset[] = (job.productReferenceProfile?.referenceImages || [])
     .filter((image) => image.usableForGeneration && !image.duplicateOf && !image.watermarkRisk)
+    // Text-heavy square/detail images are often finished ads or promotional
+    // banners. Feeding them back into image generation causes the model to
+    // reproduce old copy panels and embedded ad fragments. Product labels are
+    // still available through the separately verified ProductTruth assets.
+    .filter((image) => !image.hasText)
     .filter((image) => !/\/(?:processed-products|product-cutouts)\//i.test(image.url))
     .sort((left, right) => (rolePriority.get(right.role) || 0) + right.importance - (rolePriority.get(left.role) || 0) - left.importance)
     .map((image) => ({
@@ -63,19 +68,28 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
       asset.role !== "product-cutout" &&
       !/\/(?:processed-products|product-cutouts)\//i.test(asset.path)
   );
-  return originals
+  const productScore = (asset: CreativeImageAsset) => {
+    if (asset.role === "product-packshot") return 500;
+    if (asset.role === "product-lifestyle") return 420;
+    if (asset.role === "detail-image") return 340;
+    return 0;
+  };
+  const productSources = originals
+    .filter((asset) => asset.role !== "ad-reference" && asset.verified)
+    .sort((left, right) => productScore(right) - productScore(left));
+  const primary = productSources[0];
+  if (!primary) return [];
+  const supporting = productSources
+    .filter((asset) => asset.path !== primary.path)
     .sort((left, right) => {
-      const score = (asset: (typeof unique)[number]) => {
-        if (asset.role === "product-packshot") return 500;
-        if (asset.role === "product-lifestyle") return 450;
-        if (asset.role === "detail-image") return 350;
-        if (asset.role === "ad-reference") return 250;
-        if (asset.role === "product-cutout") return 100;
-        return 0;
-      };
-      return score(right) - score(left);
+      const roleBonus = (asset: CreativeImageAsset) => asset.role === "product-lifestyle" ? 30 : asset.role === "detail-image" ? 20 : 0;
+      return productScore(right) + roleBonus(right) - productScore(left) - roleBonus(left);
     })
-    .slice(0, 5);
+    .slice(0, 4);
+  // Native AI generation receives only product-page evidence. Advertising
+  // references are distilled into semantic grammar and are never attached as
+  // pixels, so an old ad cannot become part of a new creative.
+  return [primary, ...supporting].slice(0, 5);
 }
 
 export async function prepareNativeReferenceImages(job: GenerationJob) {
@@ -83,15 +97,16 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
   const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references");
   await mkdir(directory, { recursive: true });
   const sources = selectNativeReferenceSources(job);
+  if (!sources.length || sources[0].role === "ad-reference") {
+    throw new Error("AI 제작에 사용할 검증된 원본 상품 이미지가 없습니다.");
+  }
   const files: string[] = [];
   for (let index = 0; index < sources.length; index += 1) {
     const file = path.join(directory, `reference-${index + 1}.png`);
-    try {
-      await access(file);
-    } catch {
-      const buffer = await readCreativeRasterAsset(sources[index].path);
-      await writeFile(file, buffer);
-    }
+    // Always refresh the prepared file. Older jobs may have cached an ad
+    // reference at the same numbered path before the product-only policy.
+    const buffer = await readCreativeRasterAsset(sources[index].path);
+    await writeFile(file, buffer);
     files.push(file);
   }
   if (!files.length) throw new Error("AI 제작에 사용할 실제 상품 참조 이미지가 없습니다.");
@@ -157,6 +172,7 @@ async function writeNativeJobArtifacts(job: GenerationJob, brandMemory?: PromptB
     atomicJson(path.join(directory, "product-analysis.json"), {
       productId: job.productTruth.productId,
       product: job.productTruth.product,
+      normalized: job.productTruth.normalized,
       facts: job.productTruth.facts,
       verifiedClaims: job.productTruth.verifiedClaims,
       unverifiedClaims: job.productTruth.unverifiedClaims,
@@ -212,7 +228,7 @@ export async function writeNativeManifest(job: GenerationJob, brandMemory?: Prom
       mainHook: result.hookPlan.headline,
       subCopy: result.hookPlan.body,
       visualConcept: job.visualDiversityMatrix?.find((entry) => entry.hookCode === result.hookPlan.hookCode),
-      referenceImages: [...job.productTruth.referenceImages, ...job.productTruth.imageAssets].map((asset) => asset.path),
+      referenceImages: result.nativeCreative?.referencePaths || [...job.productTruth.referenceImages, ...job.productTruth.imageAssets].map((asset) => asset.path),
       generationEngine: result.nativeCreative?.engine || job.engine,
       revisionCount: result.nativeCreative?.revisionCount || 0,
       koreanTextVerified: (result.nativeCreative?.validation?.koreanTextAccuracy || 0) >= 95,

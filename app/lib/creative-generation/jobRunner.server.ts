@@ -127,8 +127,12 @@ async function runSafely(jobId: string) {
   }
 }
 
-export function enqueueGenerationJob(jobId: string) {
-  return runner.enqueue(jobId);
+export function enqueueGenerationJob(jobId: string, options: { priority?: boolean } = {}) {
+  return runner.enqueue(jobId, options);
+}
+
+export function cancelQueuedGenerationJob(jobId: string) {
+  return runner.cancelQueued(jobId);
 }
 
 export async function waitForGenerationJobForTests(jobId: string) {

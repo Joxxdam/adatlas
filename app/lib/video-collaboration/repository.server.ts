@@ -123,7 +123,6 @@ function conceptText(concept: VideoConcept) {
     concept.fullScript,
     concept.cta,
     ...concept.requiredSources,
-    ...concept.productionCautions,
     ...concept.cuts.flatMap((cut) => [
       cut.sceneDescription,
       cut.caption,

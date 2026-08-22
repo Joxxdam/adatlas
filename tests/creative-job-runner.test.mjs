@@ -38,8 +38,18 @@ test("1. 작업 생성 API는 저장 직후 서버 runner를 자동 시작하고
     read("app/lib/creative-generation/createNativeGenerationJob.server.ts"),
   ]);
   assert.match(route, /createNativeGenerationJob\(body\)/);
-  assert.match(service, /enqueueGenerationJob\(job\.id\)/);
+  assert.match(service, /enqueueGenerationJob\(job\.id, \{ priority: job\.sourceType === "manual" \}\)/);
+  assert.match(service, /supersedeActiveForProduct/);
+  assert.match(service, /cancelQueuedGenerationJob/);
   assert.match(route, /status: 202/);
+});
+
+test("1-1. 활성 작업 조회는 같은 상품의 최신 작업만 재개하고 전체 조회가 과거 큐를 다시 실행하지 않는다", async () => {
+  const active = await read("app/api/creative-generation/jobs/active/route.ts");
+  assert.match(active, /selectedCandidates = requestedProductUrl \? candidates\.slice\(0, 1\) : candidates/);
+  assert.match(active, /supersedeActiveForProduct/);
+  assert.match(active, /cancelQueuedGenerationJob/);
+  assert.match(active, /enqueueGenerationJob\(job\.id, \{ priority: true \}\)/);
 });
 
 test("2. 클라이언트는 runPending이나 workerCount로 H01~H06을 지휘하지 않는다", async () => {
@@ -70,6 +80,26 @@ test("4. 동일 jobId를 두 번 enqueue해도 실행은 한 번뿐이다", asyn
   release();
   await runner.wait("job-a");
   assert.equal(calls, 1);
+});
+
+test("4-1. 취소된 중복 대기 작업을 제거하고 최신 작업을 우선 실행한다", async () => {
+  const started = [];
+  const releases = new Map();
+  const runner = createIdempotentJobRunner(async (jobId) => {
+    started.push(jobId);
+    await new Promise((resolve) => releases.set(jobId, resolve));
+  }, 1);
+  runner.enqueue("running-old");
+  runner.enqueue("queued-old");
+  runner.enqueue("latest", { priority: true });
+  assert.equal(runner.cancelQueued("queued-old"), true);
+  assert.equal(runner.isActive("queued-old"), false);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  releases.get("running-old")();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.deepEqual(started, ["running-old", "latest"]);
+  releases.get("latest")();
+  await runner.wait("latest");
 });
 
 test("5. 완료된 후킹은 재실행하지 않고 pending/허용된 failed만 선택한다", () => {

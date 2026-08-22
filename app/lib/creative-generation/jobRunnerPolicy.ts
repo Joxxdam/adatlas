@@ -1,9 +1,22 @@
 import type { GenerationJob, GenerationResult } from "./types";
 
+export function normalizeCreativeProductUrl(value: string) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    [...url.searchParams.keys()]
+      .filter((key) => /^utm_|^(?:fbclid|gclid)$/i.test(key))
+      .forEach((key) => url.searchParams.delete(key));
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return value.trim().replace(/\/$/, "");
+  }
+}
+
 export function isServerRunnableGenerationJob(job: GenerationJob) {
   return Boolean(
     job.engine &&
-    ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition"].includes(job.version) &&
+    ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad"].includes(job.version) &&
     job.results.length === 6
   );
 }

@@ -122,6 +122,7 @@ public/video-collaboration/*
 /.data/generated/
 /.data/creative-generation/
 /.data/site-candidates/
+/.data/creative-plan-cache/
 public/generated/
 
 # automatic production mutable settings, runs and scheduler logs

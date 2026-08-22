@@ -234,11 +234,11 @@ test("products without price or reviews never receive price-benefit or review ho
   assert.ok(!hooks.some((hook) => /원|할인|후기|리뷰/.test(`${hook.mainHook} ${hook.subCopy}`)));
 });
 
-test("상품별 후킹 탐색은 후보 10~15개를 만든 뒤 서로 다른 근거와 장면의 6개를 선택한다", () => {
+test("상품별 후킹 탐색은 후보 12~15개를 만든 뒤 서로 다른 근거와 장면의 6개를 선택한다", () => {
   for (const fixture of fixtures) {
     const truth = truthFor(fixture.product);
     const exploration = buildProductHookExploration(truth);
-    assert.ok(exploration.candidates.length >= 10 && exploration.candidates.length <= 15);
+    assert.ok(exploration.candidates.length >= 12 && exploration.candidates.length <= 15);
     assert.equal(exploration.selected.length, 6);
     const tagCounts = exploration.selected.reduce((map, item) => {
       map.set(item.primaryTag, (map.get(item.primaryTag) || 0) + 1);
@@ -480,7 +480,9 @@ test(
       `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"><defs><pattern id="p" width="64" height="64" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#061a24"/><rect x="32" y="32" width="32" height="32" fill="#061a24"/><rect x="32" width="32" height="32" fill="#b7f7e8"/><rect y="32" width="32" height="32" fill="#b7f7e8"/></pattern></defs><rect width="1024" height="1024" fill="url(#p)"/></svg>`
     )).png().toBuffer();
     const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+    const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
     process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
+    process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
     let sceneCalls = 0;
     const provider = {
       id: "openai",
@@ -516,6 +518,8 @@ test(
     } finally {
       if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
       else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
+      if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+      else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
     }
   }
 );
@@ -821,9 +825,11 @@ test(
     });
     const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
     const previousPaid = process.env.PAID_IMAGE_GENERATION_ENABLED;
+    const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
     const calls = [];
     process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
     process.env.PAID_IMAGE_GENERATION_ENABLED = "false";
+    process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
     const failingProvider = {
       id: "mock",
       isConfigured: () => true,
@@ -856,6 +862,8 @@ test(
       else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
       if (previousPaid === undefined) delete process.env.PAID_IMAGE_GENERATION_ENABLED;
       else process.env.PAID_IMAGE_GENERATION_ENABLED = previousPaid;
+      if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+      else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
     }
   }
 );
@@ -877,8 +885,10 @@ test(
     );
     const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
     const previousCandidates = process.env.ADATLAS_MAX_SCENE_CANDIDATES;
+    const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
     process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
     process.env.ADATLAS_MAX_SCENE_CANDIDATES = "3";
+    process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
     let calls = 0;
     const unverifiedProvider = {
       id: "openai",
@@ -912,6 +922,8 @@ test(
       else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
       if (previousCandidates === undefined) delete process.env.ADATLAS_MAX_SCENE_CANDIDATES;
       else process.env.ADATLAS_MAX_SCENE_CANDIDATES = previousCandidates;
+      if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+      else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
     }
   }
 );

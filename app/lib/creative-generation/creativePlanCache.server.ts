@@ -2,9 +2,12 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CreativePlan, ProductTruth } from "./types";
-import { PERFORMANCE_TEMPLATE_REGISTRY_VERSION } from "./performanceTemplateRegistry.ts";
+import { PRODUCT_TRUTH_VERSION } from "./productTruth.ts";
+import { REFERENCE_CREATIVE_GRAMMAR_VERSION } from "./referenceCreativeGrammar.ts";
+import { HOOK_QUALITY_VERSION } from "./hookQuality.ts";
+import { hasBannedCreativePhrase, looksLikeGenericOrRepetitiveCopy } from "./bannedCreativePhrases.ts";
 
-export const CREATIVE_PLAN_CACHE_VERSION = "creative-plan-cache-v1";
+export const CREATIVE_PLAN_CACHE_VERSION = "creative-plan-cache-v3-quality-gated";
 export const BRAND_RULES_VERSION = "brand-copy-rules-v1";
 export const HOOK_PROMPT_VERSION = "codex-local-hook-planner-v2-one-shot";
 
@@ -46,7 +49,10 @@ export function buildCreativePlanFingerprint(truth: ProductTruth) {
     representativeImageHash,
     brandRulesVersion: BRAND_RULES_VERSION,
     hookPromptVersion: HOOK_PROMPT_VERSION,
-    templateRegistryVersion: PERFORMANCE_TEMPLATE_REGISTRY_VERSION,
+    productTruthVersion: PRODUCT_TRUTH_VERSION,
+    referenceGrammarVersion: REFERENCE_CREATIVE_GRAMMAR_VERSION,
+    hookQualityVersion: HOOK_QUALITY_VERSION,
+    cacheVersion:CREATIVE_PLAN_CACHE_VERSION,
   });
 }
 
@@ -55,7 +61,35 @@ const root = path.join(process.cwd(), ".data", "creative-plan-cache");
 export async function readCreativePlanCache(fingerprint: string) {
   try {
     const parsed = JSON.parse(await readFile(path.join(root, `${fingerprint}.json`), "utf8")) as CachedPlan;
-    return parsed.fingerprint === fingerprint ? parsed : null;
+    if (parsed.fingerprint !== fingerprint) return null;
+    const candidates = parsed.exploration?.candidates || [];
+    const selected = parsed.exploration?.selected || [];
+    const validCopy = selected.every((item) =>
+      item.mainHook && item.subCopy &&
+      !hasBannedCreativePhrase(`${item.mainHook} ${item.subCopy}`) &&
+      !looksLikeGenericOrRepetitiveCopy(item.mainHook,item.subCopy) &&
+      item.score?.total >= 35
+    );
+    const distinctTags = new Set(selected.map((item) => item.primaryTag)).size;
+    const normalized = (value: string) => String(value || "")
+      .normalize("NFKC")
+      .toLocaleLowerCase("ko-KR")
+      .replace(/[^가-힣a-z0-9]/g, "");
+    const claims = selected.map((item) => normalized(item.coreClaim || item.verifiedEvidence?.[0] || item.customerReason));
+    const scenes = selected.map((item) => normalized(item.sceneKey));
+    const duplicateClaim = claims.some((claim, index) => !claim || claims.indexOf(claim) !== index);
+    const duplicateScene = scenes.some((scene, index) => !scene || scenes.indexOf(scene) !== index);
+    const priceCount = selected.filter((item) => item.primaryTag === "price-value").length;
+    if (
+      candidates.length < 12 ||
+      selected.length !== 6 ||
+      distinctTags < 4 ||
+      duplicateClaim ||
+      duplicateScene ||
+      priceCount > 2 ||
+      !validCopy
+    ) return null;
+    return parsed;
   } catch {
     return null;
   }

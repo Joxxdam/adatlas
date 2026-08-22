@@ -267,6 +267,31 @@ export type MasterSceneArtifact = {
 export type ProductTruth = {
   productId: string;
   product: ProductInfoForPrompt;
+  normalized: {
+    rawProductTitle: string;
+    cleanProductName: string;
+    brandName: string;
+    category: string;
+    price?: string;
+    originalPrice?: string;
+    discount?: string;
+    discountInfo?: string;
+    promotion?: string;
+    quantity?: string;
+    composition?: string;
+    shipping?: string;
+    origin?: string;
+    ingredients: string[];
+    verifiedBenefits: string[];
+    seasonOrEvent?: string;
+    packageOrOption?: string;
+    uspCandidates: string[];
+    reviewEvidence: string[];
+    targetCustomer?: string;
+    target?: string;
+    usageOccasions: string[];
+    useSituations: string[];
+  };
   facts: ProductFact[];
   verifiedClaims: string[];
   unverifiedClaims: string[];
@@ -456,6 +481,31 @@ export type CategoryCreativeProfile = {
 
 export type CreativeGenerationEngine = "codex_local" | "openai_api";
 
+/**
+ * 유료 API는 키나 서버 플래그만으로 활성화하지 않는다.
+ * 향후 별도 선택 UI에서 사용자가 해당 작업에 한해 명시적으로 승인했을 때만 전달한다.
+ */
+export type PaidApiAuthorization = {
+  explicitlySelected: true;
+  provider: "openai_api";
+  scope: "native-creative";
+  acknowledgedAt: string;
+};
+
+export function hasExplicitPaidApiAuthorization(
+  value: PaidApiAuthorization | undefined
+): value is PaidApiAuthorization {
+  if (
+    value?.explicitlySelected !== true ||
+    value.provider !== "openai_api" ||
+    value.scope !== "native-creative"
+  ) {
+    return false;
+  }
+  const acknowledgedAt = Date.parse(value.acknowledgedAt);
+  return Number.isFinite(acknowledgedAt) && acknowledgedAt <= Date.now();
+}
+
 export type VisualDiversityMatrixEntry = {
   hookCode: HookMessageCode;
   sceneType: string;
@@ -511,7 +561,9 @@ export type NativeGroupValidation = {
 
 export type NativeCreativeArtifact = {
   engine: CreativeGenerationEngine;
-  /** Text-free AI scene used as the immutable input for local product/copy composition. */
+  /** Exact minimal reference set supplied to this result's scene generation. */
+  referencePaths?: string[];
+  /** Legacy text-free scene path. New ai-native-final results leave this empty. */
   backgroundPath?: string;
   originalPath?: string;
   revisionPaths: string[];
@@ -529,11 +581,17 @@ export type NativeCreativeArtifact = {
   };
   composition?: {
     version: string;
-    templateId: PerformanceTemplateId;
+    /** Present only for legacy template-composed results. */
+    templateId?: PerformanceTemplateId;
+    creativeGrammarId?: CreativeGrammarId;
+    layoutPlan?: AdaptiveLayoutPlan;
     paletteId: string;
     productSource: string;
     productComposed: boolean;
     exactKoreanComposed: boolean;
+    productBounds?: PlacementBox[];
+    textBounds?: PlacementBox[];
+    validationStatus?: "auto-checked" | "manual-review" | "failed";
   };
   export?: {
     width: 1200;
@@ -552,6 +610,8 @@ export type HookHypothesisCandidate = {
   hypothesis: string;
   mainHook: string;
   subCopy: string;
+  coreClaim?: string;
+  sentenceStyle?: "question" | "declaration" | "dialogue" | "contrast" | "sensory" | "urgency" | "proof";
   customerReason: string;
   customerTension: string;
   verifiedEvidence: string[];
@@ -644,11 +704,53 @@ export type HookPlan = {
   primaryTag?: HookTaxonomyTag;
   secondaryTags?: HookTaxonomyTag[];
   customerReason?: string;
+  coreClaim?: string;
+  sentenceStyle?: HookHypothesisCandidate["sentenceStyle"];
   selectionReason?: string;
   score?: HookHypothesisScore;
   creativeBrief?: HookCreativeBrief;
   /** Automatically selected performance grammar. It is internal metadata, not ad copy. */
   performanceTemplateId?: PerformanceTemplateId;
+  /** Semantic native-creative grammar. It carries no fixed coordinates. */
+  creativeGrammarId?: CreativeGrammarId;
+};
+
+export const creativeGrammarIds = [
+  "PROVOCATIVE_REVERSAL",
+  "SENSORY_PROOF",
+  "SITUATION_STORY",
+  "PRICE_VALUE",
+  "SOCIAL_DIALOGUE",
+  "FEATURE_EVIDENCE",
+  "BUNDLE_LINEUP",
+  "SEASON_URGENCY",
+  "PREMIUM_EDITORIAL",
+  "PROBLEM_RELIEF",
+] as const;
+
+export type CreativeGrammarId = (typeof creativeGrammarIds)[number];
+
+export type AdaptiveLayoutPlan = {
+  version: string;
+  id: string;
+  grammarId: CreativeGrammarId;
+  sceneAnchor: "full-bleed" | "left-story" | "right-story" | "top-story" | "split-story";
+  copyAnchor: "top-left" | "top-center" | "left-center" | "bottom-left" | "bottom-center";
+  productAnchor: "left" | "center" | "right" | "bottom-left" | "bottom-right";
+  productScale: number;
+  productCount: 1 | 2 | 3;
+  productRotation: number[];
+  textAlign: "left" | "center";
+  typographyRole: "heavy" | "display" | "editorial" | "handwritten";
+  headlineMaxWidth: number;
+  headlineMaxLines: number;
+  subCopyMaxWidth: number;
+  graphicMotif: "marker" | "speech" | "circle" | "arrow" | "label" | "receipt" | "none";
+  paletteId: string;
+  contrastSurface: "none" | "gradient" | "paper" | "solid";
+  priceEmphasis: boolean;
+  sceneKey: string;
+  reasons: string[];
 };
 
 export type DynamicTextBox = PlacementBox & {
@@ -1013,6 +1115,8 @@ export type GenerationJob = {
   errors: string[];
   version: string;
   engine?: CreativeGenerationEngine;
+  /** 서버 저장용 작업별 유료 API 승인. 기본 Codex 작업에는 존재하지 않는다. */
+  paidApiAuthorization?: PaidApiAuthorization;
   paidApiUsed?: boolean;
   advertiserId?: string;
   advertiserName?: string;
@@ -1079,4 +1183,6 @@ export type CreateGenerationJobInput = {
   strategyVariation?: number;
   mode?: CreativeExplorationMode;
   engine?: CreativeGenerationEngine;
+  /** 별도 유료 공급자 선택 화면에서만 설정한다. 일반 제작 UI는 이 값을 보내지 않는다. */
+  paidApiAuthorization?: PaidApiAuthorization;
 };

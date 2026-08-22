@@ -177,6 +177,11 @@ export type AutoProductionRun = {
   expectedImages: number;
   completedImages: number;
   failedImages: number;
+  packageStatus?: "pending" | "building" | "ready" | "failed";
+  packageReadyAt?: string;
+  packageFileName?: string;
+  packageImageCount?: number;
+  packageError?: string;
   tasks: AutoProductionProductTask[];
   warnings: string[];
   errors: string[];

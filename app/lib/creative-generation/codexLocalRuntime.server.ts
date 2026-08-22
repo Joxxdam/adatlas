@@ -16,12 +16,22 @@ const runtimeGlobal = globalThis as typeof globalThis & { [cacheKey]?: RuntimeCa
 const cache = runtimeGlobal[cacheKey] ?? {};
 runtimeGlobal[cacheKey] = cache;
 
+const paidApiEnvironmentKeys = new Set([
+  "OPENAI_API_KEY",
+  "CODEX_API_KEY",
+  "AZURE_OPENAI_API_KEY",
+  "OPENAI_BASE_URL",
+  "AZURE_OPENAI_ENDPOINT",
+  "OPENAI_ORGANIZATION",
+  "OPENAI_PROJECT",
+]);
+
 export function codexLocalEnvironment() {
   return Object.fromEntries(
     Object.entries(process.env).filter(
       ([key, value]) =>
         value !== undefined &&
-        !["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY"].includes(key)
+        !paidApiEnvironmentKeys.has(key)
     )
   ) as Record<string, string>;
 }
@@ -55,7 +65,9 @@ export async function codexLocalAuthenticated(options: { force?: boolean } = {})
         timeout: 10_000,
         env: codexLocalEnvironment() as NodeJS.ProcessEnv,
       });
-      return /logged in/i.test(`${stdout}\n${stderr}`);
+      // `Logged in using an API key` is intentionally rejected. The default
+      // creative engine is allowed only with the user's ChatGPT/Codex login.
+      return /logged in using chatgpt/i.test(`${stdout}\n${stderr}`);
     } catch {
       return false;
     }

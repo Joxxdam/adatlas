@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { POST as extractProduct } from "../../extract/product/route";
 import { adaptExtractedProductToVideoSnapshot } from "../../../lib/video-collaboration/analysisAdapter";
 import { enrichVideoProductAnalysis } from "../../../lib/video-collaboration/analysisEnricher.server";
+import {
+  sanitizeVideoPlanningErrorMessage,
+  VideoPlanningGenerationError,
+  videoPlanningFailureHttpStatus,
+} from "../../../lib/video-collaboration/videoPlanningAi.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,8 +42,14 @@ export async function POST(request: Request) {
       extracted: payload.productInfo,
     });
   } catch (error) {
+    if (error instanceof VideoPlanningGenerationError) {
+      return NextResponse.json(
+        { ok: false, error: error.failure.message, failure: error.failure },
+        { status: videoPlanningFailureHttpStatus(error.failure.code) }
+      );
+    }
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "상품 분석 실패" },
+      { ok: false, error: sanitizeVideoPlanningErrorMessage(error) || "상품 분석 실패" },
       { status: 500 }
     );
   }

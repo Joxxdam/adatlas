@@ -12,6 +12,13 @@ import { runCandidateSourceFallback } from "../app/lib/auto-production/sourceFal
 import { createAutoProductionTaskId, normalizeAutoProductionTaskIds } from "../app/lib/auto-production/taskIdentity.ts";
 import { candidateIdentityKeys, normalizedProductFamilyName, productFamilyKey } from "../app/lib/auto-production/productIdentity.ts";
 import { verifyAutoProductionProductImages } from "../app/lib/auto-production/productImageValidation.ts";
+import {
+  AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
+  AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
+  AUTO_PRODUCTION_IMAGES_PER_MALL,
+  AUTO_PRODUCTION_PRODUCTS_PER_MALL,
+  minimumDailyImageCapacity,
+} from "../app/lib/auto-production/policy.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -22,15 +29,15 @@ function config(overrides = {}) {
     aliases: [],
     enabled: true,
     timezone: "Asia/Seoul",
-    scheduleTime: "09:00",
+    scheduleTime: "07:00",
     scheduleDays: [0, 1, 2, 3, 4, 5, 6],
     productsPerRun: 4,
-    creativesPerProduct: 1,
+    creativesPerProduct: 4,
     fullHookTestForNewProducts: false,
     productCooldownDays: 7,
     productFamilyCooldownDays: 14,
     hookCooldownDays: 14,
-    maxImagesPerRun: 4,
+    maxImagesPerRun: 16,
     dataSource: "auto",
     bigQueryBrandMatch: "테스트 광고주",
     siteUrl: "https://shop.example.com",
@@ -154,9 +161,9 @@ function job(overrides = {}) {
   };
 }
 
-test("1. 오전 9시 Asia/Seoul에 활성 광고주가 실행 대상으로 선택된다", () => {
-  const at = new Date("2026-08-20T00:00:00.000Z");
-  assert.deepEqual(seoulClock(at), { date: "2026-08-20", hour: 9, minute: 0, weekday: 4 });
+test("1. 오전 7시 Asia/Seoul에 활성 광고주가 실행 대상으로 선택된다", () => {
+  const at = new Date("2026-08-19T22:00:00.000Z");
+  assert.deepEqual(seoulClock(at), { date: "2026-08-20", hour: 7, minute: 0, weekday: 4 });
   assert.equal(isScheduleDue(config(), at), true);
 });
 
@@ -199,14 +206,15 @@ test("자동제작은 관리 도구 경로로 분리되고 기존 경로는 redi
   assert.match(adminPage, /AutoProductionWorkspace/);
 });
 
-test("기본 광고주 3곳은 매일 오전 9시, 상품 4개, 기본 이미지 1장으로 설정된다", async () => {
+test("기본 광고주 3곳은 매일 오전 7시, 상품 4개 × 광고 4장으로 설정된다", async () => {
   const seeds = JSON.parse(await read("data/auto-production/advertiser-seed.json"));
   assert.deepEqual(seeds.map((item) => item.advertiserName), ["국대한우", "대한한우", "힘내라농가"]);
   for (const item of seeds) {
-    assert.equal(item.scheduleTime, "09:00");
+    assert.equal(item.scheduleTime, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME);
     assert.deepEqual(item.scheduleDays, [0, 1, 2, 3, 4, 5, 6]);
-    assert.equal(item.productsPerRun, 4);
-    assert.equal(item.creativesPerProduct, 1);
+    assert.equal(item.productsPerRun, AUTO_PRODUCTION_PRODUCTS_PER_MALL);
+    assert.equal(item.creativesPerProduct, AUTO_PRODUCTION_CREATIVES_PER_PRODUCT);
+    assert.equal(item.maxImagesPerRun, AUTO_PRODUCTION_IMAGES_PER_MALL);
   }
 });
 
@@ -337,9 +345,9 @@ test("13. 상품별 후킹 후보 6개가 저장된다", () => {
   assert.equal(new Set(hypotheses.map((item) => item.mainHook)).size, 6);
 });
 
-test("14. 자동 제작에서는 기본적으로 상품별 1장만 생성된다", () => {
-  const generated = job({ executionResultIds: ["result-3"] });
-  assert.deepEqual(executionResults(generated).map((result) => result.id), ["result-3"]);
+test("14. 자동 제작에서는 기본적으로 상품별 4장을 독립 실행한다", () => {
+  const generated = job({ executionResultIds: ["result-1", "result-2", "result-3", "result-4"] });
+  assert.deepEqual(executionResults(generated).map((result) => result.id), ["result-1", "result-2", "result-3", "result-4"]);
 });
 
 test("15. 상품별 전체 6장 제작은 명시적 수동 요청에서만 연결된다", async () => {
@@ -350,9 +358,10 @@ test("15. 상품별 전체 6장 제작은 명시적 수동 요청에서만 연�
   assert.match(route, /body\.all \? \[\] : body\.hookCodes/);
 });
 
-test("16. 하루 전체 기본 제한은 12장이며 명시적 추가 제작과 분리된다", async () => {
+test("16. 하루 기본 용량은 활성 3개 몰의 4×4, 총 48장이며 추가 제작과 분리된다", async () => {
   const advertisers = [config({ advertiserId: "a" }), config({ advertiserId: "b" }), config({ advertiserId: "c" })];
-  assert.equal(plannedImageCount(advertisers), 12);
+  assert.equal(plannedImageCount(advertisers), 48);
+  assert.equal(minimumDailyImageCapacity(advertisers), 48);
   const repository = await read("app/lib/auto-production/productionRepository.server.ts");
   assert.match(repository, /automaticExpectedImages \?\? run\.expectedImages/);
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
@@ -425,6 +434,16 @@ test("23. Codex 실패 시 유료 API로 자동 전환되지 않는다", async (
   assert.match(runner, /engine: "codex_local"/);
   assert.match(service, /다른 엔진이나 기존 배경으로 자동 전환하지 않습니다/);
   assert.doesNotMatch(runner, /openai_api/);
+});
+
+test("23-1. 완료 실행은 출근 전 ZIP과 후킹별 광고 세팅 파일을 미리 준비한다", async () => {
+  const source = await read("app/lib/auto-production/package.server.ts");
+  const runner = await read("app/lib/auto-production/productionRunner.server.ts");
+  assert.match(source, /meta-ad-settings\.csv/);
+  assert.match(source, /\$\{hookCode\}-ad-setup\.json/);
+  assert.match(source, /engine: "codex_local"/);
+  assert.match(runner, /buildAutoProductionPackage/);
+  assert.match(runner, /packageStatus: "ready"/);
 });
 
 test("24. 실행 API는 외부 임의 요청과 CSRF 없는 변경을 차단한다", () => {

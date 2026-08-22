@@ -5,21 +5,26 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import { Codex } from "@openai/codex-sdk";
-import type { VideoGenerationFailure, VideoGenerationStage } from "./types.ts";
+import type { VideoGenerationStage } from "./types.ts";
 import { assertStructuredVideoPlanningResponse } from "./structuredSchema.ts";
+import {
+  createOpenAiVideoPlanningRunner,
+  resolveVideoPlanningProvider,
+  resolveVideoPlanningStageConfig,
+  sanitizeVideoPlanningErrorMessage,
+  videoPlanningFailureMessage,
+  VideoPlanningGenerationError,
+  type VideoPlanningAiInput,
+} from "./videoPlanningAiCore.ts";
+
+export {
+  sanitizeVideoPlanningErrorMessage,
+  VideoPlanningGenerationError,
+  videoPlanningFailureHttpStatus,
+} from "./videoPlanningAiCore.ts";
 
 const execFileAsync = promisify(execFile);
 let authenticatedExecutablePromise: Promise<string> | undefined;
-
-export class VideoPlanningGenerationError extends Error {
-  readonly failure: VideoGenerationFailure;
-
-  constructor(failure: VideoGenerationFailure, cause?: unknown) {
-    super(failure.message, cause ? { cause } : undefined);
-    this.name = "VideoPlanningGenerationError";
-    this.failure = failure;
-  }
-}
 
 function safeEnvironment() {
   const secretNames = new Set([
@@ -29,7 +34,9 @@ function safeEnvironment() {
     "REMOVE_BG_API_KEY",
   ]);
   return Object.fromEntries(
-    Object.entries(process.env).filter(([key, value]) => value !== undefined && !secretNames.has(key))
+    Object.entries(process.env).filter(
+      ([key, value]) => value !== undefined && !secretNames.has(key)
+    )
   ) as Record<string, string>;
 }
 
@@ -46,16 +53,16 @@ function codexExecutable() {
 async function assertAuthenticated() {
   if (authenticatedExecutablePromise) return authenticatedExecutablePromise;
   authenticatedExecutablePromise = (async () => {
-  const executable = codexExecutable();
-  if (!executable) throw new Error("로컬 Codex 실행 파일을 찾지 못했습니다.");
-  const { stdout, stderr } = await execFileAsync(executable, ["login", "status"], {
-    timeout: 10_000,
-    env: safeEnvironment() as NodeJS.ProcessEnv,
-  });
-  if (!/logged in/i.test(`${stdout}\n${stderr}`)) {
-    throw new Error("로컬 Codex 로그인이 필요합니다.");
-  }
-  return executable;
+    const executable = codexExecutable();
+    if (!executable) throw new Error("로컬 Codex 실행 파일을 찾지 못했습니다.");
+    const { stdout, stderr } = await execFileAsync(executable, ["login", "status"], {
+      timeout: 10_000,
+      env: safeEnvironment() as NodeJS.ProcessEnv,
+    });
+    if (!/logged in/i.test(`${stdout}\n${stderr}`)) {
+      throw new Error("로컬 Codex 로그인이 필요합니다.");
+    }
+    return executable;
   })();
   try {
     return await authenticatedExecutablePromise;
@@ -66,23 +73,26 @@ async function assertAuthenticated() {
 }
 
 function safeMessage(error: unknown) {
-  const raw = error instanceof Error ? error.message : String(error || "AI 응답을 받지 못했습니다.");
-  return raw
-    .replace(/(?:sk-|Bearer\s+)[A-Za-z0-9._-]+/g, "[비공개]")
-    .replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일")
-    .slice(0, 280);
+  return sanitizeVideoPlanningErrorMessage(error);
 }
 
 function logStage(input: {
   stage: VideoGenerationStage;
   event: "start" | "retry" | "success" | "failure";
   attempt: number;
+  model: string;
+  effort: string;
+  startedAt: string;
+  endedAt?: string;
   durationMs?: number;
   code?: string;
 }) {
   if (process.env.NODE_ENV === "production" && process.env.VIDEO_PLANNING_LOGS !== "true") return;
   console.info(
-    `[video-planning] stage=${input.stage} event=${input.event} attempt=${input.attempt}` +
+    `[video-planning-ai] stage=${input.stage} provider=codex-local model=${input.model} effort=${input.effort}` +
+      ` startedAt=${input.startedAt}` +
+      (input.endedAt ? ` endedAt=${input.endedAt}` : "") +
+      ` event=${input.event} attempt=${input.attempt}` +
       (input.durationMs === undefined ? "" : ` durationMs=${input.durationMs}`) +
       (input.code ? ` code=${input.code}` : "")
   );
@@ -90,26 +100,33 @@ function logStage(input: {
 
 function failureCode(error: unknown) {
   const message = safeMessage(error).toLowerCase();
-  if (/timeout|timed out|abort/.test(message)) return "AI_TIMEOUT";
-  if (/json|parse|schema|validation/.test(message)) return "AI_SCHEMA_INVALID";
-  if (/login|authenticated/.test(message)) return "AI_NOT_AUTHENTICATED";
-  if (/model/.test(message)) return "AI_MODEL_INVALID";
-  return "AI_GENERATION_FAILED";
+  if (/timeout|timed out|abort/.test(message)) return "VIDEO_PLANNING_TIMEOUT";
+  if (/json|parse|schema|validation/.test(message)) return "VIDEO_PLANNING_INVALID_RESPONSE";
+  if (/login|authenticated|실행 파일/.test(message)) return "VIDEO_PLANNING_AUTH_ERROR";
+  return "VIDEO_PLANNING_MODEL_ERROR";
 }
 
-export async function runVideoPlanningAi<T>(input: {
-  stage: VideoGenerationStage;
-  prompt: string;
-  outputSchema: Record<string, unknown>;
-  timeoutMs?: number;
-}): Promise<T> {
+async function runCodexVideoPlanningAi<T>(input: VideoPlanningAiInput): Promise<T> {
   const startedAt = Date.now();
-  const maxAttempts = 3;
+  const startedIso = new Date(startedAt).toISOString();
+  const maxAttempts = 2;
   let attempts = 0;
   let lastError: unknown;
+  const config = resolveVideoPlanningStageConfig(input);
+  const model =
+    process.env.VIDEO_PLANNING_CODEX_MODEL?.trim() ||
+    process.env.ADATLAS_CODEX_MODEL?.trim() ||
+    "gpt-5.6-sol";
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     attempts = attempt;
-    logStage({ stage: input.stage, event: attempt === 1 ? "start" : "retry", attempt });
+    logStage({
+      stage: input.stage,
+      event: attempt === 1 ? "start" : "retry",
+      attempt,
+      model,
+      effort: config.effort,
+      startedAt: startedIso,
+    });
     try {
       const executable = await assertAuthenticated();
       const codex = new Codex({ env: safeEnvironment(), codexPathOverride: executable });
@@ -118,10 +135,8 @@ export async function runVideoPlanningAi<T>(input: {
         sandboxMode: "workspace-write",
         approvalPolicy: "never",
         networkAccessEnabled: false,
-        model: process.env.VIDEO_PLANNING_CODEX_MODEL?.trim() ||
-          process.env.ADATLAS_CODEX_MODEL?.trim() ||
-          "gpt-5.6-sol",
-        modelReasoningEffort: "high",
+        model,
+        modelReasoningEffort: config.effort,
       });
       const response = await thread.run(input.prompt, {
         outputSchema: input.outputSchema,
@@ -140,6 +155,10 @@ export async function runVideoPlanningAi<T>(input: {
         stage: input.stage,
         event: "success",
         attempt,
+        model,
+        effort: config.effort,
+        startedAt: startedIso,
+        endedAt: new Date().toISOString(),
         durationMs: Date.now() - startedAt,
       });
       return parsed;
@@ -150,10 +169,14 @@ export async function runVideoPlanningAi<T>(input: {
         stage: input.stage,
         event: attempt === maxAttempts ? "failure" : "retry",
         attempt,
+        model,
+        effort: config.effort,
+        startedAt: startedIso,
+        endedAt: new Date().toISOString(),
         durationMs: Date.now() - startedAt,
         code,
       });
-      if (code === "AI_NOT_AUTHENTICATED" || code === "AI_MODEL_INVALID") break;
+      if (code === "VIDEO_PLANNING_AUTH_ERROR") break;
     }
   }
   const code = failureCode(lastError);
@@ -161,11 +184,23 @@ export async function runVideoPlanningAi<T>(input: {
     {
       stage: input.stage,
       code,
-      message: `AI 영상 기획 생성에 실패했습니다. ${safeMessage(lastError)}`,
-      retryable: !["AI_NOT_AUTHENTICATED", "AI_MODEL_INVALID"].includes(code),
+      message: videoPlanningFailureMessage(code, "codex-local"),
+      retryable: code !== "VIDEO_PLANNING_AUTH_ERROR",
       attempts,
       failedAt: new Date().toISOString(),
     },
     lastError
   );
+}
+
+const runOpenAiVideoPlanning = createOpenAiVideoPlanningRunner();
+
+export function getVideoPlanningProvider() {
+  return resolveVideoPlanningProvider();
+}
+
+export async function runVideoPlanningAi<T>(input: VideoPlanningAiInput): Promise<T> {
+  const provider = resolveVideoPlanningProvider();
+  if (provider === "codex-local") return runCodexVideoPlanningAi<T>(input);
+  return runOpenAiVideoPlanning<T>(input);
 }

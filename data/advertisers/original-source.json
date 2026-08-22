@@ -8,7 +8,7 @@
   "visualKeywords": ["강렬함", "시원함", "민트", "물", "여름", "젊고 대담함"],
   "preferredTones": ["대담한 퍼포먼스", "유쾌한 문제 해결", "시각적 체감 소구"],
   "preferredColorHints": ["#00e6c3", "#00a7d8", "#0b1116", "#ffffff"],
-  "prohibitedVisuals": ["모든 향에 동일한 얼음 배경 반복", "가짜 제품 패키지", "가짜 로고", "이미지 내 글자"],
+  "prohibitedVisuals": ["모든 향에 동일한 얼음 배경 반복", "가짜 제품 패키지", "가짜 로고", "깨진 한글·임의 문구·이전 광고 문구 재사용"],
   "prohibitedClaims": ["확인되지 않은 체취 감소율", "확인되지 않은 피부 온도 감소 수치"],
   "productDisplayRules": ["실제 패키지와 라벨을 변형하지 않음", "제품을 적어도 화면 높이의 46% 이상으로 표시", "배경과 제품의 조명 방향을 맞춤"],
   "scenePreferences": ["personal-care-cooling-impact", "personal-care-shower-freshness", "personal-care-post-workout", "personal-care-clean-product"],

@@ -120,11 +120,27 @@ test("hook creatives are server-driven and deliver each completed card immediate
   assert.match(generator, /six-creative-grid/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
-  assert.match(generator, /copyEdits|문구만 적용|문구 수정·제작 정보/);
+  assert.match(generator, /copyEdits|수정 문구로 전체 광고 재생성|문구 수정·제작 정보/);
   assert.match(generator, /장면 다시 만들기/);
   for (const label of ["후킹", "소재코드", "권장 광고명", "UTM", "최종 랜딩 URL", "이미지 다운로드"]) {
     assert.match(assetActions, new RegExp(label));
   }
+});
+
+test("새 URL을 분석할 때만 제작 카드를 교체하고 같은 상품 작업은 메뉴 이동 후 복원한다", async () => {
+  const [dashboard, generator, activeRoute] = await Promise.all([
+    read("app/components/MvpDashboard.tsx"),
+    read("app/components/features/creative-generation/SixCreativeGenerator.tsx"),
+    read("app/api/creative-generation/jobs/active/route.ts"),
+  ]);
+
+  assert.match(dashboard, /analyzedProductUrl=\{lastLoadedProductUrl\}/);
+  assert.doesNotMatch(generator, /props\.analysisRevision/);
+  assert.match(generator, /localStorage\.getItem\(`\$\{storedJobKey\}:\$\{currentProductUrl\}`\)/);
+  assert.match(generator, /jobUrl === currentUrl/);
+  assert.match(generator, /jobs\/active\?productUrl=/);
+  assert.match(activeRoute, /requestedProductUrl/);
+  assert.match(activeRoute, /candidate\.productTruth\.product\.landingUrl/);
 });
 
 test("creative reasoning and vision defaults use GPT-5.6 Sol while image generation stays dedicated", async () => {

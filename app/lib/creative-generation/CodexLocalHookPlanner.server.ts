@@ -11,7 +11,8 @@ import {
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
 import { hookTaxonomyTags, type CreativePlan, type HookHypothesisCandidate, type HookTaxonomyTag, type ProductTruth } from "./types";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
-import { assertCreativeCopyAllowed, repairBannedCreativeSentence } from "./bannedCreativePhrases";
+import { assertCreativeCopyAllowed, looksLikeGenericOrRepetitiveCopy, repairBannedCreativeSentence } from "./bannedCreativePhrases";
+import { normalizePlannerScoreValues, recomputeHookTotal } from "./hookQuality";
 
 const PLANNER_VERSION = "codex-local-hook-planner-v1";
 
@@ -27,12 +28,14 @@ const outputSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["primaryTag", "hypothesis", "mainHook", "subCopy", "customerTension", "verifiedFactIds", "intendedReaction", "visualConcept", "sceneKey", "selectionReason", "prohibitedClaims", "scores"],
+        required: ["primaryTag", "hypothesis", "mainHook", "subCopy", "coreClaim", "sentenceStyle", "customerTension", "verifiedFactIds", "intendedReaction", "visualConcept", "sceneKey", "selectionReason", "prohibitedClaims", "scores"],
         properties: {
           primaryTag: { type: "string", enum: hookTaxonomyTags },
           hypothesis: { type: "string" },
           mainHook: { type: "string" },
           subCopy: { type: "string" },
+          coreClaim: { type: "string" },
+          sentenceStyle: { type: "string", enum:["question","declaration","dialogue","contrast","sensory","urgency","proof"] },
           customerTension: { type: "string" },
           verifiedFactIds: { type: "array", items: { type: "string" } },
           intendedReaction: { type: "string" },
@@ -65,6 +68,8 @@ type PlannerResponse = {
     hypothesis: string;
     mainHook: string;
     subCopy: string;
+    coreClaim: string;
+    sentenceStyle: "question"|"declaration"|"dialogue"|"contrast"|"sensory"|"urgency"|"proof";
     customerTension: string;
     verifiedFactIds: string[];
     intendedReaction: string;
@@ -109,9 +114,12 @@ function plannerPrompt(truth: ProductTruth) {
 - 상품명을 다시 쓰는 수준의 제목, 내부 전략 용어, 'USP 점검', '랜딩 조건', '광고 가설' 같은 문구를 금지한다.
 - '사용하는 순간', '이 선택', '핵심 이유', '고를 이유', '한눈에', '새로운 사용 이유'처럼 어느 상품에도 붙일 수 있는 상투 문구를 금지한다.
 - mainHook은 상품명보다 고객이 실제로 겪는 의외의 상황·감각·대조·질문을 앞세우고, 상세페이지에서만 발견할 수 있는 구체 근거와 연결한다.
+- 사실과 상품 정체성을 지키는 범위에서는 고객의 체면, 익숙한 불편, 돈 낭비, 미루는 습관을 직설적으로 찌르는 도발·반전·유머를 적극 허용한다. 비하·혐오·공포 조장이나 근거 없는 단정은 금지한다.
+- 광고를 무난하게 설명하려 하지 말고, 스크롤을 멈출 한 문장과 그 문장을 눈으로 이해시키는 장면을 설계한다. 서로 다른 후보를 단어만 바꾼 변형으로 만들지 않는다.
 - 여섯 최종 후보가 모두 같은 문장 구조가 되지 않도록 질문형·상황 묘사형·반전형·수치/근거형·대화형 등 문장 리듬도 다르게 설계한다.
 - mainHook은 모바일에서 한눈에 읽히는 자연스러운 한국어, subCopy는 그 가설을 보완하는 한 줄이다.
 - 각 후보는 고객 긴장, 의도한 반응, 실제로 시각화할 독립 장면을 구체적으로 다르게 만든다.
+- coreClaim은 이 후보가 사용하는 단 하나의 상품 근거를 짧게 적고, sentenceStyle도 후보마다 의도적으로 다르게 배분한다.
 - 상세페이지 광고 배너를 복제하거나 자동 누끼를 전제로 하지 않는다.
 - 점수는 근거 강도, 상품 특이성, 서로 다른 정도, 주목 가능성, 시각화 가능성, 실제 광고 적합성을 냉정하게 평가한다.
 
@@ -150,7 +158,7 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
   return response.candidates.slice(0, 15).map((candidate, index) => {
     const factIds = [...new Set(candidate.verifiedFactIds)].filter((id) => knownFacts.has(id));
     const evidence = factIds.map((id) => knownFacts.get(id)!).map((fact) => ({ fact: `${fact.label}: ${fact.value}`, sourceReference: fact.sourceUrl || fact.source }));
-    const s = candidate.scores;
+    const s = normalizePlannerScoreValues(candidate.scores);
     const evidenceStrength = factIds.length ? clamp(s.evidenceStrength) : Math.min(35, clamp(s.evidenceStrength));
     const specificity = clamp(s.specificity);
     const distinctiveness = clamp(s.distinctiveness);
@@ -161,13 +169,16 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
     const claimSafety = factIds.length ? 96 : 60;
     const categoryPrior = clamp(prior[candidate.primaryTag] ?? 50);
     const novelty = distinctiveness;
-    const total = Math.round(evidenceStrength * .2 + specificity * .15 + distinctiveness * .15 + attentionPotential * .15 + visualizability * .15 + advertisingFit * .15 + claimSafety * .05);
+    const total = recomputeHookTotal({ evidenceStrength,specificity,purchaseReasonStrength,distinctiveness,attentionPotential,visualizability,advertisingFit,claimSafety,categoryPrior,novelty });
     const id = `codex-hypothesis-${String(index + 1).padStart(2, "0")}`;
     const verifiedEvidence = evidence.map((item) => item.fact);
     const originalMainHook = candidate.mainHook.trim().slice(0, 80);
     const originalSubCopy = candidate.subCopy.trim().slice(0, 120);
-    const mainHook = repairBannedCreativeSentence(originalMainHook) || `지금 가장 먼저 달라질 한 가지`;
-    const subCopy = repairBannedCreativeSentence(originalSubCopy) || verifiedEvidence[0] || truth.product.productName;
+    const mainHook = repairBannedCreativeSentence(originalMainHook);
+    const subCopy = repairBannedCreativeSentence(originalSubCopy);
+    if (!mainHook || !subCopy || looksLikeGenericOrRepetitiveCopy(mainHook,subCopy)) {
+      throw new Error(`후킹 후보 ${index + 1}가 일반적이거나 메인·서브 문구가 반복됩니다.`);
+    }
     assertCreativeCopyAllowed(`${mainHook} ${subCopy}`);
     if (!mainHook || !subCopy || visibleLength(mainHook) > 44) throw new Error(`후킹 후보 ${index + 1}의 문구 형식이 올바르지 않습니다.`);
     const score = { evidenceStrength, specificity, purchaseReasonStrength, distinctiveness, attentionPotential, visualizability, advertisingFit, claimSafety, categoryPrior, novelty, total };
@@ -178,6 +189,8 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
       hypothesis: candidate.hypothesis.trim(),
       mainHook,
       subCopy,
+      coreClaim:candidate.coreClaim.trim() || verifiedEvidence[0] || candidate.customerTension.trim(),
+      sentenceStyle:candidate.sentenceStyle,
       customerReason: candidate.customerTension.trim(),
       customerTension: candidate.customerTension.trim(),
       verifiedEvidence,

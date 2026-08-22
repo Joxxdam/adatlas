@@ -52,7 +52,11 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       modelReasoningEffort: runtime.imageReasoning,
     });
     const prompt = buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback);
-    await thread.run(prompt, { signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS || DEFAULT_IMAGE_GENERATION_TIMEOUT_MS)) });
+    const content = [
+      { type:"text" as const, text:`${prompt}\n\nThe first attached local image is the authoritative product reference. Faithfully retain its recognizable package, label hierarchy, material, sales-unit identity and product-specific visual details inside the final advertisement. Use the other product-page images only for truthful use, texture and context evidence. Do not copy any previous advertisement wording or embed an old ad image inside the result.` },
+      ...input.referencePaths.slice(0,5).map((file)=>({type:"local_image" as const,path:file})),
+    ];
+    await thread.run(content, { signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS || DEFAULT_IMAGE_GENERATION_TIMEOUT_MS)) });
     await access(input.outputPath);
     return { outputPath: input.outputPath };
   }
@@ -60,8 +64,8 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
   async validate(input: { job: NativeGenerationInput["job"]; result: NativeGenerationInput["result"]; imagePath: string; referencePaths: string[] }) {
     const state = await this.status();
     if (!state.available) throw new Error(`codex_local 사용 불가: ${state.detail}`);
-    const qaThread = this.codex.startThread({ workingDirectory: process.cwd(), sandboxMode: "workspace-write", approvalPolicy: "never", networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "high" });
-    const content = [{ type: "text" as const, text: buildNativeValidationPrompt(input.job, input.result) }, { type: "local_image" as const, path: input.imagePath }, ...input.referencePaths.slice(0, 4).map((file) => ({ type: "local_image" as const, path: file }))];
+    const qaThread = this.codex.startThread({ workingDirectory: process.cwd(), sandboxMode: "workspace-write", approvalPolicy: "never", networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "medium" });
+    const content = [{ type: "text" as const, text: buildNativeValidationPrompt(input.job, input.result) }, { type: "local_image" as const, path: input.imagePath }, ...input.referencePaths.slice(0, 5).map((file) => ({ type: "local_image" as const, path: file }))];
     const response = await qaThread.run(content, { outputSchema: validationSchema, signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS || 150_000)) });
     const parsed = JSON.parse(response.finalResponse) as Omit<NativeCreativeValidation, "checkedAt">;
     return { ...parsed, checkedAt: new Date().toISOString() };

@@ -181,6 +181,8 @@ export async function createOrReuseMasterScene(input: {
   revision?: number;
   provider?: SceneGenerationProvider;
 }): Promise<MasterSceneArtifact> {
+  // Legacy master-scene creation never opts into a paid provider implicitly.
+  // A caller must inject an explicitly authorized provider from a separate paid UI.
   const provider = input.provider || new OpenAISceneGenerationProvider();
   const paidConfigured = isPaidImageGenerationEnabled() && provider.isConfigured();
   const requestedMode = input.spec.generationMode;

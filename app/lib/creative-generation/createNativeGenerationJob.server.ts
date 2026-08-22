@@ -1,10 +1,14 @@
 import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { buildExplorationCreativePlan, createGenerationJob, planAiScenes } from "./planner";
-import { buildProductTruth } from "./productTruth";
+import { buildProductTruth, cleanProductTitle } from "./productTruth";
 import { assertNativeProductReferenceReady, inspectProductTruthImages } from "./productImages.server";
 import { analyzeProductReferences } from "./referenceAnalyzer.server";
-import type { CreateGenerationJobInput, GenerationJob } from "./types";
+import {
+  hasExplicitPaidApiAuthorization,
+  type CreateGenerationJobInput,
+  type GenerationJob,
+} from "./types";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 import { resolveAdvertiserIdentity } from "./advertiserIdentity";
 import { buildVisualDiversityMatrix, validateVisualDiversityMatrix } from "./visualDiversity";
@@ -13,12 +17,12 @@ import { defaultAdBrief } from "../mvp/adBrief";
 import type { AdBrief } from "../mvp/types";
 import { matchCategoryProfile } from "./profiles";
 import { readCategoryHookPrior } from "./hookLearning.server";
-import { enqueueGenerationJob } from "./jobRunner.server";
+import { cancelQueuedGenerationJob, enqueueGenerationJob } from "./jobRunner.server";
 import { planHooksWithCodexLocal } from "./CodexLocalHookPlanner.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { buildCreativePlanFingerprint, readCreativePlanCache, writeCreativePlanCache } from "./creativePlanCache.server";
-import { PERFORMANCE_TEMPLATE_REGISTRY_VERSION, selectPerformanceTemplates, unusedPerformanceTemplates } from "./performanceTemplateRegistry";
-import { assertCreativeCopyAllowed, repairBannedCreativeSentence } from "./bannedCreativePhrases";
+import { REFERENCE_CREATIVE_GRAMMAR_VERSION, selectCreativeGrammar } from "./referenceCreativeGrammar";
+import { assertCreativeCopyAllowed, looksLikeGenericOrRepetitiveCopy, repairBannedCreativeSentence } from "./bannedCreativePhrases";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -57,7 +61,10 @@ function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]
     : product.mainBenefit;
   return {
     ...product,
-    productName: product.productName.replace(/\s*\(\d+\)\s*$/, "").trim(),
+    productName: cleanProductTitle(
+      product.productName.replace(/\s*\(\d+\)\s*$/, "").trim(),
+      product.brandName || product.advertiserName || ""
+    ),
     mainBenefit,
     targetCustomer: internalStrategyText.test(product.targetCustomer || "") ? "" : product.targetCustomer,
     verifiedBenefits,
@@ -76,11 +83,17 @@ export async function createNativeGenerationJob(
   const started = Date.now();
   if (!input.product?.productName?.trim()) throw new Error("먼저 상품정보를 불러와 주세요.");
   const engine = input.engine === "openai_api" ? "openai_api" : "codex_local";
-  const imageProvider = createCreativeGenerationProvider(engine);
+  const explicitPaidApiAuthorization = hasExplicitPaidApiAuthorization(
+    input.paidApiAuthorization
+  );
+  const imageProvider = createCreativeGenerationProvider(engine, {
+    explicitPaidApiAuthorization,
+  });
   const providerStatus = await imageProvider.status();
   if (!providerStatus.available) {
     throw new Error(`${providerStatus.detail} 다른 엔진이나 기존 배경으로 자동 전환하지 않습니다.`);
   }
+  const rawProductTitle = input.product.productName;
   const product = sanitizeProductForCreative(input.product);
   const allPaths = Array.from(new Set([
     ...(input.selectedAdImages || []).slice(0, 12),
@@ -97,6 +110,7 @@ export async function createNativeGenerationJob(
   const originalProductReferencePaths = originals.slice(0, 12);
   const rawTruth = buildProductTruth({
     product,
+    rawProductTitle,
     productImagePaths: originalProductReferencePaths,
     selectedAdImages: [],
     imageAssets: input.imageAssets || [],
@@ -129,15 +143,21 @@ export async function createNativeGenerationJob(
     const headline = repairBannedCreativeSentence(hookPlan.headline) || hookPlan.factIds.map((id) => truth.facts.find((fact) => fact.id === id)?.value).find(Boolean) || truth.product.productName;
     const body = repairBannedCreativeSentence(hookPlan.body) || truth.product.mainBenefit || truth.product.productName;
     assertCreativeCopyAllowed(`${headline} ${body} ${hookPlan.offer} ${hookPlan.cta}`);
+    if (looksLikeGenericOrRepetitiveCopy(headline, body)) {
+      throw new Error(`${hookPlan.hookCode} 문구가 상품명 낭독 또는 같은 사실 반복으로 판정되었습니다. 후킹 기획을 다시 실행해 주세요.`);
+    }
     return {
       ...hookPlan,
       headline,
       body,
-      creativeBrief: hookPlan.creativeBrief ? { ...hookPlan.creativeBrief, mainHook:headline, subCopy:body, textRendering:"post-render-exact-korean" as const } : hookPlan.creativeBrief,
+      creativeBrief: hookPlan.creativeBrief ? { ...hookPlan.creativeBrief, mainHook:headline, subCopy:body, textRendering:"ai-native-final" as const } : hookPlan.creativeBrief,
     };
   });
-  const selectedTemplates = selectPerformanceTemplates(truth, creativePlan.hookPlans, runtime.maxCreatives);
-  creativePlan.hookPlans = creativePlan.hookPlans.map((hookPlan,index) => ({ ...hookPlan, performanceTemplateId:selectedTemplates[index]?.id }));
+  creativePlan.hookPlans = creativePlan.hookPlans.map((hookPlan) => ({
+    ...hookPlan,
+    performanceTemplateId:undefined,
+    creativeGrammarId:selectCreativeGrammar(hookPlan),
+  }));
   creativePlan.blueprintIds = creativePlan.hookPlans.map((hookPlan) => hookPlan.blueprintId);
   const scenes = planAiScenes(creativePlan, paidImageGenerationEnabled);
   const productReferenceProfile = await analyzeProductReferences(truth);
@@ -153,6 +173,10 @@ export async function createNativeGenerationJob(
     planningMs: Date.now() - started,
   });
   job.engine = engine;
+  job.paidApiAuthorization =
+    engine === "openai_api" && explicitPaidApiAuthorization
+      ? input.paidApiAuthorization
+      : undefined;
   job.paidApiUsed = engine === "openai_api";
   job.advertiserId = advertiserId;
   job.advertiserName = advertiserName;
@@ -161,18 +185,25 @@ export async function createNativeGenerationJob(
   job.visualDiversityMatrix = buildVisualDiversityMatrix(job.results);
   const diversity = validateVisualDiversityMatrix(job.visualDiversityMatrix);
   if (!diversity.valid) throw new Error(diversity.errors.join(" "));
-  job.version = "generation-job-v6-ai-native-final";
   job.sourceType = options.sourceType || "manual";
   job.autoProductionRunId = options.autoProductionRunId;
   job.autoProductionTaskId = options.autoProductionTaskId;
   job.hookLearningApplied = Object.keys(categoryPrior).length > 0;
   job.representativeResultId = job.results[0]?.id;
   job.planningFingerprint = planningFingerprint;
-  job.templateRegistryVersion = PERFORMANCE_TEMPLATE_REGISTRY_VERSION;
-  job.unusedPerformanceTemplateIds = unusedPerformanceTemplates(selectedTemplates.map((template) => template.id), truth).map((template) => template.id);
-  job.version = "generation-job-v7-fast-local-composition";
+  job.templateRegistryVersion = REFERENCE_CREATIVE_GRAMMAR_VERSION;
+  job.unusedPerformanceTemplateIds = [];
+  job.version = "generation-job-v9-ai-native-complete-ad";
+  if (job.sourceType === "manual") {
+    const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(
+      job.productTruth.product.landingUrl
+    );
+    superseded.forEach((previous) => cancelQueuedGenerationJob(previous.id));
+  }
   await creativeGenerationJobStore.create(job);
   await writeNativeManifest(job);
-  if (options.autoStart !== false) enqueueGenerationJob(job.id);
+  if (options.autoStart !== false) {
+    enqueueGenerationJob(job.id, { priority: job.sourceType === "manual" });
+  }
   return job;
 }

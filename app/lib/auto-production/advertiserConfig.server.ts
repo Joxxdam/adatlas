@@ -3,6 +3,13 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { nextScheduledAt } from "./schedule";
+import {
+  AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
+  AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
+  AUTO_PRODUCTION_IMAGES_PER_MALL,
+  AUTO_PRODUCTION_PRODUCTS_PER_MALL,
+  minimumDailyImageCapacity,
+} from "./policy";
 import type { AutoProductionAdvertiserConfig, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types";
 
@@ -22,7 +29,7 @@ export type AutoProductionGlobalSettings = {
 
 const defaultSettings: AutoProductionGlobalSettings = {
   paused: false,
-  maxImagesPerDay: 12,
+  maxImagesPerDay: 48,
   globalConcurrency: 2,
   updatedAt: new Date(0).toISOString(),
 };
@@ -49,7 +56,9 @@ export function normalizeAdvertiserConfig(
   now = new Date()
 ): AutoProductionAdvertiserConfig {
   const createdAt = current?.createdAt || now.toISOString();
-  const scheduleTime = /^\d{2}:\d{2}$/.test(input.scheduleTime || "") ? input.scheduleTime! : current?.scheduleTime || "09:00";
+  const scheduleTime = /^\d{2}:\d{2}$/.test(input.scheduleTime || "")
+    ? input.scheduleTime!
+    : current?.scheduleTime || AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME;
   const scheduleDays = (Array.isArray(input.scheduleDays) ? input.scheduleDays : current?.scheduleDays || [0, 1, 2, 3, 4, 5, 6])
     .map(Number)
     .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
@@ -63,13 +72,13 @@ export function normalizeAdvertiserConfig(
     timezone: "Asia/Seoul",
     scheduleTime,
     scheduleDays: scheduleDays.length ? Array.from(new Set(scheduleDays)) : [0, 1, 2, 3, 4, 5, 6],
-    productsPerRun: numeric(input.productsPerRun ?? current?.productsPerRun, 4, 1, 12),
-    creativesPerProduct: numeric(input.creativesPerProduct ?? current?.creativesPerProduct, 1, 1, 6),
-    fullHookTestForNewProducts: input.fullHookTestForNewProducts ?? current?.fullHookTestForNewProducts ?? false,
+    productsPerRun: AUTO_PRODUCTION_PRODUCTS_PER_MALL,
+    creativesPerProduct: AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
+    fullHookTestForNewProducts: false,
     productCooldownDays: numeric(input.productCooldownDays ?? current?.productCooldownDays, 7, 0, 90),
     productFamilyCooldownDays: numeric(input.productFamilyCooldownDays ?? current?.productFamilyCooldownDays, 14, 0, 180),
     hookCooldownDays: numeric(input.hookCooldownDays ?? current?.hookCooldownDays, 14, 0, 180),
-    maxImagesPerRun: numeric(input.maxImagesPerRun ?? current?.maxImagesPerRun, 4, 1, 24),
+    maxImagesPerRun: AUTO_PRODUCTION_IMAGES_PER_MALL,
     dataSource: input.dataSource || current?.dataSource || "auto",
     bigQueryBrandMatch: String(input.bigQueryBrandMatch ?? current?.bigQueryBrandMatch ?? input.advertiserName).trim().slice(0, 120),
     siteUrl: String(input.siteUrl ?? current?.siteUrl ?? "").trim().slice(0, 1000),
@@ -152,19 +161,32 @@ export const autoProductionAdvertiserRepository = {
     });
   },
   async settings(): Promise<AutoProductionGlobalSettings> {
+    let stored: Partial<AutoProductionGlobalSettings> = {};
     try {
-      return { ...defaultSettings, ...(JSON.parse(await fs.readFile(settingsFile, "utf8")) as Partial<AutoProductionGlobalSettings>) };
+      stored = JSON.parse(await fs.readFile(settingsFile, "utf8")) as Partial<AutoProductionGlobalSettings>;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return defaultSettings;
-      throw error;
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
+    const configs = await readConfigs();
+    const requiredCapacity = minimumDailyImageCapacity(configs);
+    return {
+      ...defaultSettings,
+      ...stored,
+      maxImagesPerDay: Math.max(
+        requiredCapacity,
+        numeric(stored.maxImagesPerDay, defaultSettings.maxImagesPerDay, 1, 240)
+      ),
+    };
   },
   async updateSettings(input: Partial<AutoProductionGlobalSettings>) {
     return serialize(async () => {
       const current = await this.settings();
       const next = {
         paused: input.paused ?? current.paused,
-        maxImagesPerDay: numeric(input.maxImagesPerDay ?? current.maxImagesPerDay, 12, 1, 120),
+        maxImagesPerDay: Math.max(
+          minimumDailyImageCapacity(await readConfigs()),
+          numeric(input.maxImagesPerDay ?? current.maxImagesPerDay, 48, 1, 240)
+        ),
         globalConcurrency: numeric(input.globalConcurrency ?? current.globalConcurrency, 2, 1, 2),
         updatedAt: new Date().toISOString(),
       };

@@ -27,17 +27,31 @@ import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } fr
 import {
   assignPlanningTimeline,
   hasVerifiedVideoBenefit,
+  repairDetailedPlanningSceneDescriptions,
   segmentRange,
   validateConceptDiversity,
   validateDetailedPlanning,
 } from "./planningValidation.ts";
-import { runVideoPlanningAi, VideoPlanningGenerationError } from "./videoPlanningAi.server.ts";
+import {
+  getVideoPlanningProvider,
+  runVideoPlanningAi,
+  VideoPlanningGenerationError,
+} from "./videoPlanningAi.server.ts";
+import {
+  requestFourVideoConcepts,
+  REQUIRED_VIDEO_CONCEPT_ARCHETYPES,
+} from "./videoPlanningConceptBatch.ts";
+import { runWithSingleVideoPlanningCorrection } from "./videoPlanningCorrection.ts";
+import { analyzeReferenceAssets } from "./planningPipeline.ts";
 
 const hookTypes = [...VIDEO_HOOK_TYPES];
 const hookTypeSchema = { type: "string", enum: hookTypes } as const;
 
 function clean(value: unknown, max = 1200) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
 }
 
 function compact(values: unknown[], limit = 12, max = 240) {
@@ -113,7 +127,10 @@ function stylePrinciples(category: string) {
   return "상품의 실제 사용 장소와 고객 행동을 중심으로 카테고리에 맞는 구체적인 장면을 만든다.";
 }
 
-type AiReferenceAnalysis = Omit<ReferenceVideoAnalysis, "analysisStatus" | "cutCount" | "averageCutLength"> & {
+type AiReferenceAnalysis = Omit<
+  ReferenceVideoAnalysis,
+  "analysisStatus" | "cutCount" | "averageCutLength"
+> & {
   analysisStatus: "analyzed" | "limited";
   cutCount: number;
   averageCutLength: number;
@@ -132,10 +149,23 @@ const referenceAnalysisSchema = {
         type: "object",
         additionalProperties: false,
         required: [
-          "assetId", "assetName", "analysisStatus", "openingHookMethod", "openingTiming",
-          "cutCount", "averageCutLength", "cameraAndGaze", "actions", "informationDensity",
-          "subtitlePosition", "transitions", "timingMap", "compositionRatio", "emotionalTone",
-          "reusablePrinciples", "limitations",
+          "assetId",
+          "assetName",
+          "analysisStatus",
+          "openingHookMethod",
+          "openingTiming",
+          "cutCount",
+          "averageCutLength",
+          "cameraAndGaze",
+          "actions",
+          "informationDensity",
+          "subtitlePosition",
+          "transitions",
+          "timingMap",
+          "compositionRatio",
+          "emotionalTone",
+          "reusablePrinciples",
+          "limitations",
         ],
         properties: {
           assetId: { type: "string" },
@@ -155,8 +185,10 @@ const referenceAnalysisSchema = {
             additionalProperties: false,
             required: ["problem", "product", "usp", "cta"],
             properties: {
-              problem: { type: "string" }, product: { type: "string" },
-              usp: { type: "string" }, cta: { type: "string" },
+              problem: { type: "string" },
+              product: { type: "string" },
+              usp: { type: "string" },
+              cta: { type: "string" },
             },
           },
           compositionRatio: {
@@ -187,6 +219,13 @@ function localReferencePath(asset: VideoReferenceAsset) {
 }
 
 export async function analyzeVideoReferencesAi(assets: VideoReferenceAsset[]) {
+  // The Responses API receives no tools and cannot dereference a server-local video path.
+  // Keep the uploaded reference in the project, but do not present an unobserved video as
+  // AI-analyzed. The explicit codex-local provider retains the existing local media path.
+  if (getVideoPlanningProvider() === "openai-api") {
+    return analyzeReferenceAssets(assets);
+  }
+
   const videoAssets = assets
     .filter((asset) => asset.mimeType.startsWith("video/"))
     .map((asset) => ({ ...asset, localPath: localReferencePath(asset) }))
@@ -218,8 +257,9 @@ export async function analyzeVideoReferencesAi(assets: VideoReferenceAsset[]) {
   try {
     const payload = await runVideoPlanningAi<{ analyses: AiReferenceAnalysis[] }>({
       stage: "reference-analysis",
+      purpose: "analysis",
       outputSchema: referenceAnalysisSchema as unknown as Record<string, unknown>,
-      timeoutMs: Number(process.env.VIDEO_PLANNING_REFERENCE_TIMEOUT_MS || 180_000),
+      timeoutMs: Number(process.env.VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS || 45_000),
       prompt: `당신은 숏폼 퍼포먼스 광고 편집 분석가다. 아래 로컬 참고 영상을 운영체제에서 사용할 수 있는 읽기 전용 미디어 정보 도구와 샘플 프레임으로 분석한다. 특정 명령어가 없으면 다른 읽기 전용 도구를 사용하고, 확인하지 못한 값은 추측하지 않는다. 새 이미지나 영상을 생성하지 않으며 원본 파일을 수정하지 않는다.
 
 [로컬 참고 영상]
@@ -235,22 +275,38 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
         cutCount: analysis.cutCount || null,
         averageCutLength: analysis.averageCutLength || null,
       }));
-    const completed = videoAssets.map((asset) => analyses.find((analysis) => analysis.assetId === asset.id) || ({
-      assetId: asset.id,
-      assetName: asset.name,
-      analysisStatus: "limited" as const,
-      openingHookMethod: "확인 불가",
-      openingTiming: "확인 불가",
-      cutCount: null,
-      averageCutLength: null,
-      cameraAndGaze: [], actions: [], informationDensity: "확인 불가", subtitlePosition: "확인 불가",
-      transitions: [], timingMap: { problem: "확인 불가", product: "확인 불가", usp: "확인 불가", cta: "확인 불가" },
-      compositionRatio: { liveAction: null, animation: null, composite: null }, emotionalTone: "확인 불가",
-      reusablePrinciples: [], limitations: ["참고 영상의 프레임 구조를 완전히 확인하지 못했습니다."],
-    }));
+    const completed = videoAssets.map(
+      (asset) =>
+        analyses.find((analysis) => analysis.assetId === asset.id) || {
+          assetId: asset.id,
+          assetName: asset.name,
+          analysisStatus: "limited" as const,
+          openingHookMethod: "확인 불가",
+          openingTiming: "확인 불가",
+          cutCount: null,
+          averageCutLength: null,
+          cameraAndGaze: [],
+          actions: [],
+          informationDensity: "확인 불가",
+          subtitlePosition: "확인 불가",
+          transitions: [],
+          timingMap: {
+            problem: "확인 불가",
+            product: "확인 불가",
+            usp: "확인 불가",
+            cta: "확인 불가",
+          },
+          compositionRatio: { liveAction: null, animation: null, composite: null },
+          emotionalTone: "확인 불가",
+          reusablePrinciples: [],
+          limitations: ["참고 영상의 프레임 구조를 완전히 확인하지 못했습니다."],
+        }
+    );
     return [...completed, ...nonVideos];
   } catch (error) {
-    console.info(`[video-planning] stage=reference-analysis event=limited code=${error instanceof VideoPlanningGenerationError ? error.failure.code : "REFERENCE_ANALYSIS_LIMITED"}`);
+    console.info(
+      `[video-planning] stage=reference-analysis event=limited code=${error instanceof VideoPlanningGenerationError ? error.failure.code : "REFERENCE_ANALYSIS_LIMITED"}`
+    );
     return [
       ...videoAssets.map((asset): ReferenceVideoAnalysis => ({
         assetId: asset.id,
@@ -260,10 +316,23 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
         openingTiming: "확인 불가",
         cutCount: null,
         averageCutLength: null,
-        cameraAndGaze: [], actions: [], informationDensity: "확인 불가", subtitlePosition: "확인 불가",
-        transitions: [], timingMap: { problem: "확인 불가", product: "확인 불가", usp: "확인 불가", cta: "확인 불가" },
-        compositionRatio: { liveAction: null, animation: null, composite: null }, emotionalTone: "확인 불가",
-        reusablePrinciples: [], limitations: ["참고 영상 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다."],
+        cameraAndGaze: [],
+        actions: [],
+        informationDensity: "확인 불가",
+        subtitlePosition: "확인 불가",
+        transitions: [],
+        timingMap: {
+          problem: "확인 불가",
+          product: "확인 불가",
+          usp: "확인 불가",
+          cta: "확인 불가",
+        },
+        compositionRatio: { liveAction: null, animation: null, composite: null },
+        emotionalTone: "확인 불가",
+        reusablePrinciples: [],
+        limitations: [
+          "참고 영상 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다.",
+        ],
       })),
       ...nonVideos,
     ];
@@ -397,7 +466,11 @@ ${JSON.stringify(referenceAnalyses.filter((item) => item.analysisStatus === "ana
         hookType: item.hookType,
         hook: clean(item.hook, 100),
         customerProblem: clean(item.customerProblem, 160),
-        evidenceIds: compact(item.evidenceIds.filter((id) => allowedEvidenceIds.has(id)), 4, 120),
+        evidenceIds: compact(
+          item.evidenceIds.filter((id) => allowedEvidenceIds.has(id)),
+          4,
+          120
+        ),
         visualIdea: clean(item.visualIdea, 400),
         score: { ...scores, total: scoreTotal(scores) },
         rejectionReasons: compact(item.rejectionReasons, 4, 160),
@@ -448,7 +521,10 @@ type AiConceptSummary = {
   benefitAvailability: "verified" | "insufficient";
 };
 
-function conceptSummarySchema(archetype?: VideoConceptArchetype) {
+function conceptSummarySchema(options: { count: number; archetypes?: VideoConceptArchetype[] }) {
+  const archetypes = options.archetypes?.length
+    ? options.archetypes
+    : [...REQUIRED_VIDEO_CONCEPT_ARCHETYPES];
   return {
     type: "object",
     additionalProperties: false,
@@ -456,20 +532,38 @@ function conceptSummarySchema(archetype?: VideoConceptArchetype) {
     properties: {
       concepts: {
         type: "array",
-        minItems: 1,
-        maxItems: 1,
+        minItems: options.count,
+        maxItems: options.count,
         items: {
           type: "object",
           additionalProperties: false,
           required: [
-            "conceptArchetype", "hookId", "hookType", "title", "openingHook", "coreTarget", "customerProblem",
-            "usp", "speaker", "creativeStyle", "narrativeStructure", "narrativeSummary",
-            "recommendationReason", "evidenceIds", "claimsToVerify", "cta", "centralIncident",
-            "speakerPointOfView", "keyAppeal", "recommendedVisualStyle", "supportingDevices",
-            "differenceFromPrevious", "benefitAvailability",
+            "conceptArchetype",
+            "hookId",
+            "hookType",
+            "title",
+            "openingHook",
+            "coreTarget",
+            "customerProblem",
+            "usp",
+            "speaker",
+            "creativeStyle",
+            "narrativeStructure",
+            "narrativeSummary",
+            "recommendationReason",
+            "evidenceIds",
+            "claimsToVerify",
+            "cta",
+            "centralIncident",
+            "speakerPointOfView",
+            "keyAppeal",
+            "recommendedVisualStyle",
+            "supportingDevices",
+            "differenceFromPrevious",
+            "benefitAvailability",
           ],
           properties: {
-            conceptArchetype: { type: "string", enum: archetype ? [archetype] : ["parody", "real-review", "usp-focus", "secret-benefit"] },
+            conceptArchetype: { type: "string", enum: archetypes },
             hookId: { type: "string" },
             hookType: hookTypeSchema,
             title: { type: "string", minLength: 6, maxLength: 70 },
@@ -478,7 +572,18 @@ function conceptSummarySchema(archetype?: VideoConceptArchetype) {
             customerProblem: { type: "string", minLength: 4, maxLength: 120 },
             usp: { type: "string", minLength: 4, maxLength: 120 },
             speaker: { type: "string", minLength: 2, maxLength: 80 },
-            creativeStyle: { type: "string", enum: ["auto", "smartphone-ugc", "ad-real", "clay-miniature", "3d", "live-ai", "mixed"] },
+            creativeStyle: {
+              type: "string",
+              enum: [
+                "auto",
+                "smartphone-ugc",
+                "ad-real",
+                "clay-miniature",
+                "3d",
+                "live-ai",
+                "mixed",
+              ],
+            },
             narrativeStructure: { type: "string", minLength: 12, maxLength: 180 },
             narrativeSummary: { type: "string", minLength: 30, maxLength: 400 },
             recommendationReason: { type: "string", minLength: 20, maxLength: 300 },
@@ -489,7 +594,11 @@ function conceptSummarySchema(archetype?: VideoConceptArchetype) {
             speakerPointOfView: { type: "string", minLength: 4, maxLength: 100 },
             keyAppeal: { type: "string", minLength: 4, maxLength: 140 },
             recommendedVisualStyle: { type: "string", minLength: 4, maxLength: 140 },
-            supportingDevices: { type: "array", maxItems: 4, items: { type: "string", maxLength: 100 } },
+            supportingDevices: {
+              type: "array",
+              maxItems: 4,
+              items: { type: "string", maxLength: 100 },
+            },
             differenceFromPrevious: { type: "string", minLength: 8, maxLength: 180 },
             benefitAvailability: { type: "string", enum: ["verified", "insufficient"] },
           },
@@ -501,11 +610,21 @@ function conceptSummarySchema(archetype?: VideoConceptArchetype) {
 
 function conceptScore(hook?: VideoHookCandidate) {
   const fallback: HookScore = {
-    stopPower: 0, specificity: 0, productRelevance: 0, visualPotential: 0,
-    evidenceStrength: 0, conversionPotential: 0, originality: 0, policySafety: 0, total: 0,
+    stopPower: 0,
+    specificity: 0,
+    productRelevance: 0,
+    visualPotential: 0,
+    evidenceStrength: 0,
+    conversionPotential: 0,
+    originality: 0,
+    policySafety: 0,
+    total: 0,
   };
   const score = hook?.score || fallback;
-  return { ...score, narrativeFlow: Math.round((score.productRelevance + score.visualPotential) / 2) };
+  return {
+    ...score,
+    narrativeFlow: Math.round((score.productRelevance + score.visualPotential) / 2),
+  };
 }
 
 export async function generateVideoConceptSummariesAi(input: {
@@ -521,6 +640,7 @@ export async function generateVideoConceptSummariesAi(input: {
   planningMode?: "legacy" | "four-concepts";
   requiredContent?: string;
   excludedContent?: string;
+  requestedArchetype?: VideoConceptArchetype;
 }) {
   const candidates = [...input.hooks]
     .filter((hook) => !hook.rejectionReasons.length)
@@ -534,16 +654,25 @@ export async function generateVideoConceptSummariesAi(input: {
     category: input.analysis.category,
     productName: input.analysis.productName,
   });
-  const selectedFormat = VIDEO_CONCEPT_FORMAT_OPTIONS.find((item) => item.id === input.conceptFormat);
-  const fourConceptMode = input.planningMode === "four-concepts" || !selectedFormat;
-  const archetypes: Array<VideoConceptArchetype | undefined> = fourConceptMode
-    ? VIDEO_CONCEPT_ARCHETYPE_OPTIONS.map((item) => item.id)
-    : [undefined];
+  const selectedFormat = VIDEO_CONCEPT_FORMAT_OPTIONS.find(
+    (item) => item.id === input.conceptFormat
+  );
+  const fourConceptMode =
+    !input.requestedArchetype && (input.planningMode === "four-concepts" || !selectedFormat);
   const hasVerifiedBenefit = hasVerifiedVideoBenefit(input.analysis);
-  const request = async (archetype: VideoConceptArchetype | undefined, correction = "") => runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
-    stage: "concept-summaries",
-    outputSchema: conceptSummarySchema(archetype) as unknown as Record<string, unknown>,
-    prompt: `당신은 한국 퍼포먼스 광고 영상 기획자다. 아래 상품 근거와 평가된 후킹을 사용해 ${archetype ? `${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label} 기획안 1개` : "사용자가 선택한 형식의 기획안 1개"}만 만든다.
+  const request = async (archetypes: VideoConceptArchetype[] | undefined, correction = "") =>
+    runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
+      stage: "concept-summaries",
+      purpose: "concept",
+      outputSchema: conceptSummarySchema({
+        count: archetypes?.length || 1,
+        archetypes,
+      }) as unknown as Record<string, unknown>,
+      prompt: `당신은 한국 퍼포먼스 광고 영상 기획자다. 아래 상품 근거와 평가된 후킹을 사용해 ${
+        archetypes?.length
+          ? `${archetypes.map((archetype) => VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label).join(" · ")} 기획안을 각각 1개씩, 총 ${archetypes.length}개`
+          : "사용자가 선택한 형식의 기획안 1개"
+      } 만든다.
 
 [상품]
 ${JSON.stringify(promptFacts(input.analysis))}
@@ -551,14 +680,22 @@ ${JSON.stringify(promptFacts(input.analysis))}
 ${JSON.stringify(candidates)}
 [목표와 길이]
 ${input.duration}초, ${VIDEO_OBJECTIVE_LABELS[input.objective]}
-${selectedFormat ? `[사용자가 선택한 영상 콘셉트]
+${
+  selectedFormat
+    ? `[사용자가 선택한 영상 콘셉트]
 ${selectedFormat.title} · ${selectedFormat.description}
 전개: ${selectedFormat.flow}
 연출 규칙: ${selectedFormat.direction}
-creativeStyle은 반드시 ${selectedFormat.creativeStyle}을 사용한다.` : ""}
-${archetype ? `[반드시 지킬 중심 유형]
-${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label}: ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.direction}
-conceptArchetype은 반드시 ${archetype}이다.` : ""}
+creativeStyle은 반드시 ${selectedFormat.creativeStyle}을 사용한다.`
+    : ""
+}
+${
+  archetypes?.length
+    ? `[반드시 지킬 중심 유형]
+${archetypes.map((archetype) => `${archetype} = ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label}: ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.direction}`).join("\n")}
+conceptArchetype은 위 유형을 정확히 한 번씩 사용한다.`
+    : ""
+}
 [카테고리 연출 원칙]
 ${stylePrinciples(input.analysis.category)}
 [브랜드 가이드]
@@ -573,81 +710,142 @@ ${clean(input.excludedContent, 1500) || "없음"}
 ${JSON.stringify((input.existingConcepts || []).map((item) => ({ opening: item.openingHook, incident: item.centralIncident, speaker: item.speakerPointOfView || item.speaker, appeal: item.keyAppeal || item.usp })))}
 
 첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 멈춰 볼 센 사건이나 한마디로 시작한다. 상품 사실은 바꾸지 않되 표현과 상황은 과감하게 창작한다. 첫 자막, 중심 사건, 화자 시점, 갈등 원인, 상품 등장 방식, 핵심 소구, 결말·CTA, 화면 스타일을 기존 기획안과 다르게 만든다. 참고 영상은 첫 1~3초 강한 인물/상품/가격 후킹, 6초 전후 B-roll 전환, 상품의 이른 반복 노출, 중반의 원산지·과정·가격 근거, 마지막 직접 CTA라는 편집 원리만 참고하고 원문은 복제하지 않는다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓰고 확정 문구로 쓰지 않는다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다. 실제 이미지나 영상을 생성하지 않으며 상세 대본은 아직 만들지 않는다.
-${archetype === "secret-benefit" && !hasVerifiedBenefit ? "확인된 혜택이 없으므로 benefitAvailability는 insufficient, keyAppeal과 narrativeSummary에는 ‘확인 가능한 혜택 정보가 부족합니다’를 포함하고 가격·할인·배송·증정을 창작하지 않는다." : ""}
+${archetypes?.includes("secret-benefit") && !hasVerifiedBenefit ? "secret-benefit 기획안은 확인된 혜택이 없으므로 benefitAvailability를 insufficient로 두고, keyAppeal과 narrativeSummary에는 ‘확인 가능한 혜택 정보가 부족합니다’를 포함하며 가격·할인·배송·증정을 창작하지 않는다." : ""}
 ${correction} JSON만 반환한다.`,
-  });
+    });
   const toConcepts = (rows: AiConceptSummary[]) => {
     const occupiedCodes = [...(input.existingConcepts || []).map((item) => item.materialCode)];
     return rows.map((row): VideoConcept => {
-    const hook = input.hooks.find((item) => item.id === row.hookId) ||
-      input.hooks.find((item) => item.hookType === row.hookType);
-    const previous = input.existingConcepts?.find((item) => item.hookType === row.hookType);
-    const now = new Date().toISOString();
-    return {
-      id: previous?.id || crypto.randomUUID(),
-      title: clean(row.title, 100),
-      hookType: row.hookType,
-      coreTarget: clean(row.coreTarget, 140),
-      objective: input.objective,
-      openingHook: clean(row.openingHook, 100),
-      fullScript: "",
-      cuts: [],
-      requiredSources: [],
-      cta: clean(row.cta, 80),
-      productionCautions: compact(input.analysis.cautionPhrases, 8, 240),
-      materialCode: previous?.materialCode || (() => {
-        const code = createVideoMaterialCode({
-          advertiserName: input.advertiserName,
-          productName: input.analysis.productName,
-          hookType: row.hookType,
-          existingCodes: occupiedCodes,
-        });
-        occupiedCodes.push(code);
-        return code;
-      })(),
-      generationSource: "codex-local",
-      generationWarnings: [],
-      revision: (previous?.revision || 0) + 1,
-      createdAt: previous?.createdAt || now,
-      updatedAt: now,
-      customerProblem: clean(row.customerProblem, 180),
-      usp: clean(row.usp, 180),
-      creativeStyle: selectedFormat?.creativeStyle || row.creativeStyle,
-      narrativeSummary: clean(row.narrativeSummary, 600),
-      narrativeStructure: clean(row.narrativeStructure, 260),
-      speaker: clean(row.speaker, 120),
-      recommendationReason: clean(row.recommendationReason, 400),
-      claimsToVerify: compact(row.claimsToVerify, 6, 200),
-      evidenceIds: compact(row.evidenceIds.filter((id) => evidenceIds.has(id)), 6, 120),
-      score: { ...conceptScore(hook), total: hook?.score.total || 0 },
-      detailStatus: "not-generated",
-      conceptFormat: input.conceptFormat,
-      conceptArchetype: row.conceptArchetype,
-      centralIncident: clean(row.centralIncident, 320),
-      speakerPointOfView: clean(row.speakerPointOfView, 140),
-      keyAppeal: clean(row.keyAppeal, 200),
-      recommendedVisualStyle: clean(row.recommendedVisualStyle, 200),
-      supportingDevices: compact(row.supportingDevices, 4, 120),
-      differenceFromPrevious: clean(row.differenceFromPrevious, 240),
-      benefitAvailability: row.benefitAvailability,
-    };
+      const hook =
+        input.hooks.find((item) => item.id === row.hookId) ||
+        input.hooks.find((item) => item.hookType === row.hookType);
+      const previous =
+        input.existingConcepts?.find((item) => item.conceptArchetype === row.conceptArchetype) ||
+        input.existingConcepts?.find((item) => item.hookType === row.hookType);
+      const now = new Date().toISOString();
+      return {
+        id: previous?.id || crypto.randomUUID(),
+        title: clean(row.title, 100),
+        hookType: row.hookType,
+        coreTarget: clean(row.coreTarget, 140),
+        objective: input.objective,
+        openingHook: clean(row.openingHook, 100),
+        fullScript: "",
+        cuts: [],
+        requiredSources: [],
+        cta: clean(row.cta, 80),
+        productionCautions: compact(input.analysis.cautionPhrases, 8, 240),
+        materialCode:
+          previous?.materialCode ||
+          (() => {
+            const code = createVideoMaterialCode({
+              advertiserName: input.advertiserName,
+              productName: input.analysis.productName,
+              hookType: row.hookType,
+              existingCodes: occupiedCodes,
+            });
+            occupiedCodes.push(code);
+            return code;
+          })(),
+        generationSource: getVideoPlanningProvider() === "openai-api" ? "openai" : "codex-local",
+        generationWarnings: [],
+        revision: (previous?.revision || 0) + 1,
+        createdAt: previous?.createdAt || now,
+        updatedAt: now,
+        customerProblem: clean(row.customerProblem, 180),
+        usp: clean(row.usp, 180),
+        creativeStyle: selectedFormat?.creativeStyle || row.creativeStyle,
+        narrativeSummary: clean(row.narrativeSummary, 600),
+        narrativeStructure: clean(row.narrativeStructure, 260),
+        speaker: clean(row.speaker, 120),
+        recommendationReason: clean(row.recommendationReason, 400),
+        claimsToVerify: compact(row.claimsToVerify, 6, 200),
+        evidenceIds: compact(
+          row.evidenceIds.filter((id) => evidenceIds.has(id)),
+          6,
+          120
+        ),
+        score: { ...conceptScore(hook), total: hook?.score.total || 0 },
+        detailStatus: "not-generated",
+        conceptFormat: input.conceptFormat,
+        conceptArchetype: row.conceptArchetype,
+        centralIncident: clean(row.centralIncident, 320),
+        speakerPointOfView: clean(row.speakerPointOfView, 140),
+        keyAppeal: clean(row.keyAppeal, 200),
+        recommendedVisualStyle: clean(row.recommendedVisualStyle, 200),
+        supportingDevices: compact(row.supportingDevices, 4, 120),
+        differenceFromPrevious: clean(row.differenceFromPrevious, 240),
+        benefitAvailability: row.benefitAvailability,
+      };
     });
   };
-  const rows: AiConceptSummary[] = [];
-  for (const archetype of archetypes) {
-    const payload = await request(archetype);
-    rows.push(...payload.concepts);
+  if (input.requestedArchetype) {
+    const payload = await request([input.requestedArchetype]);
+    return toConcepts(payload.concepts);
   }
-  let concepts = toConcepts(rows);
-  if (fourConceptMode && !validateConceptDiversity(concepts).valid) {
-    const retryRows: AiConceptSummary[] = [];
-    for (const archetype of archetypes) {
-      const payload = await request(archetype, "이전 결과와 첫 자막·중심 사건·화자·갈등·상품 등장·핵심 소구·결말·화면 스타일이 겹쳤다. 이 중심 유형의 문법을 유지하면서 완전히 다른 사건으로 다시 구성한다.");
-      retryRows.push(...payload.concepts);
+  if (!fourConceptMode) {
+    const payload = await request(undefined);
+    return toConcepts(payload.concepts);
+  }
+
+  const findInvalidArchetypes = (rows: AiConceptSummary[]) => {
+    const invalid = new Set<VideoConceptArchetype>();
+    for (const row of rows) {
+      if (!candidates.some((hook) => hook.id === row.hookId)) invalid.add(row.conceptArchetype);
+      if (row.evidenceIds.some((id) => !evidenceIds.has(id))) invalid.add(row.conceptArchetype);
+      if (
+        row.conceptArchetype === "secret-benefit" &&
+        !hasVerifiedBenefit &&
+        row.benefitAvailability !== "insufficient"
+      ) {
+        invalid.add(row.conceptArchetype);
+      }
     }
-    concepts = toConcepts(retryRows);
+    const fields = rows.map((row) => [
+      row.hookType,
+      row.openingHook,
+      row.centralIncident,
+      row.customerProblem,
+      row.usp,
+      row.speakerPointOfView || row.speaker,
+      row.recommendedVisualStyle,
+      row.narrativeStructure,
+      row.cta,
+    ]);
+    for (let left = 0; left < fields.length; left += 1) {
+      for (let right = left + 1; right < fields.length; right += 1) {
+        const same = fields[left].filter(
+          (value, index) => value && value === fields[right][index]
+        ).length;
+        if (same / fields[left].length >= 0.45) invalid.add(rows[right].conceptArchetype);
+      }
+    }
+    return [...invalid];
+  };
+
+  let rows: AiConceptSummary[];
+  try {
+    rows = await requestFourVideoConcepts({
+      requestBatch: async () => (await request([...REQUIRED_VIDEO_CONCEPT_ARCHETYPES])).concepts,
+      requestOne: async (archetype, correction) =>
+        (await request([archetype], correction)).concepts[0],
+      findInvalidArchetypes,
+    });
+  } catch (error) {
+    throw new VideoPlanningGenerationError(
+      {
+        stage: "schema-validation",
+        code: "CONCEPTS_NOT_DISTINCT",
+        message: "AI가 서로 충분히 다른 기획안 4개를 만들지 못했습니다.",
+        retryable: true,
+        attempts: 2,
+        failedAt: new Date().toISOString(),
+      },
+      error
+    );
   }
-  if (fourConceptMode && !validateConceptDiversity(concepts).valid) {
+  const concepts = toConcepts(rows);
+  if (!validateConceptDiversity(concepts).valid) {
     throw new VideoPlanningGenerationError({
       stage: "schema-validation",
       code: "CONCEPTS_NOT_DISTINCT",
@@ -704,6 +902,31 @@ function rowsToCuts(rows: AiScriptRow[], duration: VideoDuration, existing?: Vid
   }));
 }
 
+function removeLiteralForbidden(value: string, forbidden: string[]) {
+  let next = value;
+  for (const phrase of forbidden.map((item) => clean(item, 180)).filter(Boolean)) {
+    next = next.replaceAll(phrase, "").replace(/\s{2,}/g, " ").trim();
+  }
+  return next;
+}
+
+function sanitizeGeneratedConceptCopy(concept: VideoConcept, forbidden: string[]): VideoConcept {
+  const apply = (value: string) => removeLiteralForbidden(value, forbidden);
+  return {
+    ...concept,
+    title: apply(concept.title),
+    openingHook: apply(concept.openingHook),
+    fullScript: apply(concept.fullScript),
+    cta: apply(concept.cta),
+    cuts: concept.cuts.map((cut) => ({
+      ...cut,
+      caption: apply(cut.caption),
+      narration: apply(cut.narration),
+      sceneDescription: apply(cut.sceneDescription),
+    })),
+  };
+}
+
 function detailedPrompt(input: {
   analysis: ProductAnalysisSnapshot;
   guideline: BrandGuideline;
@@ -720,29 +943,37 @@ function detailedPrompt(input: {
 ${JSON.stringify(promptFacts(input.analysis))}
 [선택한 기획안]
 ${JSON.stringify({
-    title: input.concept.title,
-    hookType: VIDEO_HOOK_LABELS[input.concept.hookType],
-    openingHook: input.concept.openingHook,
-    target: input.concept.coreTarget,
-    problem: input.concept.customerProblem,
-    usp: input.concept.usp,
-    speaker: input.concept.speaker,
-    style: input.concept.creativeStyle,
-    selectedConceptFormat: input.concept.conceptFormat,
-    conceptArchetype: input.concept.conceptArchetype,
-    narrative: input.concept.narrativeStructure,
-    incident: input.concept.centralIncident,
-    pointOfView: input.concept.speakerPointOfView,
-    keyAppeal: input.concept.keyAppeal,
-    visualStyle: input.concept.recommendedVisualStyle,
-    supportingDevices: input.concept.supportingDevices,
-    cta: input.concept.cta,
+  title: input.concept.title,
+  hookType: VIDEO_HOOK_LABELS[input.concept.hookType],
+  openingHook: input.concept.openingHook,
+  target: input.concept.coreTarget,
+  problem: input.concept.customerProblem,
+  usp: input.concept.usp,
+  speaker: input.concept.speaker,
+  style: input.concept.creativeStyle,
+  selectedConceptFormat: input.concept.conceptFormat,
+  conceptArchetype: input.concept.conceptArchetype,
+  narrative: input.concept.narrativeStructure,
+  incident: input.concept.centralIncident,
+  pointOfView: input.concept.speakerPointOfView,
+  keyAppeal: input.concept.keyAppeal,
+  visualStyle: input.concept.recommendedVisualStyle,
+  supportingDevices: input.concept.supportingDevices,
+  cta: input.concept.cta,
   evidenceIds: input.concept.evidenceIds,
 })}
-${input.concept.conceptFormat ? `[선택 형식 연출 규칙]
-${VIDEO_CONCEPT_FORMAT_OPTIONS.find((item) => item.id === input.concept.conceptFormat)?.direction || "선택 형식의 연출 문법을 일관되게 유지한다."}` : ""}
-${input.concept.conceptArchetype ? `[중심 콘셉트 규칙]
-${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === input.concept.conceptArchetype)?.direction || "선택된 중심 유형의 사건과 시점을 끝까지 유지한다."}` : ""}
+${
+  input.concept.conceptFormat
+    ? `[선택 형식 연출 규칙]
+${VIDEO_CONCEPT_FORMAT_OPTIONS.find((item) => item.id === input.concept.conceptFormat)?.direction || "선택 형식의 연출 문법을 일관되게 유지한다."}`
+    : ""
+}
+${
+  input.concept.conceptArchetype
+    ? `[중심 콘셉트 규칙]
+${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === input.concept.conceptArchetype)?.direction || "선택된 중심 유형의 사건과 시점을 끝까지 유지한다."}`
+    : ""
+}
 [브랜드 기준]
 ${JSON.stringify({ tone: input.guideline.toneAndManner, required: input.guideline.requiredPhrases, forbidden: input.guideline.forbiddenPhrases })}
 [카테고리 원칙]
@@ -756,7 +987,7 @@ ${clean(input.revisionFeedback, 1600) || "없음"}
 
 참고 영상의 품질 원칙처럼 첫 1~3초에는 인물·상품·검증된 가격 중 하나를 강하게 노출하고, 6초 전에는 다른 피사체 또는 B-roll로 전환한다. 발표자와 원물·생산·사용·가격·신뢰 장면을 교차하고 상품은 초반부터 반복 노출한다. 원문 자막과 특정 인물·장면은 복제하지 않는다.
 
-각 sceneDescription은 100자 이상이며 촬영팀이 그대로 실행할 수 있게 등장인물·사물, 장소·배경, 구체 행동, 표정·반응, 카메라 구도, 필요한 제품 노출, 활용 B-roll, 전환·편집 방식, 기존 촬영본 재사용 가능 여부를 자연스러운 문장으로 모두 쓴다. 반드시 무엇이 먼저 보이고 다음 구간에서 무엇으로 바뀌는지도 명시한다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다', '사용 전후를 비교한다', '제품 전체와 CTA를 보여준다' 같은 추상 문장은 금지한다.
+각 sceneDescription은 100자 이상이며 촬영팀이 그대로 실행할 수 있게 등장인물·사물, 장소·배경, 구체 행동, 표정·반응, 카메라 구도, 필요한 제품 노출, 활용 B-roll, 전환·편집 방식, 기존 촬영본 재사용 가능 여부를 자연스러운 문장으로 모두 쓴다. 각 행에 '첫 화면', '장소', '주체', '행동', '관찰 가능한 반응', '다음 전환'이 반드시 문장으로 드러나야 한다. 사람이 없는 제품·원물 B-roll의 반응은 표면 변화·윤기·색감·거품·물방울·수증기·질감처럼 카메라로 확인할 수 있는 시각 반응으로 쓴다. 반드시 무엇이 먼저 보이고 다음 구간에서 무엇으로 바뀌는지도 명시한다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다', '사용 전후를 비교한다', '제품 전체와 CTA를 보여준다' 같은 추상 문장은 금지한다.
 
 검증된 사실에 없는 숫자·효능·원산지·후기·성과는 쓰지 않는다. 이미지, 이미지 프롬프트, 이미지 생성, visualBible, productLockedAsset은 만들지 않는다. ${input.correction || ""} JSON만 반환한다.`;
 }
@@ -772,6 +1003,7 @@ async function requestDetailedRows(input: {
 }) {
   return runVideoPlanningAi<{ rows: AiScriptRow[]; fullScript: string }>({
     stage: input.correction ? "automatic-revision" : "detailed-script",
+    purpose: input.correction ? "correction" : "script",
     outputSchema: scriptSchema(input.duration) as unknown as Record<string, unknown>,
     prompt: detailedPrompt(input),
   });
@@ -785,41 +1017,57 @@ export async function generateDetailedVideoScriptAi(input: {
   referenceAnalyses?: ReferenceVideoAnalysis[];
   revisionFeedback?: string;
 }) {
-  let payload = await requestDetailedRows(input);
-  let concept: VideoConcept = {
-    ...input.concept,
-    cuts: rowsToCuts(payload.rows, input.duration, input.concept.cuts),
-    fullScript: clean(payload.fullScript, 4000),
-    detailStatus: "ready",
-    generationFailure: undefined,
-    revision: input.concept.revision + 1,
-    updatedAt: new Date().toISOString(),
-  };
-  concept.validation = validateDetailedPlanning(concept, input.analysis, input.duration);
-  for (let revisionAttempt = 1; revisionAttempt <= 2 && !concept.validation.valid; revisionAttempt += 1) {
-    const failures = concept.validation.checks.filter((check) => !check.passed).map((check) => check.message);
-    payload = await requestDetailedRows({
-      ...input,
-      concept,
-      correction: `자동 검수 ${revisionAttempt}차에서 다음 문제가 발견됐다. 다른 항목은 유지하고 문제를 모두 수정해 전체 대본을 다시 반환한다: ${failures.join(" / ")}`,
-      referenceAnalyses: input.referenceAnalyses,
-    });
-    concept = {
-      ...concept,
+  const toValidatedConcept = (
+    payload: { rows: AiScriptRow[]; fullScript: string },
+    previous: VideoConcept,
+    revised: boolean
+  ) => {
+    let concept: VideoConcept = {
+      ...previous,
       cuts: rowsToCuts(payload.rows, input.duration, input.concept.cuts),
       fullScript: clean(payload.fullScript, 4000),
-      revision: concept.revision + 1,
+      detailStatus: "ready",
+      generationFailure: undefined,
+      revision: previous.revision + 1,
       updatedAt: new Date().toISOString(),
     };
-    concept.validation = { ...validateDetailedPlanning(concept, input.analysis, input.duration), revised: true };
-  }
-  if (!concept.validation.valid) {
+    concept = repairDetailedPlanningSceneDescriptions(concept, input.analysis);
+    concept = sanitizeGeneratedConceptCopy(concept, input.guideline.forbiddenPhrases);
+    concept.validation = {
+      ...validateDetailedPlanning(concept, input.analysis, input.duration),
+      revised,
+    };
+    return concept;
+  };
+  const result = await runWithSingleVideoPlanningCorrection({
+    requestInitial: async () =>
+      toValidatedConcept(await requestDetailedRows(input), input.concept, false),
+    isValid: (concept) => concept.validation?.valid === true,
+    requestCorrection: async (concept) => {
+      const failures =
+        concept.validation?.checks.filter((check) => !check.passed).map((check) => check.message) ||
+        [];
+      const payload = await requestDetailedRows({
+        ...input,
+        concept,
+        correction: `자동 검수에서 다음 문제가 발견됐다. 다른 항목은 유지하고 문제를 모두 수정해 전체 대본을 다시 반환한다: ${failures.join(" / ")}`,
+        referenceAnalyses: input.referenceAnalyses,
+      });
+      return toValidatedConcept(payload, concept, true);
+    },
+  });
+  const concept = result.value;
+  const validation = concept.validation!;
+  if (!validation.valid) {
     throw new VideoPlanningGenerationError({
       stage: "quality-review",
       code: "SCRIPT_QUALITY_FAILED",
-      message: concept.validation.checks.filter((check) => !check.passed).map((check) => check.message).join(" "),
+      message: validation.checks
+        .filter((check) => !check.passed)
+        .map((check) => check.message)
+        .join(" "),
       retryable: true,
-      attempts: 3,
+      attempts: 2,
       failedAt: new Date().toISOString(),
     });
   }
@@ -839,36 +1087,59 @@ export async function regeneratePlanningSegmentAi(input: {
   const current = input.concept.cuts[index];
   const neighbor = {
     previous: input.concept.cuts[index - 1]
-      ? { caption: input.concept.cuts[index - 1].caption, scene: input.concept.cuts[index - 1].sceneDescription }
+      ? {
+          caption: input.concept.cuts[index - 1].caption,
+          scene: input.concept.cuts[index - 1].sceneDescription,
+        }
       : null,
     current: { caption: current.caption, scene: current.sceneDescription },
     next: input.concept.cuts[index + 1]
-      ? { caption: input.concept.cuts[index + 1].caption, scene: input.concept.cuts[index + 1].sceneDescription }
+      ? {
+          caption: input.concept.cuts[index + 1].caption,
+          scene: input.concept.cuts[index + 1].sceneDescription,
+        }
       : null,
   };
-  const fieldSchema = input.field === "caption"
-    ? { type: "object", additionalProperties: false, required: ["caption"], properties: { caption: { type: "string", minLength: 2, maxLength: 34 } } }
-    : { type: "object", additionalProperties: false, required: ["sceneDescription"], properties: { sceneDescription: { type: "string", minLength: 80, maxLength: 700 } } };
+  const fieldSchema =
+    input.field === "caption"
+      ? {
+          type: "object",
+          additionalProperties: false,
+          required: ["caption"],
+          properties: { caption: { type: "string", minLength: 2, maxLength: 34 } },
+        }
+      : {
+          type: "object",
+          additionalProperties: false,
+          required: ["sceneDescription"],
+          properties: { sceneDescription: { type: "string", minLength: 80, maxLength: 700 } },
+        };
   const result = await runVideoPlanningAi<{ caption?: string; sceneDescription?: string }>({
     stage: "detailed-script",
+    purpose: "segment",
+    reasoningEffort: "low",
     outputSchema: fieldSchema,
     prompt: `아래 영상 대본에서 ${index + 1}번째 구간의 ${input.field === "caption" ? "자막" : "영상 장면 설명"}만 다시 쓴다. 다른 행은 바꾸지 않는다. 상품 근거에 없는 수치나 효능을 쓰지 않고 앞뒤 흐름을 자연스럽게 잇는다. 장면 설명이라면 구체적인 장소·배경·인물/상품·행동·표정·첫 시각 요소·자막과 연결되는 사건·다음 변화/전환을 80자 이상으로 모두 포함한다. JSON만 반환한다.\n상품=${JSON.stringify(promptFacts(input.analysis))}\n기획안=${JSON.stringify({ title: input.concept.title, hook: input.concept.openingHook, cta: input.concept.cta })}\n앞뒤=${JSON.stringify(neighbor)}`,
   });
-  const cuts = input.concept.cuts.map((cut) => cut.id === input.cutId
-    ? {
-        ...cut,
-        ...(input.field === "caption"
-          ? { caption: clean(result.caption, 80) }
-          : { sceneDescription: clean(result.sceneDescription, 1000) }),
-      }
-    : cut);
-  const concept = {
+  const cuts = input.concept.cuts.map((cut) =>
+    cut.id === input.cutId
+      ? {
+          ...cut,
+          ...(input.field === "caption"
+            ? { caption: clean(result.caption, 80) }
+            : { sceneDescription: clean(result.sceneDescription, 1000) }),
+        }
+      : cut
+  );
+  let concept: VideoConcept = {
     ...input.concept,
     cuts,
     fullScript: cuts.map((cut) => cut.narration || cut.caption).join(" "),
     revision: input.concept.revision + 1,
     updatedAt: new Date().toISOString(),
   };
+  concept = repairDetailedPlanningSceneDescriptions(concept, input.analysis);
+  concept = sanitizeGeneratedConceptCopy(concept, input.guideline.forbiddenPhrases);
   concept.validation = validateDetailedPlanning(concept, input.analysis, input.duration);
   return concept;
 }

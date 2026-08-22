@@ -15,7 +15,10 @@ import type {
 import { GeminiSceneGenerationProvider } from "../../../lib/image-generation/GeminiSceneGenerationProvider";
 import { MockSceneGenerationProvider } from "../../../lib/image-generation/MockSceneGenerationProvider";
 import { OpenAISceneGenerationProvider } from "../../../lib/image-generation/OpenAISceneGenerationProvider";
-import type { SceneGenerationProvider } from "../../../lib/image-generation/SceneGenerationProvider";
+import {
+  isPaidImageGenerationEnabled,
+  type SceneGenerationProvider,
+} from "../../../lib/image-generation/SceneGenerationProvider";
 
 export const runtime = "nodejs";
 
@@ -23,6 +26,8 @@ type Body = {
   direction?: VisualDirection;
   provider?: SceneGenerationProviderId;
   candidateCount?: number;
+  /** Legacy advanced route only. The default Codex flow never sends this flag. */
+  paidApiExplicitlySelected?: boolean;
 };
 
 type SceneAssessment = {
@@ -39,10 +44,13 @@ type SceneAssessment = {
 
 const outputDirectory = path.join(process.cwd(), "public", "background-images");
 
-function providerFor(id: SceneGenerationProviderId): SceneGenerationProvider {
+function providerFor(
+  id: SceneGenerationProviderId,
+  options: { explicitPaidApiAuthorization?: boolean } = {}
+): SceneGenerationProvider {
   if (id === "gemini") return new GeminiSceneGenerationProvider();
   if (id === "mock") return new MockSceneGenerationProvider();
-  return new OpenAISceneGenerationProvider();
+  return new OpenAISceneGenerationProvider(options);
 }
 
 function paletteFor(direction: VisualDirection) {
@@ -207,8 +215,24 @@ export async function POST(request: Request) {
       );
     }
     const requestedProvider = body.provider || "openai";
+    const explicitPaidSelection = body.paidApiExplicitlySelected === true;
+    if (
+      requestedProvider !== "mock" &&
+      (!explicitPaidSelection || !isPaidImageGenerationEnabled())
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "유료 이미지 API는 별도 공급자 선택과 작업별 동의 전에는 사용할 수 없습니다. 기본 광고 제작의 Codex·ChatGPT 로그인 생성을 이용해 주세요.",
+        },
+        { status: 403 }
+      );
+    }
     const count = Math.max(1, Math.min(3, Number(body.candidateCount) || 2));
-    const primary = providerFor(requestedProvider);
+    const primary = providerFor(requestedProvider, {
+      explicitPaidApiAuthorization: explicitPaidSelection,
+    });
     const fallback = new MockSceneGenerationProvider();
     const candidates: SceneCandidate[] = [];
     const errors: string[] = [];
@@ -226,7 +250,7 @@ export async function POST(request: Request) {
             requestedProvider === "gemini"
               ? "GEMINI_API_KEY가 설정되지 않았습니다."
               : requestedProvider === "openai"
-                ? "OPENAI_API_KEY가 설정되지 않았습니다."
+                ? "선택한 유료 OpenAI 이미지 공급자의 서버 인증정보를 확인해 주세요."
                 : "안전 배경을 사용합니다."
           );
         }

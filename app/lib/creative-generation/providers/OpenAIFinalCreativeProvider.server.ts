@@ -9,15 +9,35 @@ import type { CreativeGenerationProvider, NativeGenerationInput } from "./Creati
 
 export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
   readonly engine = "openai_api" as const;
-  async status() { const available = Boolean(process.env.OPENAI_API_KEY && process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED === "true"); return { engine: this.engine, available, authenticated: available, paidApiUsed: true, detail: available ? "사용자가 선택한 유료 OpenAI API" : "OPENAI_API_KEY와 ADATLAS_PAID_API_EXPLICIT_ENABLED=true가 필요합니다." }; }
+  private readonly explicitPaidApiAuthorization: boolean;
+
+  constructor(options: { explicitPaidApiAuthorization?: boolean } = {}) {
+    this.explicitPaidApiAuthorization = options.explicitPaidApiAuthorization === true;
+  }
+
+  async status() {
+    const serverEnabled = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED === "true";
+    const available = Boolean(
+      this.explicitPaidApiAuthorization && serverEnabled && process.env.OPENAI_API_KEY
+    );
+    return {
+      engine: this.engine,
+      available,
+      authenticated: available,
+      paidApiUsed: available,
+      detail: available
+        ? "이 작업에 사용자가 별도로 승인한 유료 OpenAI API"
+        : "작업별 유료 API 선택, 서버 허용, OPENAI_API_KEY가 모두 필요합니다.",
+    };
+  }
   async generate(input: NativeGenerationInput) {
     const state = await this.status(); if (!state.available) throw new Error(state.detail);
     const sourceImagePath = input.sourceImagePath || input.referencePaths[0];
     const memory = await readBrandMemory(input.job.advertiserId || "unknown-advertiser");
-    const goldenPaths = [...new Set((input.goldenReferencePaths || []).slice(0, 2))];
-    const selectedGolden = new Set(goldenPaths);
-    const promptMemory = { ...memory, goldenReferences: memory.goldenReferences.filter((reference) => selectedGolden.has(reference.imagePath)) };
-    const generated = await editImageFromSource({ sourceImagePath, referenceImagePaths: [...input.referencePaths.filter((file) => file !== sourceImagePath).slice(0, 4), ...goldenPaths].slice(0, 5), prompt: buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback, promptMemory), size: "1024x1024", quality: "high" });
+    // Golden advertisements contribute only abstract reusable traits through
+    // brand memory. Their pixels are deliberately not attached, preventing an
+    // older ad or its copy panel from being reproduced inside the new output.
+    const generated = await editImageFromSource({ sourceImagePath, referenceImagePaths: input.referencePaths.filter((file) => file !== sourceImagePath).slice(0, 4), prompt: buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback, memory), size: "1024x1024", quality: "high", explicitPaidApiAuthorization: this.explicitPaidApiAuthorization });
     await writeFile(input.outputPath, generated.imageBuffer);
     return { outputPath: input.outputPath };
   }

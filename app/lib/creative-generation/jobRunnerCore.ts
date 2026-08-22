@@ -1,5 +1,6 @@
 export type IdempotentJobRunner = {
-  enqueue: (jobId: string) => boolean;
+  enqueue: (jobId: string, options?: { priority?: boolean }) => boolean;
+  cancelQueued: (jobId: string) => boolean;
   isActive: (jobId: string) => boolean;
   wait: (jobId: string) => Promise<void>;
 };
@@ -25,7 +26,7 @@ export function createIdempotentJobRunner(execute: (jobId: string) => Promise<vo
     }
   }
   return {
-    enqueue(jobId) {
+    enqueue(jobId, options = {}) {
       if (jobs.has(jobId)) return false;
       let resolve!: () => void;
       let reject!: (error: unknown) => void;
@@ -34,8 +35,18 @@ export function createIdempotentJobRunner(execute: (jobId: string) => Promise<vo
         reject = failed;
       });
       jobs.set(jobId, running);
-      queue.push({ jobId, resolve, reject });
+      const queued = { jobId, resolve, reject };
+      if (options.priority) queue.unshift(queued);
+      else queue.push(queued);
       drain();
+      return true;
+    },
+    cancelQueued(jobId) {
+      const index = queue.findIndex((item) => item.jobId === jobId);
+      if (index < 0) return false;
+      const [cancelled] = queue.splice(index, 1);
+      jobs.delete(jobId);
+      cancelled.resolve();
       return true;
     },
     isActive(jobId) {

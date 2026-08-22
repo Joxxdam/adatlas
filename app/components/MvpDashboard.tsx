@@ -2032,6 +2032,7 @@ export function MvpDashboard({
     }
 
     if (!options.silent) {
+      setGenerationPlanConfirmed(false);
       setProductExtractStatus({
         kind: "loading",
         message: "상품 상세페이지 정보를 불러오는 중입니다.",
@@ -5018,6 +5019,7 @@ export function MvpDashboard({
                   <div>
                     <HookExperimentCreativeGenerator
                       adBrief={creativeWorkflow.adBrief}
+                      analyzedProductUrl={lastLoadedProductUrl}
                       logoPath={brandLogoPath}
                       planConfirmed={generationPlanConfirmed}
                       productLoaded={currentProductLoaded}

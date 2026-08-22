@@ -81,6 +81,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
   };
   const publicJob = {
     ...job,
+    paidApiAuthorization: undefined,
     adCopy: job.adCopy ? {
       id: job.adCopy.id,
       jobId: job.adCopy.jobId,
