@@ -35,6 +35,9 @@ export type CreativeArchiveEntry = {
   productName: string;
   category: string;
   hookCode: string;
+  materialCode?: string;
+  copyPlanMode?: "reference-adapted" | "legacy-hook-first";
+  referenceId?: string;
   hookType: string;
   headline: string;
   subCopy: string;

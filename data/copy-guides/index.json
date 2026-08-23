@@ -26,6 +26,15 @@
       "domains": ["fightingfarm.com", "www.fightingfarm.com"],
       "filePath": "data/copy-guides/fighting-farm.md",
       "priority": 100
+    },
+    {
+      "id": "original-source",
+      "brandName": "오리지널소스",
+      "aliases": ["오리지널소스", "오리지널 소스", "Original Source", "originalsource"],
+      "categories": ["화장품", "뷰티", "바디워시", "샤워젤", "퍼스널케어"],
+      "domains": ["originalsource.co.kr", "www.originalsource.co.kr"],
+      "filePath": "data/copy-guides/original-source.md",
+      "priority": 100
     }
   ],
   "defaultGuideId": null

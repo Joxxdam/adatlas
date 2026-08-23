@@ -56,19 +56,20 @@ export function aggregateMetaPerformance(
       cpa: safeDivide(totals.spend, totals.purchases),
       roas: safeDivide(totals.purchaseValue, totals.spend),
       spendShare: safeDivide(totals.spend, totalSpend),
-      status: enough ? "유망 후킹" : "추가 데이터 필요",
+      status: enough ? "성과 후보 소재" : "추가 데이터 필요",
     };
   });
-  const eligible = rows.filter((row) => row.status === "유망 후킹");
+  const eligible = rows.filter((row) => row.status === "성과 후보 소재");
   const leader = [...eligible].sort((a, b) => b.roas - a.roas || a.cpa - b.cpa || b.purchases - a.purchases)[0];
-  if (leader && eligible.length >= 2) leader.status = "검증된 우승";
+  if (leader && eligible.length >= 2) leader.status = "성과 우수 소재";
   return { ...experiment, rows };
 }
 
 export function spendImbalanceWarning(rows: PerformanceHookRow[]) {
   const highest = [...rows].sort((a, b) => b.spendShare - a.spendShare)[0];
   if (!highest || highest.spendShare < 0.4) return "";
-  return `${highest.hookCode}에 전체 광고비의 ${Math.round(highest.spendShare * 100)}%가 배분되었습니다. 현재 결과는 Meta의 불균등 노출 영향을 포함합니다.`;
+  const label = highest.materialCode || highest.hookCode;
+  return `${label}에 전체 광고비의 ${Math.round(highest.spendShare * 100)}%가 배분되었습니다. 현재 결과는 Meta의 불균등 노출 영향을 포함합니다.`;
 }
 
 export function recentThreeDayRange(now = new Date()) {

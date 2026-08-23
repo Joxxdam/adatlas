@@ -30,21 +30,22 @@ export function prepareArchivePerformanceSelection(input: CreativeArchiveEntry[]
   const entries = input
     .filter(isArchivePerformanceEligible)
     .slice(0, 6)
-    .sort((left, right) => left.hookCode.localeCompare(right.hookCode));
+    .sort((left, right) => String(left.materialCode || left.hookCode).localeCompare(String(right.materialCode || right.hookCode)));
   const base = entries[0];
   const sameAdvertiser = Boolean(base && entries.every((entry) => identity(entry, "advertiser") === identity(base, "advertiser")));
   const sameProduct = Boolean(base && entries.every((entry) => identity(entry, "product") === identity(base, "product")));
   const uniqueHooks = new Set(entries.map((entry) => entry.hookCode.toUpperCase())).size === entries.length;
   const templateIds = new Set(entries.map((entry) => String(entry.templateId || "").trim()).filter(Boolean));
   const visualDirections = new Set(entries.map((entry) => String(entry.visualDirection || "").trim()).filter(Boolean));
-  const hookOnlyEligible = entries.length >= 2 && templateIds.size === 1 && visualDirections.size === 1 && entries.every((entry) => Boolean(entry.templateId && entry.visualDirection));
+  const containsReferenceAdaptedMaterial = entries.some((entry) => entry.copyPlanMode === "reference-adapted");
+  const hookOnlyEligible = !containsReferenceAdaptedMaterial && entries.length >= 2 && templateIds.size === 1 && visualDirections.size === 1 && entries.every((entry) => Boolean(entry.templateId && entry.visualDirection));
   const testType: PerformanceTestType = hookOnlyEligible ? "hook-only" : "creative-combination";
 
   if (!entries.length) {
     return {
       entries,
       valid: false,
-      message: "소재코드와 H01~H06이 발급된 완성 이미지를 선택해 주세요.",
+      message: "소재코드와 결과 순번이 발급된 완성 이미지를 선택해 주세요.",
       testType,
       hookOnlyEligible,
     };
@@ -71,7 +72,7 @@ export function prepareArchivePerformanceSelection(input: CreativeArchiveEntry[]
     return {
       entries,
       valid: false,
-      message: "같은 후킹 코드가 중복되었습니다. H01~H06을 한 장씩 선택해 주세요.",
+      message: "같은 결과 순번이 중복되었습니다. 서로 다른 소재를 한 장씩 선택해 주세요.",
       testType,
       hookOnlyEligible,
     };
@@ -79,7 +80,7 @@ export function prepareArchivePerformanceSelection(input: CreativeArchiveEntry[]
   return {
     entries,
     valid: true,
-    message: hookOnlyEligible ? "동일한 디자인 조건이 확인되어 후킹 문구 차이를 비교할 수 있습니다." : "장면·레이아웃이 서로 달라 후킹 단독 효과가 아닌 전체 소재 조합 성과로 비교합니다.",
+    message: hookOnlyEligible ? "과거 동일 디자인 기록이므로 문구 차이를 비교할 수 있습니다." : "레퍼런스 구성·상품 표현·문구·레이아웃과 Meta 노출 배분이 함께 반영된 완성 소재 성과로 비교합니다.",
     testType,
     hookOnlyEligible,
   };
@@ -92,6 +93,9 @@ export function archiveEntriesToMetaDrafts(entries: CreativeArchiveEntry[], land
     return {
       hookCode,
       materialCode,
+      referenceId: entry.referenceId,
+      advertisingConcept: entry.mainMessage || entry.visualDirection || entry.headline,
+      previewUrl: entry.imageUrl,
       mediaPath: entry.imageUrl,
       mediaType: "image",
       mediaRatio: "1:1",

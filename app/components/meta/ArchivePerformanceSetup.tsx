@@ -14,6 +14,7 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
   const [landingUrl, setLandingUrl] = useState(first?.landingUrl || "");
   const [testType, setTestType] = useState<PerformanceTestType>(selection.testType);
   const creatives = useMemo(() => archiveEntriesToMetaDrafts(selection.entries, landingUrl.trim()), [landingUrl, selection.entries]);
+  const materialLabel = (entry: CreativeArchiveEntry) => entry.materialCode || (entry.copyPlanMode === "reference-adapted" ? `M${entry.hookCode.replace(/^H/i, "")}` : entry.hookCode);
 
   if (!selection.entries.length) {
     return (
@@ -46,9 +47,9 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
           <article key={entry.id}>
             {/* Runtime-generated local files intentionally bypass Next image optimization. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt={`${entry.hookCode} ${entry.headline}`} src={entry.imageUrl} />
+            <img alt={`${materialLabel(entry)} ${entry.headline}`} src={entry.imageUrl} />
             <div>
-              <strong>{entry.hookCode}</strong>
+              <strong>{materialLabel(entry)}</strong>
               <span>{entry.assetCode}</span>
             </div>
           </article>
@@ -62,15 +63,14 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
           <p>{selection.message}</p>
         </div>
         <div className={styles.testTypeChoices}>
-          <button aria-pressed={testType === "hook-only"} className={testType === "hook-only" ? styles.choiceActive : ""} disabled={!selection.hookOnlyEligible} onClick={() => setTestType("hook-only")} type="button">
+          {selection.hookOnlyEligible ? <button aria-pressed={testType === "hook-only"} className={testType === "hook-only" ? styles.choiceActive : ""} onClick={() => setTestType("hook-only")} type="button">
             <strong>후킹만 비교</strong>
             <span>동일 디자인에서 메인 후킹과 서브 문구만 다른 경우</span>
-            {!selection.hookOnlyEligible ? <small>현재 소재는 디자인 조건이 동일하지 않아 선택할 수 없습니다.</small> : null}
-          </button>
+          </button> : null}
           <button aria-pressed={testType === "creative-combination"} className={testType === "creative-combination" ? styles.choiceActive : ""} onClick={() => setTestType("creative-combination")} type="button">
-            <strong>전체 소재 조합 비교</strong>
-            <span>후킹·장면·레이아웃이 함께 다른 완성 광고 성과를 비교</span>
-            <small>결과를 후킹 단독 효과라고 단정하지 않습니다.</small>
+            <strong>완성 광고 소재 비교</strong>
+            <span>레퍼런스·상품 표현·문구·레이아웃이 함께 다른 광고 성과를 비교</span>
+            <small>특정 문구 하나의 순수 효과라고 단정하지 않습니다.</small>
           </button>
         </div>
       </div>

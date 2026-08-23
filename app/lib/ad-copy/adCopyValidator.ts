@@ -4,7 +4,7 @@ export const BANNED_GENERIC_AD_COPY = ["지금 만나보세요", "새로운 경�
 
 const unsupportedClaimPattern = /(?:무조건|완벽(?:히|한)?|100%\s*(?:효과|해결|제거)|즉시\s*(?:치료|개선|제거)|임상(?:적으로)?\s*입증|체감온도|체취.{0,8}(?:지우|제거|없애)|체취\s*-?\d+%)/iu;
 const urgencyPattern = /(?:지금만|오늘만|마감\s*임박|선착순|한정\s*수량|품절\s*임박|단\s*\d+일)/iu;
-const evidenceRequiredPattern = /(?:도축현장|도매가|도매특가|최저가|판매량\s*1위|국내\s*1위|영국\s*1위|괜히\s*1등|무료\s*배송|잡내\s*(?:1도|0|제로|없))/giu;
+const evidenceRequiredPattern = /(?:도축현장|도매가|도매특가|최저가|판매량\s*(?:1위|1등)|(?:국내|영국)\s*(?:1위|1등)|괜히\s*1등|무료\s*배송|잡내\s*(?:1도|0|제로|없))/giu;
 const numericPattern = /(?:₩|￦)?\s*\d[\d,.]*(?:\s*(?:원|%|kg|g|mg|ml|l|개|입|팩|장|점))?/giu;
 
 function normalize(value: string) {
@@ -34,6 +34,7 @@ export function validateAdCopyAgainstTruth(input: { primaryText: string; adTitle
   const facts = verifiedFactText(input.truth);
   const normalizedFacts = normalize(facts);
   const combinedCopy = [primaryText, adTitle].filter(Boolean).join("\n");
+  const normalizedPrimaryText = normalize(primaryText);
   const normalizedCopy = normalize(combinedCopy);
 
   if (copyLines.length < 5 || copyLines.length > 8) failures.push("Meta 기본 문구는 5~8개의 읽기 쉬운 문장 줄이어야 합니다.");
@@ -61,7 +62,7 @@ export function validateAdCopyAgainstTruth(input: { primaryText: string; adTitle
     if (hookWords.length && !hookWords.some((word) => normalizedCopy.includes(normalize(word)))) failures.push("대표 후킹과 광고문구의 메시지가 연결되지 않습니다.");
   }
   for (const approved of input.approvedCopies || []) {
-    if (approved && normalize(approved) === normalizedCopy) failures.push("기존 승인 문구를 그대로 복사할 수 없습니다.");
+    if (approved && normalize(approved) === normalizedPrimaryText) failures.push("기존 승인 문구를 그대로 복사할 수 없습니다.");
   }
   return { passed: failures.length === 0, failures, lineCount: copyLines.length, emojiCount };
 }
@@ -115,12 +116,13 @@ export function buildAdCopyCsv(
   rows: Array<{
     productName: string;
     primaryText: string;
+    adTitle?: string;
     adName?: string;
     utm?: string;
     assetCode?: string;
     hookId?: string;
   }>
 ) {
-  const header = ["상품명", "Meta 기본 문구", "광고명", "UTM", "소재코드", "대표 후킹"];
-  return `\uFEFF${[header, ...rows.map((row) => [row.productName, row.primaryText, row.adName, row.utm, row.assetCode, row.hookId])].map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
+  const header = ["상품명", "Meta 기본 문구", "광고 제목", "광고명", "UTM", "소재코드", "대표 후킹"];
+  return `\uFEFF${[header, ...rows.map((row) => [row.productName, row.primaryText, row.adTitle, row.adName, row.utm, row.assetCode, row.hookId])].map((row) => row.map(csvCell).join(",")).join("\r\n")}`;
 }

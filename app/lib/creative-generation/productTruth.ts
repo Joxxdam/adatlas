@@ -7,7 +7,7 @@ function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
 }
 
-const titleNoisePattern = /(?:\[[^\]]{0,40}(?:특가|한정|무료배송|이벤트|증정|쿠폰)[^\]]*\]|[★☆◆◇♥♡●■▶▷✔✓🔥🚨]|(?:^|\s)(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가)(?:\s|$))/giu;
+const titleNoisePattern = /(?:\[[^\]]{0,40}(?:특가|한정|무료배송|이벤트|증정|쿠폰)[^\]]*\]|[★☆◆◇♥♡●■▶▷✔✓🔥🚨]|(?:^|\s)(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량)(?:\s|$))/giu;
 
 export function cleanProductTitle(rawTitle: string, brandName = "") {
   let value = String(rawTitle || "")
@@ -52,17 +52,33 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
   const description = [product.extractedDescription, product.mainBenefit, ...(product.verifiedBenefits || [])].filter(Boolean).join(" · ");
   const ingredientValues = compact(product.ingredients || []).filter((value) => !isOriginLike(value) && !isPromotionLike(value));
   const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value));
-  const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg|개|팩|병|박스|세트|종)/i);
+  const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg)/i);
+  const salesUnit = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:봉지|개입|개|팩|병|박스|세트|종)(?!\s*(?:구성|세트))/i);
   const composition = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
   const shipping = firstMatch(`${rawProductTitle} ${description}`, /(?:무료\s*배송|당일\s*출고|오늘\s*출발|새벽\s*배송)/i);
   const promotion = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%\s*할인|쿠폰|증정|한정\s*(?:특가|판매)|무료\s*배송)/i);
   const origin = firstMatch(`${description} ${(product.ingredients || []).join(" ")}`, /(?:원산지\s*[:：]?\s*)?(?:국내산|국산|[가-힣]{2,12}산)(?=\s|[,·/]|$)/u);
   const seasonOrEvent = firstMatch(`${rawProductTitle} ${description}`, /(?:봄|여름|가을|겨울|명절|설날|추석|크리스마스|신상품|시즌|\d{1,2}일\s*한정|한정\s*판매)/u);
   const packageOrOption = product.packageType || composition || firstMatch(`${rawProductTitle} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
+  const promotionalTokens = compact(rawProductTitle.match(/(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량|반란|\d{1,3}\s*%\s*(?:할인|OFF)?|\d+\s*\+\s*\d+)/giu) || []);
+  const titleDescriptor = firstMatch(cleanProductName, /(?:바삭달콤|상큼한|달콤한|고소한|쫄깃한|부드러운|촉촉한|산뜻한|시원한|진한|담백한|매콤한)/u);
+  const removableTitleTokens = [quantity, salesUnit, composition, titleDescriptor, ...promotionalTokens]
+    .filter((token): token is string => Boolean(token));
+  const baseProductName = removableTitleTokens
+    .reduce<string>((value, token) => value.replace(token, " "), cleanProductName)
+    .replace(/(?:^|\s)(?:건강간식|간편식|인기간식|추천상품)(?:\s|$)/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const verifiedDescriptor = titleDescriptor || verifiedBenefits[0] || ingredientValues[0] || undefined;
   const reviewEvidence = compact([...(product.reviewSources || []).map((review) => review.keySentence || review.sourceContext), ...(product.creativeContext?.reviewInsightSummaries || [])]).slice(0, 6);
   return {
     rawProductTitle,
     cleanProductName,
+    baseProductName: baseProductName || cleanProductName,
+    verifiedDescriptor,
+    descriptor: verifiedDescriptor || baseProductName || cleanProductName,
+    salesUnit: salesUnit || composition || quantity,
+    promotionalTokens,
     brandName: String(product.brandName || product.advertiserName || "").trim(),
     category: String(product.category || "").trim(),
     price: product.price || undefined,
@@ -259,6 +275,16 @@ function fact(key: string, label: string, value: string | undefined, verificatio
   const evidenceType: ProductEvidenceType = key.startsWith("review") ? "review" : key.startsWith("ingredient") ? "ingredient" : key === "origin" ? "origin" : key === "quantity" ? "quantity" : key === "package-option" ? (/(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|포함)/iu.test(normalized) ? "composition" : "other") : key === "season-event" ? "usage" : key === "price" || key === "original-price" ? "price" : key === "discount" || key.includes("promotion") ? "offer" : key === "target" ? "target" : key === "product-name" || key === "brand-name" || key === "category" ? "identity" : key.includes("benefit") || key.includes("usp") ? "usp" : extractNumericTokens(normalized).length ? "numeric" : "other";
   const specificity = Math.min(100, 30 + Math.min(30, normalized.length) + (extractNumericTokens(normalized).length ? 25 : 0) + (evidenceType === "identity" ? -20 : 10));
   const strength = Math.max(10, Math.min(100, (verification === "verified" || verification === "source-backed" ? 55 : 38) + (evidenceType === "usp" || evidenceType === "review" || evidenceType === "offer" ? 20 : 5) + (extractNumericTokens(normalized).length ? 15 : 0)));
+  const copyEligibility: NonNullable<ProductFact["copyEligibility"]> =
+    verification === "unverified"
+      ? "blocked"
+      : evidenceType === "price" || evidenceType === "offer"
+        ? "offerOnly"
+        : evidenceType === "identity"
+          ? "identityOnly"
+          : evidenceType === "review" || evidenceType === "origin" || evidenceType === "composition" || evidenceType === "quantity" || evidenceType === "numeric"
+            ? "proofOnly"
+            : "headlineEligible";
   return {
     id: `fact-${key}-${stableId(normalized)}`,
     key,
@@ -272,6 +298,7 @@ function fact(key: string, label: string, value: string | undefined, verificatio
     strength,
     specificity,
     evidenceType,
+    copyEligibility,
   };
 }
 
@@ -287,7 +314,8 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
   const verification: FactVerification = landingSource ? "source-backed" : "user-provided";
   const source: ProductFact["source"] = landingSource ? "landing-page" : "user-input";
   const candidates = [
-    fact("product-name", "상품명", product.productName, verification, source, product.landingUrl),
+    fact("base-product-name", "정제 상품명", normalizedTruth.baseProductName || normalizedTruth.cleanProductName, verification, source, product.landingUrl),
+    fact("verified-descriptor", "확인된 상품 표현", normalizedTruth.verifiedDescriptor, verification, source, product.landingUrl),
     fact("brand-name", "브랜드", product.brandName || product.advertiserName, verification, source, product.landingUrl),
     fact("category", "카테고리", product.category, verification, source, product.landingUrl),
     fact("price", "판매가", product.price, verification, source, product.landingUrl),

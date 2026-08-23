@@ -24,6 +24,7 @@ function setup(job: NonNullable<Awaited<ReturnType<typeof creativeGenerationJobS
   return {
     productName: job.productTruth.product.productName,
     primaryText: copy.primaryText,
+    adTitle: copy.adTitle || "",
     adName: copy.adName || "",
     utm: copy.utm || "",
     assetCode: copy.assetCode || "",
@@ -42,7 +43,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
     const row = setup(job);
     const base = fileName(`${row.assetCode || row.productName}-meta-copy`);
     if (format === "txt") {
-      const text = `${row.primaryText}\n\n광고명\n${row.adName}\n\nUTM\n${row.utm}\n\n소재코드\n${row.assetCode}\n`;
+      const text = `${row.primaryText}\n\n광고 제목\n${row.adTitle}\n\n광고명\n${row.adName}\n\nUTM\n${row.utm}\n\n소재코드\n${row.assetCode}\n`;
       return new NextResponse(text, { headers: { "Content-Type": "text/plain; charset=utf-8", "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(`${base}.txt`)}` } });
     }
     if (format === "csv") {

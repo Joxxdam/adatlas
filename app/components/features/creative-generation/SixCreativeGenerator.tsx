@@ -113,7 +113,7 @@ function shouldPersistGenerationJob(job: GenerationJob) {
   return hasGenerationWorkRemaining(job) || job.results.some((result) => !result.imagePath);
 }
 
-export function HookExperimentCreativeGenerator(props: Props) {
+export function ReferenceFirstCreativeGenerator(props: Props) {
   const [job, setJob] = useState<GenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -124,7 +124,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
   const [copyEdits, setCopyEdits] = useState<Record<string, Partial<CopyPlan>>>({});
-  const generationModePreference = "reference-staged-edit" as const;
+  const generationModePreference = "reference-first-adapted-copy" as const;
   const [strategyVariation, setStrategyVariation] = useState(0);
   const [providerStatus, setProviderStatus] = useState("로컬 Codex 상태 확인 중…");
   const [latestCompletedResultId, setLatestCompletedResultId] = useState<string>();
@@ -386,7 +386,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
     if (!response.ok || !payload.result) throw new Error(payload.error || "개별 광고 생성에 실패했습니다.");
     if (payload.result.status === "success") {
       setLatestCompletedResultId(payload.result.id);
-      setMessage(`${payload.result.hookPlan.hookCode} 광고 콘텐츠를 완성해 화면에 전달했습니다.`);
+      setMessage(`소재 ${String(payload.result.order).padStart(2, "0")}를 완성해 화면에 전달했습니다.`);
     }
     return payload.result;
   }
@@ -442,7 +442,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
           generationModePreference,
           strategyVariation: mode === "scene" ? strategyVariation + 1 : strategyVariation,
           forceSceneRevision: mode === "scene",
-          mode: "concept-exploration",
+          mode: "reference-adapted-materials",
         }),
       });
       const payload = (await response.json()) as {
@@ -517,7 +517,10 @@ export function HookExperimentCreativeGenerator(props: Props) {
   async function startOrResumeGeneration(mode: "new" | "scene" = "new") {
     const jobUrl = normalizeCreativeProductUrl(job?.productTruth.product.landingUrl || "");
     const matchesCurrentProduct = Boolean(job && currentProductUrl && jobUrl === currentProductUrl);
-    const usesRandomReferencePipeline = job?.pipeline === "reference-staged-edit" || job?.version === "generation-job-v12-category-reference-edit";
+    const usesRandomReferencePipeline =
+      job?.pipeline === "reference-first-adapted-copy" ||
+      job?.pipeline === "reference-staged-edit" ||
+      job?.version === "generation-job-v12-category-reference-edit";
     const resumableStatus = Boolean(job && usesRandomReferencePipeline && ["pending", "running", "cancelled", "partial", "failed"].includes(job.status) && job.results.some((result) => ["pending", "running", "cancelled", "failed"].includes(result.status)));
     if (mode === "new" && matchesCurrentProduct && resumableStatus && !runnerActive) {
       await resumeJob();
@@ -549,7 +552,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
         copy: copyEdits[result.id] || {},
       });
       await refreshJob(job.id);
-      setMessage(`${result.hookPlan.hookCode} 수정 문구로 전체 광고를 다시 생성했습니다.`);
+      setMessage(`소재 ${String(result.order).padStart(2, "0")}를 수정 문구로 다시 생성했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "문구 적용 실패");
     } finally {
@@ -682,7 +685,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   }
 
   if ((!props.productLoaded || !props.planConfirmed) && !job) return null;
-  const recoverable = Boolean(job && job.version === "generation-job-v12-category-reference-edit" && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
+  const recoverable = Boolean(job && ["generation-job-v12-category-reference-edit", "generation-job-v13-reference-first-adapted-copy"].includes(job.version) && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
   const generationInProgress = Boolean(job && ["pending", "running"].includes(job.status) && runnerActive);
   const storedReference = job?.results.find((result) => result.nativeCreative?.adReference)?.nativeCreative?.adReference;
   const selectedCategoryLabel = job?.referenceCategoryOverride
@@ -701,6 +704,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const nextPendingResult = job?.results.filter((result) => result.status === "pending").sort((left, right) => left.order - right.order)[0];
   const currentOrder = activeResults[0]?.order || nextPendingResult?.order || Math.min(progress.completed + 1, progress.total);
   const allCreativesReady = Boolean(job && progress.total === 6 && completedResults.length === progress.total);
+  const referenceAdapted = job?.copyPlanMode === "reference-adapted";
   const currentStage = activeResults[0] ? generationStageLabels[activeResults[0].generationStage || "planned"] : generationInProgress ? "다음 광고 준비 중" : "";
   const progressHeadline = allCreativesReady ? "광고 6장이 모두 완성됐습니다" : activeResults.length ? `${currentOrder}장째 광고를 제작 중입니다` : generationInProgress ? `${currentOrder}장째 광고 제작을 준비 중입니다` : recoverable ? "광고 생성이 잠시 멈췄습니다" : attentionResultsWithoutImage.length ? "다시 제작할 광고가 있습니다" : loading || !job ? "광고 제작을 준비하고 있습니다" : message;
 
@@ -711,7 +715,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
           {allCreativesReady ? "✓" : generationInProgress || loading || !job ? <i /> : "!"}
         </div>
         <div>
-          <p className="eyebrow">광고 콘텐츠 6장 자동 제작</p>
+          <p className="eyebrow">레퍼런스 기반 광고 콘텐츠 6장 제작</p>
           <h4>{progressHeadline}</h4>
           <p>{allCreativesReady ? "완성된 광고를 확인한 뒤 한 번에 ZIP으로 내려받으세요." : currentStage ? `${currentStage}${activeResults.length > 1 ? ` · ${activeResults.length}장 동시 처리 중` : ""}` : message}</p>
         </div>
@@ -835,7 +839,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
                       <div className="six-creative-card-head">
                         <span>{result.order}</span>
                         <div>
-                          <strong>{result.order}번째 광고 완성</strong>
+                          <strong>소재 {String(result.order).padStart(2, "0")} 완성</strong>
                           <small>{result.hookPlan.headline}</small>
                         </div>
                         <b>{["quality-review", "group-review"].includes(result.status) ? "품질 확인 필요 · 다운로드 가능" : "다운로드 가능"}</b>
@@ -846,7 +850,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
                       <details className="six-creative-edit">
                         <summary>이 광고 수정·다운로드</summary>
                         <div className="hook-hypothesis">
-                          <b>메인 후킹</b>
+                          <b>{referenceAdapted ? "메인 문구" : "메인 후킹"}</b>
                           <strong>{result.hookPlan.headline}</strong>
                           <b>서브 문구</b>
                           <span>{result.hookPlan.body}</span>
@@ -903,7 +907,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
                         </div>
                         <div className="six-creative-copy-editor">
                           <label>
-                            <span>메인 후킹</span>
+                            <span>{referenceAdapted ? "메인 문구" : "메인 후킹"}</span>
                             <input
                               value={copyEdits[result.id]?.headline ?? result.hookPlan.headline}
                               onChange={(event) =>
@@ -1021,3 +1025,6 @@ export function HookExperimentCreativeGenerator(props: Props) {
     </section>
   );
 }
+
+// 과거 import 경로 호환용 별칭입니다. 신규 화면과 작업은 레퍼런스 우선 파이프라인을 사용합니다.
+export const HookExperimentCreativeGenerator = ReferenceFirstCreativeGenerator;

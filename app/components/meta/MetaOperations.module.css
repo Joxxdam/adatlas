@@ -602,3 +602,10 @@
     grid-template-columns: 1fr;
   }
 }
+.performanceThumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #d7e1ee;
+}

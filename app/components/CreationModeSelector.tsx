@@ -17,7 +17,7 @@ const modes = [
     eyebrow: "DIRECT CREATION",
     title: "상세페이지로 광고 만들기",
     description: "제작할 상품이 정해져 있다면 상품 URL을 입력해 바로 광고 소재를 만듭니다.",
-    features: ["상품정보 추출", "상품 근거 기반 후킹 후보 기획", "최종 후킹 6개 선정", "후킹별 AI 완성 광고 생성", "개별 검수·수정·다운로드"],
+    features: ["상품정보 추출", "호환 레퍼런스 6장 선택", "레퍼런스별 문구 적응", "AI 완성 광고 6장 생성", "개별 검수·수정·다운로드"],
     href: "/create-product",
     button: "상세페이지로 제작 시작",
     accent: "creation",
@@ -35,7 +35,7 @@ export function CreationModeSelector() {
           </div>
           <p className="eyebrow">CREATIVE OPERATIONS</p>
           <h1>광고 제작을 어디서 시작할까요?</h1>
-          <p>쇼핑몰에서 광고 후보를 먼저 찾거나, 준비된 상품으로 후킹별 AI 완성 광고를 바로 만들 수 있습니다.</p>
+          <p>쇼핑몰에서 광고 후보를 먼저 찾거나, 준비된 상품으로 레퍼런스 기반 AI 완성 광고를 바로 만들 수 있습니다.</p>
         </section>
         <ol className="mode-selector-flow" aria-label="기본 광고 제작 순서">
           <li>

@@ -345,7 +345,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
                 </details>
                 <div className={styles.actions}>
                   <Link href={buildProductCreationHref({ dataCandidateId: candidate.id }, candidate.productUrl)}>
-                    이 상품으로 후킹 6개 만들기
+                    이 상품으로 광고 소재 6장 만들기
                     <span aria-hidden="true">→</span>
                   </Link>
                 </div>

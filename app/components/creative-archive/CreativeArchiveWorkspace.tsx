@@ -58,6 +58,10 @@ function downloadFileName(entry: CreativeArchiveEntry) {
   return entry.fileName || `${entry.productName}-${entry.hookCode}.jpg`;
 }
 
+function displayMaterialCode(entry: CreativeArchiveEntry) {
+  return entry.materialCode || (entry.copyPlanMode === "reference-adapted" ? `M${entry.hookCode.replace(/^H/i, "").padStart(2, "0")}` : entry.hookCode);
+}
+
 function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSelect, onToggleDeletion, onToggleBranding, onDelete, onUpdate, onNotice }: { entry: CreativeArchiveEntry; selected: boolean; deletionSelected: boolean; brandingSelected: boolean; onSelect: (entry: CreativeArchiveEntry) => void; onToggleDeletion: (entry: CreativeArchiveEntry) => void; onToggleBranding: (entry: CreativeArchiveEntry) => void; onDelete: (entry: CreativeArchiveEntry) => void; onUpdate: (entry: CreativeArchiveEntry) => void; onNotice: (message: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -113,9 +117,9 @@ function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSe
       <div className={styles.media}>
         {/* Runtime-generated local files intentionally bypass Next image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img alt={`${entry.productName} ${entry.hookCode} 광고 콘텐츠`} loading="lazy" src={entry.imageUrl} />
+        <img alt={`${entry.productName} ${displayMaterialCode(entry)} 광고 콘텐츠`} loading="lazy" src={entry.imageUrl} />
         <div className={styles.mediaBadges}>
-          <span>{entry.hookCode || "후킹"}</span>
+          <span>{entry.copyPlanMode === "reference-adapted" ? `소재 ${displayMaterialCode(entry).replace(/^M/i, "")}` : entry.hookCode || "과거 후킹"}</span>
           {entry.qaScore !== undefined ? <span>QA {entry.qaScore}</span> : null}
           {entry.deliveryBranding?.logoId ? <span>로고 적용</span> : null}
           {entry.deliveryBranding?.aiDisclosure ? <span>AI 고지</span> : null}
@@ -124,7 +128,7 @@ function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSe
         <button aria-label={entry.savedAsReference ? "업체 레퍼런스 해제" : "업체 레퍼런스로 저장"} className={entry.savedAsReference ? styles.referenceActive : ""} disabled={busy} onClick={() => void patch({ savedAsReference: !entry.savedAsReference })} type="button">
           {entry.savedAsReference ? "★ 레퍼런스" : "☆ 레퍼런스 저장"}
         </button>
-        <button aria-pressed={selected} className={`${styles.performanceSelect}${selected ? ` ${styles.performanceSelected}` : ""}`} disabled={!isArchivePerformanceEligible(entry)} onClick={() => onSelect(entry)} title={isArchivePerformanceEligible(entry) ? "성과 테스트에 사용할 소재 선택" : "소재코드와 H01~H06이 필요합니다"} type="button">
+        <button aria-pressed={selected} className={`${styles.performanceSelect}${selected ? ` ${styles.performanceSelected}` : ""}`} disabled={!isArchivePerformanceEligible(entry)} onClick={() => onSelect(entry)} title={isArchivePerformanceEligible(entry) ? "성과 테스트에 사용할 소재 선택" : "성과 연결용 소재코드와 결과 순번이 필요합니다"} type="button">
           {selected ? "✓ 테스트 선택됨" : "+ 성과 테스트"}
         </button>
         <label className={styles.deletionSelect}>
@@ -139,7 +143,7 @@ function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSe
         </label>
         <div className={styles.cardHeading}>
           <div>
-            <p>{entry.hookType || "후킹 유형 미기록"}</p>
+            <p>{entry.copyPlanMode === "reference-adapted" ? "레퍼런스 기반 완성 소재" : entry.hookType || "후킹 유형 미기록"}</p>
             <h3>{entry.headline}</h3>
           </div>
           <span className={styles.status}>{statusLabels[entry.status] || entry.status}</span>
@@ -383,12 +387,12 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
 
   function togglePerformanceSelection(entry: CreativeArchiveEntry) {
     if (!isArchivePerformanceEligible(entry)) {
-      setNotice("소재코드와 H01~H06이 발급된 완성 이미지만 성과 테스트에 사용할 수 있습니다.");
+      setNotice("소재코드와 결과 순번이 발급된 완성 이미지만 성과 테스트에 사용할 수 있습니다.");
       return;
     }
     if (selectedIds.includes(entry.id)) {
       setSelectedIds((current) => current.filter((id) => id !== entry.id));
-      setNotice(`${entry.hookCode} 소재를 성과 테스트에서 제외했습니다.`);
+      setNotice(`${entry.copyPlanMode === "reference-adapted" ? `소재 ${entry.hookCode.replace(/^H/i, "")}` : entry.hookCode}를 성과 확인에서 제외했습니다.`);
       return;
     }
     const base = selectedEntries[0];
@@ -400,7 +404,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       return;
     }
     if (selectedEntries.some((item) => item.hookCode === entry.hookCode)) {
-      setNotice(`${entry.hookCode}은 이미 선택했습니다. 후킹별 한 장만 선택할 수 있습니다.`);
+      setNotice(`${entry.copyPlanMode === "reference-adapted" ? `소재 ${entry.hookCode.replace(/^H/i, "")}` : entry.hookCode}은 이미 선택했습니다.`);
       return;
     }
     if (selectedIds.length >= 6) {
@@ -408,7 +412,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       return;
     }
     setSelectedIds((current) => [...current, entry.id]);
-    setNotice(`${entry.hookCode} 소재를 성과 테스트에 추가했습니다.`);
+    setNotice(`${entry.copyPlanMode === "reference-adapted" ? `소재 ${entry.hookCode.replace(/^H/i, "")}` : entry.hookCode}를 성과 확인에 추가했습니다.`);
   }
 
   async function refresh() {
@@ -537,7 +541,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
                       <i>선택됨</i>
                     </span>
                     <small>
-                      {entry.hookCode || "후킹"} · {entry.productName}
+                      {entry.copyPlanMode === "reference-adapted" ? `소재 ${displayMaterialCode(entry).replace(/^M/i, "")}` : entry.hookCode || "과거 후킹"} · {entry.productName}
                     </small>
                   </button>
                 ))}
@@ -633,7 +637,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       <section className={styles.filters} aria-label="아카이브 검색과 필터">
         <label className={styles.search}>
           <span>검색</span>
-          <input onChange={(event) => setQuery(event.target.value)} placeholder="업체·상품·후킹·문구·소재코드 검색" value={query} />
+          <input onChange={(event) => setQuery(event.target.value)} placeholder="업체·상품·소재 순번·문구·소재코드 검색" value={query} />
         </label>
         <label>
           <span>광고주</span>
@@ -664,9 +668,9 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
           </select>
         </label>
         <label>
-          <span>후킹</span>
+          <span>소재 순번</span>
           <select onChange={(event) => setHook(event.target.value)} value={hook}>
-            <option value="">전체 후킹</option>
+            <option value="">전체 소재 순번</option>
             {hooks.map((name) => (
               <option key={name} value={name}>
                 {name}

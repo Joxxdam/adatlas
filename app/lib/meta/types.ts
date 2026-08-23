@@ -50,6 +50,9 @@ export type MetaAdvertiserAssetMap = {
 export type MetaCreativeDraft = {
   hookCode: `H0${1 | 2 | 3 | 4 | 5 | 6}`;
   materialCode: string;
+  referenceId?: string;
+  advertisingConcept?: string;
+  previewUrl?: string;
   mediaPath: string;
   mediaHash?: string;
   mediaType: "image" | "video";
@@ -153,6 +156,9 @@ export type MetaInsightSnapshot = {
 export type PerformanceHookRow = {
   hookCode: string;
   materialCode: string;
+  referenceId?: string;
+  advertisingConcept?: string;
+  previewUrl?: string;
   adId: string;
   adName: string;
   impressions: number;

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, executionResults, isCurrentAutoProductionGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, executionResults, isCurrentAutoProductionGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 import { hasDuplicateRunKey, isProductRecentlyProduced, selectFreshHook, textSimilarity } from "../app/lib/auto-production/duplicateGuard.ts";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "../app/lib/auto-production/hookSelector.ts";
 import { eligibleAutoProductionCandidates, plannedImageCount, selectAutoProductionCandidates } from "../app/lib/auto-production/productSelector.ts";
@@ -353,7 +353,7 @@ test("12. 공개 데이터에 없는 판매량과 매출을 생성하지 않는�
   }
 });
 
-test("13. 상품별 후킹 후보 6개가 저장된다", () => {
+test("13. 레거시 자동제작 기록의 내부 순번 6개를 계속 읽을 수 있다", () => {
   const hypotheses = hookHypothesesFromJob(job());
   assert.equal(hypotheses.length, 6);
   assert.equal(new Set(hypotheses.map((item) => item.mainHook)).size, 6);
@@ -378,10 +378,12 @@ test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성
   assert.match(runner, /isCurrentAutoProductionGenerationJob/);
   assert.match(runner, /assignedReferences/);
   assert.doesNotMatch(runner, /config\.creativesPerProduct|fullHookTestForNewProducts/);
-  assert.match(factory, /selectCategoryNativeAdReferences\(job, job\.results\.length\)/);
+  assert.match(factory, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6/);
+  assert.match(factory, /planReferenceAdaptedCopies/);
+  assert.doesNotMatch(factory, /planHooksWithCodexLocal|buildExplorationCreativePlan/);
 });
 
-test("구형 4장 자동제작은 실행·복구하지 않고 v12 레퍼런스 6장만 허용한다", () => {
+test("구형 4장 자동제작은 실행·복구하지 않고 현재 레퍼런스 우선 6장만 허용한다", () => {
   const base = job();
   const referenceResults = base.results.map((result, index) => ({
     ...result,
@@ -391,7 +393,7 @@ test("구형 4장 자동제작은 실행·복구하지 않고 v12 레퍼런스 6
     ...base,
     sourceType: "auto-production",
     version: CURRENT_AUTO_PRODUCTION_JOB_VERSION,
-    pipeline: "reference-staged-edit",
+    pipeline: CURRENT_AUTO_PRODUCTION_PIPELINE,
     results: referenceResults,
     executionResultIds: referenceResults.map((result) => result.id),
   };
@@ -599,4 +601,12 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(source, /자동제작 화면에서 확정한 다음 제작 예정 상품 URL/);
   assert.match(runner, /Boolean\(result\.imageUrl\)/);
   assert.match(packaging, /Boolean\(result\.nativeCreative\?\.finalPath\)/);
+});
+
+test("32. 자동제작 실행 내역은 중복 안내 문구와 레거시 ID에도 고유한 React key를 사용한다", async () => {
+  const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
+  assert.match(workspace, /key=\{`\$\{productionRun\.id\}:warning:\$\{warningIndex\}`\}/);
+  assert.match(workspace, /key=\{`\$\{productionRun\.id\}:task:\$\{task\.id\}:\$\{taskIndex\}`\}/);
+  assert.match(workspace, /key=\{`\$\{productionRun\.id\}:task:\$\{task\.id\}:result:\$\{result\.generationResultId\}:\$\{resultIndex\}`\}/);
+  assert.doesNotMatch(workspace, /key=\{warning\}/);
 });

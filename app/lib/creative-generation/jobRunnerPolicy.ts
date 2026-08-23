@@ -3,8 +3,8 @@ import type { GenerationJob, GenerationResult } from "./types";
 export const terminalGenerationResultStatuses = new Set<GenerationResult["status"]>(["success", "failed", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"]);
 
 export const failedGenerationResultStatuses = new Set<GenerationResult["status"]>(["failed", "korean-review", "product-review", "quality-review", "group-review"]);
-export const CURRENT_AUTO_PRODUCTION_JOB_VERSION = "generation-job-v12-category-reference-edit";
-export const CURRENT_AUTO_PRODUCTION_PIPELINE = "reference-staged-edit";
+export const CURRENT_AUTO_PRODUCTION_JOB_VERSION = "generation-job-v13-reference-first-adapted-copy";
+export const CURRENT_AUTO_PRODUCTION_PIPELINE = "reference-first-adapted-copy";
 
 export function normalizeCreativeProductUrl(value: string) {
   try {
@@ -18,7 +18,7 @@ export function normalizeCreativeProductUrl(value: string) {
 }
 
 export function isServerRunnableGenerationJob(job: GenerationJob) {
-  const compatible = Boolean(job.engine && ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad", "generation-job-v10-staged-reference-edit", "generation-job-v11-random-reference-edit", CURRENT_AUTO_PRODUCTION_JOB_VERSION].includes(job.version) && job.results.length === 6);
+  const compatible = Boolean(job.engine && ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad", "generation-job-v10-staged-reference-edit", "generation-job-v11-random-reference-edit", "generation-job-v12-category-reference-edit", CURRENT_AUTO_PRODUCTION_JOB_VERSION].includes(job.version) && job.results.length === 6);
   if (!compatible) return false;
   // 과거 수동 작업은 조회·수정 호환을 유지하지만 자동제작은 구형 4장 경로나
   // 레퍼런스 없는 작업을 절대 복구하지 않는다.

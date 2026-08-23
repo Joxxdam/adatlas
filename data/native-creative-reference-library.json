@@ -1251,44 +1251,6 @@
       "compatibilityConfidence": "high"
     },
     {
-      "id": "reference-copy-067",
-      "publicPath": "/creative-references/reference-copy/reference-067.jpg",
-      "sourceFile": "67.jpg",
-      "layoutFamily": "problem-objection",
-      "categoryGroup": "beauty",
-      "ordinal": 67,
-      "productForm": "universal-packshot",
-      "compositionType": "product-packshot",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-068",
-      "publicPath": "/creative-references/reference-copy/reference-068.jpg",
-      "sourceFile": "68.jpg",
-      "layoutFamily": "price-offer",
-      "categoryGroup": "beauty",
-      "ordinal": 68,
-      "productForm": "universal-packshot",
-      "compositionType": "price-card",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "dense",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
       "id": "reference-copy-069",
       "publicPath": "/creative-references/reference-copy/reference-069.jpg",
       "sourceFile": "69.jpg",
@@ -3438,7 +3400,29 @@
       "contentHash": "f108f01bd3582d08c55afb18f9d5a0a9c615680e60581170f07613acc33d98c6",
       "uploadedAt": "2026-08-23T09:57:37.373Z",
       "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-ec77c25c-b097-4757-b76f-4e1255ef8416",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ec77c25c-b097-4757-b76f-4e1255ef8416.jpg",
+      "sourceFile": "고기21.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 174,
+      "contentHash": "2e26c5b9ee69f6a2b26a1a024ba4da8b6bf6c1a56feda6d2232e940e4fa7c44e",
+      "uploadedAt": "2026-08-23T14:11:53.032Z",
+      "classificationMethod": "codex-local"
     }
   ],
-  "updatedAt": "2026-08-23T12:06:36.535Z"
+  "updatedAt": "2026-08-23T14:11:53.032Z"
 }

@@ -247,7 +247,10 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     generatedCount: scopedResults.filter((result) => Boolean(result.imagePath)).length,
     successCount: scopedResults.filter((result) => result.status === "success" || result.status === "approved").length,
     failedCount: scopedResults.filter((result) => failedGenerationResultStatuses.has(result.status)).length,
-    currentHookCode: scopedResults.find((result) => result.status === "running")?.hookPlan.hookCode,
+    currentHookCode: (() => {
+      const running = scopedResults.find((result) => result.status === "running");
+      return running ? (job.copyPlanMode === "reference-adapted" ? `소재 ${String(running.order).padStart(2, "0")}` : running.hookPlan.hookCode) : undefined;
+    })(),
     status: job.status,
     runnerActive,
     createdAt: job.createdAt,

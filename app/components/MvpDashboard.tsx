@@ -30,7 +30,7 @@ import { BackgroundLibraryManager } from "./features/background-library/Backgrou
 import { BackgroundCatalogPanel } from "./features/background-library/BackgroundCatalogPanel";
 import ProductImageWorkbench from "./features/product-image/ProductImageWorkbench";
 import ReviewCreativeWorkbench from "./features/review-creative/ReviewCreativeWorkbench";
-import { HookExperimentCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
+import { ReferenceFirstCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
 import { CreativeAssetActions, markCreativeAssetExported } from "./features/creative-assets/CreativeAssetActions";
 import { CreativeAssetLibrary } from "./features/creative-assets/CreativeAssetLibrary";
 import type { CreateCreativeAssetInput, CreativeAsset } from "../lib/creative-assets/types";
@@ -4092,7 +4092,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
                     </section>
                   </details>
                   <div>
-                    <HookExperimentCreativeGenerator adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
+                    <ReferenceFirstCreativeGenerator adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
                   </div>
                   {legacyManualProductionToolsAvailable ? (
                     <details className="advanced-production-workspace" hidden={!currentProductLoaded} id="advanced-generation-settings">
@@ -5989,11 +5989,11 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
                           </>
                         ) : (
                           <div className="empty-banner-preview">
-                            <strong>상품 USP 분석 후 후킹 생성</strong>
-                            <span>상세페이지에서 확인한 차별점을 먼저 찾습니다.</span>
+                            <strong>상품 분석 후 호환 레퍼런스 선택</strong>
+                            <span>상세페이지의 상품 사실과 형태에 맞는 광고 구조를 먼저 고릅니다.</span>
                             <em>가격·구성·혜택은 확인된 정보만 사용합니다.</em>
                             <i aria-hidden="true" />
-                            <b>상세페이지 원본 사진을 후킹별 전체 광고 제작에 참조합니다.</b>
+                            <b>상세페이지 원본 사진을 소재별 상품 교체에 참조합니다.</b>
                             <small>상품 URL을 먼저 불러와주세요 &gt;</small>
                           </div>
                         )}

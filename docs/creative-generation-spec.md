@@ -4,7 +4,7 @@
 
 상품 URL 분석이 끝나면 상품 확인 카드에서 `이 상품으로 광고 만들기`를 한 번 누릅니다. 추가 필수 설정 없이 서버 작업이 자동 시작되며 결과는 1200×1200 JPEG, 각 광고는 독립적으로 생성·검수·재시도됩니다.
 
-이 문서가 현재 `reference-staged-edit` 광고 6장 생성의 기준입니다. 기존 배경 라이브러리, text-free 장면 생성, 고정 템플릿 렌더러는 레거시·고급 도구이며 이 기본 경로에서 호출하지 않습니다. 라벨이 있는 모든 포장 상품의 동일성을 보존하기 위한 원본 래스터 보호 합성은 native 전용 안전 단계로 사용합니다.
+이 문서가 현재 `reference-first-adapted-copy` 광고 6장 생성의 기준입니다. 기존 배경 라이브러리, text-free 장면 생성, 고정 템플릿 렌더러와 후킹 우선 플래너는 레거시·고급 도구이며 이 기본 경로에서 호출하지 않습니다. 상세페이지 원본 상품 이미지는 AI 생성의 시각 레퍼런스로만 사용하며 원본 픽셀을 누끼로 추출하거나 최종 결과에 로컬 합성하지 않습니다.
 
 ## 입력 레퍼런스
 
@@ -21,7 +21,7 @@
 - 새 수동·자동 작업은 같은 상품군 중 상품 형태·구도·슬롯 호환 점수를 통과한 후보에서 중복 없이 6장을 무작위 선택합니다.
 - 호환 후보가 6장 미만이면 다른 카테고리나 비호환 레퍼런스로 보충하지 않고 부족 상태를 표시합니다.
 - 운영 화면은 패션·식품·화장품 세 대그룹과 식품 아래의 과일/농산물 필터를 보입니다. 과일/농산물 지정은 식품 카드에 바로 표시하고, 상품 형태·구도·슬롯·사진·문구 밀도·지원 플래그·신뢰도는 기본 숨김인 고급 호환 태그로 관리합니다.
-- HookPlan, 가격형·감각형 같은 카피 분류는 선택 조건이 아닙니다.
+- 신규 작업은 레퍼런스 선택 전에 HookPlan, 후킹 후보, 범용 카피 초안을 만들지 않습니다.
 - 선택된 6장은 작업 생성 시 `GenerationResult.nativeCreative.adReference`에 저장합니다.
 - 새로고침, 서버 복구, 개별 재시도와 같은 레퍼런스 재생성에서는 다시 추첨하지 않습니다.
 
@@ -42,10 +42,12 @@
 ```text
 상품 URL + 상세페이지 원본 이미지
   → ProductTruth
-  → ProductTruth 기반 Copy/HookPlan × 6
   → 상품군 + 상품 형태 + 구도/슬롯 호환성 계산
   → 호환 점수 통과 ZIP 풀에서 Unique Random Reference × 6
   → 선택 결과를 GenerationJob에 영구 저장
+  → ReferenceCopyProfile 분석 또는 파일 해시 캐시 복원
+  → ReferenceAdaptedCopyPlan × 6 일괄 생성
+  → 비생성 검증과 실패 항목 최대 1회 일괄 수정
   → Stage 1: Lossless Reference Copy (no generation)
   → Stage 2: Product-only Replacement
   → Stage 3: Copy-only Replacement
@@ -71,7 +73,7 @@
 - 상품 형태, 패키지, 색, 뚜껑, 라벨 위계와 판매 단위를 보존합니다.
 - 반복 배치는 같은 상품의 시각적 반복일 뿐 검증되지 않은 묶음 구성으로 표현하지 않습니다.
 - 육류는 원본의 부위·마블링·지방 비율·색·두께·판매 구성을 시각 사실로 사용하되 장면 안의 원근, 결, 수분, 접촉과 조명에 자연스럽게 통합합니다. 사각 원본 사진이나 분리된 누끼처럼 붙이지 않고 다른 부위·등급·원산지·수량을 만들지 않습니다.
-- 화장품·퍼스널케어·건강/웰니스·음료·우유·병·캔·파우치·박스 등 라벨이 있는 포장 상품은 원본 광고 상품을 제거하고 깨끗한 상품 영역만 준비합니다. AI가 대상 패키지를 다시 그리지 않으며 각 후속 편집 뒤 원본 상품 래스터를 변형 없이 보호 합성합니다.
+- 화장품·퍼스널케어·건강/웰니스·음료·우유·병·캔·파우치·박스 등 라벨이 있는 포장 상품도 원본 상품 이미지를 레퍼런스로 삼아 패키지 형태·색·라벨 위계·판매 단위를 전체 AI 래스터 안에서 재현합니다. 후속 단계에서 원본 상품 픽셀을 누끼로 복원하거나 보호 합성하지 않으며, 동일성이 부족하면 결과 전체를 AI로 다시 생성합니다.
 
 ### Stage 3 — Copy-only Replacement
 
@@ -93,13 +95,23 @@
 ## 핵심 타입
 
 - `ProductTruth`: 광고에 사용할 수 있는 상품 사실과 금지 표현의 유일한 기준
-- `HookPlan`: 교체할 한국어 문구, 사용 fact ID, H01~H06 성과 추적 코드
+- `ReferenceCopyProfile`: 레퍼런스의 문구 역할·길이·밀도·말투·강조 방식 분석. 파일 SHA-256과 profile version으로 캐시
+- `ReferenceAdaptedCopyPlan`: 레퍼런스별 한국어 문구와 사용 fact ID, 검증·수정 상태
+- `HookPlan`: 과거 작업 읽기와 기존 단계형 생성기 연결을 위한 호환 투영 타입
 - `NativeAdReference`: ZIP에서 선택한 광고의 ID, 상품군, public path, source file과 선택 이유
 - `NativeCreativeArtifact.stagePaths`: 원본 구조 복사, 상품 교체, 문구 교체, 치명 QA 수정 중간 결과
 - `NativeCreativeValidation`: 디자인 충실도·상품 동일성·문구 정확성·가독성 검수
 - `GenerationJob`/`GenerationResult`: 6개 선택·상태·시도·복구 정보를 JSON으로 저장
 
-H01~H06은 카피와 성과 추적 코드입니다. 시각 장면을 새로 설계하거나 ZIP 레퍼런스를 선택하는 기준이 아닙니다.
+H01~H06은 저장 호환을 위한 내부 순번입니다. 신규 UI에는 `소재 01~06`으로 표시하며 시각 장면·카피 전략·성과 가설·ZIP 레퍼런스를 선택하는 기준이 아닙니다.
+
+## 레퍼런스 적응 문구 계약
+
+- 상품명에서 판매 수식어·프로모션 토큰·판매 단위를 분리하고 ProductTruth fact마다 `headlineEligible`, `proofOnly`, `offerOnly`, `identityOnly`, `blocked` 역할을 둡니다.
+- 여섯 레퍼런스의 프로필 분석과 문구 계획은 한 번의 짧은 Codex Local 배치로 처리합니다.
+- 검증 실패 항목만 한 번의 추가 배치로 수정합니다. 이후에도 실패하면 검증된 사실만 사용하는 안전 최소 문구를 저장하고 이미지 제작은 계속합니다.
+- 원본 광고 문구와 고유 표현은 복사하지 않고 역할·길이·밀도·말투만 적응합니다.
+- 로컬 Codex가 불가능해도 과거 후킹 엔진이나 유료 API로 자동 전환하지 않습니다.
 
 ## 사실 안전성
 
@@ -119,11 +131,11 @@ H01~H06은 카피와 성과 추적 코드입니다. 시각 장면을 새로 설�
 
 ## API와 저장
 
-- `POST /api/creative-generation/jobs`: ProductTruth, 문구 계획, 호환 점수 통과 레퍼런스 6장을 저장하고 서버 작업 시작
+- `POST /api/creative-generation/jobs`: ProductTruth, 먼저 고정한 레퍼런스 6장, 레퍼런스 적응 문구 계획을 저장하고 서버 작업 시작
 - `GET /api/creative-generation/jobs/:jobId`: 진행 중 작업 복구
 - `PATCH /api/creative-generation/jobs/:jobId`: `cancel` 또는 `resume`
 - `POST /api/creative-generation/jobs/:jobId/results/:resultId`: 카드 생성·재생성·문구 수정·검수 처리
 
-작업 버전은 하위 호환을 위해 `generation-job-v12-category-reference-edit`를 유지하고 의미 이름은 `reference-staged-edit`입니다. 시작하지 않은 v11 작업은 처음 복구할 때 호환 레퍼런스로 재배정해 v12로 올립니다. 이미 편집을 시작한 과거 작업은 기존 배정을 보존합니다.
+신규 작업은 `generation-job-v13-reference-first-adapted-copy`, `pipeline: "reference-first-adapted-copy"`, `copyPlanMode: "reference-adapted"`를 저장합니다. `copyPlanMode`가 없는 v12 이하 작업은 `legacy-hook-first`로 읽어 기존 레퍼런스·문구·완료 결과와 재시도 동작을 보존합니다.
 
 런타임 작업과 AI 중간 결과는 `.data/` 비공개 저장소에 두고 공개 API가 로컬 경로·프롬프트·인증정보를 제거합니다.

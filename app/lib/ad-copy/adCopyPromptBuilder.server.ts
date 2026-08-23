@@ -4,12 +4,12 @@ import type { GenerationJob, GenerationResult } from "../creative-generation/typ
 
 export const AD_COPY_PROMPT_VERSION = "meta-primary-copy-v2-social-performance-tone";
 
-export function buildAdCopyPrompt(input: { job: GenerationJob; result: GenerationResult; approvedCopies: ApprovedAdCopyMemory[]; retryFailures?: string[] }) {
+export function buildAdCopyPrompt(input: { job: GenerationJob; result: GenerationResult; approvedCopies: ApprovedAdCopyMemory[]; copyGuideContent?: string; retryFailures?: string[] }) {
   const { job, result } = input;
   const facts = job.productTruth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").map((fact) => ({ id: fact.id, label: fact.label, value: fact.value, evidenceType: fact.evidenceType }));
   const brief = result.hookPlan.creativeBrief;
   const category = job.creativePlan.categoryCreativeProfile?.category || job.productTruth.product.category;
-  const copyGuide = job.productTruth.product.copyGuideContext?.content?.slice(0, 7_000) || "";
+  const copyGuide = (input.copyGuideContent || job.productTruth.product.copyGuideContext?.content || "").slice(0, 7_000);
   const approvedStyle = input.approvedCopies.map((copy) => ({
     languageTraits: copy.languageTraits,
     primaryText: copy.primaryText,

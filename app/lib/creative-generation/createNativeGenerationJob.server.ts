@@ -1,26 +1,22 @@
 import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
-import { buildExplorationCreativePlan, createGenerationJob, planAiScenes } from "./planner";
+import { createGenerationJob } from "./planner";
 import { buildProductTruth, cleanProductTitle } from "./productTruth";
 import { assertNativeProductReferenceReady, inspectProductTruthImages } from "./productImages.server";
 import { analyzeProductReferences } from "./referenceAnalyzer.server";
 import { hasExplicitPaidApiAuthorization, type CreateGenerationJobInput, type GenerationJob, type ReferenceCategoryOverride } from "./types";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 import { resolveAdvertiserIdentity } from "./advertiserIdentity";
-import { buildVisualDiversityMatrix, validateVisualDiversityMatrix } from "./visualDiversity";
+import { buildVisualDiversityMatrix } from "./visualDiversity";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import { defaultAdBrief } from "../mvp/adBrief";
 import type { AdBrief } from "../mvp/types";
-import { matchCategoryProfile } from "./profiles";
-import { readCategoryHookPrior } from "./hookLearning.server";
 import { cancelQueuedGenerationJob, enqueueGenerationJob } from "./jobRunner.server";
-import { planHooksWithCodexLocal } from "./CodexLocalHookPlanner.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
-import { buildCreativePlanFingerprint, readCreativePlanCache, writeCreativePlanCache } from "./creativePlanCache.server";
-import { REFERENCE_CREATIVE_GRAMMAR_VERSION, selectCreativeGrammar } from "./referenceCreativeGrammar";
-import { assertCreativeCopyAllowed, looksLikeGenericOrRepetitiveCopy, repairBannedCreativeSentence } from "./bannedCreativePhrases";
+import { buildCreativePlanFingerprint } from "./creativePlanCache.server";
 import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -108,76 +104,29 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const paidImageGenerationEnabled = engine === "openai_api";
   const runtime = resolveFastCreativeRuntime();
   const configuredConcurrency = runtime.concurrency;
-  const experimentObjective = adBrief.adObjective === "awareness" ? "AWR" : adBrief.adObjective === "signup" ? "TRF" : "SLS";
-  const categoryPrior = await readCategoryHookPrior({
-    categoryId: matchCategoryProfile(truth.product).id,
-    objective: experimentObjective,
-  });
   const advertiser = resolveAdvertiserIdentity(product);
   const advertiserId = product.creativeContext?.advertiserId || advertiser.id;
   const advertiserName = product.advertiserName || advertiser.name;
   const planningFingerprint = buildCreativePlanFingerprint(truth);
-  const cachedPlanning = await readCreativePlanCache(planningFingerprint);
-  const hookPlanning = cachedPlanning || (await planHooksWithCodexLocal({ truth, advertiserId, advertiserName, prior: categoryPrior }));
-  if (!cachedPlanning)
-    await writeCreativePlanCache({
-      fingerprint: planningFingerprint,
-      ...hookPlanning,
-      createdAt: new Date().toISOString(),
-    });
-  const creativePlan = buildExplorationCreativePlan(truth, {
+  const referenceCategoryOverride = options.sourceType === "auto-production" ? undefined : normalizeReferenceCategoryOverride(input.referenceCategoryOverride);
+  const recentReferenceIds = new Set(
+    (await creativeGenerationJobStore.recentFor({ advertiserId, limit: 12 }))
+      .flatMap((previous) => previous.results.map((result) => result.nativeCreative?.adReference?.id))
+      .filter((id): id is string => Boolean(id))
+  );
+  const selectedAdReferences = selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6, undefined, recentReferenceIds);
+  const referencePlanning = await planReferenceAdaptedCopies({ truth, references: selectedAdReferences });
+  const creativePlan = buildReferenceAdaptedCreativePlan({
+    truth,
+    references: selectedAdReferences,
+    copyPlans: referencePlanning.plans,
     logoPath: input.logoPath,
     adBrief,
-    categoryPrior,
     testCode: input.testCode,
-    exploration: hookPlanning.exploration,
-    copyGeneration: hookPlanning.copyGeneration,
+    provider: referencePlanning.provider,
+    warnings: referencePlanning.warnings,
   });
-  const nonBlockingPlanningWarnings: string[] = [];
-  creativePlan.hookPlans = creativePlan.hookPlans.slice(0, runtime.maxCreatives).map((hookPlan) => {
-    const verifiedHeadlineFallback = hookPlan.factIds
-      .map((id) => truth.facts.find((fact) => fact.id === id)?.value)
-      .map((value) => repairBannedCreativeSentence(value || ""))
-      .find(Boolean);
-    const headline = repairBannedCreativeSentence(hookPlan.headline) || verifiedHeadlineFallback || "지금 눈여겨볼 상품 포인트";
-    const body = repairBannedCreativeSentence(hookPlan.body) || repairBannedCreativeSentence(truth.product.mainBenefit || "") || "실제 상품 이미지로 형태와 구성을 확인해보세요";
-    const proof = repairBannedCreativeSentence(hookPlan.proof || "");
-    const offer = repairBannedCreativeSentence(hookPlan.offer || "");
-    const cta = repairBannedCreativeSentence(hookPlan.cta || "") || "상품 보기";
-    assertCreativeCopyAllowed(`${headline} ${body} ${proof} ${offer} ${cta}`);
-    if (looksLikeGenericOrRepetitiveCopy(headline, body)) {
-      nonBlockingPlanningWarnings.push(`${hookPlan.hookCode} 메인·서브 문구 유사도가 높지만 이미지 제작은 계속 진행했습니다.`);
-    }
-    return {
-      ...hookPlan,
-      headline,
-      body,
-      proof,
-      offer,
-      cta,
-      creativeBrief: hookPlan.creativeBrief
-        ? {
-            ...hookPlan.creativeBrief,
-            mainHook: headline,
-            subCopy: body,
-            textRendering: "ai-native-final" as const,
-          }
-        : hookPlan.creativeBrief,
-    };
-  });
-  if (nonBlockingPlanningWarnings.length) {
-    creativePlan.copyGeneration = {
-      ...(creativePlan.copyGeneration || { provider: "fallback" as const }),
-      warnings: [...(creativePlan.copyGeneration?.warnings || []), ...nonBlockingPlanningWarnings],
-    };
-  }
-  creativePlan.hookPlans = creativePlan.hookPlans.map((hookPlan) => ({
-    ...hookPlan,
-    performanceTemplateId: undefined,
-    creativeGrammarId: selectCreativeGrammar(hookPlan),
-  }));
-  creativePlan.blueprintIds = creativePlan.hookPlans.map((hookPlan) => hookPlan.blueprintId);
-  const scenes = planAiScenes(creativePlan, paidImageGenerationEnabled);
+  const scenes = buildReferenceScenes(selectedAdReferences, referencePlanning.plans);
   const productReferenceProfile = await analyzeProductReferences(truth);
   const configuredRetries = runtime.autoRevisionLimit;
   const job = createGenerationJob({
@@ -191,12 +140,14 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
     planningMs: Date.now() - started,
   });
   job.engine = engine;
-  // 자동 제작은 ProductTruth 자동 분류를 그대로 사용하고, 수동 제작에서만
-  // 사용자가 고른 레퍼런스 풀을 작업에 고정합니다.
-  job.referenceCategoryOverride = options.sourceType === "auto-production" ? undefined : normalizeReferenceCategoryOverride(input.referenceCategoryOverride);
-  const selectedAdReferences = selectCategoryNativeAdReferences(job, job.results.length);
+  job.referenceCategoryOverride = referenceCategoryOverride;
   job.results = job.results.map((result, index) => ({
     ...result,
+    materialCode: `M${String(index + 1).padStart(2, "0")}`,
+    status: referencePlanning.plans[index]?.validationStatus === "invalid" ? "quality-review" : result.status,
+    error: referencePlanning.plans[index]?.validationStatus === "invalid" ? `문구 확인 필요 · ${referencePlanning.plans[index].validationErrors.join(" · ")}` : result.error,
+    completedAt: referencePlanning.plans[index]?.validationStatus === "invalid" ? new Date().toISOString() : result.completedAt,
+    referenceAdaptedCopyPlan: referencePlanning.plans[index],
     nativeCreative: {
       engine,
       adReference: selectedAdReferences[index],
@@ -211,20 +162,22 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.advertiserId = advertiserId;
   job.advertiserName = advertiserName;
   job.visualDiversityMatrix = buildVisualDiversityMatrix(job.results);
-  const diversity = validateVisualDiversityMatrix(job.visualDiversityMatrix);
-  if (!diversity.valid) {
-    job.errors = [...job.errors, `광고 구성 다양성 참고: ${diversity.errors.join(" ")} 제작은 중단하지 않았습니다.`].slice(-20);
-  }
   job.sourceType = options.sourceType || "manual";
   job.autoProductionRunId = options.autoProductionRunId;
   job.autoProductionTaskId = options.autoProductionTaskId;
-  job.hookLearningApplied = Object.keys(categoryPrior).length > 0;
+  job.hookLearningApplied = false;
   job.representativeResultId = job.results[0]?.id;
   job.planningFingerprint = planningFingerprint;
-  job.templateRegistryVersion = REFERENCE_CREATIVE_GRAMMAR_VERSION;
+  job.templateRegistryVersion = REFERENCE_ADAPTED_PLANNER_VERSION;
   job.unusedPerformanceTemplateIds = [];
-  job.version = "generation-job-v12-category-reference-edit";
-  job.pipeline = "reference-staged-edit";
+  job.referenceCopyProfiles = referencePlanning.profiles;
+  job.copyPlanMode = "reference-adapted";
+  job.version = "generation-job-v13-reference-first-adapted-copy";
+  job.pipeline = "reference-first-adapted-copy";
+  if (job.results.every((result) => result.status !== "pending")) {
+    job.status = "partial";
+    job.completedAt = new Date().toISOString();
+  }
   if (job.sourceType === "manual") {
     // 수동 새 작업은 같은 상품의 이전 수동 작업만 교체한다. 자정 자동 제작과
     // 수동 제작이 겹쳐도 서로의 서버 작업을 취소하지 않는다.

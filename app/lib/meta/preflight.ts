@@ -87,7 +87,7 @@ export function validateMetaDraftPreflight(
     },
     {
       key: "creative-count",
-      label: "상품 1개·후킹 최대 6개",
+      label: "상품 1개·소재 최대 6개",
       ok: creativeCountSafe,
       detail: `${input.creatives.length}개 단일 미디어 광고`,
     },
@@ -95,7 +95,7 @@ export function validateMetaDraftPreflight(
       key: "approved-creatives",
       label: "승인된 제작 결과",
       ok: approvedCreatives,
-      detail: approvedCreatives ? "검수 완료된 H01~H06 단일 이미지 결과만 사용합니다." : "제작 결과에서 승인된 광고 이미지가 준비되어야 합니다.",
+      detail: approvedCreatives ? "소재코드가 발급된 단일 이미지 결과만 사용합니다." : "제작 결과에서 승인된 광고 이미지가 준비되어야 합니다.",
     },
     {
       key: "landing",

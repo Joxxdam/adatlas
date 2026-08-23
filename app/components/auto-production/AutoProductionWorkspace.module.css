@@ -925,6 +925,49 @@
   color: #5c806f;
   font-size: 10px;
 }
+.taskAdCopy {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.35fr) minmax(0, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+  padding: 13px 14px;
+  border: 1px solid #c8dfd5;
+  border-radius: 12px;
+  background: #f5fbf8;
+}
+.taskAdCopy > div {
+  min-width: 0;
+}
+.taskAdCopy span {
+  display: block;
+  margin-bottom: 5px;
+  color: #56806e;
+  font-size: 10px;
+  font-weight: 900;
+}
+.taskAdCopy strong {
+  display: block;
+  color: #173f31;
+  font-size: 14px;
+}
+.taskAdCopy pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #25483b;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.adCopyPending {
+  margin: 12px 0;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #f1f7ff;
+  color: #3c668f;
+  font-size: 12px;
+  font-weight: 750;
+}
 .imageResults {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1100,6 +1143,9 @@
   .taskActions {
     grid-column: 1 / -1;
     justify-content: flex-start;
+  }
+  .taskAdCopy {
+    grid-template-columns: 1fr;
   }
   .imageResults {
     grid-template-columns: repeat(2, minmax(0, 1fr));

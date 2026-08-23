@@ -1,4 +1,5 @@
 import type { CreativeAsset } from "../creative-assets/types";
+import { canonicalAdvertiserDisplayName } from "../creative-generation/advertiserIdentity.ts";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 import type { CreativeArchiveEntry, CreativeArchiveMetadata } from "./types";
 
@@ -84,12 +85,20 @@ export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jo
       source: "creative-asset",
       assetCode: asset.assetCode,
       advertiserId: asset.advertiserId || context?.job.advertiserId,
-      advertiserName: context?.job.advertiserName || product?.advertiserName || asset.brandName || "광고주 미지정",
+      advertiserName: canonicalAdvertiserDisplayName({
+        advertiserId: asset.advertiserId || context?.job.advertiserId,
+        advertiserName: context?.job.advertiserName || product?.advertiserName || asset.brandName,
+        brandName: product?.brandName || asset.brandName,
+        landingUrl: product?.landingUrl,
+      }),
       brandName: asset.brandName || product?.brandName || "브랜드 미지정",
       productId: asset.productId || context?.job.productTruth.productId,
       productName: asset.productName,
       category: asset.category || product?.category || "기타",
       hookCode: asset.hookVariantCode || asset.hookCode,
+      materialCode: context?.result.materialCode || asset.materialCode,
+      copyPlanMode: context?.job.copyPlanMode || asset.copyPlanMode,
+      referenceId: context?.result.referenceAdaptedCopyPlan?.referenceId || context?.result.nativeCreative?.adReference?.id || asset.referenceId,
       hookType: asset.hookType,
       headline: asset.headline || asset.mainMessage || "후킹 문구 미기록",
       subCopy: asset.subCopy || asset.benefitCopy || "",
@@ -137,12 +146,20 @@ export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jo
         source: "generation-result",
         assetCode: result.creativeAsset?.assetCode,
         advertiserId: job.advertiserId || product.creativeContext?.advertiserId,
-        advertiserName: job.advertiserName || product.advertiserName || product.brandName || "광고주 미지정",
+        advertiserName: canonicalAdvertiserDisplayName({
+          advertiserId: job.advertiserId || product.creativeContext?.advertiserId,
+          advertiserName: job.advertiserName || product.advertiserName || product.brandName,
+          brandName: product.brandName,
+          landingUrl: product.landingUrl,
+        }),
         brandName: product.brandName || product.advertiserName || "브랜드 미지정",
         productId: job.productTruth.productId,
         productName: product.productName,
         category: product.category || "기타",
         hookCode: result.hookPlan.hookCode || `H${String(result.order).padStart(2, "0")}`,
+        materialCode: result.materialCode,
+        copyPlanMode: job.copyPlanMode,
+        referenceId: result.referenceAdaptedCopyPlan?.referenceId || result.nativeCreative?.adReference?.id,
         hookType: result.hookPlan.hookType,
         headline: result.hookPlan.headline || result.hookPlan.mainMessage || result.hookPlan.title,
         subCopy: result.hookPlan.body || result.hookPlan.proof || "",

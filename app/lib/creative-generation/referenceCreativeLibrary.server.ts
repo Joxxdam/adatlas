@@ -85,6 +85,11 @@ function toNativeAdReference(selected: ManagedNativeReferenceItem, selectionReas
   };
 }
 
+/** 관리 화면에서 막 등록된 레퍼런스를 문구 구조 캐시에 전달할 때 사용합니다. */
+export function nativeAdReferenceFromManagedItem(item: ManagedNativeReferenceItem): NativeAdReference {
+  return toNativeAdReference(normalizeNativeReferenceCompatibility(item), "레퍼런스 관리 화면에서 등록되어 문구 구조를 사전 분석합니다.");
+}
+
 function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
   if (categoryGroup === "fashion") return "패션";
   if (categoryGroup === "food") return "식품";
@@ -165,13 +170,21 @@ export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectio
  * 선택 결과는 GenerationJob에 저장되므로 새로고침·재시도·서버 복구 시에는
  * 다시 추첨하지 않고 같은 디자인을 이어서 편집한다.
  */
-export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, count = 6, nextIndex: (maxExclusive: number) => number = randomInt): NativeAdReference[] {
+export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, count = 6, nextIndex: (maxExclusive: number) => number = randomInt, recentReferenceIds: ReadonlySet<string> = new Set()): NativeAdReference[] {
   const profile = buildProductReferenceCompatibilityProfile(job);
   const categoryGroup = profile.categoryGroup;
   const categoryName = profile.foodSubcategory ? `${categoryLabel(categoryGroup)} > 과일/농산물` : categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
+  const freshItems = referenceItems.filter((item) => !recentReferenceIds.has(item.id));
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
-  return pickCompatibleRandomItems(referenceItems, count, profile, nextIndex).map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${categoryName} · ${profile.productForm} 호환 후보에서 ${index + 1}번째 레퍼런스로 무작위 선택했습니다(호환 점수 ${candidate.score}: ${candidate.reasons.join(", ")}). 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
+  let selected;
+  try {
+    selected = pickCompatibleRandomItems(freshItems, count, profile, nextIndex);
+  } catch {
+    // 최근 사용 제외로 풀이 부족하면 제작 자체를 막지 않고 전체 호환 풀로 돌아갑니다.
+    selected = pickCompatibleRandomItems(referenceItems, count, profile, nextIndex);
+  }
+  return selected.map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${categoryName} · ${profile.productForm} 호환 후보에서 ${index + 1}번째 레퍼런스로 무작위 선택했습니다(호환 점수 ${candidate.score}: ${candidate.reasons.join(", ")}). 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */

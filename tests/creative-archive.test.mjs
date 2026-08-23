@@ -154,6 +154,22 @@ test("아카이브는 소재 자산과 과거 AI 결과를 합치되 동일 이�
   assert.equal(entries.find((entry) => entry.hookCode === "H01").landingUrl, "https://originalsource.example/mint");
 });
 
+test("과거 작업에 도메인으로 저장된 광고주는 브랜드 표시명으로 통합한다", () => {
+  const entries = buildCreativeArchiveEntries({
+    assets: [
+      asset({ id: "asset-kookdae", assetCode: "AT-KOOKDAE-H01", brandName: "kookdae.co.kr", generatedImageUrl: "/generated-ads/kookdae.jpg" }),
+      asset({ id: "asset-daehan", assetCode: "AT-DAEHAN-H01", brandName: "koreakoreanbeef.com", generatedImageUrl: "/generated-ads/daehan.jpg" }),
+      asset({ id: "asset-farm", assetCode: "AT-FARM-H01", brandName: "fightingfarm.com", generatedImageUrl: "/generated-ads/farm.jpg" }),
+    ],
+    jobs: [],
+    metadata: {},
+  });
+  assert.deepEqual(
+    entries.map((entry) => entry.advertiserName).sort((left, right) => left.localeCompare(right, "ko")),
+    ["국대한우", "대한한우", "힘내라농가"].sort((left, right) => left.localeCompare(right, "ko"))
+  );
+});
+
 test("아카이브 레퍼런스 메타데이터는 태그와 메모를 정리해 영구 저장한다", async (context) => {
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-archive-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
@@ -262,7 +278,7 @@ test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차�
   const combination = prepareArchivePerformanceSelection([base, second]);
   assert.equal(combination.valid, true);
   assert.equal(combination.testType, "creative-combination");
-  assert.match(combination.message, /전체 소재 조합/);
+  assert.match(combination.message, /완성 소재 성과/);
 
   const hookOnly = prepareArchivePerformanceSelection([
     { ...base, templateId: "fixed-design", visualDirection: "동일 디자인" },
@@ -270,6 +286,13 @@ test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차�
   ]);
   assert.equal(hookOnly.testType, "hook-only");
   assert.equal(hookOnly.hookOnlyEligible, true);
+
+  const referenceAdapted = prepareArchivePerformanceSelection([
+    asset({ id: "asset-reference-a", assetCode: "AT-REF-A", copyPlanMode: "reference-adapted", templateId: "same", visualDirection: "same", generatedImageUrl: "/generated-ads/ref-a.jpg" }),
+    asset({ id: "asset-reference-b", assetCode: "AT-REF-B", copyPlanMode: "reference-adapted", templateId: "same", visualDirection: "same", generatedImageUrl: "/generated-ads/ref-b.jpg" }),
+  ]);
+  assert.equal(referenceAdapted.testType, "creative-combination");
+  assert.equal(referenceAdapted.hookOnlyEligible, false);
 
   const mixed = prepareArchivePerformanceSelection([base, { ...second, productId: "another-product", productName: "다른 상품" }]);
   assert.equal(mixed.valid, false);

@@ -83,6 +83,7 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
   const rows: Array<{
     productName: string;
     primaryText: string;
+    adTitle?: string;
     adName?: string;
     utm?: string;
     assetCode?: string;
@@ -114,6 +115,7 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
       }
 
       const primaryText = job.adCopy?.status !== "needs-review" && job.adCopy?.primaryText ? job.adCopy.primaryText : [result.hookPlan.headline, result.hookPlan.body].filter(Boolean).join("\n");
+      const primaryLabel = job.copyPlanMode === "reference-adapted" ? "메인 문구" : "후킹";
       const setup = {
         productName: task.candidate.productName,
         productUrl: task.candidate.productUrl,
@@ -121,6 +123,7 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
         headline: result.hookPlan.headline,
         subCopy: result.hookPlan.body,
         primaryText,
+        adTitle: job.adCopy?.adTitle || result.hookPlan.headline,
         adName: result.creativeAsset?.recommendedAdName || job.adCopy?.adName || "",
         utm: result.creativeAsset?.utmContent || job.adCopy?.utm || "",
         assetCode: result.creativeAsset?.assetCode || job.adCopy?.assetCode || "",
@@ -130,13 +133,14 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
       rows.push({
         productName: setup.productName,
         primaryText: setup.primaryText,
+        adTitle: setup.adTitle,
         adName: setup.adName,
         utm: setup.utm,
         assetCode: setup.assetCode,
         hookId: setup.hookCode,
       });
       folder?.file(`${hookCode}-ad-setup.json`, `${JSON.stringify(setup, null, 2)}\n`);
-      folder?.file(`${hookCode}-ad-setup.txt`, `후킹\n${setup.headline}\n\n서브 문구\n${setup.subCopy}\n\nMeta 기본 문구\n${setup.primaryText}\n\n광고명\n${setup.adName}\n\nUTM\n${setup.utm}\n\n소재코드\n${setup.assetCode}\n`);
+      folder?.file(`${hookCode}-ad-setup.txt`, `${primaryLabel}\n${setup.headline}\n\n서브 문구\n${setup.subCopy}\n\nMeta 기본 문구\n${setup.primaryText}\n\n광고 제목\n${setup.adTitle}\n\n광고명\n${setup.adName}\n\nUTM\n${setup.utm}\n\n소재코드\n${setup.assetCode}\n`);
       manifest.push(setup);
     }
   }
@@ -163,7 +167,7 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
       2
     )}\n`
   );
-  zip.file("README.txt", "상품 폴더마다 생성된 광고 이미지 및 후킹별 광고명·UTM·소재코드가 들어 있습니다. 내부 진단이 확인 필요로 표시된 이미지도 사용자가 직접 검토할 수 있도록 포함됩니다. meta-ad-settings.csv는 Meta 세팅용 UTF-8 BOM CSV이며, 이미지 생성에 실패한 항목이 있으면 failures 파일에서 확인할 수 있습니다.\n");
+  zip.file("README.txt", "상품 폴더마다 생성된 광고 이미지 및 소재별 광고명·UTM·소재코드가 들어 있습니다. 내부 진단이 확인 필요로 표시된 이미지도 사용자가 직접 검토할 수 있도록 포함됩니다. meta-ad-settings.csv는 Meta 세팅용 UTF-8 BOM CSV이며, 이미지 생성에 실패한 항목이 있으면 failures 파일에서 확인할 수 있습니다.\n");
 
   const buffer = await zip.generateAsync({
     type: "nodebuffer",

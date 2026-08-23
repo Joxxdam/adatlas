@@ -9,6 +9,7 @@ import { creativeGenerationJobStore } from "../creative-generation/jobStore.serv
 import { executionResults } from "../creative-generation/jobRunnerPolicy";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 import { getAdvertiserThread, resetAdvertiserThread, saveAdvertiserThread } from "../creative-generation/codexRegistry.server";
+import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader";
 import { adCopyRepository } from "./adCopyRepository.server";
 import { AD_COPY_PROMPT_VERSION, buildAdCopyPrompt, buildAdCopyQaPrompt } from "./adCopyPromptBuilder.server";
 import { adCopyFingerprint, selectRepresentativeResultId, validateAdCopyAgainstTruth } from "./adCopyValidator";
@@ -106,9 +107,20 @@ async function generateWithCodex(job: GenerationJob, result: GenerationResult, a
   const options = { workingDirectory: process.cwd(), sandboxMode: "workspace-write" as const, approvalPolicy: "never" as const, networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "high" as const };
   let thread = record?.threadId ? codex.resumeThread(record.threadId, options) : codex.startThread(options);
   const approvedTexts = approvedCopies.map((copy) => copy.primaryText || "").filter(Boolean);
+  const product = job.productTruth.product;
+  const loadedGuide = product.copyGuideContext
+    ? product.copyGuideContext
+    : await loadCopyGuideForProduct({
+        advertiserName: job.advertiserName || product.advertiserName,
+        brandName: product.brandName,
+        productUrl: product.landingUrl,
+        category: product.category,
+        productName: product.productName,
+        copyGuideId: product.copyGuideId,
+      });
   let failures: string[] = [];
   for (let attempt = 0; attempt <= 2; attempt += 1) {
-    const prompt = buildAdCopyPrompt({ job, result, approvedCopies, retryFailures: failures });
+    const prompt = buildAdCopyPrompt({ job, result, approvedCopies, copyGuideContent: loadedGuide?.content, retryFailures: failures });
     const content = [{ type: "text" as const, text: prompt }, ...(result.nativeCreative?.finalPath ? [{ type: "local_image" as const, path: result.nativeCreative.finalPath }] : [])];
     let response;
     try {

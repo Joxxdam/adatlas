@@ -41,7 +41,7 @@ function truth(overrides = {}) {
   };
 }
 
-const validCopy = "저녁 메뉴 고민, 팬 하나면 끝 🍳\n한우 불고기 250g 한 팩\n팬에 바로 익혀 든든하게 차려보세요\n17,800원으로 오늘 저녁 준비 🥩";
+const validCopy = "저녁 메뉴 고민, 팬 하나면 끝?! 🍳\n한우 불고기 250g 한 팩\n복잡한 준비는 잠깐 내려두고\n팬에 바로 익혀 든든하게 차려보세요\n17,800원으로 오늘 저녁 준비 🥩";
 
 test("상품 작업은 이미지 수와 관계없이 대표 결과 ID 하나를 선택한다", () => {
   const id = selectRepresentativeResultId({
@@ -78,14 +78,14 @@ test("6장 그룹 검수가 필요한 경우 그룹 승인 후에만 생성한�
   assert.equal(canGenerateAdCopyAfterQa({ resultStatus: "success", nativeQaRecommendation: "approve", groupRequired: true, groupRecommendation: "approve" }), true);
 });
 
-test("대표 후킹과 연결된 자연스러운 4~8줄 문구를 통과시킨다", () => {
+test("대표 후킹과 연결된 자연스러운 5~8줄 문구를 통과시킨다", () => {
   assert.equal(validateAdCopyAgainstTruth({ primaryText: validCopy, truth: truth(), hookHeadline: "저녁 메뉴 고민, 팬 하나면 끝" }).passed, true);
 });
 
 test("가격 정보가 없으면 가격을 쓰지 않은 문구는 통과할 수 있다", () => {
   const noPrice = truth({ price: "" });
   noPrice.facts = noPrice.facts.filter((fact) => fact.id !== "price");
-  const copy = "저녁 메뉴 고민, 팬 하나면 끝 🍳\n한우 불고기 한 팩을 준비하고\n팬에 바로 익혀 든든하게 차려보세요\n오늘 저녁을 간단하게 준비해요 🥩";
+  const copy = "저녁 메뉴 고민, 팬 하나면 끝?! 🍳\n한우 불고기 한 팩을 준비하고\n복잡한 준비는 잠깐 내려두고\n팬에 바로 익혀 든든하게 차려보세요\n오늘 저녁을 간단하게 준비해요 🥩";
   assert.equal(validateAdCopyAgainstTruth({ primaryText: copy, truth: noPrice, hookHeadline: "저녁 메뉴 고민" }).passed, true);
 });
 
@@ -133,9 +133,21 @@ test("대표 이미지 승인 변경은 문구 재생성 대상이다", () => {
   assert.equal(shouldRegenerateAdCopy({ representativeImageChanged: true }), true);
 });
 
+test("SNS형 기본 문구와 짧은 광고 제목을 함께 검수한다", () => {
+  const result = validateAdCopyAgainstTruth({ primaryText: validCopy, adTitle: "오늘 저녁 한우로 끝", truth: truth(), hookHeadline: "저녁 메뉴 고민" });
+  assert.equal(result.passed, true);
+  assert.equal(validateAdCopyAgainstTruth({ primaryText: validCopy, adTitle: "줄바꿈이\n들어간 제목", truth: truth(), hookHeadline: "저녁 메뉴 고민" }).passed, false);
+});
+
+test("도매가·1위·무료배송·잡내 없음은 상품 근거가 있을 때만 허용한다", () => {
+  const unverified = validateAdCopyAgainstTruth({ primaryText: validCopy.replace("복잡한 준비는 잠깐 내려두고", "도축현장 도매가 그대로"), adTitle: "영국 1위 비밀", truth: truth(), hookHeadline: "저녁 메뉴 고민" });
+  assert.equal(unverified.passed, false);
+  assert.match(unverified.failures.join(" "), /상품 근거/);
+});
+
 test("줄바꿈·이모지·원화·중량 표현을 그대로 보존한다", () => {
   const result = validateAdCopyAgainstTruth({ primaryText: validCopy, truth: truth(), hookHeadline: "저녁 메뉴 고민" });
-  assert.equal(result.lineCount, 4);
+  assert.equal(result.lineCount, 5);
   assert.equal(result.emojiCount, 2);
   assert.match(validCopy, /17,800원/);
   assert.match(validCopy, /250g/);
@@ -162,8 +174,15 @@ test("이미지 제작 완료 후 상품당 한 번 설명 문구를 자동 생�
   assert.match(manualUi, /ProductAdCopyPanel/);
   assert.match(adCopyPanel, /상품 광고 설명 문구 · 상품당 1개/);
   assert.match(adCopyPanel, /이미지 제작이 끝나면 자동으로 생성됩니다/);
+  assert.match(adCopyPanel, /광고 제목/);
+  const prompt = await read("app/lib/ad-copy/adCopyPromptBuilder.server.ts");
+  assert.match(prompt, /meta-primary-copy-v2-social-performance-tone/);
+  assert.match(prompt, /SNS 게시글처럼 직접적이고 리듬감/);
+  assert.match(prompt, /primaryText, adTitle, languageTraits/);
   assert.match(autoRunner, /createNativeGenerationJob/);
   assert.match(autoUi, /\/create-product\?view=results/);
+  assert.match(autoUi, /task\.adCopy\?\.primaryText/);
+  assert.match(autoUi, /광고 제목/);
   assert.doesNotMatch(autoUi, /ProductAdCopyPanel/);
   assert.match(publicJob, /promptVersion:\s*""/);
   assert.doesNotMatch(publicJob, /buildAdCopyPrompt/);

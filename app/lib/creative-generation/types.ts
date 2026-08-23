@@ -4,7 +4,7 @@ import type { CreativeNoteCompliance } from "../creative-content-notes/types";
 import type { ProductAdCopy } from "../ad-copy/types";
 import type { PerformanceTemplateId } from "./performanceTemplateRegistry";
 
-export const CREATIVE_PLANNER_VERSION = "creative-planner-v7-ai-hook-parallel-repair";
+export const CREATIVE_PLANNER_VERSION = "creative-planner-v8-reference-adapted-copy";
 
 export const creativeBlueprintIds = ["problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "proof-data"] as const;
 
@@ -25,6 +25,57 @@ export type ProductFact = {
   strength?: number;
   specificity?: number;
   evidenceType?: ProductEvidenceType;
+  /** 새 레퍼런스 우선 문구 경로에서 이 사실을 사용할 수 있는 문구 역할입니다. */
+  copyEligibility?: "headlineEligible" | "proofOnly" | "offerOnly" | "identityOnly" | "blocked";
+};
+
+export type ReferenceCopyProfile = {
+  id: string;
+  referenceId: string;
+  referenceHash: string;
+  profileVersion: string;
+  tone: string;
+  sentenceStyle: "question" | "declaration" | "dialogue" | "contrast" | "sensory" | "urgency" | "proof";
+  rhetoricalDevice: string;
+  headlineRole: string;
+  headlineLineBudget: number;
+  headlineCharacterBudget: number;
+  supportRole: string;
+  supportLineBudget: number;
+  supportCharacterBudget: number;
+  proofRole: string;
+  offerRole: string;
+  ctaRole: string;
+  numericEmphasis: "none" | "light" | "strong";
+  density: "light" | "medium" | "dense";
+  punctuationRhythm: string;
+  prohibitedLiteralPhrases: string[];
+  analysisSource: "codex-local" | "safe-minimal";
+  analysisError?: string;
+  createdAt: string;
+};
+
+export type ReferenceAdaptedCopyPlan = {
+  id: string;
+  resultCode: string;
+  referenceId: string;
+  referenceCopyProfileId: string;
+  headline: string;
+  subCopy: string;
+  proof: string;
+  offer: string;
+  cta: string;
+  factIds: string[];
+  sourceFactValues: string[];
+  tone: string;
+  sentenceStyle: ReferenceCopyProfile["sentenceStyle"];
+  naturalnessScore: number;
+  referenceFitScore: number;
+  factualSafetyScore: number;
+  validationStatus: "valid" | "needs-review" | "invalid";
+  validationErrors: string[];
+  repairCount: number;
+  generationSource: "codex-local" | "repaired-codex-local" | "safe-minimal";
 };
 
 export type ProductEvidence = {
@@ -201,6 +252,11 @@ export type ProductTruth = {
   normalized: {
     rawProductTitle: string;
     cleanProductName: string;
+    baseProductName?: string;
+    verifiedDescriptor?: string;
+    descriptor?: string;
+    salesUnit?: string;
+    promotionalTokens?: string[];
     brandName: string;
     category: string;
     price?: string;
@@ -262,7 +318,7 @@ export type HookMessageHypothesis = {
 export const hookTaxonomyTags = ["problem-solution", "sensory-experience", "price-value", "feature-usp", "review-trust", "usage-occasion", "target-identity", "convenience", "bundle-choice", "season-newness", "brand-origin", "comparison-alternative", "scarcity-urgency", "gift-purpose", "other"] as const;
 
 export type HookTaxonomyTag = (typeof hookTaxonomyTags)[number];
-export type CreativeExplorationMode = "concept-exploration" | "exact-message-comparison";
+export type CreativeExplorationMode = "concept-exploration" | "exact-message-comparison" | "reference-adapted-materials";
 
 export type ProductInsightProfile = {
   productId: string;
@@ -949,6 +1005,8 @@ export type DeliveryBranding = {
 export type GenerationResult = {
   id: string;
   order: number;
+  /** 새 기본 제작에서 사용자에게 표시하는 소재 순번. H 코드는 과거 저장 구조 호환용입니다. */
+  materialCode?: string;
   blueprintId: CreativeBlueprintId;
   blueprintLabel: string;
   status: GenerationResultStatus;
@@ -972,6 +1030,8 @@ export type GenerationResult = {
   nativeCreative?: NativeCreativeArtifact;
   userFeedback?: string;
   deliveryBranding?: DeliveryBranding;
+  /** 새 기본 제작의 원본 데이터. hookPlan은 과거 결과 호환용 투영값입니다. */
+  referenceAdaptedCopyPlan?: ReferenceAdaptedCopyPlan;
 };
 
 export type GenerationJobStatus = "pending" | "running" | "partial" | "completed" | "failed" | "cancelled";
@@ -1002,7 +1062,7 @@ export type GenerationJob = {
   errors: string[];
   version: string;
   /** Semantic pipeline name. Older v12 jobs may omit it and remain readable. */
-  pipeline?: "reference-staged-edit";
+  pipeline?: "reference-staged-edit" | "reference-first-adapted-copy";
   engine?: CreativeGenerationEngine;
   /** 서버 저장용 작업별 유료 API 승인. 기본 Codex 작업에는 존재하지 않는다. */
   paidApiAuthorization?: PaidApiAuthorization;
@@ -1031,6 +1091,9 @@ export type GenerationJob = {
   planningFingerprint?: string;
   templateRegistryVersion?: string;
   unusedPerformanceTemplateIds?: PerformanceTemplateId[];
+  /** 값이 없으면 과거 작업으로 보고 legacy-hook-first로 읽습니다. */
+  copyPlanMode?: "reference-adapted" | "legacy-hook-first";
+  referenceCopyProfiles?: ReferenceCopyProfile[];
 };
 
 export type GenerationJobSummary = {
@@ -1070,7 +1133,7 @@ export type CreateGenerationJobInput = {
   preserveBackgroundAssetId?: string;
   excludedMasterDesignIds?: CreativeBlueprintId[];
   testCode?: `T${string}`;
-  generationModePreference?: "auto" | "actual-product" | "ai-full-scene" | "reference-staged-edit";
+  generationModePreference?: "auto" | "actual-product" | "ai-full-scene" | "reference-staged-edit" | "reference-first-adapted-copy";
   forceSceneRevision?: boolean;
   strategyVariation?: number;
   mode?: CreativeExplorationMode;

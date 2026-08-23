@@ -49,32 +49,46 @@ function PerformanceTable({ experiment }: { experiment: PerformanceExperiment })
   const hookOnly = experiment.testType === "hook-only";
   return (
     <>
-      <p className={styles.interpretation}>{hookOnly ? "동일한 디자인 조건에서 후킹 문구 성과를 비교합니다." : "후킹·장면·레이아웃이 함께 다른 완성 소재의 성과입니다. 후킹 단독 효과로 해석하지 않습니다."}</p>
+      <p className={styles.interpretation}>{hookOnly ? "과거 동일 디자인 후킹 기록입니다." : "Meta 운영 환경에서의 광고 소재 성과입니다. 레퍼런스 구성·상품 표현·문구·레이아웃과 Meta의 노출 배분이 함께 반영된 결과입니다."}</p>
       {warning ? <p className={styles.warning}>{warning}</p> : null}
       <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
               <th>{hookOnly ? "후킹" : "소재"}</th>
+              {!hookOnly ? <th>미리보기</th> : null}
+              {!hookOnly ? <th>광고 콘셉트·레퍼런스</th> : null}
+              <th>광고명</th>
               <th>상태</th>
               <th>노출</th>
               <th>광고비</th>
+              <th>배분</th>
               <th>아웃바운드 CTR</th>
+              <th>CPC</th>
+              <th>랜딩 조회</th>
+              <th>구매</th>
               <th>CPA</th>
               <th>ROAS</th>
             </tr>
           </thead>
           <tbody>
-            {experiment.rows.map((row) => (
+            {experiment.rows.map((row, index) => (
               <tr key={row.adId}>
                 <td>
-                  <strong>{row.hookCode}</strong>
+                  <strong>{hookOnly ? row.hookCode : `소재 ${String(index + 1).padStart(2, "0")}`}</strong>
                   <small>{row.materialCode}</small>
                 </td>
+                {!hookOnly ? <td>{row.previewUrl ? <img alt={`${row.materialCode} 소재 미리보기`} className={styles.performanceThumb} src={row.previewUrl} /> : "-"}</td> : null}
+                {!hookOnly ? <td><strong>{row.advertisingConcept || "소재 설명 미기록"}</strong><small>{row.referenceId ? `레퍼런스 ${row.referenceId}` : "레퍼런스 미기록"}</small></td> : null}
+                <td>{row.adName}</td>
                 <td>{row.status}</td>
                 <td>{row.impressions.toLocaleString("ko-KR")}</td>
                 <td>{money(row.spend, experiment.currency)}</td>
+                <td>{(row.spendShare * 100).toFixed(1)}%</td>
                 <td>{row.ctr.toFixed(2)}%</td>
+                <td>{row.outboundClicks ? money(row.cpc, experiment.currency) : "-"}</td>
+                <td>{row.landingPageViews.toLocaleString("ko-KR")}</td>
+                <td>{row.purchases.toLocaleString("ko-KR")}</td>
                 <td>{row.purchases ? money(row.cpa, experiment.currency) : "-"}</td>
                 <td>{row.roas ? `${row.roas.toFixed(2)}x` : "-"}</td>
               </tr>
@@ -270,8 +284,7 @@ export function PerformanceWorkspace({ initialExperiments, legacyExperiments, se
           <label>
             성과 해석 단위
             <select onChange={(event) => setTestType(event.target.value as PerformanceTestType)} value={testType}>
-              <option value="creative-combination">전체 소재 조합 비교</option>
-              <option value="hook-only">후킹만 비교(동일 디자인 확인 시)</option>
+              <option value="creative-combination">완성 광고 소재 비교</option>
             </select>
           </label>
           <button disabled={!advertiserId || Boolean(busy)} onClick={() => void read("connection")} type="button">
@@ -367,7 +380,7 @@ export function PerformanceWorkspace({ initialExperiments, legacyExperiments, se
                 <p>
                   {experiment.campaignName} · {experiment.adSetName}
                 </p>
-                <small>{experiment.testType === "hook-only" ? "후킹만 비교" : "전체 소재 조합 비교"}</small>
+                <small>{experiment.testType === "hook-only" ? "과거 후킹 비교 기록" : "완성 광고 소재 비교"}</small>
               </div>
               <span>{experiment.trackingStatus}</span>
             </header>
@@ -380,7 +393,7 @@ export function PerformanceWorkspace({ initialExperiments, legacyExperiments, se
                 성과 새로고침
               </button>
               <Link href={`/performance/${encodeURIComponent(experiment.id)}`}>상세 보기</Link>
-              <Link href={`/create-product?step=hooks${experiment.landingUrl ? `&productUrl=${encodeURIComponent(experiment.landingUrl)}` : ""}`}>우승 후킹으로 다음 콘텐츠 만들기</Link>
+              <Link href={`/create-product?step=product${experiment.landingUrl ? `&productUrl=${encodeURIComponent(experiment.landingUrl)}` : ""}`}>{experiment.testType === "hook-only" ? "과거 결과로 새 상품 제작 열기" : "성과 우수 소재를 참고해 새 광고 만들기"}</Link>
             </footer>
           </article>
         ))}

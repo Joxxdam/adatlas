@@ -22,6 +22,9 @@ export type CreativeAsset = {
   category: string;
   hookType: string;
   hookCode: string;
+  materialCode?: string;
+  copyPlanMode?: "reference-adapted" | "legacy-hook-first";
+  referenceId?: string;
   mainMessage?: string;
   visualDirection?: string;
   generationRound?: number;
@@ -57,7 +60,7 @@ export type CreativeAsset = {
   updatedAt: string;
 };
 
-export type CreativeAssetSnapshot = Pick<CreativeAsset, "id" | "assetCode" | "brandName" | "productName" | "hookType" | "hookCode" | "generatedImageUrl" | "fileName" | "recommendedAdName" | "utmContent" | "status" | "version" | "parentAssetCode" | "createdAt" | "advertiserId" | "opportunityId" | "analysisRunId" | "opportunityType" | "recommendedHookType" | "appliedContentNoteIds" | "reviewInsightIds" | "originalHostProductNo" | "mainMessage" | "visualDirection" | "generationRound" | "variant" | "experimentId" | "testCode" | "hookVariantCode" | "explorationCode" | "conceptCode" | "primaryHookTag" | "secondaryHookTags" | "customerReason" | "hypothesisId">;
+export type CreativeAssetSnapshot = Pick<CreativeAsset, "id" | "assetCode" | "brandName" | "productName" | "hookType" | "hookCode" | "materialCode" | "copyPlanMode" | "referenceId" | "generatedImageUrl" | "fileName" | "recommendedAdName" | "utmContent" | "status" | "version" | "parentAssetCode" | "createdAt" | "advertiserId" | "opportunityId" | "analysisRunId" | "opportunityType" | "recommendedHookType" | "appliedContentNoteIds" | "reviewInsightIds" | "originalHostProductNo" | "mainMessage" | "visualDirection" | "generationRound" | "variant" | "experimentId" | "testCode" | "hookVariantCode" | "explorationCode" | "conceptCode" | "primaryHookTag" | "secondaryHookTags" | "customerReason" | "hypothesisId">;
 
 export type CreateCreativeAssetInput = {
   brandId?: string;
@@ -74,6 +77,9 @@ export type CreateCreativeAssetInput = {
   reviewInsightIds?: string[];
   category?: string;
   hookType?: string;
+  materialCode?: string;
+  copyPlanMode?: "reference-adapted" | "legacy-hook-first";
+  referenceId?: string;
   mainMessage?: string;
   visualDirection?: string;
   generationRound?: number;
@@ -150,6 +156,9 @@ export function toCreativeAssetSnapshot(asset: CreativeAsset): CreativeAssetSnap
     productName: asset.productName,
     hookType: asset.hookType,
     hookCode: asset.hookCode,
+    materialCode: asset.materialCode,
+    copyPlanMode: asset.copyPlanMode,
+    referenceId: asset.referenceId,
     generatedImageUrl: asset.generatedImageUrl,
     fileName: asset.fileName,
     recommendedAdName: asset.recommendedAdName,

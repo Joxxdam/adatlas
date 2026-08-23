@@ -927,7 +927,7 @@ export function AutoProductionWorkspace() {
                   {productionRun.tasks.map((task, taskIndex) => {
                     const downloadableCount = task.results.filter((result) => Boolean(result.imageUrl)).length;
                     return (
-                      <section className={styles.task} key={task.id}>
+                      <section className={styles.task} key={`${productionRun.id}:task:${task.id}:${taskIndex}`}>
                         <header className={styles.taskOverview}>
                           {task.candidate.imageUrl ? <img alt="" src={task.candidate.imageUrl} /> : <div className={styles.placeholder}>상품</div>}
                           <div>
@@ -958,10 +958,24 @@ export function AutoProductionWorkspace() {
                             {task.candidate.verifiedEvidence.length ? <small>확인 근거 · {task.candidate.verifiedEvidence.slice(0, 3).join(" · ")}</small> : null}
                           </div>
                         </div>
+                        {task.adCopy?.primaryText ? (
+                          <section className={styles.taskAdCopy} aria-label={`${task.candidate.productName} 광고 등록 문구`}>
+                            <div>
+                              <span>광고 제목</span>
+                              <strong>{task.adCopy.adTitle || "제목 준비 중"}</strong>
+                            </div>
+                            <div>
+                              <span>광고 문구</span>
+                              <pre>{task.adCopy.primaryText}</pre>
+                            </div>
+                          </section>
+                        ) : task.adCopy?.status === "generating" ? (
+                          <p className={styles.adCopyPending}>이미지 제작 결과를 바탕으로 광고 문구와 제목을 만들고 있습니다.</p>
+                        ) : null}
                         {task.results.length ? (
                           <div className={styles.imageResults} aria-label={`${task.candidate.productName} 자동제작 이미지`}>
                             {task.results.map((result, resultIndex) => (
-                              <article className={styles.imageResult} key={result.generationResultId}>
+                              <article className={styles.imageResult} key={`${productionRun.id}:task:${task.id}:result:${result.generationResultId}:${resultIndex}`}>
                                 {result.imageUrl ? (
                                   <a href={result.downloadUrl || result.imageUrl}>
                                     <img alt={`${task.candidate.productName} 광고 ${resultIndex + 1}`} loading="lazy" src={result.imageUrl} />
@@ -973,7 +987,7 @@ export function AutoProductionWorkspace() {
                                   </div>
                                 )}
                                 <div className={styles.imageMeta}>
-                                  <span>{result.hookCode}</span>
+                                  <span>소재 {String(resultIndex + 1).padStart(2, "0")}</span>
                                   <strong>{resultStatusLabel(result.status)}</strong>
                                   {result.downloadUrl ? <a href={result.downloadUrl}>다운로드</a> : null}
                                 </div>
@@ -991,8 +1005,8 @@ export function AutoProductionWorkspace() {
                 {productionRun.warnings.length ? (
                   <details className={styles.runMessages}>
                     <summary>안내 및 제외 사유 {productionRun.warnings.length}건</summary>
-                    {productionRun.warnings.map((warning) => (
-                      <p key={warning}>{warning}</p>
+                    {productionRun.warnings.map((warning, warningIndex) => (
+                      <p key={`${productionRun.id}:warning:${warningIndex}`}>{warning}</p>
                     ))}
                   </details>
                 ) : null}

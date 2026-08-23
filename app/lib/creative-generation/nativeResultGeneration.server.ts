@@ -1,7 +1,7 @@
 import "server-only";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
@@ -17,8 +17,6 @@ import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
 import { validateCopyAgainstTruth } from "./productTruth";
 import { selectNativeAdReference } from "./referenceCreativeLibrary.server";
-import { createIdentityLockedProductComposite } from "./protectedProductCompositor.server";
-import { identityLockedProductPlacements, resolveProductRenderingPolicy } from "./productRenderingPolicy";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
 
 type NativeResultInput = {
@@ -125,6 +123,18 @@ async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<Co
       result.id === resultId
         ? {
             ...result,
+            referenceAdaptedCopyPlan: result.referenceAdaptedCopyPlan
+              ? {
+                  ...result.referenceAdaptedCopyPlan,
+                  headline: next.headline,
+                  subCopy: next.body,
+                  proof: next.proof,
+                  offer: next.offer,
+                  cta: next.cta,
+                  validationStatus: "valid",
+                  validationErrors: [],
+                }
+              : result.referenceAdaptedCopyPlan,
             hookPlan: {
               ...result.hookPlan,
               ...next,
@@ -215,7 +225,6 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const started = Date.now();
   let referenceMs = 0;
   let generationMs = 0;
-  let compositionMs = 0;
   let validationMs = 0;
   let exportMs = 0;
   const loadedJob = await creativeGenerationJobStore.get(input.jobId);
@@ -236,6 +245,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
   const isRevision = ["regenerate", "revise", "copy-update"].includes(action);
   const previousArtifact = initial.nativeCreative;
+  const promptVersionChanged = Boolean(previousArtifact && previousArtifact.promptVersion !== NATIVE_FINAL_PROMPT_VERSION);
   const revisionCount = isRevision ? (previousArtifact?.revisionCount || 0) + 1 : previousArtifact?.revisionCount || 0;
   job = await creativeGenerationJobStore.update(job.id, (active) => ({
     ...active,
@@ -253,7 +263,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
             nativeCreative: {
               engine: active.engine || "codex_local",
               adReference: result.nativeCreative?.adReference,
-              stagePaths: action === "regenerate" ? undefined : result.nativeCreative?.stagePaths,
+              // Old staged files may contain the removed local product-cutout
+              // exception. Never reuse them after a full-AI prompt migration.
+              stagePaths: action === "regenerate" || promptVersionChanged ? undefined : result.nativeCreative?.stagePaths,
               referencePaths: result.nativeCreative?.referencePaths || [],
               backgroundPath: undefined,
               originalPath: result.nativeCreative?.originalPath,
@@ -298,33 +310,6 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   }));
 
   const active = job.results.find((result) => result.id === input.resultId)!;
-  const productRenderingPolicy = resolveProductRenderingPolicy(job);
-  const identityLockedPlacements = identityLockedProductPlacements(active);
-  async function restoreIdentityLockedProduct(sourceFile: string, outputFile = sourceFile) {
-    if (productRenderingPolicy !== "identity-locked-packaged-product") return sourceFile;
-    const compositionStarted = Date.now();
-    let lastError: unknown;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const temporary = `${outputFile}.${process.pid}.${Date.now()}.identity.tmp`;
-      try {
-        const composited = await createIdentityLockedProductComposite({
-          backgroundPath: sourceFile,
-          productImagePath: generationReferences[0],
-          placements: identityLockedPlacements,
-        });
-        await writeFile(temporary, composited.buffer);
-        await rename(temporary, outputFile);
-        compositionMs += Date.now() - compositionStarted;
-        return outputFile;
-      } catch (error) {
-        lastError = error;
-        await unlink(temporary).catch(() => undefined);
-        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-    }
-    const detail = lastError instanceof Error ? lastError.message : "알 수 없는 파일 오류";
-    throw new Error(`원본 상품 보호 합성 실패: ${detail}`);
-  }
   const existingStages = active.nativeCreative?.stagePaths || {};
   let structurePath = existingStages.structurePath;
   let productPath = existingStages.productPath;
@@ -393,14 +378,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       if (!sourceStructurePath) throw new Error("광고 레퍼런스 원본 복사 결과가 없습니다.");
       if (!(await validStageFile(productPath))) {
         productPath = path.join(directory, "02-product.png");
-        if (productRenderingPolicy === "identity-locked-packaged-product") {
-          const productBasePath = path.join(directory, "02-product-base.png");
-          await runStage("product-replacement", "product-replacing", productBasePath, sourceStructurePath, input.feedback);
-          await restoreIdentityLockedProduct(productBasePath, productPath);
-          await validateGeneratedFinal(productPath);
-        } else {
-          await runStage("product-replacement", "product-replacing", productPath, sourceStructurePath, input.feedback);
-        }
+        await runStage("product-replacement", "product-replacing", productPath, sourceStructurePath, input.feedback);
         job = await updateNativeProgress(job, input.resultId, "product-replacing", (result) => ({
           nativeCreative: {
             ...result.nativeCreative!,
@@ -416,14 +394,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
       if (!(await validStageFile(copyPath))) {
         copyPath = path.join(directory, "03-copy.png");
-        if (productRenderingPolicy === "identity-locked-packaged-product") {
-          const copyBasePath = path.join(directory, "03-copy-base.png");
-          await runStage("copy-replacement", "copy-replacing", copyBasePath, productPath, input.feedback);
-          await restoreIdentityLockedProduct(copyBasePath, copyPath);
-          await validateGeneratedFinal(copyPath);
-        } else {
-          await runStage("copy-replacement", "copy-replacing", copyPath, productPath, input.feedback);
-        }
+        await runStage("copy-replacement", "copy-replacing", copyPath, productPath, input.feedback);
         job = await updateNativeProgress(job, input.resultId, "copy-replacing", (result) => ({
           nativeCreative: {
             ...result.nativeCreative!,
@@ -448,7 +419,6 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     if (action === "revise") {
       const repairedPath = path.join(directory, `04-qa-repair-user-${revisionCount}-${qaRepairPaths.length + 1}.png`);
       await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, input.feedback || "사용자 수정 요청을 반영해 상품·로고·가격·한국어를 포함한 광고 전체 래스터를 다시 완성해 주세요.");
-      await restoreIdentityLockedProduct(repairedPath);
       qaRepairPaths.push(repairedPath);
       generatedPath = repairedPath;
       job = await updateNativeProgress(job, input.resultId, "qa-repairing", (result) => ({
@@ -490,7 +460,6 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       if (validation.recommendation !== "revise" || !criticalFailure || action === "revalidate" || attempt >= Math.min(1, runtime.autoRevisionLimit)) break;
       const repairedPath = path.join(directory, `04-qa-repair-${attempt + 1}.png`);
       await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, [input.feedback, conciseQaFeedback(validation)].filter(Boolean).join("\n"));
-      await restoreIdentityLockedProduct(repairedPath);
       qaRepairPaths.push(repairedPath);
       generatedPath = repairedPath;
       job = await updateNativeProgress(job, input.resultId, "qa-repairing", (result) => ({
@@ -560,7 +529,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                 timing: {
                   referenceMs,
                   generationMs,
-                  compositionMs,
+                  compositionMs: 0,
                   validationMs,
                   exportMs,
                   totalMs: Date.now() - started,

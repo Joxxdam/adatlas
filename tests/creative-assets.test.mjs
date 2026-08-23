@@ -192,6 +192,9 @@ test("기회 분석·참고사항·후기 인사이트 메타데이터를 소재
       analysisRunId: "run-1",
       opportunityType: "HIDDEN_WINNER",
       recommendedHookType: "price-value",
+      materialCode: "M01",
+      copyPlanMode: "reference-adapted",
+      referenceId: "reference-021",
       appliedContentNoteIds: ["note-1", "note-1", "note-2"],
       reviewInsightIds: ["review-1"],
     })
@@ -200,6 +203,9 @@ test("기회 분석·참고사항·후기 인사이트 메타데이터를 소재
   assert.equal(stored.advertiserId, "adv-1");
   assert.equal(stored.opportunityId, "opp-1");
   assert.equal(stored.opportunityType, "HIDDEN_WINNER");
+  assert.equal(stored.materialCode, "M01");
+  assert.equal(stored.copyPlanMode, "reference-adapted");
+  assert.equal(stored.referenceId, "reference-021");
   assert.deepEqual(stored.appliedContentNoteIds, ["note-1", "note-2"]);
   assert.deepEqual(stored.reviewInsightIds, ["review-1"]);
 });

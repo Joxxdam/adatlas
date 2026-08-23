@@ -48,6 +48,9 @@ export function createMetaDraftRegistrationService(options?: { provider?: MetaPr
         return {
           hookCode: item.hookCode,
           materialCode: item.materialCode,
+          referenceId: creative?.referenceId,
+          advertisingConcept: creative?.advertisingConcept,
+          previewUrl: creative?.previewUrl,
           adId: String(item.adId),
           adName: creative?.materialCode || `${item.hookCode} ${input.productName}`,
           impressions: 0,

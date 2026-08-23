@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
+import { nativeAdReferenceFromManagedItem } from "../../../lib/creative-generation/referenceCreativeLibrary.server";
+import { prewarmReferenceCopyProfiles } from "../../../lib/creative-generation/referenceAdaptedPlanning.server";
 import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, type ManagedNativeReferenceItem } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
@@ -40,7 +42,10 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
     const result = await nativeReferenceLibraryRepository.add(files);
-    return NextResponse.json({ ok: true, added: result.added, library: publicLibrary() });
+    const profileAnalysis = result.added.length
+      ? await prewarmReferenceCopyProfiles(result.added.map(nativeAdReferenceFromManagedItem))
+      : { analyzedCount: 0, fallbackCount: 0 };
+    return NextResponse.json({ ok: true, added: result.added, profileAnalysis: { analyzedCount: profileAnalysis.analyzedCount, fallbackCount: profileAnalysis.fallbackCount }, library: publicLibrary() });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 업로드에 실패했습니다." }, { status: 400 });
   }

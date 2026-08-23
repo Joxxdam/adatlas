@@ -5,7 +5,8 @@
 기본 광고 6장 생성은 장면 생성이 아니라 `codex_local`의 단계형 이미지 편집입니다.
 
 ```text
-무작위 ZIP 레퍼런스
+호환 ZIP 레퍼런스 6장 선고정
+→ 레퍼런스 문구 구조 분석·적응 문구 배치
 → 레퍼런스 원본 무손실 복사
 → URL 상품만 교체
 → ProductTruth 문구만 교체
@@ -32,7 +33,7 @@ ADATLAS_PAID_API_EXPLICIT_ENABLED=false
 `CreativeGenerationProvider`는 현재 기본 경로에서 다음 계약을 가집니다.
 
 - `openSession()`: H 결과 하나에 대한 짧은 격리 세션을 한 번만 생성
-- `session.generate(input)`: 신규 `reference-staged-edit`에서는 `product-replacement`, `copy-replacement`, 치명 오류의 `qa-repair`에만 완성 래스터를 저장
+- `session.generate(input)`: 신규 `reference-first-adapted-copy`에서는 `product-replacement`, `copy-replacement`, 치명 오류의 `qa-repair`에만 완성 래스터를 저장
 - 구조 단계: provider를 호출하지 않고 원본을 바이트 동일하게 `01-structure`로 복사. `structure-recreation` 타입은 과거 저장 작업 읽기 호환용으로만 유지
 - `session.validate(input)`: 생성에 사용한 같은 세션에서 최종 광고, 선택 ZIP 레퍼런스, URL 상품 원본을 비교하고 구조 충실도·상품 동일성·문구 정확성을 JSON으로 반환
 - `session.close()`: 성공·실패와 관계없이 메모리 참조를 해제하고 재사용을 차단
