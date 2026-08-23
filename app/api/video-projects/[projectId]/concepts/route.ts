@@ -1,18 +1,8 @@
 import { NextResponse } from "next/server";
 import { videoProjectRepository } from "../../../../lib/video-collaboration/repository.server";
-import {
-  analyzeVideoReferencesAi,
-  generateVideoConceptSummariesAi,
-  generateVideoHookCandidatesAi,
-} from "../../../../lib/video-collaboration/videoPlanningGenerator.server";
-import {
-  VideoPlanningGenerationError,
-  videoPlanningFailureHttpStatus,
-} from "../../../../lib/video-collaboration/videoPlanningAi.server";
-import {
-  videoPlanningGenerationKey,
-  withVideoPlanningGenerationLock,
-} from "../../../../lib/video-collaboration/videoPlanningRequestGuards";
+import { analyzeVideoReferencesAi, generateVideoConceptSummariesAi, generateVideoHookCandidatesAi } from "../../../../lib/video-collaboration/videoPlanningGenerator.server";
+import { VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "../../../../lib/video-collaboration/videoPlanningAi.server";
+import { videoPlanningGenerationKey, withVideoPlanningGenerationLock } from "../../../../lib/video-collaboration/videoPlanningRequestGuards";
 import type { VideoPipelineProgress } from "../../../../lib/video-collaboration/types";
 
 export const runtime = "nodejs";
@@ -33,16 +23,10 @@ export async function POST(request: Request, context: { params: Promise<{ projec
     if (!["script_pending", "script_review", "concept_selected"].includes(project.status)) {
       throw new Error("기획 중이거나 기획안 검토 단계에서만 다시 생성할 수 있습니다.");
     }
-    const previousConcept = conceptId
-      ? project.concepts.find((concept) => concept.id === conceptId)
-      : undefined;
+    const previousConcept = conceptId ? project.concepts.find((concept) => concept.id === conceptId) : undefined;
     if (conceptId && !previousConcept) throw new Error("다시 생성할 기획안을 찾지 못했습니다.");
     return await withVideoPlanningGenerationLock({
-      key: videoPlanningGenerationKey(
-        projectId,
-        conceptId,
-        conceptId ? "regenerate-concept" : "generate-concepts"
-      ),
+      key: videoPlanningGenerationKey(projectId, conceptId, conceptId ? "regenerate-concept" : "generate-concepts"),
       stage: "concept-summaries",
       run: async () => {
         const progress: VideoPipelineProgress[] = [
@@ -72,18 +56,8 @@ export async function POST(request: Request, context: { params: Promise<{ projec
           },
         ];
         await videoProjectRepository.updatePipelineProgress(projectId, progress);
-        const referenceAnalyses =
-          project.referenceAssets.length && !project.referenceAnalyses?.length
-            ? await analyzeVideoReferencesAi(project.referenceAssets)
-            : project.referenceAnalyses || [];
-        const hooks =
-          project.hookCandidates && project.hookCandidates.length >= 7
-            ? project.hookCandidates
-            : await generateVideoHookCandidatesAi(
-                project.productAnalysis,
-                project.brandGuideline,
-                referenceAnalyses
-              );
+        const referenceAnalyses = project.referenceAssets.length && !project.referenceAnalyses?.length ? await analyzeVideoReferencesAi(project.referenceAssets) : project.referenceAnalyses || [];
+        const hooks = project.hookCandidates && project.hookCandidates.length >= 7 ? project.hookCandidates : await generateVideoHookCandidatesAi(project.productAnalysis, project.brandGuideline, referenceAnalyses);
         progress[1] = {
           stage: "hookCandidates",
           status: "complete",
@@ -93,9 +67,7 @@ export async function POST(request: Request, context: { params: Promise<{ projec
         progress[2] = {
           stage: "conceptCandidates",
           status: "running",
-          message: conceptId
-            ? "선택한 콘셉트만 다시 생성하는 중"
-            : "서로 다른 4개 콘셉트를 한 번에 생성하는 중",
+          message: conceptId ? "선택한 콘셉트만 다시 생성하는 중" : "서로 다른 4개 콘셉트를 한 번에 생성하는 중",
           updatedAt: new Date().toISOString(),
         };
         await videoProjectRepository.updatePipelineProgress(projectId, progress);
@@ -128,26 +100,13 @@ export async function POST(request: Request, context: { params: Promise<{ projec
         };
         if (conceptId) {
           const previous = previousConcept!;
-          const replacement =
-            generated.find((concept) => concept.conceptArchetype === previous.conceptArchetype) ||
-            generated.find((concept) => concept.hookType === previous.hookType) ||
-            generated.find(
-              (concept) =>
-                !project.concepts.some(
-                  (item) => item.id !== previous.id && item.hookType === concept.hookType
-                )
-            ) ||
-            generated[0];
-          const updated = await videoProjectRepository.saveConceptSummaries(
-            projectId,
-            [replacement],
-            {
-              actor: body.actor,
-              hookCandidates: hooks,
-              referenceAnalyses,
-              replaceConceptId: conceptId,
-            }
-          );
+          const replacement = generated.find((concept) => concept.conceptArchetype === previous.conceptArchetype) || generated.find((concept) => concept.hookType === previous.hookType) || generated.find((concept) => !project.concepts.some((item) => item.id !== previous.id && item.hookType === concept.hookType)) || generated[0];
+          const updated = await videoProjectRepository.saveConceptSummaries(projectId, [replacement], {
+            actor: body.actor,
+            hookCandidates: hooks,
+            referenceAnalyses,
+            replaceConceptId: conceptId,
+          });
           await videoProjectRepository.updatePipelineProgress(projectId, progress);
           return NextResponse.json({ ok: true, project: updated, concepts: [replacement] });
         }
@@ -173,13 +132,8 @@ export async function POST(request: Request, context: { params: Promise<{ projec
             failedAt: new Date().toISOString(),
           };
     if (failure.code !== "GENERATION_ALREADY_RUNNING") {
-      await videoProjectRepository
-        .saveGenerationFailure(projectId, failure, { conceptId })
-        .catch(() => undefined);
+      await videoProjectRepository.saveGenerationFailure(projectId, failure, { conceptId }).catch(() => undefined);
     }
-    return NextResponse.json(
-      { ok: false, error: failure.message, failure },
-      { status: videoPlanningFailureHttpStatus(failure.code) }
-    );
+    return NextResponse.json({ ok: false, error: failure.message, failure }, { status: videoPlanningFailureHttpStatus(failure.code) });
   }
 }

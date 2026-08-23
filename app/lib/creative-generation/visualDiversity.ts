@@ -13,7 +13,7 @@ export function buildVisualDiversityMatrix(results: GenerationResult[]): VisualD
   return results.slice(0, 6).map((result, index) => {
     const brief = result.hookPlan.creativeBrief;
     return {
-      hookCode: hookMessageCodes.includes(result.hookPlan.hookCode as (typeof hookMessageCodes)[number]) ? result.hookPlan.hookCode as (typeof hookMessageCodes)[number] : hookMessageCodes[index],
+      hookCode: hookMessageCodes.includes(result.hookPlan.hookCode as (typeof hookMessageCodes)[number]) ? (result.hookPlan.hookCode as (typeof hookMessageCodes)[number]) : hookMessageCodes[index],
       sceneType: brief?.heroScene || brief?.sceneDescription || sceneTypes[index],
       cameraAngle: brief?.cameraAngle || angles[index],
       productPlacement: brief?.productPlacement || placements[index],
@@ -30,7 +30,7 @@ export function buildVisualDiversityMatrix(results: GenerationResult[]): VisualD
 
 export function validateVisualDiversityMatrix(matrix: VisualDiversityMatrixEntry[]) {
   if (matrix.length !== 6) return { valid: false, errors: ["비주얼 다양성 매트릭스는 6개여야 합니다."] };
-  const fingerprints = matrix.map((item) => [item.sceneType,item.cameraAngle,item.productPlacement,item.productScale,item.dominantColor,item.typographyStyle,item.emotionalTone,item.visualMetaphor].join("|"));
+  const fingerprints = matrix.map((item) => [item.sceneType, item.cameraAngle, item.productPlacement, item.productScale, item.dominantColor, item.typographyStyle, item.emotionalTone, item.visualMetaphor].join("|"));
   const errors = fingerprints.length === new Set(fingerprints).size ? [] : ["동일한 비주얼 조합이 반복됩니다."];
   if (new Set(matrix.map((item) => item.visualArchetype)).size < 4) {
     errors.push("6장 중 최소 4개의 시각 광고 문법이 달라야 합니다.");

@@ -29,7 +29,13 @@ function rgbToHsv(r: number, g: number, b: number) {
 }
 
 function toHex(r: number, g: number, b: number) {
-  return `#${[r, g, b].map((value) => Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, "0")).join("")}`;
+  return `#${[r, g, b]
+    .map((value) =>
+      Math.max(0, Math.min(255, Math.round(value)))
+        .toString(16)
+        .padStart(2, "0")
+    )
+    .join("")}`;
 }
 
 function perceptualDifferenceHash(gray: number[], width: number, height: number) {
@@ -51,30 +57,11 @@ function perceptualDifferenceHash(gray: number[], width: number, height: number)
   return output;
 }
 
-type LocalAnalysis = Pick<
-  BackgroundCatalogItem,
-  | "dominantColor"
-  | "secondaryColors"
-  | "brightness"
-  | "saturation"
-  | "contrast"
-  | "entropy"
-  | "edgeDensity"
-  | "clutterLevel"
-  | "negativeSpaceDirection"
-  | "productPlacementSpace"
-  | "focalPoint"
-  | "cropSafety"
-  | "backgroundSuitabilityScore"
-  | "adCompositionScore"
-  | "recommendedProductPosition"
-  | "recommendedCopyPosition"
-  | "overlayReadability"
-  | "needsDarkOverlay"
-  | "needsLightOverlay"
-  | "squareCropScore"
-  | "perceptualHash"
-> & { width: number; height: number; format: SupportedCatalogImageFormat };
+type LocalAnalysis = Pick<BackgroundCatalogItem, "dominantColor" | "secondaryColors" | "brightness" | "saturation" | "contrast" | "entropy" | "edgeDensity" | "clutterLevel" | "negativeSpaceDirection" | "productPlacementSpace" | "focalPoint" | "cropSafety" | "backgroundSuitabilityScore" | "adCompositionScore" | "recommendedProductPosition" | "recommendedCopyPosition" | "overlayReadability" | "needsDarkOverlay" | "needsLightOverlay" | "squareCropScore" | "perceptualHash"> & {
+  width: number;
+  height: number;
+  format: SupportedCatalogImageFormat;
+};
 
 export async function analyzeCatalogImage(buffer: Buffer): Promise<LocalAnalysis> {
   const signature = detectCatalogImageSignature(buffer);
@@ -91,12 +78,7 @@ export async function analyzeCatalogImage(buffer: Buffer): Promise<LocalAnalysis
 
   const sampleWidth = 64;
   const sampleHeight = 64;
-  const { data, info } = await sharp(buffer)
-    .rotate()
-    .resize(sampleWidth, sampleHeight, { fit: "fill" })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(buffer).rotate().resize(sampleWidth, sampleHeight, { fit: "fill" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const luma: number[] = [];
   const histogram = new Array<number>(32).fill(0);
   const colors = new Map<string, { count: number; r: number; g: number; b: number }>();
@@ -124,11 +106,12 @@ export async function analyzeCatalogImage(buffer: Buffer): Promise<LocalAnalysis
   const brightness = lumaSum / pixelCount;
   const saturation = saturationSum / pixelCount;
   const contrast = Math.sqrt(luma.reduce((sum, value) => sum + (value - brightness) ** 2, 0) / pixelCount) * 2.4;
-  const entropy = -histogram.reduce((sum, count) => {
-    if (!count) return sum;
-    const probability = count / pixelCount;
-    return sum + probability * Math.log2(probability);
-  }, 0) / 5;
+  const entropy =
+    -histogram.reduce((sum, count) => {
+      if (!count) return sum;
+      const probability = count / pixelCount;
+      return sum + probability * Math.log2(probability);
+    }, 0) / 5;
 
   let edgeCount = 0;
   const regionEdges = { left: 0, right: 0, top: 0, bottom: 0 };
@@ -139,16 +122,24 @@ export async function analyzeCatalogImage(buffer: Buffer): Promise<LocalAnalysis
       const gy = Math.abs(luma[(y + 1) * sampleWidth + x] - luma[(y - 1) * sampleWidth + x]);
       const edge = gx + gy > 0.24 ? 1 : 0;
       edgeCount += edge;
-      if (x < sampleWidth / 2) { regionEdges.left += edge; regionPixels.left += 1; }
-      else { regionEdges.right += edge; regionPixels.right += 1; }
-      if (y < sampleHeight / 2) { regionEdges.top += edge; regionPixels.top += 1; }
-      else { regionEdges.bottom += edge; regionPixels.bottom += 1; }
+      if (x < sampleWidth / 2) {
+        regionEdges.left += edge;
+        regionPixels.left += 1;
+      } else {
+        regionEdges.right += edge;
+        regionPixels.right += 1;
+      }
+      if (y < sampleHeight / 2) {
+        regionEdges.top += edge;
+        regionPixels.top += 1;
+      } else {
+        regionEdges.bottom += edge;
+        regionPixels.bottom += 1;
+      }
     }
   }
   const edgeDensity = edgeCount / ((sampleWidth - 2) * (sampleHeight - 2));
-  const openness = Object.fromEntries(
-    Object.keys(regionEdges).map((key) => [key, 1 - regionEdges[key as keyof typeof regionEdges] / regionPixels[key as keyof typeof regionPixels]])
-  ) as Record<"left" | "right" | "top" | "bottom", number>;
+  const openness = Object.fromEntries(Object.keys(regionEdges).map((key) => [key, 1 - regionEdges[key as keyof typeof regionEdges] / regionPixels[key as keyof typeof regionPixels]])) as Record<"left" | "right" | "top" | "bottom", number>;
   const mostOpen = (Object.entries(openness) as Array<[keyof typeof openness, number]>).sort((a, b) => b[1] - a[1])[0];
   const negativeSpaceDirection = mostOpen[0] === "left" ? "center-left" : mostOpen[0] === "right" ? "center-right" : mostOpen[0] === "top" ? "top-center" : "bottom-center";
   const productPosition = mostOpen[0] === "left" ? "center-left" : mostOpen[0] === "right" ? "center-right" : mostOpen[0] === "top" ? "center" : "bottom-center";

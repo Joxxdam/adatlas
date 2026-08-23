@@ -47,11 +47,7 @@ export function aggregateMetaPerformance(
   });
   const totalSpend = totalsByAd.reduce((sum, item) => sum + item.totals.spend, 0);
   const rows: PerformanceHookRow[] = totalsByAd.map(({ row, totals }) => {
-    const enough =
-      totals.impressions >= thresholds.impressions &&
-      totals.outboundClicks >= thresholds.outboundClicks &&
-      totals.purchases >= thresholds.purchases &&
-      totals.spend >= thresholds.spend;
+    const enough = totals.impressions >= thresholds.impressions && totals.outboundClicks >= thresholds.outboundClicks && totals.purchases >= thresholds.purchases && totals.spend >= thresholds.spend;
     return {
       ...row,
       ...totals,
@@ -64,9 +60,7 @@ export function aggregateMetaPerformance(
     };
   });
   const eligible = rows.filter((row) => row.status === "유망 후킹");
-  const leader = [...eligible].sort(
-    (a, b) => b.roas - a.roas || a.cpa - b.cpa || b.purchases - a.purchases
-  )[0];
+  const leader = [...eligible].sort((a, b) => b.roas - a.roas || a.cpa - b.cpa || b.purchases - a.purchases)[0];
   if (leader && eligible.length >= 2) leader.status = "검증된 우승";
   return { ...experiment, rows };
 }
@@ -74,9 +68,7 @@ export function aggregateMetaPerformance(
 export function spendImbalanceWarning(rows: PerformanceHookRow[]) {
   const highest = [...rows].sort((a, b) => b.spendShare - a.spendShare)[0];
   if (!highest || highest.spendShare < 0.4) return "";
-  return `${highest.hookCode}에 전체 광고비의 ${Math.round(
-    highest.spendShare * 100
-  )}%가 배분되었습니다. 현재 결과는 Meta의 불균등 노출 영향을 포함합니다.`;
+  return `${highest.hookCode}에 전체 광고비의 ${Math.round(highest.spendShare * 100)}%가 배분되었습니다. 현재 결과는 Meta의 불균등 노출 영향을 포함합니다.`;
 }
 
 export function recentThreeDayRange(now = new Date()) {

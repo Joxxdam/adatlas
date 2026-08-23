@@ -22,25 +22,13 @@ function archetypeChoices(params: BuildVisualDirectionsInput) {
   const premiumLed = /프리미엄|선물|품질|고급|신뢰/.test(angle);
 
   if (categoryFamily === "personal-care") {
-    return [
-      problemLed ? "problem-solution" : "giant-hook",
-      priceLed ? "numeric-proof" : "product-hero",
-      "community-review",
-    ];
+    return [problemLed ? "problem-solution" : "giant-hook", priceLed ? "numeric-proof" : "product-hero", "community-review"];
   }
   if (categoryFamily === "agriculture") {
-    return [
-      priceLed ? "price-event" : "product-hero",
-      "three-benefits",
-      premiumLed ? "premium-product" : "seasonal-context",
-    ];
+    return [priceLed ? "price-event" : "product-hero", "three-benefits", premiumLed ? "premium-product" : "seasonal-context"];
   }
   if (categoryFamily === "food") {
-    return [
-      priceLed ? "price-event" : "giant-hook",
-      premiumLed ? "premium-product" : "product-hero",
-      /캠핑|가족|모임|식탁/.test(angle) ? "lifestyle-context" : "problem-solution",
-    ];
+    return [priceLed ? "price-event" : "giant-hook", premiumLed ? "premium-product" : "product-hero", /캠핑|가족|모임|식탁/.test(angle) ? "lifestyle-context" : "problem-solution"];
   }
   return ["giant-hook", problemLed ? "problem-solution" : "product-hero", "three-benefits"];
 }
@@ -84,9 +72,7 @@ function textStyleFor(params: BuildVisualDirectionsInput, archetypeId: string) {
     return "lifestyle-problem-solution";
   }
   if (categoryFamily === "personal-care") {
-    return /쿨|민트|시원/.test(`${params.product.mainBenefit} ${params.product.productName}`)
-      ? "cooling-impact"
-      : params.advertiserProfile?.defaultTextStylePreset || "clean-brand";
+    return /쿨|민트|시원/.test(`${params.product.mainBenefit} ${params.product.productName}`) ? "cooling-impact" : params.advertiserProfile?.defaultTextStylePreset || "clean-brand";
   }
   if (categoryFamily === "agriculture") return "honest-farm-direct";
   if (categoryFamily === "food") return "premium-food";
@@ -116,9 +102,7 @@ export function buildVisualDirections(params: BuildVisualDirectionsInput): Visua
 
   return archetypeIds.map((archetypeId, index) => {
     const archetype = getVisualArchetype(archetypeId);
-    const compatible = sceneRanking.find(
-      (item, sceneIndex) => sceneIndex >= index && item.profile.compatibleArchetypes.includes(archetypeId)
-    ) || sceneRanking.find((item) => item.profile.compatibleArchetypes.includes(archetypeId)) || sceneRanking[index] || sceneRanking[0];
+    const compatible = sceneRanking.find((item, sceneIndex) => sceneIndex >= index && item.profile.compatibleArchetypes.includes(archetypeId)) || sceneRanking.find((item) => item.profile.compatibleArchetypes.includes(archetypeId)) || sceneRanking[index] || sceneRanking[0];
     const profile = compatible?.profile || getSceneProfile(params.advertiserProfile!.defaultSceneProfile || "generic-bold-performance");
     const scenePromptPlan = buildScenePrompt({
       profile,

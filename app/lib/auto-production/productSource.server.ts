@@ -9,11 +9,7 @@ import { siteCandidateToProductInfo } from "../site-candidates/handoff.server";
 import { analyzeDiscoveredSite, cacheSiteDiscovery } from "../site-candidates/service.server";
 import type { SiteAdCandidate } from "../site-candidates/types";
 import type { ProductInfoForPrompt } from "../mvp/types";
-import type {
-  AutoProductionAdvertiserConfig,
-  AutoProductionProductCandidate,
-  AutoProductionRole,
-} from "./types";
+import type { AutoProductionAdvertiserConfig, AutoProductionProductCandidate, AutoProductionRole } from "./types";
 import { runCandidateSourceFallback } from "./sourceFallback";
 import { canonicalProductUrl, productFamilyKey } from "./productIdentity";
 import { verifyAutoProductionProductImages } from "./productImageValidation";
@@ -40,9 +36,7 @@ function verifiedCandidate(candidate: AutoProductionProductCandidate): AutoProdu
 
 function matchesBrand(config: AutoProductionAdvertiserConfig, value: string) {
   const normalized = value.toLowerCase().replace(/\s+/g, "");
-  return [config.bigQueryBrandMatch, config.advertiserName, ...config.aliases]
-    .filter(Boolean)
-    .some((item) => normalized === item.toLowerCase().replace(/\s+/g, ""));
+  return [config.bigQueryBrandMatch, config.advertiserName, ...config.aliases].filter(Boolean).some((item) => normalized === item.toLowerCase().replace(/\s+/g, ""));
 }
 
 function bigQueryRole(candidate: BigQueryAdCandidate): AutoProductionRole {
@@ -69,7 +63,10 @@ function bigQueryCandidate(config: AutoProductionAdvertiserConfig, candidate: Bi
     sourceReason: "BigQuery 읽기 전용 판매·노출 집계",
     recommendationRole: bigQueryRole(candidate),
     recommendationReason: candidate.recommendationReason,
-    verifiedEvidence: candidate.metrics.filter((item) => item.value !== null).slice(0, 6).map((item) => `${item.label}: ${item.note}`),
+    verifiedEvidence: candidate.metrics
+      .filter((item) => item.value !== null)
+      .slice(0, 6)
+      .map((item) => `${item.label}: ${item.note}`),
     recommendedHookDirections: candidate.recommendedHookTypes,
     selectionScore: candidate.score,
     currentSales: candidate.currentSales,
@@ -185,15 +182,13 @@ function cremaCandidates(config: AutoProductionAdvertiserConfig, dataset: CremaM
       return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
     };
     const opportunity = dataset.opportunities.find((item) => item.productId === product.id && item.status !== "excluded");
-    const evidence = opportunity?.evidence.map((item) => item.message).filter(Boolean).slice(0, 6) || [];
+    const evidence =
+      opportunity?.evidence
+        .map((item) => item.message)
+        .filter(Boolean)
+        .slice(0, 6) || [];
     const info = cremaProductInfo(config, product, evidence);
-    const role: AutoProductionRole = opportunity?.primaryType === "HIDDEN_WINNER" || opportunity?.primaryType === "UNDEREXPOSED"
-      ? "low-exposure-opportunity"
-      : opportunity?.primaryType === "DECLINING_BESTSELLER"
-        ? "reactivation"
-        : opportunity?.primaryType === "NEW_PRODUCT_TEST"
-          ? "new-exploration"
-          : "core-expansion";
+    const role: AutoProductionRole = opportunity?.primaryType === "HIDDEN_WINNER" || opportunity?.primaryType === "UNDEREXPOSED" ? "low-exposure-opportunity" : opportunity?.primaryType === "DECLINING_BESTSELLER" ? "reactivation" : opportunity?.primaryType === "NEW_PRODUCT_TEST" ? "new-exploration" : "core-expansion";
     const revenue = sums("netRevenue") ?? sums("revenue");
     const orders = sums("netOrders") ?? sums("paidOrders");
     const impressions = sums("impressions");
@@ -255,15 +250,58 @@ async function fromSite(config: AutoProductionAdvertiserConfig, url = config.sit
   return { candidates: analysis.candidates.map((candidate) => siteCandidate(config, candidate, source)), warnings: analysis.warnings };
 }
 
+function sameProductUrl(left: string, right: string) {
+  return Boolean(left && right && canonicalProductUrl(left) === canonicalProductUrl(right));
+}
+
+async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
+  const batches = await Promise.allSettled(config.adminProductUrls.slice(0, config.productsPerRun).map((url) => fromSite(config, url, "admin")));
+  const candidates: AutoProductionProductCandidate[] = [];
+  const warnings: string[] = [];
+  batches.forEach((batch, index) => {
+    const plannedUrl = config.adminProductUrls[index];
+    if (batch.status === "rejected") {
+      warnings.push(`${index + 1}번 예정 상품을 불러오지 못했습니다: ${batch.reason instanceof Error ? batch.reason.message : "상품 페이지 확인 실패"}`);
+      return;
+    }
+    const exact = batch.value.candidates.find((candidate) => sameProductUrl(candidate.productUrl, plannedUrl));
+    const selected = exact || batch.value.candidates[0];
+    if (!selected) {
+      warnings.push(`${index + 1}번 예정 상품에서 제작할 상품정보를 찾지 못했습니다.`);
+      return;
+    }
+    candidates.push({
+      ...selected,
+      productUrl: plannedUrl,
+      canonicalProductUrl: canonicalProductUrl(plannedUrl),
+      source: "admin",
+      sourceReason: "자동제작 화면에서 확정한 다음 제작 예정 상품 URL",
+      recommendationReason: "사용자가 몰별 다음 제작 예정 상품으로 확정했습니다.",
+      productInfo: {
+        ...selected.productInfo,
+        landingUrl: plannedUrl,
+      },
+    });
+    warnings.push(...batch.value.warnings);
+  });
+  if (!candidates.length) throw new Error("저장한 예정 상품 URL에서 제작할 상품정보를 찾지 못했습니다.");
+  return { candidates, source: "admin" as const, warnings: Array.from(new Set(warnings)) };
+}
+
 export async function loadAutoProductionCandidates(config: AutoProductionAdvertiserConfig) {
   const attempts: Array<() => Promise<{ candidates: AutoProductionProductCandidate[]; source: AutoProductionProductCandidate["source"]; warnings?: string[] }>> = [];
-  if (config.productVisibilityMode === "admin-only" || config.dataSource === "admin") {
-    for (const url of config.adminProductUrls) attempts.push(async () => ({ ...(await fromSite(config, url, "admin")), source: "admin" as const }));
+  // 화면에서 확정한 URL은 단순 fallback이 아니라 다음 예약 실행의 고정 상품 목록이다.
+  // 네 URL을 한 번에 수집해야 첫 번째 URL의 탐색 결과만 쓰는 과거 동작을 피할 수 있다.
+  if (config.adminProductUrls.length) {
+    attempts.push(() => fromPlannedProductUrls(config));
+  } else if (config.productVisibilityMode === "admin-only" || config.dataSource === "admin") {
+    attempts.push(async () => {
+      throw new Error("관리자 지정 상품 모드에는 다음 제작 예정 상품 URL이 필요합니다.");
+    });
   } else {
     if (["auto", "bigquery"].includes(config.dataSource)) attempts.push(async () => ({ candidates: await fromBigQuery(config), source: "bigquery" as const }));
     if (["auto", "crema"].includes(config.dataSource)) attempts.push(async () => ({ candidates: await fromCrema(config), source: "crema" as const }));
     if (["auto", "site", "bigquery", "crema"].includes(config.dataSource)) attempts.push(async () => ({ ...(await fromSite(config)), source: "site" as const }));
-    for (const url of config.adminProductUrls) attempts.push(async () => ({ ...(await fromSite(config, url, "admin")), source: "admin" as const }));
   }
   const result = await runCandidateSourceFallback(attempts, "site" as const);
   return {

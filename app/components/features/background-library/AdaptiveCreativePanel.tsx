@@ -2,11 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- generated and local preview images */
 
-import type {
-  AdaptiveCreativePlan,
-  AdaptiveCreativeRenderResult,
-  CreativeGenerationMode,
-} from "../../../lib/background-library/types";
+import type { AdaptiveCreativePlan, AdaptiveCreativeRenderResult, CreativeGenerationMode } from "../../../lib/background-library/types";
 
 import styles from "./AdaptiveCreativePanel.module.css";
 
@@ -37,22 +33,7 @@ function percent(value: number) {
   return `${Math.max(0, Math.min(100, (value / 1200) * 100))}%`;
 }
 
-export function AdaptiveCreativePanel(props: {
-  backgroundFile: string;
-  plans: AdaptiveCreativePlan[];
-  selectedPlanId: string;
-  loading: boolean;
-  status: string;
-  generationMode: CreativeGenerationMode;
-  generating: boolean;
-  results: AdaptiveCreativeRenderResult[];
-  onSelectPlan: (id: string) => void;
-  onChangePlan: (plan: AdaptiveCreativePlan) => void;
-  onReset: () => void;
-  onGenerationModeChange: (mode: CreativeGenerationMode) => void;
-  onGenerateVariants: () => void;
-  onUseResult: (result: AdaptiveCreativeRenderResult) => void;
-}) {
+export function AdaptiveCreativePanel(props: { backgroundFile: string; plans: AdaptiveCreativePlan[]; selectedPlanId: string; loading: boolean; status: string; generationMode: CreativeGenerationMode; generating: boolean; results: AdaptiveCreativeRenderResult[]; onSelectPlan: (id: string) => void; onChangePlan: (plan: AdaptiveCreativePlan) => void; onReset: () => void; onGenerationModeChange: (mode: CreativeGenerationMode) => void; onGenerateVariants: () => void; onUseResult: (result: AdaptiveCreativeRenderResult) => void }) {
   const resultCount = props.generationMode === "hook-based" ? 6 : 3;
   const selected = props.plans.find((plan) => plan.id === props.selectedPlanId) || props.plans[0];
   const update = (patch: Partial<AdaptiveCreativePlan>) => {
@@ -66,13 +47,7 @@ export function AdaptiveCreativePanel(props: {
       textPlacement: { ...selected.textPlacement, [axis]: nextValue },
       bodyPlacement: {
         ...selected.bodyPlacement,
-        [axis]: Math.max(
-          24,
-          Math.min(
-            1176 - selected.bodyPlacement[axis === "x" ? "width" : "height"],
-            selected.bodyPlacement[axis] + delta
-          )
-        ),
+        [axis]: Math.max(24, Math.min(1176 - selected.bodyPlacement[axis === "x" ? "width" : "height"], selected.bodyPlacement[axis] + delta)),
       },
     });
   };
@@ -85,20 +60,13 @@ export function AdaptiveCreativePanel(props: {
         <p>단일 대형, 동일 상품 겹침, 큰 상품+작은 상품의 위계가 서로 다른 시안입니다.</p>
       </header>
 
-      {props.loading ? (
-        <p className={styles.status}>배경 색상과 합성 영역을 분석하고 있습니다.</p>
-      ) : null}
+      {props.loading ? <p className={styles.status}>배경 색상과 합성 영역을 분석하고 있습니다.</p> : null}
       {!props.loading && props.plans.length ? (
         <div className={styles.planGrid}>
           {props.plans.map((plan) => {
             const active = plan.id === selected?.id;
             return (
-              <button
-                className={`${styles.planCard} ${active ? styles.selected : ""}`}
-                key={plan.id}
-                onClick={() => props.onSelectPlan(plan.id)}
-                type="button"
-              >
+              <button className={`${styles.planCard} ${active ? styles.selected : ""}`} key={plan.id} onClick={() => props.onSelectPlan(plan.id)} type="button">
                 <span className={styles.planPreview}>
                   <img alt="선택 배경 레이아웃 미리보기" src={props.backgroundFile} />
                   <i
@@ -117,15 +85,8 @@ export function AdaptiveCreativePanel(props: {
                     const direction = index % 2 === 0 ? -1 : 1;
                     const width = plan.productPlacement.width * (support ? supportScale : 1);
                     const height = plan.productPlacement.height * (support ? supportScale : 1);
-                    const x = support
-                      ? plan.productPlacement.x +
-                        direction *
-                          plan.productPlacement.width *
-                          (1 - (plan.productComposition?.overlapRatio || 0.24))
-                      : plan.productPlacement.x;
-                    const y = support
-                      ? plan.productPlacement.y + plan.productPlacement.height - height
-                      : plan.productPlacement.y;
+                    const x = support ? plan.productPlacement.x + direction * plan.productPlacement.width * (1 - (plan.productComposition?.overlapRatio || 0.24)) : plan.productPlacement.x;
+                    const y = support ? plan.productPlacement.y + plan.productPlacement.height - height : plan.productPlacement.y;
                     return (
                       <i
                         className={styles.productBlock}
@@ -237,23 +198,11 @@ export function AdaptiveCreativePanel(props: {
             </label>
             <label>
               문구 가로 위치
-              <input
-                max={Math.max(24, 1176 - selected.textPlacement.width)}
-                min="24"
-                onChange={(event) => moveText("x", Number(event.target.value))}
-                type="range"
-                value={selected.textPlacement.x}
-              />
+              <input max={Math.max(24, 1176 - selected.textPlacement.width)} min="24" onChange={(event) => moveText("x", Number(event.target.value))} type="range" value={selected.textPlacement.x} />
             </label>
             <label>
               문구 세로 위치
-              <input
-                max={Math.max(24, 1176 - selected.textPlacement.height)}
-                min="24"
-                onChange={(event) => moveText("y", Number(event.target.value))}
-                type="range"
-                value={selected.textPlacement.y}
-              />
+              <input max={Math.max(24, 1176 - selected.textPlacement.height)} min="24" onChange={(event) => moveText("y", Number(event.target.value))} type="range" value={selected.textPlacement.y} />
             </label>
             <label>
               문구 정렬
@@ -469,38 +418,20 @@ export function AdaptiveCreativePanel(props: {
               ["hook-based", "자동 문구 6개 적용", "문구·배경·레이아웃을 각각 변경"],
             ] as const
           ).map(([value, title, description]) => (
-            <button
-              className={props.generationMode === value ? styles.modeSelected : ""}
-              key={value}
-              onClick={() => props.onGenerationModeChange(value)}
-              type="button"
-            >
+            <button className={props.generationMode === value ? styles.modeSelected : ""} key={value} onClick={() => props.onGenerationModeChange(value)} type="button">
               <b>{title}</b>
               <small>{description}</small>
             </button>
           ))}
         </div>
-        <button
-          className={styles.generateButton}
-          disabled={props.generating || !selected}
-          onClick={props.onGenerateVariants}
-          type="button"
-        >
-          {props.generating
-            ? `시안 ${resultCount}개 생성 중`
-            : `선택 모드로 시안 ${resultCount}개 생성`}
+        <button className={styles.generateButton} disabled={props.generating || !selected} onClick={props.onGenerateVariants} type="button">
+          {props.generating ? `시안 ${resultCount}개 생성 중` : `선택 모드로 시안 ${resultCount}개 생성`}
         </button>
         {props.results.length ? (
           <div className={styles.resultGrid}>
             {props.results.map((result) => (
               <article key={result.id}>
-                {result.imagePath ? (
-                  <img alt={`${result.hookTitle} 광고 시안`} src={result.imagePath} />
-                ) : (
-                  <div className={styles.resultPending}>
-                    {result.status === "error" ? result.errorMessage : "생성 중"}
-                  </div>
-                )}
+                {result.imagePath ? <img alt={`${result.hookTitle} 광고 시안`} src={result.imagePath} /> : <div className={styles.resultPending}>{result.status === "error" ? result.errorMessage : "생성 중"}</div>}
                 <b>{result.hookTitle}</b>
                 <span>{layoutLabels[result.plan.layoutType]}</span>
                 {result.status === "success" ? (

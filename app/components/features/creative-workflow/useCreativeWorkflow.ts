@@ -5,14 +5,7 @@ import { defaultAdBrief, productInfoToAdBrief } from "../../../lib/mvp/adBrief";
 import { buildCreativeStrategies } from "../../../lib/mvp/creativeStrategy";
 import { labelsForReferenceMatches, matchReferences } from "../../../lib/mvp/referenceMatcher";
 import { normalizeReferenceUsages } from "../../../lib/mvp/referenceUsage";
-import type {
-  AdBrief,
-  AdImageLabel,
-  CreationStepId,
-  CreativeStrategy,
-  MessageHierarchy,
-  ProductInfoForPrompt,
-} from "../../../lib/mvp/types";
+import type { AdBrief, AdImageLabel, CreationStepId, CreativeStrategy, MessageHierarchy, ProductInfoForPrompt } from "../../../lib/mvp/types";
 
 const emptyHierarchy: MessageHierarchy = {
   primaryMessage: "",
@@ -22,26 +15,16 @@ const emptyHierarchy: MessageHierarchy = {
   actionMessage: "",
 };
 
-export function useCreativeWorkflow(params: {
-  productInfo: ProductInfoForPrompt;
-  allReferences: AdImageLabel[];
-  preferredReferenceIds?: string[];
-  advertiserName?: string;
-}) {
+export function useCreativeWorkflow(params: { productInfo: ProductInfoForPrompt; allReferences: AdImageLabel[]; preferredReferenceIds?: string[]; advertiserName?: string }) {
   const [activeStep, setActiveStep] = useState<CreationStepId>("brief");
-  const [adBriefDraft, setAdBriefDraft] = useState<AdBrief>(() =>
-    productInfoToAdBrief(params.productInfo, defaultAdBrief)
-  );
+  const [adBriefDraft, setAdBriefDraft] = useState<AdBrief>(() => productInfoToAdBrief(params.productInfo, defaultAdBrief));
   const [strategies, setStrategies] = useState<CreativeStrategy[]>([]);
   const [selectedStrategyId, setSelectedStrategyId] = useState("");
   const [strategyBatch, setStrategyBatch] = useState(0);
   const [isGeneratingStrategies, setIsGeneratingStrategies] = useState(false);
   const [messageHierarchy, setMessageHierarchy] = useState<MessageHierarchy>(emptyHierarchy);
 
-  const adBrief = useMemo(
-    () => productInfoToAdBrief(params.productInfo, adBriefDraft),
-    [adBriefDraft, params.productInfo]
-  );
+  const adBrief = useMemo(() => productInfoToAdBrief(params.productInfo, adBriefDraft), [adBriefDraft, params.productInfo]);
   const setAdBrief = useCallback(
     (next: SetStateAction<AdBrief>) => {
       setAdBriefDraft((currentDraft) => {
@@ -58,9 +41,7 @@ export function useCreativeWorkflow(params: {
       labels: params.allReferences,
       limit: 5,
     });
-    const preferredOrder = new Map(
-      (params.preferredReferenceIds || []).map((id, index) => [id, index])
-    );
+    const preferredOrder = new Map((params.preferredReferenceIds || []).map((id, index) => [id, index]));
     return matches.sort((a, b) => {
       const aOrder = preferredOrder.get(a.referenceId);
       const bOrder = preferredOrder.get(b.referenceId);
@@ -70,10 +51,7 @@ export function useCreativeWorkflow(params: {
       return b.score - a.score;
     });
   }, [adBrief, params.allReferences, params.preferredReferenceIds, params.productInfo]);
-  const references = useMemo(
-    () => labelsForReferenceMatches(params.allReferences, referenceMatches),
-    [params.allReferences, referenceMatches]
-  );
+  const references = useMemo(() => labelsForReferenceMatches(params.allReferences, referenceMatches), [params.allReferences, referenceMatches]);
   const referenceUsages = useMemo(() => normalizeReferenceUsages(references, []), [references]);
 
   const generateStrategies = useCallback(
@@ -87,10 +65,7 @@ export function useCreativeWorkflow(params: {
             productInfo: {
               ...params.productInfo,
               advertiserName: params.advertiserName || params.productInfo.advertiserName,
-              brandName:
-                params.productInfo.brandName ||
-                params.advertiserName ||
-                params.productInfo.advertiserName,
+              brandName: params.productInfo.brandName || params.advertiserName || params.productInfo.advertiserName,
             },
             adBrief,
             batch: nextBatch,
@@ -126,10 +101,7 @@ export function useCreativeWorkflow(params: {
     [adBrief, params.advertiserName, params.productInfo, referenceUsages, references, strategyBatch]
   );
 
-  const selectedStrategy = useMemo(
-    () => strategies.find((strategy) => strategy.id === selectedStrategyId) || null,
-    [selectedStrategyId, strategies]
-  );
+  const selectedStrategy = useMemo(() => strategies.find((strategy) => strategy.id === selectedStrategyId) || null, [selectedStrategyId, strategies]);
 
   const resetStrategies = useCallback(() => {
     setStrategies([]);

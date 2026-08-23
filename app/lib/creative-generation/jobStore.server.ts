@@ -2,11 +2,7 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { GenerationJob, GenerationJobStatus } from "./types";
-import {
-  cancelGenerationJob,
-  executionResults,
-  normalizeCreativeProductUrl,
-} from "./jobRunnerPolicy";
+import { cancelGenerationJob, executionResults, normalizeCreativeProductUrl } from "./jobRunnerPolicy";
 
 const jobsDirectory = path.join(process.cwd(), ".data", "creative-generation", "jobs");
 const globalKey = Symbol.for("daywiz.creative-generation.job-store-locks");
@@ -35,17 +31,7 @@ async function writeJobFile(job: GenerationJob) {
 }
 
 const successfulStatuses = new Set(["success", "approved"]);
-const terminalStatuses = new Set([
-  "success",
-  "failed",
-  "cancelled",
-  "korean-review",
-  "product-review",
-  "quality-review",
-  "group-review",
-  "approved",
-  "excluded",
-]);
+const terminalStatuses = new Set(["success", "failed", "cancelled", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"]);
 
 export function summarizeGenerationJobStatus(job: GenerationJob): GenerationJob {
   if (job.status === "cancelled") return job;
@@ -70,18 +56,14 @@ export function summarizeGenerationJobStatus(job: GenerationJob): GenerationJob 
     completedAt,
     timing: {
       ...job.timing,
-      totalMs: completedAt
-        ? new Date(completedAt).getTime() - new Date(job.createdAt).getTime()
-        : undefined,
+      totalMs: completedAt ? new Date(completedAt).getTime() - new Date(job.createdAt).getTime() : undefined,
     },
   };
 }
 
 async function listJobFiles() {
   try {
-    return (await fs.readdir(jobsDirectory))
-      .filter((name) => /^creative-job-[a-z0-9-]{8,96}\.json$/i.test(name))
-      .map((name) => path.join(jobsDirectory, name));
+    return (await fs.readdir(jobsDirectory)).filter((name) => /^creative-job-[a-z0-9-]{8,96}\.json$/i.test(name)).map((name) => path.join(jobsDirectory, name));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
     throw error;
@@ -102,12 +84,14 @@ export const creativeGenerationJobStore = {
     }
   },
 
-  async list(options: {
-    limit?: number;
-    statuses?: GenerationJobStatus[];
-    advertiserId?: string;
-    productId?: string;
-  } = {}): Promise<GenerationJob[]> {
+  async list(
+    options: {
+      limit?: number;
+      statuses?: GenerationJobStatus[];
+      advertiserId?: string;
+      productId?: string;
+    } = {}
+  ): Promise<GenerationJob[]> {
     const statusSet = options.statuses?.length ? new Set(options.statuses) : null;
     const jobs = await Promise.all(
       (await listJobFiles()).map(async (file) => {
@@ -135,13 +119,11 @@ export const creativeGenerationJobStore = {
     return this.list(input);
   },
 
-  async supersedeActiveForProduct(productUrl: string, exceptJobId?: string) {
+  async supersedeActiveForProduct(productUrl: string, exceptJobId?: string, sourceType?: GenerationJob["sourceType"]) {
     const normalizedUrl = normalizeCreativeProductUrl(productUrl);
     if (!normalizedUrl) return [] as GenerationJob[];
     const candidates = (await this.active(200)).filter(
-      (job) =>
-        job.id !== exceptJobId &&
-        normalizeCreativeProductUrl(job.productTruth.product.landingUrl) === normalizedUrl
+      (job) => job.id !== exceptJobId && (!sourceType || job.sourceType === sourceType) && normalizeCreativeProductUrl(job.productTruth.product.landingUrl) === normalizedUrl
     );
     return Promise.all(
       candidates.map((candidate) =>
@@ -154,9 +136,7 @@ export const creativeGenerationJobStore = {
               {
                 at: new Date().toISOString(),
                 message: "같은 상품의 새 후킹 광고 작업으로 교체",
-                resultIds: cancelled.results
-                  .filter((result) => result.status === "cancelled")
-                  .map((result) => result.id),
+                resultIds: cancelled.results.filter((result) => result.status === "cancelled").map((result) => result.id),
               },
             ].slice(-20),
           };
@@ -176,7 +156,10 @@ export const creativeGenerationJobStore = {
       });
       return writeJobFile(changed);
     });
-    jobLocks.set(jobId, next.catch(() => undefined));
+    jobLocks.set(
+      jobId,
+      next.catch(() => undefined)
+    );
     return next;
   },
 };

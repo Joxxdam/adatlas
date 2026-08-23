@@ -4,10 +4,7 @@ export type CandidateSourceResult<T, S extends string> = {
   warnings?: string[];
 };
 
-export async function runCandidateSourceFallback<T, S extends string>(
-  attempts: Array<() => Promise<CandidateSourceResult<T, S>>>,
-  emptySource: S
-) {
+export async function runCandidateSourceFallback<T, S extends string>(attempts: Array<() => Promise<CandidateSourceResult<T, S>>>, emptySource: S) {
   const warnings: string[] = [];
   for (let index = 0; index < attempts.length; index += 1) {
     try {

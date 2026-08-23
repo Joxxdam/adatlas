@@ -7,15 +7,7 @@ import { readCreativeRasterAsset } from "./assets.server.ts";
 import { isCompositableImageRole } from "./productImages.server.ts";
 import { qaRenderedCreative } from "./qa.ts";
 import { resolveRenderedSlots } from "./textLayout.server.ts";
-import type {
-  CopyPlan,
-  GenerationJob,
-  GenerationResult,
-  LayoutPlan,
-  PlacementBox,
-  ProductCompositionInstance,
-  RenderPlan,
-} from "./types.ts";
+import type { CopyPlan, GenerationJob, GenerationResult, LayoutPlan, PlacementBox, ProductCompositionInstance, RenderPlan } from "./types.ts";
 
 const OUTPUT_DIR = path.join(process.cwd(), "public", "generated-ads");
 const FONT_FAMILY = "Noto Sans KR, Apple SD Gothic Neo, Arial, sans-serif";
@@ -50,21 +42,11 @@ function unionBoxes(boxes: PlacementBox[]): PlacementBox {
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-export async function buildRenderPlan(
-  job: GenerationJob,
-  result: GenerationResult,
-  overrides: Partial<CopyPlan> = {},
-  repairPass = 0
-): Promise<RenderPlan> {
+export async function buildRenderPlan(job: GenerationJob, result: GenerationResult, overrides: Partial<CopyPlan> = {}, repairPass = 0): Promise<RenderPlan> {
   const master = result.creativeDesign || job.creativePlan.masterDesign;
   const masterScene = result.masterScene || job.masterScene;
   const copy = copyFor(result, overrides);
-  const productImageAssets = job.productTruth.imageAssets.filter(
-    (asset) =>
-      asset.verified &&
-      asset.validationStatus === "confirmed" &&
-      isCompositableImageRole(asset.role)
-  );
+  const productImageAssets = job.productTruth.imageAssets.filter((asset) => asset.verified && asset.validationStatus === "confirmed" && isCompositableImageRole(asset.role));
   const productImagePaths = productImageAssets.map((asset) => asset.path);
   const product = unionBoxes(master.productComposition.instances);
   const layout: LayoutPlan = {
@@ -89,13 +71,7 @@ export async function buildRenderPlan(
   });
   const fontAdjustments = renderedSlots
     .filter((slot) => {
-      const expected = slot.id === "headline"
-        ? master.typography.headlineFontSize
-        : slot.id === "body"
-          ? master.typography.subCopyFontSize
-          : slot.id === "cta"
-            ? master.typography.ctaFontSize
-            : undefined;
+      const expected = slot.id === "headline" ? master.typography.headlineFontSize : slot.id === "body" ? master.typography.subCopyFontSize : slot.id === "cta" ? master.typography.ctaFontSize : undefined;
       return expected !== undefined && slot.fontSize < expected;
     })
     .map((slot) => `${slot.id} ${slot.fontSize}px로 허용 범위 내 축소`);
@@ -120,11 +96,8 @@ export async function buildRenderPlan(
     masterVisualDigest: masterScene?.masterVisualDigest,
     generationMode: masterScene?.generationMode,
     productReferenceProfileId: job.productReferenceProfile?.id,
-    productLayerRequired:
-      !masterScene?.includesProduct && result.scenePlan.generationMode !== "real-photo-adaptation",
-    overlay: result.scenePlan.generationMode === "real-photo-adaptation"
-      ? { ...master.overlay, opacity: Math.min(master.overlay.opacity, 0.14) }
-      : master.overlay,
+    productLayerRequired: !masterScene?.includesProduct && result.scenePlan.generationMode !== "real-photo-adaptation",
+    overlay: result.scenePlan.generationMode === "real-photo-adaptation" ? { ...master.overlay, opacity: Math.min(master.overlay.opacity, 0.14) } : master.overlay,
     renderedSlots,
     fontAdjustments,
     logoAsset: job.creativePlan.brandProfile.logoAssets[0],
@@ -136,11 +109,7 @@ function underlaySvg(plan: RenderPlan, copySafetyScore = 100) {
   const colors = plan.layout.colors;
   const id = plan.layout.blueprintId;
   if (["ai-background-composite", "ai-reference-full-creative"].includes(plan.generationMode || "")) {
-    const copyArea = unionBoxes(
-      plan.renderedSlots
-        .filter((slot) => ["headline", "body", "proof", "offer"].includes(slot.id))
-        .map((slot) => slot.box)
-    );
+    const copyArea = unionBoxes(plan.renderedSlots.filter((slot) => ["headline", "body", "proof", "offer"].includes(slot.id)).map((slot) => slot.box));
     const copyOnRight = copyArea.x + copyArea.width / 2 > 600;
     const copyMostlyTop = copyArea.y + copyArea.height < 650 && copyArea.width > 650;
     const needsCopyRepair = copySafetyScore < 55;
@@ -151,12 +120,8 @@ function underlaySvg(plan: RenderPlan, copySafetyScore = 100) {
       : copyOnRight
         ? `<linearGradient id="aiCopyFade" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="${colors.background}" stop-opacity="${strongOpacity}"/><stop offset=".7" stop-color="${colors.background}" stop-opacity="${middleOpacity}"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>`
         : `<linearGradient id="aiCopyFade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${colors.background}" stop-opacity="${strongOpacity}"/><stop offset=".7" stop-color="${colors.background}" stop-opacity="${middleOpacity}"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>`;
-    const copyShield = needsCopyRepair
-      ? `<rect x="${Math.max(0, copyArea.x - 28)}" y="${Math.max(0, copyArea.y - 24)}" width="${Math.min(1200 - Math.max(0, copyArea.x - 28), copyArea.width + 56)}" height="${Math.min(1200 - Math.max(0, copyArea.y - 24), copyArea.height + 48)}" rx="34" fill="${colors.background}" fill-opacity=".30"/>`
-      : "";
-    return Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><defs>${gradient}</defs><rect width="1200" height="1200" fill="${plan.overlay.color}" opacity="${Math.min(plan.overlay.opacity, 0.1).toFixed(2)}"/><rect width="1200" height="1200" fill="url(#aiCopyFade)"/>${copyShield}</svg>`
-    );
+    const copyShield = needsCopyRepair ? `<rect x="${Math.max(0, copyArea.x - 28)}" y="${Math.max(0, copyArea.y - 24)}" width="${Math.min(1200 - Math.max(0, copyArea.x - 28), copyArea.width + 56)}" height="${Math.min(1200 - Math.max(0, copyArea.y - 24), copyArea.height + 48)}" rx="34" fill="${colors.background}" fill-opacity=".30"/>` : "";
+    return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><defs>${gradient}</defs><rect width="1200" height="1200" fill="${plan.overlay.color}" opacity="${Math.min(plan.overlay.opacity, 0.1).toFixed(2)}"/><rect width="1200" height="1200" fill="url(#aiCopyFade)"/>${copyShield}</svg>`);
   }
   const common = `<defs>
     <linearGradient id="leftFade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${colors.background}" stop-opacity=".96"/><stop offset=".82" stop-color="${colors.background}" stop-opacity=".63"/><stop offset="1" stop-color="${colors.background}" stop-opacity="0"/></linearGradient>
@@ -171,9 +136,7 @@ function underlaySvg(plan: RenderPlan, copySafetyScore = 100) {
     "product-hero-lifestyle": `<rect width="650" height="1200" fill="url(#leftFade)"/><circle cx="870" cy="640" r="360" fill="${colors.accent}" opacity=".13"/>`,
     "proof-data": `<rect width="680" height="1200" fill="url(#leftFade)"/><rect width="1200" height="330" fill="url(#topFade)"/><circle cx="890" cy="680" r="340" fill="${colors.accent}" opacity=".11"/>`,
   };
-  return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200">${common}<rect width="1200" height="1200" fill="${plan.overlay.color}" opacity="${plan.overlay.opacity.toFixed(2)}"/>${shapes[id] || shapes["product-hero-lifestyle"]}</svg>`
-  );
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200">${common}<rect width="1200" height="1200" fill="${plan.overlay.color}" opacity="${plan.overlay.opacity.toFixed(2)}"/>${shapes[id] || shapes["product-hero-lifestyle"]}</svg>`);
 }
 
 function slotSvg(plan: RenderPlan) {
@@ -182,41 +145,31 @@ function slotSvg(plan: RenderPlan) {
   const markup = slots
     .map((slot) => {
       const radius = slot.id === "cta" ? Math.floor(slot.box.height / 2) : 20;
-      const panel = slot.fillColor
-        ? `<rect x="${slot.box.x}" y="${slot.box.y}" width="${slot.box.width}" height="${slot.box.height}" rx="${radius}" fill="${slot.fillColor}" ${slot.id === "cta" ? "" : 'fill-opacity=".92"'}/>`
-        : "";
+      const panel = slot.fillColor ? `<rect x="${slot.box.x}" y="${slot.box.y}" width="${slot.box.width}" height="${slot.box.height}" rx="${radius}" fill="${slot.fillColor}" ${slot.id === "cta" ? "" : 'fill-opacity=".92"'}/>` : "";
       const anchor = slot.id === "cta" ? "middle" : "start";
       const x = slot.id === "cta" ? slot.box.x + slot.box.width / 2 : slot.textBounds.x;
-      const firstBaseline =
-        slot.textBounds.y + slot.fontSize * (slot.id === "cta" ? 0.83 : 0.88);
-      const text = `<text x="${x}" y="${firstBaseline}" fill="${slot.textColor}" font-family="${FONT_FAMILY}" font-size="${slot.fontSize}" font-weight="${slot.id === "body" ? 700 : 900}" text-anchor="${anchor}">${slot.lines
-        .map(
-          (line, index) =>
-            `<tspan x="${x}" dy="${index === 0 ? 0 : slot.lineHeight}">${xml(line)}</tspan>`
-        )
-        .join("")}</text>`;
+      const firstBaseline = slot.textBounds.y + slot.fontSize * (slot.id === "cta" ? 0.83 : 0.88);
+      const text = `<text x="${x}" y="${firstBaseline}" fill="${slot.textColor}" font-family="${FONT_FAMILY}" font-size="${slot.fontSize}" font-weight="${slot.id === "body" ? 700 : 900}" text-anchor="${anchor}">${slot.lines.map((line, index) => `<tspan x="${x}" dy="${index === 0 ? 0 : slot.lineHeight}">${xml(line)}</tspan>`).join("")}</text>`;
       return `${panel}${text}`;
     })
     .join("");
-  return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><style>text{paint-order:stroke;stroke:${master.background};stroke-width:1.4px;stroke-opacity:.22}</style>${markup}</svg>`
-  );
+  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><style>text{paint-order:stroke;stroke:${master.background};stroke-width:1.4px;stroke-opacity:.22}</style>${markup}</svg>`);
 }
 
 async function fitRaster(buffer: Buffer, box: PlacementBox, mode: "contain" | "cover" = "contain") {
-  const image = sharp(buffer).rotate().resize(box.width, box.height, {
-    fit: mode,
-    position: "centre",
-    withoutEnlargement: false,
-    background: { r: 0, g: 0, b: 0, alpha: 0 },
-  });
+  const image = sharp(buffer)
+    .rotate()
+    .resize(box.width, box.height, {
+      fit: mode,
+      position: "centre",
+      withoutEnlargement: false,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    });
   if (mode === "cover") {
     return image
       .composite([
         {
-          input: Buffer.from(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="${box.width}" height="${box.height}"><rect width="100%" height="100%" rx="28" fill="#fff"/></svg>`
-          ),
+          input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${box.width}" height="${box.height}"><rect width="100%" height="100%" rx="28" fill="#fff"/></svg>`),
           blend: "dest-in",
         },
       ])
@@ -226,11 +179,7 @@ async function fitRaster(buffer: Buffer, box: PlacementBox, mode: "contain" | "c
   return image.png().toBuffer();
 }
 
-async function productComposite(
-  product: Buffer,
-  instance: ProductCompositionInstance,
-  transparent = false
-) {
+async function productComposite(product: Buffer, instance: ProductCompositionInstance, transparent = false) {
   // Registered cutouts often retain a large transparent export canvas. Fitting
   // that canvas makes a perfectly valid bottle or tube look artificially tiny.
   // Trim only verified transparent products; opaque packshots must keep their
@@ -257,14 +206,11 @@ async function productComposite(
 
 async function productLayer(plan: RenderPlan) {
   if (!plan.productImagePaths[0]) {
-    throw new Error(
-      "광고 합성용 상품 이미지가 없습니다. 참고 광고가 아닌 제품 단독 이미지 또는 누끼를 확정해 주세요."
-    );
+    throw new Error("광고 합성용 상품 이미지가 없습니다. 참고 광고가 아닌 제품 단독 이미지 또는 누끼를 확정해 주세요.");
   }
   const composites: Array<{ input: Buffer; left: number; top: number }> = [];
   for (const instance of plan.productComposition.instances) {
-    const sourcePath =
-      plan.productImagePaths[instance.sourceIndex ?? 0] || plan.productImagePaths[0];
+    const sourcePath = plan.productImagePaths[instance.sourceIndex ?? 0] || plan.productImagePaths[0];
     const asset = plan.productImageAssets.find((item) => item.path === sourcePath);
     if (!asset || !isCompositableImageRole(asset.role)) {
       throw new Error("참고 광고·리뷰·배경 이미지를 상품 레이어에 합성하려는 요청을 차단했습니다.");
@@ -307,10 +253,7 @@ async function productLayer(plan: RenderPlan) {
       bottom = Math.max(bottom, y);
     }
   }
-  const bounds =
-    right >= left && bottom >= top
-      ? { x: left, y: top, width: right - left + 1, height: bottom - top + 1 }
-      : { x: 0, y: 0, width: 0, height: 0 };
+  const bounds = right >= left && bottom >= top ? { x: left, y: top, width: right - left + 1, height: bottom - top + 1 } : { x: 0, y: 0, width: 0, height: 0 };
   return {
     layer,
     pixelAreaRatio: Number((visible / (1200 * 1200)).toFixed(4)),
@@ -326,46 +269,27 @@ async function encodeWithinLimit(png: Buffer, maxBytes: number) {
   return { buffer: await sharp(png).webp({ quality: 34, effort: 6 }).toBuffer(), quality: 34 };
 }
 
-export async function renderCreativeResult(input: {
-  job: GenerationJob;
-  result: GenerationResult;
-  overrides?: Partial<CopyPlan>;
-  repairPass?: number;
-  autoRepairs?: string[];
-}) {
-  const renderPlan = await buildRenderPlan(
-    input.job,
-    input.result,
-    input.overrides,
-    input.repairPass || 0
-  );
+export async function renderCreativeResult(input: { job: GenerationJob; result: GenerationResult; overrides?: Partial<CopyPlan>; repairPass?: number; autoRepairs?: string[] }) {
+  const renderPlan = await buildRenderPlan(input.job, input.result, input.overrides, input.repairPass || 0);
   const activeMaster = input.result.creativeDesign || input.job.creativePlan.masterDesign;
   const activeMasterScene = input.result.masterScene || input.job.masterScene;
   let scene: Buffer;
   try {
     scene = await readCreativeRasterAsset(renderPlan.scene.sceneAsset.file);
   } catch {
-    scene = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><rect width="1200" height="1200" fill="${renderPlan.layout.colors.background}"/><circle cx="900" cy="420" r="430" fill="${renderPlan.layout.colors.accent}" opacity=".18"/></svg>`
-    );
+    scene = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200"><rect width="1200" height="1200" fill="${renderPlan.layout.colors.background}"/><circle cx="900" cy="420" r="430" fill="${renderPlan.layout.colors.accent}" opacity=".18"/></svg>`);
   }
-  const base = await sharp(scene)
-    .rotate()
-    .resize(1200, 1200, { fit: "cover", position: "centre" })
-    .png()
-    .toBuffer();
+  const base = await sharp(scene).rotate().resize(1200, 1200, { fit: "cover", position: "centre" }).png().toBuffer();
   const underlay = underlaySvg(renderPlan, activeMasterScene?.sceneQualityResult.copySafetyScore);
-  const product = renderPlan.productLayerRequired === false
-    ? {
-        layer: null,
-        pixelAreaRatio: activeMasterScene?.estimatedProductAreaRatio || 0.58,
-        bounds: activeMasterScene?.productBounds || renderPlan.layout.placement.product,
-      }
-    : await productLayer(renderPlan);
-  const baseComposites: Array<{ input: Buffer; left: number; top: number }> = [
-    { input: underlay, left: 0, top: 0 },
-    ...(product.layer ? [{ input: product.layer, left: 0, top: 0 }] : []),
-  ];
+  const product =
+    renderPlan.productLayerRequired === false
+      ? {
+          layer: null,
+          pixelAreaRatio: activeMasterScene?.estimatedProductAreaRatio || 0.58,
+          bounds: activeMasterScene?.productBounds || renderPlan.layout.placement.product,
+        }
+      : await productLayer(renderPlan);
+  const baseComposites: Array<{ input: Buffer; left: number; top: number }> = [{ input: underlay, left: 0, top: 0 }, ...(product.layer ? [{ input: product.layer, left: 0, top: 0 }] : [])];
   const surfaceBeforeLogo = await sharp(base).composite(baseComposites).png().toBuffer();
   let logoRendered = false;
   if (renderPlan.logoAsset?.path) {
@@ -414,10 +338,7 @@ export async function renderCreativeResult(input: {
   const hookCode = input.result.hookPlan.hookCode;
   const fileName = `creative-${input.job.id}-${hookCode}-${input.result.blueprintId}-${digest}.webp`;
   await fs.writeFile(path.join(OUTPUT_DIR, fileName), encoded.buffer);
-  const productName = String(input.job.productTruth.product.productName || "product").replace(
-    /[^a-z0-9가-힣]+/gi,
-    "-"
-  );
+  const productName = String(input.job.productTruth.product.productName || "product").replace(/[^a-z0-9가-힣]+/gi, "-");
   return {
     imagePath: `/generated-ads/${fileName}`,
     downloadName: `${productName}-${input.job.creativePlan.testCode}-${hookCode}.webp`,

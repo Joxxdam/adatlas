@@ -5,27 +5,16 @@ import ririnco from "../../../data/advertisers/ririnco.json" with { type: "json"
 import type { ProductInfoForPrompt } from "../mvp/types.ts";
 import type { AdvertiserProfile } from "./types.ts";
 
-export const advertiserProfiles: AdvertiserProfile[] = [
-  originalSource,
-  ririnco,
-  kookdaeHanwoo,
-  himnaeraFarm,
-] as AdvertiserProfile[];
+export const advertiserProfiles: AdvertiserProfile[] = [originalSource, ririnco, kookdaeHanwoo, himnaeraFarm] as AdvertiserProfile[];
 
 function normalize(value: unknown) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function productHaystack(product: ProductInfoForPrompt) {
-  return normalize(
-    [
-      product.advertiserName,
-      product.brandName,
-      product.productName,
-      product.category,
-      product.landingUrl,
-    ].join(" ")
-  );
+  return normalize([product.advertiserName, product.brandName, product.productName, product.category, product.landingUrl].join(" "));
 }
 
 function profileScore(profile: AdvertiserProfile, product: ProductInfoForPrompt) {
@@ -103,8 +92,6 @@ function genericProfile(product: ProductInfoForPrompt): AdvertiserProfile {
 }
 
 export function matchAdvertiserProfile(product: ProductInfoForPrompt): AdvertiserProfile {
-  const scored = advertiserProfiles
-    .map((profile) => ({ profile, score: profileScore(profile, product) }))
-    .sort((a, b) => b.score - a.score);
+  const scored = advertiserProfiles.map((profile) => ({ profile, score: profileScore(profile, product) })).sort((a, b) => b.score - a.score);
   return scored[0]?.score > 0 ? scored[0].profile : genericProfile(product);
 }

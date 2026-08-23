@@ -8,7 +8,12 @@ const legacyJobsRoot = path.join(root, "data", "creative-generation-jobs");
 const privateJobsRoot = path.join(root, ".data", "creative-generation", "jobs");
 
 async function exists(file) {
-  try { await access(file); return true; } catch { return false; }
+  try {
+    await access(file);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function atomicJson(file, value) {
@@ -58,9 +63,7 @@ async function migrateLoosePublicFiles(directory = legacyRoot) {
 
 function replacePrivatePaths(value) {
   if (typeof value === "string") {
-    return value.startsWith(`${legacyRoot}${path.sep}`)
-      ? path.join(privateRoot, path.relative(legacyRoot, value))
-      : value;
+    return value.startsWith(`${legacyRoot}${path.sep}`) ? path.join(privateRoot, path.relative(legacyRoot, value)) : value;
   }
   if (Array.isArray(value)) return value.map(replacePrivatePaths);
   if (value && typeof value === "object") {
@@ -77,7 +80,7 @@ async function migrateJobs() {
     if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
     const legacyFile = path.join(legacyJobsRoot, entry.name);
     const privateFile = path.join(privateJobsRoot, entry.name);
-    const sourceFile = await exists(privateFile) ? privateFile : legacyFile;
+    const sourceFile = (await exists(privateFile)) ? privateFile : legacyFile;
     const source = JSON.parse(await readFile(sourceFile, "utf8"));
     const job = replacePrivatePaths(source);
     let touched = sourceFile === legacyFile || JSON.stringify(job) !== JSON.stringify(source);

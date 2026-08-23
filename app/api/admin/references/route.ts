@@ -1,16 +1,6 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
-import {
-  nativeReferenceCompatibilityConfidences,
-  nativeReferenceCompositionTypes,
-  nativeReferenceCategoryGroups,
-  nativeReferencePhotographyTypes,
-  nativeReferenceProductForms,
-  nativeReferenceSlotShapes,
-  nativeReferenceTextDensities,
-  normalizeNativeReferenceCategory,
-  type ManagedNativeReferenceItem,
-} from "../../../lib/creative-generation/referenceLibraryManagement";
+import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, type ManagedNativeReferenceItem } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,10 +21,8 @@ function publicLibrary() {
     version: manifest.version,
     updatedAt: manifest.updatedAt || manifest.importedAt,
     items: manifest.items,
-    counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [
-      category,
-      manifest.items.filter((item) => item.categoryGroup === category).length,
-    ])),
+    counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [category, manifest.items.filter((item) => item.categoryGroup === category).length])),
+    foodProduceCount: manifest.items.filter((item) => item.categoryGroup === "food" && item.foodSubcategory === "produce-agriculture").length,
   };
 }
 
@@ -42,10 +30,7 @@ export async function GET() {
   try {
     return NextResponse.json({ ok: true, library: publicLibrary() });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "레퍼런스 목록을 불러오지 못했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 목록을 불러오지 못했습니다." }, { status: 500 });
   }
 }
 
@@ -57,10 +42,7 @@ export async function POST(request: Request) {
     const result = await nativeReferenceLibraryRepository.add(files);
     return NextResponse.json({ ok: true, added: result.added, library: publicLibrary() });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "레퍼런스 업로드에 실패했습니다." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 업로드에 실패했습니다." }, { status: 400 });
   }
 }
 
@@ -72,6 +54,9 @@ export async function PATCH(request: Request) {
     if (!id) throw new Error("수정할 레퍼런스 ID가 필요합니다.");
     const patch: Partial<ManagedNativeReferenceItem> = {};
     if (body.categoryGroup !== undefined) patch.categoryGroup = normalizeNativeReferenceCategory(body.categoryGroup);
+    if (Object.prototype.hasOwnProperty.call(body, "foodSubcategory")) {
+      patch.foodSubcategory = normalizeNativeReferenceFoodSubcategory(body.foodSubcategory);
+    }
     if (nativeReferenceProductForms.includes(body.productForm)) patch.productForm = body.productForm;
     if (nativeReferenceCompositionTypes.includes(body.compositionType)) patch.compositionType = body.compositionType;
     if (nativeReferenceSlotShapes.includes(body.productSlotShape)) patch.productSlotShape = body.productSlotShape;
@@ -85,10 +70,7 @@ export async function PATCH(request: Request) {
     await nativeReferenceLibraryRepository.updateCompatibility(id, patch);
     return NextResponse.json({ ok: true, library: publicLibrary() });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "레퍼런스 호환 정보 수정에 실패했습니다." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 호환 정보 수정에 실패했습니다." }, { status: 400 });
   }
 }
 
@@ -106,9 +88,6 @@ export async function DELETE(request: Request) {
       library: publicLibrary(),
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "레퍼런스 삭제에 실패했습니다." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 삭제에 실패했습니다." }, { status: 400 });
   }
 }

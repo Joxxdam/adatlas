@@ -10,19 +10,11 @@ if (!input || !output) {
 
 await fs.mkdir(path.dirname(output), { recursive: true });
 let quality = 84;
-let buffer = await sharp(input)
-  .rotate()
-  .resize(1200, 1200, { fit: "cover", position: "attention" })
-  .webp({ quality, effort: 6 })
-  .toBuffer();
+let buffer = await sharp(input).rotate().resize(1200, 1200, { fit: "cover", position: "attention" }).webp({ quality, effort: 6 }).toBuffer();
 
 while (buffer.length > 800_000 && quality > 64) {
   quality -= 4;
-  buffer = await sharp(input)
-    .rotate()
-    .resize(1200, 1200, { fit: "cover", position: "attention" })
-    .webp({ quality, effort: 6 })
-    .toBuffer();
+  buffer = await sharp(input).rotate().resize(1200, 1200, { fit: "cover", position: "attention" }).webp({ quality, effort: 6 }).toBuffer();
 }
 
 await fs.writeFile(output, buffer);

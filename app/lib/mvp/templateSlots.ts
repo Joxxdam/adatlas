@@ -4,11 +4,7 @@ export function slotById(slots: TemplateSlot[] | undefined, id: string) {
   return slots?.find((slot) => slot.id === id);
 }
 
-export function validateTemplateSlots(
-  slots: TemplateSlot[] | undefined,
-  width = 1200,
-  height = 1200
-) {
+export function validateTemplateSlots(slots: TemplateSlot[] | undefined, width = 1200, height = 1200) {
   const warnings: string[] = [];
   const seen = new Set<string>();
 

@@ -99,6 +99,454 @@
   line-height: 1.5;
 }
 
+.brandingPanel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  border: 1px solid #b9d5fa;
+  border-radius: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+}
+
+.brandingIntro,
+.brandingIntro span,
+.brandingIntro strong,
+.brandingIntro small,
+.disclosureOption span,
+.disclosureOption strong,
+.disclosureOption small,
+.brandingSelectionSummary {
+  display: grid;
+}
+
+.brandingIntro {
+  gap: 3px;
+}
+.brandingIntro span {
+  color: #176bd1;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+.brandingIntro strong {
+  color: #142f57;
+  font-size: 16px;
+}
+.brandingIntro small {
+  color: #6c7c93;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.brandingTargets {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(190px, 0.72fr) auto minmax(190px, 0.72fr) auto;
+  align-items: end;
+  gap: 10px;
+  border: 1px solid #d5e3f5;
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.targetGuide,
+.brandingTargets label,
+.logoCatalogHeader > div,
+.logoCatalogHeader label {
+  display: grid;
+  gap: 4px;
+}
+
+.targetGuide strong,
+.logoCatalogHeader strong {
+  color: #17365f;
+  font-size: 12px;
+}
+
+.targetGuide small,
+.logoCatalogHeader small {
+  color: #718198;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.brandingTargets label,
+.logoCatalogHeader label {
+  color: #536984;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.brandingTargets select,
+.logoCatalogHeader input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #bdd0e9;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #18345d;
+  font: inherit;
+}
+
+.brandingTargets button {
+  min-height: 42px;
+  border: 1px solid #8eb9ee;
+  border-radius: 10px;
+  padding: 8px 11px;
+  background: #fff;
+  color: #1759a7;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.brandingTargets button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.brandingPending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px dashed #c2d4e9;
+  border-radius: 14px;
+  padding: 14px;
+  color: #718198;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.brandingPending strong {
+  color: #49617f;
+  font-size: 12px;
+}
+.brandingPending span {
+  font-size: 10px;
+}
+
+.logoCatalog {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d5e3f5;
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.logoCatalogHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.logoCatalogHeader label {
+  width: min(100%, 240px);
+}
+
+.logoGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.logoGrid > button {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  border: 1px solid #cedaea;
+  border-radius: 11px;
+  padding: 7px;
+  background: #fff;
+  color: #445a78;
+  cursor: pointer;
+}
+
+.logoGrid > button:hover {
+  border-color: #7eafe9;
+  background: #f5f9ff;
+}
+.logoGrid > .logoTileSelected {
+  border-color: #176bd1;
+  box-shadow: 0 0 0 2px rgba(23, 107, 209, 0.14);
+  background: #eaf3ff;
+  color: #174f9d;
+}
+.logoGrid strong {
+  overflow: hidden;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logoTileImage,
+.selectedLogoImage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 7px;
+  border: 1px solid #d8e0e9;
+  background-color: #f7f9fc;
+  background-image: linear-gradient(45deg, #e9edf3 25%, transparent 25%), linear-gradient(-45deg, #e9edf3 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e9edf3 75%), linear-gradient(-45deg, transparent 75%, #e9edf3 75%);
+  background-position:
+    0 0,
+    0 6px,
+    6px -6px,
+    -6px 0;
+  background-size: 12px 12px;
+}
+
+.logoTileImage {
+  height: 58px;
+}
+.logoTileImage img,
+.selectedLogoImage img {
+  position: absolute;
+  display: block;
+  width: calc(100% - 16px) !important;
+  height: calc(100% - 16px) !important;
+  inset: 8px;
+  object-fit: contain !important;
+  object-position: center !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.24));
+}
+
+.noLogoMark {
+  display: grid;
+  height: 52px;
+  place-items: center;
+  border: 1px dashed #b9c8dc;
+  border-radius: 7px;
+  color: #8290a4;
+  font-size: 9px;
+}
+
+.noLogoResult {
+  margin: 0;
+  padding: 12px;
+  color: #79879a;
+  font-size: 10px;
+  text-align: center;
+}
+
+.brandingOptions {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.6fr) minmax(320px, 1.4fr);
+  gap: 10px;
+}
+
+.selectedLogoSummary {
+  display: grid;
+  grid-template-columns: auto 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  border: 1px solid #cad9ec;
+  border-radius: 11px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.84);
+  color: #203a60;
+  font-size: 10px;
+}
+
+.selectedLogoImage {
+  width: 150px;
+  height: 174px;
+}
+.selectedLogoSummary > span:first-child {
+  color: #718198;
+  font-size: 9px;
+  font-weight: 850;
+}
+.selectedLogoSummary strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brandingTargetPreview {
+  display: grid;
+  gap: 10px;
+  border: 2px solid #82b4f2;
+  border-radius: 15px;
+  padding: 12px;
+  background: #f7fbff;
+  box-shadow: 0 0 0 3px rgba(23, 107, 209, 0.08);
+}
+
+.brandingTargetPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brandingTargetPreviewHeader > div {
+  display: grid;
+  gap: 3px;
+}
+.brandingTargetPreviewHeader strong {
+  color: #1459ae;
+  font-size: 13px;
+}
+.brandingTargetPreviewHeader small,
+.brandingTargetPreviewHeader > span {
+  color: #647996;
+  font-size: 9px;
+}
+
+.brandingTargetPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.brandingTargetPreviewGrid > button {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  border: 2px solid #2f80df;
+  border-radius: 11px;
+  padding: 5px;
+  background: #fff;
+  color: #294766;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(30, 93, 169, 0.12);
+}
+
+.brandingTargetPreviewGrid > button > span {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  background: #102039;
+}
+
+.brandingTargetPreviewGrid img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.brandingTargetPreviewGrid b {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: #176bd1;
+  color: #fff;
+  font-size: 9px;
+}
+.brandingTargetPreviewGrid i {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  border-radius: 999px;
+  padding: 4px 6px;
+  background: rgba(9, 66, 137, 0.92);
+  color: #fff;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+}
+.brandingTargetPreviewGrid small {
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brandingTargetPreview > p {
+  margin: 0;
+  color: #627792;
+  font-size: 9px;
+}
+
+.disclosureOption {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 58px;
+  border: 1px solid #cad9ec;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.84);
+  cursor: pointer;
+}
+
+.disclosureOption input {
+  width: 17px;
+  height: 17px;
+  accent-color: #176bd1;
+}
+.disclosureOption span {
+  gap: 3px;
+}
+.disclosureOption strong {
+  color: #203a60;
+  font-size: 11px;
+}
+.disclosureOption small {
+  color: #7d899a;
+  font-size: 9px;
+}
+
+.brandingSelectionSummary {
+  grid-template-columns: auto minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border-top: 1px solid #d5e3f5;
+  padding-top: 12px;
+}
+
+.brandingSelectionSummary strong {
+  color: #174f9d;
+  font-size: 13px;
+}
+.brandingSelectionSummary span {
+  color: #6b7b91;
+  font-size: 10px;
+}
+.brandingSelectionSummary button,
+.brandingActions button {
+  border: 1px solid #b9cde7;
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: #fff;
+  color: #2c527f;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.brandingActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  border-top: 1px solid #d5e3f5;
+  padding-top: 12px;
+}
+
+.brandingActions button:first-child {
+  border-color: #176bd1;
+  background: #176bd1;
+  color: #fff;
+}
+.brandingActions button:disabled,
+.brandingSelectionSummary button:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
 .filters {
   display: grid;
   grid-template-columns: minmax(260px, 1.8fr) repeat(3, minmax(150px, 0.75fr)) auto;
@@ -392,6 +840,26 @@
   accent-color: #ad3434;
 }
 
+.groupActions .groupBrandingSelect {
+  border-color: #9bbfea;
+  background: #f2f7ff;
+  color: #215b9f;
+}
+
+.groupActions .groupBrandingSelect input {
+  accent-color: #176bd1;
+}
+.groupActions .groupBrandingSelect:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.groupActions .groupDeletionSelect {
+  border-color: #ddbbbb;
+  background: #fff8f8;
+  color: #913d3d;
+}
+
 .groupActions button {
   border: 1px solid #dcaaaa;
   border-radius: 9px;
@@ -421,7 +889,10 @@
   border: 1px solid #dfe6ef;
   border-radius: 16px;
   background: #fff;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .card:hover {
@@ -445,6 +916,13 @@
   box-shadow: 0 0 0 3px rgba(217, 75, 75, 0.16);
 }
 
+.brandingSelectedCard {
+  border: 3px solid #176bd1;
+  box-shadow:
+    0 0 0 4px rgba(23, 107, 209, 0.18),
+    0 16px 34px rgba(18, 74, 143, 0.14);
+}
+
 .media {
   position: relative;
   overflow: hidden;
@@ -464,6 +942,21 @@
   left: 11px;
   display: flex;
   gap: 5px;
+}
+
+.brandingSelectionBadge {
+  position: absolute;
+  z-index: 3;
+  right: 11px;
+  bottom: 11px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #176bd1;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 950;
+  box-shadow: 0 5px 16px rgba(9, 54, 111, 0.32);
 }
 
 .mediaBadges span,
@@ -540,6 +1033,36 @@
   display: grid;
   gap: 10px;
   padding: 15px;
+}
+
+.brandingSelect {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #d7e2f1;
+  border-radius: 9px;
+  padding: 8px 9px;
+  background: #f7faff;
+  color: #58708f;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.brandingSelect input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #176bd1;
+}
+.brandingSelect:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.brandingSelected {
+  border-color: #72aaf1;
+  background: #eaf3ff;
+  color: #175ab0;
 }
 
 .cardHeading {
@@ -738,6 +1261,21 @@
 }
 
 @media (max-width: 1280px) {
+  .brandingTargets {
+    grid-template-columns: minmax(190px, 1fr) auto minmax(190px, 1fr) auto;
+  }
+
+  .targetGuide {
+    grid-column: 1 / -1;
+  }
+
+  .logoGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .brandingTargetPreviewGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .filters {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -761,6 +1299,48 @@
     flex-direction: column;
   }
 
+  .brandingPanel,
+  .brandingTargets,
+  .brandingOptions,
+  .brandingSelectionSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .targetGuide {
+    grid-column: auto;
+  }
+
+  .logoCatalogHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .logoCatalogHeader label {
+    width: 100%;
+  }
+  .logoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .brandingTargetPreviewHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .brandingTargetPreviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .selectedLogoSummary {
+    grid-template-columns: auto 110px minmax(0, 1fr);
+  }
+  .selectedLogoImage {
+    width: 110px;
+    height: 130px;
+  }
+
+  .brandingActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -774,6 +1354,10 @@
   .deletionTray > div:last-child,
   .groupActions {
     justify-content: flex-start;
+  }
+
+  .groupActions {
+    flex-wrap: wrap;
   }
 
   .stats article:nth-child(2) {

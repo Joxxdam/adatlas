@@ -7,17 +7,18 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const summaries = await videoProjectRepository.list();
-    const projects = (
-      await Promise.all(summaries.map((summary) => videoProjectRepository.get(summary.id)))
-    ).filter((project) => Boolean(project));
+    const projects = (await Promise.all(summaries.map((summary) => videoProjectRepository.get(summary.id)))).filter((project) => Boolean(project));
     const people = new Map<string, { name: string; role: "designer" | "marketer" }>();
-    const products = new Map<string, {
-      id: string;
-      advertiserName: string;
-      productUrl: string;
-      productName: string;
-      analysis: NonNullable<(typeof projects)[number]>["productAnalysis"];
-    }>();
+    const products = new Map<
+      string,
+      {
+        id: string;
+        advertiserName: string;
+        productUrl: string;
+        productName: string;
+        analysis: NonNullable<(typeof projects)[number]>["productAnalysis"];
+      }
+    >();
 
     for (const project of projects) {
       if (!project) continue;
@@ -54,9 +55,6 @@ export async function GET() {
       products: [...products.values()],
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "기획 선택지 조회 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "기획 선택지 조회 실패" }, { status: 500 });
   }
 }

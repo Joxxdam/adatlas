@@ -98,8 +98,14 @@ export function CreativeAssetLibrary() {
         <input aria-label="브랜드" onChange={(event) => update("brand", event.target.value)} placeholder="브랜드" value={filters.brand} />
         <input aria-label="상품" onChange={(event) => update("product", event.target.value)} placeholder="상품" value={filters.product} />
         <input aria-label="소구점" onChange={(event) => update("hook", event.target.value)} placeholder="소구점" value={filters.hook} />
-        <label><span>시작일</span><input onChange={(event) => update("dateFrom", event.target.value)} type="date" value={filters.dateFrom} /></label>
-        <label><span>종료일</span><input onChange={(event) => update("dateTo", event.target.value)} type="date" value={filters.dateTo} /></label>
+        <label>
+          <span>시작일</span>
+          <input onChange={(event) => update("dateFrom", event.target.value)} type="date" value={filters.dateFrom} />
+        </label>
+        <label>
+          <span>종료일</span>
+          <input onChange={(event) => update("dateTo", event.target.value)} type="date" value={filters.dateTo} />
+        </label>
         <button type="submit">검색</button>
       </form>
       {loading ? <p className="creative-asset-empty">소재 기록을 불러오고 있습니다.</p> : null}
@@ -111,10 +117,21 @@ export function CreativeAssetLibrary() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt={`${asset.productName} 소재`} src={asset.generatedImageUrl} />
               <div className="creative-asset-list-content">
-                <div><strong>{asset.productName}</strong><span>{asset.brandName} · {asset.category}</span></div>
+                <div>
+                  <strong>{asset.productName}</strong>
+                  <span>
+                    {asset.brandName} · {asset.category}
+                  </span>
+                </div>
                 <dl>
-                  <div><dt>생성일</dt><dd>{new Date(asset.createdAt).toLocaleString("ko-KR")}</dd></div>
-                  <div><dt>상태</dt><dd>{statusLabels[asset.status]}</dd></div>
+                  <div>
+                    <dt>생성일</dt>
+                    <dd>{new Date(asset.createdAt).toLocaleString("ko-KR")}</dd>
+                  </div>
+                  <div>
+                    <dt>상태</dt>
+                    <dd>{statusLabels[asset.status]}</dd>
+                  </div>
                 </dl>
                 <CreativeAssetActions asset={asset} compact onMessage={setMessage} />
               </div>

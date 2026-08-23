@@ -11,7 +11,7 @@ export async function GET(request: Request, context: { params: Promise<{ runId: 
   try {
     verifyAutoProductionAccess(request);
     const { runId } = await context.params;
-    const run = await syncAutoProductionRun(runId) || await autoProductionRepository.get(runId);
+    const run = (await syncAutoProductionRun(runId)) || (await autoProductionRepository.get(runId));
     if (!run) return NextResponse.json({ ok: false, error: "자동 제작 실행 기록을 찾지 못했습니다." }, { status: 404 });
     return NextResponse.json({ ok: true, run: toPublicAutoProductionRun(run) });
   } catch (error) {

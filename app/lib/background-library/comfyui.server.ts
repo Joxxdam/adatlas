@@ -2,10 +2,7 @@ import { createHash, randomInt, randomUUID } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import {
-  importBackgroundSources,
-  type CatalogImportSource,
-} from "./importPipeline.server.ts";
+import { importBackgroundSources, type CatalogImportSource } from "./importPipeline.server.ts";
 import { readBackgroundCollectionConfigs } from "./catalogStore.server.ts";
 import type { BackgroundJobCheckpoint, DiversityPlanItem } from "./catalogTypes.ts";
 import { backgroundStorage } from "./storage.ts";
@@ -59,7 +56,8 @@ export async function checkComfyUi() {
   try {
     endpoint = comfyBaseUrl().toString();
     const response = await fetch(new URL("/system_stats", endpoint), {
-      signal: AbortSignal.timeout(2_500), cache: "no-store",
+      signal: AbortSignal.timeout(2_500),
+      cache: "no-store",
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     let workflowValid = false;
@@ -98,23 +96,18 @@ async function recentPlanKeys() {
     try {
       const parsed = JSON.parse((await backgroundStorage.read(job.key)).toString("utf8")) as Partial<BackgroundJobCheckpoint>;
       (parsed.items || []).slice(-50).forEach((item) => keys.push(`${item.positivePrompt}|${item.seed}`));
-    } catch { /* invalid local checkpoint is ignored and reported by verify */ }
+    } catch {
+      /* invalid local checkpoint is ignored and reported by verify */
+    }
   }
   return new Set(keys.slice(-50));
 }
 
-export async function createComfyPlan(input: {
-  collectionId: string;
-  categoryId?: string;
-  limit?: number;
-  dryRun?: boolean;
-}) {
+export async function createComfyPlan(input: { collectionId: string; categoryId?: string; limit?: number; dryRun?: boolean }) {
   const configs = await readBackgroundCollectionConfigs();
   const config = configs.find((item) => item.id === input.collectionId);
   if (!config) throw new Error("등록된 컬렉션이 아닙니다.");
-  const categories = input.categoryId
-    ? Object.entries(config.categories).filter(([id]) => id === input.categoryId)
-    : Object.entries(config.categories);
+  const categories = input.categoryId ? Object.entries(config.categories).filter(([id]) => id === input.categoryId) : Object.entries(config.categories);
   if (!categories.length) throw new Error("등록된 세부 카테고리가 아닙니다.");
   const connection = await checkComfyUi();
   const workflow = await loadWorkflow().catch(() => null);
@@ -124,42 +117,55 @@ export async function createComfyPlan(input: {
   const distributionTotal = categories.reduce((sum, [, count]) => sum + count, 0);
   const items: DiversityPlanItem[] = [];
   for (const [categoryId, target] of categories) {
-    const count = input.categoryId ? Math.min(maximum, target) : Math.max(1, Math.round(maximum * target / distributionTotal));
+    const count = input.categoryId ? Math.min(maximum, target) : Math.max(1, Math.round((maximum * target) / distributionTotal));
     for (let index = 0; index < count && items.length < maximum; index += 1) {
       const family = config.generationPromptParts.promptFamilies[index % config.generationPromptParts.promptFamilies.length];
       const query = config.searchQueries[categoryId]?.[index % Math.max(1, config.searchQueries[categoryId]?.length || 1)] || categoryId;
-      const variation = [
-        locationVariants[index % locationVariants.length], timeVariants[(index * 3) % timeVariants.length],
-        seasonVariants[(index * 5) % seasonVariants.length], weatherVariants[(index * 7) % weatherVariants.length],
-        lensVariants[(index * 11) % lensVariants.length], surfaceVariants[(index * 13) % surfaceVariants.length],
-        lightVariants[(index * 17) % lightVariants.length], index % 2 ? "product space on left, copy space on right" : "product space on right, copy space on left",
-      ].join(", ");
+      const variation = [locationVariants[index % locationVariants.length], timeVariants[(index * 3) % timeVariants.length], seasonVariants[(index * 5) % seasonVariants.length], weatherVariants[(index * 7) % weatherVariants.length], lensVariants[(index * 11) % lensVariants.length], surfaceVariants[(index * 13) % surfaceVariants.length], lightVariants[(index * 17) % lightVariants.length], index % 2 ? "product space on left, copy space on right" : "product space on right, copy space on left"].join(", ");
       const positivePrompt = `${config.generationPromptParts.base}, ${query}, ${family}, ${variation}`;
       let seed = seedFor(usedSeeds);
       while (recentKeys.has(`${positivePrompt}|${seed}`)) seed = seedFor(usedSeeds);
       items.push({
-        id: `plan-${categoryId}-${index + 1}-${randomUUID().slice(0, 6)}`, collectionId: config.id,
-        categoryId, promptFamily: family, positivePrompt, negativePrompt: config.negativePrompt,
-        seed, width: 1024, height: 1024, status: "planned", attempts: 0, outputPath: "", error: "",
+        id: `plan-${categoryId}-${index + 1}-${randomUUID().slice(0, 6)}`,
+        collectionId: config.id,
+        categoryId,
+        promptFamily: family,
+        positivePrompt,
+        negativePrompt: config.negativePrompt,
+        seed,
+        width: 1024,
+        height: 1024,
+        status: "planned",
+        attempts: 0,
+        outputPath: "",
+        error: "",
       });
     }
   }
   const estimatedBytes = items.length * 4.2 * 1024 * 1024;
   const checkpoint: BackgroundJobCheckpoint = {
-    id: `comfyui-${Date.now()}-${randomUUID().slice(0, 8)}`, type: "comfyui", collectionId: config.id,
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), status: "planned", cursor: 0,
-    workflowHash: workflow?.workflowHash || "", items, failures: 0,
+    id: `comfyui-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    type: "comfyui",
+    collectionId: config.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: "planned",
+    cursor: 0,
+    workflowHash: workflow?.workflowHash || "",
+    items,
+    failures: 0,
   };
   if (!input.dryRun) await backgroundStorage.write(`jobs/${checkpoint.id}.json`, `${JSON.stringify(checkpoint, null, 2)}\n`);
   return {
-    checkpoint, connection, workflowValid: Boolean(workflow), estimatedBytes,
+    checkpoint,
+    connection,
+    workflowValid: Boolean(workflow),
+    estimatedBytes,
     resolution: "1024×1024 (승인 시 1600×1600 generatedUpscaled 표시)",
     categoryCounts: Object.fromEntries(categories.map(([id]) => [id, items.filter((item) => item.categoryId === id).length])),
     promptExamples: items.slice(0, 3).map((item) => ({ category: item.categoryId, prompt: item.positivePrompt, seed: item.seed })),
     canRun: connection.available && Boolean(workflow),
-    resumeCommand: input.dryRun
-      ? `npm run backgrounds:comfy:generate -- --collection ${config.id}${input.categoryId ? ` --category ${input.categoryId}` : ""} --limit ${items.length}`
-      : `npm run backgrounds:resume -- --job ${checkpoint.id}`,
+    resumeCommand: input.dryRun ? `npm run backgrounds:comfy:generate -- --collection ${config.id}${input.categoryId ? ` --category ${input.categoryId}` : ""} --limit ${items.length}` : `npm run backgrounds:resume -- --job ${checkpoint.id}`,
   };
 }
 
@@ -181,10 +187,11 @@ async function waitForComfyOutput(base: URL, promptId: string, outputNodeId: str
   const deadline = Date.now() + 180_000;
   while (Date.now() < deadline) {
     const response = await fetch(new URL(`/history/${encodeURIComponent(promptId)}`, base), {
-      signal: AbortSignal.timeout(5_000), cache: "no-store",
+      signal: AbortSignal.timeout(5_000),
+      cache: "no-store",
     });
     if (response.ok) {
-      const history = await response.json() as Record<string, { outputs?: Record<string, { images?: Array<{ filename?: string; subfolder?: string; type?: string }> }> }>;
+      const history = (await response.json()) as Record<string, { outputs?: Record<string, { images?: Array<{ filename?: string; subfolder?: string; type?: string }> }> }>;
       const output = history[promptId]?.outputs?.[outputNodeId]?.images?.[0];
       if (output?.filename) return output;
     }
@@ -196,12 +203,13 @@ async function waitForComfyOutput(base: URL, promptId: string, outputNodeId: str
 async function generateOne(item: DiversityPlanItem, loaded: Awaited<ReturnType<typeof loadWorkflow>>) {
   const base = comfyBaseUrl();
   const response = await fetch(new URL("/prompt", base), {
-    method: "POST", headers: { "content-type": "application/json" },
+    method: "POST",
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({ prompt: injectWorkflow(loaded.workflow, item, loaded.nodes), client_id: `adatlas-${process.pid}` }),
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) throw new Error(`ComfyUI prompt 실패: HTTP ${response.status}`);
-  const body = await response.json() as { prompt_id?: string };
+  const body = (await response.json()) as { prompt_id?: string };
   if (!body.prompt_id) throw new Error("ComfyUI prompt_id가 없습니다.");
   const output = await waitForComfyOutput(base, body.prompt_id, loaded.nodes.output);
   const viewUrl = new URL("/view", base);
@@ -229,27 +237,32 @@ export async function resumeComfyJob(jobId: string) {
   const pending = job.items.filter((item) => item.status !== "success" && item.attempts < 3);
   for (let offset = 0; offset < pending.length; offset += concurrency) {
     const batch = pending.slice(offset, offset + concurrency);
-    await Promise.all(batch.map(async (item) => {
-      item.status = "running";
-      item.attempts += 1;
-      try {
-        const buffer = await generateOne(item, loaded);
-        const source: CatalogImportSource = { name: `${item.id}.png`, buffer };
-        const imported = await importBackgroundSources({
-          collectionId: item.collectionId, categoryId: item.categoryId, sourceType: "local-generation",
-          sources: [source], generated: { prompt: item.positivePrompt, negativePrompt: item.negativePrompt, seed: item.seed, workflowHash: loaded.workflowHash, upscaled: true },
-        });
-        const created = imported.items[0];
-        if (!created || created.status === "rejected") throw new Error(imported.failures[0]?.reason || "생성 이미지 검증 실패");
-        item.status = "success";
-        item.outputPath = created.filePath;
-        item.error = "";
-      } catch (error) {
-        item.status = "failed";
-        item.error = error instanceof Error ? error.message : "생성 실패";
-        job.failures += 1;
-      }
-    }));
+    await Promise.all(
+      batch.map(async (item) => {
+        item.status = "running";
+        item.attempts += 1;
+        try {
+          const buffer = await generateOne(item, loaded);
+          const source: CatalogImportSource = { name: `${item.id}.png`, buffer };
+          const imported = await importBackgroundSources({
+            collectionId: item.collectionId,
+            categoryId: item.categoryId,
+            sourceType: "local-generation",
+            sources: [source],
+            generated: { prompt: item.positivePrompt, negativePrompt: item.negativePrompt, seed: item.seed, workflowHash: loaded.workflowHash, upscaled: true },
+          });
+          const created = imported.items[0];
+          if (!created || created.status === "rejected") throw new Error(imported.failures[0]?.reason || "생성 이미지 검증 실패");
+          item.status = "success";
+          item.outputPath = created.filePath;
+          item.error = "";
+        } catch (error) {
+          item.status = "failed";
+          item.error = error instanceof Error ? error.message : "생성 실패";
+          job.failures += 1;
+        }
+      })
+    );
     job.cursor = Math.min(job.items.length, job.cursor + batch.length);
     job.updatedAt = new Date().toISOString();
     await backgroundStorage.write(jobKey, `${JSON.stringify(job, null, 2)}\n`);

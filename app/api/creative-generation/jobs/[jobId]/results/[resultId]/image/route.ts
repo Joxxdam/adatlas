@@ -33,9 +33,6 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: toPublicGenerationError(error, "이미지 조회 실패") },
-      { status: localAccessError(error) ? 403 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "이미지 조회 실패") }, { status: localAccessError(error) ? 403 : 400 });
   }
 }

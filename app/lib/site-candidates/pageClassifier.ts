@@ -1,17 +1,10 @@
-import {
-  extractJsonLdNodes,
-  jsonLdTypeIncludes,
-  metaContent,
-} from "../store-analysis/htmlUtils.ts";
+import { extractJsonLdNodes, jsonLdTypeIncludes, metaContent } from "../store-analysis/htmlUtils.ts";
 import type { SitePageType } from "./types";
 
-const PRODUCT_PATH =
-  /\/(?:product\/(?:[^/?#]+\/)?\d+|products\/[^/?#]+|products?\/products?_view\.php|goods\/(?:detail|view)|shop\/shopdetail\.html|product[_-]?detail|items?\/[^/?#]+|p\/[^/?#]+)(?:\/|\.|\?|$)/i;
+const PRODUCT_PATH = /\/(?:product\/(?:[^/?#]+\/)?\d+|products\/[^/?#]+|products?\/products?_view\.php|goods\/(?:detail|view)|shop\/shopdetail\.html|product[_-]?detail|items?\/[^/?#]+|p\/[^/?#]+)(?:\/|\.|\?|$)/i;
 const PRODUCT_QUERY = /[?&](?:product_no|pseq|goodsno|branduid|itemid|item_id|productId)=/i;
-const CATEGORY_SIGNAL =
-  /\/(?:category|categories|collections|shop|goods\/goods_list|products?\/products?_list\.php|product\/list)(?:\/|\.|\?|$)|\/c\/[a-z0-9]+(?:x[a-z0-9]+)+(?:\/|$)|[?&](?:cate_no|category)=/i;
-const PROMOTION_SIGNAL =
-  /\/(?:event|events|promotion|promotions|exhibition|project|plan|sale)(?:\/|\.|\?|$)|기획전|프로모션|이벤트|특가/i;
+const CATEGORY_SIGNAL = /\/(?:category|categories|collections|shop|goods\/goods_list|products?\/products?_list\.php|product\/list)(?:\/|\.|\?|$)|\/c\/[a-z0-9]+(?:x[a-z0-9]+)+(?:\/|$)|[?&](?:cate_no|category)=/i;
+const PROMOTION_SIGNAL = /\/(?:event|events|promotion|promotions|exhibition|project|plan|sale)(?:\/|\.|\?|$)|기획전|프로모션|이벤트|특가/i;
 const CONTENT_SIGNAL = /\/(?:board|blog|article|notice|faq|community|magazine)(?:\/|\.|\?|$)/i;
 
 export function looksLikeProductPageUrl(value: string) {
@@ -25,14 +18,8 @@ export function looksLikeProductPageUrl(value: string) {
 }
 
 export function detectSitePageType(url: string, html: string): SitePageType {
-  const productStructuredData = extractJsonLdNodes(html).some((node) =>
-    jsonLdTypeIncludes(node, "product")
-  );
-  if (
-    productStructuredData ||
-    /product/i.test(metaContent(html, "og:type")) ||
-    looksLikeProductPageUrl(url)
-  ) {
+  const productStructuredData = extractJsonLdNodes(html).some((node) => jsonLdTypeIncludes(node, "product"));
+  if (productStructuredData || /product/i.test(metaContent(html, "og:type")) || looksLikeProductPageUrl(url)) {
     return "product";
   }
 
@@ -43,28 +30,14 @@ export function detectSitePageType(url: string, html: string): SitePageType {
   if (parsed.pathname === "/" || !parsed.pathname) return "homepage";
   if (CONTENT_SIGNAL.test(signal)) return "unsupported";
   const pathSegments = parsed.pathname.split("/").filter(Boolean);
-  const productLinkCount = Array.from(
-    html.matchAll(
-      /\bhref\s*=\s*["'][^"']*(?:\/p\/[^"']+|products?_view\.php\?[^"']*(?:product_no|pseq)=)[^"']*["']/gi
-    )
-  ).length;
+  const productLinkCount = Array.from(html.matchAll(/\bhref\s*=\s*["'][^"']*(?:\/p\/[^"']+|products?_view\.php\?[^"']*(?:product_no|pseq)=)[^"']*["']/gi)).length;
   if (pathSegments.length === 1 && productLinkCount > 0) return "homepage";
   return "unsupported";
 }
 
 export function normalizeSitePageUrl(value: string) {
   const url = new URL(value);
-  const trackingKeys = [
-    "utm_source",
-    "utm_medium",
-    "utm_campaign",
-    "utm_content",
-    "utm_term",
-    "fbclid",
-    "gclid",
-    "ref",
-    "source",
-  ];
+  const trackingKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid", "gclid", "ref", "source"];
   trackingKeys.forEach((key) => url.searchParams.delete(key));
   url.hash = "";
   if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/, "");
@@ -77,18 +50,8 @@ export function deduplicateProductUrls<T extends { url: string }>(items: T[], li
   for (const item of items) {
     const normalized = normalizeSitePageUrl(item.url);
     const parsed = new URL(normalized);
-    const productKey =
-      parsed.searchParams.get("product_no") ||
-      parsed.searchParams.get("pseq") ||
-      parsed.searchParams.get("goodsno") ||
-      parsed.searchParams.get("goodsNo") ||
-      parsed.searchParams.get("branduid") ||
-      parsed.pathname.match(
-        /\/(?:product|products|goods\/(?:detail|view))\/(?:[^/]+\/)?([^/?#]+)/i
-      )?.[1];
-    const identity = productKey
-      ? `${parsed.hostname.toLowerCase()}:${productKey}`
-      : normalized.toLowerCase();
+    const productKey = parsed.searchParams.get("product_no") || parsed.searchParams.get("pseq") || parsed.searchParams.get("goodsno") || parsed.searchParams.get("goodsNo") || parsed.searchParams.get("branduid") || parsed.pathname.match(/\/(?:product|products|goods\/(?:detail|view))\/(?:[^/]+\/)?([^/?#]+)/i)?.[1];
+    const identity = productKey ? `${parsed.hostname.toLowerCase()}:${productKey}` : normalized.toLowerCase();
     if (seen.has(identity)) continue;
     seen.add(identity);
     result.push({ ...item, url: normalized });

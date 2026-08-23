@@ -5,38 +5,12 @@ import type { AdBrief, CreativeStrategy, ProductInfoForPrompt } from "../mvp/typ
 import { matchKnownProductAsset } from "../creative/knownProductAssets.ts";
 import { getCreativeBlueprint } from "./blueprints.ts";
 import { buildFallbackHookMessages } from "./hookMessages.server.ts";
-import {
-  blueprintForHookTag,
-  buildProductHookExploration,
-  type CategoryHookPrior,
-} from "./hookHypothesisEngine.ts";
-import {
-  designFingerprintForMaster,
-  selectMasterCreativeDirection,
-} from "./masterDesign.ts";
-import {
-  applyCategoryCreativeDirection,
-  countDistinctVisualArchetypes,
-  resolveCategoryCreativeProfile,
-} from "./categoryCreativeRouter.ts";
+import { blueprintForHookTag, buildProductHookExploration, type CategoryHookPrior } from "./hookHypothesisEngine.ts";
+import { designFingerprintForMaster, selectMasterCreativeDirection } from "./masterDesign.ts";
+import { applyCategoryCreativeDirection, countDistinctVisualArchetypes, resolveCategoryCreativeProfile } from "./categoryCreativeRouter.ts";
 import { matchBrandProfile, matchCategoryProfile, withRequestedLogo } from "./profiles.ts";
 import { extractNumericTokens } from "./productTruth.ts";
-import {
-  CREATIVE_PLANNER_VERSION,
-  type BrandProfile,
-  type CreativeBlueprintId,
-  type CreativePlan,
-  type GenerationJob,
-  type GenerationResult,
-  type HookMessageHypothesis,
-  type HookPlan,
-  type HookHypothesisCandidate,
-  type ProductTruth,
-  type ProductReferenceProfile,
-  type MasterSceneArtifact,
-  type SceneAsset,
-  type ScenePlan,
-} from "./types.ts";
+import { CREATIVE_PLANNER_VERSION, type BrandProfile, type CreativeBlueprintId, type CreativePlan, type GenerationJob, type GenerationResult, type HookMessageHypothesis, type HookPlan, type HookHypothesisCandidate, type ProductTruth, type ProductReferenceProfile, type MasterSceneArtifact, type SceneAsset, type ScenePlan } from "./types.ts";
 
 export const SCENE_PROMPT_VERSION = "scene-safe-zone-v1";
 
@@ -47,18 +21,10 @@ function id(prefix: string, index = 0) {
 function exactOffer(truth: ProductTruth) {
   return [truth.product.discountInfo, truth.product.price].filter(Boolean).join(" · ");
 }
-export function buildHookPlans(
-  truth: ProductTruth,
-  adBrief?: AdBrief,
-  hypotheses: HookMessageHypothesis[] = buildFallbackHookMessages(truth),
-  blueprintId: CreativeBlueprintId = "product-hero-lifestyle"
-): HookPlan[] {
+export function buildHookPlans(truth: ProductTruth, adBrief?: AdBrief, hypotheses: HookMessageHypothesis[] = buildFallbackHookMessages(truth), blueprintId: CreativeBlueprintId = "product-hero-lifestyle"): HookPlan[] {
   const offer = exactOffer(truth);
   const cta = objectiveCta(adBrief?.adObjective, Boolean(offer));
-  const proof = truth.facts.find(
-    (fact) =>
-      /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length > 0
-  )?.value || "";
+  const proof = truth.facts.find((fact) => /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length > 0)?.value || "";
   return hypotheses.map((hypothesis) => {
     const text = [hypothesis.mainHook, hypothesis.subCopy, proof, offer, cta].join(" ");
     return {
@@ -114,12 +80,7 @@ export function buildCreativePlan(
     preserveMasterDesignId: options.preserveMasterDesignId,
     excludedMasterDesignIds: options.excludedMasterDesignIds,
   });
-  const hookPlans = buildHookPlans(
-    truth,
-    options.adBrief,
-    options.hypotheses,
-    masterDesign.layoutFamily
-  );
+  const hookPlans = buildHookPlans(truth, options.adBrief, options.hypotheses, masterDesign.layoutFamily);
   const fixedCta = hookPlans[0]?.cta || masterDesign.fixedFacts.cta;
   return {
     id: id("creative-plan"),
@@ -144,11 +105,7 @@ export function buildCreativePlan(
   };
 }
 
-function hookPlansForExploration(
-  truth: ProductTruth,
-  selected: HookHypothesisCandidate[],
-  adBrief?: AdBrief
-): HookPlan[] {
+function hookPlansForExploration(truth: ProductTruth, selected: HookHypothesisCandidate[], adBrief?: AdBrief): HookPlan[] {
   const offer = exactOffer(truth);
   const cta = objectiveCta(adBrief?.adObjective, Boolean(offer));
   return selected.map((candidate, index) => {
@@ -202,9 +159,7 @@ function hookPlansForExploration(
         messageHypothesis: candidate.hypothesis,
         customerInsight: candidate.customerReason,
         verifiedFacts: candidate.evidence.map((item) => item.fact),
-        referenceImageIds: truth.imageAssets
-          .filter((asset) => asset.verified && asset.validationStatus !== "excluded")
-          .map((asset) => asset.id),
+        referenceImageIds: truth.imageAssets.filter((asset) => asset.verified && asset.validationStatus !== "excluded").map((asset) => asset.id),
         differentiationReason: candidate.creativeBrief.differentiationReason || candidate.creativeBrief.differentiationFromOtherHooks,
       },
     };
@@ -224,19 +179,17 @@ export function buildExplorationCreativePlan(
 ): CreativePlan {
   const brandProfile = withRequestedLogo(matchBrandProfile(truth.product), options.logoPath);
   const categoryProfile = matchCategoryProfile(truth.product);
-  const exploration = options.exploration || buildProductHookExploration(truth, options.categoryPrior);
-  if (exploration.selected.length < 6) {
-    throw new Error("상품 근거로 구분 가능한 후킹 가설이 6개보다 적습니다. 상세정보를 추가해 주세요.");
-  }
+  const requestedExploration = options.exploration || buildProductHookExploration(truth, options.categoryPrior);
+  const fallbackExploration = requestedExploration.selected.length < 6 ? buildProductHookExploration(truth, options.categoryPrior) : requestedExploration;
+  const selected = Array.from(new Map([...requestedExploration.selected, ...fallbackExploration.selected, ...fallbackExploration.candidates, ...requestedExploration.candidates].map((candidate) => [candidate.id, candidate])).values()).slice(0, 6);
+  const exploration = {
+    ...requestedExploration,
+    candidates: Array.from(new Map([...requestedExploration.candidates, ...fallbackExploration.candidates].map((candidate) => [candidate.id, candidate])).values()),
+    selected,
+  };
   const categoryCreativeProfile = resolveCategoryCreativeProfile(truth);
-  const selectedWithDirection = applyCategoryCreativeDirection(
-    truth,
-    exploration.selected,
-    categoryCreativeProfile
-  );
-  if (countDistinctVisualArchetypes(selectedWithDirection) < 4) {
-    throw new Error("후킹 6개에 필요한 시각 문법 다양성을 확보하지 못했습니다.");
-  }
+  const selectedWithDirection = applyCategoryCreativeDirection(truth, exploration.selected, categoryCreativeProfile);
+  const diversityWarning = countDistinctVisualArchetypes(selectedWithDirection) < 4 ? ["광고 구성의 시각적 차이가 작지만 제작을 우선 진행했습니다."] : [];
   const hookPlans = hookPlansForExploration(truth, selectedWithDirection, options.adBrief);
   const firstBlueprint = hookPlans[0].blueprintId;
   const masterDesign = selectMasterCreativeDirection({
@@ -259,21 +212,22 @@ export function buildExplorationCreativePlan(
     candidateHypotheses: exploration.candidates,
     selectedHypotheses: selectedWithDirection,
     testCode: options.testCode || "T01",
-    copyGeneration: options.copyGeneration || {
-      provider: "fallback",
-      warnings: ["상품 공개정보와 검증된 입력만 사용해 후킹 가설 후보를 점수화했습니다."],
-    },
+    copyGeneration: options.copyGeneration
+      ? {
+          ...options.copyGeneration,
+          warnings: [...(options.copyGeneration.warnings || []), ...diversityWarning],
+        }
+      : {
+          provider: "fallback",
+          warnings: ["상품 공개정보와 검증된 입력만 사용해 광고 구성을 준비했습니다.", ...diversityWarning],
+        },
     adBrief: options.adBrief,
     createdAt: new Date().toISOString(),
     plannerVersion: CREATIVE_PLANNER_VERSION,
   };
 }
 
-function strategyForMaster(
-  blueprintId: CreativeBlueprintId,
-  categoryVariant: string,
-  product: ProductInfoForPrompt
-): CreativeStrategy {
+function strategyForMaster(blueprintId: CreativeBlueprintId, categoryVariant: string, product: ProductInfoForPrompt): CreativeStrategy {
   const map: Record<CreativeBlueprintId, Pick<CreativeStrategy, "hookType" | "backgroundHookType">> = {
     "problem-solution-split": { hookType: "problem-solution", backgroundHookType: "problem_solution" },
     "editorial-story": { hookType: "lifestyle", backgroundHookType: "situation" },
@@ -339,20 +293,11 @@ function productPhotoSceneCandidates(creativePlan: CreativePlan): SceneAsset[] {
   const categoryId = creativePlan.categoryProfile.id;
   const fullPhotoCategory = ["agriculture", "food-meat", "packaged-food"].includes(categoryId);
   const representation = product.productRepresentation?.type || "";
-  if (
-    !fullPhotoCategory ||
-    !["irregular-product", "plated-product"].includes(representation)
-  ) {
+  if (!fullPhotoCategory || !["irregular-product", "plated-product"].includes(representation)) {
     return [];
   }
   return (product.sourceImageCandidates || [])
-    .filter(
-      (candidate) =>
-        !candidate.hasText &&
-        (candidate.width || 0) >= 500 &&
-        (candidate.height || 0) >= 500 &&
-        candidate.sourceType !== "unknown"
-    )
+    .filter((candidate) => !candidate.hasText && (candidate.width || 0) >= 500 && (candidate.height || 0) >= 500 && candidate.sourceType !== "unknown")
     .slice(0, 3)
     .map((candidate, index) => ({
       id: `product-photo-${candidate.id}`,
@@ -376,13 +321,8 @@ function productPhotoSceneCandidates(creativePlan: CreativePlan): SceneAsset[] {
  * No background file is selected here: the image model creates the product,
  * scene, Korean copy, typography and final layout together in one pass.
  */
-export function planAiScenes(
-  creativePlan: CreativePlan,
-  paidGenerationAllowed = true
-): ScenePlan[] {
-  const designNotes = (creativePlan.productTruth.product.creativeContext?.appliedContentNotes || [])
-    .filter((note) => ["IMAGE_RULE", "PRODUCT_IMAGE_RULE", "BACKGROUND_STYLE", "LAYOUT_RULE", "DESIGN_GUIDELINE"].includes(note.type))
-    .map((note) => note.content);
+export function planAiScenes(creativePlan: CreativePlan, paidGenerationAllowed = true): ScenePlan[] {
+  const designNotes = (creativePlan.productTruth.product.creativeContext?.appliedContentNotes || []).filter((note) => ["IMAGE_RULE", "PRODUCT_IMAGE_RULE", "BACKGROUND_STYLE", "LAYOUT_RULE", "DESIGN_GUIDELINE"].includes(note.type)).map((note) => note.content);
   return creativePlan.hookPlans.map((hookPlan) => ({
     id: `scene-${hookPlan.hookCode}-ai-${hookPlan.blueprintId}`,
     blueprintId: hookPlan.blueprintId,
@@ -391,10 +331,7 @@ export function planAiScenes(
       file: "",
       sourceType: "generated" as const,
       assetType: "ai-generated-background",
-      scene:
-        hookPlan.creativeBrief?.sceneDescription ||
-        hookPlan.creativeBrief?.visualStory ||
-        `${hookPlan.hypothesis}을 시각화한 전용 광고 장면`,
+      scene: hookPlan.creativeBrief?.sceneDescription || hookPlan.creativeBrief?.visualStory || `${hookPlan.hypothesis}을 시각화한 전용 광고 장면`,
       category: creativePlan.categoryProfile.id,
       includesPerson: false,
       textSafeArea: "planned-from-hook-layout",
@@ -406,37 +343,17 @@ export function planAiScenes(
     generated: true,
     paidGenerationAllowed,
     generationMode: "ai-reference-full-creative" as const,
-    reason: [
-      `${hookPlan.hookCode} 메시지 가설 전용 AI 전체 키비주얼`,
-      hookPlan.creativeBrief?.visualStory,
-      "기존 배경 라이브러리 미사용",
-      "상세페이지 상품·사용·질감 이미지를 참조해 AI가 완성형 키비주얼 전체를 제작",
-      "상품·장면·정확한 한국어 문구를 한 번에 조판한 완성형 광고 이미지",
-      ...designNotes,
-    ].filter(Boolean).join(" · "),
+    reason: [`${hookPlan.hookCode} 메시지 가설 전용 AI 전체 키비주얼`, hookPlan.creativeBrief?.visualStory, "기존 배경 라이브러리 미사용", "상세페이지 상품·사용·질감 이미지를 참조해 AI가 완성형 키비주얼 전체를 제작", "상품·장면·정확한 한국어 문구를 한 번에 조판한 완성형 광고 이미지", ...designNotes].filter(Boolean).join(" · "),
   }));
 }
 
-export function planScenes(
-  creativePlan: CreativePlan,
-  library: BackgroundLibraryItem[],
-  paidImageGenerationAllowed = false,
-  options: { preserveBackgroundAssetId?: string } = {}
-): ScenePlan[] {
-  const designNotes = (creativePlan.productTruth.product.creativeContext?.appliedContentNotes || [])
-    .filter((note) => ["IMAGE_RULE", "PRODUCT_IMAGE_RULE", "BACKGROUND_STYLE", "LAYOUT_RULE", "DESIGN_GUIDELINE"].includes(note.type))
-    .map((note) => note.content);
+export function planScenes(creativePlan: CreativePlan, library: BackgroundLibraryItem[], paidImageGenerationAllowed = false, options: { preserveBackgroundAssetId?: string } = {}): ScenePlan[] {
+  const designNotes = (creativePlan.productTruth.product.creativeContext?.appliedContentNotes || []).filter((note) => ["IMAGE_RULE", "PRODUCT_IMAGE_RULE", "BACKGROUND_STYLE", "LAYOUT_RULE", "DESIGN_GUIDELINE"].includes(note.type)).map((note) => note.content);
   const fallback = library.find((item) => item.enabled !== false) || null;
   const knownAsset = matchKnownProductAsset(creativePlan.productTruth.product);
-  const dedicatedLibrary = knownAsset
-    ? library.filter((item) => item.enabled !== false && item.file.startsWith(knownAsset.backgroundPrefix))
-    : [];
+  const dedicatedLibrary = knownAsset ? library.filter((item) => item.enabled !== false && item.file.startsWith(knownAsset.backgroundPrefix)) : [];
   const recommendationPool = dedicatedLibrary.length ? dedicatedLibrary : library;
-  const preserved = options.preserveBackgroundAssetId
-    ? recommendationPool.find(
-        (item) => item.enabled !== false && item.id === options.preserveBackgroundAssetId
-      )
-    : undefined;
+  const preserved = options.preserveBackgroundAssetId ? recommendationPool.find((item) => item.enabled !== false && item.id === options.preserveBackgroundAssetId) : undefined;
   if (creativePlan.mode === "concept-exploration") {
     const productPhotoScenes = productPhotoSceneCandidates(creativePlan);
     const selectedIds: string[] = [];
@@ -452,12 +369,7 @@ export function planScenes(
           generated: false,
           paidGenerationAllowed: paidImageGenerationAllowed,
           generationMode: "real-photo-adaptation" as const,
-          reason: [
-            "배경 제거 없이 현재 상품의 실제 상세페이지 사진을 전체 장면으로 사용",
-            hookPlan.creativeBrief?.visualStory,
-            "실제 상품 레퍼런스의 품종·색·질감을 기준으로 상품과 정확한 한국어 문구를 AI 완성 광고 전체 안에서 함께 생성",
-            ...designNotes,
-          ].filter(Boolean).join(" · "),
+          reason: ["배경 제거 없이 현재 상품의 실제 상세페이지 사진을 전체 장면으로 사용", hookPlan.creativeBrief?.visualStory, "실제 상품 레퍼런스의 품종·색·질감을 기준으로 상품과 정확한 한국어 문구를 AI 완성 광고 전체 안에서 함께 생성", ...designNotes].filter(Boolean).join(" · "),
         };
       }
       const recommendation = recommendBackgrounds(recommendationPool, {
@@ -478,22 +390,13 @@ export function planScenes(
         provider: "library" as const,
         generated: false,
         paidGenerationAllowed: paidImageGenerationAllowed,
-        reason: [
-          recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback",
-          hookPlan.creativeBrief?.sceneDescription,
-          "실제 상품 레퍼런스와 정확한 한국어 문구를 AI 완성 광고 전체 안에서 함께 생성",
-          ...designNotes,
-        ].filter(Boolean).join(" · "),
+        reason: [recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback", hookPlan.creativeBrief?.sceneDescription, "실제 상품 레퍼런스와 정확한 한국어 문구를 AI 완성 광고 전체 안에서 함께 생성", ...designNotes].filter(Boolean).join(" · "),
       };
     });
   }
   const recommendation = recommendBackgrounds(recommendationPool, {
     product: creativePlan.productTruth.product,
-    hook: strategyForMaster(
-      creativePlan.masterDesign.layoutFamily,
-      creativePlan.masterDesign.categoryVariant,
-      creativePlan.productTruth.product
-    ),
+    hook: strategyForMaster(creativePlan.masterDesign.layoutFamily, creativePlan.masterDesign.categoryVariant, creativePlan.productTruth.product),
     limit: 6,
     recommendationPage: 0,
   }).recommendations[0];
@@ -508,16 +411,7 @@ export function planScenes(
       provider: "library",
       generated: false,
       paidGenerationAllowed: paidImageGenerationAllowed,
-      reason: [
-        dedicatedLibrary.length ? "등록된 상품 전용 배경" : "",
-        preserved
-          ? "사용자가 고정한 마스터 배경"
-          : recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback",
-        "상품·카테고리·마스터 디자인을 기준으로 선택된 고정 배경이며, 후킹 성과 비교를 위해 H01~H06에 동일하게 적용",
-        ...designNotes,
-      ]
-        .filter(Boolean)
-        .join(" · "),
+      reason: [dedicatedLibrary.length ? "등록된 상품 전용 배경" : "", preserved ? "사용자가 고정한 마스터 배경" : recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback", "상품·카테고리·마스터 디자인을 기준으로 선택된 고정 배경이며, 후킹 성과 비교를 위해 H01~H06에 동일하게 적용", ...designNotes].filter(Boolean).join(" · "),
     };
   });
 }
@@ -572,24 +466,13 @@ function strategyForExploration(hookPlan: HookPlan, product: ProductInfoForPromp
   };
 }
 
-export function createGenerationJob(params: {
-  truth: ProductTruth;
-  creativePlan: CreativePlan;
-  scenes: ScenePlan[];
-  concurrency?: number;
-  retryLimit?: number;
-  paidImageGenerationEnabled?: boolean;
-  planningMs: number;
-  productReferenceProfile?: ProductReferenceProfile;
-  masterScene?: MasterSceneArtifact;
-}): GenerationJob {
+export function createGenerationJob(params: { truth: ProductTruth; creativePlan: CreativePlan; scenes: ScenePlan[]; concurrency?: number; retryLimit?: number; paidImageGenerationEnabled?: boolean; planningMs: number; productReferenceProfile?: ProductReferenceProfile; masterScene?: MasterSceneArtifact }): GenerationJob {
   const jobId = id("creative-job");
   const now = new Date().toISOString();
   const masterScene = params.scenes[0];
   const masterWithBackground = {
     ...params.creativePlan.masterDesign,
-    backgroundAssetId:
-      masterScene?.sceneAsset.id || params.creativePlan.masterDesign.backgroundAssetId,
+    backgroundAssetId: masterScene?.sceneAsset.id || params.creativePlan.masterDesign.backgroundAssetId,
   };
   const creativePlan: CreativePlan = {
     ...params.creativePlan,
@@ -599,14 +482,15 @@ export function createGenerationJob(params: {
     },
   };
   const results: GenerationResult[] = params.creativePlan.hookPlans.map((hookPlan, index) => {
-    const creativeDesign = params.creativePlan.mode === "concept-exploration"
-      ? selectMasterCreativeDirection({
-          truth: params.truth,
-          brand: params.creativePlan.brandProfile,
-          category: params.creativePlan.categoryProfile,
-          preserveMasterDesignId: `exploration-${hookPlan.blueprintId}-${index}`,
-        })
-      : creativePlan.masterDesign;
+    const creativeDesign =
+      params.creativePlan.mode === "concept-exploration"
+        ? selectMasterCreativeDirection({
+            truth: params.truth,
+            brand: params.creativePlan.brandProfile,
+            category: params.creativePlan.categoryProfile,
+            preserveMasterDesignId: `exploration-${hookPlan.blueprintId}-${index}`,
+          })
+        : creativePlan.masterDesign;
     const withBackground = {
       ...creativeDesign,
       backgroundAssetId: params.scenes[index]?.sceneAsset.id || creativeDesign.backgroundAssetId,

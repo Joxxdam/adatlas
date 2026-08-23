@@ -19,8 +19,7 @@ export async function createAssetFromGenerationResult(input: {
   const experiment = input.job.creativePlan.experimentContext;
   const created = await creativeAssetRepository.create({
     brandId: input.job.creativePlan.brandProfile.id,
-    brandName:
-      input.job.creativePlan.brandProfile.name || product.brandName || product.advertiserName,
+    brandName: input.job.creativePlan.brandProfile.name || product.brandName || product.advertiserName,
     productId: input.job.productTruth.productId,
     productName: product.productName,
     originalHostProductNo: experiment?.originalHostProductNo,
@@ -41,9 +40,7 @@ export async function createAssetFromGenerationResult(input: {
     testCode: experiment ? undefined : input.job.creativePlan.testCode,
     hookVariantCode: experiment ? undefined : input.result.hookPlan.hookCode,
     explorationCode: input.job.creativePlan.mode === "concept-exploration" ? "E01" : undefined,
-    conceptCode: input.job.creativePlan.mode === "concept-exploration"
-      ? `C${String(input.result.order).padStart(2, "0")}`
-      : undefined,
+    conceptCode: input.job.creativePlan.mode === "concept-exploration" ? `C${String(input.result.order).padStart(2, "0")}` : undefined,
     primaryHookTag: input.result.hookPlan.primaryTag,
     secondaryHookTags: input.result.hookPlan.secondaryTags,
     customerReason: input.result.hookPlan.customerReason,

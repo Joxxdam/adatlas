@@ -9,11 +9,7 @@ export type ProductLayerPlan = {
   warnings: string[];
 };
 
-export function buildProductLayerPlan(params: {
-  imagePaths: string[];
-  arrangement: ProductArrangement;
-  effect: ProductImageRenderEffect;
-}): ProductLayerPlan {
+export function buildProductLayerPlan(params: { imagePaths: string[]; arrangement: ProductArrangement; effect: ProductImageRenderEffect }): ProductLayerPlan {
   const paths = Array.from(new Set(params.imagePaths.filter(Boolean))).slice(0, 4);
   const warnings: string[] = [];
   if (!paths.length) warnings.push("실제 상품 이미지가 없어 장면 위에 합성할 상품 레이어가 없습니다.");

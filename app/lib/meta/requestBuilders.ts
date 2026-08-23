@@ -1,20 +1,10 @@
 import { assertNoMetaAutomationOptIn } from "./featureOptOutRegistry.ts";
 import type { MetaDraftRegistrationInput, MetaPreflightResult } from "./types.ts";
 
-const cloneableAdSetFields = [
-  "targeting",
-  "promoted_object",
-  "optimization_goal",
-  "billing_event",
-  "attribution_spec",
-] as const;
+const cloneableAdSetFields = ["targeting", "promoted_object", "optimization_goal", "billing_event", "attribution_spec"] as const;
 
-export function buildPausedAdSetRequest(
-  input: MetaDraftRegistrationInput,
-  preflight: MetaPreflightResult
-) {
-  if (!preflight.ok || !preflight.budget.dailyBudgetMinor)
-    throw new Error("사전 검토를 통과하지 못했습니다.");
+export function buildPausedAdSetRequest(input: MetaDraftRegistrationInput, preflight: MetaPreflightResult) {
+  if (!preflight.ok || !preflight.budget.dailyBudgetMinor) throw new Error("사전 검토를 통과하지 못했습니다.");
   const request: Record<string, unknown> = {
     name: preflight.draft.adSetName,
     campaign_id: input.campaign.id,
@@ -35,11 +25,7 @@ export function buildPausedAdSetRequest(
   return request;
 }
 
-export function buildSingleMediaCreativeRequest(
-  input: MetaDraftRegistrationInput,
-  creative: MetaDraftRegistrationInput["creatives"][number],
-  mediaId: string
-) {
+export function buildSingleMediaCreativeRequest(input: MetaDraftRegistrationInput, creative: MetaDraftRegistrationInput["creatives"][number], mediaId: string) {
   const request = {
     name: `${creative.materialCode}_${creative.hookCode}`,
     object_story_spec: {
@@ -65,12 +51,7 @@ export function buildSingleMediaCreativeRequest(
   return request;
 }
 
-export function buildPausedAdRequest(input: {
-  materialCode: string;
-  hookCode: string;
-  adSetId: string;
-  creativeId: string;
-}) {
+export function buildPausedAdRequest(input: { materialCode: string; hookCode: string; adSetId: string; creativeId: string }) {
   const request = {
     name: `${input.materialCode}_${input.hookCode}`,
     adset_id: input.adSetId,

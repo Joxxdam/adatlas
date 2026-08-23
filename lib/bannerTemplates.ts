@@ -1,12 +1,6 @@
-import type {
-  PalettePolicy,
-  TemplateCopyLimits,
-  TemplateSlot,
-  TemplateVariantPreference,
-} from "../app/lib/mvp/types";
+import type { PalettePolicy, TemplateCopyLimits, TemplateSlot, TemplateVariantPreference } from "../app/lib/mvp/types";
 
-export type HeadlineFontPresetId =
-  "impact-korean-red" | "commerce-heavy-black" | "premium-serif-gold" | "ugc-bold-white";
+export type HeadlineFontPresetId = "impact-korean-red" | "commerce-heavy-black" | "premium-serif-gold" | "ugc-bold-white";
 
 export type HeadlineFontPreset = {
   description: string;
@@ -28,8 +22,7 @@ export type HeadlineFontPreset = {
 export const headlineFontPresets: Record<HeadlineFontPresetId, HeadlineFontPreset> = {
   "impact-korean-red": {
     description: "식품/공구형 광고의 초두꺼운 빨간 헤드라인",
-    fontFamily:
-      '"Black Han Sans", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
+    fontFamily: '"Black Han Sans", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
     fontWeight: 900,
     letterSpacing: -4,
     lineHeight: 0.95,
@@ -58,8 +51,7 @@ export const headlineFontPresets: Record<HeadlineFontPresetId, HeadlineFontPrese
   },
   "ugc-bold-white": {
     description: "배경 이미지 위에 얹는 흰색 UGC형 손글씨 문구",
-    fontFamily:
-      '"Nanum Pen Script", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
+    fontFamily: '"Nanum Pen Script", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
     fontWeight: 400,
     letterSpacing: -1,
     lineHeight: 1.05,
@@ -614,8 +606,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "분할 고기 특가형",
     category: "식품/선물",
     templateGroup: "food",
-    description:
-      "좌우 분할 상품 비주얼과 하단 가격 블록으로 선물/고기 특가감을 강하게 보여주는 템플릿입니다.",
+    description: "좌우 분할 상품 비주얼과 하단 가격 블록으로 선물/고기 특가감을 강하게 보여주는 템플릿입니다.",
     recommendedHookTypes: ["감탄형", "가격정당화형", "가격충격형", "긴급/한정형"],
     recommendedAppealPoints: ["가성비", "실속", "즉시혜택", "후기신뢰"],
     style: {
@@ -658,8 +649,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "가격 폭발 특가형",
     category: "식품/선물",
     templateGroup: "food",
-    description:
-      "고기 이미지를 전체 배경으로 깔고 후기 박스, 원가/특가, 하단 대형 오드라인을 강조하는 식품 특가 템플릿입니다.",
+    description: "고기 이미지를 전체 배경으로 깔고 후기 박스, 원가/특가, 하단 대형 오드라인을 강조하는 식품 특가 템플릿입니다.",
     recommendedHookTypes: ["가격정당화형", "가격소구형", "긴급/한정형"],
     recommendedAppealPoints: ["가성비", "실속", "즉시혜택"],
     style: {
@@ -700,8 +690,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "미니멀 비교 설명형",
     category: "식품/선물",
     templateGroup: "food",
-    description:
-      "흰 배경 2단 비교 레이아웃으로 설명형/브랜드형 상품을 차분하게 보여주는 템플릿입니다.",
+    description: "흰 배경 2단 비교 레이아웃으로 설명형/브랜드형 상품을 차분하게 보여주는 템플릿입니다.",
     recommendedHookTypes: ["선물명분형", "가격정당화형", "전문가/권위형"],
     recommendedAppealPoints: ["선물명분", "고급감", "실속", "사회적 인정"],
     style: {
@@ -782,8 +771,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "다크 임팩트 공구형",
     category: "식품/선물",
     templateGroup: "food",
-    description:
-      "어두운 배경 위에 대형 문구, 전면 상품, 흰 외곽선 가격을 쌓아 공구 광고처럼 강하게 보이는 템플릿입니다.",
+    description: "어두운 배경 위에 대형 문구, 전면 상품, 흰 외곽선 가격을 쌓아 공구 광고처럼 강하게 보이는 템플릿입니다.",
     recommendedHookTypes: ["감탄형", "가격충격형", "선물명분형", "긴급/한정형"],
     recommendedAppealPoints: ["고급감", "가성비", "실속", "즉시혜택"],
     style: {
@@ -830,8 +818,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "캠핑인기폭발형",
     category: "범용/특가",
     templateGroup: "new-reference",
-    description:
-      "상단 초대형 레드 헤드라인, 빨간 가격띠, 대형 상품 이미지, 하단 CTA로 구성한 인기 폭발형 광고 템플릿입니다.",
+    description: "상단 초대형 레드 헤드라인, 빨간 가격띠, 대형 상품 이미지, 하단 CTA로 구성한 인기 폭발형 광고 템플릿입니다.",
     recommendedHookTypes: ["가격정당화형", "긴급/한정형", "상황제안형", "문제제기형"],
     recommendedAppealPoints: ["가격", "인기감", "상황명분", "즉시구매"],
     style: {
@@ -873,8 +860,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "원형포커스후기형",
     category: "범용/후기",
     templateGroup: "new-reference",
-    description:
-      "실사용 이미지 위에 원형 포커스 링을 얹고 하단에 후기형 카피를 크게 배치하는 UGC 리뷰형 템플릿입니다.",
+    description: "실사용 이미지 위에 원형 포커스 링을 얹고 하단에 후기형 카피를 크게 배치하는 UGC 리뷰형 템플릿입니다.",
     recommendedHookTypes: ["후기/리뷰형", "공감형", "문제제기형", "UGC형"],
     recommendedAppealPoints: ["실사용감", "문제해결", "공감", "후기"],
     style: {
@@ -915,8 +901,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "블랙반복제품형",
     category: "범용/제품",
     templateGroup: "new-reference",
-    description:
-      "검정 배경 위에 제품 컷을 반복 배치하고 민트 정보바와 강한 헤드라인으로 구성하는 제품 강조형 템플릿입니다.",
+    description: "검정 배경 위에 제품 컷을 반복 배치하고 민트 정보바와 강한 헤드라인으로 구성하는 제품 강조형 템플릿입니다.",
     recommendedHookTypes: ["UGC형", "가격정당화형", "후기/리뷰형", "상황제안형"],
     recommendedAppealPoints: ["제품반복노출", "혜택", "기능", "가격"],
     style: {
@@ -957,8 +942,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "스포츠성분칩형",
     category: "범용/기능",
     templateGroup: "new-reference",
-    description:
-      "어두운 배경, 좌측 굵은 헤드라인, 성분/혜택 pill 3개, 우측 제품 spotlight를 조합한 기능 소구형 템플릿입니다.",
+    description: "어두운 배경, 좌측 굵은 헤드라인, 성분/혜택 pill 3개, 우측 제품 spotlight를 조합한 기능 소구형 템플릿입니다.",
     recommendedHookTypes: ["문제제기형", "상황제안형", "후기/리뷰형", "UGC형"],
     recommendedAppealPoints: ["성분", "효과", "기능", "실사용"],
     style: {
@@ -1000,8 +984,7 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
     name: "전후분할후기형",
     category: "범용/후기",
     templateGroup: "new-reference",
-    description:
-      "좌측 실사용 이미지와 우측 정보 패널을 분할해 문제 해결/전후 비교/분위기형 후기를 보여주는 템플릿입니다.",
+    description: "좌측 실사용 이미지와 우측 정보 패널을 분할해 문제 해결/전후 비교/분위기형 후기를 보여주는 템플릿입니다.",
     recommendedHookTypes: ["문제제기형", "공감형", "후기/리뷰형", "상황제안형"],
     recommendedAppealPoints: ["문제해결", "전후비교", "공감", "제품효과"],
     style: {
@@ -1040,16 +1023,13 @@ export const foodCategoryTemplates: BannerTemplateDefinition[] = [
   },
 ];
 
-const splitMeatDealTemplate = foodCategoryTemplates.find(
-  (template) => template.id === "food-template-001"
-);
+const splitMeatDealTemplate = foodCategoryTemplates.find((template) => template.id === "food-template-001");
 
 if (splitMeatDealTemplate) {
   Object.assign(splitMeatDealTemplate, {
     name: "분할고기특가형 템플릿",
     category: "식품/선물",
-    description:
-      "여러 컷의 고기/상품 이미지를 분할 배치하고, 상단 헤드라인과 하단 상품명·기존가·배지·판매가를 강하게 보여주는 식품 특가형 템플릿입니다.",
+    description: "여러 컷의 고기/상품 이미지를 분할 배치하고, 상단 헤드라인과 하단 상품명·기존가·배지·판매가를 강하게 보여주는 식품 특가형 템플릿입니다.",
     recommendedHookTypes: ["가격정당화형", "가격충격형", "긴급/한정형", "선물명분형"],
     recommendedAppealPoints: ["가성비", "대용량", "특가", "선물 명분"],
     typography: {
@@ -2040,8 +2020,7 @@ export const optimizedCategoryTemplates: BannerTemplateDefinition[] = [
     name: "자동 최적화 · 뷰티 에디토리얼",
     category: "뷰티",
     templateGroup: "optimized-beauty",
-    description:
-      "제품 패키지를 훼손하지 않고 여백, 세리프 타이포, 성분 포인트로 고급스럽게 구성합니다.",
+    description: "제품 패키지를 훼손하지 않고 여백, 세리프 타이포, 성분 포인트로 고급스럽게 구성합니다.",
     recommendedHookTypes: ["문제제기형", "상황제안형", "후기/리뷰형"],
     recommendedAppealPoints: ["사용감", "성분", "결과", "감성"],
     style: {
@@ -2410,38 +2389,14 @@ export const optimizedCategoryTemplates: BannerTemplateDefinition[] = [
   },
 ];
 
-export const qualityFoodTemplates = optimizedCategoryTemplates.filter(
-  (template) => template.templateGroup === "optimized-food"
-);
+export const qualityFoodTemplates = optimizedCategoryTemplates.filter((template) => template.templateGroup === "optimized-food");
 
-export const beautyCategoryTemplates = optimizedCategoryTemplates.filter(
-  (template) => template.templateGroup === "optimized-beauty"
-);
+export const beautyCategoryTemplates = optimizedCategoryTemplates.filter((template) => template.templateGroup === "optimized-beauty");
 
-export const healthCategoryTemplates = [
-  ...optimizedCategoryTemplates.filter((template) =>
-    ["auto-beauty-proof-002", "auto-body-solution-001"].includes(template.id)
-  ),
-  ...foodCategoryTemplates.filter((template) =>
-    [
-      "circle-focus-review",
-      "black-repeat-product",
-      "sports-benefit-chip",
-      "before-after-split-review",
-    ].includes(template.id)
-  ),
-];
+export const healthCategoryTemplates = [...optimizedCategoryTemplates.filter((template) => ["auto-beauty-proof-002", "auto-body-solution-001"].includes(template.id)), ...foodCategoryTemplates.filter((template) => ["circle-focus-review", "black-repeat-product", "sports-benefit-chip", "before-after-split-review"].includes(template.id))];
 
-export const templatesById = new Map(
-  [...foodCategoryTemplates, ...optimizedCategoryTemplates].map((template) => [
-    template.id,
-    template,
-  ])
-);
-export const foodCategoryTemplateIds = [
-  ...foodCategoryTemplates,
-  ...optimizedCategoryTemplates,
-].map((template) => template.id);
+export const templatesById = new Map([...foodCategoryTemplates, ...optimizedCategoryTemplates].map((template) => [template.id, template]));
+export const foodCategoryTemplateIds = [...foodCategoryTemplates, ...optimizedCategoryTemplates].map((template) => template.id);
 
 export const foodImpactHeroTemplate = {
   id: "food-impact-hero-001",

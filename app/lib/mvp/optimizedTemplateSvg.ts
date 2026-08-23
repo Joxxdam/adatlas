@@ -52,35 +52,20 @@ function xml(value: unknown) {
 }
 
 function estimateWidth(text: string, fontSize: number) {
-  return [...text].reduce(
-    (width, char) => width + fontSize * (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char) ? 0.96 : 0.62),
-    0
-  );
+  return [...text].reduce((width, char) => width + fontSize * (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char) ? 0.96 : 0.62), 0);
 }
 
 function clampNumber(value: number, minimum: number, maximum: number) {
   return Math.max(minimum, Math.min(maximum, value));
 }
 
-function safeRenderedFontSize(
-  slot: TemplateSlot,
-  lines: string[],
-  requestedSize: number,
-  lineHeightRatio: number,
-  strokeWidth = 0
-) {
+function safeRenderedFontSize(slot: TemplateSlot, lines: string[], requestedSize: number, lineHeightRatio: number, strokeWidth = 0) {
   const horizontalPadding = Math.max(0, Number(slot.safePadding || 0)) * 2 + strokeWidth * 2;
   const availableWidth = Math.max(1, slot.width - horizontalPadding);
-  const widestAtRequestedSize = Math.max(
-    1,
-    ...lines.map((line) => estimateWidth(line, requestedSize))
-  );
+  const widestAtRequestedSize = Math.max(1, ...lines.map((line) => estimateWidth(line, requestedSize)));
   const widthScale = Math.min(1, availableWidth / widestAtRequestedSize);
   const availableHeight = Math.max(1, slot.height - strokeWidth * 2);
-  const requestedBlockHeight = Math.max(
-    1,
-    lines.length * requestedSize * lineHeightRatio
-  );
+  const requestedBlockHeight = Math.max(1, lines.length * requestedSize * lineHeightRatio);
   const heightScale = Math.min(1, availableHeight / requestedBlockHeight);
   return Math.max(8, Math.floor(requestedSize * Math.min(widthScale, heightScale)));
 }
@@ -92,26 +77,14 @@ function slotText(slot: TemplateSlot, input: OptimizedTemplateSvgInput) {
   if (role === "bodyCopy" || role === "subheadline" || role === "reviewQuote") {
     return plan.copy.bodyCopy;
   }
-  if (
-    role === "highlight" ||
-    role === "highlightCopy" ||
-    role === "benefitChip" ||
-    role === "socialProof" ||
-    role === "urgency"
-  ) {
+  if (role === "highlight" || role === "highlightCopy" || role === "benefitChip" || role === "socialProof" || role === "urgency") {
     return plan.copy.highlightCopy;
   }
   if (role === "bottomBar" || role === "bottomBarCopy") return plan.copy.bottomBarCopy;
   if (role === "cta") return plan.copy.cta;
   if (role === "price") return plan.copy.price || productInfo?.price || "";
   if (role === "originalPrice") {
-    return (
-      input.productOriginalPrice ||
-      input.productOldPrice ||
-      productInfo?.originalPrice ||
-      productInfo?.oldPrice ||
-      ""
-    );
+    return input.productOriginalPrice || input.productOldPrice || productInfo?.originalPrice || productInfo?.oldPrice || "";
   }
   if (role === "productName") return productInfo?.productName || plan.copy.bodyCopy;
   if (role === "productBadge") return "특가";
@@ -190,24 +163,10 @@ function imageElements(input: OptimizedTemplateSvgInput, layer: "background" | "
       const dataUrl = input.frameData[index]?.dataUrl;
       if (!dataUrl) return "";
       const slot = slots.find((item) => item.id === frame.slotId);
-      const background =
-        slot?.imageFit === "background-image" ||
-        slot?.role === "background" ||
-        slot?.role === "scene" ||
-        slot?.id === "background" ||
-        slot?.id === "scene" ||
-        frame.slotId === "__generatedSceneBackground";
+      const background = slot?.imageFit === "background-image" || slot?.role === "background" || slot?.role === "scene" || slot?.id === "background" || slot?.id === "scene" || frame.slotId === "__generatedSceneBackground";
       if ((layer === "background") !== background) return "";
       const preserve = frame.fit === "cover" || background ? "slice" : "meet";
-      const backdrop =
-        !background &&
-        ["beauty-editorial", "beauty-clinical", "produce-editorial"].includes(
-          input.template.visualTone || ""
-        )
-          ? `<rect x="${frame.x}" y="${frame.y}" width="${frame.width}" height="${
-              frame.height
-            }" rx="8" fill="${xml(input.plan.palette.surfaceColor)}"/>`
-          : "";
+      const backdrop = !background && ["beauty-editorial", "beauty-clinical", "produce-editorial"].includes(input.template.visualTone || "") ? `<rect x="${frame.x}" y="${frame.y}" width="${frame.width}" height="${frame.height}" rx="8" fill="${xml(input.plan.palette.surfaceColor)}"/>` : "";
       if (background) {
         const scale = Math.max(1, Math.min(1.45, Number(input.backgroundTreatment?.scale ?? 1)));
         const offsetX = Math.max(-220, Math.min(220, Number(input.backgroundTreatment?.offsetX ?? 0)));
@@ -234,31 +193,21 @@ function imageElements(input: OptimizedTemplateSvgInput, layer: "background" | "
 function sceneOverlay(input: OptimizedTemplateSvgInput) {
   const opacity = Math.max(0, Math.min(0.72, Number(input.backgroundTreatment?.overlayOpacity || 0)));
   if (!opacity) return "";
-  return `<rect width="1200" height="1200" fill="${xml(
-    input.backgroundTreatment?.overlayColor || "#000000"
-  )}" opacity="${opacity}"/>`;
+  return `<rect width="1200" height="1200" fill="${xml(input.backgroundTreatment?.overlayColor || "#000000")}" opacity="${opacity}"/>`;
 }
 
 function foregroundScenePanels(input: OptimizedTemplateSvgInput) {
-  const hasGeneratedFullBleedScene = input.plan.imageFrames.some(
-    (frame) => frame.slotId === "__generatedSceneBackground"
-  );
+  const hasGeneratedFullBleedScene = input.plan.imageFrames.some((frame) => frame.slotId === "__generatedSceneBackground");
   if (!hasGeneratedFullBleedScene) return "";
   const palette = input.plan.palette;
   if (input.template.visualTone === "produce-editorial") {
-    return `<rect x="30" y="30" width="510" height="912" rx="8" fill="${xml(
-      palette.backgroundColor
-    )}" opacity="0.94"/>`;
+    return `<rect x="30" y="30" width="510" height="912" rx="8" fill="${xml(palette.backgroundColor)}" opacity="0.94"/>`;
   }
   if (input.template.visualTone === "beauty-editorial") {
-    return `<rect x="30" y="30" width="510" height="872" rx="8" fill="${xml(
-      palette.backgroundColor
-    )}" opacity="0.94"/>`;
+    return `<rect x="30" y="30" width="510" height="872" rx="8" fill="${xml(palette.backgroundColor)}" opacity="0.94"/>`;
   }
   if (input.template.visualTone === "beauty-clinical") {
-    return `<rect x="585" y="0" width="615" height="1200" fill="${xml(
-      palette.surfaceColor
-    )}" opacity="0.96"/>`;
+    return `<rect x="585" y="0" width="615" height="1200" fill="${xml(palette.surfaceColor)}" opacity="0.96"/>`;
   }
   return "";
 }
@@ -294,39 +243,24 @@ function headlineShadowFilter(input: OptimizedTemplateSvgInput) {
   const blur = Math.max(0, Number(presetShadow?.blur ?? templateStyle?.shadowBlur ?? 10));
   const offsetX = Number(presetShadow?.offsetX ?? templateStyle?.shadowOffsetX ?? 0);
   const offsetY = Number(presetShadow?.offsetY ?? templateStyle?.shadowOffsetY ?? 5);
-  return `<filter id="optimizedHeadlineShadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="${offsetX}" dy="${offsetY}" stdDeviation="${Math.max(
-    0.1,
-    blur / 3
-  )}" flood-color="${xml(color)}"/></filter>`;
+  return `<filter id="optimizedHeadlineShadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="${offsetX}" dy="${offsetY}" stdDeviation="${Math.max(0.1, blur / 3)}" flood-color="${xml(color)}"/></filter>`;
 }
 
 function textBox(slot: TemplateSlot, role: string, input: OptimizedTemplateSvgInput) {
   const { plan, template } = input;
   if (slot.type === "cta") {
-    const fill =
-      template.visualTone === "meat-impact" ? plan.palette.dangerColor : plan.palette.accentColor;
-    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${slot.height}" rx="${
-      ["beauty-editorial", "beauty-clinical"].includes(template.visualTone || "") ? 8 : 0
-    }" fill="${xml(fill)}"/>`;
+    const fill = template.visualTone === "meat-impact" ? plan.palette.dangerColor : plan.palette.accentColor;
+    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${slot.height}" rx="${["beauty-editorial", "beauty-clinical"].includes(template.visualTone || "") ? 8 : 0}" fill="${xml(fill)}"/>`;
   }
   if (role === "bottomBar" || role === "bottomBarCopy") {
-    const fill =
-      template.visualTone === "meat-impact"
-        ? plan.palette.secondaryColor
-        : plan.palette.primaryColor;
-    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${
-      slot.height
-    }" rx="${slot.x > 0 ? 8 : 0}" fill="${xml(fill)}"/>`;
+    const fill = template.visualTone === "meat-impact" ? plan.palette.secondaryColor : plan.palette.primaryColor;
+    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${slot.height}" rx="${slot.x > 0 ? 8 : 0}" fill="${xml(fill)}"/>`;
   }
   if (slot.type === "chip") {
-    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${
-      slot.height
-    }" rx="8" fill="${xml(plan.palette.highlightColor)}"/>`;
+    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${slot.height}" rx="8" fill="${xml(plan.palette.highlightColor)}"/>`;
   }
   if (slot.type === "badge") {
-    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${
-      slot.height
-    }" rx="6" fill="${xml(plan.palette.dangerColor)}"/>`;
+    return `<rect x="${slot.x}" y="${slot.y}" width="${slot.width}" height="${slot.height}" rx="6" fill="${xml(plan.palette.dangerColor)}"/>`;
   }
   return "";
 }
@@ -345,150 +279,42 @@ function textElements(input: OptimizedTemplateSvgInput) {
       const creativePreset = textOverrides?.creativePreset;
       const isHeadline = role === "headline";
       const isBodyCopy = ["bodyCopy", "subheadline", "reviewQuote"].includes(role);
-      const centered =
-        role === "cta" ||
-        role === "bottomBar" ||
-        role === "bottomBarCopy" ||
-        role === "productBadge" ||
-        (role === "headline" && input.template.visualTone === "meat-impact");
+      const centered = role === "cta" || role === "bottomBar" || role === "bottomBarCopy" || role === "productBadge" || (role === "headline" && input.template.visualTone === "meat-impact");
       const x = centered ? slot.x + slot.width / 2 : slot.x + (slot.safePadding || 0);
-      const manualStroke =
-        isHeadline && typeof textOverrides?.headlineTextStroke === "boolean"
-          ? textOverrides.headlineTextStroke
-          : undefined;
-      const strokeEnabled = isHeadline
-        ? manualStroke ?? (creativePreset ? Boolean(creativePreset.outline) : Boolean(style.stroke))
-        : Boolean(style.stroke);
-      const strokeWidth = strokeEnabled
-        ? clampNumber(
-            Number(
-              textOverrides?.headlineTextStrokeWidth ??
-                creativePreset?.outline?.width ??
-                style.strokeWidth ??
-                0
-            ),
-            0,
-            20
-          )
-        : 0;
-      const lineHeightRatio = clampNumber(
-        Number(
-          isHeadline
-            ? textOverrides?.headlineLineHeight ?? creativePreset?.lineHeight ?? fit.lineHeight
-            : fit.lineHeight
-        ),
-        0.82,
-        1.5
-      );
-      const requestedFontSize = Math.max(
-        8,
-        Number(
-          isHeadline
-            ? textOverrides?.headlineFontSize ??
-                fit.fontSize * (creativePreset?.headlineScale ?? 1)
-            : isBodyCopy
-              ? textOverrides?.bodyFontSize ??
-                fit.fontSize * (creativePreset?.secondaryScale ?? 1)
-              : fit.fontSize
-        )
-      );
-      const fontSize = safeRenderedFontSize(
-        slot,
-        fit.lines,
-        requestedFontSize,
-        lineHeightRatio,
-        strokeWidth
-      );
+      const manualStroke = isHeadline && typeof textOverrides?.headlineTextStroke === "boolean" ? textOverrides.headlineTextStroke : undefined;
+      const strokeEnabled = isHeadline ? (manualStroke ?? (creativePreset ? Boolean(creativePreset.outline) : Boolean(style.stroke))) : Boolean(style.stroke);
+      const strokeWidth = strokeEnabled ? clampNumber(Number(textOverrides?.headlineTextStrokeWidth ?? creativePreset?.outline?.width ?? style.strokeWidth ?? 0), 0, 20) : 0;
+      const lineHeightRatio = clampNumber(Number(isHeadline ? (textOverrides?.headlineLineHeight ?? creativePreset?.lineHeight ?? fit.lineHeight) : fit.lineHeight), 0.82, 1.5);
+      const requestedFontSize = Math.max(8, Number(isHeadline ? (textOverrides?.headlineFontSize ?? fit.fontSize * (creativePreset?.headlineScale ?? 1)) : isBodyCopy ? (textOverrides?.bodyFontSize ?? fit.fontSize * (creativePreset?.secondaryScale ?? 1)) : fit.fontSize));
+      const fontSize = safeRenderedFontSize(slot, fit.lines, requestedFontSize, lineHeightRatio, strokeWidth);
       const lineHeight = fontSize * lineHeightRatio;
       const blockHeight = fit.lines.length * lineHeight;
-      const startY =
-        slot.y + Math.max(lineHeight, (slot.height - blockHeight) / 2 + lineHeight * 0.78);
-      const fill = ["cta", "bottomBar", "bottomBarCopy", "productBadge"].includes(role)
-        ? "#ffffff"
-        : isHeadline
-          ? textOverrides?.headlineColor || style.fill
-          : isBodyCopy
-            ? textOverrides?.bodyColor || style.fill
-            : style.fill;
-      const strokeColor =
-        textOverrides?.headlineTextStrokeColor || creativePreset?.outline?.color || style.stroke;
-      const stroke = strokeEnabled && strokeColor
-        ? ` stroke="${xml(strokeColor)}" stroke-width="${strokeWidth}" paint-order="stroke fill" stroke-linejoin="round"`
-        : "";
-      const resolvedFontFamily = isHeadline
-        ? textOverrides?.headlineFontFamily || creativePreset?.fontFamily || style.fontFamily
-        : isBodyCopy
-          ? textOverrides?.fontFamily || style.fontFamily
-          : style.fontFamily;
-      const fontFamily = isHeadline
-        ? `AdAtlasHeadlineFont, ${resolvedFontFamily}`
-        : `AdAtlasSelectedFont, ${resolvedFontFamily}`;
-      const fontWeight = isHeadline
-        ? textOverrides?.headlineFontWeight || creativePreset?.fontWeight || style.fontWeight
-        : isBodyCopy
-          ? textOverrides?.bodyFontWeight || style.fontWeight
-          : style.fontWeight;
-      const letterSpacing = isHeadline
-        ? textOverrides?.headlineLetterSpacing ?? creativePreset?.letterSpacing ?? style.letterSpacing
-        : style.letterSpacing;
-      const headlineShadowEnabled = isHeadline
-        ? typeof textOverrides?.headlineShadow === "boolean"
-          ? textOverrides.headlineShadow
-          : creativePreset
-            ? Boolean(creativePreset.shadow)
-            : Boolean(style.shadowColor)
-        : false;
+      const startY = slot.y + Math.max(lineHeight, (slot.height - blockHeight) / 2 + lineHeight * 0.78);
+      const fill = ["cta", "bottomBar", "bottomBarCopy", "productBadge"].includes(role) ? "#ffffff" : isHeadline ? textOverrides?.headlineColor || style.fill : isBodyCopy ? textOverrides?.bodyColor || style.fill : style.fill;
+      const strokeColor = textOverrides?.headlineTextStrokeColor || creativePreset?.outline?.color || style.stroke;
+      const stroke = strokeEnabled && strokeColor ? ` stroke="${xml(strokeColor)}" stroke-width="${strokeWidth}" paint-order="stroke fill" stroke-linejoin="round"` : "";
+      const resolvedFontFamily = isHeadline ? textOverrides?.headlineFontFamily || creativePreset?.fontFamily || style.fontFamily : isBodyCopy ? textOverrides?.fontFamily || style.fontFamily : style.fontFamily;
+      const fontFamily = isHeadline ? `AdAtlasHeadlineFont, ${resolvedFontFamily}` : `AdAtlasSelectedFont, ${resolvedFontFamily}`;
+      const fontWeight = isHeadline ? textOverrides?.headlineFontWeight || creativePreset?.fontWeight || style.fontWeight : isBodyCopy ? textOverrides?.bodyFontWeight || style.fontWeight : style.fontWeight;
+      const letterSpacing = isHeadline ? (textOverrides?.headlineLetterSpacing ?? creativePreset?.letterSpacing ?? style.letterSpacing) : style.letterSpacing;
+      const headlineShadowEnabled = isHeadline ? (typeof textOverrides?.headlineShadow === "boolean" ? textOverrides.headlineShadow : creativePreset ? Boolean(creativePreset.shadow) : Boolean(style.shadowColor)) : false;
       const shadow = headlineShadowEnabled ? ' filter="url(#optimizedHeadlineShadow)"' : "";
       const backgroundBox =
         isHeadline && creativePreset?.backgroundBox
           ? (() => {
-              const paddingX = Math.max(
-                12,
-                slot.width * creativePreset.backgroundBox!.paddingRatio
-              );
+              const paddingX = Math.max(12, slot.width * creativePreset.backgroundBox!.paddingRatio);
               const paddingY = Math.max(10, fontSize * 0.18);
-              const textWidth = Math.max(
-                1,
-                ...fit.lines.map((line) => estimateWidth(line, fontSize))
-              );
+              const textWidth = Math.max(1, ...fit.lines.map((line) => estimateWidth(line, fontSize)));
               const boxWidth = Math.min(slot.width, textWidth + paddingX * 2);
               const boxHeight = Math.min(slot.height, blockHeight + paddingY * 2);
               const boxX = centered ? x - boxWidth / 2 : slot.x;
               const boxY = Math.max(slot.y, startY - fontSize * 0.82 - paddingY);
-              return `<rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" rx="8" fill="${xml(
-                creativePreset.backgroundBox!.color
-              )}" opacity="${clampNumber(
-                creativePreset.backgroundBox!.opacity,
-                0,
-                1
-              )}"/>`;
+              return `<rect x="${boxX}" y="${boxY}" width="${boxWidth}" height="${boxHeight}" rx="8" fill="${xml(creativePreset.backgroundBox!.color)}" opacity="${clampNumber(creativePreset.backgroundBox!.opacity, 0, 1)}"/>`;
             })()
           : "";
-      const lines = fit.lines
-        .map(
-          (line, index) =>
-            `<text x="${x}" y="${startY + index * lineHeight}" text-anchor="${
-              centered ? "middle" : "start"
-            }" font-family="${xml(fontFamily)}" font-size="${fontSize}" font-weight="${
-              fontWeight
-            }" letter-spacing="${letterSpacing || 0}" fill="${xml(fill)}"${stroke}${shadow}>${xml(
-              line
-            )}</text>`
-        )
-        .join("");
-      const strike =
-        role === "originalPrice"
-          ? `<line x1="${slot.x}" y1="${slot.y + slot.height / 2}" x2="${Math.min(
-              slot.x + slot.width,
-              slot.x + estimateWidth(fit.finalText, fontSize) + 18
-            )}" y2="${slot.y + slot.height / 2}" stroke="${xml(fill)}" stroke-width="4"/>`
-          : "";
-      const arrow =
-        role === "cta"
-          ? `<text x="${slot.x + slot.width - 38}" y="${
-              slot.y + slot.height / 2 + 10
-            }" text-anchor="middle" font-family="AdAtlasSelectedFont" font-size="38" font-weight="700" fill="#ffffff">›</text>`
-          : "";
+      const lines = fit.lines.map((line, index) => `<text x="${x}" y="${startY + index * lineHeight}" text-anchor="${centered ? "middle" : "start"}" font-family="${xml(fontFamily)}" font-size="${fontSize}" font-weight="${fontWeight}" letter-spacing="${letterSpacing || 0}" fill="${xml(fill)}"${stroke}${shadow}>${xml(line)}</text>`).join("");
+      const strike = role === "originalPrice" ? `<line x1="${slot.x}" y1="${slot.y + slot.height / 2}" x2="${Math.min(slot.x + slot.width, slot.x + estimateWidth(fit.finalText, fontSize) + 18)}" y2="${slot.y + slot.height / 2}" stroke="${xml(fill)}" stroke-width="4"/>` : "";
+      const arrow = role === "cta" ? `<text x="${slot.x + slot.width - 38}" y="${slot.y + slot.height / 2 + 10}" text-anchor="middle" font-family="AdAtlasSelectedFont" font-size="38" font-weight="700" fill="#ffffff">›</text>` : "";
       return `${textBox(slot, role, input)}${backgroundBox}${lines}${strike}${arrow}`;
     })
     .join("");
@@ -498,29 +324,13 @@ export function buildOptimizedTemplateSvg(input: OptimizedTemplateSvgInput) {
   const clips = input.plan.imageFrames
     .map((frame, index) => {
       const inset = frame.fit === "contain" ? 8 : 0;
-      return `<clipPath id="optimizedClip${index}"><rect x="${
-        frame.x + inset
-      }" y="${frame.y + inset}" width="${Math.max(
-        1,
-        frame.width - inset * 2
-      )}" height="${Math.max(1, frame.height - inset * 2)}" rx="${
-        frame.fit === "contain" ? 6 : 0
-      }"/></clipPath>`;
+      return `<clipPath id="optimizedClip${index}"><rect x="${frame.x + inset}" y="${frame.y + inset}" width="${Math.max(1, frame.width - inset * 2)}" height="${Math.max(1, frame.height - inset * 2)}" rx="${frame.fit === "contain" ? 6 : 0}"/></clipPath>`;
     })
     .join("");
-  const logo = input.logoDataUrl
-    ? `<image href="${input.logoDataUrl}" x="1028" y="40" width="126" height="126" preserveAspectRatio="xMidYMid meet"/>`
-    : "";
-  const disclosure = input.aiDisclosureText
-    ? `<text x="600" y="1174" text-anchor="middle" font-family="AdAtlasSelectedFont" font-size="18" font-weight="500" fill="#ffffff" stroke="#111111" stroke-width="2" paint-order="stroke fill">${xml(
-        input.aiDisclosureText
-      )}</text>`
-    : "";
+  const logo = input.logoDataUrl ? `<image href="${input.logoDataUrl}" x="1028" y="40" width="126" height="126" preserveAspectRatio="xMidYMid meet"/>` : "";
+  const disclosure = input.aiDisclosureText ? `<text x="600" y="1174" text-anchor="middle" font-family="AdAtlasSelectedFont" font-size="18" font-weight="500" fill="#ffffff" stroke="#111111" stroke-width="2" paint-order="stroke fill">${xml(input.aiDisclosureText)}</text>` : "";
   const sceneBlur = Math.max(0, Math.min(18, Number(input.backgroundTreatment?.blur || 0)));
-  const sceneBrightness = Math.max(
-    0.55,
-    Math.min(1.35, Number(input.backgroundTreatment?.brightness || 1))
-  );
+  const sceneBrightness = Math.max(0.55, Math.min(1.35, Number(input.backgroundTreatment?.brightness || 1)));
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
     <defs>
       <style>${input.fontFaceCss}</style>

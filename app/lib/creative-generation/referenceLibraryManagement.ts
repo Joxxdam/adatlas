@@ -2,17 +2,13 @@ export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty"] as co
 
 export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups)[number];
 
-export const nativeReferenceProductForms = [
-  "bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item",
-  "natural-food", "meat-cut", "produce", "bundle", "universal-packshot",
-] as const;
+export const nativeReferenceFoodSubcategories = ["produce-agriculture"] as const;
+export type NativeReferenceFoodSubcategory = (typeof nativeReferenceFoodSubcategories)[number];
+
+export const nativeReferenceProductForms = ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] as const;
 export type NativeReferenceProductForm = (typeof nativeReferenceProductForms)[number];
 
-export const nativeReferenceCompositionTypes = [
-  "product-packshot", "price-card", "product-lineup", "lifestyle-scene",
-  "before-after", "comparison", "review-card", "sensory-closeup", "human-use",
-  "natural-food-scene",
-] as const;
+export const nativeReferenceCompositionTypes = ["product-packshot", "price-card", "product-lineup", "lifestyle-scene", "before-after", "comparison", "review-card", "sensory-closeup", "human-use", "natural-food-scene"] as const;
 export type NativeReferenceCompositionType = (typeof nativeReferenceCompositionTypes)[number];
 export const nativeReferenceSlotShapes = ["tall", "wide", "square", "flexible"] as const;
 export type NativeReferenceSlotShape = (typeof nativeReferenceSlotShapes)[number];
@@ -43,6 +39,8 @@ export type ManagedNativeReferenceItem = {
   sourceFile: string;
   layoutFamily: string;
   categoryGroup: NativeReferenceCategoryGroup;
+  /** 식품 대카테고리 안에서 운영자가 직접 지정하는 선택 풀입니다. */
+  foodSubcategory?: NativeReferenceFoodSubcategory;
   ordinal: number;
   contentHash?: string;
   uploadedAt?: string;
@@ -95,43 +93,22 @@ function compositionFromLayout(layoutFamily: string): NativeReferenceComposition
  * 육류와 실제 확인한 포장 식품 레퍼런스를 분리해 병음료가 육류 장면을
  * 범용 fallback으로 사용하는 일을 막는다. 수동 태그가 있으면 항상 우선한다.
  */
-export function normalizeNativeReferenceCompatibility(
-  item: ManagedNativeReferenceItem
-): ManagedNativeReferenceItem & NativeReferenceCompatibility {
+export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferenceItem): ManagedNativeReferenceItem & NativeReferenceCompatibility {
   const packagedFoodProfile = item.categoryGroup === "food" ? verifiedPackagedFoodProfiles.get(item.ordinal) : undefined;
   const isPackagedFood = Boolean(packagedFoodProfile);
   const isNaturalFood = item.categoryGroup === "food" && !isPackagedFood;
-  const inferredForm: NativeReferenceProductForm = item.categoryGroup === "fashion"
-    ? "fashion-item"
-    : isNaturalFood
-      ? "meat-cut"
-      : isPackagedFood
-        ? packagedFoodProfile!.productForm
-        : "universal-packshot";
-  const inferredComposition = packagedFoodProfile?.compositionType || (isNaturalFood
-    ? (item.layoutFamily === "sensory-editorial" || item.layoutFamily === "situation-story"
-      ? "natural-food-scene" as const
-      : compositionFromLayout(item.layoutFamily))
-    : compositionFromLayout(item.layoutFamily));
+  const inferredForm: NativeReferenceProductForm = item.categoryGroup === "fashion" ? "fashion-item" : isNaturalFood ? "meat-cut" : isPackagedFood ? packagedFoodProfile!.productForm : "universal-packshot";
+  const inferredComposition = packagedFoodProfile?.compositionType || (isNaturalFood ? (item.layoutFamily === "sensory-editorial" || item.layoutFamily === "situation-story" ? ("natural-food-scene" as const) : compositionFromLayout(item.layoutFamily)) : compositionFromLayout(item.layoutFamily));
   const inferredCount = packagedFoodProfile?.productSlotCount || (/(?:2\s*\+\s*1|세트|묶음|라인업)/i.test(item.sourceFile) ? 2 : 1);
   return {
     ...item,
-    productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm)
-      ? item.productForm as NativeReferenceProductForm
-      : inferredForm,
-    compositionType: nativeReferenceCompositionTypes.includes(item.compositionType as NativeReferenceCompositionType)
-      ? item.compositionType as NativeReferenceCompositionType
-      : inferredComposition,
+    foodSubcategory: item.categoryGroup === "food" ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) : undefined,
+    productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm) ? (item.productForm as NativeReferenceProductForm) : inferredForm,
+    compositionType: nativeReferenceCompositionTypes.includes(item.compositionType as NativeReferenceCompositionType) ? (item.compositionType as NativeReferenceCompositionType) : inferredComposition,
     productSlotCount: Math.max(1, Math.min(6, Math.round(Number(item.productSlotCount) || inferredCount))),
-    productSlotShape: nativeReferenceSlotShapes.includes(item.productSlotShape as NativeReferenceSlotShape)
-      ? item.productSlotShape as NativeReferenceSlotShape
-      : isNaturalFood ? "wide" : item.categoryGroup === "fashion" ? "tall" : "flexible",
-    photographyType: nativeReferencePhotographyTypes.includes(item.photographyType as NativeReferencePhotographyType)
-      ? item.photographyType as NativeReferencePhotographyType
-      : isNaturalFood ? "natural-food" : inferredComposition === "lifestyle-scene" ? "lifestyle" : "packshot",
-    textDensity: nativeReferenceTextDensities.includes(item.textDensity as NativeReferenceTextDensity)
-      ? item.textDensity as NativeReferenceTextDensity
-      : ["price-offer", "usp-evidence", "social-proof"].includes(item.layoutFamily) ? "dense" : "medium",
+    productSlotShape: nativeReferenceSlotShapes.includes(item.productSlotShape as NativeReferenceSlotShape) ? (item.productSlotShape as NativeReferenceSlotShape) : isNaturalFood ? "wide" : item.categoryGroup === "fashion" ? "tall" : "flexible",
+    photographyType: nativeReferencePhotographyTypes.includes(item.photographyType as NativeReferencePhotographyType) ? (item.photographyType as NativeReferencePhotographyType) : isNaturalFood ? "natural-food" : inferredComposition === "lifestyle-scene" ? "lifestyle" : "packshot",
+    textDensity: nativeReferenceTextDensities.includes(item.textDensity as NativeReferenceTextDensity) ? (item.textDensity as NativeReferenceTextDensity) : ["price-offer", "usp-evidence", "social-proof"].includes(item.layoutFamily) ? "dense" : "medium",
     supportsPackagedProduct: item.supportsPackagedProduct ?? !isNaturalFood,
     supportsNaturalFood: item.supportsNaturalFood ?? isNaturalFood,
     supportsHumanModel: item.supportsHumanModel ?? item.categoryGroup === "fashion",
@@ -141,15 +118,22 @@ export function normalizeNativeReferenceCompatibility(
 }
 
 export function normalizeNativeReferenceCategory(value: unknown): NativeReferenceCategoryGroup {
-  return nativeReferenceCategoryGroups.includes(value as NativeReferenceCategoryGroup)
-    ? value as NativeReferenceCategoryGroup
-    : "beauty";
+  return nativeReferenceCategoryGroups.includes(value as NativeReferenceCategoryGroup) ? (value as NativeReferenceCategoryGroup) : "beauty";
 }
 
 export function nativeReferenceCategoryLabel(value: NativeReferenceCategoryGroup) {
   if (value === "fashion") return "패션";
   if (value === "food") return "식품";
   return "화장품";
+}
+
+export function normalizeNativeReferenceFoodSubcategory(value: unknown): NativeReferenceFoodSubcategory | undefined {
+  return nativeReferenceFoodSubcategories.includes(value as NativeReferenceFoodSubcategory) ? (value as NativeReferenceFoodSubcategory) : undefined;
+}
+
+export function nativeReferenceFoodSubcategoryLabel(value: NativeReferenceFoodSubcategory) {
+  if (value === "produce-agriculture") return "과일/농산물";
+  return value;
 }
 
 export function inferNativeReferenceCategoryFromText(value: string): NativeReferenceCategoryGroup {
@@ -159,9 +143,6 @@ export function inferNativeReferenceCategoryFromText(value: string): NativeRefer
   return "beauty";
 }
 
-export function removeManagedNativeReference(
-  items: readonly ManagedNativeReferenceItem[],
-  id: string
-) {
+export function removeManagedNativeReference(items: readonly ManagedNativeReferenceItem[], id: string) {
   return items.filter((item) => item.id !== id);
 }

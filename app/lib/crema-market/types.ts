@@ -1,30 +1,10 @@
 import type { CreativeOpportunityContext } from "../creative-content-notes/types.ts";
 
-export const cremaConnectionStatuses = [
-  "crema_connected",
-  "crema_partial",
-  "crema_disconnected",
-  "crema_error",
-] as const;
+export const cremaConnectionStatuses = ["crema_connected", "crema_partial", "crema_disconnected", "crema_error"] as const;
 export type CremaConnectionStatus = (typeof cremaConnectionStatuses)[number];
 export type CremaInputProvider = "crema_api" | "file_upload" | "development_fixture";
 
-export const productOpportunityTypes = [
-  "HIDDEN_WINNER",
-  "RISING_PRODUCT",
-  "SCALE_CANDIDATE",
-  "UNDEREXPOSED",
-  "HIGH_INTEREST_LOW_CONVERSION",
-  "CART_ABANDONMENT",
-  "REVIEW_POWERED",
-  "REVIEW_RISK",
-  "REPEAT_PURCHASE",
-  "BUNDLE_CANDIDATE",
-  "NEW_PRODUCT_TEST",
-  "DECLINING_BESTSELLER",
-  "INVENTORY_OPPORTUNITY",
-  "EXCLUDE_FROM_ADS",
-] as const;
+export const productOpportunityTypes = ["HIDDEN_WINNER", "RISING_PRODUCT", "SCALE_CANDIDATE", "UNDEREXPOSED", "HIGH_INTEREST_LOW_CONVERSION", "CART_ABANDONMENT", "REVIEW_POWERED", "REVIEW_RISK", "REPEAT_PURCHASE", "BUNDLE_CANDIDATE", "NEW_PRODUCT_TEST", "DECLINING_BESTSELLER", "INVENTORY_OPPORTUNITY", "EXCLUDE_FROM_ADS"] as const;
 export type ProductOpportunityType = (typeof productOpportunityTypes)[number];
 
 export type Advertiser = {

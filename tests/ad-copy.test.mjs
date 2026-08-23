@@ -1,14 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import {
-  adCopyFingerprint,
-  buildAdCopyCsv,
-  canGenerateAdCopyAfterQa,
-  selectRepresentativeResultId,
-  shouldRegenerateAdCopy,
-  validateAdCopyAgainstTruth,
-} from "../app/lib/ad-copy/adCopyValidator.ts";
+import { adCopyFingerprint, buildAdCopyCsv, canGenerateAdCopyAfterQa, selectRepresentativeResultId, shouldRegenerateAdCopy, validateAdCopyAgainstTruth } from "../app/lib/ad-copy/adCopyValidator.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -36,19 +29,41 @@ function truth(overrides = {}) {
       { id: "qty", key: "quantity", label: "중량", value: "250g", verification: "verified", source: "landing-page", usableInCopy: true, numericTokens: ["250"], evidenceType: "quantity" },
       { id: "usage", key: "usage", label: "사용", value: "팬에 바로 익히는 불고기", verification: "verified", source: "landing-page", usableInCopy: true, numericTokens: [], evidenceType: "usage" },
     ],
-    verifiedClaims: [], unverifiedClaims: [], allowedNumericTokens: ["17800", "250"], blockedClaimPatterns: [], imageAssets: [], referenceImages: [], imagePaths: [], completeness: 90, createdAt: new Date().toISOString(),
+    verifiedClaims: [],
+    unverifiedClaims: [],
+    allowedNumericTokens: ["17800", "250"],
+    blockedClaimPatterns: [],
+    imageAssets: [],
+    referenceImages: [],
+    imagePaths: [],
+    completeness: 90,
+    createdAt: new Date().toISOString(),
   };
 }
 
 const validCopy = "저녁 메뉴 고민, 팬 하나면 끝 🍳\n한우 불고기 250g 한 팩\n팬에 바로 익혀 든든하게 차려보세요\n17,800원으로 오늘 저녁 준비 🥩";
 
 test("상품 작업은 이미지 수와 관계없이 대표 결과 ID 하나를 선택한다", () => {
-  const id = selectRepresentativeResultId({ executionResultIds: ["r2", "r1"], results: [{ id: "r1", status: "success" }, { id: "r2", status: "success" }, { id: "r3", status: "success" }] });
+  const id = selectRepresentativeResultId({
+    executionResultIds: ["r2", "r1"],
+    results: [
+      { id: "r1", status: "success" },
+      { id: "r2", status: "success" },
+      { id: "r3", status: "success" },
+    ],
+  });
   assert.equal(id, "r2");
 });
 
 test("여러 이미지 중 사용자가 승인한 대표 이미지가 문구 기준이 된다", () => {
-  const id = selectRepresentativeResultId({ representativeResultId: "r3", executionResultIds: ["r1"], results: [{ id: "r1", status: "success" }, { id: "r3", status: "approved" }] });
+  const id = selectRepresentativeResultId({
+    representativeResultId: "r3",
+    executionResultIds: ["r1"],
+    results: [
+      { id: "r1", status: "success" },
+      { id: "r3", status: "approved" },
+    ],
+  });
   assert.equal(id, "r3");
 });
 
@@ -133,16 +148,20 @@ test("광고 설정 CSV는 문구 줄바꿈과 UTF-8 BOM을 포함한다", () =>
   assert.match(csv, /저녁 메뉴 고민/);
 });
 
-test("이미지 제작은 Meta 문구를 지연 생성하고 내부 프롬프트는 공개 응답에서 제거한다", async () => {
+test("이미지 제작 완료 후 상품당 한 번 설명 문구를 자동 생성하고 내부 프롬프트는 공개 응답에서 제거한다", async () => {
   const native = await read("app/lib/creative-generation/nativeResultGeneration.server.ts");
+  const runner = await read("app/lib/creative-generation/jobRunner.server.ts");
   const publicJob = await read("app/lib/creative-generation/publicJob.server.ts");
   const manualUi = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
   const adCopyPanel = await read("app/components/ad-copy/ProductAdCopyPanel.tsx");
   const autoUi = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   const autoRunner = await read("app/lib/auto-production/productionRunner.server.ts");
   assert.doesNotMatch(native, /ensureProductAdCopy/);
+  assert.match(runner, /hasGeneratedImage && !completed\.adCopy/);
+  assert.match(runner, /ensureProductAdCopy\(jobId\)/);
   assert.match(manualUi, /ProductAdCopyPanel/);
-  assert.match(adCopyPanel, /Meta 문구 만들기/);
+  assert.match(adCopyPanel, /상품 광고 설명 문구 · 상품당 1개/);
+  assert.match(adCopyPanel, /이미지 제작이 끝나면 자동으로 생성됩니다/);
   assert.match(autoRunner, /createNativeGenerationJob/);
   assert.match(autoUi, /\/create-product\?view=results/);
   assert.doesNotMatch(autoUi, /ProductAdCopyPanel/);

@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
-import {
-  applyProductEffectToPng,
-  imageSourceToBuffer,
-  saveProcessedProductImage,
-} from "../../../lib/mvp/imageEffects";
-import {
-  removeProductBackground,
-  type BackgroundRemovalProvider,
-} from "../../../lib/mvp/backgroundRemoval";
-import type {
-  NormalizedImageBox,
-  ProductExtractionScope,
-  ProductImageEffectPreset,
-  ProductRepresentationType,
-} from "../../../lib/mvp/types";
+import { applyProductEffectToPng, imageSourceToBuffer, saveProcessedProductImage } from "../../../lib/mvp/imageEffects";
+import { removeProductBackground, type BackgroundRemovalProvider } from "../../../lib/mvp/backgroundRemoval";
+import type { NormalizedImageBox, ProductExtractionScope, ProductImageEffectPreset, ProductRepresentationType } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
@@ -32,22 +20,14 @@ type Body = {
   cleanupStrength?: "light" | "balanced" | "strong";
 };
 
-const effectPresets = new Set<ProductImageEffectPreset>([
-  "none",
-  "clean-outline",
-  "soft-glow",
-  "commerce-shadow",
-  "outline-glow-shadow",
-]);
+const effectPresets = new Set<ProductImageEffectPreset>(["none", "clean-outline", "soft-glow", "commerce-shadow", "outline-glow-shadow"]);
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Body;
     const sourceImagePath = String(body.imagePath || body.sourceImagePath || "").trim();
     const provider = body.provider || "removebg";
-    const effectPreset = effectPresets.has(body.effectPreset || "commerce-shadow")
-      ? body.effectPreset || "commerce-shadow"
-      : "commerce-shadow";
+    const effectPreset = effectPresets.has(body.effectPreset || "commerce-shadow") ? body.effectPreset || "commerce-shadow" : "commerce-shadow";
 
     if (!sourceImagePath) {
       return NextResponse.json(
@@ -63,13 +43,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const allowAlternativeSources = !body.cropBox && !(body.selectedObjectIds?.length);
-    const candidateImagePaths = [
-      sourceImagePath,
-      ...(allowAlternativeSources && Array.isArray(body.candidateImagePaths)
-        ? body.candidateImagePaths
-        : []),
-    ]
+    const allowAlternativeSources = !body.cropBox && !body.selectedObjectIds?.length;
+    const candidateImagePaths = [sourceImagePath, ...(allowAlternativeSources && Array.isArray(body.candidateImagePaths) ? body.candidateImagePaths : [])]
       .map((value) => String(value || "").trim())
       .filter((value, index, values) => value && values.indexOf(value) === index)
       .slice(0, 8);
@@ -103,10 +78,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ...result,
         attemptedImageCount: candidateImagePaths.length,
-        fallbackMessage:
-          candidateImagePaths.length > 1
-            ? "상세 이미지에서 상품 단독 컷을 탐색했지만 안전하게 분리할 이미지를 찾지 못해 원본을 유지했습니다."
-            : result.fallbackMessage,
+        fallbackMessage: candidateImagePaths.length > 1 ? "상세 이미지에서 상품 단독 컷을 탐색했지만 안전하게 분리할 이미지를 찾지 못해 원본을 유지했습니다." : result.fallbackMessage,
       });
     }
 
@@ -114,10 +86,7 @@ export async function POST(request: Request) {
     if (effectPreset !== "none") {
       const cutoutBuffer = await imageSourceToBuffer(result.processedImagePath);
       const styledBuffer = await applyProductEffectToPng(cutoutBuffer, effectPreset);
-      styledCutoutImagePath = await saveProcessedProductImage(
-        styledBuffer,
-        `removebg-effect-${Date.now()}-${Math.random().toString(16).slice(2, 10)}.png`
-      );
+      styledCutoutImagePath = await saveProcessedProductImage(styledBuffer, `removebg-effect-${Date.now()}-${Math.random().toString(16).slice(2, 10)}.png`);
     }
 
     return NextResponse.json({
@@ -154,8 +123,7 @@ export async function POST(request: Request) {
         provider: "removebg",
         error: "REMOVE_BG_FAILED",
         detail: process.env.NODE_ENV === "development" ? errorMessage : undefined,
-        fallbackMessage:
-          "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요.",
+        fallbackMessage: "배경 제거에 실패했습니다. 원본 이미지를 계속 사용하거나 상품 이미지를 직접 업로드해 주세요.",
       },
       { status: 500 }
     );

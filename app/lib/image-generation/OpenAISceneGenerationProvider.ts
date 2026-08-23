@@ -1,15 +1,6 @@
-import {
-  editImageFromSource,
-  generateImageFromText,
-  getOpenAIImageModel,
-  getOpenAIImageQuality,
-} from "../mvp/openaiImageClient.ts";
+import { editImageFromSource, generateImageFromText, getOpenAIImageModel, getOpenAIImageQuality } from "../mvp/openaiImageClient.ts";
 import type { SceneGenerationInput, SceneGenerationResult } from "../creative/types.ts";
-import {
-  isPaidImageGenerationEnabled,
-  type ImageGenerationFeature,
-  type SceneGenerationProvider,
-} from "./SceneGenerationProvider.ts";
+import { isPaidImageGenerationEnabled, type ImageGenerationFeature, type SceneGenerationProvider } from "./SceneGenerationProvider.ts";
 
 export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   readonly id = "openai" as const;
@@ -20,11 +11,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
   }
 
   isConfigured() {
-    return Boolean(
-      this.explicitPaidApiAuthorization &&
-        process.env.OPENAI_API_KEY &&
-        isPaidImageGenerationEnabled()
-    );
+    return Boolean(this.explicitPaidApiAuthorization && process.env.OPENAI_API_KEY && isPaidImageGenerationEnabled());
   }
 
   supports(feature: ImageGenerationFeature) {
@@ -34,19 +21,9 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
 
   async generateScene(input: SceneGenerationInput): Promise<SceneGenerationResult> {
     if (!this.isConfigured()) {
-      throw new Error(
-        "유료 OpenAI 이미지 공급자 선택, 작업별 동의, 서버 허용이 모두 필요합니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다."
-      );
+      throw new Error("유료 OpenAI 이미지 공급자 선택, 작업별 동의, 서버 허용이 모두 필요합니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다.");
     }
-    const prompt = [
-      input.prompt,
-      input.negativePrompt ? `Negative constraints: ${input.negativePrompt}` : "",
-      "OUTPUT CONTRACT: one edge-to-edge, fully opaque square commercial photography plate. Fill all four corners and every pixel with the continuous environment.",
-      "A product-safe zone means a low-detail photographed surface with coherent perspective and light. It must never be transparent, black, blank, masked, boxed, or cut out.",
-      "Do not render the sold product, a lookalike replacement product, package, bottle, label, logo, price, text, or isolated hero object anywhere. Contextual ingredients, water, foam, surfaces, people or usage props are allowed only when the art-direction prompt explicitly requests them, and they must not obstruct the reserved product stage.",
-    ]
-      .filter(Boolean)
-      .join("\n\n");
+    const prompt = [input.prompt, input.negativePrompt ? `Negative constraints: ${input.negativePrompt}` : "", "OUTPUT CONTRACT: one edge-to-edge, fully opaque square commercial photography plate. Fill all four corners and every pixel with the continuous environment.", "A product-safe zone means a low-detail photographed surface with coherent perspective and light. It must never be transparent, black, blank, masked, boxed, or cut out.", "Do not render the sold product, a lookalike replacement product, package, bottle, label, logo, price, text, or isolated hero object anywhere. Contextual ingredients, water, foam, surfaces, people or usage props are allowed only when the art-direction prompt explicitly requests them, and they must not obstruct the reserved product stage."].filter(Boolean).join("\n\n");
     const model = getOpenAIImageModel();
     const result = await generateImageFromText({
       prompt,
@@ -72,9 +49,7 @@ export class OpenAISceneGenerationProvider implements SceneGenerationProvider {
 
   async generateReferenceImage(input: SceneGenerationInput): Promise<SceneGenerationResult> {
     if (!this.isConfigured()) {
-      throw new Error(
-        "유료 OpenAI 이미지 공급자 선택, 작업별 동의, 서버 허용이 모두 필요합니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다."
-      );
+      throw new Error("유료 OpenAI 이미지 공급자 선택, 작업별 동의, 서버 허용이 모두 필요합니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다.");
     }
     const [sourceImagePath, ...referenceImagePaths] = input.referenceImages || [];
     if (!sourceImagePath) throw new Error("참조 이미지 생성에는 source image가 필요합니다.");

@@ -22,11 +22,7 @@ function responseText(payload: unknown) {
     output_text?: string;
     output?: Array<{ content?: Array<{ text?: string }> }>;
   };
-  return (
-    object.output_text ||
-    object.output?.flatMap((item) => item.content || []).find((item) => item.text)?.text ||
-    ""
-  );
+  return object.output_text || object.output?.flatMap((item) => item.content || []).find((item) => item.text)?.text || "";
 }
 
 function numbers(value: string) {
@@ -105,38 +101,21 @@ ${JSON.stringify(facts)}`;
     const detail = narrative.productId ? byId.get(narrative.productId) : undefined;
     if (!detail?.advertisingAnalysis) continue;
     const factText = JSON.stringify(facts.find((item) => item.productId === detail.product.id));
-    const usps = uniqueStrings(
-      (narrative.uspSummaries || []).map((value) => safeNarrative(value, factText)).filter(Boolean),
-      4
-    );
+    const usps = uniqueStrings((narrative.uspSummaries || []).map((value) => safeNarrative(value, factText)).filter(Boolean), 4);
     if (usps.length) detail.uspCandidates = usps;
-    const reviewInsights = uniqueStrings(
-      (narrative.reviewInsightSummaries || [])
-        .map((value) => safeNarrative(value, factText))
-        .filter(Boolean),
-      4
-    );
+    const reviewInsights = uniqueStrings((narrative.reviewInsightSummaries || []).map((value) => safeNarrative(value, factText)).filter(Boolean), 4);
     if (reviewInsights.length && detail.reviewAnalysis) {
       detail.reviewAnalysis.copyUsableInsights = reviewInsights;
     }
-    const reasons = uniqueStrings(
-      (narrative.recommendationReasons || [])
-        .map((value) => safeNarrative(value, factText))
-        .filter(Boolean),
-      6
-    );
+    const reasons = uniqueStrings((narrative.recommendationReasons || []).map((value) => safeNarrative(value, factText)).filter(Boolean), 6);
     if (reasons.length) detail.advertisingAnalysis.reasons = reasons;
     for (const angleNarrative of narrative.angles || []) {
-      const angle = detail.advertisingAnalysis.recommendedAngles.find(
-        (candidate) => candidate.type === angleNarrative.type
-      );
+      const angle = detail.advertisingAnalysis.recommendedAngles.find((candidate) => candidate.type === angleNarrative.type);
       if (!angle) continue;
       angle.name = safeNarrative(angleNarrative.name, factText, 80) || angle.name;
       angle.reason = safeNarrative(angleNarrative.reason, factText) || angle.reason;
-      angle.headlineDirection =
-        safeNarrative(angleNarrative.headlineDirection, factText) || angle.headlineDirection;
-      angle.bodyDirection =
-        safeNarrative(angleNarrative.bodyDirection, factText) || angle.bodyDirection;
+      angle.headlineDirection = safeNarrative(angleNarrative.headlineDirection, factText) || angle.headlineDirection;
+      angle.bodyDirection = safeNarrative(angleNarrative.bodyDirection, factText) || angle.bodyDirection;
     }
   }
 }

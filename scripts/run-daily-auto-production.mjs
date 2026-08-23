@@ -6,12 +6,17 @@ import path from "node:path";
 async function readLocalEnvironment() {
   try {
     const text = await readFile(path.join(process.cwd(), ".env.local"), "utf8");
-    return Object.fromEntries(text.split(/\r?\n/).map((line) => {
-      const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-      if (!match) return null;
-      const value = match[2].replace(/^(['"])(.*)\1$/, "$2");
-      return [match[1], value];
-    }).filter(Boolean));
+    return Object.fromEntries(
+      text
+        .split(/\r?\n/)
+        .map((line) => {
+          const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+          if (!match) return null;
+          const value = match[2].replace(/^(['"])(.*)\1$/, "$2");
+          return [match[1], value];
+        })
+        .filter(Boolean)
+    );
   } catch {
     return {};
   }
@@ -31,11 +36,7 @@ function summarizeRun(item) {
 
 const localEnvironment = await readLocalEnvironment();
 const options = argumentsFrom(process.argv.slice(2));
-const baseUrl = String(
-  process.env.ADATLAS_AUTO_PRODUCTION_BASE_URL ||
-  localEnvironment.ADATLAS_AUTO_PRODUCTION_BASE_URL ||
-  "http://127.0.0.1:3000"
-).replace(/\/$/, "");
+const baseUrl = String(process.env.ADATLAS_AUTO_PRODUCTION_BASE_URL || localEnvironment.ADATLAS_AUTO_PRODUCTION_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const token = process.env.ADATLAS_AUTO_PRODUCTION_TOKEN || localEnvironment.ADATLAS_AUTO_PRODUCTION_TOKEN || "";
 
 async function request(endpoint, init = {}) {

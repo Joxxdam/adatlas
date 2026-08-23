@@ -3,12 +3,7 @@ import { NextResponse } from "next/server";
 import { defaultAdBrief, productInfoToAdBrief } from "../../../lib/mvp/adBrief";
 import { readAdImageLabels } from "../../../lib/mvp/labelStore";
 import { matchReferences } from "../../../lib/mvp/referenceMatcher";
-import type {
-  AdBrief,
-  CreativeStrategy,
-  GeneratedAdCopy,
-  ProductInfoForPrompt,
-} from "../../../lib/mvp/types";
+import type { AdBrief, CreativeStrategy, GeneratedAdCopy, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import { matchAdvertiserProfile } from "../../../lib/creative/advertiserProfiles";
 import { buildVisualDirections } from "../../../lib/creative/buildVisualDirection";
 import { evaluateCreativeQuality } from "../../../lib/creative/creativeQualityEvaluator";
@@ -51,10 +46,7 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as Body;
     const product = normalizeProduct(body.productInfo);
     if (!product.productName && !product.category && !product.mainBenefit) {
-      return NextResponse.json(
-        { ok: false, error: "비주얼 방향을 만들 상품 정보가 필요합니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "비주얼 방향을 만들 상품 정보가 필요합니다." }, { status: 400 });
     }
     const brief = productInfoToAdBrief(product, {
       ...defaultAdBrief,

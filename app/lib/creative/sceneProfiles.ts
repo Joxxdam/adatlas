@@ -1,12 +1,6 @@
 import type { SceneProfile } from "./types";
 
-const sharedNegatives = [
-  "readable text, letters, numbers, typography, logo, watermark",
-  "fake product, package, bottle, label or branded container",
-  "collage, poster, border or UI screenshot",
-  "busy objects inside reserved product and text zones",
-  "transparent background, alpha channel, cutout, isolated object, black void or missing pixels",
-];
+const sharedNegatives = ["readable text, letters, numbers, typography, logo, watermark", "fake product, package, bottle, label or branded container", "collage, poster, border or UI screenshot", "busy objects inside reserved product and text zones", "transparent background, alpha channel, cutout, isolated object, black void or missing pixels"];
 
 export const sceneProfiles: SceneProfile[] = [
   {

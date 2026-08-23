@@ -1,23 +1,11 @@
 import "server-only";
 
 import type { ProductInfoForPrompt, SourceImageCandidate } from "../mvp/types";
-import type {
-  ContentAngleRecommendation,
-  ProductCreationHandoff,
-} from "../store-analysis/types";
+import type { ContentAngleRecommendation, ProductCreationHandoff } from "../store-analysis/types";
 import { siteCandidateCache } from "./cache.server";
 import type { SiteAdCandidate, SiteRecommendationType } from "./types";
 
-const UNIVERSAL_HOOKS = [
-  "감각형",
-  "문제 해결형",
-  "상황형",
-  "호기심형",
-  "핵심 USP형",
-  "타깃형",
-  "후기·신뢰형",
-  "가격·혜택형",
-];
+const UNIVERSAL_HOOKS = ["감각형", "문제 해결형", "상황형", "호기심형", "핵심 USP형", "타깃형", "후기·신뢰형", "가격·혜택형"];
 
 const TYPE_TO_HOOK: Record<SiteRecommendationType, string> = {
   "review-trust": "후기·신뢰형",
@@ -71,23 +59,8 @@ function contentAngle(candidate: SiteAdCandidate): ContentAngleRecommendation {
   return {
     id: `site-angle-${candidate.id}`,
     name: TYPE_LABEL[type],
-    type:
-      type === "review-trust"
-        ? "review"
-        : type === "price-benefit"
-          ? "price-shock"
-          : type === "problem-solution"
-            ? "problem-solution"
-            : type === "new-product-test"
-              ? "new-product"
-              : type === "seasonal-test" || type === "situation"
-                ? "seasonal"
-                : type === "bundle-value"
-                  ? "bundle-value"
-                  : "quality",
-    reason:
-      candidate.recommendationReasons[0] ||
-      "페이지 공개정보에서 확인된 상품 근거를 광고 메시지로 검증합니다.",
+    type: type === "review-trust" ? "review" : type === "price-benefit" ? "price-shock" : type === "problem-solution" ? "problem-solution" : type === "new-product-test" ? "new-product" : type === "seasonal-test" || type === "situation" ? "seasonal" : type === "bundle-value" ? "bundle-value" : "quality",
+    reason: candidate.recommendationReasons[0] || "페이지 공개정보에서 확인된 상품 근거를 광고 메시지로 검증합니다.",
     evidence: candidate.recommendationReasons,
     headlineDirection: `${TYPE_LABEL[type]} 후킹`,
     bodyDirection: candidate.product.uspCandidates.slice(0, 2).join(" · "),
@@ -97,14 +70,9 @@ function contentAngle(candidate: SiteAdCandidate): ContentAngleRecommendation {
 
 export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductInfoForPrompt {
   const product = candidate.product;
-  const images = [product.representativeImage, ...product.additionalImages].filter(
-    (image): image is string => Boolean(image)
-  );
+  const images = [product.representativeImage, ...product.additionalImages].filter((image): image is string => Boolean(image));
   const prioritizedHook = TYPE_TO_HOOK[candidate.primaryRecommendationType];
-  const recommendedHookTypes = [
-    prioritizedHook,
-    ...UNIVERSAL_HOOKS.filter((hook) => hook !== prioritizedHook),
-  ];
+  const recommendedHookTypes = [prioritizedHook, ...UNIVERSAL_HOOKS.filter((hook) => hook !== prioritizedHook)];
   return {
     productName: product.productName,
     category: product.category || "기타",
@@ -115,10 +83,7 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
     brandName: product.brandName,
     discountInfo: product.benefits.join(" · "),
     mainBenefit: product.uspCandidates.slice(0, 3).join(" · "),
-    targetCustomer:
-      product.targetSignals.slice(0, 3).join(" · ") ||
-      product.usageContexts.slice(0, 2).join(" · ") ||
-      "상품 상세페이지에서 확인된 정보를 비교하는 고객",
+    targetCustomer: product.targetSignals.slice(0, 3).join(" · ") || product.usageContexts.slice(0, 2).join(" · ") || "상품 상세페이지에서 확인된 정보를 비교하는 고객",
     landingUrl: product.productUrl,
     productImagePath: product.representativeImage || "",
     secondaryProductImagePath: product.additionalImages[0] || "",
@@ -147,12 +112,7 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
       dataEvidence: candidate.recommendationReasons,
       dataAsOf: product.analyzedAt.slice(0, 10),
       dataSources: ["SITE_PUBLIC_DATA", product.productUrl],
-      dataSufficiency:
-        candidate.evidenceLevel === "high"
-          ? "analysis-ready"
-          : candidate.evidenceLevel === "medium"
-            ? "reference-only"
-            : "data-insufficient",
+      dataSufficiency: candidate.evidenceLevel === "high" ? "analysis-ready" : candidate.evidenceLevel === "medium" ? "reference-only" : "data-insufficient",
       analysisSource: "SITE_PUBLIC_DATA",
       adFitScore: candidate.score.total,
       evidenceLevel: candidate.evidenceLevel,
@@ -161,9 +121,7 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
   };
 }
 
-export function buildSiteCandidateProductCreationHandoff(
-  selectionId: string
-): ProductCreationHandoff | null {
+export function buildSiteCandidateProductCreationHandoff(selectionId: string): ProductCreationHandoff | null {
   const selection = siteCandidateCache.getSelection(selectionId);
   if (!selection) return null;
   const candidate = selection.candidate;
@@ -175,20 +133,21 @@ export function buildSiteCandidateProductCreationHandoff(
     productUrl: candidate.product.productUrl,
     productInfo,
     productImagePaths: productInfo.productImagePaths || [],
-    reviewAnalysis: candidate.product.reviewCount || candidate.product.rating
-      ? {
-          reviewCount: candidate.product.reviewCount,
-          averageRating: candidate.product.rating,
-          positiveKeywords: [],
-          negativeKeywords: [],
-          purchaseSituations: candidate.product.usageContexts,
-          repeatedBenefits: candidate.product.extractedReviewPhrases,
-          repeatedComplaints: [],
-          copyUsableInsights: candidate.product.extractedReviewPhrases,
-          sourceReviewCount: candidate.product.reviewCount,
-          confidence: candidate.evidenceLevel === "high" ? 0.85 : 0.55,
-        }
-      : undefined,
+    reviewAnalysis:
+      candidate.product.reviewCount || candidate.product.rating
+        ? {
+            reviewCount: candidate.product.reviewCount,
+            averageRating: candidate.product.rating,
+            positiveKeywords: [],
+            negativeKeywords: [],
+            purchaseSituations: candidate.product.usageContexts,
+            repeatedBenefits: candidate.product.extractedReviewPhrases,
+            repeatedComplaints: [],
+            copyUsableInsights: candidate.product.extractedReviewPhrases,
+            sourceReviewCount: candidate.product.reviewCount,
+            confidence: candidate.evidenceLevel === "high" ? 0.85 : 0.55,
+          }
+        : undefined,
     selectedContentAngle: angle,
     availableContentAngles: [angle],
     recommendedTemplateIds: [],
@@ -196,8 +155,7 @@ export function buildSiteCandidateProductCreationHandoff(
     recommendedStyleName: "사이트 공개정보 기반 광고 실험",
     advertiserName: candidate.product.brandName,
     advertisingScore: candidate.score.total,
-    confidence:
-      candidate.evidenceLevel === "high" ? 0.85 : candidate.evidenceLevel === "medium" ? 0.65 : 0.4,
+    confidence: candidate.evidenceLevel === "high" ? 0.85 : candidate.evidenceLevel === "medium" ? 0.65 : 0.4,
     creativeContext: productInfo.creativeContext,
   };
 }

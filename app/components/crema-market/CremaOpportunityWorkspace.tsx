@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { buildProductCreationHref } from "../../lib/product-creation/handoffUrl";
 import { useEffect, useMemo, useState } from "react";
-import type {
-  CremaMarketDataset,
-  ProductOpportunity,
-  ProductOpportunityType,
-} from "../../lib/crema-market/types";
+import type { CremaMarketDataset, ProductOpportunity, ProductOpportunityType } from "../../lib/crema-market/types";
 
 type AdvertiserSummary = CremaMarketDataset["advertiser"] & {
   productCount: number;
@@ -58,19 +54,13 @@ export function CremaOpportunityWorkspace() {
   const [periodDays, setPeriodDays] = useState<1 | 7 | 14 | 28>(14);
   const [file, setFile] = useState<File | null>(null);
   const [typeFilter, setTypeFilter] = useState<ProductOpportunityType | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<ProductOpportunity["status"] | "all">(
-    "recommended"
-  );
+  const [statusFilter, setStatusFilter] = useState<ProductOpportunity["status"] | "all">("recommended");
   const [sortBy, setSortBy] = useState<"score" | "confidence">("score");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [minimumConfidence, setMinimumConfidence] = useState(0);
-  const [availabilityFilter, setAvailabilityFilter] = useState<"all" | "available" | "excluded">(
-    "all"
-  );
+  const [availabilityFilter, setAvailabilityFilter] = useState<"all" | "available" | "excluded">("all");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(
-    "크리마켓 연결은 선택사항입니다. 미연결 상태에서도 아래 상세페이지 분석을 계속 사용할 수 있습니다."
-  );
+  const [message, setMessage] = useState("크리마켓 연결은 선택사항입니다. 미연결 상태에서도 아래 상세페이지 분석을 계속 사용할 수 있습니다.");
 
   async function loadAdvertisers(preferredId?: string) {
     const response = await fetch("/api/crema-market", { cache: "no-store" });
@@ -93,8 +83,7 @@ export function CremaOpportunityWorkspace() {
       cache: "no-store",
     });
     const payload = (await response.json()) as { dataset?: CremaMarketDataset; error?: string };
-    if (!response.ok || !payload.dataset)
-      throw new Error(payload.error || "분석 데이터를 불러오지 못했습니다.");
+    if (!response.ok || !payload.dataset) throw new Error(payload.error || "분석 데이터를 불러오지 못했습니다.");
     setDataset(payload.dataset);
     setAdvertiserId(payload.dataset.advertiser.id);
     setAdvertiserName(payload.dataset.advertiser.name);
@@ -102,9 +91,7 @@ export function CremaOpportunityWorkspace() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      void loadAdvertisers().catch((error) =>
-        setMessage(error instanceof Error ? error.message : "목록 조회 실패")
-      );
+      void loadAdvertisers().catch((error) => setMessage(error instanceof Error ? error.message : "목록 조회 실패"));
     }, 0);
     return () => window.clearTimeout(timeout);
     // Initial discovery only; subsequent refreshes are explicit user actions.
@@ -124,8 +111,7 @@ export function CremaOpportunityWorkspace() {
         error?: string;
         opportunities?: ProductOpportunity[];
       };
-      if (!response.ok || !payload.dataset)
-        throw new Error(payload.error || "동기화에 실패했습니다.");
+      if (!response.ok || !payload.dataset) throw new Error(payload.error || "동기화에 실패했습니다.");
       setDataset(payload.dataset);
       setSelectedAdvertiserId(payload.dataset.advertiser.id);
       setMessage(`분석 완료: 광고 기회 ${payload.opportunities?.length || 0}건을 찾았습니다.`);
@@ -153,13 +139,10 @@ export function CremaOpportunityWorkspace() {
         opportunities?: ProductOpportunity[];
         warnings?: string[];
       };
-      if (!response.ok || !payload.dataset)
-        throw new Error(payload.error || "업로드 분석에 실패했습니다.");
+      if (!response.ok || !payload.dataset) throw new Error(payload.error || "업로드 분석에 실패했습니다.");
       setDataset(payload.dataset);
       setSelectedAdvertiserId(payload.dataset.advertiser.id);
-      setMessage(
-        `업로드 분석 완료: 광고 기회 ${payload.opportunities?.length || 0}건 · 데이터 없음은 0으로 바꾸지 않았습니다.`
-      );
+      setMessage(`업로드 분석 완료: 광고 기회 ${payload.opportunities?.length || 0}건 · 데이터 없음은 0으로 바꾸지 않았습니다.`);
       await loadAdvertisers(payload.dataset.advertiser.id);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "업로드 실패");
@@ -169,66 +152,32 @@ export function CremaOpportunityWorkspace() {
   }
 
   async function updateStatus(opportunityId: string, status: "recommended" | "later" | "excluded") {
-    const response = await fetch(
-      `/api/crema-market/opportunities/${encodeURIComponent(opportunityId)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      }
-    );
+    const response = await fetch(`/api/crema-market/opportunities/${encodeURIComponent(opportunityId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
     if (!response.ok) return setMessage("상태를 변경하지 못했습니다.");
     setDataset((current) =>
       current
         ? {
             ...current,
-            opportunities: current.opportunities.map((item) =>
-              item.id === opportunityId
-                ? { ...item, status, updatedAt: new Date().toISOString() }
-                : item
-            ),
+            opportunities: current.opportunities.map((item) => (item.id === opportunityId ? { ...item, status, updatedAt: new Date().toISOString() } : item)),
           }
         : current
     );
   }
 
-  const productMap = useMemo(
-    () => new Map((dataset?.products || []).map((product) => [product.id, product])),
-    [dataset]
-  );
+  const productMap = useMemo(() => new Map((dataset?.products || []).map((product) => [product.id, product])), [dataset]);
   const displayed = useMemo(() => {
     return [...(dataset?.opportunities || [])]
-      .filter(
-        (item) =>
-          typeFilter === "all" ||
-          item.type === typeFilter ||
-          item.secondaryTypes.includes(typeFilter)
-      )
+      .filter((item) => typeFilter === "all" || item.type === typeFilter || item.secondaryTypes.includes(typeFilter))
       .filter((item) => statusFilter === "all" || item.status === statusFilter)
-      .filter(
-        (item) =>
-          categoryFilter === "all" ||
-          productMap.get(item.productId)?.categoryName === categoryFilter
-      )
+      .filter((item) => categoryFilter === "all" || productMap.get(item.productId)?.categoryName === categoryFilter)
       .filter((item) => item.confidence >= minimumConfidence)
-      .filter(
-        (item) =>
-          availabilityFilter === "all" ||
-          (availabilityFilter === "available"
-            ? item.type !== "EXCLUDE_FROM_ADS"
-            : item.type === "EXCLUDE_FROM_ADS")
-      )
+      .filter((item) => availabilityFilter === "all" || (availabilityFilter === "available" ? item.type !== "EXCLUDE_FROM_ADS" : item.type === "EXCLUDE_FROM_ADS"))
       .sort((left, right) => right[sortBy] - left[sortBy]);
-  }, [
-    availabilityFilter,
-    categoryFilter,
-    dataset,
-    minimumConfidence,
-    productMap,
-    sortBy,
-    statusFilter,
-    typeFilter,
-  ]);
+  }, [availabilityFilter, categoryFilter, dataset, minimumConfidence, productMap, sortBy, statusFilter, typeFilter]);
   const quality = dataset?.qualityReports.at(-1);
   const run = dataset?.analysisRuns.at(-1);
 
@@ -238,41 +187,23 @@ export function CremaOpportunityWorkspace() {
         <div>
           <p className="eyebrow">OPTIONAL CREMA MARKET SIGNALS</p>
           <h1>광고 기회 상품 찾기</h1>
-          <p>
-            상품·주문·후기와 업로드한 퍼널 지표를 비교해 광고할 이유가 있는 상품만 근거와 함께
-            추천합니다.
-          </p>
+          <p>상품·주문·후기와 업로드한 퍼널 지표를 비교해 광고할 이유가 있는 상품만 근거와 함께 추천합니다.</p>
         </div>
-        <span
-          className={`crema-connection-badge ${dataset?.advertiser.connectionStatus || "crema_disconnected"}`}
-        >
-          {connectionLabels[dataset?.advertiser.connectionStatus || "crema_disconnected"]}
-        </span>
+        <span className={`crema-connection-badge ${dataset?.advertiser.connectionStatus || "crema_disconnected"}`}>{connectionLabels[dataset?.advertiser.connectionStatus || "crema_disconnected"]}</span>
       </div>
 
       <div className="crema-connection-panel">
         <label>
           <span>광고주 ID</span>
-          <input
-            onChange={(event) => setAdvertiserId(event.target.value)}
-            placeholder="예: brand-a"
-            value={advertiserId}
-          />
+          <input onChange={(event) => setAdvertiserId(event.target.value)} placeholder="예: brand-a" value={advertiserId} />
         </label>
         <label>
           <span>광고주명</span>
-          <input
-            onChange={(event) => setAdvertiserName(event.target.value)}
-            placeholder="광고주 또는 브랜드명"
-            value={advertiserName}
-          />
+          <input onChange={(event) => setAdvertiserName(event.target.value)} placeholder="광고주 또는 브랜드명" value={advertiserName} />
         </label>
         <label>
           <span>분석 기간</span>
-          <select
-            onChange={(event) => setPeriodDays(Number(event.target.value) as 1 | 7 | 14 | 28)}
-            value={periodDays}
-          >
+          <select onChange={(event) => setPeriodDays(Number(event.target.value) as 1 | 7 | 14 | 28)} value={periodDays}>
             <option value={1}>최근 1일</option>
             <option value={7}>최근 7일</option>
             <option value={14}>최근 14일</option>
@@ -280,46 +211,25 @@ export function CremaOpportunityWorkspace() {
           </select>
         </label>
         <div className="crema-connection-actions">
-          <button
-            disabled={loading || !configured || !advertiserId || !advertiserName}
-            onClick={() => void sync("crema_api")}
-            type="button"
-          >
+          <button disabled={loading || !configured || !advertiserId || !advertiserName} onClick={() => void sync("crema_api")} type="button">
             공식 API 동기화
           </button>
-          {!configured ? (
-            <small>서버에 CREMA_APP_ID/CREMA_SECRET을 설정하면 활성화됩니다.</small>
-          ) : null}
+          {!configured ? <small>서버에 CREMA_APP_ID/CREMA_SECRET을 설정하면 활성화됩니다.</small> : null}
         </div>
         <label className="crema-file-input">
           <span>CSV/XLSX 보완 데이터</span>
-          <input
-            accept=".csv,.xlsx,.xls"
-            onChange={(event) => setFile(event.target.files?.[0] || null)}
-            type="file"
-          />
+          <input accept=".csv,.xlsx,.xls" onChange={(event) => setFile(event.target.files?.[0] || null)} type="file" />
         </label>
-        <button
-          disabled={loading || !file || !advertiserId || !advertiserName}
-          onClick={() => void upload()}
-          type="button"
-        >
+        <button disabled={loading || !file || !advertiserId || !advertiserName} onClick={() => void upload()} type="button">
           파일 업로드 후 분석
         </button>
         {process.env.NODE_ENV !== "production" ? (
-          <button
-            className="secondary"
-            disabled={loading}
-            onClick={() => void sync("development_fixture")}
-            type="button"
-          >
+          <button className="secondary" disabled={loading} onClick={() => void sync("development_fixture")} type="button">
             개발 fixture로 확인
           </button>
         ) : null}
       </div>
-      <p className="crema-workspace-message">
-        {loading ? "데이터를 정규화하고 이전 동기간과 비교하는 중입니다…" : message}
-      </p>
+      <p className="crema-workspace-message">{loading ? "데이터를 정규화하고 이전 동기간과 비교하는 중입니다…" : message}</p>
 
       {advertisers.length ? (
         <label className="crema-advertiser-picker">
@@ -327,16 +237,13 @@ export function CremaOpportunityWorkspace() {
           <select
             onChange={(event) => {
               setSelectedAdvertiserId(event.target.value);
-              void loadDataset(event.target.value).catch((error) =>
-                setMessage(error instanceof Error ? error.message : "조회 실패")
-              );
+              void loadDataset(event.target.value).catch((error) => setMessage(error instanceof Error ? error.message : "조회 실패"));
             }}
             value={selectedAdvertiserId}
           >
             {advertisers.map((advertiser) => (
               <option key={advertiser.id} value={advertiser.id}>
-                {advertiser.name} · {connectionLabels[advertiser.connectionStatus]} · 기회{" "}
-                {advertiser.opportunityCount}
+                {advertiser.name} · {connectionLabels[advertiser.connectionStatus]} · 기회 {advertiser.opportunityCount}
               </option>
             ))}
           </select>
@@ -358,10 +265,7 @@ export function CremaOpportunityWorkspace() {
             <article>
               <small>상품</small>
               <strong>{run.productCount}개</strong>
-              <span>
-                추천 기회{" "}
-                {dataset.opportunities.filter((item) => item.status === "recommended").length}건
-              </span>
+              <span>추천 기회 {dataset.opportunities.filter((item) => item.status === "recommended").length}건</span>
             </article>
             <article>
               <small>데이터 품질</small>
@@ -370,49 +274,22 @@ export function CremaOpportunityWorkspace() {
             </article>
             <article>
               <small>수집 출처</small>
-              <strong>
-                {dataset.advertiser.provider === "crema_api"
-                  ? "크리마켓 공식 API"
-                  : dataset.advertiser.provider === "file_upload"
-                    ? "업로드 파일"
-                    : "개발 fixture"}
-              </strong>
+              <strong>{dataset.advertiser.provider === "crema_api" ? "크리마켓 공식 API" : dataset.advertiser.provider === "file_upload" ? "업로드 파일" : "개발 fixture"}</strong>
               <span>{dataset.advertiser.lastSyncedAt?.slice(0, 16).replace("T", " ")}</span>
             </article>
             <article>
               <small>소액 테스트</small>
-              <strong>
-                {
-                  dataset.opportunities.filter((item) =>
-                    ["NEW_PRODUCT_TEST", "HIDDEN_WINNER", "RISING_PRODUCT"].includes(item.type)
-                  ).length
-                }
-                개
-              </strong>
+              <strong>{dataset.opportunities.filter((item) => ["NEW_PRODUCT_TEST", "HIDDEN_WINNER", "RISING_PRODUCT"].includes(item.type)).length}개</strong>
               <span>가설 검증 우선</span>
             </article>
             <article>
               <small>개선 후 광고</small>
-              <strong>
-                {
-                  dataset.opportunities.filter((item) =>
-                    [
-                      "HIGH_INTEREST_LOW_CONVERSION",
-                      "CART_ABANDONMENT",
-                      "REVIEW_RISK",
-                      "DECLINING_BESTSELLER",
-                    ].includes(item.type)
-                  ).length
-                }
-                개
-              </strong>
+              <strong>{dataset.opportunities.filter((item) => ["HIGH_INTEREST_LOW_CONVERSION", "CART_ABANDONMENT", "REVIEW_RISK", "DECLINING_BESTSELLER"].includes(item.type)).length}개</strong>
               <span>장벽 해소 필요</span>
             </article>
             <article>
               <small>광고 제외</small>
-              <strong>
-                {dataset.opportunities.filter((item) => item.type === "EXCLUDE_FROM_ADS").length}개
-              </strong>
+              <strong>{dataset.opportunities.filter((item) => item.type === "EXCLUDE_FROM_ADS").length}개</strong>
               <span>상태·위험 확인</span>
             </article>
           </div>
@@ -429,12 +306,7 @@ export function CremaOpportunityWorkspace() {
             </details>
           ) : null}
           <div className="crema-opportunity-filters">
-            <select
-              onChange={(event) =>
-                setTypeFilter(event.target.value as ProductOpportunityType | "all")
-              }
-              value={typeFilter}
-            >
+            <select onChange={(event) => setTypeFilter(event.target.value as ProductOpportunityType | "all")} value={typeFilter}>
               <option value="all">모든 기회 유형</option>
               {Object.entries(opportunityLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -442,53 +314,32 @@ export function CremaOpportunityWorkspace() {
                 </option>
               ))}
             </select>
-            <select
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              value={categoryFilter}
-            >
+            <select onChange={(event) => setCategoryFilter(event.target.value)} value={categoryFilter}>
               <option value="all">모든 카테고리</option>
-              {Array.from(
-                new Set(dataset.products.map((product) => product.categoryName).filter(Boolean))
-              ).map((category) => (
+              {Array.from(new Set(dataset.products.map((product) => product.categoryName).filter(Boolean))).map((category) => (
                 <option key={category!} value={category!}>
                   {category}
                 </option>
               ))}
             </select>
-            <select
-              onChange={(event) =>
-                setStatusFilter(event.target.value as ProductOpportunity["status"] | "all")
-              }
-              value={statusFilter}
-            >
+            <select onChange={(event) => setStatusFilter(event.target.value as ProductOpportunity["status"] | "all")} value={statusFilter}>
               <option value="all">모든 상태</option>
               <option value="recommended">추천</option>
               <option value="later">나중에</option>
               <option value="excluded">제외</option>
               <option value="creative_generated">소재 생성됨</option>
             </select>
-            <select
-              onChange={(event) => setMinimumConfidence(Number(event.target.value))}
-              value={minimumConfidence}
-            >
+            <select onChange={(event) => setMinimumConfidence(Number(event.target.value))} value={minimumConfidence}>
               <option value={0}>모든 신뢰도</option>
               <option value={60}>신뢰도 60 이상</option>
               <option value={80}>신뢰도 80 이상</option>
             </select>
-            <select
-              onChange={(event) =>
-                setAvailabilityFilter(event.target.value as "all" | "available" | "excluded")
-              }
-              value={availabilityFilter}
-            >
+            <select onChange={(event) => setAvailabilityFilter(event.target.value as "all" | "available" | "excluded")} value={availabilityFilter}>
               <option value="all">광고 가능 여부 전체</option>
               <option value="available">광고 제작 가능</option>
               <option value="excluded">광고 제외</option>
             </select>
-            <select
-              onChange={(event) => setSortBy(event.target.value as "score" | "confidence")}
-              value={sortBy}
-            >
+            <select onChange={(event) => setSortBy(event.target.value as "score" | "confidence")} value={sortBy}>
               <option value="score">기회 점수순</option>
               <option value="confidence">신뢰도순</option>
             </select>
@@ -497,10 +348,7 @@ export function CremaOpportunityWorkspace() {
             {displayed.map((opportunity, rank) => {
               const product = productMap.get(opportunity.productId);
               return (
-                <article
-                  className={`crema-opportunity-card ${opportunity.type === "EXCLUDE_FROM_ADS" ? "excluded" : ""}`}
-                  key={opportunity.id}
-                >
+                <article className={`crema-opportunity-card ${opportunity.type === "EXCLUDE_FROM_ADS" ? "excluded" : ""}`} key={opportunity.id}>
                   <div className="crema-card-image">
                     {product?.imageUrl ? (
                       // External product images intentionally bypass Next image optimization.
@@ -521,24 +369,13 @@ export function CremaOpportunityWorkspace() {
                     <p>
                       {product?.categoryName || "카테고리 미확인"} · {opportunity.title}
                     </p>
-                    {opportunity.secondaryTypes.length ? (
-                      <p className="crema-secondary-types">
-                        보조 신호:{" "}
-                        {opportunity.secondaryTypes
-                          .map((type) => opportunityLabels[type])
-                          .join(" · ")}
-                      </p>
-                    ) : null}
+                    {opportunity.secondaryTypes.length ? <p className="crema-secondary-types">보조 신호: {opportunity.secondaryTypes.map((type) => opportunityLabels[type]).join(" · ")}</p> : null}
                     <ul className="crema-evidence-list">
                       {opportunity.evidence.slice(0, 4).map((item) => (
                         <li key={item.metric}>
                           <span>{item.label}</span>
                           <strong>{metricText(item.current, item.unit)}</strong>
-                          <small>
-                            {item.changeRate === null
-                              ? item.message
-                              : `이전 대비 ${(item.changeRate * 100).toFixed(1)}%`}
-                          </small>
+                          <small>{item.changeRate === null ? item.message : `이전 대비 ${(item.changeRate * 100).toFixed(1)}%`}</small>
                         </li>
                       ))}
                     </ul>
@@ -546,9 +383,7 @@ export function CremaOpportunityWorkspace() {
                       <strong>{opportunity.recommendation.objective}</strong>
                       <span>{opportunity.recommendation.messageAngles.join(" · ")}</span>
                     </div>
-                    {opportunity.risks.length ? (
-                      <p className="crema-risk">확인사항: {opportunity.risks.join(" · ")}</p>
-                    ) : null}
+                    {opportunity.risks.length ? <p className="crema-risk">확인사항: {opportunity.risks.join(" · ")}</p> : null}
                     <details>
                       <summary>판정 근거와 제작 방향</summary>
                       <p>{opportunity.recommendation.rationale.join(" ")}</p>
@@ -556,26 +391,11 @@ export function CremaOpportunityWorkspace() {
                       <p>이미지: {opportunity.recommendation.imageDirection}</p>
                     </details>
                     <div className="crema-card-actions">
-                      {opportunity.type !== "EXCLUDE_FROM_ADS" ? (
-                        <Link
-                          href={buildProductCreationHref(
-                            { opportunityId: opportunity.id },
-                            product?.url
-                          )}
-                        >
-                          이 상품으로 광고 만들기
-                        </Link>
-                      ) : null}
-                      <button
-                        onClick={() => void updateStatus(opportunity.id, "later")}
-                        type="button"
-                      >
+                      {opportunity.type !== "EXCLUDE_FROM_ADS" ? <Link href={buildProductCreationHref({ opportunityId: opportunity.id }, product?.url)}>이 상품으로 광고 만들기</Link> : null}
+                      <button onClick={() => void updateStatus(opportunity.id, "later")} type="button">
                         나중에
                       </button>
-                      <button
-                        onClick={() => void updateStatus(opportunity.id, "excluded")}
-                        type="button"
-                      >
+                      <button onClick={() => void updateStatus(opportunity.id, "excluded")} type="button">
                         제외
                       </button>
                     </div>
@@ -584,17 +404,12 @@ export function CremaOpportunityWorkspace() {
               );
             })}
           </div>
-          {!displayed.length ? (
-            <p className="crema-empty">현재 필터에 맞는 광고 기회가 없습니다.</p>
-          ) : null}
+          {!displayed.length ? <p className="crema-empty">현재 필터에 맞는 광고 기회가 없습니다.</p> : null}
         </>
       ) : (
         <div className="crema-disconnected-state">
           <strong>크리마켓 데이터가 없어도 괜찮습니다.</strong>
-          <p>
-            아래 ‘상세페이지로 광고 만들기’에서 기존 URL 분석과 제작 기능을 그대로 사용할 수
-            있습니다.
-          </p>
+          <p>아래 ‘상세페이지로 광고 만들기’에서 기존 URL 분석과 제작 기능을 그대로 사용할 수 있습니다.</p>
         </div>
       )}
     </section>

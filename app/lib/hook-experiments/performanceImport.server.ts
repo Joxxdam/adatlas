@@ -2,45 +2,9 @@ import crypto from "node:crypto";
 import * as XLSX from "xlsx";
 import { extractCreativeAssetCode } from "../creative-assets/code.ts";
 import { creativeAssetRepository } from "../creative-assets/repository.server.ts";
-import type {
-  CreativeExperiment,
-  ExperimentAsset,
-  ExperimentObjective,
-  PerformanceRecord,
-} from "./types.ts";
+import type { CreativeExperiment, ExperimentAsset, ExperimentObjective, PerformanceRecord } from "./types.ts";
 
-type ParsedReportRow = Omit<
-  PerformanceRecord,
-  | "id"
-  | "experimentId"
-  | "assetId"
-  | "assetCode"
-  | "hookGroupId"
-  | "advertiserId"
-  | "productId"
-  | "category"
-  | "subCategory"
-  | "hookCode"
-  | "hypothesisId"
-  | "primaryTag"
-  | "secondaryTags"
-  | "creativeId"
-  | "creativeCode"
-  | "visualConcept"
-  | "cpm"
-  | "ctr"
-  | "outboundCtr"
-  | "cpc"
-  | "costPerLandingPageView"
-  | "cvr"
-  | "cpa"
-  | "roas"
-  | "dataSufficiency"
-  | "resultStatus"
-  | "matchStatus"
-  | "matchMessage"
-  | "importedAt"
->;
+type ParsedReportRow = Omit<PerformanceRecord, "id" | "experimentId" | "assetId" | "assetCode" | "hookGroupId" | "advertiserId" | "productId" | "category" | "subCategory" | "hookCode" | "hypothesisId" | "primaryTag" | "secondaryTags" | "creativeId" | "creativeCode" | "visualConcept" | "cpm" | "ctr" | "outboundCtr" | "cpc" | "costPerLandingPageView" | "cvr" | "cpa" | "roas" | "dataSufficiency" | "resultStatus" | "matchStatus" | "matchMessage" | "importedAt">;
 
 const aliases: Record<keyof ParsedReportRow, string[]> = {
   platform: ["플랫폼", "platform", "publisher platform"],
@@ -60,21 +24,10 @@ const aliases: Record<keyof ParsedReportRow, string[]> = {
   clicks: ["전체 클릭", "클릭", "clicks (all)", "clicks"],
   linkClicks: ["링크 클릭", "link clicks", "link_clicks"],
   outboundClicks: ["아웃바운드 클릭", "outbound clicks", "outbound_clicks"],
-  landingPageViews: [
-    "랜딩페이지 조회",
-    "랜딩 페이지 조회",
-    "landing page views",
-    "landing_page_views",
-  ],
+  landingPageViews: ["랜딩페이지 조회", "랜딩 페이지 조회", "landing page views", "landing_page_views"],
   engagements: ["참여", "게시물 참여", "engagements", "post engagements"],
   purchases: ["구매", "purchases", "website purchases"],
-  purchaseValue: [
-    "구매전환값",
-    "구매 전환값",
-    "purchase conversion value",
-    "purchase value",
-    "conversion value",
-  ],
+  purchaseValue: ["구매전환값", "구매 전환값", "purchase conversion value", "purchase value", "conversion value"],
   source: ["source", "출처"],
 };
 
@@ -108,12 +61,10 @@ function numberOrNull(value: unknown) {
 }
 
 function dateText(value: unknown) {
-  if (value instanceof Date && !Number.isNaN(value.getTime()))
-    return value.toISOString().slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
   if (typeof value === "number") {
     const parsed = XLSX.SSF.parse_date_code(value);
-    if (parsed)
-      return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
+    if (parsed) return `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}`;
   }
   return text(value).slice(0, 10);
 }
@@ -141,11 +92,7 @@ function ratio(numerator: number | null, denominator: number | null, multiplier 
 }
 
 export const PerformanceImportService = {
-  parse(
-    buffer: Buffer,
-    fileName: string,
-    fallbackObjective: ExperimentObjective
-  ): ParsedReportRow[] {
+  parse(buffer: Buffer, fileName: string, fallbackObjective: ExperimentObjective): ParsedReportRow[] {
     const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
     const rows = workbook.SheetNames.flatMap((sheetName) =>
       XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[sheetName], {
@@ -180,22 +127,14 @@ export const PerformanceImportService = {
   },
 };
 
-export function createCreativePerformanceMatchingService(
-  assetRepository: Pick<typeof creativeAssetRepository, "getByCode">
-) {
+export function createCreativePerformanceMatchingService(assetRepository: Pick<typeof creativeAssetRepository, "getByCode">) {
   return {
-    async match(input: {
-      experiment: CreativeExperiment;
-      experimentAssets: ExperimentAsset[];
-      rows: ParsedReportRow[];
-    }) {
+    async match(input: { experiment: CreativeExperiment; experimentAssets: ExperimentAsset[]; rows: ParsedReportRow[] }) {
       const importedAt = new Date().toISOString();
       const records: PerformanceRecord[] = [];
       for (const row of input.rows) {
         const code = extractCreativeAssetCode(row.adName);
-        const relationship = code
-          ? input.experimentAssets.find((item) => item.assetCode === code)
-          : undefined;
+        const relationship = code ? input.experimentAssets.find((item) => item.assetCode === code) : undefined;
         const asset = code ? await assetRepository.getByCode(code) : null;
         let matchStatus: PerformanceRecord["matchStatus"] = "matched";
         let matchMessage = "소재코드 자동 연결";
@@ -234,16 +173,8 @@ export function createCreativePerformanceMatchingService(
           cvr: ratio(row.purchases, row.linkClicks),
           cpa: ratio(row.spend, row.purchases),
           roas: ratio(row.purchaseValue, row.spend),
-          dataSufficiency:
-            (row.spend || 0) >= input.experiment.ruleConfig.minimumSpend &&
-            (row.impressions || 0) >= input.experiment.ruleConfig.minimumImpressions
-              ? "minimum-delivery-met"
-              : "additional-data-required",
-          resultStatus:
-            (row.spend || 0) >= input.experiment.ruleConfig.minimumSpend &&
-            (row.impressions || 0) >= input.experiment.ruleConfig.minimumImpressions
-              ? "promising"
-              : "needs-more-data",
+          dataSufficiency: (row.spend || 0) >= input.experiment.ruleConfig.minimumSpend && (row.impressions || 0) >= input.experiment.ruleConfig.minimumImpressions ? "minimum-delivery-met" : "additional-data-required",
+          resultStatus: (row.spend || 0) >= input.experiment.ruleConfig.minimumSpend && (row.impressions || 0) >= input.experiment.ruleConfig.minimumImpressions ? "promising" : "needs-more-data",
           matchStatus,
           matchMessage,
           importedAt,
@@ -254,5 +185,4 @@ export function createCreativePerformanceMatchingService(
   };
 }
 
-export const CreativePerformanceMatchingService =
-  createCreativePerformanceMatchingService(creativeAssetRepository);
+export const CreativePerformanceMatchingService = createCreativePerformanceMatchingService(creativeAssetRepository);

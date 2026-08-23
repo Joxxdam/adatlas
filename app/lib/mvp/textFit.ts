@@ -42,9 +42,7 @@ function wrapText(text: string, maxWidth: number, fontSize: number, letterSpacin
   const normalized = text.replace(/\s+/g, " ").trim();
   if (!normalized) return [""];
 
-  const tokens = normalized.includes(" ")
-    ? normalized.split(" ").filter(Boolean)
-    : splitLongToken(normalized, maxWidth, fontSize, letterSpacing);
+  const tokens = normalized.includes(" ") ? normalized.split(" ").filter(Boolean) : splitLongToken(normalized, maxWidth, fontSize, letterSpacing);
 
   const lines: string[] = [];
   let current = "";
@@ -71,13 +69,7 @@ function wrapText(text: string, maxWidth: number, fontSize: number, letterSpacin
   return lines.length ? lines : [""];
 }
 
-function truncateLines(
-  lines: string[],
-  maxLines: number,
-  maxWidth: number,
-  fontSize: number,
-  letterSpacing: number
-) {
+function truncateLines(lines: string[], maxLines: number, maxWidth: number, fontSize: number, letterSpacing: number) {
   const next = lines.slice(0, Math.max(1, maxLines));
   let last = next[next.length - 1] || "";
   const ellipsis = "...";
@@ -90,18 +82,7 @@ function truncateLines(
   return next;
 }
 
-export function fitTextToBox(params: {
-  text: string;
-  boxWidth: number;
-  boxHeight: number;
-  maxLines: number;
-  minFontSize: number;
-  maxFontSize: number;
-  fontFamily?: string;
-  fontWeight?: number | string;
-  letterSpacing?: number;
-  lineHeight?: number;
-}): TextFitResult {
+export function fitTextToBox(params: { text: string; boxWidth: number; boxHeight: number; maxLines: number; minFontSize: number; maxFontSize: number; fontFamily?: string; fontWeight?: number | string; letterSpacing?: number; lineHeight?: number }): TextFitResult {
   const text = String(params.text || "")
     .replace(/\s+/g, " ")
     .trim();
@@ -113,9 +94,7 @@ export function fitTextToBox(params: {
 
   for (let fontSize = maxFontSize; fontSize >= minFontSize; fontSize -= 2) {
     const lines = wrapText(text, params.boxWidth, fontSize, letterSpacing);
-    const fitsWidth = lines.every(
-      (line) => estimateTextWidth(line, fontSize, letterSpacing) <= params.boxWidth
-    );
+    const fitsWidth = lines.every((line) => estimateTextWidth(line, fontSize, letterSpacing) <= params.boxWidth);
     const fitsHeight = Math.min(lines.length, maxLines) * fontSize * lineHeight <= params.boxHeight;
 
     if (fitsWidth && lines.length <= maxLines && fitsHeight) {
@@ -129,14 +108,10 @@ export function fitTextToBox(params: {
   }
 
   const lines = wrapText(text, params.boxWidth, minFontSize, letterSpacing);
-  const didTruncate =
-    lines.length > maxLines ||
-    lines.some((line) => estimateTextWidth(line, minFontSize, letterSpacing) > params.boxWidth);
+  const didTruncate = lines.length > maxLines || lines.some((line) => estimateTextWidth(line, minFontSize, letterSpacing) > params.boxWidth);
 
   return {
-    lines: didTruncate
-      ? truncateLines(lines, maxLines, params.boxWidth, minFontSize, letterSpacing)
-      : lines.slice(0, maxLines),
+    lines: didTruncate ? truncateLines(lines, maxLines, params.boxWidth, minFontSize, letterSpacing) : lines.slice(0, maxLines),
     fontSize: minFontSize,
     didShrink: maxFontSize > minFontSize,
     didTruncate,

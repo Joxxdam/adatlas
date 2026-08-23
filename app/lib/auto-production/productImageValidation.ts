@@ -21,12 +21,7 @@ function unique(values: string[]) {
 
 export function verifyAutoProductionProductImages(productName: string, product: ProductInfoForPrompt): AutoProductionImageVerification {
   const structured = product.sourceImageCandidates || [];
-  const rawFallbacks = unique([
-    ...(product.productImagePaths || []),
-    product.productImagePath || "",
-    product.extractedMainImage || "",
-    ...(product.extractedGalleryImages || []),
-  ]);
+  const rawFallbacks = unique([...(product.productImagePaths || []), product.productImagePath || "", product.extractedMainImage || "", ...(product.extractedGalleryImages || [])]);
   const acceptedStructured = structured.filter((image) => {
     const text = descriptor(image);
     if (!image.imagePath || rejectedCue.test(text)) return false;
@@ -34,14 +29,8 @@ export function verifyAutoProductionProductImages(productName: string, product: 
     if (image.salesUnitMatchScore !== undefined && image.salesUnitMatchScore < 45) return false;
     return image.type === "hero" || image.sourceType === "product-gallery" || productCue.test(text) || image.multipleObjectsAreSalesUnit === true;
   });
-  const rejectedPaths = unique([
-    ...structured.filter((image) => !acceptedStructured.includes(image)).map((image) => image.imagePath),
-    ...rawFallbacks.filter((path) => rejectedCue.test(path)),
-  ]);
-  const selectedPaths = unique([
-    ...acceptedStructured.map((image) => image.imagePath),
-    ...rawFallbacks.filter((path) => !rejectedCue.test(path)),
-  ]).slice(0, 5);
+  const rejectedPaths = unique([...structured.filter((image) => !acceptedStructured.includes(image)).map((image) => image.imagePath), ...rawFallbacks.filter((path) => rejectedCue.test(path))]);
+  const selectedPaths = unique([...acceptedStructured.map((image) => image.imagePath), ...rawFallbacks.filter((path) => !rejectedCue.test(path))]).slice(0, 5);
   if (!selectedPaths.length) {
     return { status: "rejected", selectedPaths: [], rejectedPaths, reasons: ["해당 상품으로 확인할 수 있는 원본 이미지가 없습니다."] };
   }

@@ -1,17 +1,8 @@
 import crypto from "crypto";
 import sharp from "sharp";
 import { validatePublicHttpUrl } from "../store-analysis/urlSafety";
-import {
-  hammingDistance,
-  normalizeProductImageUrl,
-} from "./productImagePipeline";
-import type {
-  DetectedProductObject,
-  NormalizedImageBox,
-  ProductImageCandidate,
-  ProductRepresentation,
-  SourceImageCandidate,
-} from "./types";
+import { hammingDistance, normalizeProductImageUrl } from "./productImagePipeline";
+import type { DetectedProductObject, NormalizedImageBox, ProductImageCandidate, ProductRepresentation, SourceImageCandidate } from "./types";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 40_000_000;
@@ -64,10 +55,7 @@ async function downloadImage(value: string): Promise<DownloadedImage> {
     }
     await validatePublicHttpUrl(response.url || current.toString());
     if (!response.ok) throw new Error(`image HTTP ${response.status}`);
-    const contentType = (response.headers.get("content-type") || "")
-      .split(";")[0]
-      .trim()
-      .toLowerCase();
+    const contentType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
     if (!contentType.startsWith("image/") || /svg/.test(contentType)) {
       throw new Error("response is not a supported raster image");
     }
@@ -81,21 +69,10 @@ async function downloadImage(value: string): Promise<DownloadedImage> {
 }
 
 function colorDistance(data: Buffer, index: number, color: [number, number, number]) {
-  return Math.sqrt(
-    (data[index] - color[0]) ** 2 +
-      (data[index + 1] - color[1]) ** 2 +
-      (data[index + 2] - color[2]) ** 2
-  );
+  return Math.sqrt((data[index] - color[0]) ** 2 + (data[index + 1] - color[1]) ** 2 + (data[index + 2] - color[2]) ** 2);
 }
 
-function normalizedBox(
-  minX: number,
-  minY: number,
-  maxX: number,
-  maxY: number,
-  width: number,
-  height: number
-): NormalizedImageBox {
+function normalizedBox(minX: number, minY: number, maxX: number, maxY: number, width: number, height: number): NormalizedImageBox {
   return {
     x: minX / width,
     y: minY / height,
@@ -113,12 +90,7 @@ function unionBoxes(boxes: NormalizedImageBox[]): NormalizedImageBox | undefined
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
 
-function detectForegroundObjects(
-  data: Buffer,
-  width: number,
-  height: number,
-  hasAlpha: boolean
-) {
+function detectForegroundObjects(data: Buffer, width: number, height: number, hasAlpha: boolean) {
   const corners = [0, width - 1, (height - 1) * width, height * width - 1];
   const background = corners.reduce<[number, number, number]>(
     (sum, position) => {
@@ -134,13 +106,7 @@ function detectForegroundObjects(
   for (let position = 0; position < foreground.length; position += 1) {
     const index = position * 4;
     const alpha = data[index + 3];
-    foreground[position] = hasAlpha
-      ? alpha > 20
-        ? 1
-        : 0
-      : colorDistance(data, index, background) > 34
-        ? 1
-        : 0;
+    foreground[position] = hasAlpha ? (alpha > 20 ? 1 : 0) : colorDistance(data, index, background) > 34 ? 1 : 0;
   }
 
   // Bridge tiny gaps so labels, caps, straps, meat edges and separated pixels form stable objects.
@@ -235,8 +201,7 @@ function detectForegroundObjects(
       maxY = Math.max(maxY, y);
       const neighbors = [position - 1, position + 1, position - width, position + width];
       for (const neighbor of neighbors) {
-        if (neighbor < 0 || neighbor >= closed.length || visited[neighbor] || !closed[neighbor])
-          continue;
+        if (neighbor < 0 || neighbor >= closed.length || visited[neighbor] || !closed[neighbor]) continue;
         if (Math.abs((neighbor % width) - x) > 1) continue;
         visited[neighbor] = 1;
         queue.push(neighbor);
@@ -272,17 +237,7 @@ function sourceTypeFor(candidate: ProductImageCandidate): SourceImageCandidate["
   return "unknown";
 }
 
-function sourceQualityScore(input: {
-  width: number;
-  height: number;
-  foregroundRatio: number;
-  objectCount: number;
-  hasText: boolean;
-  hasAlpha: boolean;
-  touchesEdges: boolean;
-  sourceScore: number;
-  imageUrl: string;
-}) {
+function sourceQualityScore(input: { width: number; height: number; foregroundRatio: number; objectCount: number; hasText: boolean; hasAlpha: boolean; touchesEdges: boolean; sourceScore: number; imageUrl: string }) {
   const shortest = Math.min(input.width, input.height);
   const longest = Math.max(input.width, input.height);
   let score = Math.min(1, shortest / 900) * 0.28 + Math.min(1, longest / 1400) * 0.12;
@@ -298,11 +253,7 @@ function sourceQualityScore(input: {
   return Math.max(0, Math.min(1, score));
 }
 
-function salesMatchScore(
-  representation: ProductRepresentation,
-  objectCount: number,
-  candidate: ProductImageCandidate
-) {
+function salesMatchScore(representation: ProductRepresentation, objectCount: number, candidate: ProductImageCandidate) {
   const expected = representation.expectedUnitCount;
   let score = candidate.type === "main" || candidate.type === "gallery" ? 0.72 : 0.58;
   if (["multi-unit-set", "bundle-components", "irregular-product"].includes(representation.type)) {
@@ -318,11 +269,7 @@ function salesMatchScore(
   return Math.max(0, Math.min(1, score));
 }
 
-async function analyzeCandidate(
-  candidate: ProductImageCandidate,
-  representation: ProductRepresentation,
-  index: number
-): Promise<SourceImageCandidate> {
+async function analyzeCandidate(candidate: ProductImageCandidate, representation: ProductRepresentation, index: number): Promise<SourceImageCandidate> {
   const downloaded = await downloadImage(candidate.url);
   const metadata = await sharp(downloaded.buffer).metadata();
   const width = metadata.width || 0;
@@ -331,31 +278,21 @@ async function analyzeCandidate(
   if (Math.min(width, height) < 240 || Math.max(width, height) / Math.max(1, Math.min(width, height)) > 4) {
     throw new Error("image is too small or elongated for product cutout");
   }
-  const sample = await sharp(downloaded.buffer)
-    .rotate()
-    .resize({ width: 192, height: 192, fit: "inside", withoutEnlargement: true })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const sample = await sharp(downloaded.buffer).rotate().resize({ width: 192, height: 192, fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let transparentPixels = 0;
   for (let index = 3; index < sample.data.length; index += 4) {
     if (sample.data[index] < 245) transparentPixels += 1;
   }
   const hasAlpha = Boolean(metadata.hasAlpha) && transparentPixels / Math.max(1, sample.info.width * sample.info.height) > 0.01;
-  const foregroundDetection = detectForegroundObjects(
-    sample.data,
-    sample.info.width,
-    sample.info.height,
-    hasAlpha
-  );
+  const foregroundDetection = detectForegroundObjects(sample.data, sample.info.width, sample.info.height, hasAlpha);
   const components = foregroundDetection.components;
   const objectCount = components.length;
-  const foregroundRatio = Math.min(1, components.reduce((sum, item) => sum + item.area, 0));
-  const hasText = /배너|광고|할인|특가|event|banner|promotion|상세/i.test(
-    `${candidate.alt || ""} ${candidate.reason || ""} ${candidate.url}`
+  const foregroundRatio = Math.min(
+    1,
+    components.reduce((sum, item) => sum + item.area, 0)
   );
-  const useCentralPrimary =
-    representation.type === "single-product" && Boolean(foregroundDetection.centralProductBox);
+  const hasText = /배너|광고|할인|특가|event|banner|promotion|상세/i.test(`${candidate.alt || ""} ${candidate.reason || ""} ${candidate.url}`);
+  const useCentralPrimary = representation.type === "single-product" && Boolean(foregroundDetection.centralProductBox);
   const detectedObjects: DetectedProductObject[] = [
     ...(useCentralPrimary && foregroundDetection.centralProductBox
       ? [
@@ -363,9 +300,7 @@ async function analyzeCandidate(
             id: "object-primary",
             box: foregroundDetection.centralProductBox,
             confidence: 0.78,
-            relativeArea:
-              foregroundDetection.centralProductBox.width *
-              foregroundDetection.centralProductBox.height,
+            relativeArea: foregroundDetection.centralProductBox.width * foregroundDetection.centralProductBox.height,
             selected: true,
             role: "primary" as const,
           },
@@ -380,16 +315,8 @@ async function analyzeCandidate(
       role: !useCentralPrimary && objectIndex === 0 ? ("primary" as const) : ("component" as const),
     })),
   ];
-  const groupBox = unionBoxes(
-    detectedObjects.filter((object) => object.selected).map((object) => object.box)
-  );
-  const touchesEdges = Boolean(
-    groupBox &&
-      (groupBox.x <= 0.01 ||
-        groupBox.y <= 0.01 ||
-        groupBox.x + groupBox.width >= 0.99 ||
-        groupBox.y + groupBox.height >= 0.99)
-  );
+  const groupBox = unionBoxes(detectedObjects.filter((object) => object.selected).map((object) => object.box));
+  const touchesEdges = Boolean(groupBox && (groupBox.x <= 0.01 || groupBox.y <= 0.01 || groupBox.x + groupBox.width >= 0.99 || groupBox.y + groupBox.height >= 0.99));
   const quality = sourceQualityScore({
     width,
     height,
@@ -402,16 +329,7 @@ async function analyzeCandidate(
     imageUrl: candidate.url,
   });
   const salesMatch = salesMatchScore(representation, objectCount, candidate);
-  const recommendationScore = Math.max(
-    0,
-    Math.min(
-      1,
-      quality * 0.54 +
-        salesMatch * 0.38 +
-        representation.confidence * 0.08 +
-        (candidate.type === "main" ? 0.16 : candidate.type === "gallery" ? 0.05 : 0)
-    )
-  );
+  const recommendationScore = Math.max(0, Math.min(1, quality * 0.54 + salesMatch * 0.38 + representation.confidence * 0.08 + (candidate.type === "main" ? 0.16 : candidate.type === "gallery" ? 0.05 : 0)));
   const warnings: string[] = [];
   if (Math.min(width, height) < 500) warnings.push("해상도가 낮습니다.");
   if (hasText) warnings.push("문구 또는 프로모션 그래픽이 포함될 수 있습니다.");
@@ -438,11 +356,7 @@ async function analyzeCandidate(
     detectedGroupBox: groupBox,
     hasText,
     hasMultipleObjects: objectCount > 1,
-    multipleObjectsAreSalesUnit:
-      objectCount > 1 &&
-      ["multi-unit-set", "bundle-components", "irregular-product", "plated-product"].includes(
-        representation.type
-      ),
+    multipleObjectsAreSalesUnit: objectCount > 1 && ["multi-unit-set", "bundle-components", "irregular-product", "plated-product"].includes(representation.type),
     contentHash: crypto.createHash("sha256").update(downloaded.buffer).digest("hex"),
     perceptualHash: await perceptualHash(downloaded.buffer),
     alreadyTransparent: hasAlpha,
@@ -450,11 +364,7 @@ async function analyzeCandidate(
   };
 }
 
-export async function analyzeProductSourceCandidates(input: {
-  candidates: ProductImageCandidate[];
-  representation: ProductRepresentation;
-  limit?: number;
-}) {
+export async function analyzeProductSourceCandidates(input: { candidates: ProductImageCandidate[]; representation: ProductRepresentation; limit?: number }) {
   const normalizedSeen = new Set<string>();
   const unique = input.candidates.filter((candidate) => {
     const normalized = normalizeProductImageUrl(candidate.url);
@@ -462,23 +372,14 @@ export async function analyzeProductSourceCandidates(input: {
     normalizedSeen.add(normalized);
     return true;
   });
-  const attempts = await Promise.allSettled(
-    unique.slice(0, 12).map((candidate, index) => analyzeCandidate(candidate, input.representation, index))
-  );
+  const attempts = await Promise.allSettled(unique.slice(0, 12).map((candidate, index) => analyzeCandidate(candidate, input.representation, index)));
   const analyzed = attempts
     .filter((result): result is PromiseFulfilledResult<SourceImageCandidate> => result.status === "fulfilled")
     .map((result) => result.value)
-    .sort((left, right) =>
-      (right.recommendationScore || 0) - (left.recommendationScore || 0) ||
-      (right.width || 0) * (right.height || 0) - (left.width || 0) * (left.height || 0)
-    );
+    .sort((left, right) => (right.recommendationScore || 0) - (left.recommendationScore || 0) || (right.width || 0) * (right.height || 0) - (left.width || 0) * (left.height || 0));
   const deduped: SourceImageCandidate[] = [];
   for (const candidate of analyzed) {
-    const duplicate = deduped.some(
-      (existing) =>
-        existing.contentHash === candidate.contentHash ||
-        hammingDistance(existing.perceptualHash, candidate.perceptualHash) <= 5
-    );
+    const duplicate = deduped.some((existing) => existing.contentHash === candidate.contentHash || hammingDistance(existing.perceptualHash, candidate.perceptualHash) <= 5);
     if (!duplicate) deduped.push(candidate);
   }
   const limited = deduped.slice(0, Math.max(3, Math.min(6, input.limit || 6)));

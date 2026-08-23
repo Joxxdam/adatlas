@@ -34,18 +34,58 @@ export function VideoPlanningList() {
           <h1>영상 기획</h1>
           <p>상품을 분석해 서로 다른 4개 콘셉트를 비교하고, 선택한 안의 자막과 장면 설명을 완성합니다.</p>
         </div>
-        <Link className={styles.primaryButton} href="/video-planning/new">새 영상 기획</Link>
+        <Link className={styles.primaryButton} href="/video-planning/new">
+          새 영상 기획
+        </Link>
       </header>
 
       <section className={styles.panel}>
-        <div className={styles.sectionHead}><div><h2>최근 기획</h2><p>상품과 선택한 콘셉트를 기준으로 이어서 작업할 수 있습니다.</p></div></div>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2>최근 기획</h2>
+            <p>상품과 선택한 콘셉트를 기준으로 이어서 작업할 수 있습니다.</p>
+          </div>
+        </div>
         {loading ? <div className={styles.empty}>영상 기획을 불러오는 중입니다.</div> : null}
         {error ? <div className={styles.error}>{error}</div> : null}
         {!loading && !error && !projects.length ? <div className={styles.empty}>아직 영상 기획이 없습니다. 상품을 분석하고 콘셉트를 선택해 첫 기획을 만들어 보세요.</div> : null}
         {projects.length ? (
-          <div className={styles.tableWrap}><table className={styles.projectTable}><thead><tr><th>업체·브랜드</th><th>상품명</th><th>담당 마케터</th><th>담당 디자이너</th><th>선택 콘셉트</th><th>상태</th><th>생성일</th><th>마감일</th><th>최근 수정</th></tr></thead><tbody>{projects.map((project) => <tr key={project.id}>
-            <td>{project.advertiserName}</td><td><Link href={`/video-planning/${project.id}`}>{project.productName}</Link></td><td>{project.marketerName || "미지정"}</td><td>{project.designerName || "미지정"}</td><td>{project.selectedConceptTitle || "검토 중"}</td><td><span className={styles.status}>{VIDEO_STATUS_LABELS[project.status]}</span></td><td>{date(project.createdAt)}</td><td>{project.deadline || "미정"}</td><td>{date(project.updatedAt)}</td>
-          </tr>)}</tbody></table></div>
+          <div className={styles.tableWrap}>
+            <table className={styles.projectTable}>
+              <thead>
+                <tr>
+                  <th>업체·브랜드</th>
+                  <th>상품명</th>
+                  <th>담당 마케터</th>
+                  <th>담당 디자이너</th>
+                  <th>선택 콘셉트</th>
+                  <th>상태</th>
+                  <th>생성일</th>
+                  <th>마감일</th>
+                  <th>최근 수정</th>
+                </tr>
+              </thead>
+              <tbody>
+                {projects.map((project) => (
+                  <tr key={project.id}>
+                    <td>{project.advertiserName}</td>
+                    <td>
+                      <Link href={`/video-planning/${project.id}`}>{project.productName}</Link>
+                    </td>
+                    <td>{project.marketerName || "미지정"}</td>
+                    <td>{project.designerName || "미지정"}</td>
+                    <td>{project.selectedConceptTitle || "검토 중"}</td>
+                    <td>
+                      <span className={styles.status}>{VIDEO_STATUS_LABELS[project.status]}</span>
+                    </td>
+                    <td>{date(project.createdAt)}</td>
+                    <td>{project.deadline || "미정"}</td>
+                    <td>{date(project.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : null}
       </section>
     </main>

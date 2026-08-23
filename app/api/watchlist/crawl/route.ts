@@ -12,9 +12,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "워치리스트 크롤링 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "워치리스트 크롤링 실패" }, { status: 500 });
   }
 }

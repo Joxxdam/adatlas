@@ -1,10 +1,7 @@
 import path from "path";
 import { readCreativeRasterAsset } from "../creative-generation/assets.server.ts";
 
-type ImageSize =
-  | "1024x1024"
-  | "1536x1024"
-  | "1024x1536";
+type ImageSize = "1024x1024" | "1536x1024" | "1024x1536";
 type ImageQuality = "low" | "medium" | "high";
 type ImageBackground = "transparent" | "opaque" | "auto";
 type ImageOutputFormat = "png" | "jpeg" | "webp";
@@ -17,9 +14,7 @@ type ImageClientResult = {
 function assertExplicitPaidImageAuthorization(explicitlyAuthorized: boolean | undefined) {
   const serverEnabled = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED === "true";
   if (explicitlyAuthorized !== true || !serverEnabled) {
-    throw new Error(
-      "유료 OpenAI 이미지 API는 사용자가 해당 작업에서 별도로 공급자를 선택하고 서버 허용이 켜진 경우에만 사용할 수 있습니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다."
-    );
+    throw new Error("유료 OpenAI 이미지 API는 사용자가 해당 작업에서 별도로 공급자를 선택하고 서버 허용이 켜진 경우에만 사용할 수 있습니다. 기본 제작은 Codex·ChatGPT 로그인으로 실행됩니다.");
   }
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("선택한 유료 OpenAI 이미지 공급자의 서버 인증정보를 확인해 주세요.");
@@ -37,9 +32,7 @@ export function getOpenAIImageQuality(): ImageQuality {
 
 export function getOpenAIImageSize(): ImageSize {
   const value = String(process.env.ADATLAS_IMAGE_SIZE || "1024x1024");
-  return ["1024x1024", "1536x1024", "1024x1536"].includes(value)
-    ? (value as ImageSize)
-    : "1024x1024";
+  return ["1024x1024", "1536x1024", "1024x1536"].includes(value) ? (value as ImageSize) : "1024x1024";
 }
 
 function contentTypeFromSource(source: string) {
@@ -75,14 +68,7 @@ async function imageBufferFromOpenAIResponse(response: Response) {
   throw new Error("OpenAI 이미지 응답에서 이미지 데이터를 찾지 못했습니다.");
 }
 
-export async function generateImageFromText(params: {
-  prompt: string;
-  size?: ImageSize;
-  quality?: ImageQuality;
-  background?: ImageBackground;
-  outputFormat?: ImageOutputFormat;
-  explicitPaidApiAuthorization?: boolean;
-}): Promise<ImageClientResult> {
+export async function generateImageFromText(params: { prompt: string; size?: ImageSize; quality?: ImageQuality; background?: ImageBackground; outputFormat?: ImageOutputFormat; explicitPaidApiAuthorization?: boolean }): Promise<ImageClientResult> {
   assertExplicitPaidImageAuthorization(params.explicitPaidApiAuthorization);
   const body: Record<string, unknown> = {
     model: getOpenAIImageModel(),
@@ -113,14 +99,7 @@ export async function generateImageFromText(params: {
   };
 }
 
-export async function editImageFromSource(params: {
-  sourceImagePath: string;
-  referenceImagePaths?: string[];
-  prompt: string;
-  size?: ImageSize;
-  quality?: ImageQuality;
-  explicitPaidApiAuthorization?: boolean;
-}): Promise<ImageClientResult> {
+export async function editImageFromSource(params: { sourceImagePath: string; referenceImagePaths?: string[]; prompt: string; size?: ImageSize; quality?: ImageQuality; explicitPaidApiAuthorization?: boolean }): Promise<ImageClientResult> {
   assertExplicitPaidImageAuthorization(params.explicitPaidApiAuthorization);
   if (!params.sourceImagePath) {
     throw new Error("선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다.");
@@ -144,11 +123,7 @@ export async function editImageFromSource(params: {
     .slice(0, 3);
   for (const referenceImagePath of referenceImagePaths) {
     const referenceBuffer = await readCreativeRasterAsset(referenceImagePath);
-    formData.append(
-      "image[]",
-      new Blob([referenceBuffer], { type: contentTypeFromSource(referenceImagePath) }),
-      fileNameFromSource(referenceImagePath)
-    );
+    formData.append("image[]", new Blob([referenceBuffer], { type: contentTypeFromSource(referenceImagePath) }), fileNameFromSource(referenceImagePath));
   }
 
   const response = await fetch("https://api.openai.com/v1/images/edits", {
@@ -160,9 +135,7 @@ export async function editImageFromSource(params: {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `선택된 기준 이미지를 사용한 GPT 이미지 생성에 실패했습니다. ${await response.text()}`
-    );
+    throw new Error(`선택된 기준 이미지를 사용한 GPT 이미지 생성에 실패했습니다. ${await response.text()}`);
   }
 
   return {

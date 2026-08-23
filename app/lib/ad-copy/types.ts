@@ -1,10 +1,4 @@
-export const adCopyStatuses = [
-  "generating",
-  "ready",
-  "needs-review",
-  "approved",
-  "excluded",
-] as const;
+export const adCopyStatuses = ["generating", "ready", "needs-review", "approved", "excluded"] as const;
 
 export type AdCopyStatus = (typeof adCopyStatuses)[number];
 
@@ -28,6 +22,8 @@ export type ProductAdCopy = {
   basedOnHookId: string;
   basedOnCreativeBriefId: string;
   primaryText?: string;
+  /** Meta 광고에서 기본 문구 아래에 노출하는 짧은 광고 제목입니다. */
+  adTitle?: string;
   assetCode?: string;
   adName?: string;
   utm?: string;
@@ -45,15 +41,4 @@ export type ProductAdCopy = {
   performanceData?: Record<string, number>;
 };
 
-export type ApprovedAdCopyMemory = Pick<
-  ProductAdCopy,
-  | "id"
-  | "advertiserId"
-  | "productId"
-  | "basedOnHookId"
-  | "primaryText"
-  | "approvedAt"
-  | "approvalReason"
-  | "performanceData"
-  | "languageTraits"
->;
+export type ApprovedAdCopyMemory = Pick<ProductAdCopy, "id" | "advertiserId" | "productId" | "basedOnHookId" | "primaryText" | "adTitle" | "approvedAt" | "approvalReason" | "performanceData" | "languageTraits">;

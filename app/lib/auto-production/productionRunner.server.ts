@@ -3,12 +3,12 @@ import { randomUUID } from "node:crypto";
 import { createNativeGenerationJob } from "../creative-generation/createNativeGenerationJob.server";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { enqueueGenerationJob, recoverGenerationJob } from "../creative-generation/jobRunner.server";
-import { executionResults } from "../creative-generation/jobRunnerPolicy";
+import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, executionResults, isCurrentAutoProductionGenerationJob } from "../creative-generation/jobRunnerPolicy";
 import type { GenerationJob, HookMessageCode } from "../creative-generation/types";
 import { autoProductionAdvertiserRepository } from "./advertiserConfig.server";
 import { recentTasks } from "./duplicateGuard";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "./hookSelector";
-import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT } from "./policy";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "./policy";
 import { loadAutoProductionCandidates } from "./productSource.server";
 import { selectAutoProductionCandidates } from "./productSelector";
 import { autoProductionRepository } from "./productionRepository.server";
@@ -16,15 +16,9 @@ import { nextScheduledAt, scheduledRunKey, seoulClock } from "./schedule";
 import { createAutoProductionTaskId } from "./taskIdentity";
 import { candidateIdentityKeys } from "./productIdentity";
 import { buildAutoProductionPackage } from "./package.server";
-import type {
-  AutoProductionAdvertiserConfig,
-  AutoProductionPreview,
-  AutoProductionProductTask,
-  AutoProductionResult,
-  AutoProductionRun,
-} from "./types";
+import type { AutoProductionAdvertiserConfig, AutoProductionPreview, AutoProductionProductTask, AutoProductionResult, AutoProductionRun } from "./types";
 
-const monitorKey = Symbol.for("daywiz.auto-production.monitors-v1");
+const monitorKey = Symbol.for("daywiz.auto-production.monitors-v2-current-contract");
 const globalState = globalThis as typeof globalThis & { [monitorKey]?: Map<string, Promise<void>> };
 const monitors = globalState[monitorKey] ?? new Map<string, Promise<void>>();
 globalState[monitorKey] = monitors;
@@ -36,9 +30,7 @@ function wait(milliseconds: number) {
 }
 
 function safeMessage(error: unknown, fallback: string) {
-  return (error instanceof Error ? error.message : fallback)
-    .replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일")
-    .slice(0, 500);
+  return (error instanceof Error ? error.message : fallback).replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 500);
 }
 
 function productTask(runId: string, candidate: Awaited<ReturnType<typeof loadAutoProductionCandidates>>["candidates"][number]): AutoProductionProductTask {
@@ -94,22 +86,18 @@ function resultsFromJob(job: GenerationJob): AutoProductionResult[] {
 export async function previewAutoProduction(config: AutoProductionAdvertiserConfig, now = new Date()): Promise<AutoProductionPreview> {
   const source = await loadAutoProductionCandidates(config);
   const runs = await autoProductionRepository.list({ advertiserId: config.advertiserId, limit: 100 });
-  const recent = recentTasks(runs, config.advertiserId, config.productCooldownDays, now)
-    .filter((task) => task.status === "completed");
-  const recentFamilies = recentTasks(runs, config.advertiserId, config.productFamilyCooldownDays, now)
-    .filter((task) => task.status === "completed");
-  const recentIds = new Set(recent.flatMap((task) => [
-    task.candidate.id,
-    task.candidate.externalId || "",
-    ...candidateIdentityKeys(task.candidate).filter((key) => !key.startsWith("family:")),
-  ]).filter(Boolean));
+  const recent = recentTasks(runs, config.advertiserId, config.productCooldownDays, now).filter((task) => task.status === "completed");
+  const recentFamilies = recentTasks(runs, config.advertiserId, config.productFamilyCooldownDays, now).filter((task) => task.status === "completed");
+  const recentIds = new Set(recent.flatMap((task) => [task.candidate.id, task.candidate.externalId || "", ...candidateIdentityKeys(task.candidate).filter((key) => !key.startsWith("family:"))]).filter(Boolean));
   for (const task of recentFamilies) {
     for (const key of candidateIdentityKeys(task.candidate)) if (key.startsWith("family:")) recentIds.add(key);
   }
-  const candidates = selectAutoProductionCandidates(source.candidates, config, recentIds);
-  const imageWarnings = source.candidates
-    .filter((candidate) => candidate.imageVerificationStatus && candidate.imageVerificationStatus !== "verified")
-    .map((candidate) => `${candidate.productName}: 상품 이미지 확인 필요 · ${candidate.imageVerificationReasons?.[0] || "정확한 판매 구성 이미지를 확인하지 못했습니다."}`);
+  // 사용자가 화면에서 확정한 예정 상품은 입력 순서와 구성을 그대로 유지한다.
+  // 확정 목록이 없을 때만 성과·중복 방지 정책으로 자동 후보를 선정한다.
+  const candidates = config.adminProductUrls.length
+    ? source.candidates.slice(0, AUTO_PRODUCTION_PRODUCTS_PER_MALL)
+    : selectAutoProductionCandidates(source.candidates, config, recentIds);
+  const imageWarnings = source.candidates.filter((candidate) => candidate.imageVerificationStatus && candidate.imageVerificationStatus !== "verified").map((candidate) => `${candidate.productName}: 상품 이미지 확인 필요 · ${candidate.imageVerificationReasons?.[0] || "정확한 판매 구성 이미지를 확인하지 못했습니다."}`);
   const expectedImages = candidates.length * AUTO_PRODUCTION_CREATIVES_PER_PRODUCT;
   return {
     advertiserId: config.advertiserId,
@@ -149,26 +137,43 @@ function runRecord(config: AutoProductionAdvertiserConfig, trigger: AutoProducti
   };
 }
 
+function directRunRecord(config: AutoProductionAdvertiserConfig, now: Date): AutoProductionRun {
+  return {
+    ...runRecord(config, "manual", now),
+    runKey: `${seoulClock(now).date}:direct-product:${randomUUID()}`,
+  };
+}
+
 async function prepareTask(run: AutoProductionRun, config: AutoProductionAdvertiserConfig, task: AutoProductionProductTask) {
-  await autoProductionRepository.update(run.id, (current) => ({ ...current, status: "generating-hooks", tasks: current.tasks.map((item) => item.id === task.id ? { ...item, status: "analyzing", updatedAt: new Date().toISOString() } : item) }));
-  const job = await createNativeGenerationJob({
-    product: task.candidate.productInfo,
-    productImagePaths: task.candidate.productInfo.productImagePaths,
-    selectedAdImages: task.candidate.productInfo.productImagePaths,
-    source: "landing-page",
-    adBrief: adBrief(config, task),
-    engine: "codex_local",
-  }, {
-    autoStart: false,
-    sourceType: "auto-production",
-    autoProductionRunId: run.id,
-    autoProductionTaskId: task.id,
-  });
+  await autoProductionRepository.update(run.id, (current) => ({ ...current, status: "generating-hooks", tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: "analyzing", updatedAt: new Date().toISOString() } : item)) }));
+  const job = await createNativeGenerationJob(
+    {
+      product: task.candidate.productInfo,
+      productImagePaths: task.candidate.productInfo.productImagePaths,
+      selectedAdImages: task.candidate.productInfo.productImagePaths,
+      source: "landing-page",
+      adBrief: adBrief(config, task),
+      engine: "codex_local",
+    },
+    {
+      autoStart: false,
+      sourceType: "auto-production",
+      autoProductionRunId: run.id,
+      autoProductionTaskId: task.id,
+    }
+  );
   const hooks = hookHypothesesFromJob(job);
-  if (hooks.length !== 6) throw new Error("상품별 후킹 가설 6개를 구성하지 못했습니다.");
   const executionResultIds = job.results.map((result) => result.id);
-  if (executionResultIds.length !== AUTO_PRODUCTION_CREATIVES_PER_PRODUCT) {
-    throw new Error("수동 제작과 동일한 광고 레퍼런스 6장을 배정하지 못했습니다.");
+  const assignedReferences = job.results.map((result) => result.nativeCreative?.adReference?.id).filter(Boolean);
+  if (job.version !== CURRENT_AUTO_PRODUCTION_JOB_VERSION || job.pipeline !== CURRENT_AUTO_PRODUCTION_PIPELINE || executionResultIds.length !== AUTO_PRODUCTION_CREATIVES_PER_PRODUCT || new Set(executionResultIds).size !== AUTO_PRODUCTION_CREATIVES_PER_PRODUCT || assignedReferences.length !== AUTO_PRODUCTION_CREATIVES_PER_PRODUCT || new Set(assignedReferences).size !== AUTO_PRODUCTION_CREATIVES_PER_PRODUCT) {
+    await creativeGenerationJobStore.update(job.id, (current) => ({
+      ...current,
+      status: "cancelled",
+      cancelledAt: new Date().toISOString(),
+      errors: [...current.errors, "최신 자동제작 6장 계약을 충족하지 않아 실행을 차단했습니다."].slice(-20),
+      results: current.results.map((result) => (result.status === "pending" ? { ...result, status: "cancelled" as const } : result)),
+    }));
+    throw new Error("자동제작은 최신 v12 공통 경로와 서로 다른 카테고리 레퍼런스 6장이 모두 준비된 경우에만 실행합니다.");
   }
   const queuedJob = await creativeGenerationJobStore.update(job.id, (current) => ({
     ...current,
@@ -176,25 +181,64 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
     representativeResultId: executionResultIds[0],
     status: "pending",
   }));
+  if (!isCurrentAutoProductionGenerationJob(queuedJob)) {
+    throw new Error("자동제작 작업의 v12·6장 실행 계약 검증에 실패했습니다.");
+  }
   await autoProductionRepository.update(run.id, (current) => ({
     ...current,
     status: "queued",
-    tasks: current.tasks.map((item) => item.id === task.id ? {
-      ...item,
-      status: "queued",
-      hookHypotheses: hooks,
-      generationJobId: queuedJob.id,
-      results: resultsFromJob(queuedJob),
-      updatedAt: new Date().toISOString(),
-    } : item),
+    tasks: current.tasks.map((item) =>
+      item.id === task.id
+        ? {
+            ...item,
+            status: "queued",
+            hookHypotheses: hooks,
+            generationJobId: queuedJob.id,
+            results: resultsFromJob(queuedJob),
+            updatedAt: new Date().toISOString(),
+          }
+        : item
+    ),
   }));
   enqueueGenerationJob(queuedJob.id);
 }
 
-export async function runAutoProductionForAdvertiser(
-  config: AutoProductionAdvertiserConfig,
-  options: { trigger?: AutoProductionRun["trigger"]; now?: Date } = {}
-) {
+export async function runAutoProductionForProduct(config: AutoProductionAdvertiserConfig, candidate: AutoProductionProductTask["candidate"], options: { now?: Date } = {}) {
+  const now = options.now || new Date();
+  const initial = directRunRecord(config, now);
+  const created = await autoProductionRepository.createUnique(initial);
+  if (!created.run) return { run: null, created: false };
+  const task = productTask(initial.id, candidate);
+  let run = await autoProductionRepository.update(initial.id, (current) => ({
+    ...current,
+    status: "analyzing-products",
+    dataSourceUsed: "admin",
+    automaticExpectedImages: 0,
+    expectedImages: AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
+    tasks: [task],
+  }));
+  try {
+    await prepareTask(run, config, task);
+    run = await autoProductionRepository.update(initial.id, (current) => ({
+      ...current,
+      status: "generating-creatives",
+    }));
+    ensureAutoProductionRunMonitor(run.id);
+    return { run, created: true };
+  } catch (error) {
+    const message = safeMessage(error, "상품 광고 준비에 실패했습니다.");
+    const failed = await autoProductionRepository.update(initial.id, (current) => ({
+      ...current,
+      status: "failed",
+      errors: [...current.errors, message],
+      tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: "failed", error: message, updatedAt: new Date().toISOString() } : item)),
+      completedAt: new Date().toISOString(),
+    }));
+    return { run: failed, created: true };
+  }
+}
+
+export async function runAutoProductionForAdvertiser(config: AutoProductionAdvertiserConfig, options: { trigger?: AutoProductionRun["trigger"]; now?: Date } = {}) {
   const now = options.now || new Date();
   const created = await autoProductionRepository.createUnique(runRecord(config, options.trigger || "manual", now));
   if (!created.created || !created.run) return { run: created.run, created: false };
@@ -237,10 +281,18 @@ export async function runAutoProductionForAdvertiser(
         await prepareTask(run, config, task);
       } catch (error) {
         const message = safeMessage(error, "상품 광고 준비에 실패했습니다.");
-        await autoProductionRepository.update(run.id, (current) => ({ ...current, errors: [...current.errors, message], tasks: current.tasks.map((item) => item.id === task.id ? { ...item, status: /이미지|상품정보|후킹/.test(message) ? "skipped-insufficient-data" : "failed", error: message, updatedAt: new Date().toISOString() } : item) }));
+        await autoProductionRepository.update(run.id, (current) => ({
+          ...current,
+          errors: [...current.errors, message],
+          tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: /이미지|상품정보|후킹/.test(message) ? "skipped-insufficient-data" : "failed", error: message, updatedAt: new Date().toISOString() } : item)),
+        }));
       }
     }
-    run = await autoProductionRepository.update(run.id, (current) => ({ ...current, status: current.tasks.some((task) => task.generationJobId) ? "generating-creatives" : current.tasks.some((task) => task.status === "failed") ? "failed" : "skipped", completedAt: current.tasks.some((task) => task.generationJobId) ? undefined : new Date().toISOString() }));
+    run = await autoProductionRepository.update(run.id, (current) => ({
+      ...current,
+      status: current.tasks.some((task) => task.generationJobId) ? "generating-creatives" : current.tasks.some((task) => task.status === "failed") ? "failed" : "skipped",
+      completedAt: current.tasks.some((task) => task.generationJobId) ? undefined : new Date().toISOString(),
+    }));
     await autoProductionAdvertiserRepository.update(config.advertiserId, { lastRunAt: now.toISOString(), nextRunAt: nextScheduledAt(config, now) });
     if (run.status === "generating-creatives") ensureAutoProductionRunMonitor(run.id);
     return { run, created: true };
@@ -254,47 +306,42 @@ export async function runAutoProductionForAdvertiser(
 export async function syncAutoProductionRun(runId: string) {
   const run = await autoProductionRepository.get(runId);
   if (!run) return null;
-  const tasks = await Promise.all(run.tasks.map(async (task) => {
-    if (!task.generationJobId || (terminalProductStatuses.has(task.status) && task.adCopy && task.adCopy.status !== "generating")) return task;
-    const job = await creativeGenerationJobStore.get(task.generationJobId);
-    if (!job) return { ...task, status: "failed" as const, error: "연결된 광고 생성 작업을 찾지 못했습니다.", updatedAt: new Date().toISOString() };
-    const scoped = executionResults(job);
-    const successful = scoped.filter((result) => ["success", "approved"].includes(result.status)).length;
-    const failed = scoped.filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)).length;
-    const imagePending = scoped.some((result) => ["pending", "running"].includes(result.status));
-    const copyPending = successful > 0 && (!job.adCopy || job.adCopy.status === "generating");
-    const pending = imagePending || copyPending;
-    return {
-      ...task,
-      status: pending ? (scoped.some((result) => result.status === "running") ? "generating" as const : "queued" as const) : successful ? "completed" as const : failed ? "failed" as const : task.status,
-      results: resultsFromJob(job),
-      adCopy: job.adCopy,
-      error: failed && !successful ? scoped.find((result) => result.error)?.error : task.error,
-      updatedAt: new Date().toISOString(),
-    };
-  }));
-  const completedImages = tasks.flatMap((task) => task.results).filter((result) => ["success", "approved"].includes(result.status)).length;
-  const failedImages = tasks.flatMap((task) => task.results).filter((result) => ["failed", "korean-review", "product-review", "quality-review", "group-review"].includes(result.status)).length;
+  const tasks = await Promise.all(
+    run.tasks.map(async (task) => {
+      if (!task.generationJobId || (terminalProductStatuses.has(task.status) && task.adCopy && task.adCopy.status !== "generating")) return task;
+      const job = await creativeGenerationJobStore.get(task.generationJobId);
+      if (!job) return { ...task, status: "failed" as const, error: "연결된 광고 생성 작업을 찾지 못했습니다.", updatedAt: new Date().toISOString() };
+      const scoped = executionResults(job);
+      const generated = scoped.filter((result) => Boolean(result.imagePath)).length;
+      const failed = scoped.filter((result) => result.status === "failed" && !result.imagePath).length;
+      const imagePending = scoped.some((result) => ["pending", "running"].includes(result.status));
+      // 상품 설명 문구는 러너가 상품당 한 번 별도로 생성한다. 문구 생성 지연이나
+      // 내부 진단은 이미 만들어진 광고 이미지의 완료·다운로드를 막지 않는다.
+      const pending = imagePending;
+      return {
+        ...task,
+        status: pending ? (scoped.some((result) => result.status === "running") ? ("generating" as const) : ("queued" as const)) : generated ? ("completed" as const) : failed ? ("failed" as const) : task.status,
+        results: resultsFromJob(job),
+        adCopy: job.adCopy,
+        error: failed && !generated ? scoped.find((result) => result.error)?.error : task.error,
+        updatedAt: new Date().toISOString(),
+      };
+    })
+  );
+  const completedImages = tasks.flatMap((task) => task.results).filter((result) => Boolean(result.imageUrl)).length;
+  const failedImages = tasks.flatMap((task) => task.results).filter((result) => result.status === "failed" && !result.imageUrl).length;
   const allTerminal = tasks.every((task) => terminalProductStatuses.has(task.status));
-  const status = allTerminal
-    ? completedImages && failedImages ? "partial" : completedImages ? "completed" : tasks.every((task) => task.status.startsWith("skipped")) ? "skipped" : "failed"
-    : "generating-creatives";
+  const status = allTerminal ? (completedImages && failedImages ? "partial" : completedImages ? "completed" : tasks.every((task) => task.status.startsWith("skipped")) ? "skipped" : "failed") : "generating-creatives";
   let updated = await autoProductionRepository.update(runId, (current) => ({
     ...current,
     tasks,
     completedImages,
     failedImages,
     status,
-    packageStatus:
-      allTerminal && completedImages > 0 && current.packageImageCount === completedImages
-        ? current.packageStatus
-        : "pending",
-    packageReadyAt:
-      current.packageImageCount === completedImages ? current.packageReadyAt : undefined,
-    packageFileName:
-      current.packageImageCount === completedImages ? current.packageFileName : undefined,
-    packageImageCount:
-      current.packageImageCount === completedImages ? current.packageImageCount : undefined,
+    packageStatus: allTerminal && completedImages > 0 && current.packageImageCount === completedImages ? current.packageStatus : "pending",
+    packageReadyAt: current.packageImageCount === completedImages ? current.packageReadyAt : undefined,
+    packageFileName: current.packageImageCount === completedImages ? current.packageFileName : undefined,
+    packageImageCount: current.packageImageCount === completedImages ? current.packageImageCount : undefined,
     packageError: undefined,
     completedAt: allTerminal ? current.completedAt || new Date().toISOString() : undefined,
   }));
@@ -343,6 +390,23 @@ export async function recoverAutoProductionRuns() {
   for (const run of runs) {
     for (const task of run.tasks) {
       if (!task.generationJobId || terminalProductStatuses.has(task.status)) continue;
+      const stored = await creativeGenerationJobStore.get(task.generationJobId);
+      if (stored && stored.sourceType === "auto-production" && !isCurrentAutoProductionGenerationJob(stored)) {
+        const message = "구형 자동제작 작업은 재개하지 않았습니다. 다음 예약부터 최신 v12·레퍼런스 6장 경로로 새로 제작합니다.";
+        await creativeGenerationJobStore.update(stored.id, (current) => ({
+          ...current,
+          status: "cancelled",
+          cancelledAt: new Date().toISOString(),
+          errors: [...current.errors, message].slice(-20),
+          results: current.results.map((result) => (["pending", "running"].includes(result.status) ? { ...result, status: "cancelled" as const, error: undefined } : result)),
+        }));
+        await autoProductionRepository.update(run.id, (current) => ({
+          ...current,
+          warnings: [...current.warnings, message].slice(-50),
+          tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: "failed" as const, error: message, updatedAt: new Date().toISOString() } : item)),
+        }));
+        continue;
+      }
       const recovered = await recoverGenerationJob(task.generationJobId);
       if (recovered && ["pending", "running"].includes(recovered.status)) enqueueGenerationJob(recovered.id);
     }
@@ -368,7 +432,7 @@ export async function queueAutoProductionHooks(runId: string, taskIdValue: strin
     representativeResultId: requestedIds[0] || current.representativeResultId,
     status: "running",
     completedAt: undefined,
-    results: current.results.map((result) => requestedIds.includes(result.id) && ["cancelled", "failed"].includes(result.status) ? { ...result, status: "pending", error: undefined, startedAt: undefined } : result),
+    results: current.results.map((result) => (requestedIds.includes(result.id) && ["cancelled", "failed"].includes(result.status) ? { ...result, status: "pending", error: undefined, startedAt: undefined } : result)),
   }));
   await autoProductionRepository.update(runId, (current) => ({
     ...current,
@@ -380,7 +444,7 @@ export async function queueAutoProductionHooks(runId: string, taskIdValue: strin
     packageFileName: undefined,
     packageImageCount: undefined,
     packageError: undefined,
-    tasks: current.tasks.map((item) => item.id === taskIdValue ? { ...item, status: "queued", results: resultsFromJob(updated), updatedAt: new Date().toISOString() } : item),
+    tasks: current.tasks.map((item) => (item.id === taskIdValue ? { ...item, status: "queued", results: resultsFromJob(updated), updatedAt: new Date().toISOString() } : item)),
   }));
   enqueueGenerationJob(updated.id);
   ensureAutoProductionRunMonitor(runId);
@@ -392,7 +456,7 @@ export async function cancelAutoProductionRun(runId: string) {
   if (!run) throw new Error("자동 제작 실행 기록을 찾지 못했습니다.");
   for (const task of run.tasks) {
     if (!task.generationJobId) continue;
-    await creativeGenerationJobStore.update(task.generationJobId, (job) => ({ ...job, status: "cancelled", cancelledAt: new Date().toISOString(), results: job.results.map((result) => result.status === "pending" ? { ...result, status: "cancelled" } : result) })).catch(() => undefined);
+    await creativeGenerationJobStore.update(task.generationJobId, (job) => ({ ...job, status: "cancelled", cancelledAt: new Date().toISOString(), results: job.results.map((result) => (result.status === "pending" ? { ...result, status: "cancelled" } : result)) })).catch(() => undefined);
   }
   return autoProductionRepository.update(runId, (current) => ({ ...current, status: "cancelled", completedAt: new Date().toISOString() }));
 }

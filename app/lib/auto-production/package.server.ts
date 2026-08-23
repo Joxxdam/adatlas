@@ -6,15 +6,10 @@ import JSZip from "jszip";
 import { buildAdCopyCsv } from "../ad-copy/adCopyValidator";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { executionResults } from "../creative-generation/jobRunnerPolicy";
+import { resolveValidatedNativeDownload } from "../creative-generation/nativeCreativeStorage.server";
 import { autoProductionRepository } from "./productionRepository.server";
 
-const packagesDirectory = path.join(
-  process.cwd(),
-  "data",
-  "auto-production",
-  "runtime",
-  "packages"
-);
+const packagesDirectory = path.join(process.cwd(), "data", "auto-production", "runtime", "packages");
 
 function safeName(value: string) {
   return (
@@ -39,10 +34,7 @@ export type AutoProductionPackageArtifact = {
   generatedAt: string;
 };
 
-async function buildPackage(
-  runId: string,
-  taskId?: string
-): Promise<AutoProductionPackageArtifact> {
+async function buildPackage(runId: string, taskId?: string): Promise<AutoProductionPackageArtifact> {
   const run = await autoProductionRepository.get(runId);
   if (!run) throw new Error("자동 제작 실행 기록을 찾지 못했습니다.");
   const selectedTasks = taskId ? run.tasks.filter((task) => task.id === taskId) : run.tasks;
@@ -54,26 +46,24 @@ async function buildPackage(
     results: ReturnType<typeof executionResults>;
   }> = [];
   const completedResultIds: string[] = [];
+  const packageFingerprintKeys: string[] = [];
 
   for (const task of selectedTasks) {
     if (!task.generationJobId) continue;
     const job = await creativeGenerationJobStore.get(task.generationJobId);
     if (!job) continue;
-    const results = executionResults(job).filter(
-      (result) =>
-        ["success", "approved"].includes(result.status) &&
-        Boolean(result.nativeCreative?.finalPath)
-    );
+    const results = executionResults(job).filter((result) => Boolean(result.nativeCreative?.finalPath));
     if (!results.length) continue;
     completedResultIds.push(...results.map((result) => result.id));
+    packageFingerprintKeys.push(...results.map((result) => `${result.id}:${result.deliveryBranding?.updatedAt || "original"}`));
     prepared.push({ task, job, results });
   }
 
   if (!completedResultIds.length) {
-    throw new Error("다운로드할 검수 통과 광고 이미지가 아직 없습니다.");
+    throw new Error("다운로드할 생성 이미지가 아직 없습니다.");
   }
 
-  const fingerprint = packageFingerprint(completedResultIds);
+  const fingerprint = packageFingerprint(packageFingerprintKeys);
   const taskName = taskId ? `-${safeName(selectedTasks[0].candidate.productName)}` : "";
   const fileName = `auto-production-${run.businessDate}-${safeName(run.advertiserName)}${taskName}-${fingerprint}.zip`;
   const packagePath = path.join(packagesDirectory, fileName);
@@ -102,7 +92,7 @@ async function buildPackage(
   const failures = selectedTasks.flatMap((task) => [
     ...(task.error ? [{ productName: task.candidate.productName, taskId: task.id, status: task.status, error: task.error }] : []),
     ...task.results
-      .filter((result) => !["success", "approved"].includes(result.status))
+      .filter((result) => !result.imageUrl)
       .map((result) => ({
         productName: task.candidate.productName,
         taskId: task.id,
@@ -116,21 +106,14 @@ async function buildPackage(
     const folder = zip.folder(safeName(task.candidate.productName));
     for (const result of results) {
       const hookCode = result.hookPlan.hookCode;
-      const imageName =
-        result.creativeAsset?.fileName ||
-        `${safeName(task.candidate.productName)}-${hookCode}.jpg`;
+      const imageName = result.creativeAsset?.fileName || `${safeName(task.candidate.productName)}-${hookCode}.jpg`;
       try {
-        folder?.file(imageName, await fs.readFile(result.nativeCreative!.finalPath!));
+        folder?.file(imageName, await fs.readFile(resolveValidatedNativeDownload(job, result.id)));
       } catch {
         continue;
       }
 
-      const primaryText =
-        job.adCopy?.status !== "needs-review" && job.adCopy?.primaryText
-          ? job.adCopy.primaryText
-          : [result.hookPlan.headline, result.hookPlan.body]
-              .filter(Boolean)
-              .join("\n");
+      const primaryText = job.adCopy?.status !== "needs-review" && job.adCopy?.primaryText ? job.adCopy.primaryText : [result.hookPlan.headline, result.hookPlan.body].filter(Boolean).join("\n");
       const setup = {
         productName: task.candidate.productName,
         productUrl: task.candidate.productUrl,
@@ -138,8 +121,7 @@ async function buildPackage(
         headline: result.hookPlan.headline,
         subCopy: result.hookPlan.body,
         primaryText,
-        adName:
-          result.creativeAsset?.recommendedAdName || job.adCopy?.adName || "",
+        adName: result.creativeAsset?.recommendedAdName || job.adCopy?.adName || "",
         utm: result.creativeAsset?.utmContent || job.adCopy?.utm || "",
         assetCode: result.creativeAsset?.assetCode || job.adCopy?.assetCode || "",
         imageFile: imageName,
@@ -154,10 +136,7 @@ async function buildPackage(
         hookId: setup.hookCode,
       });
       folder?.file(`${hookCode}-ad-setup.json`, `${JSON.stringify(setup, null, 2)}\n`);
-      folder?.file(
-        `${hookCode}-ad-setup.txt`,
-        `후킹\n${setup.headline}\n\n서브 문구\n${setup.subCopy}\n\nMeta 기본 문구\n${setup.primaryText}\n\n광고명\n${setup.adName}\n\nUTM\n${setup.utm}\n\n소재코드\n${setup.assetCode}\n`
-      );
+      folder?.file(`${hookCode}-ad-setup.txt`, `후킹\n${setup.headline}\n\n서브 문구\n${setup.subCopy}\n\nMeta 기본 문구\n${setup.primaryText}\n\n광고명\n${setup.adName}\n\nUTM\n${setup.utm}\n\n소재코드\n${setup.assetCode}\n`);
       manifest.push(setup);
     }
   }
@@ -165,10 +144,7 @@ async function buildPackage(
   zip.file("meta-ad-settings.csv", buildAdCopyCsv(rows));
   if (failures.length) {
     zip.file("failures.json", `${JSON.stringify(failures, null, 2)}\n`);
-    zip.file(
-      "failures.txt",
-      `${failures.map((failure) => `${failure.productName} · ${"hookCode" in failure ? failure.hookCode : "상품"} · ${failure.status}${"error" in failure ? ` · ${failure.error}` : ""}`).join("\n")}\n`
-    );
+    zip.file("failures.txt", `${failures.map((failure) => `${failure.productName} · ${"hookCode" in failure ? failure.hookCode : "상품"} · ${failure.status}${"error" in failure ? ` · ${failure.error}` : ""}`).join("\n")}\n`);
   }
   zip.file(
     "manifest.json",
@@ -187,10 +163,7 @@ async function buildPackage(
       2
     )}\n`
   );
-  zip.file(
-    "README.txt",
-    "상품 폴더마다 reference-staged-edit 제작과 검수를 통과한 광고 이미지 및 후킹별 광고명·UTM·소재코드가 들어 있습니다. meta-ad-settings.csv는 Meta 세팅용 UTF-8 BOM CSV이며, 실패 항목이 있으면 failures 파일에서 확인할 수 있습니다.\n"
-  );
+  zip.file("README.txt", "상품 폴더마다 생성된 광고 이미지 및 후킹별 광고명·UTM·소재코드가 들어 있습니다. 내부 진단이 확인 필요로 표시된 이미지도 사용자가 직접 검토할 수 있도록 포함됩니다. meta-ad-settings.csv는 Meta 세팅용 UTF-8 BOM CSV이며, 이미지 생성에 실패한 항목이 있으면 failures 파일에서 확인할 수 있습니다.\n");
 
   const buffer = await zip.generateAsync({
     type: "nodebuffer",

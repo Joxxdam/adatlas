@@ -26,14 +26,7 @@
     },
     "generationPromptParts": {
       "base": "commercial advertising background, empty product placement surface, Korean dining mood, realistic photography",
-      "promptFamilies": [
-        "wide eye-level composition at morning", "wide eye-level composition at evening",
-        "low camera with foreground surface", "high angle with clear table space",
-        "side-lit cinematic composition", "soft window light composition",
-        "warm tungsten interior depth", "cool outdoor daylight depth",
-        "shallow depth with clean foreground", "deep focus environmental scene",
-        "left negative space composition", "right negative space composition"
-      ]
+      "promptFamilies": ["wide eye-level composition at morning", "wide eye-level composition at evening", "low camera with foreground surface", "high angle with clear table space", "side-lit cinematic composition", "soft window light composition", "warm tungsten interior depth", "cool outdoor daylight depth", "shallow depth with clean foreground", "deep focus environmental scene", "left negative space composition", "right negative space composition"]
     },
     "negativePrompt": "text, letters, typography, watermark, logo, brand name, product package, price tag, meat package, competitor product, deformed objects, distorted hands, duplicated people, close-up face, cluttered composition, low resolution, oversharpened, artificial plastic texture, extreme blur, cropped subject, frame, border",
     "preferredMoods": ["warm", "rustic", "premium", "cozy", "dramatic"],
@@ -76,13 +69,7 @@
     },
     "generationPromptParts": {
       "base": "fresh bodycare advertising background, realistic, clean product placement space, no product shown",
-      "promptFamilies": [
-        "bright morning wide shot", "cool evening wide shot", "eye-level shelf composition",
-        "low camera product-grounded composition", "high angle ingredient composition",
-        "backlit water atmosphere", "side-lit clean interior", "soft spa daylight",
-        "energetic motion background", "minimal macro texture with space",
-        "left negative space composition", "right negative space composition"
-      ]
+      "promptFamilies": ["bright morning wide shot", "cool evening wide shot", "eye-level shelf composition", "low camera product-grounded composition", "high angle ingredient composition", "backlit water atmosphere", "side-lit clean interior", "soft spa daylight", "energetic motion background", "minimal macro texture with space", "left negative space composition", "right negative space composition"]
     },
     "negativePrompt": "text, letters, typography, watermark, logo, brand name, bodywash package, cosmetic package, product package, endorsement, close-up face, duplicated people, distorted hands, cluttered composition, low resolution, oversharpened, plastic texture, extreme blur, cropped subject, frame, border",
     "preferredMoods": ["fresh", "cool", "energetic", "clean", "vivid"],
@@ -125,12 +112,7 @@
     },
     "generationPromptParts": {
       "base": "farm produce advertising background, realistic natural light, empty product box placement, no branded package",
-      "promptFamilies": [
-        "sunrise wide landscape", "midday natural wide scene", "golden hour backlight",
-        "eye-level market scene", "low camera table foreground", "high angle preparation space",
-        "soft cloudy outdoor light", "warm window kitchen light", "deep focus farm environment",
-        "shallow depth rustic foreground", "left negative space composition", "right negative space composition"
-      ]
+      "promptFamilies": ["sunrise wide landscape", "midday natural wide scene", "golden hour backlight", "eye-level market scene", "low camera table foreground", "high angle preparation space", "soft cloudy outdoor light", "warm window kitchen light", "deep focus farm environment", "shallow depth rustic foreground", "left negative space composition", "right negative space composition"]
     },
     "negativePrompt": "text, letters, typography, watermark, logo, brand name, branded box, product package, oversized produce close-up, distorted hands, duplicated people, close-up face, cluttered composition, low resolution, oversharpened, artificial texture, extreme blur, cropped subject, frame, border",
     "preferredMoods": ["natural", "fresh", "rustic", "warm", "clean"],
@@ -173,13 +155,7 @@
     },
     "generationPromptParts": {
       "base": "women's fashion advertising background, empty full-body placement area, visible floor contact, realistic editorial photography",
-      "promptFamilies": [
-        "bright morning full-body wide shot", "golden hour full-body wide shot",
-        "eye-level editorial composition", "low camera long vertical space",
-        "symmetrical corridor perspective", "asymmetrical wall and floor composition",
-        "soft window light interior", "dramatic side light interior", "spring color atmosphere",
-        "autumn neutral atmosphere", "left full-body negative space", "right full-body negative space"
-      ]
+      "promptFamilies": ["bright morning full-body wide shot", "golden hour full-body wide shot", "eye-level editorial composition", "low camera long vertical space", "symmetrical corridor perspective", "asymmetrical wall and floor composition", "soft window light interior", "dramatic side light interior", "spring color atmosphere", "autumn neutral atmosphere", "left full-body negative space", "right full-body negative space"]
     },
     "negativePrompt": "text, letters, typography, watermark, logo, brand name, product package, clothing product, fashion model foreground, close-up face, mannequin, branded storefront, duplicated people, cluttered composition, low resolution, oversharpened, plastic texture, extreme blur, cropped floor, frame, border",
     "preferredMoods": ["minimal", "romantic", "premium", "clean", "calm"],

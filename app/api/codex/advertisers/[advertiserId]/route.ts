@@ -1,11 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  deleteBrandMemory,
-  getAdvertiserThread,
-  readBrandMemory,
-  resetAdvertiserThread,
-  saveBrandMemory,
-} from "../../../../lib/creative-generation/codexRegistry.server";
+import { deleteBrandMemory, getAdvertiserThread, readBrandMemory, resetAdvertiserThread, saveBrandMemory } from "../../../../lib/creative-generation/codexRegistry.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +22,7 @@ export async function GET(_: Request, context: { params: Promise<{ advertiserId:
 export async function PATCH(request: Request, context: { params: Promise<{ advertiserId: string }> }) {
   try {
     const id = advertiserId((await context.params).advertiserId);
-    const body = await request.json() as { approvedDirections?: string[]; rejectedDirections?: string[]; feedback?: string[] };
+    const body = (await request.json()) as { approvedDirections?: string[]; rejectedDirections?: string[]; feedback?: string[] };
     const brandMemory = await saveBrandMemory(id, {
       approvedDirections: Array.isArray(body.approvedDirections) ? body.approvedDirections : [],
       rejectedDirections: Array.isArray(body.rejectedDirections) ? body.rejectedDirections : [],

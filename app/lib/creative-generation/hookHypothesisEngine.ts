@@ -1,14 +1,5 @@
 import { matchCategoryProfile } from "./profiles.ts";
-import type {
-  CreativeBlueprintId,
-  HookCreativeBrief,
-  HookHypothesisCandidate,
-  HookHypothesisScore,
-  HookTaxonomyTag,
-  ProductFact,
-  ProductInsightProfile,
-  ProductTruth,
-} from "./types.ts";
+import type { CreativeBlueprintId, HookCreativeBrief, HookHypothesisCandidate, HookHypothesisScore, HookTaxonomyTag, ProductFact, ProductInsightProfile, ProductTruth } from "./types.ts";
 import { selectQualityDiverseHooks } from "./hookQuality.ts";
 
 export type CategoryHookPrior = Partial<Record<HookTaxonomyTag, number>>;
@@ -50,7 +41,10 @@ const blueprintByTag: Record<HookTaxonomyTag, CreativeBlueprintId> = {
 };
 
 function clean(value: unknown) {
-  return String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function words(value: string, maxVisible: number) {
@@ -79,14 +73,8 @@ function unique<T>(values: T[]) {
 }
 
 function compactProductName(truth: ProductTruth) {
-  const brandTerms = unique([
-    clean(truth.product.brandName),
-    clean(truth.product.advertiserName),
-  ]).filter(Boolean);
-  let value = clean(truth.product.productName).replace(
-    /\b\d+(?:\.\d+)?\s*(?:ml|mL|l|L|g|kg)\b/gi,
-    " "
-  );
+  const brandTerms = unique([clean(truth.product.brandName), clean(truth.product.advertiserName)]).filter(Boolean);
+  let value = clean(truth.product.productName).replace(/\b\d+(?:\.\d+)?\s*(?:ml|mL|l|L|g|kg)\b/gi, " ");
   value = value
     .replace(/[★☆◆◇♥♡●■▶▷✔✓🍏🍎🔥]/gu, " ")
     .replace(/\b\d[\d,.]*\s*(?:원|%|개|팩|병|박스)\b/gi, " ")
@@ -112,16 +100,9 @@ function signal(facts: ProductFact[]) {
 }
 
 function factStrength(truth: ProductTruth, factIds: string[]) {
-  const facts = factIds
-    .map((factId) => truth.facts.find((fact) => fact.id === factId))
-    .filter((fact): fact is ProductFact => Boolean(fact));
+  const facts = factIds.map((factId) => truth.facts.find((fact) => fact.id === factId)).filter((fact): fact is ProductFact => Boolean(fact));
   if (!facts.length) return 30;
-  return Math.round(
-    facts.reduce(
-      (sum, fact) => sum + (fact.strength ?? 50) * 0.55 + (fact.specificity ?? 50) * 0.45,
-      0
-    ) / facts.length
-  );
+  return Math.round(facts.reduce((sum, fact) => sum + (fact.strength ?? 50) * 0.55 + (fact.specificity ?? 50) * 0.45, 0) / facts.length);
 }
 
 function derivedProblem(target: string, benefit: string) {
@@ -129,8 +110,7 @@ function derivedProblem(target: string, benefit: string) {
     .replace(/(?:을|를)?\s*(?:원하는|찾는|준비하는|챙기려는)\s*(?:사람|고객)?$/u, "")
     .replace(/고객$/u, "")
     .trim();
-  if (/외출|여행|휴대|헬스장|캠핑|챙/.test(`${targetText} ${benefit}`))
-    return "외출할 때 필요한 용품 챙기기";
+  if (/외출|여행|휴대|헬스장|캠핑|챙/.test(`${targetText} ${benefit}`)) return "외출할 때 필요한 용품 챙기기";
   if (/운동/.test(targetText)) return "운동 뒤 남는 불편";
   if (/출근|주말/.test(targetText)) return "상황마다 다른 선택의 번거로움";
   if (/좁은|정리|수납/.test(targetText)) return "공간 정리의 번거로움";
@@ -140,8 +120,7 @@ function derivedProblem(target: string, benefit: string) {
 
 function usageMoment(target: string, category: string) {
   const source = `${target} ${category}`;
-  if (/외출|여행|휴대|헬스장|캠핑|여행용/.test(source))
-    return "여행·헬스장·캠핑에서 씻을 때";
+  if (/외출|여행|휴대|헬스장|캠핑|여행용/.test(source)) return "여행·헬스장·캠핑에서 씻을 때";
   if (/운동/.test(source)) return "운동을 마친 뒤";
   if (/출근/.test(source)) return "출근을 준비하는 아침";
   if (/주말|선물/.test(source)) return "주말 식사나 선물을 고를 때";
@@ -153,38 +132,14 @@ function usageMoment(target: string, category: string) {
 
 export function buildProductInsightProfile(truth: ProductTruth): ProductInsightProfile {
   const reviewFacts = matchingFacts(truth, (fact) => fact.evidenceType === "review" || /^review/.test(fact.key));
-  const priceFacts = matchingFacts(
-    truth,
-    (fact) => ["price", "offer", "shipping"].includes(fact.evidenceType || "") || /^(price|original-price|discount)/.test(fact.key)
-  );
-  const optionFacts = matchingFacts(
-    truth,
-    (fact) =>
-      fact.evidenceType !== "identity" &&
-      (
-      fact.evidenceType === "composition" ||
-      /(?:option|composition)/i.test(fact.key) && /(?:택\s*\d+|옵션|\d+\s*(?:개|팩|병|세트|종)|구성|묶음|포함)/iu.test(fact.value) ||
-      /(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|파우치\s*포함)/i.test(fact.value)
-      )
-  );
-  const originFacts = matchingFacts(
-    truth,
-    (fact) =>
-      ["origin", "certification"].includes(fact.evidenceType || "") ||
-      (!/^original-price$/i.test(fact.key) &&
-        /(?:^|[-_\s])origin(?:$|[-_\s])|원산지|산지|인증/i.test(`${fact.key} ${fact.label}`))
-  );
-  const benefitFacts = matchingFacts(
-    truth,
-    (fact) => ["usp", "ingredient", "usage", "target", "numeric"].includes(fact.evidenceType || "") || /(?:benefit|ingredient|target|usp)/i.test(fact.key)
-  );
+  const priceFacts = matchingFacts(truth, (fact) => ["price", "offer", "shipping"].includes(fact.evidenceType || "") || /^(price|original-price|discount)/.test(fact.key));
+  const optionFacts = matchingFacts(truth, (fact) => fact.evidenceType !== "identity" && (fact.evidenceType === "composition" || (/(?:option|composition)/i.test(fact.key) && /(?:택\s*\d+|옵션|\d+\s*(?:개|팩|병|세트|종)|구성|묶음|포함)/iu.test(fact.value)) || /(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|파우치\s*포함)/i.test(fact.value)));
+  const originFacts = matchingFacts(truth, (fact) => ["origin", "certification"].includes(fact.evidenceType || "") || (!/^original-price$/i.test(fact.key) && /(?:^|[-_\s])origin(?:$|[-_\s])|원산지|산지|인증/i.test(`${fact.key} ${fact.label}`)));
+  const benefitFacts = matchingFacts(truth, (fact) => ["usp", "ingredient", "usage", "target", "numeric"].includes(fact.evidenceType || "") || /(?:benefit|ingredient|target|usp)/i.test(fact.key));
   const targetFacts = matchingFacts(truth, (fact) => fact.evidenceType === "target" || /^target/.test(fact.key));
   const usageFacts = matchingFacts(truth, (fact) => fact.evidenceType === "usage" || /usage|상황/.test(fact.key));
   const ingredientFacts = matchingFacts(truth, (fact) => fact.evidenceType === "ingredient" || /^ingredient/.test(fact.key));
-  const seasonFacts = matchingFacts(
-    truth,
-    (fact) => /(?:season|new|limited|시즌|신상품|한정)/i.test(`${fact.key} ${fact.label} ${fact.value}`)
-  );
+  const seasonFacts = matchingFacts(truth, (fact) => /(?:season|new|limited|시즌|신상품|한정)/i.test(`${fact.key} ${fact.label} ${fact.value}`));
   const benefit = clean(truth.product.mainBenefit || benefitFacts[0]?.value || truth.product.productName);
   const target = clean(truth.product.targetCustomer || targetFacts[0]?.value);
   const use = usageMoment(target, `${truth.product.category} ${truth.product.productName}`);
@@ -195,12 +150,14 @@ export function buildProductInsightProfile(truth: ProductTruth): ProductInsightP
         factIds: [fact.id],
         strength: factStrength(truth, [fact.id]),
       }))
-    : [{
-        id: "reason-product-identity",
-        reason: benefit,
-        factIds: truth.facts.filter((fact) => fact.key === "product-name").map((fact) => fact.id),
-        strength: 40,
-      }];
+    : [
+        {
+          id: "reason-product-identity",
+          reason: benefit,
+          factIds: truth.facts.filter((fact) => fact.key === "product-name").map((fact) => fact.id),
+          strength: 40,
+        },
+      ];
   const visibleSignals = reasons.length + reviewFacts.length + priceFacts.length + optionFacts.length + originFacts.length + truth.imageAssets.length;
   return {
     productId: truth.productId,
@@ -213,37 +170,27 @@ export function buildProductInsightProfile(truth: ProductTruth): ProductInsightP
     outcomes: [{ value: benefit, factIds: reasons[0]?.factIds || [] }],
     useOccasions: unique([use, ...usageFacts.map((fact) => fact.value)]).map((value) => ({
       value,
-      factIds: usageFacts.filter((fact) => fact.value === value).map((fact) => fact.id).concat(reasons[0]?.factIds || []),
+      factIds: usageFacts
+        .filter((fact) => fact.value === value)
+        .map((fact) => fact.id)
+        .concat(reasons[0]?.factIds || []),
     })),
-    targets: target
-      ? [{ value: target, factIds: targetFacts.map((fact) => fact.id).concat(reasons[0]?.factIds || []) }]
-      : [],
+    targets: target ? [{ value: target, factIds: targetFacts.map((fact) => fact.id).concat(reasons[0]?.factIds || []) }] : [],
     ingredients: signal(ingredientFacts),
     priceSignals: signal(priceFacts),
     reviewSignals: signal(reviewFacts),
     optionSignals: signal(optionFacts),
     originSignals: signal(originFacts),
     seasonSignals: signal(seasonFacts),
-    visualAssets: truth.imageAssets
-      .filter((asset) => asset.verified)
-      .map((asset) => ({ id: asset.id, role: asset.role, path: asset.path })),
+    visualAssets: truth.imageAssets.filter((asset) => asset.verified).map((asset) => ({ id: asset.id, role: asset.role, path: asset.path })),
     dataSufficiency: Math.min(100, Math.round(25 + visibleSignals * 7.5)),
   };
 }
 
-function rawScores(input: {
-  truth: ProductTruth;
-  factIds: string[];
-  primaryTag: HookTaxonomyTag;
-  sceneKey: string;
-  prior?: CategoryHookPrior;
-  variant: number;
-}): HookHypothesisScore {
+function rawScores(input: { truth: ProductTruth; factIds: string[]; primaryTag: HookTaxonomyTag; sceneKey: string; prior?: CategoryHookPrior; variant: number }): HookHypothesisScore {
   const evidenceStrength = Math.min(100, Math.max(20, factStrength(input.truth, input.factIds)));
   const specificity = Math.min(96, 48 + input.factIds.length * 12);
-  const purchaseReasonStrength = ["problem-solution", "price-value", "feature-usp", "convenience", "bundle-choice"].includes(input.primaryTag)
-    ? 82
-    : 68;
+  const purchaseReasonStrength = ["problem-solution", "price-value", "feature-usp", "convenience", "bundle-choice"].includes(input.primaryTag) ? 82 : 68;
   const distinctiveness = Math.min(94, 58 + input.factIds.length * 9 + input.variant * 3);
   const attentionPotential = Math.min(94, 68 + input.variant * 5);
   const visualizability = ["sensory-experience", "usage-occasion", "problem-solution", "bundle-choice"].includes(input.primaryTag) ? 90 : 76;
@@ -251,33 +198,11 @@ function rawScores(input: {
   const claimSafety = input.factIds.length ? 96 : 72;
   const categoryPrior = Math.max(0, Math.min(100, input.prior?.[input.primaryTag] ?? 50));
   const novelty = Math.min(92, 64 + input.variant * 6 + (input.sceneKey.includes("detail") ? 8 : 0));
-  const total = Math.round(
-    evidenceStrength * 0.18 +
-      specificity * 0.12 +
-      purchaseReasonStrength * 0.12 +
-      distinctiveness * 0.12 +
-      attentionPotential * 0.1 +
-      visualizability * 0.12 +
-      advertisingFit * 0.09 +
-      claimSafety * 0.1 +
-      categoryPrior * 0.03 +
-      novelty * 0.02
-  );
+  const total = Math.round(evidenceStrength * 0.18 + specificity * 0.12 + purchaseReasonStrength * 0.12 + distinctiveness * 0.12 + attentionPotential * 0.1 + visualizability * 0.12 + advertisingFit * 0.09 + claimSafety * 0.1 + categoryPrior * 0.03 + novelty * 0.02);
   return { evidenceStrength, specificity, purchaseReasonStrength, distinctiveness, attentionPotential, visualizability, advertisingFit, claimSafety, categoryPrior, novelty, total };
 }
 
-export function buildHookCreativeBrief(input: {
-  id: string;
-  advertiserId?: string;
-  productId?: string;
-  tag: HookTaxonomyTag;
-  mainHook: string;
-  subCopy: string;
-  customerReason: string;
-  verifiedFacts: string[];
-  visualStory: string;
-  scene: string;
-}): HookCreativeBrief {
+export function buildHookCreativeBrief(input: { id: string; advertiserId?: string; productId?: string; tag: HookTaxonomyTag; mainHook: string; subCopy: string; customerReason: string; verifiedFacts: string[]; visualStory: string; scene: string }): HookCreativeBrief {
   return {
     creativeId: `creative-${input.id}`,
     advertiserId: input.advertiserId || "unassigned-advertiser",
@@ -301,12 +226,7 @@ export function buildHookCreativeBrief(input: {
     graphicDirection: "AI가 실제 상품 레퍼런스를 보존하면서 장면·한국어 타이포그래피·그래픽을 하나의 완성 광고로 통합 생성",
     copySafeZone: "한국어 후킹이 모바일에서도 즉시 읽히는 명확한 시각 위계",
     referenceImageIds: [],
-    forbiddenElements: [
-      "기존 광고 배너의 문구·가격·할인·배지·CTA 복제",
-      "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성",
-      "실제 상품과 다른 패키지·수량·옵션",
-      "지정하지 않은 임의의 한글·숫자·가격·로고",
-    ],
+    forbiddenElements: ["기존 광고 배너의 문구·가격·할인·배지·CTA 복제", "확인되지 않은 효능·성분·원산지·인증·후기·가격·구성", "실제 상품과 다른 패키지·수량·옵션", "지정하지 않은 임의의 한글·숫자·가격·로고"],
     productDirection: "실제 상품 레퍼런스의 형태·라벨·색상을 유지하고 주 피사체로 크게 배치",
     backgroundDirection: "후킹과 직접 연결되는 완성 광고 장면을 생성하고 기존 배경 라이브러리를 사용하지 않음",
     copySafeDirection: "AI 완성 이미지 안에서 메인·서브·CTA가 정확하고 크게 읽히도록 구성",
@@ -345,11 +265,7 @@ type Draft = {
   coreClaim?: string;
 };
 
-export function generateHookHypothesisCandidates(
-  truth: ProductTruth,
-  profile = buildProductInsightProfile(truth),
-  prior: CategoryHookPrior = {}
-): HookHypothesisCandidate[] {
+export function generateHookHypothesisCandidates(truth: ProductTruth, profile = buildProductInsightProfile(truth), prior: CategoryHookPrior = {}): HookHypothesisCandidate[] {
   const benefit = words(profile.primaryBenefit, 30);
   const product = compactProductName(truth);
   const reason = profile.customerReasons[0];
@@ -367,11 +283,7 @@ export function generateHookHypothesisCandidates(
   );
   const ingredient = words(profile.ingredients[0]?.value || "", 16);
   const isAgriculture = profile.category === "agriculture";
-  const sensoryBenefit = isAgriculture
-    ? benefit
-        .replace(/\s*\/\s*/g, "·")
-        .replace(/\s*3박자(?:\s*한번에)?\s*$/u, "")
-    : benefit;
+  const sensoryBenefit = isAgriculture ? benefit.replace(/\s*\/\s*/g, "·").replace(/\s*3박자(?:\s*한번에)?\s*$/u, "") : benefit;
   const priceFactIds = unique(profile.priceSignals.flatMap((item) => item.factIds));
   const seasonFactIds = unique(profile.seasonSignals.flatMap((item) => item.factIds));
   const reviewFactIds = unique(profile.reviewSignals.flatMap((item) => item.factIds));
@@ -379,167 +291,374 @@ export function generateHookHypothesisCandidates(
   const salePrice = priceValues.find((value) => /원/.test(value) && value === truth.product.price) || truth.product.price;
   const originalPrice = truth.product.originalPrice || truth.product.oldPrice || "";
   const discount = truth.product.discountInfo || "";
-  const quantity = clean(
-    truth.product.productName.match(/\d[\d,.]*\s*(?:kg|g|개|팩|박스)/i)?.[0] || ""
-  );
-  const valueHook = [quantity && `${quantity} 한 상자`, salePrice]
-    .filter(Boolean)
-    .join(" · ");
+  const quantity = clean(truth.product.productName.match(/\d[\d,.]*\s*(?:kg|g|개|팩|박스)/i)?.[0] || "");
+  const valueHook = [quantity && `${quantity} 한 상자`, salePrice].filter(Boolean).join(" · ");
   const reviewText = profile.reviewSignals.map((item) => item.value).join(" ");
   const reviewKeyword = reviewText.match(/새콤달콤|아삭(?:한|함)?|싱싱(?:한|함)?/u)?.[0] || "실제 구매 후기";
   const agricultureDrafts: Draft[] = [
     {
-      tag: "sensory-experience", main: "아삭·새콤달콤, 청량까지", sub: `한입에 만나는 ${product}`,
-      reason: benefit, factIds, sceneKey: "fresh-bite", visualStory: "물방울 맺힌 청사과와 한입 베어 문 단면을 크게 보여준다", scene: "실제 청사과 표면과 과육 단면이 선명한 자연광 푸드 광고 사진",
+      tag: "sensory-experience",
+      main: "아삭·새콤달콤, 청량까지",
+      sub: `한입에 만나는 ${product}`,
+      reason: benefit,
+      factIds,
+      sceneKey: "fresh-bite",
+      visualStory: "물방울 맺힌 청사과와 한입 베어 문 단면을 크게 보여준다",
+      scene: "실제 청사과 표면과 과육 단면이 선명한 자연광 푸드 광고 사진",
     },
     ...(salePrice
-      ? [{
-          tag: "price-value" as const, main: valueHook || `${salePrice} 여름 과일`, sub: originalPrice ? `${originalPrice} → ${salePrice}` : discount || benefit,
-          reason: [salePrice, originalPrice, discount].filter(Boolean).join(" · "), factIds: priceFactIds, sceneKey: "produce-price-impact", visualStory: "실제 판매 구성의 사과를 풍성하게 채우고 가격 근거를 크게 보여준다", scene: "청사과 한 상자의 풍성한 실물 사진과 가격 문구용 안전 여백",
-        }]
+      ? [
+          {
+            tag: "price-value" as const,
+            main: valueHook || `${salePrice} 여름 과일`,
+            sub: originalPrice ? `${originalPrice} → ${salePrice}` : discount || benefit,
+            reason: [salePrice, originalPrice, discount].filter(Boolean).join(" · "),
+            factIds: priceFactIds,
+            sceneKey: "produce-price-impact",
+            visualStory: "실제 판매 구성의 사과를 풍성하게 채우고 가격 근거를 크게 보여준다",
+            scene: "청사과 한 상자의 풍성한 실물 사진과 가격 문구용 안전 여백",
+          },
+        ]
       : []),
     {
-      tag: "season-newness", main: "이번 여름 지나면 또 1년", sub: `여름에만 만나는 ${product}`,
-      reason: "여름 한정", factIds: unique([...factIds, ...seasonFactIds]), sceneKey: "summer-limited-harvest", visualStory: "여름 햇빛 아래 수확 직후 청사과를 보여준다", scene: "여름 과수원의 빛과 실제 청사과를 연결한 산지 에디토리얼 사진",
+      tag: "season-newness",
+      main: "이번 여름 지나면 또 1년",
+      sub: `여름에만 만나는 ${product}`,
+      reason: "여름 한정",
+      factIds: unique([...factIds, ...seasonFactIds]),
+      sceneKey: "summer-limited-harvest",
+      visualStory: "여름 햇빛 아래 수확 직후 청사과를 보여준다",
+      scene: "여름 과수원의 빛과 실제 청사과를 연결한 산지 에디토리얼 사진",
     },
     {
-      tag: "problem-solution", main: salePrice ? `여름사과 ${quantity || "한 상자"}, 만원도 안 한다면?` : "여름 과일, 가격이 망설여진다면", sub: salePrice ? `${salePrice} 여름 한정가` : benefit,
-      reason: salePrice || benefit, factIds: unique([...factIds, ...priceFactIds]), sceneKey: "produce-value-solution", visualStory: "한 상자의 양과 구매 가격을 한눈에 비교하게 한다", scene: "실제 청사과 상자와 낱개를 함께 보여주는 정돈된 커머스 사진",
+      tag: "problem-solution",
+      main: salePrice ? `여름사과 ${quantity || "한 상자"}, 만원도 안 한다면?` : "여름 과일, 가격이 망설여진다면",
+      sub: salePrice ? `${salePrice} 여름 한정가` : benefit,
+      reason: salePrice || benefit,
+      factIds: unique([...factIds, ...priceFactIds]),
+      sceneKey: "produce-value-solution",
+      visualStory: "한 상자의 양과 구매 가격을 한눈에 비교하게 한다",
+      scene: "실제 청사과 상자와 낱개를 함께 보여주는 정돈된 커머스 사진",
     },
     {
-      tag: "usage-occasion", main: "차갑게 꺼내, 한입 아삭", sub: sensoryBenefit,
-      reason: occasion, factIds, sceneKey: "summer-snack-moment", visualStory: "무더운 날 시원하게 꺼내 먹는 청사과의 순간을 보여준다", scene: "차가운 물방울과 청사과 한입의 청량함이 느껴지는 실사 푸드 사진",
+      tag: "usage-occasion",
+      main: "차갑게 꺼내, 한입 아삭",
+      sub: sensoryBenefit,
+      reason: occasion,
+      factIds,
+      sceneKey: "summer-snack-moment",
+      visualStory: "무더운 날 시원하게 꺼내 먹는 청사과의 순간을 보여준다",
+      scene: "차가운 물방울과 청사과 한입의 청량함이 느껴지는 실사 푸드 사진",
     },
     ...(!originalPrice
-      ? [{
-          tag: "comparison-alternative" as const, main: "여름 과일, 무게·가격부터 비교", sub: [quantity, salePrice].filter(Boolean).join(" · ") || benefit,
-          reason: [quantity, salePrice].filter(Boolean).join(" · ") || benefit, factIds: unique([...factIds, ...priceFactIds]), sceneKey: "produce-weight-value", visualStory: "실제 판매 중량과 가격을 다른 추정 없이 한눈에 비교하게 한다", scene: "실제 사과 상자와 낱개를 정돈하고 중량·가격 문구용 여백을 둔 커머스 사진",
-        }]
+      ? [
+          {
+            tag: "comparison-alternative" as const,
+            main: "여름 과일, 무게·가격부터 비교",
+            sub: [quantity, salePrice].filter(Boolean).join(" · ") || benefit,
+            reason: [quantity, salePrice].filter(Boolean).join(" · ") || benefit,
+            factIds: unique([...factIds, ...priceFactIds]),
+            sceneKey: "produce-weight-value",
+            visualStory: "실제 판매 중량과 가격을 다른 추정 없이 한눈에 비교하게 한다",
+            scene: "실제 사과 상자와 낱개를 정돈하고 중량·가격 문구용 여백을 둔 커머스 사진",
+          },
+        ]
       : []),
     ...(reviewFactIds.length
-      ? [{
-          tag: "review-trust" as const, main: `후기에서 먼저 나온 말, ${reviewKeyword}`, sub: `${product} 실제 구매 후기에서 확인`,
-          reason: reviewKeyword, factIds: reviewFactIds, sceneKey: "produce-review-proof", visualStory: "후기에서 언급된 식감이 보이는 과육 단면을 보여준다", scene: "실제 후기의 감각 표현과 연결되는 청사과 단면 근접 사진",
-        }]
+      ? [
+          {
+            tag: "review-trust" as const,
+            main: `후기에서 먼저 나온 말, ${reviewKeyword}`,
+            sub: `${product} 실제 구매 후기에서 확인`,
+            reason: reviewKeyword,
+            factIds: reviewFactIds,
+            sceneKey: "produce-review-proof",
+            visualStory: "후기에서 언급된 식감이 보이는 과육 단면을 보여준다",
+            scene: "실제 후기의 감각 표현과 연결되는 청사과 단면 근접 사진",
+          },
+        ]
       : []),
     ...(originalPrice && salePrice
-      ? [{
-          tag: "comparison-alternative" as const, main: `${originalPrice} → ${salePrice}`, sub: `${discount || "할인"} · 여름 한정 ${product}`,
-          reason: `${originalPrice} 대비 ${salePrice}`, factIds: priceFactIds, sceneKey: "produce-price-contrast", visualStory: "기존가와 현재가의 차이를 단순하고 강하게 보여준다", scene: "실제 청사과를 배경으로 가격 전환이 또렷한 퍼포먼스 광고 사진",
-        }]
+      ? [
+          {
+            tag: "comparison-alternative" as const,
+            main: `${originalPrice} → ${salePrice}`,
+            sub: `${discount || "할인"} · 여름 한정 ${product}`,
+            reason: `${originalPrice} 대비 ${salePrice}`,
+            factIds: priceFactIds,
+            sceneKey: "produce-price-contrast",
+            visualStory: "기존가와 현재가의 차이를 단순하고 강하게 보여준다",
+            scene: "실제 청사과를 배경으로 가격 전환이 또렷한 퍼포먼스 광고 사진",
+          },
+        ]
       : []),
     {
-      tag: "sensory-experience", main: `${sensoryBenefit}, 3박자`, sub: `${product}, 맛을 고르는 기준`,
-      reason: benefit, factIds, sceneKey: "produce-benefit-detail", visualStory: "확인된 식감이나 구성 근거를 사과 표면과 단면으로 보여준다", scene: "실제 판매 사과의 표면과 단면 디테일이 함께 보이는 자연광 푸드 사진",
+      tag: "sensory-experience",
+      main: `${sensoryBenefit}, 3박자`,
+      sub: `${product}, 맛을 고르는 기준`,
+      reason: benefit,
+      factIds,
+      sceneKey: "produce-benefit-detail",
+      visualStory: "확인된 식감이나 구성 근거를 사과 표면과 단면으로 보여준다",
+      scene: "실제 판매 사과의 표면과 단면 디테일이 함께 보이는 자연광 푸드 사진",
     },
   ];
   const genericDrafts: Draft[] = [
     {
-      tag: "feature-usp", main: `${benefit}, 어디서 차이가 날까?`, sub: `${product}의 디테일을 가까이 보면 답이 보여요`,
-      reason: benefit, coreClaim:`기능 차이: ${benefit}`, factIds, sceneKey: "usp-detail", visualStory: "상품의 핵심 특징을 가까운 디테일로 보여준다", scene: "제품 정면과 핵심 성분·구조 디테일이 함께 읽히는 상업 제품 사진",
+      tag: "feature-usp",
+      main: `${benefit}, 어디서 차이가 날까?`,
+      sub: `${product}의 디테일을 가까이 보면 답이 보여요`,
+      reason: benefit,
+      coreClaim: `기능 차이: ${benefit}`,
+      factIds,
+      sceneKey: "usp-detail",
+      visualStory: "상품의 핵심 특징을 가까운 디테일로 보여준다",
+      scene: "제품 정면과 핵심 성분·구조 디테일이 함께 읽히는 상업 제품 사진",
     },
     {
-      tag: "problem-solution", main: `${problem}, 아직도 그대로 두세요?`, sub: `${benefit}으로 바뀌는 다음 장면`,
-      reason: problem, coreClaim:`불편 해소: ${problem}`, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "problem-before-after", visualStory: "고객의 불편과 해결 뒤의 장면을 한 화면 안에서 대비한다", scene: "불편한 사용 전 상황과 상품을 사용한 뒤의 정돈된 상황을 자연스럽게 대비",
+      tag: "problem-solution",
+      main: `${problem}, 아직도 그대로 두세요?`,
+      sub: `${benefit}으로 바뀌는 다음 장면`,
+      reason: problem,
+      coreClaim: `불편 해소: ${problem}`,
+      factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]),
+      sceneKey: "problem-before-after",
+      visualStory: "고객의 불편과 해결 뒤의 장면을 한 화면 안에서 대비한다",
+      scene: "불편한 사용 전 상황과 상품을 사용한 뒤의 정돈된 상황을 자연스럽게 대비",
     },
     {
-      tag: "usage-occasion", main: `${occasion}, 먼저 손이 가는 쪽`, sub: `${benefit}, 일상 장면에서 더 또렷해져요`,
-      reason: occasion, coreClaim:`사용 상황: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "usage-moment", visualStory: "상품이 필요한 구체적인 순간을 실제 생활 장면으로 보여준다", scene: `${occasion}의 실제 생활 맥락, 상품은 손이 닿는 위치에 자연스럽게 배치`,
+      tag: "usage-occasion",
+      main: `${occasion}, 먼저 손이 가는 쪽`,
+      sub: `${benefit}, 일상 장면에서 더 또렷해져요`,
+      reason: occasion,
+      coreClaim: `사용 상황: ${occasion}`,
+      factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]),
+      sceneKey: "usage-moment",
+      visualStory: "상품이 필요한 구체적인 순간을 실제 생활 장면으로 보여준다",
+      scene: `${occasion}의 실제 생활 맥락, 상품은 손이 닿는 위치에 자연스럽게 배치`,
     },
     {
-      tag: "comparison-alternative", main: `${product}, 이름보다 먼저 볼 것`, sub: `비교 기준은 ${benefit}`,
-      reason: benefit, coreClaim:`비교 기준: ${benefit}`, factIds, sceneKey: "comparison-criteria", visualStory: "구매 전에 비교할 한 가지 기준을 상품 디테일로 설명한다", scene: "상품 전체와 비교 기준이 되는 디테일을 좌우로 나눠 보여주는 사진형 장면",
+      tag: "comparison-alternative",
+      main: `${product}, 이름보다 먼저 볼 것`,
+      sub: `비교 기준은 ${benefit}`,
+      reason: benefit,
+      coreClaim: `비교 기준: ${benefit}`,
+      factIds,
+      sceneKey: "comparison-criteria",
+      visualStory: "구매 전에 비교할 한 가지 기준을 상품 디테일로 설명한다",
+      scene: "상품 전체와 비교 기준이 되는 디테일을 좌우로 나눠 보여주는 사진형 장면",
     },
     {
-      tag: "convenience", main: `${occasion}, 준비는 더 짧게`, sub: `${benefit} 하나로 동선을 줄여보세요`,
-      reason: `${occasion} 준비 편의`, coreClaim:`준비 편의: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "convenience-routine", visualStory: "상품이 일상의 준비 과정을 단순하게 만드는 순간을 보여준다", scene: "사용 직전과 직후의 동선이 이해되는 정돈된 생활 사진",
+      tag: "convenience",
+      main: `${occasion}, 준비는 더 짧게`,
+      sub: `${benefit} 하나로 동선을 줄여보세요`,
+      reason: `${occasion} 준비 편의`,
+      coreClaim: `준비 편의: ${occasion}`,
+      factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]),
+      sceneKey: "convenience-routine",
+      visualStory: "상품이 일상의 준비 과정을 단순하게 만드는 순간을 보여준다",
+      scene: "사용 직전과 직후의 동선이 이해되는 정돈된 생활 사진",
     },
     {
-      tag: "feature-usp", main: `${benefit}, 크게 보면 더 선명해요`, sub: `${koreanObject(product)} 쓰는 순간 드러나는 한 가지 차이`,
-      reason: benefit, coreClaim:`제품 특징 확대: ${benefit}`, factIds, sceneKey: "feature-hero", visualStory: "상품의 형태와 확인된 특징을 히어로 컷으로 집중시킨다", scene: "상품 라벨이 정면으로 보이는 대형 히어로 제품 사진과 절제된 관련 소품",
+      tag: "feature-usp",
+      main: `${benefit}, 크게 보면 더 선명해요`,
+      sub: `${koreanObject(product)} 쓰는 순간 드러나는 한 가지 차이`,
+      reason: benefit,
+      coreClaim: `제품 특징 확대: ${benefit}`,
+      factIds,
+      sceneKey: "feature-hero",
+      visualStory: "상품의 형태와 확인된 특징을 히어로 컷으로 집중시킨다",
+      scene: "상품 라벨이 정면으로 보이는 대형 히어로 제품 사진과 절제된 관련 소품",
     },
     {
-      tag: "problem-solution", main: `${problem}, 바뀌는 건 한 장면이면 충분해요`, sub: `${benefit}, 써보는 순간부터 달라져요`,
-      reason: problem, coreClaim:`해결 행동: ${problem}`, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "solution-action", visualStory: "고객이 상품을 사용해 불편을 해결하는 행동을 보여준다", scene: "문제 상황 속 손의 행동과 상품 사용이 동시에 이해되는 사진형 장면",
+      tag: "problem-solution",
+      main: `${problem}, 바뀌는 건 한 장면이면 충분해요`,
+      sub: `${benefit}, 써보는 순간부터 달라져요`,
+      reason: problem,
+      coreClaim: `해결 행동: ${problem}`,
+      factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]),
+      sceneKey: "solution-action",
+      visualStory: "고객이 상품을 사용해 불편을 해결하는 행동을 보여준다",
+      scene: "문제 상황 속 손의 행동과 상품 사용이 동시에 이해되는 사진형 장면",
     },
     {
-      tag: "usage-occasion", main: `${occasion}, 분위기부터 달라져요`, sub: `그때 필요한 건 ${benefit}`,
-      reason: occasion, coreClaim:`사용 분위기: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "occasion-editorial", visualStory: "특정 사용 순간의 분위기와 상품을 에디토리얼로 연결한다", scene: `${occasion}를 연상시키는 자연광 에디토리얼 장면과 선명한 실제 상품`,
+      tag: "usage-occasion",
+      main: `${occasion}, 분위기부터 달라져요`,
+      sub: `그때 필요한 건 ${benefit}`,
+      reason: occasion,
+      coreClaim: `사용 분위기: ${occasion}`,
+      factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]),
+      sceneKey: "occasion-editorial",
+      visualStory: "특정 사용 순간의 분위기와 상품을 에디토리얼로 연결한다",
+      scene: `${occasion}를 연상시키는 자연광 에디토리얼 장면과 선명한 실제 상품`,
     },
     {
-      tag: "comparison-alternative", main: `비슷해 보여도, ${benefit}에서 갈려요`, sub: `${product}, 이름 대신 사용감을 비교해보세요`,
-      reason: benefit, coreClaim:`대안 대비: ${benefit}`, factIds, sceneKey: "alternative-contrast", visualStory: "비슷한 대안 사이에서 확인된 차이가 드러나는 순간을 대비한다", scene: "고객이 망설이는 대안 장면과 실제 상품 디테일을 과장 없이 대비한 사진",
+      tag: "comparison-alternative",
+      main: `비슷해 보여도, ${benefit}에서 갈려요`,
+      sub: `${product}, 이름 대신 사용감을 비교해보세요`,
+      reason: benefit,
+      coreClaim: `대안 대비: ${benefit}`,
+      factIds,
+      sceneKey: "alternative-contrast",
+      visualStory: "비슷한 대안 사이에서 확인된 차이가 드러나는 순간을 대비한다",
+      scene: "고객이 망설이는 대안 장면과 실제 상품 디테일을 과장 없이 대비한 사진",
     },
     {
-      tag: "problem-solution", main: `${problem}, 익숙해졌다고 괜찮은 건 아니죠`, sub: `${benefit}으로 불편한 루틴을 끊어보세요`,
-      reason: problem, coreClaim:`익숙한 불편 중단: ${problem}`, factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]), sceneKey: "routine-interruption", visualStory: "반복되는 불편을 상품 사용으로 끊는 결정적 행동을 보여준다", scene: "익숙한 불편을 멈추고 상품을 집어 드는 자연스러운 손과 생활 공간",
+      tag: "problem-solution",
+      main: `${problem}, 익숙해졌다고 괜찮은 건 아니죠`,
+      sub: `${benefit}으로 불편한 루틴을 끊어보세요`,
+      reason: problem,
+      coreClaim: `익숙한 불편 중단: ${problem}`,
+      factIds: unique([...factIds, ...(profile.problems[0]?.factIds || [])]),
+      sceneKey: "routine-interruption",
+      visualStory: "반복되는 불편을 상품 사용으로 끊는 결정적 행동을 보여준다",
+      scene: "익숙한 불편을 멈추고 상품을 집어 드는 자연스러운 손과 생활 공간",
     },
     {
-      tag: "usage-occasion", main: `${occasion}, 한 번 덜 망설이게`, sub: `${benefit}을 바로 꺼내 쓰는 타이밍`,
-      reason: occasion, coreClaim:`사용 타이밍: ${occasion}`, factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]), sceneKey: "routine-timing", visualStory: "상품이 필요한 정확한 타이밍을 짧은 행동으로 설명한다", scene: `${occasion} 직전의 손동작과 실제 상품이 같은 초점에 들어오는 생활 사진`,
+      tag: "usage-occasion",
+      main: `${occasion}, 한 번 덜 망설이게`,
+      sub: `${benefit}을 바로 꺼내 쓰는 타이밍`,
+      reason: occasion,
+      coreClaim: `사용 타이밍: ${occasion}`,
+      factIds: unique([...factIds, ...(profile.useOccasions[0]?.factIds || [])]),
+      sceneKey: "routine-timing",
+      visualStory: "상품이 필요한 정확한 타이밍을 짧은 행동으로 설명한다",
+      scene: `${occasion} 직전의 손동작과 실제 상품이 같은 초점에 들어오는 생활 사진`,
     },
     {
-      tag: "feature-usp", main: `${benefit}, 숨기지 않고 크게`, sub: `${product}의 차이를 바로 앞에서 보여드릴게요`,
-      reason: benefit, coreClaim:`확대 증거: ${benefit}`, factIds, sceneKey: "evidence-macro", visualStory: "확인된 특징을 상품 재질과 매크로 디테일로 크게 증명한다", scene: "실제 상품의 재질·형태와 확인된 특징을 연결한 초근접 상업 사진",
+      tag: "feature-usp",
+      main: `${benefit}, 숨기지 않고 크게`,
+      sub: `${product}의 차이를 바로 앞에서 보여드릴게요`,
+      reason: benefit,
+      coreClaim: `확대 증거: ${benefit}`,
+      factIds,
+      sceneKey: "evidence-macro",
+      visualStory: "확인된 특징을 상품 재질과 매크로 디테일로 크게 증명한다",
+      scene: "실제 상품의 재질·형태와 확인된 특징을 연결한 초근접 상업 사진",
     },
   ];
-  const baseDrafts: Draft[] = isAgriculture
-    ? [
-        ...agricultureDrafts,
-        ...genericDrafts.filter(
-          (draft) => !agricultureDrafts.some((agriculture) => agriculture.sceneKey === draft.sceneKey)
-        ),
-      ].slice(0, 12)
-    : genericDrafts;
+  const baseDrafts: Draft[] = isAgriculture ? [...agricultureDrafts, ...genericDrafts.filter((draft) => !agricultureDrafts.some((agriculture) => agriculture.sceneKey === draft.sceneKey))].slice(0, 12) : genericDrafts;
   const drafts: Draft[] = [...baseDrafts];
-  if (target) drafts.push({
-    tag: "target-identity", main: targetHook, sub: `핵심 기준은 ${benefit}`,
-    reason: target, factIds: unique([...factIds, ...(profile.targets[0]?.factIds || [])]), sceneKey: "target-lifestyle", visualStory: "명확한 타깃의 하루 속에 상품을 배치한다", scene: `${target}의 행동과 공간을 과장 없이 보여주는 라이프스타일 사진`,
-  });
-  if (ingredient) drafts.push(
-    { tag: "sensory-experience", main: `${ingredient}, 닿자마자 어떤 느낌일까?`, sub: benefit, reason: ingredient, coreClaim:`성분 감각: ${ingredient}`, factIds: unique(profile.ingredients.flatMap((item) => item.factIds)), sceneKey: "sensory-splash", visualStory: "성분이 연상시키는 감각을 질감과 움직임으로 전달한다", scene: `${ingredient}의 색·질감과 제품, 정확한 한국어 카피를 연결한 물성 중심의 완성 광고` },
-    { tag: "sensory-experience", main: `${ingredient}가 만든 사용감`, sub: benefit, reason: ingredient, factIds: unique(profile.ingredients.flatMap((item) => item.factIds)), sceneKey: "ingredient-macro", visualStory: "성분의 매크로 질감과 패키지를 하나의 장면으로 구성한다", scene: `${ingredient}의 실제 재료 디테일과 상품 정면이 함께 보이는 근접 사진` },
-  );
+  if (target)
+    drafts.push({
+      tag: "target-identity",
+      main: targetHook,
+      sub: `핵심 기준은 ${benefit}`,
+      reason: target,
+      factIds: unique([...factIds, ...(profile.targets[0]?.factIds || [])]),
+      sceneKey: "target-lifestyle",
+      visualStory: "명확한 타깃의 하루 속에 상품을 배치한다",
+      scene: `${target}의 행동과 공간을 과장 없이 보여주는 라이프스타일 사진`,
+    });
+  if (ingredient)
+    drafts.push(
+      {
+        tag: "sensory-experience",
+        main: `${ingredient}, 닿자마자 어떤 느낌일까?`,
+        sub: benefit,
+        reason: ingredient,
+        coreClaim: `성분 감각: ${ingredient}`,
+        factIds: unique(profile.ingredients.flatMap((item) => item.factIds)),
+        sceneKey: "sensory-splash",
+        visualStory: "성분이 연상시키는 감각을 질감과 움직임으로 전달한다",
+        scene: `${ingredient}의 색·질감과 제품, 정확한 한국어 카피를 연결한 물성 중심의 완성 광고`,
+      },
+      {
+        tag: "sensory-experience",
+        main: `${ingredient}가 만든 사용감`,
+        sub: benefit,
+        reason: ingredient,
+        factIds: unique(profile.ingredients.flatMap((item) => item.factIds)),
+        sceneKey: "ingredient-macro",
+        visualStory: "성분의 매크로 질감과 패키지를 하나의 장면으로 구성한다",
+        scene: `${ingredient}의 실제 재료 디테일과 상품 정면이 함께 보이는 근접 사진`,
+      }
+    );
   if (profile.priceSignals.length) {
     const evidence = words(profile.priceSignals.map((item) => item.value).join(" · "), 24);
-    const main = isAgriculture && salePrice
-      ? [quantity && `${quantity} 한 상자`, salePrice].filter(Boolean).join(" · ")
-      : evidence;
-    const sub = isAgriculture
-      ? [originalPrice && `${originalPrice}에서`, discount].filter(Boolean).join(" ") || benefit
-      : `${product}, ${evidence}`;
-    drafts.push({ tag: "price-value", main, sub, reason: evidence, factIds: unique(profile.priceSignals.flatMap((item) => item.factIds)), sceneKey: "price-value", visualStory: "확인된 구매 혜택과 상품 구성을 선명하게 보여준다", scene: "실제 상품과 구성, 확인된 가격 문구를 한 화면에 조판한 완성형 커머스 광고" });
+    const main = isAgriculture && salePrice ? [quantity && `${quantity} 한 상자`, salePrice].filter(Boolean).join(" · ") : evidence;
+    const sub = isAgriculture ? [originalPrice && `${originalPrice}에서`, discount].filter(Boolean).join(" ") || benefit : `${product}, ${evidence}`;
+    drafts.push({
+      tag: "price-value",
+      main,
+      sub,
+      reason: evidence,
+      factIds: unique(profile.priceSignals.flatMap((item) => item.factIds)),
+      sceneKey: "price-value",
+      visualStory: "확인된 구매 혜택과 상품 구성을 선명하게 보여준다",
+      scene: "실제 상품과 구성, 확인된 가격 문구를 한 화면에 조판한 완성형 커머스 광고",
+    });
   }
   if (profile.reviewSignals.length) {
     const evidence = words(profile.reviewSignals.map((item) => item.value).join(" · "), 26);
-    drafts.push({ tag: "review-trust", main: `후기에서 확인한 ${product}`, sub: evidence, reason: evidence, factIds: unique(profile.reviewSignals.flatMap((item) => item.factIds)), sceneKey: "review-usage", visualStory: "실제 후기 근거와 사용 장면을 연결한다", scene: "실제 사용 맥락의 UGC풍 장면과 확인된 후기 근거 문구를 함께 조판한 완성 광고" });
+    drafts.push({
+      tag: "review-trust",
+      main: `후기에서 확인한 ${product}`,
+      sub: evidence,
+      reason: evidence,
+      factIds: unique(profile.reviewSignals.flatMap((item) => item.factIds)),
+      sceneKey: "review-usage",
+      visualStory: "실제 후기 근거와 사용 장면을 연결한다",
+      scene: "실제 사용 맥락의 UGC풍 장면과 확인된 후기 근거 문구를 함께 조판한 완성 광고",
+    });
   }
   if (profile.optionSignals.length) {
     const evidence = words(profile.optionSignals.map((item) => item.value).join(" · "), 24);
-    const bundleHook = /여행|휴대|파우치/.test(`${evidence} ${benefit}`)
-      ? `${product}, 이제 따로 담지 마세요`
-      : /택\s*\d+|옵션|선택/.test(evidence)
-        ? `${evidence}, 내게 맞게 선택`
-        : `${evidence}, 구성부터 확인`;
-    drafts.push({ tag: "bundle-choice", secondary: ["price-value"], main: bundleHook, sub: benefit, reason: evidence, factIds: unique(profile.optionSignals.flatMap((item) => item.factIds)), sceneKey: "bundle-lineup", visualStory: "실제 옵션과 구성품의 차이를 한 장에서 이해시킨다", scene: "확인된 동일 상품 또는 옵션만 크기 차이와 겹침을 활용해 구성한 제품 라인업 사진" });
+    const bundleHook = /여행|휴대|파우치/.test(`${evidence} ${benefit}`) ? `${product}, 이제 따로 담지 마세요` : /택\s*\d+|옵션|선택/.test(evidence) ? `${evidence}, 내게 맞게 선택` : `${evidence}, 구성부터 확인`;
+    drafts.push({
+      tag: "bundle-choice",
+      secondary: ["price-value"],
+      main: bundleHook,
+      sub: benefit,
+      reason: evidence,
+      factIds: unique(profile.optionSignals.flatMap((item) => item.factIds)),
+      sceneKey: "bundle-lineup",
+      visualStory: "실제 옵션과 구성품의 차이를 한 장에서 이해시킨다",
+      scene: "확인된 동일 상품 또는 옵션만 크기 차이와 겹침을 활용해 구성한 제품 라인업 사진",
+    });
   }
   if (profile.originSignals.length) {
     const evidence = words(profile.originSignals.map((item) => item.value).join(" · "), 22);
-    drafts.push({ tag: "brand-origin", main: `${evidence}에서 시작된 차이`, sub: benefit, reason: evidence, factIds: unique(profile.originSignals.flatMap((item) => item.factIds)), sceneKey: "origin-story", visualStory: "확인된 산지·원산지·브랜드 배경을 상품과 연결한다", scene: "확인된 원산지 또는 브랜드 맥락과 실제 상품을 연결한 다큐멘터리형 사진" });
+    drafts.push({
+      tag: "brand-origin",
+      main: `${evidence}에서 시작된 차이`,
+      sub: benefit,
+      reason: evidence,
+      factIds: unique(profile.originSignals.flatMap((item) => item.factIds)),
+      sceneKey: "origin-story",
+      visualStory: "확인된 산지·원산지·브랜드 배경을 상품과 연결한다",
+      scene: "확인된 원산지 또는 브랜드 맥락과 실제 상품을 연결한 다큐멘터리형 사진",
+    });
   } else if (profile.brandName) {
-    drafts.push({ tag: "brand-origin", main: `${words(profile.brandName, 18)}에서 시작된 ${product}`, sub: benefit, reason: profile.brandName, factIds, sceneKey: "brand-editorial", visualStory: "브랜드의 색과 상품 실루엣을 절제된 에디토리얼로 보여준다", scene: "브랜드 컬러와 실제 상품 형태를 중심으로 한 프리미엄 스튜디오 사진" });
+    drafts.push({
+      tag: "brand-origin",
+      main: `${words(profile.brandName, 18)}에서 시작된 ${product}`,
+      sub: benefit,
+      reason: profile.brandName,
+      factIds,
+      sceneKey: "brand-editorial",
+      visualStory: "브랜드의 색과 상품 실루엣을 절제된 에디토리얼로 보여준다",
+      scene: "브랜드 컬러와 실제 상품 형태를 중심으로 한 프리미엄 스튜디오 사진",
+    });
   }
   if (profile.seasonSignals.length) {
     const evidence = words(profile.seasonSignals.map((item) => item.value).join(" · "), 22);
-    drafts.push({ tag: "season-newness", main: isAgriculture ? `여름에만 만나는 ${product}` : evidence, sub: isAgriculture ? "이번 기간이 지나면 다음 여름까지" : `${occasion} 먼저 만나는 ${product}`, reason: evidence, factIds: unique(profile.seasonSignals.flatMap((item) => item.factIds)), sceneKey: "season-arrival", visualStory: "확인된 시즌·신상품 신호를 사용 순간과 연결한다", scene: "해당 시즌의 실제 빛과 소품, 상품과 정확한 카피가 결합된 완성 광고" });
+    drafts.push({
+      tag: "season-newness",
+      main: isAgriculture ? `여름에만 만나는 ${product}` : evidence,
+      sub: isAgriculture ? "이번 기간이 지나면 다음 여름까지" : `${occasion} 먼저 만나는 ${product}`,
+      reason: evidence,
+      factIds: unique(profile.seasonSignals.flatMap((item) => item.factIds)),
+      sceneKey: "season-arrival",
+      visualStory: "확인된 시즌·신상품 신호를 사용 순간과 연결한다",
+      scene: "해당 시즌의 실제 빛과 소품, 상품과 정확한 카피가 결합된 완성 광고",
+    });
   }
   // Product-specific signals outrank general angle exploration. A rich detail
   // page therefore keeps its price/review/option/origin/season hypotheses,
   // while a sparse page still receives 12 independent, fact-safe angles.
   const signalDrafts = drafts.slice(baseDrafts.length);
-  const capped = [...signalDrafts, ...baseDrafts]
-    .filter((draft,index,all)=>all.findIndex((item)=>item.sceneKey===draft.sceneKey)===index)
-    .slice(0,15);
+  const capped = [...signalDrafts, ...baseDrafts].filter((draft, index, all) => all.findIndex((item) => item.sceneKey === draft.sceneKey) === index).slice(0, 15);
   return capped.map((draft, index) => {
     const id = `hypothesis-${String(index + 1).padStart(2, "0")}-${draft.tag}`;
     const score = rawScores({ truth, factIds: draft.factIds, primaryTag: draft.tag, sceneKey: draft.sceneKey, prior, variant: index % 3 });
@@ -563,17 +682,7 @@ export function generateHookHypothesisCandidates(
       mainHook: words(draft.main, 28),
       subCopy: words(draft.sub, 42),
       coreClaim: draft.coreClaim || draft.reason || evidence[0]?.fact,
-      sentenceStyle: /\?/.test(draft.main)
-        ? "question" as const
-        : draft.tag === "sensory-experience"
-          ? "sensory" as const
-          : draft.tag === "price-value"
-            ? "contrast" as const
-            : draft.tag === "scarcity-urgency" || draft.tag === "season-newness"
-              ? "urgency" as const
-              : draft.tag === "review-trust"
-                ? "dialogue" as const
-                : "declaration" as const,
+      sentenceStyle: /\?/.test(draft.main) ? ("question" as const) : draft.tag === "sensory-experience" ? ("sensory" as const) : draft.tag === "price-value" ? ("contrast" as const) : draft.tag === "scarcity-urgency" || draft.tag === "season-newness" ? ("urgency" as const) : draft.tag === "review-trust" ? ("dialogue" as const) : ("declaration" as const),
       customerReason: draft.reason,
       selectionReason: `${draft.reason} 근거가 확인되고 '${draft.visualStory}' 표현이 가능해 ${score.total}점으로 선정`,
       evidenceSummary,
@@ -588,7 +697,7 @@ export function generateHookHypothesisCandidates(
       intendedReaction: `${tagLabels[draft.tag]} 메시지에 즉시 관심을 보이고 상품 이유를 이해`,
       visualConcept: draft.scene,
       prohibitedClaims: ["확인되지 않은 효능·가격·구성·후기·수치", "실제 상품과 다른 패키지·옵션"],
-      confidence: score.evidenceStrength >= 75 ? "high" as const : score.evidenceStrength >= 48 ? "medium" as const : "low" as const,
+      confidence: score.evidenceStrength >= 75 ? ("high" as const) : score.evidenceStrength >= 48 ? ("medium" as const) : ("low" as const),
       generationSource: "fallback" as const,
       creativeBrief: buildHookCreativeBrief({
         id,
@@ -605,7 +714,7 @@ export function generateHookHypothesisCandidates(
 }
 
 export function selectDiverseHookHypotheses(candidates: HookHypothesisCandidate[], count = 6) {
-  return selectQualityDiverseHooks(candidates,count);
+  return selectQualityDiverseHooks(candidates, count);
 }
 
 export function buildProductHookExploration(truth: ProductTruth, prior: CategoryHookPrior = {}) {

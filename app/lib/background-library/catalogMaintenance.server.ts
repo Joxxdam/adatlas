@@ -1,18 +1,12 @@
 import sharp from "sharp";
 
 import { perceptualHashDistance } from "./catalogImageAnalysis.server.ts";
-import {
-  readBackgroundCatalogManifest,
-  summarizeBackgroundCatalog,
-  writeBackgroundCatalogManifest,
-} from "./catalogStore.server.ts";
+import { readBackgroundCatalogManifest, summarizeBackgroundCatalog, writeBackgroundCatalogManifest } from "./catalogStore.server.ts";
 import type { BackgroundCatalogItem } from "./catalogTypes.ts";
 import { backgroundStorage } from "./storage.ts";
 
 function rank(item: BackgroundCatalogItem) {
-  return item.originalWidth * item.originalHeight / 1_000_000 +
-    (item.licenseStatus === "verified" ? 20 : 0) + item.squareCropScore * 6 +
-    item.productPlacementSpace * 6 + item.adCompositionScore * 10;
+  return (item.originalWidth * item.originalHeight) / 1_000_000 + (item.licenseStatus === "verified" ? 20 : 0) + item.squareCropScore * 6 + item.productPlacementSpace * 6 + item.adCompositionScore * 10;
 }
 
 export async function validateBackgroundCatalog() {
@@ -28,22 +22,24 @@ export async function validateBackgroundCatalog() {
     else if (item.contentHash) seenHashes.set(item.contentHash, item.id);
     if (item.status === "approved" && item.licenseStatus !== "verified") errors.push(`${item.id}: approved-without-verified-license`);
     if (["approved", "review", "inactive"].includes(item.status)) {
-      const [processed, thumbnail] = await Promise.all([
-        backgroundStorage.exists(item.filePath), backgroundStorage.exists(item.thumbnailPath),
-      ]);
+      const [processed, thumbnail] = await Promise.all([backgroundStorage.exists(item.filePath), backgroundStorage.exists(item.thumbnailPath)]);
       if (!processed) errors.push(`${item.id}: processed-missing`);
       if (!thumbnail) warnings.push(`${item.id}: thumbnail-missing`);
       if (processed) {
         try {
           const metadata = await sharp(await backgroundStorage.read(item.filePath), { failOn: "error" }).metadata();
           if (metadata.format !== "webp" || metadata.width !== 1600 || metadata.height !== 1600) errors.push(`${item.id}: processed-spec-invalid`);
-        } catch { errors.push(`${item.id}: processed-decode-failed`); }
+        } catch {
+          errors.push(`${item.id}: processed-decode-failed`);
+        }
       }
       if (thumbnail) {
         try {
           const metadata = await sharp(await backgroundStorage.read(item.thumbnailPath), { failOn: "error" }).metadata();
           if (metadata.format !== "webp" || metadata.width !== 320 || metadata.height !== 320) errors.push(`${item.id}: thumbnail-spec-invalid`);
-        } catch { errors.push(`${item.id}: thumbnail-decode-failed`); }
+        } catch {
+          errors.push(`${item.id}: thumbnail-decode-failed`);
+        }
       }
     }
     if (item.analysisStatus === "heuristic" && [item.textRisk, item.logoRisk, item.faceVisibility].some((value) => value === "pending")) {
@@ -86,7 +82,10 @@ export async function regenerateCatalogThumbnails(options: { dryRun?: boolean } 
   for (const item of manifest.items.filter((value) => ["approved", "review", "inactive"].includes(value.status))) {
     if (await backgroundStorage.exists(item.thumbnailPath)) continue;
     try {
-      const thumbnail = await sharp(await backgroundStorage.read(item.filePath)).resize(320, 320, { fit: "cover" }).webp({ quality: 78 }).toBuffer();
+      const thumbnail = await sharp(await backgroundStorage.read(item.filePath))
+        .resize(320, 320, { fit: "cover" })
+        .webp({ quality: 78 })
+        .toBuffer();
       await sharp(thumbnail, { failOn: "error" }).metadata();
       if (!options.dryRun) await backgroundStorage.write(item.thumbnailPath, thumbnail);
       generated += 1;
@@ -104,7 +103,11 @@ export async function optimizeCatalogFromOriginals(options: { dryRun?: boolean }
   for (const item of manifest.items.filter((value) => value.originalPath && value.status !== "rejected")) {
     if (await backgroundStorage.exists(item.filePath)) continue;
     try {
-      const processed = await sharp(await backgroundStorage.read(item.originalPath)).rotate().resize(1600, 1600, { fit: "cover", position: "attention" }).webp({ quality: 84 }).toBuffer();
+      const processed = await sharp(await backgroundStorage.read(item.originalPath))
+        .rotate()
+        .resize(1600, 1600, { fit: "cover", position: "attention" })
+        .webp({ quality: 84 })
+        .toBuffer();
       const metadata = await sharp(processed, { failOn: "error" }).metadata();
       if (metadata.width !== 1600 || metadata.height !== 1600) throw new Error("optimized-size-invalid");
       if (!options.dryRun) await backgroundStorage.write(item.filePath, processed);
@@ -122,9 +125,7 @@ export async function optimizeCatalogFromOriginals(options: { dryRun?: boolean }
 
 export async function rebuildBackgroundCatalogManifest(options: { dryRun?: boolean } = {}) {
   const manifest = await readBackgroundCatalogManifest();
-  manifest.items = manifest.items
-    .filter((item) => item && /^bg-[a-z0-9-]+$/.test(item.id))
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  manifest.items = manifest.items.filter((item) => item && /^bg-[a-z0-9-]+$/.test(item.id)).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   if (!options.dryRun) await writeBackgroundCatalogManifest(manifest);
   return { dryRun: Boolean(options.dryRun), total: manifest.items.length };
 }
@@ -134,8 +135,12 @@ export async function catalogReviewQueue() {
   return manifest.items
     .filter((item) => item.status === "review" || item.licenseStatus !== "verified")
     .map((item) => ({
-      id: item.id, collectionIds: item.collectionIds, category: item.primaryCategory,
-      licenseStatus: item.licenseStatus, status: item.status, warnings: item.warnings,
+      id: item.id,
+      collectionIds: item.collectionIds,
+      category: item.primaryCategory,
+      licenseStatus: item.licenseStatus,
+      status: item.status,
+      warnings: item.warnings,
       previewUrl: `/api/background-library/assets/${item.id}?size=processed`,
     }));
 }
@@ -144,11 +149,20 @@ export async function createCatalogContactSheet(options: { limit?: number; dryRu
   const manifest = await readBackgroundCatalogManifest();
   const items = manifest.items.filter((item) => item.status === "approved").slice(0, Math.max(1, Math.min(100, options.limit || 36)));
   if (!items.length) return { dryRun: Boolean(options.dryRun), generated: false, itemCount: 0, path: "" };
-  const cells = await Promise.all(items.map(async (item) => sharp(await backgroundStorage.read(item.thumbnailPath)).resize(240, 240).toBuffer()));
+  const cells = await Promise.all(
+    items.map(async (item) =>
+      sharp(await backgroundStorage.read(item.thumbnailPath))
+        .resize(240, 240)
+        .toBuffer()
+    )
+  );
   const columns = 6;
   const rows = Math.ceil(cells.length / columns);
   const canvas = sharp({ create: { width: columns * 240, height: rows * 240, channels: 3, background: "#f4f4f4" } });
-  const buffer = await canvas.composite(cells.map((input, index) => ({ input, left: (index % columns) * 240, top: Math.floor(index / columns) * 240 }))).webp({ quality: 82 }).toBuffer();
+  const buffer = await canvas
+    .composite(cells.map((input, index) => ({ input, left: (index % columns) * 240, top: Math.floor(index / columns) * 240 })))
+    .webp({ quality: 82 })
+    .toBuffer();
   const key = `review/contact-sheet-${Date.now()}.webp`;
   if (!options.dryRun) await backgroundStorage.write(key, buffer);
   return { dryRun: Boolean(options.dryRun), generated: true, itemCount: items.length, path: key, bytes: buffer.length };

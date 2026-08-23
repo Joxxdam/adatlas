@@ -5,12 +5,7 @@ import { NextResponse } from "next/server";
 import { safeVideoFileName } from "../../../../lib/video-collaboration/codes";
 import { videoProjectRepository } from "../../../../lib/video-collaboration/repository.server";
 import type { VideoVersion } from "../../../../lib/video-collaboration/types";
-import {
-  ALLOWED_VIDEO_TYPES,
-  detectVideoType,
-  extensionForVideoType,
-  MAX_VIDEO_UPLOAD_BYTES,
-} from "../../../../lib/video-collaboration/videoFile";
+import { ALLOWED_VIDEO_TYPES, detectVideoType, extensionForVideoType, MAX_VIDEO_UPLOAD_BYTES } from "../../../../lib/video-collaboration/videoFile";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -35,28 +30,15 @@ export async function POST(request: Request, context: { params: Promise<{ projec
       .trim()
       .slice(0, 80);
     if (!(file instanceof File)) throw new Error("업로드할 영상 파일을 선택해 주세요.");
-    if (!ALLOWED_VIDEO_TYPES.has(file.type))
-      throw new Error("MP4, MOV, WEBM 영상만 업로드할 수 있습니다.");
-    if (file.size <= 0 || file.size > MAX_VIDEO_UPLOAD_BYTES)
-      throw new Error("영상 파일은 200MB 이하만 업로드할 수 있습니다.");
+    if (!ALLOWED_VIDEO_TYPES.has(file.type)) throw new Error("MP4, MOV, WEBM 영상만 업로드할 수 있습니다.");
+    if (file.size <= 0 || file.size > MAX_VIDEO_UPLOAD_BYTES) throw new Error("영상 파일은 200MB 이하만 업로드할 수 있습니다.");
     const buffer = Buffer.from(await file.arrayBuffer());
     const actualType = detectVideoType(buffer);
-    if (!actualType || actualType !== file.type)
-      throw new Error("파일 내용과 영상 형식이 일치하지 않습니다.");
+    if (!actualType || actualType !== file.type) throw new Error("파일 내용과 영상 형식이 일치하지 않습니다.");
     const versionNumber = project.versions.length + 1;
     const extension = extensionForVideoType(actualType);
-    const storedFileName = safeVideoFileName(
-      project.finalScript.materialCode,
-      versionNumber,
-      extension
-    );
-    const directory = path.join(
-      process.cwd(),
-      "public",
-      "video-collaboration",
-      "videos",
-      projectId
-    );
+    const storedFileName = safeVideoFileName(project.finalScript.materialCode, versionNumber, extension);
+    const directory = path.join(process.cwd(), "public", "video-collaboration", "videos", projectId);
     await fs.mkdir(directory, { recursive: true });
     writtenPath = path.join(directory, storedFileName);
     await fs.writeFile(writtenPath, buffer, { flag: "wx" });
@@ -77,9 +59,6 @@ export async function POST(request: Request, context: { params: Promise<{ projec
   } catch (error) {
     if (writtenPath) await fs.unlink(writtenPath).catch(() => undefined);
     const message = error instanceof Error ? error.message : "영상 업로드 실패";
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: message.includes("찾지 못") ? 404 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: message }, { status: message.includes("찾지 못") ? 404 : 400 });
   }
 }

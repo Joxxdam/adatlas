@@ -3,13 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { nextScheduledAt } from "./schedule";
-import {
-  AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
-  AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
-  AUTO_PRODUCTION_IMAGES_PER_MALL,
-  AUTO_PRODUCTION_PRODUCTS_PER_MALL,
-  minimumDailyImageCapacity,
-} from "./policy";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "./policy";
 import type { AutoProductionAdvertiserConfig, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types";
 
@@ -35,14 +29,17 @@ const defaultSettings: AutoProductionGlobalSettings = {
 };
 
 function safeId(value: string) {
-  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9가-힣_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64);
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
   return normalized || `advertiser-${randomUUID().slice(0, 8)}`;
 }
 
 function textList(value: unknown, max = 80) {
-  return Array.isArray(value)
-    ? Array.from(new Set(value.map((item) => String(item || "").trim()).filter(Boolean))).slice(0, max)
-    : [];
+  return Array.isArray(value) ? Array.from(new Set(value.map((item) => String(item || "").trim()).filter(Boolean))).slice(0, max) : [];
 }
 
 function numeric(value: unknown, fallback: number, min: number, max: number) {
@@ -50,23 +47,16 @@ function numeric(value: unknown, fallback: number, min: number, max: number) {
   return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : fallback;
 }
 
-export function normalizeAdvertiserConfig(
-  input: Partial<AutoProductionAdvertiserConfig> & Pick<AutoProductionAdvertiserConfig, "advertiserName">,
-  current?: AutoProductionAdvertiserConfig,
-  now = new Date()
-): AutoProductionAdvertiserConfig {
+export function normalizeAdvertiserConfig(input: Partial<AutoProductionAdvertiserConfig> & Pick<AutoProductionAdvertiserConfig, "advertiserName">, current?: AutoProductionAdvertiserConfig, now = new Date()): AutoProductionAdvertiserConfig {
   const createdAt = current?.createdAt || now.toISOString();
-  const scheduleTime = /^\d{2}:\d{2}$/.test(input.scheduleTime || "")
-    ? input.scheduleTime!
-    : current?.scheduleTime || AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME;
-  const scheduleDays = (Array.isArray(input.scheduleDays) ? input.scheduleDays : current?.scheduleDays || [0, 1, 2, 3, 4, 5, 6])
-    .map(Number)
-    .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
-  const priorities = (Array.isArray(input.selectionPriorities) ? input.selectionPriorities : current?.selectionPriorities || autoProductionRoles)
-    .filter((role): role is AutoProductionRole => autoProductionRoles.includes(role as AutoProductionRole));
+  const scheduleTime = /^\d{2}:\d{2}$/.test(input.scheduleTime || "") ? input.scheduleTime! : current?.scheduleTime || AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME;
+  const scheduleDays = (Array.isArray(input.scheduleDays) ? input.scheduleDays : current?.scheduleDays || [0, 1, 2, 3, 4, 5, 6]).map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
+  const priorities = (Array.isArray(input.selectionPriorities) ? input.selectionPriorities : current?.selectionPriorities || autoProductionRoles).filter((role): role is AutoProductionRole => autoProductionRoles.includes(role as AutoProductionRole));
   const base: AutoProductionAdvertiserConfig = {
     advertiserId: safeId(input.advertiserId || current?.advertiserId || input.advertiserName),
-    advertiserName: String(input.advertiserName || current?.advertiserName || "").trim().slice(0, 100),
+    advertiserName: String(input.advertiserName || current?.advertiserName || "")
+      .trim()
+      .slice(0, 100),
     aliases: textList(input.aliases ?? current?.aliases),
     enabled: input.enabled ?? current?.enabled ?? false,
     timezone: "Asia/Seoul",
@@ -80,8 +70,12 @@ export function normalizeAdvertiserConfig(
     hookCooldownDays: 0,
     maxImagesPerRun: AUTO_PRODUCTION_IMAGES_PER_MALL,
     dataSource: input.dataSource || current?.dataSource || "auto",
-    bigQueryBrandMatch: String(input.bigQueryBrandMatch ?? current?.bigQueryBrandMatch ?? input.advertiserName).trim().slice(0, 120),
-    siteUrl: String(input.siteUrl ?? current?.siteUrl ?? "").trim().slice(0, 1000),
+    bigQueryBrandMatch: String(input.bigQueryBrandMatch ?? current?.bigQueryBrandMatch ?? input.advertiserName)
+      .trim()
+      .slice(0, 120),
+    siteUrl: String(input.siteUrl ?? current?.siteUrl ?? "")
+      .trim()
+      .slice(0, 1000),
     excludedProductIds: textList(input.excludedProductIds ?? current?.excludedProductIds),
     excludedCategories: textList(input.excludedCategories ?? current?.excludedCategories),
     requiredProductIds: textList(input.requiredProductIds ?? current?.requiredProductIds),
@@ -123,10 +117,7 @@ async function readConfigs() {
     usingSeed = true;
   }
   const parsed = JSON.parse(await fs.readFile(source, "utf8")) as AutoProductionAdvertiserConfig[];
-  return parsed.map((config) => normalizeAdvertiserConfig(
-    usingSeed ? { ...config, enabled: false } : config,
-    usingSeed ? undefined : config
-  ));
+  return parsed.map((config) => normalizeAdvertiserConfig(usingSeed ? { ...config, enabled: false } : config, usingSeed ? undefined : config));
 }
 
 export const autoProductionAdvertiserRepository = {
@@ -177,10 +168,7 @@ export const autoProductionAdvertiserRepository = {
     return {
       ...defaultSettings,
       ...stored,
-      maxImagesPerDay: Math.max(
-        requiredCapacity,
-        numeric(stored.maxImagesPerDay, defaultSettings.maxImagesPerDay, 1, 240)
-      ),
+      maxImagesPerDay: Math.max(requiredCapacity, numeric(stored.maxImagesPerDay, defaultSettings.maxImagesPerDay, 1, 240)),
     };
   },
   async updateSettings(input: Partial<AutoProductionGlobalSettings>) {
@@ -188,10 +176,7 @@ export const autoProductionAdvertiserRepository = {
       const current = await this.settings();
       const next = {
         paused: input.paused ?? current.paused,
-        maxImagesPerDay: Math.max(
-          minimumDailyImageCapacity(await readConfigs()),
-          numeric(input.maxImagesPerDay ?? current.maxImagesPerDay, defaultSettings.maxImagesPerDay, 1, 240)
-        ),
+        maxImagesPerDay: Math.max(minimumDailyImageCapacity(await readConfigs()), numeric(input.maxImagesPerDay ?? current.maxImagesPerDay, defaultSettings.maxImagesPerDay, 1, 240)),
         globalConcurrency: numeric(input.globalConcurrency ?? current.globalConcurrency, 2, 1, 2),
         updatedAt: new Date().toISOString(),
       };

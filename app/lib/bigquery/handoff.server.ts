@@ -54,18 +54,13 @@ export function bigQueryCandidateToProductInfo(candidate: BigQueryAdCandidate): 
       dataEvidence: evidence,
       dataAsOf: candidate.latestDataDate,
       dataSources: candidate.sourceTables,
-      dataSufficiency:
-        candidate.dataSufficiency === "connection-required"
-          ? "data-insufficient"
-          : candidate.dataSufficiency,
+      dataSufficiency: candidate.dataSufficiency === "connection-required" ? "data-insufficient" : candidate.dataSufficiency,
       analysisSource: "BIGQUERY",
     },
   };
 }
 
-export async function buildBigQueryProductCreationHandoff(
-  candidateId: string
-): Promise<ProductCreationHandoff | null> {
+export async function buildBigQueryProductCreationHandoff(candidateId: string): Promise<ProductCreationHandoff | null> {
   const candidate = await getBigQueryCandidate(candidateId);
   if (!candidate) return null;
   const info = bigQueryCandidateToProductInfo(candidate);

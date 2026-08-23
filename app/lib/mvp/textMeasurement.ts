@@ -2,24 +2,14 @@ import { estimateTextWidth, fitTextToBox } from "./textFit";
 import type { BannerFitResult, CopyVariantKey, TemplateSlot } from "./types";
 import type { TextStylePreset } from "./templateTextStyles";
 
-export function measureTextBlock(
-  lines: string[],
-  fontSize: number,
-  lineHeight: number,
-  letterSpacing = 0
-) {
+export function measureTextBlock(lines: string[], fontSize: number, lineHeight: number, letterSpacing = 0) {
   return {
     width: Math.max(0, ...lines.map((line) => estimateTextWidth(line, fontSize, letterSpacing))),
     height: Math.max(1, lines.length) * fontSize * lineHeight,
   };
 }
 
-export function fitTextToSlot(params: {
-  slot: TemplateSlot;
-  text: string;
-  style: TextStylePreset;
-  usedVariant?: CopyVariantKey;
-}): BannerFitResult {
+export function fitTextToSlot(params: { slot: TemplateSlot; text: string; style: TextStylePreset; usedVariant?: CopyVariantKey }): BannerFitResult {
   const padding = params.slot.safePadding ?? 0;
   const boxWidth = Math.max(12, params.slot.width - padding * 2);
   const boxHeight = Math.max(12, params.slot.height - padding * 2);
@@ -36,23 +26,10 @@ export function fitTextToSlot(params: {
     letterSpacing: params.style.letterSpacing,
     lineHeight,
   });
-  const measured = measureTextBlock(
-    result.lines,
-    result.fontSize,
-    lineHeight,
-    params.style.letterSpacing
-  );
+  const measured = measureTextBlock(result.lines, result.fontSize, lineHeight, params.style.letterSpacing);
   const overflowX = measured.width > boxWidth + 0.5;
   const overflowY = measured.height > boxHeight + 0.5;
-  const status = result.didTruncate
-    ? "ellipsis"
-    : overflowX || overflowY
-      ? "failed"
-      : result.didShrink
-        ? "shrunk"
-        : result.lines.length > 1
-          ? "wrapped"
-          : "exact";
+  const status = result.didTruncate ? "ellipsis" : overflowX || overflowY ? "failed" : result.didShrink ? "shrunk" : result.lines.length > 1 ? "wrapped" : "exact";
   const warnings: string[] = [];
   if (overflowX) warnings.push("horizontal overflow");
   if (overflowY) warnings.push("vertical overflow");

@@ -6,20 +6,10 @@ import test from "node:test";
 import JSZip from "jszip";
 import sharp from "sharp";
 
-import {
-  analyzeCatalogImage,
-  detectCatalogImageSignature,
-  perceptualHashDistance,
-} from "../app/lib/background-library/catalogImageAnalysis.server.ts";
-import {
-  filterBackgroundCatalog,
-  readBackgroundCollectionConfigs,
-} from "../app/lib/background-library/catalogStore.server.ts";
+import { analyzeCatalogImage, detectCatalogImageSignature, perceptualHashDistance } from "../app/lib/background-library/catalogImageAnalysis.server.ts";
+import { filterBackgroundCatalog, readBackgroundCollectionConfigs } from "../app/lib/background-library/catalogStore.server.ts";
 import { checkComfyUi, createComfyPlan } from "../app/lib/background-library/comfyui.server.ts";
-import {
-  extractCatalogZip,
-  importBackgroundSources,
-} from "../app/lib/background-library/importPipeline.server.ts";
+import { extractCatalogZip, importBackgroundSources } from "../app/lib/background-library/importPipeline.server.ts";
 import { assertPexelsBulkAllowed, pexelsStatus } from "../app/lib/background-library/pexels.server.ts";
 import { normalizeStorageKey } from "../app/lib/background-library/storage.ts";
 
@@ -46,20 +36,26 @@ function verifiedLicense(overrides = {}) {
 }
 
 async function sample(width = 1800, height = 1800, format = "jpeg") {
-  const image = sharp({ create: { width, height, channels: 3, background: { r: 52, g: 128, b: 92 } } })
-    .composite([{ input: Buffer.from(`<svg width="${width}" height="${height}"><rect x="${Math.round(width * 0.55)}" y="0" width="${Math.round(width * 0.45)}" height="${height}" fill="#d8ead8"/></svg>`) }]);
+  const image = sharp({ create: { width, height, channels: 3, background: { r: 52, g: 128, b: 92 } } }).composite([{ input: Buffer.from(`<svg width="${width}" height="${height}"><rect x="${Math.round(width * 0.55)}" y="0" width="${Math.round(width * 0.45)}" height="${height}" fill="#d8ead8"/></svg>`) }]);
   return format === "png" ? image.png().toBuffer() : image.jpeg({ quality: 92 }).toBuffer();
 }
 
 test("four configured collections total 2,000 targets without advertiser conditionals", async () => {
   const configs = await readBackgroundCollectionConfigs();
-  assert.deepEqual(configs.map((config) => config.id), [
-    "korean-beef-scenes", "fresh-bodycare-scenes", "farm-produce-scenes", "womens-fashion-scenes",
-  ]);
-  assert.equal(configs.reduce((sum, config) => sum + config.targetCount, 0), 2_000);
+  assert.deepEqual(
+    configs.map((config) => config.id),
+    ["korean-beef-scenes", "fresh-bodycare-scenes", "farm-produce-scenes", "womens-fashion-scenes"]
+  );
+  assert.equal(
+    configs.reduce((sum, config) => sum + config.targetCount, 0),
+    2_000
+  );
   for (const config of configs) {
     assert.equal(config.targetCount, 500);
-    assert.equal(Object.values(config.categories).reduce((sum, count) => sum + count, 0), 500);
+    assert.equal(
+      Object.values(config.categories).reduce((sum, count) => sum + count, 0),
+      500
+    );
     assert.ok(config.generationPromptParts.promptFamilies.length >= 12);
     assert.match(config.negativePrompt, /watermark/);
     assert.match(config.negativePrompt, /product package/);
@@ -90,7 +86,9 @@ test("image signatures are checked before local heuristic analysis", async () =>
 
 test("dry-run import validates, optimizes and records licensing without writing", async () => {
   const result = await importBackgroundSources({
-    collectionId: "fresh-bodycare-scenes", categoryId: "mint-herbs", dryRun: true,
+    collectionId: "fresh-bodycare-scenes",
+    categoryId: "mint-herbs",
+    dryRun: true,
     sources: [{ name: "mint-owned.jpg", buffer: await sample(), license: verifiedLicense() }],
   });
   assert.equal(result.approved, 1);
@@ -106,7 +104,9 @@ test("dry-run import validates, optimizes and records licensing without writing"
 test("low resolution and disguised files are rejected without stopping the job", async () => {
   const low = await sample(900, 900);
   const result = await importBackgroundSources({
-    collectionId: "farm-produce-scenes", categoryId: "farm-field", dryRun: true,
+    collectionId: "farm-produce-scenes",
+    categoryId: "farm-field",
+    dryRun: true,
     sources: [
       { name: "small.jpg", buffer: low, license: verifiedLicense() },
       { name: "fake.png", buffer: Buffer.from("not an image"), license: verifiedLicense() },
@@ -120,7 +120,9 @@ test("low resolution and disguised files are rejected without stopping the job",
 test("content hash and perceptual hash remove duplicates and prefer higher resolution", async () => {
   const exactBuffer = await sample(1800, 1800, "jpeg");
   const exact = await importBackgroundSources({
-    collectionId: "korean-beef-scenes", categoryId: "rustic-table", dryRun: true,
+    collectionId: "korean-beef-scenes",
+    categoryId: "rustic-table",
+    dryRun: true,
     sources: [
       { name: "one.jpg", buffer: exactBuffer, license: verifiedLicense() },
       { name: "two.jpg", buffer: exactBuffer, license: verifiedLicense() },
@@ -132,7 +134,9 @@ test("content hash and perceptual hash remove duplicates and prefer higher resol
   const lower = await sample(1800, 1800, "jpeg");
   const higher = await sample(2200, 2200, "png");
   const similar = await importBackgroundSources({
-    collectionId: "womens-fashion-scenes", categoryId: "minimal-studio", dryRun: true,
+    collectionId: "womens-fashion-scenes",
+    categoryId: "minimal-studio",
+    dryRun: true,
     sources: [
       { name: "lower.jpg", buffer: lower, license: verifiedLicense() },
       { name: "higher.png", buffer: higher, license: verifiedLicense() },
@@ -164,17 +168,31 @@ test("ComfyUI rejects external hosts and still produces a local dry-run plan", a
     assert.equal(new Set(plan.checkpoint.items.map((item) => item.positivePrompt)).size, 12);
     assert.equal(plan.canRun, false);
   } finally {
-    if (previousUrl == null) delete process.env.COMFYUI_URL; else process.env.COMFYUI_URL = previousUrl;
-    if (previousWorkflow == null) delete process.env.COMFYUI_WORKFLOW_PATH; else process.env.COMFYUI_WORKFLOW_PATH = previousWorkflow;
+    if (previousUrl == null) delete process.env.COMFYUI_URL;
+    else process.env.COMFYUI_URL = previousUrl;
+    if (previousWorkflow == null) delete process.env.COMFYUI_WORKFLOW_PATH;
+    else process.env.COMFYUI_WORKFLOW_PATH = previousWorkflow;
   }
 });
 
 test("catalog filters paginate-ready metadata without rendering all assets", () => {
   const base = {
-    status: "approved", licenseStatus: "verified", sourceType: "local-import", collectionIds: ["korean-beef-scenes"],
-    primaryCategory: "camping-barbecue", sceneType: "camping-barbecue", moodTags: ["warm"], dominantColor: "#553322",
-    secondaryColors: [], brightness: 0.4, peoplePresence: "none", negativeSpaceDirection: "right", indoorOutdoor: "outdoor",
-    favorite: false, adCompositionScore: 0.8, createdAt: "2026-08-07T00:00:00.000Z",
+    status: "approved",
+    licenseStatus: "verified",
+    sourceType: "local-import",
+    collectionIds: ["korean-beef-scenes"],
+    primaryCategory: "camping-barbecue",
+    sceneType: "camping-barbecue",
+    moodTags: ["warm"],
+    dominantColor: "#553322",
+    secondaryColors: [],
+    brightness: 0.4,
+    peoplePresence: "none",
+    negativeSpaceDirection: "right",
+    indoorOutdoor: "outdoor",
+    favorite: false,
+    adCompositionScore: 0.8,
+    createdAt: "2026-08-07T00:00:00.000Z",
   };
   const items = Array.from({ length: 60 }, (_, index) => ({ ...base, id: `bg-test-${index}`, adCompositionScore: index / 60 }));
   const filtered = filterBackgroundCatalog(items, { collectionId: "korean-beef-scenes", category: "camping-barbecue", people: "none", sort: "recommended", page: 1, pageSize: 24 });
@@ -183,11 +201,7 @@ test("catalog filters paginate-ready metadata without rendering all assets", () 
 });
 
 test("new catalog providers contain no automatic paid image or Vision calls", async () => {
-  const files = [
-    "app/lib/background-library/importPipeline.server.ts",
-    "app/lib/background-library/pexels.server.ts",
-    "app/lib/background-library/comfyui.server.ts",
-  ];
+  const files = ["app/lib/background-library/importPipeline.server.ts", "app/lib/background-library/pexels.server.ts", "app/lib/background-library/comfyui.server.ts"];
   const source = (await Promise.all(files.map((file) => readFile(path.join(root, file), "utf8")))).join("\n");
   assert.doesNotMatch(source, /api\.openai\.com|generativelanguage\.googleapis\.com|api\.anthropic\.com|api\.stability\.ai|replicate\.com|fal\.ai/i);
 });

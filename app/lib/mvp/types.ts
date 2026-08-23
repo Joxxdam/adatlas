@@ -63,18 +63,7 @@ export type AdImageLabel = {
   labeledAt: string;
 };
 
-export type ProductTargetAgeGroup =
-  | "teens"
-  | "twenties"
-  | "thirties"
-  | "forties"
-  | "fifties"
-  | "senior"
-  | "kids"
-  | "family"
-  | "couple"
-  | "friends"
-  | "no_people";
+export type ProductTargetAgeGroup = "teens" | "twenties" | "thirties" | "forties" | "fifties" | "senior" | "kids" | "family" | "couple" | "friends" | "no_people";
 
 export type ProductInfoForPrompt = {
   productName: string;
@@ -173,17 +162,7 @@ export type ReferenceMatchResult = {
   context: AutoReferenceContext;
 };
 
-export type ReferenceUsageAspect =
-  | "headline-structure"
-  | "hook-style"
-  | "appeal-point"
-  | "tone"
-  | "information-hierarchy"
-  | "price-emphasis"
-  | "product-layout"
-  | "color-mood"
-  | "background-mood"
-  | "cta-style";
+export type ReferenceUsageAspect = "headline-structure" | "hook-style" | "appeal-point" | "tone" | "information-hierarchy" | "price-emphasis" | "product-layout" | "color-mood" | "background-mood" | "cta-style";
 
 export type ReferenceUsageSelection = {
   imageId: string;
@@ -191,37 +170,11 @@ export type ReferenceUsageSelection = {
   weight: number;
 };
 
-export type AdHookType =
-  | "price-benefit"
-  | "feature-usp"
-  | "lifestyle"
-  | "season-event"
-  | "problem-solution"
-  | "social-proof"
-  | "curiosity"
-  | "sensory"
-  | "gift"
-  | "brand-story";
+export type AdHookType = "price-benefit" | "feature-usp" | "lifestyle" | "season-event" | "problem-solution" | "social-proof" | "curiosity" | "sensory" | "gift" | "brand-story";
 
-export type AdTextSafeArea =
-  | "top-left"
-  | "top-center"
-  | "top-right"
-  | "center-left"
-  | "center-right"
-  | "bottom-left"
-  | "bottom-center"
-  | "bottom-right";
+export type AdTextSafeArea = "top-left" | "top-center" | "top-right" | "center-left" | "center-right" | "bottom-left" | "bottom-center" | "bottom-right";
 
-export type AdProductPosition =
-  | "left"
-  | "center-left"
-  | "center"
-  | "center-right"
-  | "right"
-  | "bottom-left"
-  | "bottom-center"
-  | "bottom-right";
+export type AdProductPosition = "left" | "center-left" | "center" | "center-right" | "right" | "bottom-left" | "bottom-center" | "bottom-right";
 
 export type CreativeStrategy = {
   id: string;
@@ -251,32 +204,9 @@ export type CreativeStrategy = {
   inferredEvidence: string[];
   matchedReferenceIds: string[];
   matchedReferencePatterns: string[];
-  backgroundHookType?:
-    | "problem_solution"
-    | "price_offer"
-    | "usp_proof"
-    | "sensory"
-    | "situation"
-    | "review_ugc"
-    | "urgency"
-    | "premium"
-    | "styling"
-    | "freshness"
-    | "origin_story"
-    | "family"
-    | "convenience"
-    | "gifting";
+  backgroundHookType?: "problem_solution" | "price_offer" | "usp_proof" | "sensory" | "situation" | "review_ugc" | "urgency" | "premium" | "styling" | "freshness" | "origin_story" | "family" | "convenience" | "gifting";
   targetAgeGroups?: ProductTargetAgeGroup[];
-  preferredAssetTypes?: Array<
-    | "lifestyle_photo"
-    | "people_photo"
-    | "product_set"
-    | "pattern_texture"
-    | "ingredient_scene"
-    | "ai_generated"
-    | "designed_asset"
-    | "user_uploaded"
-  >;
+  preferredAssetTypes?: Array<"lifestyle_photo" | "people_photo" | "product_set" | "pattern_texture" | "ingredient_scene" | "ai_generated" | "designed_asset" | "user_uploaded">;
   preferredColors?: string[];
 };
 
@@ -290,15 +220,7 @@ export type MessageHierarchy = {
 
 export type CreationStepId = "brief" | "strategy" | "copy" | "visual" | "edit" | "export";
 
-export type CopyQualityDimension =
-  | "specificity"
-  | "benefitClarity"
-  | "differentiation"
-  | "priceClarity"
-  | "targetFit"
-  | "naturalKoreanTone"
-  | "overclaimSafety"
-  | "repetitionSafety";
+export type CopyQualityDimension = "specificity" | "benefitClarity" | "differentiation" | "priceClarity" | "targetFit" | "naturalKoreanTone" | "overclaimSafety" | "repetitionSafety";
 
 export type CopyQualityFinding = {
   id: string;
@@ -324,27 +246,9 @@ export type CopyGuideContext = {
 
 export type ProductImageMode = "original" | "cutout" | "styled-cutout";
 
-export type ProductRepresentationType =
-  | "single-product"
-  | "multi-unit-set"
-  | "irregular-product"
-  | "packaged-product"
-  | "product-package-group"
-  | "bundle-components"
-  | "plated-product"
-  | "apparel-or-soft-product"
-  | "transparent-or-reflective-product"
-  | "already-transparent";
+export type ProductRepresentationType = "single-product" | "multi-unit-set" | "irregular-product" | "packaged-product" | "product-package-group" | "bundle-components" | "plated-product" | "apparel-or-soft-product" | "transparent-or-reflective-product" | "already-transparent";
 
-export type ProductExtractionScope =
-  | "single-item"
-  | "visible-all"
-  | "sales-unit"
-  | "product-and-package"
-  | "food-only"
-  | "food-and-plate"
-  | "manual-region"
-  | "original";
+export type ProductExtractionScope = "single-item" | "visible-all" | "sales-unit" | "product-and-package" | "food-only" | "food-and-plate" | "manual-region" | "original";
 
 export type NormalizedImageBox = {
   x: number;
@@ -384,8 +288,7 @@ export type ProductCutoutQuality = {
   foregroundBox?: NormalizedImageBox;
 };
 
-export type ProductImageEffectPreset =
-  "none" | "clean-outline" | "soft-glow" | "commerce-shadow" | "outline-glow-shadow";
+export type ProductImageEffectPreset = "none" | "clean-outline" | "soft-glow" | "commerce-shadow" | "outline-glow-shadow";
 
 export type ProductImageRenderEffect = {
   outline: boolean;
@@ -426,8 +329,7 @@ export type ProductImageState = {
   processingProvider?: string;
 };
 
-export type SelectedAdImageSource =
-  "detail" | "upload" | "gpt" | "background" | "product" | "unknown";
+export type SelectedAdImageSource = "detail" | "upload" | "gpt" | "background" | "product" | "unknown";
 
 export type SelectedAdImageState = {
   selectedImagePaths: string[];
@@ -447,14 +349,7 @@ export type SourceImageCandidate = {
   createdAt: string;
   width?: number;
   height?: number;
-  sourceType?:
-    | "structured-data"
-    | "open-graph"
-    | "product-gallery"
-    | "detail-content"
-    | "option-image"
-    | "upload"
-    | "unknown";
+  sourceType?: "structured-data" | "open-graph" | "product-gallery" | "detail-content" | "option-image" | "upload" | "unknown";
   sourceImageQualityScore?: number;
   salesUnitMatchScore?: number;
   recommendationScore?: number;
@@ -488,34 +383,11 @@ export type SourceImageSelectionState = {
   selectedSourceImagePath?: string;
 };
 
-export type ReviewSourceType =
-  | "product-review"
-  | "detail-testimonial"
-  | "community-capture"
-  | "before-after"
-  | "upload";
+export type ReviewSourceType = "product-review" | "detail-testimonial" | "community-capture" | "before-after" | "upload";
 
-export type ReviewType =
-  | "review-text-screenshot"
-  | "review-photo-with-text"
-  | "review-photo-only"
-  | "community-reaction"
-  | "before-after"
-  | "review-card"
-  | "testimonial-graphic"
-  | "not-review";
+export type ReviewType = "review-text-screenshot" | "review-photo-with-text" | "review-photo-only" | "community-reaction" | "before-after" | "review-card" | "testimonial-graphic" | "not-review";
 
-export type ReviewRegionRole =
-  | "text"
-  | "review-body"
-  | "author"
-  | "profile"
-  | "date-order"
-  | "rating"
-  | "social-ui"
-  | "face"
-  | "photo"
-  | "unknown";
+export type ReviewRegionRole = "text" | "review-body" | "author" | "profile" | "date-order" | "rating" | "social-ui" | "face" | "photo" | "unknown";
 
 export type ReviewImageRegion = {
   id: string;
@@ -567,11 +439,7 @@ export type ReviewSourceCandidate = {
   warnings: string[];
 };
 
-export type ReviewCreativeTemplate =
-  | "reaction-comment"
-  | "real-review-focus"
-  | "review-collection"
-  | "before-after-usage";
+export type ReviewCreativeTemplate = "reaction-comment" | "real-review-focus" | "review-collection" | "before-after-usage";
 
 export type ReviewCreativeState = {
   status: "idle" | "analyzing" | "ready" | "rendering" | "completed" | "error";
@@ -612,19 +480,7 @@ export type GeneratedImageAsset = {
   createdAt: string;
 };
 
-export type GptImageFailureReason =
-  | "original-subject-changed"
-  | "turned-into-packaged-product"
-  | "cooked-food-turned-raw"
-  | "product-too-small"
-  | "bad-background"
-  | "unwanted-text"
-  | "unwanted-label-or-logo"
-  | "copied-reference-product"
-  | "weak-advertising-mood"
-  | "too-ai-looking"
-  | "wrong-composition"
-  | "other";
+export type GptImageFailureReason = "original-subject-changed" | "turned-into-packaged-product" | "cooked-food-turned-raw" | "product-too-small" | "bad-background" | "unwanted-text" | "unwanted-label-or-logo" | "copied-reference-product" | "weak-advertising-mood" | "too-ai-looking" | "wrong-composition" | "other";
 
 export type GptImageEvaluation = {
   originalPreservationScore?: number;
@@ -810,11 +666,9 @@ export type ExtractedProductInfo = {
   ingredients?: string[];
 };
 
-export type CopySlotKey =
-  "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price";
+export type CopySlotKey = "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price";
 
-export type CopyOverflowStrategy =
-  "shrink" | "wrap" | "ellipsis" | "shrink-wrap" | "shrink-ellipsis" | "shrink-wrap-ellipsis";
+export type CopyOverflowStrategy = "shrink" | "wrap" | "ellipsis" | "shrink-wrap" | "shrink-ellipsis" | "shrink-wrap-ellipsis";
 
 export type CopyLimit = {
   maxChars: number;
@@ -843,8 +697,7 @@ export type ExtractedPalette = {
   confidence?: number;
 };
 
-export type TemplateSlotType =
-  "text" | "image" | "price" | "cta" | "badge" | "background" | "chip" | "decoration";
+export type TemplateSlotType = "text" | "image" | "price" | "cta" | "badge" | "background" | "chip" | "decoration";
 
 export type TemplateSlot = {
   id: string;
@@ -863,24 +716,10 @@ export type TemplateSlot = {
   allowHide?: boolean;
   maxLines?: number;
   priority?: number;
-  anchor?:
-    | "top-left"
-    | "top-center"
-    | "top-right"
-    | "center"
-    | "bottom-left"
-    | "bottom-center"
-    | "bottom-right";
+  anchor?: "top-left" | "top-center" | "top-right" | "center" | "bottom-left" | "bottom-center" | "bottom-right";
   preferredVariant?: "short" | "medium" | "long";
   fallbackVariants?: Array<"short" | "medium" | "long">;
-  imageFit?:
-    | "cover"
-    | "contain"
-    | "smart-cover"
-    | "transparent-product"
-    | "background-image"
-    | "split-image"
-    | "repeat-product";
+  imageFit?: "cover" | "contain" | "smart-cover" | "transparent-product" | "background-image" | "split-image" | "repeat-product";
   intentionalOverlapWith?: string[];
   requiresDistinctImage?: boolean;
 };
@@ -898,8 +737,7 @@ export type BoundingBox = {
   height: number;
 };
 
-export type RenderFitStatus =
-  "exact" | "wrapped" | "shrunk" | "variant-changed" | "ellipsis" | "failed";
+export type RenderFitStatus = "exact" | "wrapped" | "shrunk" | "variant-changed" | "ellipsis" | "failed";
 
 export type BannerFitResult = {
   slotId: string;
@@ -916,15 +754,7 @@ export type BannerFitResult = {
   warnings: string[];
 };
 
-export type CollisionResolutionAction =
-  | "none"
-  | "wrap-text"
-  | "shrink-text"
-  | "change-variant"
-  | "move"
-  | "reduce-decoration"
-  | "hide-low-priority"
-  | "failed";
+export type CollisionResolutionAction = "none" | "wrap-text" | "shrink-text" | "change-variant" | "move" | "reduce-decoration" | "hide-low-priority" | "failed";
 
 export type CollisionItem = {
   id: string;

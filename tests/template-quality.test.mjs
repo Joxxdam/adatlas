@@ -1,18 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  foodCategoryTemplates,
-  healthCategoryTemplates,
-} from "../lib/bannerTemplates.ts";
+import { foodCategoryTemplates, healthCategoryTemplates } from "../lib/bannerTemplates.ts";
 
-const upgradedIds = [
-  "camping-popularity-impact",
-  "circle-focus-review",
-  "black-repeat-product",
-  "sports-benefit-chip",
-  "before-after-split-review",
-];
+const upgradedIds = ["camping-popularity-impact", "circle-focus-review", "black-repeat-product", "sports-benefit-chip", "before-after-split-review"];
 
 test("reference templates use the safe slot renderer", () => {
   upgradedIds.forEach((id) => {
@@ -22,8 +13,14 @@ test("reference templates use the safe slot renderer", () => {
     assert.equal(template.optimizationEnabled, true, id);
     assert.ok(template.palettePolicy && template.palettePolicy !== "fixed", id);
     assert.ok(template.textStylePresetKey, id);
-    assert.ok(template.slots.some((slot) => slot.role === "headline"), id);
-    assert.ok(template.slots.some((slot) => slot.type === "image"), id);
+    assert.ok(
+      template.slots.some((slot) => slot.role === "headline"),
+      id
+    );
+    assert.ok(
+      template.slots.some((slot) => slot.type === "image"),
+      id
+    );
     assert.ok(template.copyLimits?.headline?.minFontSize >= 38, id);
   });
 });

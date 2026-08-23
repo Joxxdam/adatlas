@@ -16,9 +16,7 @@ export async function POST(request: Request) {
     }
 
     const [product, images] = await Promise.all([extractProductInfo(websiteUrl), readImages()]);
-    const reference = referenceImageId
-      ? images.find((image) => image.id === referenceImageId)
-      : images[0];
+    const reference = referenceImageId ? images.find((image) => image.id === referenceImageId) : images[0];
     const payload = {
       product,
       referenceImage: reference?.localImagePath || reference?.imageUrl,
@@ -39,9 +37,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, generated: item, product, reference });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "광고 이미지 생성 준비 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "광고 이미지 생성 준비 실패" }, { status: 500 });
   }
 }

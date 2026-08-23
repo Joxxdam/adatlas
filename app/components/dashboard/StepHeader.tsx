@@ -12,21 +12,11 @@ const steps: Array<{ id: CreationStepId; label: string }> = [
   { id: "export", label: "다운로드" },
 ];
 
-export function StepHeader(props: {
-  activeStep: CreationStepId;
-  onStepChange: (step: CreationStepId) => void;
-}) {
+export function StepHeader(props: { activeStep: CreationStepId; onStepChange: (step: CreationStepId) => void }) {
   return (
     <nav aria-label="광고 제작 단계" className={styles.stepNav}>
       {steps.map((step, index) => (
-        <button
-          className={`${styles.stepButton} ${
-            props.activeStep === step.id ? styles.stepButtonActive : ""
-          }`}
-          key={step.id}
-          onClick={() => props.onStepChange(step.id)}
-          type="button"
-        >
+        <button className={`${styles.stepButton} ${props.activeStep === step.id ? styles.stepButtonActive : ""}`} key={step.id} onClick={() => props.onStepChange(step.id)} type="button">
           <span className={styles.stepNumber}>STEP {index + 1}</span>
           {step.label}
         </button>

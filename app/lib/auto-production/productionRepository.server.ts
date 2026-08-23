@@ -40,7 +40,10 @@ async function readIndex(): Promise<Record<string, string>> {
 async function serialized<T>(key: string, work: () => Promise<T>) {
   const previous = locks.get(key) || Promise.resolve();
   const next = previous.then(work, work);
-  locks.set(key, next.catch(() => undefined));
+  locks.set(
+    key,
+    next.catch(() => undefined)
+  );
   try {
     return await next;
   } finally {
@@ -62,9 +65,7 @@ export const autoProductionRepository = {
   },
   async get(runId: string): Promise<AutoProductionRun | null> {
     try {
-      return normalizeAutoProductionTaskIds(
-        JSON.parse(await fs.readFile(runFile(runId), "utf8")) as AutoProductionRun
-      );
+      return normalizeAutoProductionTaskIds(JSON.parse(await fs.readFile(runFile(runId), "utf8")) as AutoProductionRun);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
       throw error;
@@ -74,15 +75,15 @@ export const autoProductionRepository = {
     try {
       const status = options.statuses?.length ? new Set(options.statuses) : null;
       const files = (await fs.readdir(runsDirectory)).filter((file) => /^auto-run-.*\.json$/i.test(file));
-      const runs = await Promise.all(files.map(async (file) => {
-        try {
-          return normalizeAutoProductionTaskIds(
-            JSON.parse(await fs.readFile(path.join(runsDirectory, file), "utf8")) as AutoProductionRun
-          );
-        } catch {
-          return null;
-        }
-      }));
+      const runs = await Promise.all(
+        files.map(async (file) => {
+          try {
+            return normalizeAutoProductionTaskIds(JSON.parse(await fs.readFile(path.join(runsDirectory, file), "utf8")) as AutoProductionRun);
+          } catch {
+            return null;
+          }
+        })
+      );
       return runs
         .filter((run): run is AutoProductionRun => Boolean(run))
         .filter((run) => !status || status.has(run.status))
@@ -113,8 +114,6 @@ export const autoProductionRepository = {
     return (await this.list({ businessDate, limit: 200 })).reduce((sum, run) => sum + run.completedImages, 0);
   },
   async reservedImageCount(businessDate: string) {
-    return (await this.list({ businessDate, limit: 200 }))
-      .filter((run) => !["cancelled", "skipped"].includes(run.status))
-      .reduce((sum, run) => sum + (run.automaticExpectedImages ?? run.expectedImages), 0);
+    return (await this.list({ businessDate, limit: 200 })).filter((run) => !["cancelled", "skipped"].includes(run.status)).reduce((sum, run) => sum + (run.automaticExpectedImages ?? run.expectedImages), 0);
   },
 };

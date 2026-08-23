@@ -30,7 +30,10 @@ function officialUrl(value: string, host: string) {
 export async function searchPexels(input: { query: string; page?: number; perPage?: number }) {
   const key = pexelsKey();
   if (!key) throw new Error("PEXELS_API_KEY가 없어 Pexels 검색을 사용할 수 없습니다.");
-  const query = String(input.query || "").replace(/\s+/g, " ").trim().slice(0, 120);
+  const query = String(input.query || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
   if (query.length < 2) throw new Error("검색어를 두 글자 이상 입력해주세요.");
   const page = Math.max(1, Math.min(1_000, Number(input.page || 1)));
   const perPage = Math.max(1, Math.min(80, Number(input.perPage || 24)));
@@ -47,7 +50,7 @@ export async function searchPexels(input: { query: string; page?: number; perPag
   if (response.status === 401 || response.status === 403) throw new Error("Pexels API 키가 올바르지 않습니다.");
   if (response.status === 429) throw new Error("Pexels 검색 요청 한도에 도달했습니다. 잠시 후 다시 시도해주세요.");
   if (!response.ok) throw new Error(`Pexels 검색 실패: HTTP ${response.status}`);
-  const body = await response.json() as {
+  const body = (await response.json()) as {
     page?: number;
     per_page?: number;
     total_results?: number;
@@ -69,17 +72,29 @@ export async function searchPexels(input: { query: string; page?: number; perPag
     const originalUrl = String(photo.src?.original || "");
     const photographerUrl = String(photo.photographer_url || "");
     if (!photo.id || !officialUrl(pageUrl, pexelsPageHost) || !officialUrl(originalUrl, pexelsImageHost) || !officialUrl(photographerUrl, pexelsPageHost)) return [];
-    return [{
-      id: String(photo.id), width: Number(photo.width || 0), height: Number(photo.height || 0),
-      photographerName: String(photo.photographer || "Pexels photographer"), photographerUrl,
-      sourcePageUrl: pageUrl, originalUrl, largeUrl: String(photo.src?.large2x || originalUrl),
-      thumbnailUrl: String(photo.src?.medium || photo.src?.large2x || originalUrl), alt: String(photo.alt || ""),
-      avgColor: String(photo.avg_color || ""),
-    }];
+    return [
+      {
+        id: String(photo.id),
+        width: Number(photo.width || 0),
+        height: Number(photo.height || 0),
+        photographerName: String(photo.photographer || "Pexels photographer"),
+        photographerUrl,
+        sourcePageUrl: pageUrl,
+        originalUrl,
+        largeUrl: String(photo.src?.large2x || originalUrl),
+        thumbnailUrl: String(photo.src?.medium || photo.src?.large2x || originalUrl),
+        alt: String(photo.alt || ""),
+        avgColor: String(photo.avg_color || ""),
+      },
+    ];
   });
   return {
-    query, page: Number(body.page || page), perPage: Number(body.per_page || perPage),
-    totalResults: Number(body.total_results || photos.length), hasNextPage: Boolean(body.next_page), photos,
+    query,
+    page: Number(body.page || page),
+    perPage: Number(body.per_page || perPage),
+    totalResults: Number(body.total_results || photos.length),
+    hasNextPage: Boolean(body.next_page),
+    photos,
     rateLimit: {
       limit: response.headers.get("x-ratelimit-limit") || "",
       remaining: response.headers.get("x-ratelimit-remaining") || "",
@@ -97,13 +112,7 @@ export function assertPexelsBulkAllowed(input: { confirmedByUser?: boolean; perm
   return true;
 }
 
-export async function saveSelectedPexelsPhoto(input: {
-  photo: PexelsSearchPhoto;
-  collectionId: string;
-  categoryId: string;
-  matchedQuery: string;
-  dryRun?: boolean;
-}) {
+export async function saveSelectedPexelsPhoto(input: { photo: PexelsSearchPhoto; collectionId: string; categoryId: string; matchedQuery: string; dryRun?: boolean }) {
   const photo = input.photo;
   if (!/^\d+$/.test(photo.id) || !officialUrl(photo.sourcePageUrl, pexelsPageHost) || !officialUrl(photo.originalUrl, pexelsImageHost) || !officialUrl(photo.photographerUrl, pexelsPageHost)) {
     throw new Error("공식 Pexels 검색 결과만 저장할 수 있습니다.");
@@ -141,9 +150,15 @@ export async function saveSelectedPexelsPhoto(input: {
     categoryId: input.categoryId,
     sourceType: "pexels",
     dryRun: input.dryRun,
-    sources: [{
-      name: `pexels-${photo.id}.jpg`, buffer, license, matchedQuery: input.matchedQuery,
-      providerPhotoId: photo.id, originalUrl: photo.originalUrl,
-    }],
+    sources: [
+      {
+        name: `pexels-${photo.id}.jpg`,
+        buffer,
+        license,
+        matchedQuery: input.matchedQuery,
+        providerPhotoId: photo.id,
+        originalUrl: photo.originalUrl,
+      },
+    ],
   });
 }

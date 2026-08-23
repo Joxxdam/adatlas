@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  assertPexelsBulkAllowed,
-  pexelsStatus,
-  saveSelectedPexelsPhoto,
-  searchPexels,
-} from "../../../lib/background-library/pexels.server";
+import { assertPexelsBulkAllowed, pexelsStatus, saveSelectedPexelsPhoto, searchPexels } from "../../../lib/background-library/pexels.server";
 import type { PexelsSearchPhoto } from "../../../lib/background-library/catalogTypes";
 
 export const runtime = "nodejs";
@@ -27,7 +22,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as {
+    const body = (await request.json()) as {
       action?: "save-selected" | "bulk-check";
       photo?: PexelsSearchPhoto;
       collectionId?: string;
@@ -43,8 +38,11 @@ export async function POST(request: Request) {
     }
     if (body.action !== "save-selected" || !body.photo) return NextResponse.json({ ok: false, error: "선택한 Pexels 사진이 필요합니다." }, { status: 400 });
     const result = await saveSelectedPexelsPhoto({
-      photo: body.photo, collectionId: String(body.collectionId || ""), categoryId: String(body.categoryId || ""),
-      matchedQuery: String(body.matchedQuery || ""), dryRun: body.dryRun,
+      photo: body.photo,
+      collectionId: String(body.collectionId || ""),
+      categoryId: String(body.categoryId || ""),
+      matchedQuery: String(body.matchedQuery || ""),
+      dryRun: body.dryRun,
     });
     return NextResponse.json({ ok: true, result });
   } catch (error) {

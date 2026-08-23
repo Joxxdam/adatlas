@@ -1,11 +1,4 @@
-import OpenAI, {
-  APIConnectionError,
-  APIConnectionTimeoutError,
-  APIError,
-  AuthenticationError,
-  PermissionDeniedError,
-  RateLimitError,
-} from "openai";
+import OpenAI, { APIConnectionError, APIConnectionTimeoutError, APIError, AuthenticationError, PermissionDeniedError, RateLimitError } from "openai";
 import type { VideoGenerationFailure, VideoGenerationStage } from "./types.ts";
 import { assertStructuredVideoPlanningResponse } from "./structuredSchema.ts";
 
@@ -32,10 +25,7 @@ type OpenAiResponseLike = {
 
 export type VideoPlanningResponsesClient = {
   responses: {
-    create: (
-      body: Record<string, unknown>,
-      options?: Record<string, unknown>
-    ) => Promise<OpenAiResponseLike>;
+    create: (body: Record<string, unknown>, options?: Record<string, unknown>) => Promise<OpenAiResponseLike>;
   };
 };
 
@@ -59,13 +49,9 @@ class IncompleteStructuredOutputError extends Error {
 }
 
 export function sanitizeVideoPlanningErrorMessage(error: unknown) {
-  const raw =
-    error instanceof Error ? error.message : String(error || "AI 응답을 받지 못했습니다.");
+  const raw = error instanceof Error ? error.message : String(error || "AI 응답을 받지 못했습니다.");
   return raw
-    .replace(
-      /incorrect api key provided:[\s\S]*?(?=(?:\.?\s*you can find your api key)|$)/gi,
-      "OpenAI API 인증에 실패했습니다"
-    )
+    .replace(/incorrect api key provided:[\s\S]*?(?=(?:\.?\s*you can find your api key)|$)/gi, "OpenAI API 인증에 실패했습니다")
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [비공개]")
     .replace(/sk-[A-Za-z0-9.*_-]+/gi, "[비공개]")
     .replace(/\[비공개\][A-Za-z0-9.*_-]{4,}/g, "[비공개]")
@@ -88,9 +74,7 @@ export function videoPlanningFailureMessage(code: string, provider?: VideoPlanni
     return "유료 OpenAI API 사용이 비활성화되어 있습니다. 기본 로컬 Codex 방식으로 다시 시도해 주세요.";
   }
   if (code === "VIDEO_PLANNING_AUTH_ERROR") {
-    return provider === "codex-local"
-      ? "로컬 Codex 인증을 확인해 주세요. 터미널에서 Codex 로그인 상태를 다시 확인할 수 있습니다."
-      : "영상 기획 API 인증에 실패했습니다. 서버의 API 키가 유효한지 확인해 주세요.";
+    return provider === "codex-local" ? "로컬 Codex 인증을 확인해 주세요. 터미널에서 Codex 로그인 상태를 다시 확인할 수 있습니다." : "영상 기획 API 인증에 실패했습니다. 서버의 API 키가 유효한지 확인해 주세요.";
   }
   if (code === "VIDEO_PLANNING_RATE_LIMITED") {
     return "영상 기획 요청이 일시적으로 많습니다. 잠시 후 다시 시도해 주세요.";
@@ -154,10 +138,7 @@ export function resolveVideoPlanningProvider(env: VideoPlanningEnvironment = pro
   });
 }
 
-export function resolveVideoPlanningStageConfig(
-  input: VideoPlanningAiInput,
-  env: VideoPlanningEnvironment = process.env
-) {
+export function resolveVideoPlanningStageConfig(input: VideoPlanningAiInput, env: VideoPlanningEnvironment = process.env) {
   const purpose = purposeFor(input);
   const analysisModel = env.VIDEO_PLANNING_ANALYSIS_MODEL?.trim() || "gpt-5.6-luna";
   const conceptModel = env.VIDEO_PLANNING_CONCEPT_MODEL?.trim() || "gpt-5.6-terra";
@@ -167,13 +148,7 @@ export function resolveVideoPlanningStageConfig(
       purpose,
       model: analysisModel,
       effort: input.reasoningEffort || ("low" as VideoPlanningReasoningEffort),
-      timeoutMs:
-        input.timeoutMs ||
-        timeoutFromEnvironment(
-          env.VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS,
-          45_000,
-          "VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS"
-        ),
+      timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS, 45_000, "VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS"),
     };
   }
   if (purpose === "concept") {
@@ -181,66 +156,34 @@ export function resolveVideoPlanningStageConfig(
       purpose,
       model: conceptModel,
       effort: input.reasoningEffort || ("low" as VideoPlanningReasoningEffort),
-      timeoutMs:
-        input.timeoutMs ||
-        timeoutFromEnvironment(
-          env.VIDEO_PLANNING_CONCEPT_TIMEOUT_MS,
-          60_000,
-          "VIDEO_PLANNING_CONCEPT_TIMEOUT_MS"
-        ),
+      timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_CONCEPT_TIMEOUT_MS, 60_000, "VIDEO_PLANNING_CONCEPT_TIMEOUT_MS"),
     };
   }
   return {
     purpose,
     model: scriptModel,
-    effort:
-      input.reasoningEffort ||
-      ((purpose === "script" ? "medium" : "low") as VideoPlanningReasoningEffort),
-    timeoutMs:
-      input.timeoutMs ||
-      timeoutFromEnvironment(
-        env.VIDEO_PLANNING_SCRIPT_TIMEOUT_MS,
-        90_000,
-        "VIDEO_PLANNING_SCRIPT_TIMEOUT_MS"
-      ),
+    effort: input.reasoningEffort || ((purpose === "script" ? "medium" : "low") as VideoPlanningReasoningEffort),
+    timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_SCRIPT_TIMEOUT_MS, 90_000, "VIDEO_PLANNING_SCRIPT_TIMEOUT_MS"),
   };
 }
 
 function failureInfo(error: unknown) {
   const apiError = error instanceof APIError ? error : undefined;
-  const status =
-    apiError?.status ||
-    (typeof error === "object" && error && "status" in error && typeof error.status === "number"
-      ? error.status
-      : undefined);
+  const status = apiError?.status || (typeof error === "object" && error && "status" in error && typeof error.status === "number" ? error.status : undefined);
   const apiCode = apiError?.code || "";
-  if (
-    error instanceof AuthenticationError ||
-    error instanceof PermissionDeniedError ||
-    status === 401 ||
-    status === 403
-  ) {
+  if (error instanceof AuthenticationError || error instanceof PermissionDeniedError || status === 401 || status === 403) {
     return { code: "VIDEO_PLANNING_AUTH_ERROR", retryable: false };
   }
   if (error instanceof RateLimitError || status === 429) {
     return { code: "VIDEO_PLANNING_RATE_LIMITED", retryable: true };
   }
-  if (
-    error instanceof APIConnectionTimeoutError ||
-    /timeout|timed out|abort/i.test(safeMessage(error))
-  ) {
+  if (error instanceof APIConnectionTimeoutError || /timeout|timed out|abort/i.test(safeMessage(error))) {
     return { code: "VIDEO_PLANNING_TIMEOUT", retryable: true };
   }
-  if (
-    error instanceof IncompleteStructuredOutputError ||
-    /json parsing|schema validation|incomplete structured/i.test(safeMessage(error))
-  ) {
+  if (error instanceof IncompleteStructuredOutputError || /json parsing|schema validation|incomplete structured/i.test(safeMessage(error))) {
     return { code: "VIDEO_PLANNING_INVALID_RESPONSE", retryable: true };
   }
-  if (
-    status === 404 ||
-    /model.*not.*found|invalid.*model/i.test(`${apiCode} ${safeMessage(error)}`)
-  ) {
+  if (status === 404 || /model.*not.*found|invalid.*model/i.test(`${apiCode} ${safeMessage(error)}`)) {
     return { code: "VIDEO_PLANNING_MODEL_ERROR", retryable: false };
   }
   if (error instanceof APIConnectionError || (typeof status === "number" && status >= 500)) {
@@ -340,12 +283,9 @@ export function createOpenAiVideoPlanningRunner(
           { timeout: config.timeoutMs, maxRetries: 0 }
         );
         if (response.status && response.status !== "completed") {
-          throw new IncompleteStructuredOutputError(
-            `Incomplete structured output: ${response.status} ${JSON.stringify(response.incomplete_details || response.error || {})}`
-          );
+          throw new IncompleteStructuredOutputError(`Incomplete structured output: ${response.status} ${JSON.stringify(response.incomplete_details || response.error || {})}`);
         }
-        if (!response.output_text?.trim())
-          throw new IncompleteStructuredOutputError("Incomplete structured output: empty output");
+        if (!response.output_text?.trim()) throw new IncompleteStructuredOutputError("Incomplete structured output: empty output");
         let parsed: T;
         try {
           parsed = JSON.parse(response.output_text) as T;
@@ -415,11 +355,7 @@ export function videoPlanningFailureHttpStatus(code: string) {
   if (code === "GENERATION_ALREADY_RUNNING") return 409;
   if (code === "VIDEO_PLANNING_RATE_LIMITED") return 429;
   if (code === "VIDEO_PLANNING_TIMEOUT") return 504;
-  if (
-    code === "VIDEO_PLANNING_API_KEY_MISSING" ||
-    code === "VIDEO_PLANNING_AUTH_ERROR" ||
-    code === "VIDEO_PLANNING_PAID_API_DISABLED"
-  ) return 503;
+  if (code === "VIDEO_PLANNING_API_KEY_MISSING" || code === "VIDEO_PLANNING_AUTH_ERROR" || code === "VIDEO_PLANNING_PAID_API_DISABLED") return 503;
   if (code === "VIDEO_PLANNING_MODEL_ERROR") return 502;
   return 422;
 }

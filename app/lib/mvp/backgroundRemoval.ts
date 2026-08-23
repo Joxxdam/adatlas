@@ -3,40 +3,14 @@ import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
 import { validatePublicHttpUrl } from "../store-analysis/urlSafety";
-import {
-  prepareProductSourceBuffer,
-  removeBackgroundToPng,
-  saveProcessedProductImage,
-} from "./imageEffects";
+import { prepareProductSourceBuffer, removeBackgroundToPng, saveProcessedProductImage } from "./imageEffects";
 import { inspectCutoutQuality } from "./cutoutQuality";
-import {
-  PRODUCT_IMAGE_PIPELINE_VERSION,
-  productCutoutCacheDescriptor,
-} from "./productImagePipeline";
-import {
-  applySelectedObjectBoxes,
-  refineProductCutoutAlpha,
-} from "./productMaskPostprocess";
-import {
-  appendProcessedProductImage,
-  readProcessedProducts,
-} from "./processedProductStore";
-import type {
-  NormalizedImageBox,
-  ProductCutoutQuality,
-  ProductExtractionScope,
-  ProductRepresentationType,
-} from "./types";
+import { PRODUCT_IMAGE_PIPELINE_VERSION, productCutoutCacheDescriptor } from "./productImagePipeline";
+import { applySelectedObjectBoxes, refineProductCutoutAlpha } from "./productMaskPostprocess";
+import { appendProcessedProductImage, readProcessedProducts } from "./processedProductStore";
+import type { NormalizedImageBox, ProductCutoutQuality, ProductExtractionScope, ProductRepresentationType } from "./types";
 
-const allowedPublicPrefixes = [
-  "product-images/",
-  "extracted/",
-  "generated-product-images/",
-  "collected-images/",
-  "uploaded-source-images/",
-  "background-images/",
-  "processed-products/",
-];
+const allowedPublicPrefixes = ["product-images/", "extracted/", "generated-product-images/", "collected-images/", "uploaded-source-images/", "background-images/", "processed-products/"];
 const maxRemoteImageBytes = 12 * 1024 * 1024;
 const maxImagePixels = 40_000_000;
 const maxRedirects = 4;
@@ -149,10 +123,7 @@ async function downloadRemoteImage(imagePath: string): Promise<PreparedImage> {
     }
     await validatePublicHttpUrl(response.url || current.toString());
     if (!response.ok) throw new Error(`Remote image HTTP ${response.status}`);
-    const contentType = (response.headers.get("content-type") || "")
-      .split(";")[0]
-      .trim()
-      .toLowerCase();
+    const contentType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
     if (!contentType.startsWith("image/") || contentType.includes("svg")) {
       throw new Error("Remote response is not a supported raster image.");
     }
@@ -195,15 +166,7 @@ export async function loadSafeProductImageBuffer(imagePath: string) {
   return (await prepareImage(imagePath)).buffer;
 }
 
-export function buildProductCutoutCacheKey(input: {
-  contentHash: string;
-  provider: string;
-  representationType?: ProductRepresentationType;
-  extractionScope?: ProductExtractionScope;
-  selectedObjectIds?: string[];
-  cropBox?: NormalizedImageBox;
-  cleanupStrength?: string;
-}) {
+export function buildProductCutoutCacheKey(input: { contentHash: string; provider: string; representationType?: ProductRepresentationType; extractionScope?: ProductExtractionScope; selectedObjectIds?: string[]; cropBox?: NormalizedImageBox; cleanupStrength?: string }) {
   const stable = productCutoutCacheDescriptor(input);
   return crypto.createHash("sha256").update(stable).digest("hex");
 }
@@ -215,8 +178,7 @@ async function cachedResult(cacheKey: string) {
     if (record.cacheKey !== cacheKey) continue;
     const relative = record.processedImagePath.replace(/^\/+/, "").replace(/\\/g, "/");
     const absolute = path.resolve(publicDir, relative);
-    if (!relative.startsWith("processed-products/") || !absolute.startsWith(`${publicDir}${path.sep}`))
-      continue;
+    if (!relative.startsWith("processed-products/") || !absolute.startsWith(`${publicDir}${path.sep}`)) continue;
     try {
       const buffer = await fs.readFile(absolute);
       if (buffer.length) return { path: record.processedImagePath, buffer };
@@ -227,18 +189,8 @@ async function cachedResult(cacheKey: string) {
   return null;
 }
 
-async function saveResult(input: {
-  originalImagePath: string;
-  provider: BackgroundRemovalProvider;
-  cacheKey: string;
-  buffer: Buffer;
-  representationType?: ProductRepresentationType;
-  extractionScope?: ProductExtractionScope;
-}) {
-  const processedImagePath = await saveProcessedProductImage(
-    input.buffer,
-    `${input.provider}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`
-  );
+async function saveResult(input: { originalImagePath: string; provider: BackgroundRemovalProvider; cacheKey: string; buffer: Buffer; representationType?: ProductRepresentationType; extractionScope?: ProductExtractionScope }) {
+  const processedImagePath = await saveProcessedProductImage(input.buffer, `${input.provider}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`);
   await appendProcessedProductImage({
     id: crypto.randomUUID(),
     provider: input.provider,
@@ -295,9 +247,7 @@ async function finalizeCandidate(buffer: Buffer, input: RemoveBackgroundInput) {
   return { buffer: refined, quality };
 }
 
-export async function removeProductBackground(
-  input: RemoveBackgroundInput
-): Promise<RemoveBackgroundResult> {
+export async function removeProductBackground(input: RemoveBackgroundInput): Promise<RemoveBackgroundResult> {
   const imagePath = String(input.imagePath || "").trim();
   const provider = input.provider || "removebg";
   if (!imagePath) {
@@ -350,10 +300,7 @@ export async function removeProductBackground(
     const normalized = await prepareProductSourceBuffer(source.buffer, input.cropBox);
     let croppedImagePath: string | undefined;
     if (input.cropBox) {
-      croppedImagePath = await saveProcessedProductImage(
-        normalized,
-        `crop-${Date.now()}-${crypto.randomBytes(3).toString("hex")}.png`
-      );
+      croppedImagePath = await saveProcessedProductImage(normalized, `crop-${Date.now()}-${crypto.randomBytes(3).toString("hex")}.png`);
     }
     if (input.extractionScope === "original") {
       const quality = await inspectCutoutQuality(normalized, { extractionScope: "original" });
@@ -431,12 +378,7 @@ export async function removeProductBackground(
           retryCount,
           cacheKey,
           sourceKind: source.sourceKind,
-          fallbackMessage:
-            retryCount > 0
-              ? `${retryCount}회 설정을 조정해 품질 기준을 통과한 누끼를 선택했습니다.`
-              : process.env.REMOVE_BG_API_KEY
-                ? undefined
-                : "외부 API 키가 없어 로컬 배경 제거 방식으로 처리했습니다.",
+          fallbackMessage: retryCount > 0 ? `${retryCount}회 설정을 조정해 품질 기준을 통과한 누끼를 선택했습니다.` : process.env.REMOVE_BG_API_KEY ? undefined : "외부 API 키가 없어 로컬 배경 제거 방식으로 처리했습니다.",
           debug: {
             byteLength: source.buffer.length,
             fileName: source.filename,
@@ -463,8 +405,7 @@ export async function removeProductBackground(
       cacheKey,
       sourceKind: source.sourceKind,
       error: "CUTOUT_QUALITY_FAILED",
-      fallbackMessage:
-        "품질 기준을 통과한 누끼를 만들지 못해 원본을 유지했습니다. 다른 원본·추출 범위·직접 영역을 선택해 주세요.",
+      fallbackMessage: "품질 기준을 통과한 누끼를 만들지 못해 원본을 유지했습니다. 다른 원본·추출 범위·직접 영역을 선택해 주세요.",
     };
   } catch (error) {
     return {
@@ -473,8 +414,7 @@ export async function removeProductBackground(
       provider,
       error: "REMOVE_BG_FAILED",
       detail: process.env.NODE_ENV === "development" && error instanceof Error ? error.message : undefined,
-      fallbackMessage:
-        "이미지를 안전하게 처리하지 못해 원본을 유지했습니다. 파일 형식·크기 또는 원격 이미지 접근을 확인해 주세요.",
+      fallbackMessage: "이미지를 안전하게 처리하지 못해 원본을 유지했습니다. 파일 형식·크기 또는 원격 이미지 접근을 확인해 주세요.",
     };
   }
 }

@@ -28,11 +28,7 @@ export async function POST(request: Request, context: { params: Promise<{ projec
     if (!body.versionId) throw new Error("피드백을 남길 영상 버전을 선택해 주세요.");
     if (!text) throw new Error("피드백 내용을 입력해 주세요.");
     const timecode = body.timecodeSeconds;
-    if (
-      timecode !== null &&
-      timecode !== undefined &&
-      (!Number.isFinite(timecode) || timecode < 0 || timecode > project.duration)
-    ) {
+    if (timecode !== null && timecode !== undefined && (!Number.isFinite(timecode) || timecode < 0 || timecode > project.duration)) {
       throw new Error(`피드백 시간은 0초부터 ${project.duration}초 사이로 입력해 주세요.`);
     }
     const comment: ReviewComment = {
@@ -51,9 +47,6 @@ export async function POST(request: Request, context: { params: Promise<{ projec
     return NextResponse.json({ ok: true, project: updated, comment }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "피드백 저장 실패";
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: message.includes("찾지 못") ? 404 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: message }, { status: message.includes("찾지 못") ? 404 : 400 });
   }
 }

@@ -6,15 +6,7 @@ function hostname(value: string) {
   return first.split(":")[0].toLowerCase();
 }
 
-export function isTrustedAutoProductionRequest(input: {
-  url: string;
-  host?: string | null;
-  forwardedHost?: string | null;
-  origin?: string | null;
-  suppliedToken?: string | null;
-  configuredToken?: string | null;
-  mutation: boolean;
-}) {
+export function isTrustedAutoProductionRequest(input: { url: string; host?: string | null; forwardedHost?: string | null; origin?: string | null; suppliedToken?: string | null; configuredToken?: string | null; mutation: boolean }) {
   const supplied = String(input.suppliedToken || "").trim();
   const configured = String(input.configuredToken || "").trim();
   if (configured && supplied && supplied === configured) return true;

@@ -1,36 +1,11 @@
 import type { AdImageLabel, GeneratedAdCopyVariant, ProductInfoForPrompt } from "./types";
 
 export const kookdaeHeadlinePatterns = {
-  priceShock: [
-    "와 진심 미쳤다",
-    "이거 실화냐 가격 실화냐",
-    "{가격대}로 이 퀄리티가 가능하다고?",
-    "가격 보고 두 번 확인했습니다, 오타 아닙니다",
-  ],
-  insiderConfession: [
-    "아버지가 정육점을 해도 이 가격엔 절대 못 사옵니다",
-    "우리 사장님, 결심하셨습니다",
-    "사장님이 미쳤어요.. 이 가격 진짜 손해 보고 파는 겁니다",
-    "담당자 컨펌 없이 그냥 올렸습니다",
-    "직원인 저도 이해 안 되는 가격입니다",
-  ],
-  reversal: [
-    "이 가격 보고 저도 두 번 놀랐습니다",
-    "장바구니에 넣고 결제할 때까지 의심했습니다",
-    "반신반의로 시켰다가 바로 재주문했습니다",
-    "속는 셈 치고 시켰는데 인생 고기 만났습니다",
-  ],
-  giftFamily: [
-    "{가격대}로 생색 제대로 내는 {상품명} 찾았습니다",
-    "선물하면 반응 폭발하는 {상품명}",
-    "온가족이서 배터지게 먹었네요",
-    "부모님 선물, 이 가격이면 부담 없어요",
-  ],
-  expertAuthority: [
-    "20년차 정육 명장이 직접 고른 등급",
-    "정육점 사장님들이 이 글 보면 화낼 가격",
-    "전국 정육점 사장님들이 몰래 사가는 그 부위",
-  ],
+  priceShock: ["와 진심 미쳤다", "이거 실화냐 가격 실화냐", "{가격대}로 이 퀄리티가 가능하다고?", "가격 보고 두 번 확인했습니다, 오타 아닙니다"],
+  insiderConfession: ["아버지가 정육점을 해도 이 가격엔 절대 못 사옵니다", "우리 사장님, 결심하셨습니다", "사장님이 미쳤어요.. 이 가격 진짜 손해 보고 파는 겁니다", "담당자 컨펌 없이 그냥 올렸습니다", "직원인 저도 이해 안 되는 가격입니다"],
+  reversal: ["이 가격 보고 저도 두 번 놀랐습니다", "장바구니에 넣고 결제할 때까지 의심했습니다", "반신반의로 시켰다가 바로 재주문했습니다", "속는 셈 치고 시켰는데 인생 고기 만났습니다"],
+  giftFamily: ["{가격대}로 생색 제대로 내는 {상품명} 찾았습니다", "선물하면 반응 폭발하는 {상품명}", "온가족이서 배터지게 먹었네요", "부모님 선물, 이 가격이면 부담 없어요"],
+  expertAuthority: ["20년차 정육 명장이 직접 고른 등급", "정육점 사장님들이 이 글 보면 화낼 가격", "전국 정육점 사장님들이 몰래 사가는 그 부위"],
 } as const;
 
 export type KookdaePatternName = keyof typeof kookdaeHeadlinePatterns;
@@ -47,114 +22,24 @@ type KookdaeVariantPatternSet = {
 
 export const kookdaeVariantPatterns: Record<KookdaeVariantKey, KookdaeVariantPatternSet> = {
   short: {
-    headline: [
-      "와 진심 미쳤다",
-      "이 가격 실화냐",
-      "사장님 결심가,,",
-      "가격보고 두번 봄;;",
-      "이건 손해가..",
-      "이 가격 맞아?",
-      "진짜 이 가격임;;",
-      "도매가 미쳤다..",
-      "고기값 실화냐",
-      "이거 오타 아님?",
-    ],
-    bodyCopy: [
-      "가족식사로 든든해요",
-      "잡내 없이 부드러워요",
-      "양도 맛도 미쳤어요",
-      "캠핑용으로 딱이에요",
-      "입에서 살살 녹음..",
-      "가격이 말이 안 됨;;",
-      "온가족 배터짐,,",
-    ],
-    highlightCopy: [
-      "{가격대} 특가",
-      "도매가 특가",
-      "오늘만 특가",
-      "품절임박",
-      "{부위명} 특가",
-      "이 가격 실화",
-      "마진포기급",
-    ],
-    bottomBarCopy: [
-      "품절 전 담기",
-      "지금 담아야 손해 안 봅니다",
-      "오늘만 도매가 판매",
-      "이 가격 다시 없음",
-      "마진도 안 남는 특가",
-    ],
+    headline: ["와 진심 미쳤다", "이 가격 실화냐", "사장님 결심가,,", "가격보고 두번 봄;;", "이건 손해가..", "이 가격 맞아?", "진짜 이 가격임;;", "도매가 미쳤다..", "고기값 실화냐", "이거 오타 아님?"],
+    bodyCopy: ["가족식사로 든든해요", "잡내 없이 부드러워요", "양도 맛도 미쳤어요", "캠핑용으로 딱이에요", "입에서 살살 녹음..", "가격이 말이 안 됨;;", "온가족 배터짐,,"],
+    highlightCopy: ["{가격대} 특가", "도매가 특가", "오늘만 특가", "품절임박", "{부위명} 특가", "이 가격 실화", "마진포기급"],
+    bottomBarCopy: ["품절 전 담기", "지금 담아야 손해 안 봅니다", "오늘만 도매가 판매", "이 가격 다시 없음", "마진도 안 남는 특가"],
     cta: ["구매하기", "특가 확인", "지금 담기", "바로 보기", "품절 전 담기"],
   },
   medium: {
-    headline: [
-      "이 가격 보고 두 번 놀랐습니다",
-      "사장님이 결심한 가격입니다",
-      "정육점 사장님도 놀랄 가격",
-      "이 가격 진짜 맞습니다;;",
-      "가격 보고 다시 확인했습니다..",
-      "이 가격이면 일단 담아야죠,,",
-      "{부위명}이 이 가격이라고요?",
-      "고기값 보고 저도 멈칫했습니다;;",
-      "온가족 먹을 고기값이 이 정도라니..",
-    ],
-    bodyCopy: [
-      "잡내 없이 부드러운 찰진 {부위명}이에요",
-      "가족끼리 배터지게 먹기 좋은 구성입니다",
-      "캠핑용으로 구워도 양도 맛도 든든해요",
-      "입에서 살살 녹고 가격은 진짜 말도 안 됩니다",
-      "고소하고 부드러운데 가격까지 착해요..",
-      "양도 넉넉해서 가족식사로 딱이에요;;",
-      "이 정도 구성에 이 가격이면 진짜 괜찮습니다",
-    ],
-    highlightCopy: [
-      "{가격대} {부위명} 특가",
-      "{부위명} 도매가",
-      "오늘만 한정 도매가",
-      "가족식사용 든든한 구성",
-      "잡내 없이 부드러운 특가",
-      "온가족 든든한 고기 구성",
-    ],
-    bottomBarCopy: [
-      "잡내 없이 부드러운 찰진 {부위명} 도매가 판매",
-      "캠핑/가족식사용으로 든든한 구성",
-      "마진도 안 남는 역대급 특가로 모십니다",
-      "온가족이서 배터지게 먹기 좋은 구성입니다",
-      "이 가격이면 오늘 담아야 손해 안 봅니다",
-    ],
+    headline: ["이 가격 보고 두 번 놀랐습니다", "사장님이 결심한 가격입니다", "정육점 사장님도 놀랄 가격", "이 가격 진짜 맞습니다;;", "가격 보고 다시 확인했습니다..", "이 가격이면 일단 담아야죠,,", "{부위명}이 이 가격이라고요?", "고기값 보고 저도 멈칫했습니다;;", "온가족 먹을 고기값이 이 정도라니.."],
+    bodyCopy: ["잡내 없이 부드러운 찰진 {부위명}이에요", "가족끼리 배터지게 먹기 좋은 구성입니다", "캠핑용으로 구워도 양도 맛도 든든해요", "입에서 살살 녹고 가격은 진짜 말도 안 됩니다", "고소하고 부드러운데 가격까지 착해요..", "양도 넉넉해서 가족식사로 딱이에요;;", "이 정도 구성에 이 가격이면 진짜 괜찮습니다"],
+    highlightCopy: ["{가격대} {부위명} 특가", "{부위명} 도매가", "오늘만 한정 도매가", "가족식사용 든든한 구성", "잡내 없이 부드러운 특가", "온가족 든든한 고기 구성"],
+    bottomBarCopy: ["잡내 없이 부드러운 찰진 {부위명} 도매가 판매", "캠핑/가족식사용으로 든든한 구성", "마진도 안 남는 역대급 특가로 모십니다", "온가족이서 배터지게 먹기 좋은 구성입니다", "이 가격이면 오늘 담아야 손해 안 봅니다"],
     cta: ["특가 확인하기", "지금 구매하기", "품절 전 담기", "오늘 특가 보기", "지금 담아두기"],
   },
   long: {
-    headline: [
-      "사장님이 미쳤어요.. 이 가격 진짜 손해 보고 파는 겁니다",
-      "아버지가 정육점을 해도 이 가격엔 절대 못 사옵니다",
-      "가격 보고 두 번 확인했습니다, 오타 아닙니다",
-      "계산기 두드리다가 손해인 거 알면서도 올립니다",
-      "이 가격 보고 저도 두 번 놀랐습니다",
-      "경리팀이 계산 잘못한 줄 알았습니다, 진짜 맞는 가격입니다",
-      "정육점 사장님들이 이 글 보면 화낼 가격입니다",
-      "마진 없다고 본사에서 뒤집어졌습니다",
-    ],
-    bodyCopy: [
-      "캠핑용 고기로 샀어요..입에서 살살 녹고 양도 많은데 가격이 진짜 말도 안 됩니다",
-      "입에서 살살 녹고 양도 든든한 {부위명} 구성이에요",
-      "잡내 없이 부드럽고 가족끼리 배터지게 먹기 좋은 구성이에요",
-      "명절/생일/집들이 선물로 눈치 안 보이는 비주얼, 근데 가격은 반값입니다",
-      "고소하고 부드러운 고기를 이 가격에 담을 수 있다는 게 진짜 말이 안 됩니다",
-      "캠핑 가서 구워 먹기에도 좋고, 가족식사로 올려도 생색 제대로 납니다",
-    ],
-    highlightCopy: [
-      "{부위명} {가격대}로 온가족이서 배터지게 먹었네요",
-      "찰진 {부위명} {가격대} 도매가 특가",
-      "오늘만 한정 도매가로 풀었습니다",
-      "이 가격이면 가족식사도 선물도 부담 없습니다",
-    ],
-    bottomBarCopy: [
-      "잡내 없이 부드러운 {부위명} 도매가 판매",
-      "마진도 안 남는 역대급 폭락가로 모십니다",
-      "캠핑/가족식사용으로 배터지게 먹기 좋은 구성입니다",
-      "오늘만 이 가격, 품절되면 다시 보기 어렵습니다",
-    ],
+    headline: ["사장님이 미쳤어요.. 이 가격 진짜 손해 보고 파는 겁니다", "아버지가 정육점을 해도 이 가격엔 절대 못 사옵니다", "가격 보고 두 번 확인했습니다, 오타 아닙니다", "계산기 두드리다가 손해인 거 알면서도 올립니다", "이 가격 보고 저도 두 번 놀랐습니다", "경리팀이 계산 잘못한 줄 알았습니다, 진짜 맞는 가격입니다", "정육점 사장님들이 이 글 보면 화낼 가격입니다", "마진 없다고 본사에서 뒤집어졌습니다"],
+    bodyCopy: ["캠핑용 고기로 샀어요..입에서 살살 녹고 양도 많은데 가격이 진짜 말도 안 됩니다", "입에서 살살 녹고 양도 든든한 {부위명} 구성이에요", "잡내 없이 부드럽고 가족끼리 배터지게 먹기 좋은 구성이에요", "명절/생일/집들이 선물로 눈치 안 보이는 비주얼, 근데 가격은 반값입니다", "고소하고 부드러운 고기를 이 가격에 담을 수 있다는 게 진짜 말이 안 됩니다", "캠핑 가서 구워 먹기에도 좋고, 가족식사로 올려도 생색 제대로 납니다"],
+    highlightCopy: ["{부위명} {가격대}로 온가족이서 배터지게 먹었네요", "찰진 {부위명} {가격대} 도매가 특가", "오늘만 한정 도매가로 풀었습니다", "이 가격이면 가족식사도 선물도 부담 없습니다"],
+    bottomBarCopy: ["잡내 없이 부드러운 {부위명} 도매가 판매", "마진도 안 남는 역대급 폭락가로 모십니다", "캠핑/가족식사용으로 배터지게 먹기 좋은 구성입니다", "오늘만 이 가격, 품절되면 다시 보기 어렵습니다"],
     cta: ["품절 전에 서두르세요", "지금 구매하기", "품절 전 담기", "오늘 특가 확인하기"],
   },
 };
@@ -166,23 +51,7 @@ export type KookdaeSelectedPattern = {
   tone: string;
 };
 
-export const kookdaeGenericForbiddenPhrases = [
-  "만나보세요",
-  "특별한 기회",
-  "특별한 가격으로 만나는 기회",
-  "합리적인 가격",
-  "프리미엄 품질",
-  "고품질 상품",
-  "놓치지 마세요",
-  "지금 확인하세요",
-  "만족스러운 선택",
-  "특별한 선택",
-  "좋은 기회",
-  "뛰어난 품질",
-  "신선한 경험",
-  "여러분을 기다립니다",
-  "자세히 알아보기",
-];
+export const kookdaeGenericForbiddenPhrases = ["만나보세요", "특별한 기회", "특별한 가격으로 만나는 기회", "합리적인 가격", "프리미엄 품질", "고품질 상품", "놓치지 마세요", "지금 확인하세요", "만족스러운 선택", "특별한 선택", "좋은 기회", "뛰어난 품질", "신선한 경험", "여러분을 기다립니다", "자세히 알아보기"];
 
 export const kookdaeGenericReplacements: Array<[RegExp, string]> = [
   [/특별한 기회/g, "가격 보고 다시 확인했습니다"],
@@ -236,17 +105,8 @@ export function kookdaePriceBand(product: ProductInfoForPrompt) {
 }
 
 export function kookdaeProductFacts(product: ProductInfoForPrompt, reference?: AdImageLabel) {
-  const source = [
-    product.productName,
-    product.category,
-    product.mainBenefit,
-    product.extractedDescription,
-    reference?.finalLabel?.ocrText,
-    reference?.finalLabel?.appealPoint,
-  ].join(" ");
-  const cut =
-    source.match(/(등심|갈비|한우|설록우|스테이크|채끝|안심|차돌|불고기|국거리)/)?.[1] ||
-    "";
+  const source = [product.productName, product.category, product.mainBenefit, product.extractedDescription, reference?.finalLabel?.ocrText, reference?.finalLabel?.appealPoint].join(" ");
+  const cut = source.match(/(등심|갈비|한우|설록우|스테이크|채끝|안심|차돌|불고기|국거리)/)?.[1] || "";
 
   return {
     productName: clean(product.productName || cut || "고기"),
@@ -256,25 +116,13 @@ export function kookdaeProductFacts(product: ProductInfoForPrompt, reference?: A
     discountInfo: clean(product.discountInfo),
     priceBand: kookdaePriceBand(product),
     benefit: clean(product.mainBenefit),
-    useCase:
-      source.match(/(캠핑|가족식사|선물|명절|홈파티|부모님|집들이)/)?.[1] || "가족식사",
+    useCase: source.match(/(캠핑|가족식사|선물|명절|홈파티|부모님|집들이)/)?.[1] || "가족식사",
   };
 }
 
-export function chooseKookdaePatternNames(
-  product: ProductInfoForPrompt,
-  reference?: AdImageLabel
-): KookdaePatternName[] {
+export function chooseKookdaePatternNames(product: ProductInfoForPrompt, reference?: AdImageLabel): KookdaePatternName[] {
   const facts = kookdaeProductFacts(product, reference);
-  const source = [
-    product.productName,
-    product.discountInfo,
-    product.mainBenefit,
-    reference?.finalLabel?.hookType,
-    reference?.finalLabel?.appealPoint,
-    reference?.finalLabel?.copyNuance,
-    reference?.finalLabel?.whyItWorks,
-  ].join(" ");
+  const source = [product.productName, product.discountInfo, product.mainBenefit, reference?.finalLabel?.hookType, reference?.finalLabel?.appealPoint, reference?.finalLabel?.copyNuance, reference?.finalLabel?.whyItWorks].join(" ");
   const names: KookdaePatternName[] = [];
 
   if (facts.price || facts.discountInfo || /가격|할인|특가|도매|폭락/.test(source)) {
@@ -307,23 +155,10 @@ export function fillKookdaePattern(pattern: string, product: ProductInfoForPromp
     .replace(/\{품질특징\}/g, facts.benefit || "잡내 없이 부드러운");
 }
 
-function selectVariantPattern(
-  variant: KookdaeVariantKey,
-  slot: keyof KookdaeVariantPatternSet,
-  product: ProductInfoForPrompt,
-  reference?: AdImageLabel
-) {
+function selectVariantPattern(variant: KookdaeVariantKey, slot: keyof KookdaeVariantPatternSet, product: ProductInfoForPrompt, reference?: AdImageLabel) {
   const patternNames = chooseKookdaePatternNames(product, reference);
   const facts = kookdaeProductFacts(product, reference);
-  const source = [
-    product.productName,
-    product.discountInfo,
-    product.mainBenefit,
-    reference?.finalLabel?.hookType,
-    reference?.finalLabel?.appealPoint,
-    reference?.finalLabel?.copyNuance,
-    reference?.finalLabel?.whyItWorks,
-  ].join(" ");
+  const source = [product.productName, product.discountInfo, product.mainBenefit, reference?.finalLabel?.hookType, reference?.finalLabel?.appealPoint, reference?.finalLabel?.copyNuance, reference?.finalLabel?.whyItWorks].join(" ");
   const pool = kookdaeVariantPatterns[variant][slot];
 
   let index = 0;
@@ -373,12 +208,7 @@ export function buildKookdaeCopyVariantsFromPatterns(
       variant,
       patternGroup: headline.patternGroup,
       sourcePattern: headline.sourcePattern,
-      tone:
-        variant === "short"
-          ? "punctuationTone"
-          : variant === "medium"
-            ? "colloquialTone"
-            : "insiderConfession",
+      tone: variant === "short" ? "punctuationTone" : variant === "medium" ? "colloquialTone" : "insiderConfession",
     });
 
     return {
@@ -401,10 +231,7 @@ export function buildKookdaeCopyVariantsFromPatterns(
   };
 }
 
-export function kookdaeFallbackCopy(
-  product: ProductInfoForPrompt,
-  reference?: AdImageLabel
-): GeneratedAdCopyVariant {
+export function kookdaeFallbackCopy(product: ProductInfoForPrompt, reference?: AdImageLabel): GeneratedAdCopyVariant {
   const facts = kookdaeProductFacts(product, reference);
   const patternNames = chooseKookdaePatternNames(product, reference);
   const firstPattern = kookdaeHeadlinePatterns[patternNames[0]][0];
@@ -413,16 +240,9 @@ export function kookdaeFallbackCopy(
 
   return {
     headline,
-    bodyCopy:
-      facts.benefit ||
-      (facts.useCase === "캠핑"
-        ? "캠핑용으로 구워도 부드럽고 양도 든든해요"
-        : "가족끼리 배터지게 먹기 좋은 구성입니다"),
+    bodyCopy: facts.benefit || (facts.useCase === "캠핑" ? "캠핑용으로 구워도 부드럽고 양도 든든해요" : "가족끼리 배터지게 먹기 좋은 구성입니다"),
     highlightCopy: facts.discountInfo || priceLabel,
-    bottomBarCopy:
-      facts.cut || facts.productName
-        ? `잡내 없이 부드러운 ${facts.cut || facts.productName} 도매가 판매`
-        : "마진도 안 남는 역대급 폭락가로 모십니다",
+    bottomBarCopy: facts.cut || facts.productName ? `잡내 없이 부드러운 ${facts.cut || facts.productName} 도매가 판매` : "마진도 안 남는 역대급 폭락가로 모십니다",
     cta: "특가 확인하기",
     price: facts.price,
   };

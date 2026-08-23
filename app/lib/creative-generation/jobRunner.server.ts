@@ -7,10 +7,11 @@ import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunner
 import { executionResults, isServerRunnableGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
+import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v4-quality-throughput");
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v6-resilient-food-handoff");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;
@@ -24,10 +25,7 @@ function staleAfterMs() {
 
 function runnerErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "AI 광고 생성 중 알 수 없는 오류가 발생했습니다.";
-  if (
-    (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) ||
-    /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)
-  ) {
+  if ((error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) || /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)) {
     return "AI 광고 레퍼런스 편집이 제한시간을 초과했습니다. 해당 카드의 ‘다시 만들기’로 재시도해 주세요.";
   }
   return message.replace(/(?:\/Users|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 600);
@@ -39,17 +37,7 @@ export function isGenerationJobRunnerActive(jobId: string) {
 
 export async function recoverGenerationJob(jobId: string, ignoreRunner = false): Promise<GenerationJob | null> {
   let current = await creativeGenerationJobStore.get(jobId);
-  const untouchedRandomJob = Boolean(
-    current &&
-    current.version === "generation-job-v11-random-reference-edit" &&
-    ["pending", "running"].includes(current.status) &&
-    current.results.every(
-      (result) =>
-        result.status === "pending" &&
-        !result.startedAt &&
-        !result.nativeCreative?.stagePaths?.structurePath
-    )
-  );
+  const untouchedRandomJob = Boolean(current && current.version === "generation-job-v11-random-reference-edit" && ["pending", "running"].includes(current.status) && current.results.every((result) => result.status === "pending" && !result.startedAt && !result.nativeCreative?.stagePaths?.structurePath));
   if (current && untouchedRandomJob) {
     const references = selectCategoryNativeAdReferences(current, current.results.length);
     current = await creativeGenerationJobStore.update(current.id, (job) => ({
@@ -65,9 +53,7 @@ export async function recoverGenerationJob(jobId: string, ignoreRunner = false):
       ].slice(-20),
       results: job.results.map((result, index) => ({
         ...result,
-        nativeCreative: result.nativeCreative
-          ? { ...result.nativeCreative, adReference: references[index] }
-          : result.nativeCreative,
+        nativeCreative: result.nativeCreative ? { ...result.nativeCreative, adReference: references[index] } : result.nativeCreative,
       })),
     }));
   }
@@ -80,10 +66,7 @@ export async function recoverGenerationJob(jobId: string, ignoreRunner = false):
     status: "running",
     completedAt: undefined,
     errors: [...job.errors, "서버 실행이 중단된 생성 항목을 대기 상태로 복구했습니다."].slice(-20),
-    recoveryLog: [
-      ...(job.recoveryLog || []),
-      { at, message: "stale running 결과를 pending으로 복구", resultIds: staleResults },
-    ].slice(-20),
+    recoveryLog: [...(job.recoveryLog || []), { at, message: "stale running 결과를 pending으로 복구", resultIds: staleResults }].slice(-20),
     results: job.results.map((result) =>
       staleResults.includes(result.id)
         ? {
@@ -132,7 +115,10 @@ export async function runGenerationJob(jobId: string) {
     }
     const batch = selectRunnableResults(job, attempted, configuredConcurrency);
     if (!batch.length) {
-      if (executionResults(job).some((result) => result.status === "pending") && attempted.size) {
+      const hasRetryableWork = executionResults(job).some(
+        (result) => result.status === "pending" || (result.status === "failed" && result.attempts <= Math.max(0, job.retryLimit))
+      );
+      if (hasRetryableWork && attempted.size) {
         attempted.clear();
         continue;
       }
@@ -162,11 +148,16 @@ async function runSafely(jobId: string) {
     const recovered = await recoverGenerationJob(jobId, true);
     if (!recovered || recovered.status === "cancelled") return;
     await runGenerationJob(jobId);
+    const completed = await creativeGenerationJobStore.get(jobId);
+    const hasGeneratedImage = Boolean(completed && executionResults(completed).some((result) => result.imagePath));
+    // 상품 설명 문구는 이미지 결과별이 아니라 작업(상품)별로 단 한 번만 자동 생성한다.
+    // 실패/확인 필요 레코드도 재호출하지 않고 사용자가 명시적으로 다시 만들 때만 force한다.
+    if (completed && hasGeneratedImage && !completed.adCopy) {
+      await ensureProductAdCopy(jobId);
+    }
   } catch (error) {
     const message = runnerErrorMessage(error);
-    await creativeGenerationJobStore
-      .update(jobId, (job) => ({ ...job, errors: [...job.errors, message].slice(-20) }))
-      .catch(() => undefined);
+    await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, message].slice(-20) })).catch(() => undefined);
   }
 }
 

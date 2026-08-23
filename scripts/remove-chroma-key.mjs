@@ -45,13 +45,8 @@ for (let offset = 0; offset < data.length; offset += 4) {
   const red = data[offset];
   const green = data[offset + 1];
   const blue = data[offset + 2];
-  const chroma = keyIsGreen
-    ? green - Math.max(red, blue)
-    : Math.min(red, blue) - green;
-  const alpha = Math.max(
-    0,
-    Math.min(1, (transparentChroma - chroma) / (transparentChroma - opaqueChroma))
-  );
+  const chroma = keyIsGreen ? green - Math.max(red, blue) : Math.min(red, blue) - green;
+  const alpha = Math.max(0, Math.min(1, (transparentChroma - chroma) / (transparentChroma - opaqueChroma)));
 
   if (alpha <= 0.001) {
     data[offset] = 0;
@@ -76,6 +71,4 @@ await sharp(data, {
   .png({ compressionLevel: 9, adaptiveFiltering: true })
   .toFile(output);
 
-process.stdout.write(
-  `${output} ${info.width}x${info.height} key=${key.map((value) => Math.round(value)).join(",")}\n`
-);
+process.stdout.write(`${output} ${info.width}x${info.height} key=${key.map((value) => Math.round(value)).join(",")}\n`);

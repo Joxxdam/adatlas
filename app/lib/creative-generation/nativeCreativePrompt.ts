@@ -17,22 +17,11 @@ function verifiedFacts(job: GenerationJob, result: GenerationResult) {
 
 function hasVerifiedReviewEvidence(job: GenerationJob, result: GenerationResult) {
   const selected = new Set(result.hookPlan.factIds || []);
-  return job.productTruth.facts.some((fact) =>
-    fact.evidenceType === "review" &&
-    fact.usableInCopy &&
-    fact.verification !== "unverified" &&
-    (!selected.size || selected.has(fact.id))
-  );
+  return job.productTruth.facts.some((fact) => fact.evidenceType === "review" && fact.usableInCopy && fact.verification !== "unverified" && (!selected.size || selected.has(fact.id)));
 }
 
 /** Native generation creates the complete advertisement, never a background plate. */
-export function buildNativeFinalCreativePrompt(
-  job: GenerationJob,
-  result: GenerationResult,
-  outputPath: string,
-  feedback?: string,
-  brandMemory?: AdvertiserBrandMemory
-) {
+export function buildNativeFinalCreativePrompt(job: GenerationJob, result: GenerationResult, outputPath: string, feedback?: string, brandMemory?: AdvertiserBrandMemory) {
   const brief = result.hookPlan.creativeBrief;
   const layout = buildAdaptiveLayoutPlan({ truth: job.productTruth, result, groupResults: job.results });
   const grammar = referenceCreativeGrammars.find((item) => item.id === layout.grammarId);
@@ -46,13 +35,7 @@ export function buildNativeFinalCreativePrompt(
   const verifiedReviewEvidence = hasVerifiedReviewEvidence(job, result);
   const productPolicy = resolveProductRenderingPolicy(job);
   const productContract = productRenderingPromptContract(job, result);
-  const exactCopy = [
-    `MAIN HOOK: ${result.hookPlan.headline}`,
-    result.hookPlan.body ? `SUB COPY: ${result.hookPlan.body}` : "",
-    result.hookPlan.proof ? `PROOF: ${result.hookPlan.proof}` : "",
-    result.hookPlan.offer ? `OFFER: ${result.hookPlan.offer}` : "",
-    result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : "",
-  ].filter(Boolean).join("\n");
+  const exactCopy = [`MAIN HOOK: ${result.hookPlan.headline}`, result.hookPlan.body ? `SUB COPY: ${result.hookPlan.body}` : "", result.hookPlan.proof ? `PROOF: ${result.hookPlan.proof}` : "", result.hookPlan.offer ? `OFFER: ${result.hookPlan.offer}` : "", result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : ""].filter(Boolean).join("\n");
 
   return `Use the image generation skill to create ONE FINAL, COMPLETE, READY-TO-RUN Korean square performance advertisement.
 
@@ -131,25 +114,12 @@ ${feedback ? `REVISION DIRECTION\n${feedback}\nRegenerate the ENTIRE final adver
  * the next stage. Text is never overlaid locally. Identity-locked packaged goods
  * use the untouched original package as the protected product layer.
  */
-export function buildNativeStagePrompt(
-  stage: NativeCreativeGenerationStage,
-  job: GenerationJob,
-  result: GenerationResult,
-  outputPath: string,
-  feedback?: string,
-  brandMemory?: AdvertiserBrandMemory
-) {
+export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job: GenerationJob, result: GenerationResult, outputPath: string, feedback?: string, brandMemory?: AdvertiserBrandMemory) {
   const productName = job.productTruth.normalized.cleanProductName || job.productTruth.product.productName;
   const facts = verifiedFacts(job, result);
   const productPolicy = resolveProductRenderingPolicy(job);
   const productContract = productRenderingPromptContract(job, result);
-  const exactCopy = [
-    `메인 후킹: ${result.hookPlan.headline}`,
-    result.hookPlan.body ? `서브 문구: ${result.hookPlan.body}` : "",
-    result.hookPlan.proof ? `근거 문구: ${result.hookPlan.proof}` : "",
-    result.hookPlan.offer ? `가격·혜택: ${result.hookPlan.offer}` : "",
-    result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : "",
-  ].filter(Boolean).join("\n");
+  const exactCopy = [`메인 후킹: ${result.hookPlan.headline}`, result.hookPlan.body ? `서브 문구: ${result.hookPlan.body}` : "", result.hookPlan.proof ? `근거 문구: ${result.hookPlan.proof}` : "", result.hookPlan.offer ? `가격·혜택: ${result.hookPlan.offer}` : "", result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : ""].filter(Boolean).join("\n");
   const shared = `
 OUTPUT CONTRACT
 - Use the image generation skill to EDIT or CREATE exactly one complete square raster and save it to: ${outputPath}
@@ -207,9 +177,7 @@ TASK
   }
 
   if (stage === "copy-replacement") {
-    const packagedCopyLock = productPolicy === "identity-locked-packaged-product"
-      ? "- Treat the protected product visible in stage 2 as an identity guide only: do not synthesize, repaint, recolor, move or cover it, and keep its landing zone free of new text or decoration. The untouched original product raster is restored locally after this copy edit."
-      : "- Never regenerate, deform, recolor, move or relabel the target product in this stage.";
+    const packagedCopyLock = productPolicy === "identity-locked-packaged-product" ? "- Treat the protected product visible in stage 2 as an identity guide only: do not synthesize, repaint, recolor, move or cover it, and keep its landing zone free of new text or decoration. The untouched original product raster is restored locally after this copy edit." : "- Never regenerate, deform, recolor, move or relabel the target product in this stage.";
     return `STAGE 3 OF 4 — REPLACE ALL COPY WITH PRODUCTTRUTH-BACKED KOREAN COPY
 ${shared}
 SOURCE ORDER

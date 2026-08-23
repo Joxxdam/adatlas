@@ -30,12 +30,7 @@ export async function POST(request: NextRequest) {
       const updated = {
         ...experiment,
         trackingEnabled: action === "start",
-        trackingStatus:
-          action === "start"
-            ? ("collecting" as const)
-            : experiment.trackingStatus === "archived"
-              ? ("archived" as const)
-              : ("draft" as const),
+        trackingStatus: action === "start" ? ("collecting" as const) : experiment.trackingStatus === "archived" ? ("archived" as const) : ("draft" as const),
       };
       return NextResponse.json({
         ok: true,
@@ -48,14 +43,8 @@ export async function POST(request: NextRequest) {
         experiment: await createMetaInsightsService().refresh(String(body.experimentId || "")),
       });
     }
-    return NextResponse.json(
-      { ok: false, error: "지원하지 않는 성과 작업입니다." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: "지원하지 않는 성과 작업입니다." }, { status: 400 });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "성과 작업 실패" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "성과 작업 실패" }, { status: 400 });
   }
 }

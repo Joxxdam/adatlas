@@ -1,13 +1,7 @@
 import type { VideoHookType } from "./types.ts";
 import { createVideoMaterialCode, validateVideoMaterialCode } from "./workflow.ts";
 
-export const createVideoAssetCode = (input: {
-  companyName: string;
-  productName: string;
-  hookType: VideoHookType;
-  date?: Date;
-  sequence?: number;
-}) => {
+export const createVideoAssetCode = (input: { companyName: string; productName: string; hookType: VideoHookType; date?: Date; sequence?: number }) => {
   const existingCodes: string[] = [];
   let code = "";
   for (let index = 0; index < (input.sequence || 1); index += 1) {

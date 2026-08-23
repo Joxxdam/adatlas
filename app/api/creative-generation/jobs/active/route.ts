@@ -11,19 +11,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     verifyLocalGenerationAccess(request);
-    const requestedProductUrl = normalizeCreativeProductUrl(
-      new URL(request.url).searchParams.get("productUrl") || ""
-    );
+    const requestedProductUrl = normalizeCreativeProductUrl(new URL(request.url).searchParams.get("productUrl") || "");
     const candidates = (await creativeGenerationJobStore.active(requestedProductUrl ? 200 : 20)).filter((candidate) => {
       if (!requestedProductUrl) return true;
-      return normalizeCreativeProductUrl(candidate.productTruth.product.landingUrl) === requestedProductUrl;
+      return candidate.sourceType !== "auto-production" && normalizeCreativeProductUrl(candidate.productTruth.product.landingUrl) === requestedProductUrl;
     });
     const selectedCandidates = requestedProductUrl ? candidates.slice(0, 1) : candidates;
     if (requestedProductUrl && selectedCandidates[0]) {
-      const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(
-        requestedProductUrl,
-        selectedCandidates[0].id
-      );
+      const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(requestedProductUrl, selectedCandidates[0].id, "manual");
       superseded.forEach((previous) => cancelQueuedGenerationJob(previous.id));
     }
     const activeJobs = [];
@@ -33,9 +28,7 @@ export async function GET(request: Request) {
       if (!job || !["pending", "running"].includes(job.status)) continue;
       const runnerWasActive = isGenerationJobRunnerActive(job.id);
       if (hasOrphanedRunningResult(job, runnerWasActive)) {
-        job = await creativeGenerationJobStore.update(job.id, (current) =>
-          resumeGenerationJob(current, false)
-        );
+        job = await creativeGenerationJobStore.update(job.id, (current) => resumeGenerationJob(current, false));
       }
       if (requestedProductUrl) enqueueGenerationJob(job.id, { priority: true });
       activeJobs.push(toGenerationJobSummary(job, isGenerationJobRunnerActive(job.id)));
@@ -45,9 +38,6 @@ export async function GET(request: Request) {
       activeJobs,
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: toPublicGenerationError(error, "활성 작업 조회 실패") },
-      { status: localAccessError(error) ? 403 : 500 }
-    );
+    return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "활성 작업 조회 실패") }, { status: localAccessError(error) ? 403 : 500 });
   }
 }

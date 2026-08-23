@@ -1,20 +1,8 @@
-import type {
-  DataQualityIssue,
-  DataQualityReport,
-  Product,
-  ProductDailyMetric,
-} from "./types.ts";
+import type { DataQualityIssue, DataQualityReport, Product, ProductDailyMetric } from "./types.ts";
 
-const metricFields: Array<keyof ProductDailyMetric> = [
-  "impressions", "views", "cartAdds", "paidOrders", "revenue", "refunds",
-];
+const metricFields: Array<keyof ProductDailyMetric> = ["impressions", "views", "cartAdds", "paidOrders", "revenue", "refunds"];
 
-export function buildDataQualityReport(params: {
-  advertiserId: string;
-  products: Product[];
-  metrics: ProductDailyMetric[];
-  now?: string;
-}): DataQualityReport {
+export function buildDataQualityReport(params: { advertiserId: string; products: Product[]; metrics: ProductDailyMetric[]; now?: string }): DataQualityReport {
   const issues: DataQualityIssue[] = [];
   const productIds = new Set(params.products.map((product) => product.id));
   for (const metric of params.metrics) {

@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { videoProjectRepository } from "../../../lib/video-collaboration/repository.server";
-import type {
-  BrandGuideline,
-  ProductAnalysisSnapshot,
-  VideoConcept,
-} from "../../../lib/video-collaboration/types";
+import type { BrandGuideline, ProductAnalysisSnapshot, VideoConcept } from "../../../lib/video-collaboration/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,17 +10,11 @@ export async function GET(_request: Request, context: { params: Promise<{ projec
     const { projectId } = await context.params;
     const project = await videoProjectRepository.get(projectId);
     if (!project) {
-      return NextResponse.json(
-        { ok: false, error: "프로젝트를 찾지 못했습니다." },
-        { status: 404 }
-      );
+      return NextResponse.json({ ok: false, error: "프로젝트를 찾지 못했습니다." }, { status: 404 });
     }
     return NextResponse.json({ ok: true, project });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "프로젝트 조회 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "프로젝트 조회 실패" }, { status: 500 });
   }
 }
 
@@ -64,24 +54,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
       project = await videoProjectRepository.updateDetails(projectId, body.changes || {});
     } else if (body.action === "update-concept") {
       if (!body.conceptId || !body.concept) throw new Error("수정할 기획안을 확인해 주세요.");
-      project = await videoProjectRepository.updateConcept(
-        projectId,
-        body.conceptId,
-        body.concept,
-        actor
-      );
+      project = await videoProjectRepository.updateConcept(projectId, body.conceptId, body.concept, actor);
     } else if (body.action === "save-script") {
       if (!body.conceptId || !body.concept) throw new Error("저장할 제작 대본을 확인해 주세요.");
-      project = await videoProjectRepository.saveScript(
-        projectId,
-        body.conceptId,
-        body.concept,
-        actor,
-        {
-          productionNotes: body.changes?.productionNotes,
-          createRevision: Boolean(body.createRevision),
-        }
-      );
+      project = await videoProjectRepository.saveScript(projectId, body.conceptId, body.concept, actor, {
+        productionNotes: body.changes?.productionNotes,
+        createRevision: Boolean(body.createRevision),
+      });
     } else if (body.action === "request-production") {
       if (!body.conceptId) throw new Error("제작 요청할 기획안을 선택해 주세요.");
       project = await videoProjectRepository.requestProduction({
@@ -113,26 +92,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
     return NextResponse.json({ ok: true, project });
   } catch (error) {
     const message = error instanceof Error ? error.message : "프로젝트 수정 실패";
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: message.includes("찾지 못") ? 404 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: message }, { status: message.includes("찾지 못") ? 404 : 400 });
   }
 }
 
-export async function DELETE(
-  _request: Request,
-  context: { params: Promise<{ projectId: string }> }
-) {
+export async function DELETE(_request: Request, context: { params: Promise<{ projectId: string }> }) {
   try {
     const { projectId } = await context.params;
     const project = await videoProjectRepository.delete(projectId);
     return NextResponse.json({ ok: true, project });
   } catch (error) {
     const message = error instanceof Error ? error.message : "프로젝트 삭제 실패";
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: message.includes("찾지 못") ? 404 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: message }, { status: message.includes("찾지 못") ? 404 : 400 });
   }
 }

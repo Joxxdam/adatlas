@@ -10,22 +10,12 @@ function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function PerformancePage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function PerformancePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const selectedIds = (single(params.entryIds) || "").split(",").filter(Boolean).slice(0, 6);
-  const [metaStore, legacy, archiveEntries] = await Promise.all([
-    metaRepository.read(),
-    hookExperimentRepository.list(),
-    selectedIds.length ? listCreativeArchiveEntries() : Promise.resolve([]),
-  ]);
+  const [metaStore, legacy, archiveEntries] = await Promise.all([metaRepository.read(), hookExperimentRepository.list(), selectedIds.length ? listCreativeArchiveEntries() : Promise.resolve([])]);
   const byId = new Map(archiveEntries.map((entry) => [entry.id, entry]));
-  const selectedArchiveEntries = selectedIds
-    .map((id) => byId.get(id))
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const selectedArchiveEntries = selectedIds.map((id) => byId.get(id)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   return (
     <FeaturePageShell activeFeature="performance">
       <PerformanceWorkspace

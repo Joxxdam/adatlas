@@ -10,7 +10,12 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 function fileName(value: string) {
-  return value.replace(/[^\p{L}\p{N}._-]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "ad-copy";
+  return (
+    value
+      .replace(/[^\p{L}\p{N}._-]+/gu, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "ad-copy"
+  );
 }
 
 function setup(job: NonNullable<Awaited<ReturnType<typeof creativeGenerationJobStore.get>>>) {
@@ -56,7 +61,7 @@ export async function POST(request: Request, context: { params: Promise<{ jobId:
   try {
     verifyLocalGenerationAccess(request);
     const { jobId } = await context.params;
-    const body = await request.json().catch(() => ({})) as { action?: "regenerate" | "approve" | "exclude"; reason?: string; performanceData?: Record<string, number> };
+    const body = (await request.json().catch(() => ({}))) as { action?: "regenerate" | "approve" | "exclude"; reason?: string; performanceData?: Record<string, number> };
     let job;
     if (body.action === "regenerate") job = await ensureProductAdCopy(jobId, { force: true });
     else if (body.action === "approve") job = await approveProductAdCopy(jobId, { reason: body.reason, performanceData: body.performanceData });

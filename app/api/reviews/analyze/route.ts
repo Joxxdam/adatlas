@@ -5,20 +5,10 @@ import type { ReviewSourceType } from "../../../lib/mvp/types";
 export const runtime = "nodejs";
 
 const requestWindows = new Map<string, { startedAt: number; count: number }>();
-const allowedSourceTypes = new Set<ReviewSourceType>([
-  "product-review",
-  "detail-testimonial",
-  "community-capture",
-  "before-after",
-  "upload",
-]);
+const allowedSourceTypes = new Set<ReviewSourceType>(["product-review", "detail-testimonial", "community-capture", "before-after", "upload"]);
 
 function clientKey(request: Request) {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "local"
-  );
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
 }
 
 function rateLimited(request: Request) {
@@ -36,18 +26,12 @@ function rateLimited(request: Request) {
 export async function POST(request: Request) {
   try {
     if (rateLimited(request)) {
-      return NextResponse.json(
-        { success: false, error: "후기 분석 요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
-        { status: 429 }
-      );
+      return NextResponse.json({ success: false, error: "후기 분석 요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
     }
     const body = await request.json().catch(() => ({}));
     const imagePath = String(body.imagePath || "").trim();
     if (!imagePath) {
-      return NextResponse.json(
-        { success: false, error: "분석할 후기 이미지를 선택해주세요." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "분석할 후기 이미지를 선택해주세요." }, { status: 400 });
     }
     const requestedSourceType = String(body.sourceType || "upload") as ReviewSourceType;
     const candidate = await analyzeReviewImage({

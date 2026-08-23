@@ -7,9 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AdvertiserSettingsPage() {
   return (
     <FeaturePageShell activeFeature="advertisers">
-      <AdvertiserSettingsWorkspace
-        initialMappings={(await metaRepository.read()).advertiserMappings}
-      />
+      <AdvertiserSettingsWorkspace initialMappings={(await metaRepository.read()).advertiserMappings} />
     </FeaturePageShell>
   );
 }

@@ -22,7 +22,5 @@ export function notificationForRuns(runs: AutoProductionRun[]): AutoProductionNo
   if (!latest) return undefined;
   const completed = runs.reduce((sum, run) => sum + run.completedImages, 0);
   const failed = runs.reduce((sum, run) => sum + run.failedImages, 0);
-  return failed
-    ? { level: "warning", message: `광고 ${completed}장 완료 · ${failed}장 확인 필요`, href: "/admin/auto-production" }
-    : { level: "success", message: `오늘의 광고 콘텐츠 ${completed}장이 완성됐어요.`, href: "/admin/auto-production" };
+  return failed ? { level: "warning", message: `광고 ${completed}장 완료 · ${failed}장 확인 필요`, href: "/admin/auto-production" } : { level: "success", message: `오늘의 광고 콘텐츠 ${completed}장이 완성됐어요.`, href: "/admin/auto-production" };
 }

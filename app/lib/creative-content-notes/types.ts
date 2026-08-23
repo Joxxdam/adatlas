@@ -1,34 +1,6 @@
-export const creativeContentNoteScopes = [
-  "advertiser",
-  "category",
-  "product",
-  "promotion",
-] as const;
+export const creativeContentNoteScopes = ["advertiser", "category", "product", "promotion"] as const;
 
-export const creativeContentNoteTypes = [
-  "TONE_AND_MANNER",
-  "DESIGN_GUIDELINE",
-  "TARGET_AUDIENCE",
-  "REQUIRED_EVIDENCE",
-  "LANDING_PAGE_CAUTION",
-  "PRODUCT_IMAGE_RULE",
-  "AVOIDED_HOOK",
-  "ADVERTISER_FEEDBACK",
-  "REVIEW_INSIGHT",
-  "ADDITIONAL_NOTE",
-  "TONE_OF_VOICE",
-  "PREFERRED_HOOK",
-  "MUST_INCLUDE",
-  "PROHIBITED_EXPRESSION",
-  "PRODUCT_USP",
-  "PRICE_POLICY",
-  "PROMOTION",
-  "IMAGE_RULE",
-  "BACKGROUND_STYLE",
-  "LAYOUT_RULE",
-  "COMPLIANCE",
-  "FREEFORM",
-] as const;
+export const creativeContentNoteTypes = ["TONE_AND_MANNER", "DESIGN_GUIDELINE", "TARGET_AUDIENCE", "REQUIRED_EVIDENCE", "LANDING_PAGE_CAUTION", "PRODUCT_IMAGE_RULE", "AVOIDED_HOOK", "ADVERTISER_FEEDBACK", "REVIEW_INSIGHT", "ADDITIONAL_NOTE", "TONE_OF_VOICE", "PREFERRED_HOOK", "MUST_INCLUDE", "PROHIBITED_EXPRESSION", "PRODUCT_USP", "PRICE_POLICY", "PROMOTION", "IMAGE_RULE", "BACKGROUND_STYLE", "LAYOUT_RULE", "COMPLIANCE", "FREEFORM"] as const;
 
 export type CreativeContentNoteScope = (typeof creativeContentNoteScopes)[number];
 export type CreativeContentNoteType = (typeof creativeContentNoteTypes)[number];

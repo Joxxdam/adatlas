@@ -14,14 +14,7 @@ const regions: Array<{ id: CanvasElement; label: string; top: string; height: st
   { id: "cta", label: "CTA", top: "91%", height: "8%" },
 ];
 
-export function CanvasPreview(props: {
-  imagePath: string;
-  copy: GeneratedAdCopy;
-  productEffect: ProductImageRenderEffect;
-  onCopyChange: (copy: GeneratedAdCopy) => void;
-  onProductEffectChange: (effect: ProductImageRenderEffect) => void;
-  onRender: () => void;
-}) {
+export function CanvasPreview(props: { imagePath: string; copy: GeneratedAdCopy; productEffect: ProductImageRenderEffect; onCopyChange: (copy: GeneratedAdCopy) => void; onProductEffectChange: (effect: ProductImageRenderEffect) => void; onRender: () => void }) {
   const [selected, setSelected] = useState<CanvasElement>("headline");
   const isText = selected !== "product";
 
@@ -38,14 +31,7 @@ export function CanvasPreview(props: {
       <div className={styles.canvasStage}>
         <img alt="생성된 광고 배너" src={props.imagePath} />
         {regions.map((region) => (
-          <button
-            aria-label={`${region.label} 선택`}
-            className={`${styles.canvasRegion} ${selected === region.id ? styles.canvasRegionSelected : ""}`}
-            key={region.id}
-            onClick={() => setSelected(region.id)}
-            style={{ top: region.top, height: region.height }}
-            type="button"
-          >
+          <button aria-label={`${region.label} 선택`} className={`${styles.canvasRegion} ${selected === region.id ? styles.canvasRegionSelected : ""}`} key={region.id} onClick={() => setSelected(region.id)} style={{ top: region.top, height: region.height }} type="button">
             <span>{region.label}</span>
           </button>
         ))}
@@ -53,13 +39,7 @@ export function CanvasPreview(props: {
       <div className={styles.canvasToolbar}>
         <strong>{regions.find((region) => region.id === selected)?.label}</strong>
         {isText ? (
-          <input
-            aria-label="선택 문구 빠른 수정"
-            onChange={(event) =>
-              props.onCopyChange({ ...props.copy, [selected]: event.target.value })
-            }
-            value={String(props.copy[selected] || "")}
-          />
+          <input aria-label="선택 문구 빠른 수정" onChange={(event) => props.onCopyChange({ ...props.copy, [selected]: event.target.value })} value={String(props.copy[selected] || "")} />
         ) : (
           <>
             <button onClick={() => nudge(-12, 0)} title="왼쪽" type="button">

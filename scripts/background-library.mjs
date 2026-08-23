@@ -3,16 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import {
-  backgroundCatalogStatus,
-  catalogReviewQueue,
-  createCatalogContactSheet,
-  dedupeBackgroundCatalog,
-  optimizeCatalogFromOriginals,
-  rebuildBackgroundCatalogManifest,
-  regenerateCatalogThumbnails,
-  validateBackgroundCatalog,
-} from "../app/lib/background-library/catalogMaintenance.server.ts";
+import { backgroundCatalogStatus, catalogReviewQueue, createCatalogContactSheet, dedupeBackgroundCatalog, optimizeCatalogFromOriginals, rebuildBackgroundCatalogManifest, regenerateCatalogThumbnails, validateBackgroundCatalog } from "../app/lib/background-library/catalogMaintenance.server.ts";
 import { checkComfyUi, createComfyPlan, resumeComfyJob } from "../app/lib/background-library/comfyui.server.ts";
 import { collectLocalCatalogSources, importBackgroundSources } from "../app/lib/background-library/importPipeline.server.ts";
 import { assertPexelsBulkAllowed, pexelsStatus, saveSelectedPexelsPhoto, searchPexels } from "../app/lib/background-library/pexels.server.ts";
@@ -29,7 +20,10 @@ function args(values) {
     const key = token.slice(2);
     const next = values[index + 1];
     if (!next || next.startsWith("--")) parsed[key] = true;
-    else { parsed[key] = next; index += 1; }
+    else {
+      parsed[key] = next;
+      index += 1;
+    }
   }
   return parsed;
 }
@@ -76,7 +70,8 @@ async function run() {
     return output(result);
   }
   if (command === "pexels:save-selected") {
-    required(collectionId, "--collection"); required(categoryId, "--category");
+    required(collectionId, "--collection");
+    required(categoryId, "--category");
     const photoFile = path.resolve(required(String(options["photo-json"] || ""), "--photo-json"));
     const photo = JSON.parse(await fs.readFile(photoFile, "utf8"));
     return output(await saveSelectedPexelsPhoto({ photo, collectionId, categoryId, matchedQuery: String(options.query || ""), dryRun }));
@@ -94,7 +89,9 @@ async function run() {
     const plan = await createComfyPlan({ collectionId: required(collectionId, "--collection"), categoryId: categoryId || undefined, limit, dryRun: false });
     if (!plan.canRun) {
       output({
-        started: false, status: plan.connection, workflowValid: plan.workflowValid,
+        started: false,
+        status: plan.connection,
+        workflowValid: plan.workflowValid,
         requiredEnvironment: ["LOCAL_IMAGE_PROVIDER=comfyui", "COMFYUI_URL=http://127.0.0.1:8188", "COMFYUI_WORKFLOW_PATH", "COMFYUI_OUTPUT_NODE_ID", "COMFYUI_POSITIVE_PROMPT_NODE_ID", "COMFYUI_NEGATIVE_PROMPT_NODE_ID", "COMFYUI_SEED_NODE_ID"],
         resumeCommand: plan.resumeCommand,
       });

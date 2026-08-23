@@ -3,11 +3,7 @@ import { VideoProjectWorkspace } from "../../../components/video-collaboration/V
 
 export const dynamic = "force-dynamic";
 
-export default async function VideoPlanningProductionPage({
-  params,
-}: {
-  params: Promise<{ projectId: string }>;
-}) {
+export default async function VideoPlanningProductionPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
   return (
     <FeaturePageShell activeFeature="video-planning">

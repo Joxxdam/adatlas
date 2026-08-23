@@ -6,33 +6,11 @@ import type { PerformanceTemplateId } from "./performanceTemplateRegistry";
 
 export const CREATIVE_PLANNER_VERSION = "creative-planner-v7-ai-hook-parallel-repair";
 
-export const creativeBlueprintIds = [
-  "problem-solution-split",
-  "editorial-story",
-  "chat-ugc",
-  "comparison-versus",
-  "product-hero-lifestyle",
-  "proof-data",
-] as const;
+export const creativeBlueprintIds = ["problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "proof-data"] as const;
 
 export type CreativeBlueprintId = (typeof creativeBlueprintIds)[number];
 export type FactVerification = "verified" | "source-backed" | "user-provided" | "unverified";
-export type ProductEvidenceType =
-  | "identity"
-  | "usp"
-  | "ingredient"
-  | "composition"
-  | "quantity"
-  | "usage"
-  | "target"
-  | "price"
-  | "offer"
-  | "shipping"
-  | "review"
-  | "origin"
-  | "certification"
-  | "numeric"
-  | "other";
+export type ProductEvidenceType = "identity" | "usp" | "ingredient" | "composition" | "quantity" | "usage" | "target" | "price" | "offer" | "shipping" | "review" | "origin" | "certification" | "numeric" | "other";
 
 export type ProductFact = {
   id: string;
@@ -57,27 +35,13 @@ export type ProductEvidence = {
   evidenceType: ProductEvidenceType;
 };
 
-export type CreativeImageRole =
-  | "product-cutout"
-  | "product-packshot"
-  | "product-lifestyle"
-  | "detail-image"
-  | "ad-reference"
-  | "review-image"
-  | "logo"
-  | "background";
+export type CreativeImageRole = "product-cutout" | "product-packshot" | "product-lifestyle" | "detail-image" | "ad-reference" | "review-image" | "logo" | "background";
 
 export type CreativeImageAsset = {
   id: string;
   path: string;
   role: CreativeImageRole;
-  source:
-    | "known-product"
-    | "user-confirmed"
-    | "product-page"
-    | "source-candidate"
-    | "selected-reference"
-    | "brand-profile";
+  source: "known-product" | "user-confirmed" | "product-page" | "source-candidate" | "selected-reference" | "brand-profile";
   verified: boolean;
   reason: string;
   width?: number;
@@ -89,23 +53,7 @@ export type CreativeImageAsset = {
   productFocusRatio?: number;
 };
 
-export const productReferenceRoles = [
-  "primary-product",
-  "front-package",
-  "side-package",
-  "back-package",
-  "product-detail",
-  "texture",
-  "lifestyle",
-  "usage",
-  "worn",
-  "cooked",
-  "ingredient",
-  "size-reference",
-  "option",
-  "brand-logo",
-  "unknown",
-] as const;
+export const productReferenceRoles = ["primary-product", "front-package", "side-package", "back-package", "product-detail", "texture", "lifestyle", "usage", "worn", "cooked", "ingredient", "size-reference", "option", "brand-logo", "unknown"] as const;
 
 export type ProductReferenceRole = (typeof productReferenceRoles)[number];
 
@@ -163,28 +111,11 @@ export type ProductReferenceProfile = {
   createdAt: string;
 };
 
-export const masterSceneConcepts = [
-  "sensory-impact",
-  "problem-solution",
-  "premium-editorial",
-  "price-impact",
-  "review-trust",
-  "usage-moment",
-  "ingredient-origin",
-  "brand-story",
-  "target-lifestyle",
-] as const;
+export const masterSceneConcepts = ["sensory-impact", "problem-solution", "premium-editorial", "price-impact", "review-trust", "usage-moment", "ingredient-origin", "brand-story", "target-lifestyle"] as const;
 
 export type MasterSceneConcept = (typeof masterSceneConcepts)[number];
 
-export const masterSceneGenerationModes = [
-  "ai-background-composite",
-  "ai-reference-full-creative",
-  "reference-guided-full-scene",
-  "real-photo-adaptation",
-  "protected-product-composite",
-  "library-fallback",
-] as const;
+export const masterSceneGenerationModes = ["ai-background-composite", "ai-reference-full-creative", "reference-guided-full-scene", "real-photo-adaptation", "protected-product-composite", "library-fallback"] as const;
 
 export type MasterSceneGenerationMode = (typeof masterSceneGenerationModes)[number];
 
@@ -307,14 +238,7 @@ export type ProductTruth = {
   createdAt: string;
 };
 
-export const hookMessageCodes = [
-  "H01",
-  "H02",
-  "H03",
-  "H04",
-  "H05",
-  "H06",
-] as const;
+export const hookMessageCodes = ["H01", "H02", "H03", "H04", "H05", "H06"] as const;
 
 export type HookMessageCode = (typeof hookMessageCodes)[number];
 
@@ -335,23 +259,7 @@ export type HookMessageHypothesis = {
   repairCount?: number;
 };
 
-export const hookTaxonomyTags = [
-  "problem-solution",
-  "sensory-experience",
-  "price-value",
-  "feature-usp",
-  "review-trust",
-  "usage-occasion",
-  "target-identity",
-  "convenience",
-  "bundle-choice",
-  "season-newness",
-  "brand-origin",
-  "comparison-alternative",
-  "scarcity-urgency",
-  "gift-purpose",
-  "other",
-] as const;
+export const hookTaxonomyTags = ["problem-solution", "sensory-experience", "price-value", "feature-usp", "review-trust", "usage-occasion", "target-identity", "convenience", "bundle-choice", "season-newness", "brand-origin", "comparison-alternative", "scarcity-urgency", "gift-purpose", "other"] as const;
 
 export type HookTaxonomyTag = (typeof hookTaxonomyTags)[number];
 export type CreativeExplorationMode = "concept-exploration" | "exact-message-comparison";
@@ -447,18 +355,7 @@ export type HookCreativeBrief = {
   differentiationFromOtherHooks: string;
 };
 
-export const categoryCreativeProfileIds = [
-  "food_meat",
-  "food_fresh",
-  "food_processed",
-  "beauty_cosmetics",
-  "personal_care",
-  "fashion",
-  "health",
-  "household",
-  "kids",
-  "general",
-] as const;
+export const categoryCreativeProfileIds = ["food_meat", "food_fresh", "food_processed", "beauty_cosmetics", "personal_care", "fashion", "health", "household", "kids", "general"] as const;
 
 export type CategoryCreativeProfileId = (typeof categoryCreativeProfileIds)[number];
 
@@ -492,14 +389,8 @@ export type PaidApiAuthorization = {
   acknowledgedAt: string;
 };
 
-export function hasExplicitPaidApiAuthorization(
-  value: PaidApiAuthorization | undefined
-): value is PaidApiAuthorization {
-  if (
-    value?.explicitlySelected !== true ||
-    value.provider !== "openai_api" ||
-    value.scope !== "native-creative"
-  ) {
+export function hasExplicitPaidApiAuthorization(value: PaidApiAuthorization | undefined): value is PaidApiAuthorization {
+  if (value?.explicitlySelected !== true || value.provider !== "openai_api" || value.scope !== "native-creative") {
     return false;
   }
   const acknowledgedAt = Date.parse(value.acknowledgedAt);
@@ -552,7 +443,11 @@ export type NativeGroupValidation = {
   typographyDiversity: number;
   visualArchetypeDiversity: number;
   categoryFit: number;
-  duplicatePairs: Array<{ leftHookCode: HookMessageCode; rightHookCode: HookMessageCode; reason: string }>;
+  duplicatePairs: Array<{
+    leftHookCode: HookMessageCode;
+    rightHookCode: HookMessageCode;
+    reason: string;
+  }>;
   reviseHookCodes: HookMessageCode[];
   failures: string[];
   recommendation: "approve" | "revise" | "manual-review";
@@ -569,6 +464,7 @@ export type NativeCreativeArtifact = {
     sourceFile?: string;
     layoutFamily: string;
     categoryGroup?: "fashion" | "food" | "beauty";
+    foodSubcategory?: import("./referenceLibraryManagement").NativeReferenceFoodSubcategory;
     categoryLabel?: string;
     selectionReason: string;
     productForm?: import("./referenceLibraryManagement").NativeReferenceProductForm;
@@ -740,18 +636,7 @@ export type HookPlan = {
   creativeGrammarId?: CreativeGrammarId;
 };
 
-export const creativeGrammarIds = [
-  "PROVOCATIVE_REVERSAL",
-  "SENSORY_PROOF",
-  "SITUATION_STORY",
-  "PRICE_VALUE",
-  "SOCIAL_DIALOGUE",
-  "FEATURE_EVIDENCE",
-  "BUNDLE_LINEUP",
-  "SEASON_URGENCY",
-  "PREMIUM_EDITORIAL",
-  "PROBLEM_RELIEF",
-] as const;
+export const creativeGrammarIds = ["PROVOCATIVE_REVERSAL", "SENSORY_PROOF", "SITUATION_STORY", "PRICE_VALUE", "SOCIAL_DIALOGUE", "FEATURE_EVIDENCE", "BUNDLE_LINEUP", "SEASON_URGENCY", "PREMIUM_EDITORIAL", "PROBLEM_RELIEF"] as const;
 
 export type CreativeGrammarId = (typeof creativeGrammarIds)[number];
 
@@ -805,26 +690,7 @@ export type TypographyPlan = {
   ctaFontSize: number;
 };
 
-export const categoryDesignVariants = [
-  "raw-product-focus",
-  "cooked-serving",
-  "set-composition",
-  "fresh-origin",
-  "harvest-story",
-  "table-serving",
-  "outfit-hero",
-  "silhouette-focus",
-  "detail-focus",
-  "package-hero",
-  "ingredient-proof",
-  "usage-scene",
-  "problem-scene",
-  "function-demo",
-  "clean-product-hero",
-  "product-hero",
-  "benefit-proof",
-  "offer-focus",
-] as const;
+export const categoryDesignVariants = ["raw-product-focus", "cooked-serving", "set-composition", "fresh-origin", "harvest-story", "table-serving", "outfit-hero", "silhouette-focus", "detail-focus", "package-hero", "ingredient-proof", "usage-scene", "problem-scene", "function-demo", "clean-product-hero", "product-hero", "benefit-proof", "offer-focus"] as const;
 
 export type CategoryDesignVariant = (typeof categoryDesignVariants)[number];
 
@@ -1044,20 +910,7 @@ export type RenderPlan = {
 export type QAFinding = {
   id: string;
   severity: "info" | "warning" | "error";
-  dimension:
-    | "technical"
-    | "text-overflow"
-    | "contrast"
-    | "product-visibility"
-    | "factual-safety"
-    | "logo"
-    | "duplication"
-    | "category-contamination"
-    | "image-role"
-    | "empty-element"
-    | "unsupported-visualization"
-    | "copy-quality"
-    | "layout-collision";
+  dimension: "technical" | "text-overflow" | "contrast" | "product-visibility" | "factual-safety" | "logo" | "duplication" | "category-contamination" | "image-role" | "empty-element" | "unsupported-visualization" | "copy-quality" | "layout-collision";
   message: string;
   repairable: boolean;
 };
@@ -1085,6 +938,14 @@ export type QAResult = {
 
 export type GenerationResultStatus = "pending" | "running" | "success" | "failed" | "cancelled" | "korean-review" | "product-review" | "quality-review" | "group-review" | "approved" | "excluded";
 
+export type DeliveryBranding = {
+  logoId?: string;
+  aiDisclosure: boolean;
+  imagePath?: string;
+  sourceImagePath?: string;
+  updatedAt: string;
+};
+
 export type GenerationResult = {
   id: string;
   order: number;
@@ -1110,15 +971,16 @@ export type GenerationResult = {
   durationMs?: number;
   nativeCreative?: NativeCreativeArtifact;
   userFeedback?: string;
+  deliveryBranding?: DeliveryBranding;
 };
 
-export type GenerationJobStatus =
-  | "pending"
-  | "running"
-  | "partial"
-  | "completed"
-  | "failed"
-  | "cancelled";
+export type GenerationJobStatus = "pending" | "running" | "partial" | "completed" | "failed" | "cancelled";
+
+/**
+ * 수동 제작에서 자동 상품군 판정을 덮어쓸 때만 저장하는 레퍼런스 풀입니다.
+ * `food-produce`는 별도 대분류가 아니라 식품 안의 과일/농산물 전용 풀입니다.
+ */
+export type ReferenceCategoryOverride = "fashion" | "food" | "food-produce" | "beauty";
 
 export type GenerationJob = {
   id: string;
@@ -1147,7 +1009,6 @@ export type GenerationJob = {
   paidApiUsed?: boolean;
   advertiserId?: string;
   advertiserName?: string;
-  codexThreadId?: string;
   visualDiversityMatrix?: VisualDiversityMatrixEntry[];
   groupValidation?: NativeGroupValidation;
   groupRevisionCount?: number;
@@ -1158,6 +1019,8 @@ export type GenerationJob = {
   }>;
   executionResultIds?: string[];
   sourceType?: "manual" | "auto-production";
+  /** 수동 제작자가 선택한 레퍼런스 상품군. 없으면 ProductTruth로 자동 판정합니다. */
+  referenceCategoryOverride?: ReferenceCategoryOverride;
   autoProductionRunId?: string;
   autoProductionTaskId?: string;
   hookLearningApplied?: boolean;
@@ -1177,8 +1040,10 @@ export type GenerationJobSummary = {
   productId: string;
   productName: string;
   productUrl: string;
+  sourceType?: "manual" | "auto-production";
   totalCount: number;
   completedCount: number;
+  generatedCount: number;
   successCount: number;
   failedCount: number;
   currentHookCode?: string;
@@ -1188,8 +1053,6 @@ export type GenerationJobSummary = {
   startedAt?: string;
   updatedAt: string;
   completedAt?: string;
-  completedResults: GenerationResult[];
-  failedResults: GenerationResult[];
 };
 
 export type CreateGenerationJobInput = {
@@ -1200,6 +1063,8 @@ export type CreateGenerationJobInput = {
   imageAssets?: CreativeImageAsset[];
   logoPath?: string;
   source?: "landing-page" | "user-input";
+  /** 수동 제작 전용 레퍼런스 풀 선택. 생략하면 상품 분석 결과로 자동 매칭합니다. */
+  referenceCategoryOverride?: ReferenceCategoryOverride;
   concurrency?: number;
   preserveMasterDesignId?: string;
   preserveBackgroundAssetId?: string;

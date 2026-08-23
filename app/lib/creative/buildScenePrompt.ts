@@ -1,12 +1,5 @@
 import type { CreativeStrategy, ProductInfoForPrompt } from "../mvp/types";
-import type {
-  AdvertiserProfile,
-  ProductSafeZone,
-  SceneProfile,
-  ScenePromptPlan,
-  TextSafeZone,
-  VisualArchetype,
-} from "./types";
+import type { AdvertiserProfile, ProductSafeZone, SceneProfile, ScenePromptPlan, TextSafeZone, VisualArchetype } from "./types";
 
 function zonesForArchetype(archetypeId: string): {
   product: ProductSafeZone;
@@ -41,69 +34,30 @@ function zonesForArchetype(archetypeId: string): {
 
 function categoryObjectPolicy(profileId: string, category: string) {
   if (profileId.startsWith("food-meat")) {
-    return [
-      "This is an EMPTY food photography set that will receive a real meat product later.",
-      "Do not show raw meat, cooked meat, steak, barbecue, a plated dish, food portions, packaging, or any edible hero object anywhere in the frame.",
-      "A clean unoccupied grill, table, board, restrained smoke, warm light, and peripheral tools are allowed only as environmental context.",
-    ];
+    return ["This is an EMPTY food photography set that will receive a real meat product later.", "Do not show raw meat, cooked meat, steak, barbecue, a plated dish, food portions, packaging, or any edible hero object anywhere in the frame.", "A clean unoccupied grill, table, board, restrained smoke, warm light, and peripheral tools are allowed only as environmental context."];
   }
   if (profileId.startsWith("agriculture")) {
-    return [
-      "This is an EMPTY agricultural commerce set that will receive the real produce later.",
-      "Do not show fruit, vegetables, crops, harvested produce, produce piles, filled baskets, packages, or a substitute product anywhere in the frame.",
-      "Empty crates, clean packing paper, leaves, farm light, and an unoccupied table are allowed only as environmental context.",
-    ];
+    return ["This is an EMPTY agricultural commerce set that will receive the real produce later.", "Do not show fruit, vegetables, crops, harvested produce, produce piles, filled baskets, packages, or a substitute product anywhere in the frame.", "Empty crates, clean packing paper, leaves, farm light, and an unoccupied table are allowed only as environmental context."];
   }
   if (profileId.startsWith("personal-care")) {
-    return [
-      "This is an EMPTY personal-care advertising set that will receive the real product later.",
-      "Do not show bottles, tubes, jars, pumps, packages, cosmetic containers, a person holding a product, or any substitute hero object anywhere in the frame.",
-      "Water, mist, tile, acrylic, towels, and restrained ingredient cues are allowed only as environmental context.",
-    ];
+    return ["This is an EMPTY personal-care advertising set that will receive the real product later.", "Do not show bottles, tubes, jars, pumps, packages, cosmetic containers, a person holding a product, or any substitute hero object anywhere in the frame.", "Water, mist, tile, acrylic, towels, and restrained ingredient cues are allowed only as environmental context."];
   }
-  return [
-    `This is an EMPTY commercial set for a ${category} product that will be composited later.`,
-    "Do not show the sold product category, a substitute product, packaging, containers, or a hero object anywhere in the frame.",
-  ];
+  return [`This is an EMPTY commercial set for a ${category} product that will be composited later.`, "Do not show the sold product category, a substitute product, packaging, containers, or a hero object anywhere in the frame."];
 }
 
-export function buildScenePrompt(params: {
-  profile: SceneProfile;
-  archetype: VisualArchetype;
-  product: ProductInfoForPrompt;
-  advertiserProfile: AdvertiserProfile;
-  strategy?: CreativeStrategy | null;
-  variation?: number;
-}): ScenePromptPlan {
+export function buildScenePrompt(params: { profile: SceneProfile; archetype: VisualArchetype; product: ProductInfoForPrompt; advertiserProfile: AdvertiserProfile; strategy?: CreativeStrategy | null; variation?: number }): ScenePromptPlan {
   const baseZones = zonesForArchetype(params.archetype.id);
   const zones = {
     product: {
       ...baseZones.product,
       position: params.strategy?.productPosition || baseZones.product.position,
     },
-    text: baseZones.text.map((zone, index) =>
-      index === 0 && params.strategy?.textSafeArea
-        ? { ...zone, position: params.strategy.textSafeArea }
-        : zone
-    ),
+    text: baseZones.text.map((zone, index) => (index === 0 && params.strategy?.textSafeArea ? { ...zone, position: params.strategy.textSafeArea } : zone)),
   };
   const variation = params.variation || 0;
-  const environment = [
-    params.profile.environment[variation % params.profile.environment.length],
-    ...params.profile.environment.filter((_, index) => index !== variation % params.profile.environment.length).slice(0, 1),
-  ];
-  const props = (params.profile.props || []).slice(variation % 2, variation % 2 + 3);
-  const prohibitedElements = Array.from(
-    new Set([
-      ...params.profile.negativePromptRules,
-      ...(params.advertiserProfile.prohibitedVisuals || []),
-      "readable Korean or English text",
-      "letters, numbers, captions, logos, labels, price tags and watermarks",
-      "a newly generated hero product, package or container",
-      "transparent background, alpha holes, black voids or missing pixels",
-      "an isolated cutout, product mockup or floating object",
-    ])
-  );
+  const environment = [params.profile.environment[variation % params.profile.environment.length], ...params.profile.environment.filter((_, index) => index !== variation % params.profile.environment.length).slice(0, 1)];
+  const props = (params.profile.props || []).slice(variation % 2, (variation % 2) + 3);
+  const prohibitedElements = Array.from(new Set([...params.profile.negativePromptRules, ...(params.advertiserProfile.prohibitedVisuals || []), "readable Korean or English text", "letters, numbers, captions, logos, labels, price tags and watermarks", "a newly generated hero product, package or container", "transparent background, alpha holes, black voids or missing pixels", "an isolated cutout, product mockup or floating object"]));
   const productCategory = params.product.category || "commerce product";
   const categoryPolicy = categoryObjectPolicy(params.profile.id, productCategory);
   const hookScene = params.strategy?.sceneDescription;
@@ -115,9 +69,7 @@ export function buildScenePrompt(params: {
     ...categoryPolicy,
     hookScene ? `Selected ad hook scene: ${hookScene}.` : "",
     hookMood.length ? `Selected hook mood: ${hookMood.join(", ")}.` : "",
-    hookBackgroundTags.length
-      ? `Background cues to interpret without adding a product: ${hookBackgroundTags.join(", ")}.`
-      : "",
+    hookBackgroundTags.length ? `Background cues to interpret without adding a product: ${hookBackgroundTags.join(", ")}.` : "",
     `Scene profile: ${params.profile.label}. Environment: ${environment.join(", ")}.`,
     `Mood: ${params.profile.visualMood.join(", ")}. Lighting: ${params.profile.lighting.join(", ")}.`,
     props.length ? `Supporting props, kept subtle and peripheral: ${props.join(", ")}.` : "Keep supporting props restrained.",

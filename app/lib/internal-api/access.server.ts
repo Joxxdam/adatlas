@@ -35,10 +35,7 @@ export function assertInternalApiAccess(request: Request) {
   if (process.env.NODE_ENV !== "production") return;
   const configured = process.env.ADATLAS_INTERNAL_API_TOKEN?.trim();
   if (!configured) {
-    throw new InternalApiAccessError(
-      "내부 데이터 API 인증이 설정되지 않아 요청을 차단했습니다.",
-      503
-    );
+    throw new InternalApiAccessError("내부 데이터 API 인증이 설정되지 않아 요청을 차단했습니다.", 503);
   }
   const supplied = requestCredential(request);
   if (!supplied || !safeEqual(supplied, configured)) {

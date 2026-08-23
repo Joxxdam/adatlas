@@ -1,12 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  analyzeProductUsp,
-  buildTargetedCopyVariants,
-  buildTargetedStrategyContent,
-  buildUspFirstFallbackCopy,
-} from "../app/lib/mvp/productUsp.ts";
+import { analyzeProductUsp, buildTargetedCopyVariants, buildTargetedStrategyContent, buildUspFirstFallbackCopy } from "../app/lib/mvp/productUsp.ts";
 
 const product = {
   productName: "특마블링 등심 선별상품 1kg",
@@ -121,10 +116,7 @@ test("같은 상품도 광고 목표에 따라 헤드라인·타겟 상태·CTA�
     })
   );
 
-  assert.equal(
-    new Set(objectives.map((objective) => results[objective].strategy.headline)).size,
-    4
-  );
+  assert.equal(new Set(objectives.map((objective) => results[objective].strategy.headline)).size, 4);
   assert.match(results.purchase.strategy.audience, /구매를 비교/);
   assert.match(results.signup.strategy.headline, /처음/);
   assert.match(results.signup.variants.medium.cta, /차이점/);

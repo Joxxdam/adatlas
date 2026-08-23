@@ -1,46 +1,8 @@
 export const BIGQUERY_ALLOWED_PROJECT = "first-project-394906";
 
-export const BIGQUERY_ALLOWED_TABLES = new Set([
-  "first-project-394906.DIM_MALL.BRANDS",
-  "first-project-394906.DIM_MALL.CAT_BRANDS",
-  "first-project-394906.DIM_PDT.CAT_NAMES",
-  "first-project-394906.FACT_MALL.DAILY_SALES",
-  "first-project-394906.FACT_MALL.WEEKLY_SALES",
-  "first-project-394906.FACT_MALL.MONTHLY_SALES",
-  "first-project-394906.FACT_RANK.WEEKLY_PRODUCT_SALES",
-  "first-project-394906.FACT_RANK.MONTHLY_PRODUCT_SALES",
-  "first-project-394906.FACT_REVIEWS.MONTHLY_COUNTS",
-  "first-project-394906.FACT_REVIEW_RATE.WEEKLY_UPDATE",
-  "first-project-394906.FACT_HOST24.PRODUCT",
-  "first-project-394906.FACT_HOST24.DAILY_SALES",
-  "first-project-394906.FACT_HOST24.VIEW",
-  "first-project-394906.FACT_HOSTMK.PRODUCT",
-  "first-project-394906.FACT_HOSTMK.DAILY_SALES",
-  "first-project-394906.FACT_HOSTMK.VIEW",
-  "first-project-394906.FACT_PRICE.MONTHLY_SALES",
-]);
+export const BIGQUERY_ALLOWED_TABLES = new Set(["first-project-394906.DIM_MALL.BRANDS", "first-project-394906.DIM_MALL.CAT_BRANDS", "first-project-394906.DIM_PDT.CAT_NAMES", "first-project-394906.FACT_MALL.DAILY_SALES", "first-project-394906.FACT_MALL.WEEKLY_SALES", "first-project-394906.FACT_MALL.MONTHLY_SALES", "first-project-394906.FACT_RANK.WEEKLY_PRODUCT_SALES", "first-project-394906.FACT_RANK.MONTHLY_PRODUCT_SALES", "first-project-394906.FACT_REVIEWS.MONTHLY_COUNTS", "first-project-394906.FACT_REVIEW_RATE.WEEKLY_UPDATE", "first-project-394906.FACT_HOST24.PRODUCT", "first-project-394906.FACT_HOST24.DAILY_SALES", "first-project-394906.FACT_HOST24.VIEW", "first-project-394906.FACT_HOSTMK.PRODUCT", "first-project-394906.FACT_HOSTMK.DAILY_SALES", "first-project-394906.FACT_HOSTMK.VIEW", "first-project-394906.FACT_PRICE.MONTHLY_SALES"]);
 
-const forbiddenKeywords = [
-  "INSERT",
-  "UPDATE",
-  "DELETE",
-  "MERGE",
-  "CREATE",
-  "REPLACE",
-  "DROP",
-  "ALTER",
-  "TRUNCATE",
-  "CALL",
-  "EXPORT",
-  "LOAD",
-  "COPY",
-  "GRANT",
-  "REVOKE",
-  "EXECUTE",
-  "BEGIN",
-  "COMMIT",
-  "ROLLBACK",
-] as const;
+const forbiddenKeywords = ["INSERT", "UPDATE", "DELETE", "MERGE", "CREATE", "REPLACE", "DROP", "ALTER", "TRUNCATE", "CALL", "EXPORT", "LOAD", "COPY", "GRANT", "REVOKE", "EXECUTE", "BEGIN", "COMMIT", "ROLLBACK"] as const;
 
 export class BigQueryReadOnlyError extends Error {
   readonly code = "read-only-violation";
@@ -174,15 +136,10 @@ function semicolonOutsideQuotes(sql: string) {
 }
 
 function tableReferences(sql: string) {
-  return [...sql.matchAll(/`([^`]+)`/g)]
-    .map((match) => match[1])
-    .filter((value) => value.split(".").length === 3);
+  return [...sql.matchAll(/`([^`]+)`/g)].map((match) => match[1]).filter((value) => value.split(".").length === 3);
 }
 
-export function assertReadOnlyBigQuery(params: {
-  sql: string;
-  namedParameters: Record<string, unknown>;
-}) {
+export function assertReadOnlyBigQuery(params: { sql: string; namedParameters: Record<string, unknown> }) {
   if (hasSqlComment(params.sql)) {
     throw new BigQueryReadOnlyError("SQL 주석은 조회 전용 쿼리에서 허용되지 않습니다.");
   }
@@ -215,9 +172,7 @@ export function assertReadOnlyBigQuery(params: {
     }
   }
 
-  const requestedParameters = new Set(
-    [...masked.matchAll(/@([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1])
-  );
+  const requestedParameters = new Set([...masked.matchAll(/@([A-Za-z_][A-Za-z0-9_]*)/g)].map((match) => match[1]));
   if (!requestedParameters.size) {
     throw new BigQueryReadOnlyError("쿼리 값은 named parameter로 전달해야 합니다.");
   }

@@ -3,13 +3,7 @@
 import type { AdBrief } from "../../../lib/mvp/types";
 import styles from "../creative-workflow/CreativeWorkflow.module.css";
 
-export function ProductBriefForm(props: {
-  brief: AdBrief;
-  canConfirm: boolean;
-  confirmed: boolean;
-  onChange: (brief: AdBrief) => void;
-  onConfirm: () => void;
-}) {
+export function ProductBriefForm(props: { brief: AdBrief; canConfirm: boolean; confirmed: boolean; onChange: (brief: AdBrief) => void; onConfirm: () => void }) {
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -28,13 +22,7 @@ export function ProductBriefForm(props: {
         <small>상품 형태·패키지·색상과 확인된 사실은 유지하고, 일반적인 표현이나 확인되지 않은 주장은 사용하지 않습니다.</small>
       </div>
       <div className={`${styles.confirmBar} ${props.confirmed ? styles.confirmBarDone : ""}`}>
-        <span>
-          {props.confirmed
-            ? "상품 분석이 완료되었습니다. 아래 제작 영역에서 진행 상태와 결과를 확인할 수 있습니다."
-            : props.canConfirm
-              ? "별도 설정 없이 상품 분석 결과로 바로 제작합니다."
-              : "먼저 상품 정보와 광고용 이미지를 불러와 주세요."}
-        </span>
+        <span>{props.confirmed ? "상품 분석이 완료되었습니다. 아래 제작 영역에서 진행 상태와 결과를 확인할 수 있습니다." : props.canConfirm ? "별도 설정 없이 상품 분석 결과로 바로 제작합니다." : "먼저 상품 정보와 광고용 이미지를 불러와 주세요."}</span>
         <button disabled={!props.canConfirm || props.confirmed} onClick={props.onConfirm} type="button">
           {props.confirmed ? "상품 분석 완료" : "광고 이미지 만들기"}
         </button>

@@ -133,15 +133,7 @@ export function getGenerationPlanSummary(brief: Pick<AdBrief, "adObjective" | "c
 
 export function adObjectivePrompt(objective: AdObjective | undefined) {
   const profile = getAdObjectiveProfile(objective);
-  return [
-    `${profile.label} — ${profile.primaryTask}`,
-    `고객 상태: ${profile.audienceState}`,
-    `메시지 순서: ${profile.messageSequence}`,
-    `headline: ${profile.headlineRule}`,
-    `bodyCopy: ${profile.bodyRule}`,
-    `CTA: ${profile.ctaRule}`,
-    `금지: ${profile.avoidRule}`,
-  ].join("\n");
+  return [`${profile.label} — ${profile.primaryTask}`, `고객 상태: ${profile.audienceState}`, `메시지 순서: ${profile.messageSequence}`, `headline: ${profile.headlineRule}`, `bodyCopy: ${profile.bodyRule}`, `CTA: ${profile.ctaRule}`, `금지: ${profile.avoidRule}`].join("\n");
 }
 
 export function objectiveCta(objective: AdObjective | undefined, hasConfirmedOffer: boolean) {

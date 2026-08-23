@@ -13,6 +13,4 @@ if (!response.ok) {
   throw new Error(result.error ?? `HTTP ${response.status}`);
 }
 
-console.log(
-  `watchlist brands=${result.brands} analyses=${result.analyses} added=${result.added} total=${result.total}`
-);
+console.log(`watchlist brands=${result.brands} analyses=${result.analyses} added=${result.added} total=${result.total}`);

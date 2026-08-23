@@ -6,13 +6,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
-import {
-  assignPlanningTimeline,
-  hasVerifiedVideoBenefit,
-  segmentRange,
-  validateConceptDiversity,
-  validateDetailedPlanning,
-} from "../app/lib/video-collaboration/planningValidation.ts";
+import { assignPlanningTimeline, hasVerifiedVideoBenefit, segmentRange, validateConceptDiversity, validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
 import { extractVideoTitleMetadata, normalizeVideoProductName } from "../app/lib/video-collaboration/productName.ts";
 import { createVideoMaterialCode } from "../app/lib/video-collaboration/workflow.ts";
 import { assertStructuredVideoPlanningResponse } from "../app/lib/video-collaboration/structuredSchema.ts";
@@ -80,51 +74,9 @@ const guideline = {
   designerNotes: "",
 };
 
-const captions = [
-  "씻고도 금방 찝찝했죠",
-  "운동 뒤엔 더 빨랐고요",
-  "문제는 샤워 순서였어요",
-  "익숙한 방식부터 멈춰봐요",
-  "몸에 남은 답답함을 보고",
-  "상쾌한 감각이 필요한 순간",
-  "민트와 티트리가 등장해요",
-  "사용감의 차이를 확인하고",
-  "손에 덜어 질감을 살펴봐요",
-  "거품이 피부 위로 퍼지고",
-  "물과 함께 산뜻해져요",
-  "수건을 들 때 표정이 달라져요",
-  "다시 운동 가방을 챙기고",
-  "다음 샤워가 기다려진다면",
-  "상품 정보를 직접 살펴봐요",
-  "오늘 루틴부터 바꿔봐요",
-  "가볍게 시작해도 좋아요",
-  "지금 필요한 이유를 보세요",
-  "한 번의 선택을 확인해요",
-  "상품 상세 확인",
-];
+const captions = ["씻고도 금방 찝찝했죠", "운동 뒤엔 더 빨랐고요", "문제는 샤워 순서였어요", "익숙한 방식부터 멈춰봐요", "몸에 남은 답답함을 보고", "상쾌한 감각이 필요한 순간", "민트와 티트리가 등장해요", "사용감의 차이를 확인하고", "손에 덜어 질감을 살펴봐요", "거품이 피부 위로 퍼지고", "물과 함께 산뜻해져요", "수건을 들 때 표정이 달라져요", "다시 운동 가방을 챙기고", "다음 샤워가 기다려진다면", "상품 정보를 직접 살펴봐요", "오늘 루틴부터 바꿔봐요", "가볍게 시작해도 좋아요", "지금 필요한 이유를 보세요", "한 번의 선택을 확인해요", "상품 상세 확인"];
 
-const visualEvents = [
-  "젖은 운동복을 내려놓는다",
-  "이마의 땀을 수건으로 닦는다",
-  "샤워기 손잡이를 돌린다",
-  "기존 바디워시를 잠시 내려놓는다",
-  "거울 속 굳은 표정을 바라본다",
-  "민트색 패키지를 선반에서 꺼낸다",
-  "손바닥에 내용물을 덜어낸다",
-  "손가락으로 질감을 천천히 펼친다",
-  "양손으로 거품을 충분히 만든다",
-  "어깨를 따라 거품을 부드럽게 문지른다",
-  "샤워기 물로 거품을 씻어낸다",
-  "수건을 들고 편안하게 웃는다",
-  "깨끗한 운동복을 가방에 넣는다",
-  "현관 앞에서 가볍게 신발을 신는다",
-  "상품 상세 화면을 손가락으로 누른다",
-  "세면대 위 물방울을 닦아낸다",
-  "열린 욕실 문 밖으로 걸어간다",
-  "제품과 운동 가방을 나란히 둔다",
-  "거울 앞에서 고개를 끄덕인다",
-  "화면 아래 구매 정보를 확인한다",
-];
+const visualEvents = ["젖은 운동복을 내려놓는다", "이마의 땀을 수건으로 닦는다", "샤워기 손잡이를 돌린다", "기존 바디워시를 잠시 내려놓는다", "거울 속 굳은 표정을 바라본다", "민트색 패키지를 선반에서 꺼낸다", "손바닥에 내용물을 덜어낸다", "손가락으로 질감을 천천히 펼친다", "양손으로 거품을 충분히 만든다", "어깨를 따라 거품을 부드럽게 문지른다", "샤워기 물로 거품을 씻어낸다", "수건을 들고 편안하게 웃는다", "깨끗한 운동복을 가방에 넣는다", "현관 앞에서 가볍게 신발을 신는다", "상품 상세 화면을 손가락으로 누른다", "세면대 위 물방울을 닦아낸다", "열린 욕실 문 밖으로 걸어간다", "제품과 운동 가방을 나란히 둔다", "거울 앞에서 고개를 끄덕인다", "화면 아래 구매 정보를 확인한다"];
 
 function makeSummary(analysis, index, hookType) {
   const variants = [
@@ -205,10 +157,7 @@ test("SEO 광고 문구를 정식 상품명과 혜택으로 분리한다", () =>
   assert.equal(normalized.includes("후기1등"), false);
   assert.equal(normalized.includes("무료배송"), false);
   assert.notEqual(normalized, foodAnalysis.rawTitle);
-  const metadata = extractVideoTitleMetadata(
-    "오르기전 가격에 추석 사전예약가능_후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)",
-    "국대한우"
-  );
+  const metadata = extractVideoTitleMetadata("오르기전 가격에 추석 사전예약가능_후기1등*찰진등심 선별상품1kg박스(감칠맛 비법숙성*실속도매팩)", "국대한우");
   assert.equal(metadata.productName.includes("후기1등"), false);
   assert.match(metadata.productName, /찰진등심/);
   assert.equal(metadata.volumeOrOption, "1kg박스");
@@ -216,7 +165,11 @@ test("SEO 광고 문구를 정식 상품명과 혜택으로 분리한다", () =>
 });
 
 test("영상 길이별 구간 수와 빈틈없는 시간이 정확하다", () => {
-  for (const [duration, expected] of [[15, 15], [20, 16], [30, 20]]) {
+  for (const [duration, expected] of [
+    [15, 15],
+    [20, 16],
+    [30, 20],
+  ]) {
     const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, duration, expected);
     assert.equal(concept.cuts.length, expected);
     assert.equal(concept.cuts.at(-1).endSecond, duration);
@@ -226,7 +179,14 @@ test("영상 길이별 구간 수와 빈틈없는 시간이 정확하다", () =>
 
 test("첫 3초는 세 구간과 서로 다른 시각 변화로 구성된다", () => {
   const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
-  assert.deepEqual(concept.cuts.slice(0, 3).map((cut) => [cut.startSecond, cut.endSecond]), [[0, 1], [1, 2], [2, 3]]);
+  assert.deepEqual(
+    concept.cuts.slice(0, 3).map((cut) => [cut.startSecond, cut.endSecond]),
+    [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ]
+  );
   assert.equal(new Set(concept.cuts.slice(0, 3).map((cut) => cut.sceneDescription)).size, 3);
 });
 
@@ -241,11 +201,7 @@ test("SEO 원문과 추상 장면은 품질 검수에서 차단된다", () => {
 });
 
 test("세 기획안은 후킹·화자·문제·서사 방향이 달라야 한다", () => {
-  const concepts = [
-    makeSummary(beautyAnalysis, 0, "problem-solution"),
-    makeSummary(beautyAnalysis, 1, "unexpected-comparison"),
-    makeSummary(beautyAnalysis, 2, "loss-aversion"),
-  ];
+  const concepts = [makeSummary(beautyAnalysis, 0, "problem-solution"), makeSummary(beautyAnalysis, 1, "unexpected-comparison"), makeSummary(beautyAnalysis, 2, "loss-aversion")];
   assert.equal(validateConceptDiversity(concepts).valid, true);
   concepts[2].hookType = concepts[0].hookType;
   assert.equal(validateConceptDiversity(concepts).valid, false);
@@ -268,14 +224,13 @@ test("상품 사진·참고 파일·디자이너 없이 프로젝트와 요약 �
       productAnalysis: beautyAnalysis,
       brandGuideline: guideline,
     });
-    const concepts = [
-      makeSummary(beautyAnalysis, 0, "problem-solution"),
-      makeSummary(beautyAnalysis, 1, "unexpected-comparison"),
-      makeSummary(beautyAnalysis, 2, "loss-aversion"),
-    ];
+    const concepts = [makeSummary(beautyAnalysis, 0, "problem-solution"), makeSummary(beautyAnalysis, 1, "unexpected-comparison"), makeSummary(beautyAnalysis, 2, "loss-aversion")];
     const saved = await repository.saveConceptSummaries(project.id, concepts);
     assert.equal(saved.concepts.length, 3);
-    assert.equal(saved.concepts.every((concept) => concept.cuts.length === 0), true);
+    assert.equal(
+      saved.concepts.every((concept) => concept.cuts.length === 0),
+      true
+    );
     assert.equal(saved.designerName, "디자이너 미지정");
     assert.equal(saved.referenceAssets.length, 0);
   } finally {
@@ -338,20 +293,20 @@ test("기존 성공 기획안은 새 AI 단계 실패를 저장해도 보존된�
       productAnalysis: foodAnalysis,
       brandGuideline: guideline,
     });
-    const concepts = [
-      makeSummary(foodAnalysis, 0, "problem-solution"),
-      makeSummary(foodAnalysis, 1, "unexpected-comparison"),
-      makeSummary(foodAnalysis, 2, "loss-aversion"),
-    ];
+    const concepts = [makeSummary(foodAnalysis, 0, "problem-solution"), makeSummary(foodAnalysis, 1, "unexpected-comparison"), makeSummary(foodAnalysis, 2, "loss-aversion")];
     await repository.saveConceptSummaries(project.id, concepts);
-    await repository.saveGenerationFailure(project.id, {
-      stage: "detailed-script",
-      code: "AI_TIMEOUT",
-      message: "상세 대본 응답 시간 초과",
-      retryable: true,
-      attempts: 3,
-      failedAt: "2026-08-20T01:00:00.000Z",
-    }, { conceptId: concepts[0].id });
+    await repository.saveGenerationFailure(
+      project.id,
+      {
+        stage: "detailed-script",
+        code: "AI_TIMEOUT",
+        message: "상세 대본 응답 시간 초과",
+        retryable: true,
+        attempts: 3,
+        failedAt: "2026-08-20T01:00:00.000Z",
+      },
+      { conceptId: concepts[0].id }
+    );
     const reloaded = await repository.get(project.id);
     assert.equal(reloaded.concepts.length, 3);
     assert.equal(reloaded.concepts[0].detailStatus, "failed");
@@ -378,11 +333,7 @@ test("수동 수정 뒤 품질 검수를 다시 계산하고 불합격 대본의
       productAnalysis: beautyAnalysis,
       brandGuideline: guideline,
     });
-    const summaries = [
-      makeSummary(beautyAnalysis, 0, "problem-solution"),
-      makeSummary(beautyAnalysis, 1, "unexpected-comparison"),
-      makeSummary(beautyAnalysis, 2, "loss-aversion"),
-    ];
+    const summaries = [makeSummary(beautyAnalysis, 0, "problem-solution"), makeSummary(beautyAnalysis, 1, "unexpected-comparison"), makeSummary(beautyAnalysis, 2, "loss-aversion")];
     await repository.saveConceptSummaries(project.id, summaries);
     const detailed = makeDetailed(summaries[0], beautyAnalysis, 20);
     assert.equal(detailed.validation.valid, true);
@@ -455,18 +406,11 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
       productAnalysis: beautyAnalysis,
       brandGuideline: guideline,
     });
-    const summaries = [
-      makeSummary(beautyAnalysis, 0, "problem-solution"),
-      makeSummary(beautyAnalysis, 1, "unexpected-comparison"),
-      makeSummary(beautyAnalysis, 2, "loss-aversion"),
-    ];
+    const summaries = [makeSummary(beautyAnalysis, 0, "problem-solution"), makeSummary(beautyAnalysis, 1, "unexpected-comparison"), makeSummary(beautyAnalysis, 2, "loss-aversion")];
     await repository.saveConceptSummaries(project.id, summaries);
     const detailed = makeDetailed(summaries[0], beautyAnalysis, 20);
     await repository.saveGeneratedConcepts(project.id, [detailed], { conceptId: detailed.id });
-    await assert.rejects(
-      repository.requestProduction({ projectId: project.id, conceptId: detailed.id, deadline: "2026-08-30", actor: "박마케터" }),
-      /담당 디자이너/
-    );
+    await assert.rejects(repository.requestProduction({ projectId: project.id, conceptId: detailed.id, deadline: "2026-08-30", actor: "박마케터" }), /담당 디자이너/);
     await repository.updateDetails(project.id, { designerName: "김디자이너", marketerName: "박마케터" });
     const requested = await repository.requestProduction({
       projectId: project.id,
@@ -485,15 +429,7 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
 });
 
 test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한 안의 자막·장면안만 보여준다", async () => {
-  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource] = await Promise.all([
-    readFile("app/components/AppFeatureNavigation.tsx", "utf8"),
-    readFile("app/video-planning/page.tsx", "utf8"),
-    readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"),
-    readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"),
-    readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"),
-    readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"),
-    readFile("app/lib/video-collaboration/types.ts", "utf8"),
-  ]);
+  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource] = await Promise.all([readFile("app/components/AppFeatureNavigation.tsx", "utf8"), readFile("app/video-planning/page.tsx", "utf8"), readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"), readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"), readFile("app/lib/video-collaboration/types.ts", "utf8")]);
   assert.match(navigation, /VIDEO_PLANNING_FEATURE[\s\S]*label: "영상 기획"/);
   assert.match(navigation, /VIDEO CONTENT[\s\S]*영상 콘텐츠/);
   assert.doesNotMatch(navigation, /IMAGE_CONTENT_FEATURES[\s\S]*index: "03"/);

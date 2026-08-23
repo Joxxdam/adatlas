@@ -4,9 +4,7 @@ export type AsyncConcurrencyGate = {
   pendingCount(): number;
 };
 
-export function resolveCodexCreativeParallelLimit(
-  env: NodeJS.ProcessEnv = process.env
-) {
+export function resolveCodexCreativeParallelLimit(env: NodeJS.ProcessEnv = process.env) {
   const parsed = Number(env.ADATLAS_CODEX_MAX_PARALLEL_RUNS);
   return Math.max(1, Math.min(3, Number.isFinite(parsed) ? Math.floor(parsed) : 3));
 }

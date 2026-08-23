@@ -4,27 +4,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import {
-  getProjectScript,
-  resequenceVideoCuts,
-  videoScriptClipboard,
-  videoScriptCsv,
-} from "../../lib/video-collaboration/script";
-import {
-  ALLOWED_SCENE_REFERENCE_TYPES,
-  MAX_SCENE_REFERENCE_BYTES,
-} from "../../lib/video-collaboration/referenceImage";
-import type {
-  VideoConcept,
-  VideoCut,
-  VideoProject,
-  VideoSceneReferenceImage,
-} from "../../lib/video-collaboration/types";
-import {
-  VIDEO_FORMAT_LABELS,
-  VIDEO_HOOK_LABELS,
-  VIDEO_STATUS_LABELS,
-} from "../../lib/video-collaboration/workflow";
+import { getProjectScript, resequenceVideoCuts, videoScriptClipboard, videoScriptCsv } from "../../lib/video-collaboration/script";
+import { ALLOWED_SCENE_REFERENCE_TYPES, MAX_SCENE_REFERENCE_BYTES } from "../../lib/video-collaboration/referenceImage";
+import type { VideoConcept, VideoCut, VideoProject, VideoSceneReferenceImage } from "../../lib/video-collaboration/types";
+import { VIDEO_FORMAT_LABELS, VIDEO_HOOK_LABELS, VIDEO_STATUS_LABELS } from "../../lib/video-collaboration/workflow";
 import styles from "./VideoScriptWorkspace.module.css";
 
 function formatDate(value?: string, fallback = "미정") {
@@ -42,9 +25,7 @@ function compactDate(value?: string) {
 
 function fileSize(value: number) {
   if (!value) return "외부 URL";
-  return value >= 1024 * 1024
-    ? `${(value / 1024 / 1024).toFixed(1)}MB`
-    : `${Math.ceil(value / 1024)}KB`;
+  return value >= 1024 * 1024 ? `${(value / 1024 / 1024).toFixed(1)}MB` : `${Math.ceil(value / 1024)}KB`;
 }
 
 function syncFullScript(concept: VideoConcept) {
@@ -68,13 +49,7 @@ function downloadText(name: string, value: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function ReferencePreview({
-  image,
-  onOpen,
-}: {
-  image?: VideoSceneReferenceImage;
-  onOpen: (image: VideoSceneReferenceImage) => void;
-}) {
+function ReferencePreview({ image, onOpen }: { image?: VideoSceneReferenceImage; onOpen: (image: VideoSceneReferenceImage) => void }) {
   const [brokenPath, setBrokenPath] = useState("");
   const broken = Boolean(image?.filePath && brokenPath === image.filePath);
   if (!image) return <span className={styles.noReference}>참고 이미지 없음</span>;
@@ -88,11 +63,7 @@ function ReferencePreview({
   }
   return (
     <button className={styles.referencePreview} onClick={() => onOpen(image)} type="button">
-      <img
-        alt={image.description || image.name}
-        onError={() => setBrokenPath(image.filePath)}
-        src={image.filePath}
-      />
+      <img alt={image.description || image.name} onError={() => setBrokenPath(image.filePath)} src={image.filePath} />
       {image.required ? <span className={styles.requiredBadge}>필수 사용</span> : null}
       <small>{image.description || image.name}</small>
     </button>
@@ -170,8 +141,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       if (!dirty) return;
       const target = event.target as HTMLElement | null;
       const link = target?.closest("a[href]");
-      if (!link || window.confirm("저장되지 않은 대본 수정 내용이 있습니다. 페이지를 이동할까요?"))
-        return;
+      if (!link || window.confirm("저장되지 않은 대본 수정 내용이 있습니다. 페이지를 이동할까요?")) return;
       event.preventDefault();
       event.stopPropagation();
     };
@@ -260,8 +230,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       sceneName: `장면 ${draft.cuts.length + 1}`,
       startSecond: 0,
       endSecond: project.duration,
-      sceneDescription:
-        "제작자가 바로 이해할 수 있도록 인물, 제품, 배경, 구도와 효과를 입력하세요.",
+      sceneDescription: "제작자가 바로 이해할 수 있도록 인물, 제품, 배경, 구도와 효과를 입력하세요.",
       caption: "새 장면 자막",
       narration: "",
       requiredSources: [],
@@ -437,13 +406,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       const nextDraft = getProjectScript(nextProject);
       setDraft(nextDraft ? structuredClone(nextDraft) : null);
       setDirty(false);
-      setNotice(
-        mode === "hooks-only"
-          ? "후킹 후보와 첫 장면 문구만 다시 생성했습니다."
-          : mode === "selected-scene"
-            ? "선택한 장면만 다시 생성했습니다."
-            : "전체 기획안을 다시 생성했습니다."
-      );
+      setNotice(mode === "hooks-only" ? "후킹 후보와 첫 장면 문구만 다시 생성했습니다." : mode === "selected-scene" ? "선택한 장면만 다시 생성했습니다." : "전체 기획안을 다시 생성했습니다.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "대본 재생성 실패");
     } finally {
@@ -477,8 +440,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
     setVideoProgress(1);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `/api/video-projects/${projectId}/versions`);
-    xhr.upload.onprogress = (event) =>
-      event.lengthComputable && setVideoProgress(Math.round((event.loaded / event.total) * 100));
+    xhr.upload.onprogress = (event) => event.lengthComputable && setVideoProgress(Math.round((event.loaded / event.total) * 100));
     xhr.onload = () => {
       const payload = JSON.parse(xhr.responseText || "{}");
       if (xhr.status < 200 || xhr.status >= 300) {
@@ -534,10 +496,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
 
   async function duplicateApproved() {
     if (!project) return;
-    const duplicate = await patchProject(
-      { action: "duplicate-approved", actor: project.marketerName },
-      "완료된 제작 대본을 새 프로젝트로 복제했습니다."
-    );
+    const duplicate = await patchProject({ action: "duplicate-approved", actor: project.marketerName }, "완료된 제작 대본을 새 프로젝트로 복제했습니다.");
     if (duplicate) router.push(`/video-collaboration/${duplicate.id}/script`);
   }
 
@@ -558,13 +517,9 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
     );
   }
 
-  const hasRequiredReferences = draft.cuts.some((cut) =>
-    cut.referenceImages.some((image) => image.required)
-  );
+  const hasRequiredReferences = draft.cuts.some((cut) => cut.referenceImages.some((image) => image.required));
   const latestVersion = project.versions.at(-1);
-  const approvedVersion = project.versions.find(
-    (version) => version.id === project.approvedVersionId
-  );
+  const approvedVersion = project.versions.find((version) => version.id === project.approvedVersionId);
 
   return (
     <main className={styles.page} data-designer={designerView}>
@@ -600,9 +555,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       {error ? (
         <div className={styles.error}>
           {error}
-          {saveState === "error" ? (
-            <button onClick={() => void saveScript(false)}>다시 저장</button>
-          ) : null}
+          {saveState === "error" ? <button onClick={() => void saveScript(false)}>다시 저장</button> : null}
         </div>
       ) : null}
       {notice ? <div className={styles.notice}>{notice}</div> : null}
@@ -681,26 +634,56 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
 
       <section className={styles.requestBox}>
         <strong>선택 콘셉트 요약</strong>
-        <p><b>후킹</b> · {draft.openingHook}</p>
-        <p><b>타깃</b> · {draft.coreTarget}</p>
-        <p><b>고객 문제</b> · {draft.customerProblem || project.productAnalysis.customerProblems[0] || "추가 확인 필요"}</p>
-        <p><b>USP</b> · {draft.usp || project.productAnalysis.coreUsps[0] || "추가 확인 필요"}</p>
-        <p><b>스타일</b> · {draft.visualBible?.visualMode || draft.creativeStyle || "AI 자동"}</p>
-        <p><b>서사</b> · {draft.narrativeSummary || "문제→제품 공개→근거→CTA"}</p>
-        <p><b>추천 이유</b> · {draft.recommendationReason || "상품 근거와 장면화 가능성을 기준으로 선정"}</p>
-        <p><b>확인할 주장</b> · {draft.claimsToVerify?.join(" · ") || "없음"}</p>
+        <p>
+          <b>후킹</b> · {draft.openingHook}
+        </p>
+        <p>
+          <b>타깃</b> · {draft.coreTarget}
+        </p>
+        <p>
+          <b>고객 문제</b> · {draft.customerProblem || project.productAnalysis.customerProblems[0] || "추가 확인 필요"}
+        </p>
+        <p>
+          <b>USP</b> · {draft.usp || project.productAnalysis.coreUsps[0] || "추가 확인 필요"}
+        </p>
+        <p>
+          <b>스타일</b> · {draft.visualBible?.visualMode || draft.creativeStyle || "AI 자동"}
+        </p>
+        <p>
+          <b>서사</b> · {draft.narrativeSummary || "문제→제품 공개→근거→CTA"}
+        </p>
+        <p>
+          <b>추천 이유</b> · {draft.recommendationReason || "상품 근거와 장면화 가능성을 기준으로 선정"}
+        </p>
+        <p>
+          <b>확인할 주장</b> · {draft.claimsToVerify?.join(" · ") || "없음"}
+        </p>
       </section>
 
       {draft.visualBible ? (
         <details className={styles.requestBox}>
           <summary>비주얼 바이블·제품 원본 고정 규칙</summary>
-          <p><b>세계관</b> · {draft.visualBible.backgroundWorld}</p>
-          <p><b>카메라</b> · {draft.visualBible.cameraStyle}</p>
-          <p><b>제품 표현</b> · {draft.visualBible.productPresentation}</p>
-          <p><b>텍스트 안전 영역</b> · {draft.visualBible.textSafeArea}</p>
-          <p><b>연속성</b> · {draft.visualBible.continuityRules.join(" · ")}</p>
-          <p><b>금지 생성</b> · {draft.visualBible.negativePrompt.join(" · ")}</p>
-          <p><b>원본 파일</b> · {project.productLockedAsset?.originalFileName || "원본 추가 업로드 필요"}</p>
+          <p>
+            <b>세계관</b> · {draft.visualBible.backgroundWorld}
+          </p>
+          <p>
+            <b>카메라</b> · {draft.visualBible.cameraStyle}
+          </p>
+          <p>
+            <b>제품 표현</b> · {draft.visualBible.productPresentation}
+          </p>
+          <p>
+            <b>텍스트 안전 영역</b> · {draft.visualBible.textSafeArea}
+          </p>
+          <p>
+            <b>연속성</b> · {draft.visualBible.continuityRules.join(" · ")}
+          </p>
+          <p>
+            <b>금지 생성</b> · {draft.visualBible.negativePrompt.join(" · ")}
+          </p>
+          <p>
+            <b>원본 파일</b> · {project.productLockedAsset?.originalFileName || "원본 추가 업로드 필요"}
+          </p>
         </details>
       ) : null}
 
@@ -717,12 +700,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
           <div className={styles.inlineAction}>
             <label>
               마감일
-              <input
-                min={new Date().toISOString().slice(0, 10)}
-                onChange={(event) => setDeadline(event.target.value)}
-                type="date"
-                value={deadline}
-              />
+              <input min={new Date().toISOString().slice(0, 10)} onChange={(event) => setDeadline(event.target.value)} type="date" value={deadline} />
             </label>
             <button disabled={!deadline || Boolean(busy)} onClick={finalizeScript}>
               대본 확정
@@ -730,15 +708,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
           </div>
         ) : null}
         {project.status === "production_requested" ? (
-          <button
-            disabled={Boolean(busy)}
-            onClick={() =>
-              patchProject(
-                { action: "start-production", actor: project.designerName },
-                "영상 제작 중 상태로 변경했습니다."
-              )
-            }
-          >
+          <button disabled={Boolean(busy)} onClick={() => patchProject({ action: "start-production", actor: project.designerName }, "영상 제작 중 상태로 변경했습니다.")}>
             작업 시작
           </button>
         ) : null}
@@ -746,11 +716,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
           <div className={styles.uploadAction}>
             <label>
               영상 업로드
-              <input
-                accept="video/mp4,video/quicktime,video/webm,.mov"
-                onChange={(event) => setVideoFile(event.target.files?.[0] || null)}
-                type="file"
-              />
+              <input accept="video/mp4,video/quicktime,video/webm,.mov" onChange={(event) => setVideoFile(event.target.files?.[0] || null)} type="file" />
             </label>
             {videoProgress ? <progress max={100} value={videoProgress} /> : null}
             <button disabled={!videoFile || Boolean(busy)} onClick={uploadVideo}>
@@ -760,11 +726,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
         ) : null}
         {project.status === "marketer_review" && latestVersion ? (
           <div className={styles.reviewAction}>
-            <textarea
-              onChange={(event) => setReviewComment(event.target.value)}
-              placeholder="수정 요청 내용을 입력"
-              value={reviewComment}
-            />
+            <textarea onChange={(event) => setReviewComment(event.target.value)} placeholder="수정 요청 내용을 입력" value={reviewComment} />
             <button disabled={Boolean(busy)} onClick={requestRevision}>
               수정 요청
             </button>
@@ -795,42 +757,28 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
 
       <section className={styles.scriptToolbar}>
         <div>
-          <button
-            onClick={() => copy(videoScriptClipboard(project, "all"), "전체 대본을 복사했습니다.")}
-          >
-            전체 대본 복사
-          </button>
-          <button
-            onClick={() => copy(videoScriptClipboard(project, "captions"), "자막만 복사했습니다.")}
-          >
-            자막만 복사
-          </button>
-          <button
-            onClick={() =>
-              copy(videoScriptClipboard(project, "scenes"), "영상 장면 설명만 복사했습니다.")
-            }
-          >
-            장면 설명만 복사
-          </button>
-          <button
-            onClick={() =>
-              downloadText(
-                `${draft.materialCode}.csv`,
-                videoScriptCsv({ ...project, finalScript: draft }),
-                "text/csv;charset=utf-8"
-              )
-            }
-          >
-            CSV 다운로드
-          </button>
+          <button onClick={() => copy(videoScriptClipboard(project, "all"), "전체 대본을 복사했습니다.")}>전체 대본 복사</button>
+          <button onClick={() => copy(videoScriptClipboard(project, "captions"), "자막만 복사했습니다.")}>자막만 복사</button>
+          <button onClick={() => copy(videoScriptClipboard(project, "scenes"), "영상 장면 설명만 복사했습니다.")}>장면 설명만 복사</button>
+          <button onClick={() => downloadText(`${draft.materialCode}.csv`, videoScriptCsv({ ...project, finalScript: draft }), "text/csv;charset=utf-8")}>CSV 다운로드</button>
           {project.status === "script_review" ? (
             <>
-              <button disabled={Boolean(busy)} onClick={() => void regenerate("all")}>전체 재생성</button>
-              <button disabled={Boolean(busy)} onClick={() => void regenerate("hooks-only")}>후킹만 재생성</button>
+              <button disabled={Boolean(busy)} onClick={() => void regenerate("all")}>
+                전체 재생성
+              </button>
+              <button disabled={Boolean(busy)} onClick={() => void regenerate("hooks-only")}>
+                후킹만 재생성
+              </button>
               <select aria-label="부분 재생성 장면" value={selectedCutId} onChange={(event) => setSelectedCutId(event.target.value)}>
-                {draft.cuts.map((cut) => <option key={cut.id} value={cut.id}>{cut.sceneName}</option>)}
+                {draft.cuts.map((cut) => (
+                  <option key={cut.id} value={cut.id}>
+                    {cut.sceneName}
+                  </option>
+                ))}
               </select>
-              <button disabled={!selectedCutId || Boolean(busy)} onClick={() => void regenerate("selected-scene")}>선택 장면 재생성</button>
+              <button disabled={!selectedCutId || Boolean(busy)} onClick={() => void regenerate("selected-scene")}>
+                선택 장면 재생성
+              </button>
             </>
           ) : null}
         </div>
@@ -864,13 +812,8 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
 
       <div className={styles.referenceNotice} data-required={hasRequiredReferences}>
         <strong>참고 이미지 안내</strong>
-        <span>
-          참고 이미지는 제작 방향을 설명하기 위한 자료이며, 의도와 소구점을 유지하는 범위에서 교체할
-          수 있습니다.
-        </span>
-        {hasRequiredReferences ? (
-          <b>“필수 사용” 배지가 있는 이미지는 반드시 사용해 주세요.</b>
-        ) : null}
+        <span>참고 이미지는 제작 방향을 설명하기 위한 자료이며, 의도와 소구점을 유지하는 범위에서 교체할 수 있습니다.</span>
+        {hasRequiredReferences ? <b>“필수 사용” 배지가 있는 이미지는 반드시 사용해 주세요.</b> : null}
       </div>
 
       <section className={styles.tableSection}>
@@ -892,18 +835,25 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
             <tbody>
               {draft.cuts.map((cut) => (
                 <tr key={`plan-${cut.id}`}>
-                  <td><strong>{cut.sceneName}</strong></td>
-                  <td>{cut.startSecond}-{cut.endSecond}초</td>
                   <td>
-                    {editing ? <textarea value={cut.sceneFormat || ""} onChange={(event) => updateCut(cut.id, { sceneFormat: event.target.value })} /> : cut.sceneFormat || "실사"}
+                    <strong>{cut.sceneName}</strong>
                   </td>
+                  <td>
+                    {cut.startSecond}-{cut.endSecond}초
+                  </td>
+                  <td>{editing ? <textarea value={cut.sceneFormat || ""} onChange={(event) => updateCut(cut.id, { sceneFormat: event.target.value })} /> : cut.sceneFormat || "실사"}</td>
                   <td>
                     {editing ? (
                       <>
                         <textarea value={cut.caption} onChange={(event) => updateCut(cut.id, { caption: event.target.value })} />
                         <textarea value={cut.narration} onChange={(event) => updateCut(cut.id, { narration: event.target.value })} />
                       </>
-                    ) : <><b>{cut.caption}</b><p>{cut.narration}</p></>}
+                    ) : (
+                      <>
+                        <b>{cut.caption}</b>
+                        <p>{cut.narration}</p>
+                      </>
+                    )}
                   </td>
                   <td>{editing ? <textarea value={cut.sceneDescription} onChange={(event) => updateCut(cut.id, { sceneDescription: event.target.value })} /> : cut.sceneDescription}</td>
                   <td>{editing ? <textarea value={cut.cameraComposition || ""} onChange={(event) => updateCut(cut.id, { cameraComposition: event.target.value })} /> : cut.cameraComposition}</td>
@@ -947,17 +897,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                   <Fragment key={cut.id}>
                     <tr>
                       <td className={styles.sceneCell}>
-                        {editing ? (
-                          <input
-                            aria-label={`${index + 1}번 장면명`}
-                            onChange={(event) =>
-                              updateCut(cut.id, { sceneName: event.target.value })
-                            }
-                            value={cut.sceneName}
-                          />
-                        ) : (
-                          <strong>{cut.sceneName || `장면 ${cut.cutNumber}`}</strong>
-                        )}
+                        {editing ? <input aria-label={`${index + 1}번 장면명`} onChange={(event) => updateCut(cut.id, { sceneName: event.target.value })} value={cut.sceneName} /> : <strong>{cut.sceneName || `장면 ${cut.cutNumber}`}</strong>}
                         <small>
                           {cut.startSecond}-{cut.endSecond}초
                         </small>
@@ -975,67 +915,25 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                         </button>
                         {editing ? (
                           <div className={styles.rowActions}>
-                            <button
-                              disabled={index === 0}
-                              onClick={() => moveScene(cut.id, -1)}
-                              title="위로 이동"
-                            >
+                            <button disabled={index === 0} onClick={() => moveScene(cut.id, -1)} title="위로 이동">
                               ↑
                             </button>
-                            <button
-                              disabled={index === draft.cuts.length - 1}
-                              onClick={() => moveScene(cut.id, 1)}
-                              title="아래로 이동"
-                            >
+                            <button disabled={index === draft.cuts.length - 1} onClick={() => moveScene(cut.id, 1)} title="아래로 이동">
                               ↓
                             </button>
                             <button onClick={() => cloneScene(cut)}>복제</button>
-                            <button
-                              disabled={draft.cuts.length <= 1}
-                              onClick={() => deleteScene(cut)}
-                            >
+                            <button disabled={draft.cuts.length <= 1} onClick={() => deleteScene(cut)}>
                               삭제
                             </button>
                           </div>
                         ) : (
-                          <button
-                            className={styles.rowCopy}
-                            onClick={() =>
-                              copy(
-                                `${cut.sceneName}\n자막: ${cut.caption}\n영상 장면: ${cut.sceneDescription}`,
-                                `${cut.sceneName} 내용을 복사했습니다.`
-                              )
-                            }
-                          >
+                          <button className={styles.rowCopy} onClick={() => copy(`${cut.sceneName}\n자막: ${cut.caption}\n영상 장면: ${cut.sceneDescription}`, `${cut.sceneName} 내용을 복사했습니다.`)}>
                             장면 복사
                           </button>
                         )}
                       </td>
-                      <td>
-                        {editing ? (
-                          <textarea
-                            aria-label={`${cut.sceneName} 자막`}
-                            onChange={(event) => updateCut(cut.id, { caption: event.target.value })}
-                            value={cut.caption}
-                          />
-                        ) : (
-                          <p className={styles.captionText}>{cut.caption}</p>
-                        )}
-                      </td>
-                      <td>
-                        {editing ? (
-                          <textarea
-                            aria-label={`${cut.sceneName} 영상 장면`}
-                            className={styles.visualTextarea}
-                            onChange={(event) =>
-                              updateCut(cut.id, { sceneDescription: event.target.value })
-                            }
-                            value={cut.sceneDescription}
-                          />
-                        ) : (
-                          <p>{cut.sceneDescription}</p>
-                        )}
-                      </td>
+                      <td>{editing ? <textarea aria-label={`${cut.sceneName} 자막`} onChange={(event) => updateCut(cut.id, { caption: event.target.value })} value={cut.caption} /> : <p className={styles.captionText}>{cut.caption}</p>}</td>
+                      <td>{editing ? <textarea aria-label={`${cut.sceneName} 영상 장면`} className={styles.visualTextarea} onChange={(event) => updateCut(cut.id, { sceneDescription: event.target.value })} value={cut.sceneDescription} /> : <p>{cut.sceneDescription}</p>}</td>
                       {[0, 1].map((slot) => {
                         const image = cut.referenceImages[slot];
                         const key = `${cut.id}-${slot}`;
@@ -1083,21 +981,12 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                                     <div>
                                       <label className={styles.fileButton}>
                                         교체
-                                        <input
-                                          accept="image/jpeg,image/png,image/webp"
-                                          onChange={(event) =>
-                                            event.target.files?.[0] &&
-                                            uploadSceneImage(cut.id, slot, event.target.files[0])
-                                          }
-                                          type="file"
-                                        />
+                                        <input accept="image/jpeg,image/png,image/webp" onChange={(event) => event.target.files?.[0] && uploadSceneImage(cut.id, slot, event.target.files[0])} type="file" />
                                       </label>
                                       <button
                                         onClick={() =>
                                           updateCut(cut.id, {
-                                            referenceImages: cut.referenceImages.filter(
-                                              (_, imageIndex) => imageIndex !== slot
-                                            ),
+                                            referenceImages: cut.referenceImages.filter((_, imageIndex) => imageIndex !== slot),
                                           })
                                         }
                                       >
@@ -1110,14 +999,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                                     <span>드래그 앤 드롭</span>
                                     <label className={styles.fileButton}>
                                       파일 선택
-                                      <input
-                                        accept="image/jpeg,image/png,image/webp"
-                                        onChange={(event) =>
-                                          event.target.files?.[0] &&
-                                          uploadSceneImage(cut.id, slot, event.target.files[0])
-                                        }
-                                        type="file"
-                                      />
+                                      <input accept="image/jpeg,image/png,image/webp" onChange={(event) => event.target.files?.[0] && uploadSceneImage(cut.id, slot, event.target.files[0])} type="file" />
                                     </label>
                                     <input
                                       onChange={(event) =>
@@ -1130,17 +1012,12 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                                       type="url"
                                       value={externalUrls[key] || ""}
                                     />
-                                    <button
-                                      disabled={!externalUrls[key]?.trim()}
-                                      onClick={() => addExternalImage(cut.id, slot)}
-                                    >
+                                    <button disabled={!externalUrls[key]?.trim()} onClick={() => addExternalImage(cut.id, slot)}>
                                       URL 등록
                                     </button>
                                   </>
                                 )}
-                                {imageProgress[key] ? (
-                                  <progress max={100} value={imageProgress[key]} />
-                                ) : null}
+                                {imageProgress[key] ? <progress max={100} value={imageProgress[key]} /> : null}
                               </div>
                             ) : (
                               <ReferencePreview image={image} onOpen={setPreviewImage} />
@@ -1156,37 +1033,15 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                             <label>
                               예상 시간
                               <div>
-                                <input
-                                  disabled={!editing}
-                                  min={0}
-                                  onChange={(event) =>
-                                    updateCut(cut.id, { startSecond: Number(event.target.value) })
-                                  }
-                                  type="number"
-                                  value={cut.startSecond}
-                                />
+                                <input disabled={!editing} min={0} onChange={(event) => updateCut(cut.id, { startSecond: Number(event.target.value) })} type="number" value={cut.startSecond} />
                                 <span>~</span>
-                                <input
-                                  disabled={!editing}
-                                  max={project.duration}
-                                  onChange={(event) =>
-                                    updateCut(cut.id, { endSecond: Number(event.target.value) })
-                                  }
-                                  type="number"
-                                  value={cut.endSecond}
-                                />
+                                <input disabled={!editing} max={project.duration} onChange={(event) => updateCut(cut.id, { endSecond: Number(event.target.value) })} type="number" value={cut.endSecond} />
                                 <span>초</span>
                               </div>
                             </label>
                             <label>
                               내레이션
-                              <textarea
-                                disabled={!editing}
-                                onChange={(event) =>
-                                  updateCut(cut.id, { narration: event.target.value })
-                                }
-                                value={cut.narration}
-                              />
+                              <textarea disabled={!editing} onChange={(event) => updateCut(cut.id, { narration: event.target.value })} value={cut.narration} />
                             </label>
                             <label>
                               필요 소스
@@ -1205,13 +1060,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
                             </label>
                             <label>
                               추가 제작 메모
-                              <textarea
-                                disabled={!editing}
-                                onChange={(event) =>
-                                  updateCut(cut.id, { productionMemo: event.target.value })
-                                }
-                                value={cut.productionMemo}
-                              />
+                              <textarea disabled={!editing} onChange={(event) => updateCut(cut.id, { productionMemo: event.target.value })} value={cut.productionMemo} />
                             </label>
                           </div>
                         </td>
@@ -1236,11 +1085,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
             value={productionNotes}
           />
         ) : (
-          <p>
-            {productionNotes ||
-              project.brandGuideline.designerNotes ||
-              "등록된 전체 제작 메모가 없습니다."}
-          </p>
+          <p>{productionNotes || project.brandGuideline.designerNotes || "등록된 전체 제작 메모가 없습니다."}</p>
         )}
       </section>
 
@@ -1301,11 +1146,7 @@ export function VideoScriptWorkspace({ projectId }: { projectId: string }) {
       </section>
 
       {previewImage ? (
-        <div
-          className={styles.previewBackdrop}
-          onClick={() => setPreviewImage(null)}
-          role="presentation"
-        >
+        <div className={styles.previewBackdrop} onClick={() => setPreviewImage(null)} role="presentation">
           <div className={styles.previewModal} onClick={(event) => event.stopPropagation()}>
             <button aria-label="미리보기 닫기" onClick={() => setPreviewImage(null)}>
               ×

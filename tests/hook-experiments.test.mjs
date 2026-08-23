@@ -7,34 +7,16 @@ import JSZip from "jszip";
 import * as XLSX from "xlsx";
 
 import { createCreativeAssetRepository } from "../app/lib/creative-assets/repository.server.ts";
-import {
-  extractCreativeAssetCode,
-  validateCreativeAssetCode,
-} from "../app/lib/creative-assets/code.ts";
-import {
-  createExperimentAssetCode,
-  createExperimentCode,
-  createHookCategoryCode,
-} from "../app/lib/hook-experiments/codes.ts";
-import {
-  buildExperimentPlan,
-  buildGenerationJobForExperiment,
-} from "../app/lib/hook-experiments/generation.ts";
+import { extractCreativeAssetCode, validateCreativeAssetCode } from "../app/lib/creative-assets/code.ts";
+import { createExperimentAssetCode, createExperimentCode, createHookCategoryCode } from "../app/lib/hook-experiments/codes.ts";
+import { buildExperimentPlan, buildGenerationJobForExperiment } from "../app/lib/hook-experiments/generation.ts";
 import { createHostingRegistrationPackageService } from "../app/lib/hook-experiments/hostingPackage.server.ts";
 import { ObjectiveHookLearningService } from "../app/lib/hook-experiments/learning.ts";
-import {
-  HookPerformanceAggregationService,
-  HookValidationService,
-} from "../app/lib/hook-experiments/performance.ts";
-import {
-  createCreativePerformanceMatchingService,
-  PerformanceImportService,
-} from "../app/lib/hook-experiments/performanceImport.server.ts";
+import { HookPerformanceAggregationService, HookValidationService } from "../app/lib/hook-experiments/performance.ts";
+import { createCreativePerformanceMatchingService, PerformanceImportService } from "../app/lib/hook-experiments/performanceImport.server.ts";
 import { createHookExperimentRepository } from "../app/lib/hook-experiments/repository.server.ts";
 
-const fixtures = JSON.parse(
-  await readFile(path.join(process.cwd(), "tests/fixtures/creative-products.json"), "utf8")
-);
+const fixtures = JSON.parse(await readFile(path.join(process.cwd(), "tests/fixtures/creative-products.json"), "utf8"));
 
 function product(overrides = {}) {
   return {
@@ -92,9 +74,7 @@ function performanceRecords(plan, landingPageViewsFor) {
   const linked = withLinkedAssets(plan);
   const records = linked.experimentAssets.map((asset, index) => {
     const groupIndex = linked.hookGroups.findIndex((group) => group.id === asset.hookGroupId);
-    const assetIndex = linked.experimentAssets
-      .filter((item) => item.hookGroupId === asset.hookGroupId)
-      .findIndex((item) => item.id === asset.id);
+    const assetIndex = linked.experimentAssets.filter((item) => item.hookGroupId === asset.hookGroupId).findIndex((item) => item.id === asset.id);
     const landingPageViews = landingPageViewsFor(groupIndex, assetIndex);
     return {
       id: `record-${index}`,
@@ -212,12 +192,8 @@ test("선택 대조군은 T01 기본 12장과 분리해 2장을 추가한다", (
 });
 
 test("T02는 상위 3개 후킹×6장, T03은 우승 후킹 1개×6장으로 고정한다", () => {
-  const t02 = buildExperimentPlan(
-    input({ stage: "VALIDATION", selectedHookCodes: ["SEN", "USP", "EMP"], variantsPerHook: 2 })
-  );
-  const t03 = buildExperimentPlan(
-    input({ stage: "REFINEMENT", selectedHookCodes: ["SEN"], variantsPerHook: 2 })
-  );
+  const t02 = buildExperimentPlan(input({ stage: "VALIDATION", selectedHookCodes: ["SEN", "USP", "EMP"], variantsPerHook: 2 }));
+  const t03 = buildExperimentPlan(input({ stage: "REFINEMENT", selectedHookCodes: ["SEN"], variantsPerHook: 2 }));
   assert.equal(t02.experiment.testRound, 2);
   assert.equal(t02.experiment.totalAssetCount, 18);
   assert.equal(t02.experiment.ruleConfig.minimumEligibleAssetsPerHook, 3);
@@ -254,9 +230,7 @@ test("기존 생성 엔진에 T01 12개 결과를 전달하고 목표와 무관�
   const job = await buildGenerationJobForExperiment(plan);
   assert.equal(job.results.length, 12);
   assert.equal(job.creativePlan.adBrief, undefined);
-  assert.ok(
-    job.results.every((result) => result.hookPlan.hookCode && result.hookPlan.experimentVariant)
-  );
+  assert.ok(job.results.every((result) => result.hookPlan.hookCode && result.hookPlan.experimentVariant));
   assert.equal(new Set(job.results.map((result) => result.hookPlan.mainMessage)).size, 6);
 });
 
@@ -380,9 +354,7 @@ test("T01 비교 가능 데이터는 상위 3개만 선택하고 불균형 데�
   assert.equal(analysis.selectedHookCodes.length, 3);
   assert.equal(analysis.needsMoreData, false);
 
-  const imbalanced = records.map((record) =>
-    record.hookGroupId === linked.hookGroups[0].id ? { ...record, spend: 1000 } : record
-  );
+  const imbalanced = records.map((record) => (record.hookGroupId === linked.hookGroups[0].id ? { ...record, spend: 1000 } : record));
   const rejected = HookValidationService.analyze({
     experiment: linked.experiment,
     hookGroups: linked.hookGroups,
@@ -395,12 +367,8 @@ test("T01 비교 가능 데이터는 상위 3개만 선택하고 불균형 데�
 });
 
 test("T02는 여러 소재가 반복 우세할 때만 안정 우승 후킹을 정한다", () => {
-  const base = buildExperimentPlan(
-    input({ stage: "VALIDATION", selectedHookCodes: ["SEN", "USP", "EMP"] })
-  );
-  const { linked, records } = performanceRecords(base, (groupIndex) =>
-    groupIndex === 0 ? 100 : groupIndex === 1 ? 25 : 20
-  );
+  const base = buildExperimentPlan(input({ stage: "VALIDATION", selectedHookCodes: ["SEN", "USP", "EMP"] }));
+  const { linked, records } = performanceRecords(base, (groupIndex) => (groupIndex === 0 ? 100 : groupIndex === 1 ? 25 : 20));
   const analysis = HookValidationService.analyze({
     experiment: linked.experiment,
     hookGroups: linked.hookGroups,
@@ -414,12 +382,8 @@ test("T02는 여러 소재가 반복 우세할 때만 안정 우승 후킹을 �
 });
 
 test("T02의 한 장만 좋은 후킹은 SINGLE_ASSET_WINNER로 표시하고 다음 단계로 넘기지 않는다", () => {
-  const base = buildExperimentPlan(
-    input({ stage: "VALIDATION", selectedHookCodes: ["SEN", "USP", "EMP"] })
-  );
-  const { linked, records } = performanceRecords(base, (groupIndex, assetIndex) =>
-    groupIndex === 0 ? (assetIndex === 0 ? 1000 : 20) : 50
-  );
+  const base = buildExperimentPlan(input({ stage: "VALIDATION", selectedHookCodes: ["SEN", "USP", "EMP"] }));
+  const { linked, records } = performanceRecords(base, (groupIndex, assetIndex) => (groupIndex === 0 ? (assetIndex === 0 ? 1000 : 20) : 50));
   const analysis = HookValidationService.analyze({
     experiment: linked.experiment,
     hookGroups: linked.hookGroups,
@@ -452,33 +416,30 @@ test("CSV/XLSX 보고서는 한영 헤더·0·빈 값을 보존하고 광고명 
   ]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, sheet, "Meta");
-  const rows = PerformanceImportService.parse(
-    XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
-    "meta.xlsx",
-    "SLS"
-  );
+  const rows = PerformanceImportService.parse(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }), "meta.xlsx", "SLS");
   assert.equal(rows[0].objective, "TRF");
   assert.equal(rows[0].spend, 0);
   assert.equal(rows[0].linkClicks, null);
   const matching = createCreativePerformanceMatchingService({
-    getByCode: async (value) => (value === code ? {
-      id: "asset-1",
-      assetCode: code,
-      advertiserId: "advertiser-ors",
-      productId: "product-mini-set",
-      category: "바디워시/여행용 세트",
-      hookVariantCode: "H01",
-      hypothesisId: "hypothesis-mini-convenience",
-      primaryHookTag: "convenience",
-      secondaryHookTags: ["problem-solution"],
-      visualDirection: "캐리어 안의 미니 3종과 파우치",
-    } : null),
+    getByCode: async (value) =>
+      value === code
+        ? {
+            id: "asset-1",
+            assetCode: code,
+            advertiserId: "advertiser-ors",
+            productId: "product-mini-set",
+            category: "바디워시/여행용 세트",
+            hookVariantCode: "H01",
+            hypothesisId: "hypothesis-mini-convenience",
+            primaryHookTag: "convenience",
+            secondaryHookTags: ["problem-solution"],
+            visualDirection: "캐리어 안의 미니 3종과 파우치",
+          }
+        : null,
   });
   const records = await matching.match({
     experiment: buildExperimentPlan(input()).experiment,
-    experimentAssets: [
-      { ...buildExperimentPlan(input()).experimentAssets[0], assetId: "asset-1", assetCode: code },
-    ],
+    experimentAssets: [{ ...buildExperimentPlan(input()).experimentAssets[0], assetId: "asset-1", assetCode: code }],
     rows,
   });
   assert.equal(records[0].matchStatus, "matched");
@@ -561,9 +522,5 @@ test("목표별 후킹 학습은 적격 실험 3회·소재 6개 전에는 VERIF
   assert.equal(verified.eligibleExperimentCount, 3);
   assert.equal(verified.assetCount, 6);
   assert.equal(verified.status, "VERIFIED");
-  assert.ok(
-    ObjectiveHookLearningService.recommendations(learned, "TRF").every(
-      (item) => item.status === "VERIFIED"
-    )
-  );
+  assert.ok(ObjectiveHookLearningService.recommendations(learned, "TRF").every((item) => item.status === "VERIFIED"));
 });

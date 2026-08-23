@@ -1,24 +1,16 @@
 import { getCreativeFontMetrics, measureWithFontMetrics } from "./fontMetrics.server.ts";
-import type {
-  DynamicTextBox,
-  HookPlan,
-  MasterCreativeDirection,
-  PlacementBox,
-  RenderPlan,
-} from "./types.ts";
+import type { DynamicTextBox, HookPlan, MasterCreativeDirection, PlacementBox, RenderPlan } from "./types.ts";
 
 type RenderedSlot = RenderPlan["renderedSlots"][number];
 
 function normalizeText(value: string) {
-  return String(value || "").replace(/\r/g, "").trim();
+  return String(value || "")
+    .replace(/\r/g, "")
+    .trim();
 }
 
 function atomicParts(value: string) {
-  return (
-    value.match(
-      /-?\d[\d,.]*(?:\s?(?:%|°[cC]|℃|원|ml|mL|[lL]|g|kg|개|팩|병|점|명|회|배))?|[A-Za-z]+|[^\s]/gu
-    ) || []
-  );
+  return value.match(/-?\d[\d,.]*(?:\s?(?:%|°[cC]|℃|원|ml|mL|[lL]|g|kg|개|팩|병|점|명|회|배))?|[A-Za-z]+|[^\s]/gu) || [];
 }
 
 async function wrapLine(value: string, maxWidth: number, fontSize: number) {
@@ -64,10 +56,7 @@ async function wrapText(value: string, maxWidth: number, fontSize: number) {
   return lines;
 }
 
-function roleColor(
-  role: DynamicTextBox["colorRole"] | DynamicTextBox["fillRole"],
-  master: MasterCreativeDirection
-) {
+function roleColor(role: DynamicTextBox["colorRole"] | DynamicTextBox["fillRole"], master: MasterCreativeDirection) {
   if (!role) return undefined;
   return master.palette[role];
 }
@@ -82,13 +71,7 @@ function textBounds(box: DynamicTextBox, fontSize: number, lineHeight: number, l
   } satisfies PlacementBox;
 }
 
-export async function layoutTextSlot(params: {
-  id: RenderedSlot["id"];
-  text: string;
-  box: DynamicTextBox;
-  master: MasterCreativeDirection;
-  fixedFontSize?: number;
-}) {
+export async function layoutTextSlot(params: { id: RenderedSlot["id"]; text: string; box: DynamicTextBox; master: MasterCreativeDirection; fixedFontSize?: number }) {
   const text = normalizeText(params.text);
   if (!text) return null;
   const fontSize = params.fixedFontSize || params.box.fontSize;
@@ -97,23 +80,15 @@ export async function layoutTextSlot(params: {
   const availableHeight = Math.max(1, params.box.height - params.box.padding * 2);
   const lines = await wrapText(text, availableWidth, fontSize);
   const metrics = await getCreativeFontMetrics();
-  const contentWidth = Math.max(
-    ...lines.map((line) => measureWithFontMetrics(metrics, line, fontSize)),
-    1
-  );
+  const contentWidth = Math.max(...lines.map((line) => measureWithFontMetrics(metrics, line, fontSize)), 1);
   const shouldFitContainer = ["proof", "offer", "cta"].includes(params.id);
   const renderBox: DynamicTextBox = shouldFitContainer
     ? {
         ...params.box,
-        width: Math.max(
-          params.id === "cta" ? 210 : 140,
-          Math.min(params.box.width, Math.ceil(contentWidth + params.box.padding * 2))
-        ),
+        width: Math.max(params.id === "cta" ? 210 : 140, Math.min(params.box.width, Math.ceil(contentWidth + params.box.padding * 2))),
       }
     : params.box;
-  const overflow =
-    lines.length > params.box.maxLines ||
-    lines.length * lineHeight > availableHeight;
+  const overflow = lines.length > params.box.maxLines || lines.length * lineHeight > availableHeight;
   return {
     id: params.id,
     box: {
@@ -126,10 +101,7 @@ export async function layoutTextSlot(params: {
     text,
     lines,
     textColor: roleColor(params.box.colorRole, params.master) || "#ffffff",
-    fillColor:
-      params.box.container === "none"
-        ? undefined
-        : roleColor(params.box.fillRole || "background", params.master),
+    fillColor: params.box.container === "none" ? undefined : roleColor(params.box.fillRole || "background", params.master),
     fontSize,
     lineHeight,
     lineCount: lines.length,
@@ -137,30 +109,20 @@ export async function layoutTextSlot(params: {
   } satisfies RenderedSlot;
 }
 
-async function minimumSharedFontSize(
-  values: string[],
-  box: DynamicTextBox
-) {
+async function minimumSharedFontSize(values: string[], box: DynamicTextBox) {
   for (let fontSize = box.fontSize; fontSize >= box.minFontSize; fontSize -= 1) {
     const lineHeight = Math.round(fontSize * box.lineHeight);
     const availableWidth = Math.max(1, box.width - box.padding * 2);
     const availableHeight = Math.max(1, box.height - box.padding * 2);
     const layouts = await Promise.all(values.map((value) => wrapText(value, availableWidth, fontSize)));
-    if (
-      layouts.every(
-        (lines) => lines.length <= box.maxLines && lines.length * lineHeight <= availableHeight
-      )
-    ) {
+    if (layouts.every((lines) => lines.length <= box.maxLines && lines.length * lineHeight <= availableHeight)) {
       return fontSize;
     }
   }
   return box.minFontSize;
 }
 
-export async function resolveSharedTypography(
-  master: MasterCreativeDirection,
-  hooks: HookPlan[]
-) {
+export async function resolveSharedTypography(master: MasterCreativeDirection, hooks: HookPlan[]) {
   return {
     headline: await minimumSharedFontSize(
       hooks.map((hook) => hook.headline),

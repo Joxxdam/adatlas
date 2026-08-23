@@ -23,5 +23,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
     const metadata = await sharp(data).metadata();
     if (metadata.format !== "jpeg" || metadata.width !== 1200 || metadata.height !== 1200 || data.length > MAX_FINAL_BYTES) return NextResponse.json({ ok: false, error: "내보내기 규격 검증에 실패했습니다." }, { status: 422 });
     return new NextResponse(data, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(data.length), "Content-Disposition": `attachment; filename="${path.basename(result.downloadName || file).replace(/[^a-zA-Z0-9._-]/g, "-")}"`, "Cache-Control": "private, no-store" } });
-  } catch (error) { return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "다운로드 실패") }, { status: localAccessError(error) ? 403 : 400 }); }
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "다운로드 실패") }, { status: localAccessError(error) ? 403 : 400 });
+  }
 }

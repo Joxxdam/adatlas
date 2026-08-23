@@ -1,25 +1,9 @@
 import crypto from "node:crypto";
 import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader.ts";
-import type {
-  BrandGuideline,
-  ProductAnalysisSnapshot,
-  VideoConcept,
-  VideoCut,
-  VideoDuration,
-  VideoHookType,
-  VideoObjective,
-  VideoCreativeStyle,
-  ProductLockedAsset,
-} from "./types.ts";
+import type { BrandGuideline, ProductAnalysisSnapshot, VideoConcept, VideoCut, VideoDuration, VideoHookType, VideoObjective, VideoCreativeStyle, ProductLockedAsset } from "./types.ts";
 import { preserveSceneReferences } from "./script.ts";
 import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } from "./workflow.ts";
-import {
-  buildVideoHookCandidates,
-  buildVisualBible,
-  conceptScoreFromHook,
-  selectTopDistinctHooks,
-  validateVideoPlan,
-} from "./planningPipeline.ts";
+import { buildVideoHookCandidates, buildVisualBible, conceptScoreFromHook, selectTopDistinctHooks, validateVideoPlan } from "./planningPipeline.ts";
 import { buildVideoPlannerPrompt } from "./prompts.ts";
 
 function clean(value: unknown, max = 1200) {
@@ -43,28 +27,12 @@ function compact(values: unknown[], limit = 10) {
   return result;
 }
 
-function hookPriority(
-  analysis: ProductAnalysisSnapshot,
-  objective: VideoObjective
-): VideoHookType[] {
+function hookPriority(analysis: ProductAnalysisSnapshot, objective: VideoObjective): VideoHookType[] {
   const scores: Array<[VideoHookType, number]> = [
-    [
-      "problem-solution",
-      analysis.customerProblems.length ? 92 : objective === "interest" ? 62 : 30,
-    ],
-    [
-      "price-benefit",
-      analysis.price || analysis.discountInfo ? (objective === "benefit" ? 110 : 90) : 5,
-    ],
+    ["problem-solution", analysis.customerProblems.length ? 92 : objective === "interest" ? 62 : 30],
+    ["price-benefit", analysis.price || analysis.discountInfo ? (objective === "benefit" ? 110 : 90) : 5],
     ["feature-usp", analysis.coreUsps.length || analysis.keyFeatures.length ? 100 : 35],
-    [
-      "sensory-scene",
-      /향|맛|촉감|상쾌|시원|부드|바삭|쫀득|산뜻|색감|질감/i.test(
-        [...analysis.coreUsps, ...analysis.keyFeatures].join(" ")
-      )
-        ? 88
-        : 42,
-    ],
+    ["sensory-scene", /향|맛|촉감|상쾌|시원|부드|바삭|쫀득|산뜻|색감|질감/i.test([...analysis.coreUsps, ...analysis.keyFeatures].join(" ")) ? 88 : 42],
     ["curiosity", objective === "interest" || objective === "new-product" ? 96 : 72],
     ["review-trust", analysis.trustSignals.length ? 94 : 0],
     ["brand-message", analysis.brandName ? (objective === "new-product" ? 92 : 58) : 15],
@@ -79,8 +47,7 @@ function hookPriority(
 
 function evidenceFor(type: VideoHookType, analysis: ProductAnalysisSnapshot) {
   const product = analysis.productName || "이 상품";
-  if (type === "problem-solution")
-    return analysis.customerProblems[0] || `${product}이 필요한 상황`;
+  if (type === "problem-solution") return analysis.customerProblems[0] || `${product}이 필요한 상황`;
   if (type === "price-benefit") return analysis.discountInfo || analysis.price || product;
   if (type === "review-trust") return analysis.trustSignals[0] || product;
   if (type === "brand-message") return analysis.brandName || product;
@@ -92,10 +59,7 @@ function hookMessage(type: VideoHookType, analysis: ProductAnalysisSnapshot) {
   const evidence = evidenceFor(type, analysis);
   const usp = analysis.coreUsps[0] || analysis.keyFeatures[0] || product;
   const problem = analysis.customerProblems[0] || `${product} 선택이 어려웠다면`;
-  const messages: Record<
-    VideoHookType,
-    { title: string; opening: string; bridge: string; firstScene: string }
-  > = {
+  const messages: Record<VideoHookType, { title: string; opening: string; bridge: string; firstScene: string }> = {
     "problem-solution": {
       title: `${problem}에서 시작하는 문제 해결 기획`,
       opening: `${problem}, 무엇부터 확인해야 할까요?`,
@@ -229,15 +193,7 @@ function objectiveCta(objective: VideoObjective) {
   return "제품 포인트 더 알아보기";
 }
 
-function buildCuts(input: {
-  type: VideoHookType;
-  duration: VideoDuration;
-  analysis: ProductAnalysisSnapshot;
-  opening: string;
-  bridge: string;
-  cta: string;
-  requiredPhrases: string[];
-}): VideoCut[] {
+function buildCuts(input: { type: VideoHookType; duration: VideoDuration; analysis: ProductAnalysisSnapshot; opening: string; bridge: string; cta: string; requiredPhrases: string[] }): VideoCut[] {
   const windows = timeWindows(input.duration);
   const product = input.analysis.productName;
   const proof = evidenceFor(input.type, input.analysis);
@@ -348,26 +304,12 @@ function applyForbidden(concept: VideoConcept, forbidden: string[]) {
   };
 }
 
-export function generateGroundedVideoConcepts(input: {
-  advertiserName: string;
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  duration: VideoDuration;
-  objective: VideoObjective;
-  hookTypes?: VideoHookType[];
-  existingConcepts?: VideoConcept[];
-  creativeStyle?: VideoCreativeStyle;
-  productLockedAsset?: ProductLockedAsset;
-  now?: Date;
-}) {
+export function generateGroundedVideoConcepts(input: { advertiserName: string; analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; duration: VideoDuration; objective: VideoObjective; hookTypes?: VideoHookType[]; existingConcepts?: VideoConcept[]; creativeStyle?: VideoCreativeStyle; productLockedAsset?: ProductLockedAsset; now?: Date }) {
   const nowDate = input.now || new Date();
   const now = nowDate.toISOString();
   const hookCandidates = buildVideoHookCandidates(input.analysis);
   const selectedHooks = selectTopDistinctHooks(hookCandidates, 3);
-  const types = input.hookTypes ||
-    (selectedHooks.length === 3
-      ? selectedHooks.map((candidate) => candidate.hookType)
-      : hookPriority(input.analysis, input.objective));
+  const types = input.hookTypes || (selectedHooks.length === 3 ? selectedHooks.map((candidate) => candidate.hookType) : hookPriority(input.analysis, input.objective));
   const occupied = (input.existingConcepts || []).map((concept) => concept.materialCode);
   const concepts = types.slice(0, 3).map((type): VideoConcept => {
     const previous = input.existingConcepts?.find((concept) => concept.hookType === type);
@@ -387,10 +329,7 @@ export function generateGroundedVideoConcepts(input: {
       id: previous?.id || crypto.randomUUID(),
       title: message.title,
       hookType: type,
-      coreTarget:
-        input.analysis.targetCustomers[0] ||
-        input.guideline.primaryAudience ||
-        "이 상품의 핵심 구매 고객",
+      coreTarget: input.analysis.targetCustomers[0] || input.guideline.primaryAudience || "이 상품의 핵심 구매 고객",
       objective: input.objective,
       openingHook: message.opening,
       fullScript: cuts
@@ -398,17 +337,9 @@ export function generateGroundedVideoConcepts(input: {
         .filter(Boolean)
         .join(" "),
       cuts,
-      requiredSources: compact([
-        ...cuts.flatMap((cut) => cut.requiredSources),
-        ...input.analysis.imageUrls.slice(0, 3),
-      ]),
+      requiredSources: compact([...cuts.flatMap((cut) => cut.requiredSources), ...input.analysis.imageUrls.slice(0, 3)]),
       cta,
-      productionCautions: compact([
-        ...input.analysis.cautionPhrases,
-        input.guideline.toneAndManner,
-        input.guideline.advertiserRequests,
-        input.guideline.designerNotes,
-      ]),
+      productionCautions: compact([...input.analysis.cautionPhrases, input.guideline.toneAndManner, input.guideline.advertiserRequests, input.guideline.designerNotes]),
       materialCode:
         previous?.materialCode ||
         createVideoMaterialCode({
@@ -426,21 +357,15 @@ export function generateGroundedVideoConcepts(input: {
       customerProblem: hookCandidate?.customerProblem || input.analysis.customerProblems[0] || "",
       usp: input.analysis.coreUsps[0] || input.analysis.keyFeatures[0] || "",
       creativeStyle: input.creativeStyle || "auto",
-      narrativeSummary:
-        "첫 3초에 구체적인 문제나 근거로 멈추게 한 뒤 문제 상황→원본 제품 공개→검증 근거→CTA로 연결합니다.",
-      recommendationReason: hookCandidate
-        ? `후킹 점수 ${hookCandidate.score.total}점이며 상품 근거와 시각화 가능성이 높아 상위안으로 선정했습니다.`
-        : "확인된 상품 근거를 직접 장면화할 수 있어 선정했습니다.",
+      narrativeSummary: "첫 3초에 구체적인 문제나 근거로 멈추게 한 뒤 문제 상황→원본 제품 공개→검증 근거→CTA로 연결합니다.",
+      recommendationReason: hookCandidate ? `후킹 점수 ${hookCandidate.score.total}점이며 상품 근거와 시각화 가능성이 높아 상위안으로 선정했습니다.` : "확인된 상품 근거를 직접 장면화할 수 있어 선정했습니다.",
       claimsToVerify: (input.analysis.unsupportedClaims || []).map((claim) => claim.value),
       score: hookCandidate ? conceptScoreFromHook(hookCandidate) : undefined,
       visualBible: buildVisualBible(input.analysis, input.creativeStyle || "auto"),
     };
     concept.validation = validateVideoPlan(concept, input.analysis, input.duration);
     occupied.push(concept.materialCode);
-    return preserveSceneReferences(
-      applyForbidden(concept, input.guideline.forbiddenPhrases),
-      previous
-    );
+    return preserveSceneReferences(applyForbidden(concept, input.guideline.forbiddenPhrases), previous);
   });
   return concepts;
 }
@@ -468,35 +393,12 @@ function parseJson(value: string) {
 }
 
 function textFields(concept: VideoConcept) {
-  return [
-    concept.title,
-    concept.coreTarget,
-    concept.openingHook,
-    concept.fullScript,
-    concept.cta,
-    ...concept.requiredSources,
-    ...concept.productionCautions,
-    ...concept.cuts.flatMap((cut) => [
-      cut.sceneDescription,
-      cut.caption,
-      cut.narration,
-      ...cut.requiredSources,
-    ]),
-  ].join(" ");
+  return [concept.title, concept.coreTarget, concept.openingHook, concept.fullScript, concept.cta, ...concept.requiredSources, ...concept.productionCautions, ...concept.cuts.flatMap((cut) => [cut.sceneDescription, cut.caption, cut.narration, ...cut.requiredSources])].join(" ");
 }
 
 function allowedNumbers(analysis: ProductAnalysisSnapshot) {
   return new Set(
-    [
-      analysis.productName,
-      analysis.price,
-      analysis.originalPrice,
-      analysis.discountInfo,
-      ...analysis.coreUsps,
-      ...analysis.keyFeatures,
-      ...analysis.trustSignals,
-      analysis.rawDescription,
-    ]
+    [analysis.productName, analysis.price, analysis.originalPrice, analysis.discountInfo, ...analysis.coreUsps, ...analysis.keyFeatures, ...analysis.trustSignals, analysis.rawDescription]
       .join(" ")
       .match(/\d[\d,.]*/g)
       ?.map((value) => value.replace(/[,.]/g, "")) || []
@@ -504,16 +406,10 @@ function allowedNumbers(analysis: ProductAnalysisSnapshot) {
 }
 
 function unsupportedNumber(concept: VideoConcept, allowed: Set<string>) {
-  return (textFields(concept).match(/\d[\d,.]*/g) || [])
-    .map((value) => value.replace(/[,.]/g, ""))
-    .some((value) => !allowed.has(value));
+  return (textFields(concept).match(/\d[\d,.]*/g) || []).map((value) => value.replace(/[,.]/g, "")).some((value) => !allowed.has(value));
 }
 
-function fromAiConcept(
-  raw: unknown,
-  fallback: VideoConcept,
-  duration: VideoDuration
-): VideoConcept | null {
+function fromAiConcept(raw: unknown, fallback: VideoConcept, duration: VideoDuration): VideoConcept | null {
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Record<string, unknown>;
   const cuts = Array.isArray(value.cuts) ? value.cuts : [];
@@ -523,8 +419,7 @@ function fromAiConcept(
     return {
       id: fallback.cuts[index]?.id || crypto.randomUUID(),
       cutNumber: index + 1,
-      sceneName:
-        clean(item.sceneName, 160) || fallback.cuts[index]?.sceneName || `장면 ${index + 1}`,
+      sceneName: clean(item.sceneName, 160) || fallback.cuts[index]?.sceneName || `장면 ${index + 1}`,
       startSecond: Number(item.startSecond),
       endSecond: Number(item.endSecond),
       sceneDescription: clean(item.sceneDescription, 500),
@@ -532,33 +427,16 @@ function fromAiConcept(
       narration: clean(item.narration, 500),
       requiredSources: compact(Array.isArray(item.requiredSources) ? item.requiredSources : [], 6),
       referenceImages: fallback.cuts[index]?.referenceImages || [],
-      productionMemo:
-        clean(item.productionMemo, 1200) || fallback.cuts[index]?.productionMemo || "",
+      productionMemo: clean(item.productionMemo, 1200) || fallback.cuts[index]?.productionMemo || "",
       sceneFormat: clean(item.sceneFormat, 160) || fallback.cuts[index]?.sceneFormat,
-      cameraComposition:
-        clean(item.cameraComposition, 1000) || fallback.cuts[index]?.cameraComposition,
-      motionDirection:
-        clean(item.motionDirection, 1000) || fallback.cuts[index]?.motionDirection,
+      cameraComposition: clean(item.cameraComposition, 1000) || fallback.cuts[index]?.cameraComposition,
+      motionDirection: clean(item.motionDirection, 1000) || fallback.cuts[index]?.motionDirection,
       transition: clean(item.transition, 500) || fallback.cuts[index]?.transition,
-      generationPrompt:
-        clean(item.generationPrompt, 5000) || fallback.cuts[index]?.generationPrompt,
+      generationPrompt: clean(item.generationPrompt, 5000) || fallback.cuts[index]?.generationPrompt,
       productLockInstruction: fallback.cuts[index]?.productLockInstruction,
     };
   });
-  if (
-    normalizedCuts.some(
-      (cut) =>
-        !Number.isFinite(cut.startSecond) ||
-        !Number.isFinite(cut.endSecond) ||
-        cut.startSecond < 0 ||
-        cut.endSecond <= cut.startSecond ||
-        cut.endSecond > duration
-    ) ||
-    normalizedCuts.some(
-      (cut, index) => index > 0 && cut.startSecond < normalizedCuts[index - 1].endSecond
-    ) ||
-    normalizedCuts.at(-1)?.endSecond !== duration
-  ) {
+  if (normalizedCuts.some((cut) => !Number.isFinite(cut.startSecond) || !Number.isFinite(cut.endSecond) || cut.startSecond < 0 || cut.endSecond <= cut.startSecond || cut.endSecond > duration) || normalizedCuts.some((cut, index) => index > 0 && cut.startSecond < normalizedCuts[index - 1].endSecond) || normalizedCuts.at(-1)?.endSecond !== duration) {
     return null;
   }
   const concept: VideoConcept = {
@@ -568,34 +446,16 @@ function fromAiConcept(
     openingHook: clean(value.openingHook, 240) || fallback.openingHook,
     fullScript: clean(value.fullScript, 3000) || fallback.fullScript,
     cuts: normalizedCuts,
-    requiredSources: compact(
-      Array.isArray(value.requiredSources) ? value.requiredSources : fallback.requiredSources,
-      10
-    ),
+    requiredSources: compact(Array.isArray(value.requiredSources) ? value.requiredSources : fallback.requiredSources, 10),
     cta: clean(value.cta, 160) || fallback.cta,
-    productionCautions: compact(
-      Array.isArray(value.productionCautions)
-        ? value.productionCautions
-        : fallback.productionCautions,
-      10
-    ),
+    productionCautions: compact(Array.isArray(value.productionCautions) ? value.productionCautions : fallback.productionCautions, 10),
     generationSource: "openai",
     generationWarnings: [],
   };
   return concept;
 }
 
-async function generateWithOpenAI(input: {
-  advertiserName: string;
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  duration: VideoDuration;
-  objective: VideoObjective;
-  fallbacks: VideoConcept[];
-  creativeStyle?: VideoCreativeStyle;
-  productLockedAsset?: ProductLockedAsset;
-  copyGuideContent?: string;
-}) {
+async function generateWithOpenAI(input: { advertiserName: string; analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; duration: VideoDuration; objective: VideoObjective; fallbacks: VideoConcept[]; creativeStyle?: VideoCreativeStyle; productLockedAsset?: ProductLockedAsset; copyGuideContent?: string }) {
   const facts = {
     product: input.analysis,
     brandGuideline: input.guideline,
@@ -620,31 +480,19 @@ async function generateWithOpenAI(input: {
     }),
     signal: AbortSignal.timeout(45_000),
   });
-  if (!response.ok)
-    throw new Error(`OpenAI video script generation failed: HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`OpenAI video script generation failed: HTTP ${response.status}`);
   const parsed = parseJson(responseText(await response.json()));
   const rawConcepts = parsed.concepts || [];
   const allowed = allowedNumbers(input.analysis);
   return input.fallbacks.map((fallback) => {
-    const raw = rawConcepts.find(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        (item as Record<string, unknown>).hookType === fallback.hookType
-    );
+    const raw = rawConcepts.find((item) => item && typeof item === "object" && (item as Record<string, unknown>).hookType === fallback.hookType);
     const candidate = fromAiConcept(raw, fallback, input.duration);
     if (!candidate) {
       throw new Error(`AI response schema validation failed for ${fallback.hookType}`);
     }
-    const forbidden = input.guideline.forbiddenPhrases.filter((phrase) =>
-      textFields(candidate).includes(phrase)
-    );
+    const forbidden = input.guideline.forbiddenPhrases.filter((phrase) => textFields(candidate).includes(phrase));
     if (forbidden.length || unsupportedNumber(candidate, allowed)) {
-      throw new Error(
-        forbidden.length
-          ? `AI response contains forbidden phrase for ${fallback.hookType}`
-          : `AI response contains an unsupported number for ${fallback.hookType}`
-      );
+      throw new Error(forbidden.length ? `AI response contains forbidden phrase for ${fallback.hookType}` : `AI response contains an unsupported number for ${fallback.hookType}`);
     }
     const validation = validateVideoPlan(candidate, input.analysis, input.duration);
     if (!validation.valid) {
@@ -655,17 +503,7 @@ async function generateWithOpenAI(input: {
   });
 }
 
-export async function generateVideoConcepts(input: {
-  advertiserName: string;
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  duration: VideoDuration;
-  objective: VideoObjective;
-  hookTypes?: VideoHookType[];
-  existingConcepts?: VideoConcept[];
-  creativeStyle?: VideoCreativeStyle;
-  productLockedAsset?: ProductLockedAsset;
-}) {
+export async function generateVideoConcepts(input: { advertiserName: string; analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; duration: VideoDuration; objective: VideoObjective; hookTypes?: VideoHookType[]; existingConcepts?: VideoConcept[]; creativeStyle?: VideoCreativeStyle; productLockedAsset?: ProductLockedAsset }) {
   const fallbacks = generateGroundedVideoConcepts(input);
   if (!process.env.OPENAI_API_KEY?.trim()) {
     throw new Error("영상 대본 생성에 필요한 AI 설정을 확인해 주세요.");

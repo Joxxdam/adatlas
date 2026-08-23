@@ -1,23 +1,6 @@
 import { aggregateProductMetrics, isoDateShift, latestMetricDate } from "./aggregation.ts";
-import {
-  clampScore,
-  percentile,
-  safeChangeRate,
-  safeDivide,
-  smoothedConversionRate,
-  weightedAvailableScore,
-} from "./math.ts";
-import type {
-  AnalysisRun,
-  DataQualityReport,
-  OpportunityEvidence,
-  OpportunityRecommendation,
-  Product,
-  ProductDailyMetric,
-  ProductOpportunity,
-  ProductOpportunityType,
-  ReviewInsight,
-} from "./types.ts";
+import { clampScore, percentile, safeChangeRate, safeDivide, smoothedConversionRate, weightedAvailableScore } from "./math.ts";
+import type { AnalysisRun, DataQualityReport, OpportunityEvidence, OpportunityRecommendation, Product, ProductDailyMetric, ProductOpportunity, ProductOpportunityType, ReviewInsight } from "./types.ts";
 
 export const OPPORTUNITY_ALGORITHM_VERSION = "opportunity-engine-v1";
 
@@ -59,15 +42,7 @@ function ratioScore(value: number | null, baseline: number | null, positive = tr
   return clampScore(50 + (positive ? 1 : -1) * (ratio - 1) * 50);
 }
 
-function signalForProduct(params: {
-  product: Product;
-  current: ReturnType<typeof aggregateProductMetrics>[number] | undefined;
-  previous: ReturnType<typeof aggregateProductMetrics>[number] | undefined;
-  medians: Record<string, number | null>;
-  upper: Record<string, number | null>;
-  insights: ReviewInsight[];
-  periodEnd: string;
-}) {
+function signalForProduct(params: { product: Product; current: ReturnType<typeof aggregateProductMetrics>[number] | undefined; previous: ReturnType<typeof aggregateProductMetrics>[number] | undefined; medians: Record<string, number | null>; upper: Record<string, number | null>; insights: ReviewInsight[]; periodEnd: string }) {
   const { product, current, previous, medians, upper, insights } = params;
   const currentCvr = current?.viewToOrderRate ?? null;
   const categoryCvr = medians.viewToOrderRate;
@@ -79,10 +54,7 @@ function signalForProduct(params: {
   });
   const positiveInsights = insights.filter((insight) => insight.polarity === "positive");
   const negativeInsights = insights.filter((insight) => insight.polarity === "negative");
-  const daysSinceFirstSeen = Math.max(
-    0,
-    Math.round((new Date(`${params.periodEnd}T00:00:00Z`).getTime() - new Date(product.firstSeenAt).getTime()) / 86400000)
-  );
+  const daysSinceFirstSeen = Math.max(0, Math.round((new Date(`${params.periodEnd}T00:00:00Z`).getTime() - new Date(product.firstSeenAt).getTime()) / 86400000));
   return {
     product,
     current,
@@ -102,21 +74,9 @@ function signalForProduct(params: {
   };
 }
 
-function evidence(params: {
-  metric: string;
-  label: string;
-  current: number | null;
-  previous?: number | null;
-  median?: number | null;
-  unit?: OpportunityEvidence["unit"];
-  source?: OpportunityEvidence["source"];
-}): OpportunityEvidence {
+function evidence(params: { metric: string; label: string; current: number | null; previous?: number | null; median?: number | null; unit?: OpportunityEvidence["unit"]; source?: OpportunityEvidence["source"] }): OpportunityEvidence {
   const changeRate = safeChangeRate(params.current, params.previous ?? null);
-  const formatted = params.current === null
-    ? "데이터 없음"
-    : params.unit === "rate"
-      ? `${(params.current * 100).toFixed(1)}%`
-      : params.current.toLocaleString("ko-KR");
+  const formatted = params.current === null ? "데이터 없음" : params.unit === "rate" ? `${(params.current * 100).toFixed(1)}%` : params.current.toLocaleString("ko-KR");
   return {
     metric: params.metric,
     label: params.label,
@@ -136,27 +96,32 @@ const recommendations: Record<ProductOpportunityType, OpportunityRecommendation>
   SCALE_CANDIDATE: { objective: "예산 확장 테스트", hookTypes: ["proof-data", "product-hero"], messageAngles: ["검증된 판매 반응", "대표 혜택"], imageDirection: "대표 상품과 근거를 명확히", promotionSuggestion: null, rationale: ["판매 규모와 효율이 함께 확인됩니다."] },
   UNDEREXPOSED: { objective: "신규 도달 확보", hookTypes: ["problem-solution", "review"], messageAngles: ["후기에서 발견한 장점", "인지되지 않은 효용"], imageDirection: "후기 키워드와 실사용 장면", promotionSuggestion: null, rationale: ["상품 반응에 비해 조회 기회가 적습니다."] },
   HIGH_INTEREST_LOW_CONVERSION: { objective: "구매 장벽 해소", hookTypes: ["comparison", "objection"], messageAngles: ["선택 기준", "구매 전 걱정 해소"], imageDirection: "비교와 정보 위계 중심", promotionSuggestion: "구매 장벽을 줄이는 혜택 검토", rationale: ["관심 대비 구매 전환이 낮습니다."] },
-  CART_ABANDONMENT: { objective: "장바구니 이탈 회수", hookTypes: ["urgency", "price-value"], messageAngles: ["결정을 미룬 이유 해소", "구성·가격 확인"], imageDirection: "가격·구성·CTA를 선명하게", promotionSuggestion: "기간과 사실이 확인된 혜택만 적용", rationale: ["장바구니 이후 주문 전환이 낮습니다."] },
+  CART_ABANDONMENT: {
+    objective: "장바구니 이탈 회수",
+    hookTypes: ["urgency", "price-value"],
+    messageAngles: ["결정을 미룬 이유 해소", "구성·가격 확인"],
+    imageDirection: "가격·구성·CTA를 선명하게",
+    promotionSuggestion: "기간과 사실이 확인된 혜택만 적용",
+    rationale: ["장바구니 이후 주문 전환이 낮습니다."],
+  },
   REVIEW_POWERED: { objective: "후기 근거 확장", hookTypes: ["review-ugc", "social-proof"], messageAngles: ["후기 반복 장점", "실사용 만족"], imageDirection: "실제 상품과 후기형 레이아웃", promotionSuggestion: null, rationale: ["평점과 긍정 후기 근거가 충분합니다."] },
   REVIEW_RISK: { objective: "오해 방지·기대치 조정", hookTypes: ["faq", "transparent"], messageAngles: ["사용 전 확인사항", "적합한 고객"], imageDirection: "과장 없이 안내형 구성", promotionSuggestion: null, rationale: ["부정 후기 신호를 먼저 해소해야 합니다."] },
   REPEAT_PURCHASE: { objective: "재구매 가치 강조", hookTypes: ["routine", "value"], messageAngles: ["꾸준히 쓰는 이유", "일상 루틴"], imageDirection: "반복 사용 장면", promotionSuggestion: "반복 구매 구성을 검토", rationale: ["재구매 주문 비중이 확인됩니다."] },
   BUNDLE_CANDIDATE: { objective: "객단가 확대", hookTypes: ["bundle-value", "usage"], messageAngles: ["함께 쓰는 구성", "묶음 가치"], imageDirection: "복수 구성과 사용 맥락", promotionSuggestion: "실제 판매 가능한 묶음 구성을 검토", rationale: ["주문·반복구매 신호가 묶음 테스트에 적합합니다."] },
   NEW_PRODUCT_TEST: { objective: "신상품 학습", hookTypes: ["new", "problem-solution"], messageAngles: ["새로운 선택지", "첫 사용 이유"], imageDirection: "상품을 크게 보여주는 단순한 테스트 소재", promotionSuggestion: null, rationale: ["출시 초기라 다양한 가설 테스트가 필요합니다."] },
   DECLINING_BESTSELLER: { objective: "하락 원인 재검증", hookTypes: ["refresh", "review"], messageAngles: ["기존 인기 이유 재발견", "최근 구매 장벽"], imageDirection: "기존 강점과 새 장면 조합", promotionSuggestion: null, rationale: ["이전 판매 규모 대비 최근 반응이 하락했습니다."] },
-  INVENTORY_OPPORTUNITY: { objective: "재고 소진 테스트", hookTypes: ["product-hero", "price-value"], messageAngles: ["상품 핵심 가치", "구성 안내"], imageDirection: "재고 수치를 노출하지 않고 상품 효용 중심", promotionSuggestion: "실제 승인된 프로모션이 있을 때만 적용", rationale: ["재고와 낮은 노출이 함께 확인됩니다."] },
+  INVENTORY_OPPORTUNITY: {
+    objective: "재고 소진 테스트",
+    hookTypes: ["product-hero", "price-value"],
+    messageAngles: ["상품 핵심 가치", "구성 안내"],
+    imageDirection: "재고 수치를 노출하지 않고 상품 효용 중심",
+    promotionSuggestion: "실제 승인된 프로모션이 있을 때만 적용",
+    rationale: ["재고와 낮은 노출이 함께 확인됩니다."],
+  },
   EXCLUDE_FROM_ADS: { objective: "광고 제외", hookTypes: [], messageAngles: ["광고 집행 전 상태 확인"], imageDirection: "생성하지 않음", promotionSuggestion: null, rationale: ["품절·비노출·데이터 위험 등 제외 조건입니다."] },
 };
 
-function opportunity(params: {
-  type: ProductOpportunityType;
-  title: string;
-  score: number;
-  confidence: number;
-  signals: ProductSignals;
-  analysisRunId: string;
-  evidence: OpportunityEvidence[];
-  now: string;
-}) : ProductOpportunity {
+function opportunity(params: { type: ProductOpportunityType; title: string; score: number; confidence: number; signals: ProductSignals; analysisRunId: string; evidence: OpportunityEvidence[]; now: string }): ProductOpportunity {
   const product = params.signals.product;
   const score = clampScore(params.score);
   const confidence = clampScore(params.confidence);
@@ -213,16 +178,18 @@ function detect(signal: ProductSignals, analysisRunId: string, quality: DataQual
   const refundRisk = current?.refundRate !== null && current?.refundRate !== undefined && current.refundRate >= config.highRefundRateThreshold;
   const excluded = product.display === false || /sold|품절|중지|숨김/i.test(product.status || "") || (product.stockCount !== null && product.stockCount <= config.lowStockThreshold) || reviewRisk || refundRisk || dataError || (product.margin !== null && product.margin <= 0) || !product.url;
   if (excluded) {
-    const excludedOpportunity = opportunity({ type: "EXCLUDE_FROM_ADS", title: "재고·환불·리뷰·상품 상태 확인 후 광고 제외", score: 100, confidence, signals: signal, analysisRunId, evidence: [ev.stock, ev.rating, evidence({ metric: "refundRate", label: "환불률", current: current?.refundRate ?? null, unit: "rate" })], now });
+    const excludedOpportunity = opportunity({
+      type: "EXCLUDE_FROM_ADS",
+      title: "재고·환불·리뷰·상품 상태 확인 후 광고 제외",
+      score: 100,
+      confidence,
+      signals: signal,
+      analysisRunId,
+      evidence: [ev.stock, ev.rating, evidence({ metric: "refundRate", label: "환불률", current: current?.refundRate ?? null, unit: "rate" })],
+      now,
+    });
     excludedOpportunity.secondaryTypes = reviewRisk ? ["REVIEW_RISK"] : [];
-    excludedOpportunity.risks = [
-      product.stockCount !== null && product.stockCount <= config.lowStockThreshold ? "재고 부족" : "",
-      reviewRisk ? "반복 부정 후기와 낮은 평점" : "",
-      refundRisk ? "높은 환불률" : "",
-      dataError ? "데이터 오류" : "",
-      !product.url ? "상품 URL 누락" : "",
-      product.margin !== null && product.margin <= 0 ? "마진 부족" : "",
-    ].filter(Boolean);
+    excludedOpportunity.risks = [product.stockCount !== null && product.stockCount <= config.lowStockThreshold ? "재고 부족" : "", reviewRisk ? "반복 부정 후기와 낮은 평점" : "", refundRisk ? "높은 환불률" : "", dataError ? "데이터 오류" : "", !product.url ? "상품 URL 누락" : "", product.margin !== null && product.margin <= 0 ? "마진 부족" : ""].filter(Boolean);
     return [excludedOpportunity];
   }
 
@@ -230,7 +197,11 @@ function detect(signal: ProductSignals, analysisRunId: string, quality: DataQual
     results.push(opportunity({ type: "NEW_PRODUCT_TEST", title: "신상품 가설 테스트", score: 78, confidence, signals: signal, analysisRunId, evidence: [evidence({ metric: "daysSinceFirstSeen", label: "첫 수집 후 경과일", current: signal.daysSinceFirstSeen, unit: "days" }), ev.orders], now }));
   }
   if (current?.views !== null && current?.views !== undefined && medians.views !== null && current.views < medians.views * 0.75 && signal.smoothedCvr !== null && upper.viewToOrderRate !== null && signal.smoothedCvr >= upper.viewToOrderRate && (current.paidOrders ?? 0) > 0) {
-    const score = weightedAvailableScore([{ value: ratioScore(signal.smoothedCvr, upper.viewToOrderRate), weight: 0.7 }, { value: ratioScore(medians.views, Math.max(1, current.views)), weight: 0.3 }]) ?? 70;
+    const score =
+      weightedAvailableScore([
+        { value: ratioScore(signal.smoothedCvr, upper.viewToOrderRate), weight: 0.7 },
+        { value: ratioScore(medians.views, Math.max(1, current.views)), weight: 0.3 },
+      ]) ?? 70;
     results.push(opportunity({ type: "HIDDEN_WINNER", title: "적은 노출에서 전환이 확인된 숨은 상품", score, confidence, signals: signal, analysisRunId, evidence: [ev.views, ev.cvr, ev.orders], now }));
   }
   if (signal.orderChange !== null && signal.orderChange >= config.risingGrowthThreshold && (current?.paidOrders ?? 0) >= config.minimumOrders) {
@@ -269,16 +240,7 @@ function detect(signal: ProductSignals, analysisRunId: string, quality: DataQual
   return results;
 }
 
-export function runOpportunityAnalysis(params: {
-  advertiserId: string;
-  products: Product[];
-  metrics: ProductDailyMetric[];
-  insights: ReviewInsight[];
-  qualityReport: DataQualityReport;
-  periodDays?: 1 | 7 | 14 | 28;
-  now?: string;
-  ruleConfig?: Partial<OpportunityRuleConfig>;
-}) {
+export function runOpportunityAnalysis(params: { advertiserId: string; products: Product[]; metrics: ProductDailyMetric[]; insights: ReviewInsight[]; qualityReport: DataQualityReport; periodDays?: 1 | 7 | 14 | 28; now?: string; ruleConfig?: Partial<OpportunityRuleConfig> }) {
   const now = params.now || new Date().toISOString();
   const periodDays = params.periodDays || 14;
   const ruleConfig = { ...defaultOpportunityRuleConfig, ...(params.ruleConfig || {}) };
@@ -289,26 +251,46 @@ export function runOpportunityAnalysis(params: {
   const runId = `analysis-${params.advertiserId}-${now.replace(/\D/g, "").slice(0, 14)}`;
   const current = aggregateProductMetrics(params.metrics, currentStartsOn, currentEndsOn);
   const previous = aggregateProductMetrics(params.metrics, previousStartsOn, previousEndsOn);
-  const value = (field: keyof (typeof current)[number]) => current.map((metric) => typeof metric[field] === "number" ? metric[field] as number : null);
+  const value = (field: keyof (typeof current)[number]) => current.map((metric) => (typeof metric[field] === "number" ? (metric[field] as number) : null));
   const medians = {
-    views: percentile(value("views"), 0.5), paidOrders: percentile(value("paidOrders"), 0.5), revenue: percentile(value("revenue"), 0.5),
-    viewToOrderRate: percentile(value("viewToOrderRate"), 0.5), viewToCartRate: percentile(value("viewToCartRate"), 0.5), cartToOrderRate: percentile(value("cartToOrderRate"), 0.5),
-    averageRating: percentile(value("averageRating"), 0.5), stockCount: percentile(value("stockCount"), 0.5),
+    views: percentile(value("views"), 0.5),
+    paidOrders: percentile(value("paidOrders"), 0.5),
+    revenue: percentile(value("revenue"), 0.5),
+    viewToOrderRate: percentile(value("viewToOrderRate"), 0.5),
+    viewToCartRate: percentile(value("viewToCartRate"), 0.5),
+    cartToOrderRate: percentile(value("cartToOrderRate"), 0.5),
+    averageRating: percentile(value("averageRating"), 0.5),
+    stockCount: percentile(value("stockCount"), 0.5),
   };
   const upper = {
-    views: percentile(value("views"), 0.75), paidOrders: percentile(value("paidOrders"), 0.75), revenue: percentile(value("revenue"), 0.75),
-    viewToOrderRate: percentile(value("viewToOrderRate"), 0.75), viewToCartRate: percentile(value("viewToCartRate"), 0.75), cartToOrderRate: percentile(value("cartToOrderRate"), 0.75),
-    averageRating: percentile(value("averageRating"), 0.75), stockCount: percentile(value("stockCount"), 0.75),
+    views: percentile(value("views"), 0.75),
+    paidOrders: percentile(value("paidOrders"), 0.75),
+    revenue: percentile(value("revenue"), 0.75),
+    viewToOrderRate: percentile(value("viewToOrderRate"), 0.75),
+    viewToCartRate: percentile(value("viewToCartRate"), 0.75),
+    cartToOrderRate: percentile(value("cartToOrderRate"), 0.75),
+    averageRating: percentile(value("averageRating"), 0.75),
+    stockCount: percentile(value("stockCount"), 0.75),
   };
-  const rawOpportunities = params.products.flatMap((product) => detect(signalForProduct({
-    product,
-    current: current.find((metric) => metric.productId === product.id),
-    previous: previous.find((metric) => metric.productId === product.id),
-    medians,
-    upper,
-    insights: params.insights.filter((insight) => insight.productId === product.id),
-    periodEnd: currentEndsOn,
-  }), runId, params.qualityReport, now, ruleConfig)).sort((left, right) => right.score - left.score);
+  const rawOpportunities = params.products
+    .flatMap((product) =>
+      detect(
+        signalForProduct({
+          product,
+          current: current.find((metric) => metric.productId === product.id),
+          previous: previous.find((metric) => metric.productId === product.id),
+          medians,
+          upper,
+          insights: params.insights.filter((insight) => insight.productId === product.id),
+          periodEnd: currentEndsOn,
+        }),
+        runId,
+        params.qualityReport,
+        now,
+        ruleConfig
+      )
+    )
+    .sort((left, right) => right.score - left.score);
   const grouped = new Map<string, ProductOpportunity[]>();
   for (const item of rawOpportunities) {
     const values = grouped.get(item.productId) || [];
@@ -317,21 +299,14 @@ export function runOpportunityAnalysis(params: {
   }
   const opportunities = Array.from(grouped.values(), (items) => {
     const [primary, ...secondary] = items.sort((left, right) => right.score - left.score);
-    const secondaryTypes = Array.from(new Set([
-      ...primary.secondaryTypes,
-      ...secondary.flatMap((item) => [item.type, ...item.secondaryTypes]),
-    ]));
-    const combinedEvidence = Array.from(
-      new Map(items.flatMap((item) => item.evidence).map((item) => [item.metric, item])).values()
-    ).slice(0, 8);
+    const secondaryTypes = Array.from(new Set([...primary.secondaryTypes, ...secondary.flatMap((item) => [item.type, ...item.secondaryTypes])]));
+    const combinedEvidence = Array.from(new Map(items.flatMap((item) => item.evidence).map((item) => [item.metric, item])).values()).slice(0, 8);
     return {
       ...primary,
       secondaryTypes,
       evidence: combinedEvidence,
       risks: Array.from(new Set(items.flatMap((item) => item.risks))),
-      summary: [primary.title, secondaryTypes.length ? `보조 신호: ${secondaryTypes.join(", ")}` : ""]
-        .filter(Boolean)
-        .join(" · "),
+      summary: [primary.title, secondaryTypes.length ? `보조 신호: ${secondaryTypes.join(", ")}` : ""].filter(Boolean).join(" · "),
     };
   }).sort((left, right) => right.score - left.score);
   const run: AnalysisRun = {

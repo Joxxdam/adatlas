@@ -1,8 +1,4 @@
-import type {
-  ProductReferenceImage,
-  ProductReferenceProfile,
-  ProductTruth,
-} from "./types.ts";
+import type { ProductReferenceImage, ProductReferenceProfile, ProductTruth } from "./types.ts";
 
 function stableHash(value: string) {
   let hash = 2166136261;
@@ -22,7 +18,10 @@ function firstFact(truth: ProductTruth, pattern: RegExp) {
 }
 
 function token(value: string, pattern: RegExp) {
-  return String(value || "").match(pattern)?.[0]?.replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .match(pattern)?.[0]
+    ?.replace(/\s+/g, " ")
+    .trim();
 }
 
 function identityRules(truth: ProductTruth) {
@@ -72,15 +71,10 @@ function identityRules(truth: ProductTruth) {
   };
 }
 
-export function buildProductReferenceProfile(
-  truth: ProductTruth,
-  referenceImages: ProductReferenceImage[]
-): ProductReferenceProfile {
+export function buildProductReferenceProfile(truth: ProductTruth, referenceImages: ProductReferenceImage[]): ProductReferenceProfile {
   const product = truth.product;
   const identity = identityRules(truth);
-  const productText = [product.productName, product.extractedDescription, ...truth.verifiedClaims]
-    .filter(Boolean)
-    .join(" ");
+  const productText = [product.productName, product.extractedDescription, ...truth.verifiedClaims].filter(Boolean).join(" ");
   const quantity = token(productText, /\d[\d,.]*\s*(?:kg|g|ml|mL|L|개|팩|병|매|입|세트)\b/i);
   const volume = token(productText, /\d[\d,.]*\s*(?:ml|mL|L)\b/);
   const count = token(productText, /\d[\d,.]*\s*(?:개|팩|병|매|입)\b/);
@@ -89,30 +83,21 @@ export function buildProductReferenceProfile(
   const optionName = firstFact(truth, /option|옵션/);
   const material = firstFact(truth, /^(?:material|fabric)(?:\s|$)|소재|원단|재질/);
   const pattern = firstFact(truth, /^(?:pattern|print)(?:\s|$)|패턴|무늬/);
-  const includedItems = truth.facts
-    .filter((fact) => /구성|세트|included|composition/.test(`${fact.key} ${fact.label}`) && fact.usableInCopy)
-    .map((fact) => fact.value);
+  const includedItems = truth.facts.filter((fact) => /구성|세트|included|composition/.test(`${fact.key} ${fact.label}`) && fact.usableInCopy).map((fact) => fact.value);
   const usable = referenceImages.filter((image) => image.usableForGeneration && !image.duplicateOf);
-  const identityReferences = usable.filter((image) =>
-    ["primary-product", "front-package", "product-detail", "worn", "cooked"].includes(image.role)
-  );
-  const referenceSufficiency =
-    usable.length >= 4 && identityReferences.length >= 2
-      ? "high"
-      : usable.length >= 2 && identityReferences.length >= 1
-        ? "medium"
-        : "low";
+  const identityReferences = usable.filter((image) => ["primary-product", "front-package", "product-detail", "worn", "cooked"].includes(image.role));
+  const referenceSufficiency = usable.length >= 4 && identityReferences.length >= 2 ? "high" : usable.length >= 2 && identityReferences.length >= 1 ? "medium" : "low";
   const primaryColor = product.productColors?.[0] || product.brandColors?.[0];
-  const secondaryColors = unique([
-    ...(product.productColors || []).slice(1),
-    ...(product.brandColors || []).filter((color) => color !== primaryColor),
-  ]).slice(0, 6);
+  const secondaryColors = unique([...(product.productColors || []).slice(1), ...(product.brandColors || []).filter((color) => color !== primaryColor)]).slice(0, 6);
   const packageType = product.packageType || firstFact(truth, /package|포장|용기/);
   const signatureDetails = unique([
     packageType ? `포장·용기 형태: ${packageType}` : undefined,
     primaryColor ? `대표 색상: ${primaryColor}` : undefined,
     quantity ? `표시 구성: ${quantity}` : undefined,
-    ...referenceImages.filter((image) => image.importance >= 70).slice(0, 3).map((image) => image.description),
+    ...referenceImages
+      .filter((image) => image.importance >= 70)
+      .slice(0, 3)
+      .map((image) => image.description),
   ]);
   const idSeed = JSON.stringify({
     productId: truth.productId,
@@ -132,9 +117,7 @@ export function buildProductReferenceProfile(
       primaryColor,
       secondaryColors: secondaryColors.length ? secondaryColors : undefined,
       logoDescription: product.brandName ? `${product.brandName} 브랜드 표기 위치를 원본과 동일하게 유지` : undefined,
-      labelLayout: referenceImages.some((image) => image.role === "front-package")
-        ? "정면 패키지 레퍼런스의 라벨 배치"
-        : undefined,
+      labelLayout: referenceImages.some((image) => image.role === "front-package") ? "정면 패키지 레퍼런스의 라벨 배치" : undefined,
       quantity,
       volume,
       count,
@@ -154,10 +137,7 @@ export function buildProductReferenceProfile(
       mustNotGenerate: unique(identity.forbid),
     },
     verifiedClaims: unique(truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.value)),
-    prohibitedClaims: unique([
-      ...truth.blockedClaimPatterns,
-      "상세페이지에서 확인되지 않은 원산지·등급·인증·효능·함량·할인율·후기 수·판매량·배송 조건",
-    ]),
+    prohibitedClaims: unique([...truth.blockedClaimPatterns, "상세페이지에서 확인되지 않은 원산지·등급·인증·효능·함량·할인율·후기 수·판매량·배송 조건"]),
     referenceImages,
     referenceSufficiency,
     createdAt: new Date().toISOString(),

@@ -1,25 +1,9 @@
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import {
-  createBrandCode,
-  createProductCode,
-  createHookVariantAssetCode,
-  createExplorationAssetCode,
-  extensionFromImageUrl,
-  extractCreativeAssetCode,
-  generateCreativeAssetCode,
-  getHookCode,
-  validateCreativeAssetCode,
-} from "./code.ts";
+import { createBrandCode, createProductCode, createHookVariantAssetCode, createExplorationAssetCode, extensionFromImageUrl, extractCreativeAssetCode, generateCreativeAssetCode, getHookCode, validateCreativeAssetCode } from "./code.ts";
 import { createExperimentAssetCode } from "../hook-experiments/codes.ts";
-import type {
-  CreateCreativeAssetInput,
-  CreativeAsset,
-  CreativeAssetFilters,
-  CreativeAssetMatchResult,
-  CreativeAssetStatus,
-} from "./types.ts";
+import type { CreateCreativeAssetInput, CreativeAsset, CreativeAssetFilters, CreativeAssetMatchResult, CreativeAssetStatus } from "./types.ts";
 
 type CreativeAssetStore = {
   version: "creative-assets-v1";
@@ -37,17 +21,27 @@ const emptyStore = (): CreativeAssetStore => ({
 });
 
 function normalizedText(value: unknown, fallback = "") {
-  return String(value || fallback).replace(/\s+/g, " ").trim();
+  return String(value || fallback)
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function entityId(kind: "brand" | "product", id: string | undefined, name: string) {
   if (normalizedText(id)) return normalizedText(id);
-  const hash = crypto.createHash("sha256").update(`${kind}|${name || "unknown"}`).digest("hex").slice(0, 16);
+  const hash = crypto
+    .createHash("sha256")
+    .update(`${kind}|${name || "unknown"}`)
+    .digest("hex")
+    .slice(0, 16);
   return `${kind}-${hash}`;
 }
 
 function uniqueEntityCode(base: string, key: string, codes: Record<string, string>) {
-  const occupied = new Set(Object.entries(codes).filter(([entry]) => entry !== key).map(([, code]) => code));
+  const occupied = new Set(
+    Object.entries(codes)
+      .filter(([entry]) => entry !== key)
+      .map(([, code]) => code)
+  );
   if (!occupied.has(base)) return base;
   for (let attempt = 0; attempt < 256; attempt += 1) {
     const suffix = crypto.createHash("sha256").update(`${key}|${attempt}`).digest("hex").slice(0, 2).toUpperCase();
@@ -98,7 +92,10 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
 
   function locked<T>(operation: () => Promise<T>) {
     const next = queue.then(operation, operation);
-    queue = next.then(() => undefined, () => undefined);
+    queue = next.then(
+      () => undefined,
+      () => undefined
+    );
     return next;
   }
 
@@ -107,12 +104,8 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
     const productName = normalizedText(input.productName, "상품 미지정");
     const brandId = entityId("brand", input.brandId, brandName);
     const productId = entityId("product", input.productId, productName);
-    const brandCode =
-      store.entityCodes.brands[brandId] ||
-      uniqueEntityCode(createBrandCode(brandName, brandId), brandId, store.entityCodes.brands);
-    const productCode =
-      store.entityCodes.products[productId] ||
-      uniqueEntityCode(createProductCode(productName, productId), productId, store.entityCodes.products);
+    const brandCode = store.entityCodes.brands[brandId] || uniqueEntityCode(createBrandCode(brandName, brandId), brandId, store.entityCodes.brands);
+    const productCode = store.entityCodes.products[productId] || uniqueEntityCode(createProductCode(productName, productId), productId, store.entityCodes.products);
     store.entityCodes.brands[brandId] = brandCode;
     store.entityCodes.products[productId] = productCode;
     return { brandId, brandName, brandCode, productId, productName, productCode };
@@ -129,9 +122,7 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
         }
         const entities = resolveCodes(store, input);
         const parentCode = normalizedText(input.parentAssetCode);
-        const parent = parentCode
-          ? store.assets.find((asset) => asset.assetCode === parentCode)
-          : undefined;
+        const parent = parentCode ? store.assets.find((asset) => asset.assetCode === parentCode) : undefined;
         if (parentCode && !parent) throw new Error("이전 버전 소재를 찾지 못해 수정본을 저장할 수 없습니다.");
         const createdAt = new Date(input.createdAt || Date.now());
         if (Number.isNaN(createdAt.getTime())) throw new Error("소재 생성 날짜가 올바르지 않습니다.");
@@ -290,19 +281,8 @@ export function createCreativeAssetRepository(options: { dataDirectory?: string 
       const dateFrom = normalizedText(filters.dateFrom);
       const dateTo = normalizedText(filters.dateTo);
       const filtered = sortNewest((await readStore()).assets).filter((asset) => {
-        const haystack = [asset.assetCode, asset.brandName, asset.productName, asset.hookType, asset.hookCode]
-          .join(" ")
-          .toLowerCase();
-        return (
-          (!query || haystack.includes(query)) &&
-          (!assetCode || asset.assetCode.includes(assetCode)) &&
-          (!brand || asset.brandName.toLowerCase().includes(brand)) &&
-          (!product || asset.productName.toLowerCase().includes(product)) &&
-          (!hook || asset.hookType.toLowerCase().includes(hook) || asset.hookCode.toLowerCase() === hook) &&
-          (!dateFrom || asset.createdAt.slice(0, 10) >= dateFrom) &&
-          (!dateTo || asset.createdAt.slice(0, 10) <= dateTo) &&
-          (!filters.status || asset.status === filters.status)
-        );
+        const haystack = [asset.assetCode, asset.brandName, asset.productName, asset.hookType, asset.hookCode].join(" ").toLowerCase();
+        return (!query || haystack.includes(query)) && (!assetCode || asset.assetCode.includes(assetCode)) && (!brand || asset.brandName.toLowerCase().includes(brand)) && (!product || asset.productName.toLowerCase().includes(product)) && (!hook || asset.hookType.toLowerCase().includes(hook) || asset.hookCode.toLowerCase() === hook) && (!dateFrom || asset.createdAt.slice(0, 10) >= dateFrom) && (!dateTo || asset.createdAt.slice(0, 10) <= dateTo) && (!filters.status || asset.status === filters.status);
       });
       return filtered.slice(0, Math.max(1, Math.min(500, filters.limit || 100)));
     },

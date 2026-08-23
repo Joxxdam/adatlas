@@ -26,45 +26,9 @@ const emptyDraft: AdImageAnalysisDraft = {
   visualCopyRelation: "",
 };
 
-const categoryOptions = [
-  "식품/선물",
-  "뷰티/스킨케어",
-  "패션/의류",
-  "생활용품",
-  "건강기능식품",
-  "디지털/앱",
-  "인테리어/리빙",
-  "기타",
-];
-const hookTypeOptions = [
-  "가격정당화형",
-  "가격소구형",
-  "문제제기형",
-  "공감형",
-  "후기/리뷰형",
-  "UGC형",
-  "비포애프터형",
-  "전문가/권위형",
-  "선물명분형",
-  "긴급/한정형",
-  "반전/궁금증형",
-  "상황제안형",
-];
-const appealPointOptions = [
-  "가성비",
-  "선물명분",
-  "고급감",
-  "실속",
-  "불편해소",
-  "체형보완",
-  "성분/효능",
-  "시간절약",
-  "후기신뢰",
-  "희소성",
-  "즉시혜택",
-  "자기관리",
-  "사회적 인정",
-];
+const categoryOptions = ["식품/선물", "뷰티/스킨케어", "패션/의류", "생활용품", "건강기능식품", "디지털/앱", "인테리어/리빙", "기타"];
+const hookTypeOptions = ["가격정당화형", "가격소구형", "문제제기형", "공감형", "후기/리뷰형", "UGC형", "비포애프터형", "전문가/권위형", "선물명분형", "긴급/한정형", "반전/궁금증형", "상황제안형"];
+const appealPointOptions = ["가성비", "선물명분", "고급감", "실속", "불편해소", "체형보완", "성분/효능", "시간절약", "후기신뢰", "희소성", "즉시혜택", "자기관리", "사회적 인정"];
 
 function mockDraft(brandName: string, category: string): AdImageAnalysisDraft {
   const brand = brandName || "브랜드 미상";
@@ -76,26 +40,19 @@ function mockDraft(brandName: string, category: string): AdImageAnalysisDraft {
     hookType: "문제제기형",
     appealPoint: "불편해소",
     targetEmotion: "지금 겪는 불편을 빠르게 해결하고 싶은 마음",
-    copyNuance:
-      "OCR 문구가 질문형으로 불편을 먼저 찌른 뒤 해결책을 붙이는 구조입니다. 딱딱한 브랜드체가 아니라 소비자가 속으로 할 법한 말을 꺼내는 구어체라, 상품 설명 전에 '내 얘기 같다'는 반응을 만들도록 설계된 말투입니다.",
+    copyNuance: "OCR 문구가 질문형으로 불편을 먼저 찌른 뒤 해결책을 붙이는 구조입니다. 딱딱한 브랜드체가 아니라 소비자가 속으로 할 법한 말을 꺼내는 구어체라, 상품 설명 전에 '내 얘기 같다'는 반응을 만들도록 설계된 말투입니다.",
     visualTone: "상품과 핵심 문구가 먼저 보이는 선명한 커머스형 비주얼",
     layoutPattern: "상단에 문제/후킹 문구를 두고 중앙에 상품, 하단에 혜택이나 CTA를 배치하는 구조",
     whyItWorks: `${brand} 광고처럼 보이는 이미지에서 소비자의 불편을 먼저 건드리면, 상품 설명보다 구매 이유가 먼저 생깁니다.`,
-    recommendedUse:
-      "일상 불편 해결, 선물 명분, 즉시 혜택을 강조해야 하는 상품에 응용하기 좋습니다.",
-    firstLineHook:
-      "첫 문장에서 소비자가 이미 겪는 불편을 질문형으로 찔러 시선을 붙잡는 구조입니다.",
-    copyStructure:
-      "문제 제기 → 해결 명분 → 구매 행동으로 이어지는 퍼포먼스 광고형 문장 구조입니다.",
+    recommendedUse: "일상 불편 해결, 선물 명분, 즉시 혜택을 강조해야 하는 상품에 응용하기 좋습니다.",
+    firstLineHook: "첫 문장에서 소비자가 이미 겪는 불편을 질문형으로 찔러 시선을 붙잡는 구조입니다.",
+    copyStructure: "문제 제기 → 해결 명분 → 구매 행동으로 이어지는 퍼포먼스 광고형 문장 구조입니다.",
     toneOfVoice: "친구가 추천하듯 말하지만, 혜택과 이유는 분명하게 짚는 구어체입니다.",
     trendElements: "특별한 밈 표현 없음",
-    consumerInsight:
-      "소비자가 상품 설명보다 지금 자신의 불편을 먼저 알아봐 주길 기대한다는 심리를 건드립니다.",
+    consumerInsight: "소비자가 상품 설명보다 지금 자신의 불편을 먼저 알아봐 주길 기대한다는 심리를 건드립니다.",
     purchaseTrigger: "불편을 계속 두면 손해라는 느낌을 만들어 즉시 확인할 이유를 만듭니다.",
-    reusableCopyPattern:
-      "'아직도 OO 없이 버텼다고?'처럼 문제를 먼저 던지고 해결책을 붙이는 패턴으로 재사용할 수 있습니다.",
-    visualCopyRelation:
-      "상품과 핵심 문구가 함께 보이도록 배치해 문제와 해결책을 한 화면에서 연결합니다.",
+    reusableCopyPattern: "'아직도 OO 없이 버텼다고?'처럼 문제를 먼저 던지고 해결책을 붙이는 패턴으로 재사용할 수 있습니다.",
+    visualCopyRelation: "상품과 핵심 문구가 함께 보이도록 배치해 문제와 해결책을 한 화면에서 연결합니다.",
   };
 }
 
@@ -137,15 +94,11 @@ function pickOption(value: unknown, options: string[], fallback: string) {
 }
 
 function hasMemeUgcSignal(text: string) {
-  return /나와버(?:ㄹ|르|림|린|렸|렸네)?|버ㄹ|ㄹ\.\.|[가-힣A-Za-z0-9]+코어|야호|POV|pov|저장각|장바구니각|밈|유행어|SNS|짤|ㅇㅈ|ㄹㅇ|결국|미쳤/.test(
-    text
-  );
+  return /나와버(?:ㄹ|르|림|린|렸|렸네)?|버ㄹ|ㄹ\.\.|[가-힣A-Za-z0-9]+코어|야호|POV|pov|저장각|장바구니각|밈|유행어|SNS|짤|ㅇㅈ|ㄹㅇ|결국|미쳤/.test(text);
 }
 
 function hasPriceSignal(text: string) {
-  return /(?:\d[\d,]*\s*(?:원|만원|천원|%|퍼센트)|무료배송|특가|할인|쿠폰|가격|가성비|구성|최저가|반값|원대|만원대|혜택|세일)/.test(
-    text
-  );
+  return /(?:\d[\d,]*\s*(?:원|만원|천원|%|퍼센트)|무료배송|특가|할인|쿠폰|가격|가성비|구성|최저가|반값|원대|만원대|혜택|세일)/.test(text);
 }
 
 function hasGiftSignal(text: string) {
@@ -153,19 +106,7 @@ function hasGiftSignal(text: string) {
 }
 
 function refineHookType(value: Partial<AdImageAnalysisDraft>) {
-  const source = [
-    value.ocrText,
-    value.hookType,
-    value.copyNuance,
-    value.firstLineHook,
-    value.copyStructure,
-    value.toneOfVoice,
-    value.trendElements,
-    value.purchaseTrigger,
-    value.reusableCopyPattern,
-  ]
-    .map((item) => String(item ?? ""))
-    .join(" ");
+  const source = [value.ocrText, value.hookType, value.copyNuance, value.firstLineHook, value.copyStructure, value.toneOfVoice, value.trendElements, value.purchaseTrigger, value.reusableCopyPattern].map((item) => String(item ?? "")).join(" ");
 
   if (hasMemeUgcSignal(source)) return "UGC형";
   if (/후기|리뷰|써보|먹어보|사용자|평점|별점|인증|찐후기/.test(source)) return "후기/리뷰형";
@@ -182,44 +123,20 @@ function refineHookType(value: Partial<AdImageAnalysisDraft>) {
 }
 
 function refineAppealPoint(value: Partial<AdImageAnalysisDraft>) {
-  const source = [
-    value.ocrText,
-    value.appealPoint,
-    value.hookType,
-    value.copyNuance,
-    value.firstLineHook,
-    value.copyStructure,
-    value.toneOfVoice,
-    value.trendElements,
-    value.consumerInsight,
-    value.purchaseTrigger,
-    value.whyItWorks,
-    value.reusableCopyPattern,
-    value.visualCopyRelation,
-  ]
-    .map((item) => String(item ?? ""))
-    .join(" ");
+  const source = [value.ocrText, value.appealPoint, value.hookType, value.copyNuance, value.firstLineHook, value.copyStructure, value.toneOfVoice, value.trendElements, value.consumerInsight, value.purchaseTrigger, value.whyItWorks, value.reusableCopyPattern, value.visualCopyRelation].map((item) => String(item ?? "")).join(" ");
 
   if (/선물|부모님|명절|추석|설날|답례|체면|생색|부담.*낮|부담.*덜/.test(source)) return "선물명분";
   if (/후기|리뷰|평점|별점|인증|써보|먹어보|사용자|찐후기|반응/.test(source)) return "후기신뢰";
-  if (/무료배송|쿠폰|할인|특가|오늘만|즉시|바로|혜택|덤|사은품|증정/.test(source))
-    return "즉시혜택";
-  if (hasPriceSignal(source) || /가성비|가격 대비|가격대비|실속가|반값|만원대|원대/.test(source))
-    return "가성비";
-  if (/고급|프리미엄|품격|근사|대접|퀄리티|품질|럭셔리|명품|상급|최고급/.test(source))
-    return "고급감";
+  if (/무료배송|쿠폰|할인|특가|오늘만|즉시|바로|혜택|덤|사은품|증정/.test(source)) return "즉시혜택";
+  if (hasPriceSignal(source) || /가성비|가격 대비|가격대비|실속가|반값|만원대|원대/.test(source)) return "가성비";
+  if (/고급|프리미엄|품격|근사|대접|퀄리티|품질|럭셔리|명품|상급|최고급/.test(source)) return "고급감";
   if (/한정|희소|품절|마감|마지막|구하기|드디어|찾았|레어|소량/.test(source)) return "희소성";
   if (/불편|해결|문제|고민|귀찮|번거|없이|아직도|왜\s*매번/.test(source)) return "불편해소";
-  if (/성분|효능|효과|비타민|홍삼|유산균|단백질|저당|영양|원료|함량/.test(source))
-    return "성분/효능";
+  if (/성분|효능|효과|비타민|홍삼|유산균|단백질|저당|영양|원료|함량/.test(source)) return "성분/효능";
   if (/시간|빠르게|간편|간단|한번에|1분|즉석|바쁜|출근|퇴근/.test(source)) return "시간절약";
   if (/핏|체형|커버|보정|슬림|라인|키높이|몸매/.test(source)) return "체형보완";
   if (/자기관리|관리|루틴|운동|다이어트|건강|피부|뷰티|홈케어/.test(source)) return "자기관리";
-  if (
-    hasMemeUgcSignal(source) ||
-    /트렌드|유행|요즘|코어|SNS|공유|인싸|취향|감성|소장|저장/.test(source)
-  )
-    return "사회적 인정";
+  if (hasMemeUgcSignal(source) || /트렌드|유행|요즘|코어|SNS|공유|인싸|취향|감성|소장|저장/.test(source)) return "사회적 인정";
   if (/실속|구성|대용량|세트|쟁여|가족|온가족|가득|넉넉/.test(source)) return "실속";
 
   return pickOption(value.appealPoint, appealPointOptions, String(value.appealPoint ?? ""));
@@ -231,12 +148,7 @@ function enrichCopyNuance(value: Partial<AdImageAnalysisDraft>) {
   const trendElements = String(value.trendElements ?? "").trim();
   const trendSource = `${ocrText} ${trendElements}`;
   const hasBrokenMeme = /나와버[ㄹ림]?|버ㄹ|ㄹ\.\.|[가-힣]+코어|야호|POV|pov/.test(trendSource);
-  const isTooGeneric =
-    !copyNuance ||
-    /^(친근함|유쾌함|고급스러움|감성적|직관적|깔끔함|재미있음|귀여움|신뢰감|호기심|공감|친근하고 유쾌함)[\s/·,]*$/i.test(
-      copyNuance
-    ) ||
-    copyNuance.length < 16;
+  const isTooGeneric = !copyNuance || /^(친근함|유쾌함|고급스러움|감성적|직관적|깔끔함|재미있음|귀여움|신뢰감|호기심|공감|친근하고 유쾌함)[\s/·,]*$/i.test(copyNuance) || copyNuance.length < 16;
 
   if (!isTooGeneric && !hasBrokenMeme) return copyNuance;
 
@@ -246,47 +158,13 @@ function enrichCopyNuance(value: Partial<AdImageAnalysisDraft>) {
   const targetEmotion = String(value.targetEmotion ?? "").trim();
 
   if (hasBrokenMeme) {
-    return [
-      "일부러 말을 끊은 듯한 SNS 밈 문법입니다.",
-      /나와버(?:ㄹ|르|림|린|렸|렸네)?|버ㄹ|ㄹ\.\./.test(trendSource)
-        ? `"나와버ㄹ.."처럼 완성되지 않은 표현으로 다음 말을 궁금하게 만들고, 광고 문장보다 친구가 올린 게시글 같은 미완성 말맛을 냅니다.`
-        : "",
-      /[가-힣]+코어/.test(trendSource)
-        ? `"~코어" 표현을 상품 콘셉트에 붙여 요즘 유행하는 취향/무드 태그처럼 보이게 합니다.`
-        : "",
-      /야호/.test(trendSource) ? `"야호" 같은 감탄을 넣어 득템감과 가벼운 흥분을 만듭니다.` : "",
-      /POV|pov/.test(trendSource)
-        ? `"POV" 문법으로 소비자가 그 상황의 주인공이 된 것처럼 상상하게 만듭니다.`
-        : "",
-      firstLineHook ||
-        copyStructure ||
-        "가격/상황 후킹을 먼저 던진 뒤 상품 키워드로 장난스럽게 받는 구조입니다.",
-    ]
-      .filter(Boolean)
-      .join(" ");
+    return ["일부러 말을 끊은 듯한 SNS 밈 문법입니다.", /나와버(?:ㄹ|르|림|린|렸|렸네)?|버ㄹ|ㄹ\.\./.test(trendSource) ? `"나와버ㄹ.."처럼 완성되지 않은 표현으로 다음 말을 궁금하게 만들고, 광고 문장보다 친구가 올린 게시글 같은 미완성 말맛을 냅니다.` : "", /[가-힣]+코어/.test(trendSource) ? `"~코어" 표현을 상품 콘셉트에 붙여 요즘 유행하는 취향/무드 태그처럼 보이게 합니다.` : "", /야호/.test(trendSource) ? `"야호" 같은 감탄을 넣어 득템감과 가벼운 흥분을 만듭니다.` : "", /POV|pov/.test(trendSource) ? `"POV" 문법으로 소비자가 그 상황의 주인공이 된 것처럼 상상하게 만듭니다.` : "", firstLineHook || copyStructure || "가격/상황 후킹을 먼저 던진 뒤 상품 키워드로 장난스럽게 받는 구조입니다."].filter(Boolean).join(" ");
   }
 
-  return [
-    ocrText
-      ? `OCR의 실제 표현("${ocrText.split(/\n/)[0].slice(0, 40)}")을 기준으로,`
-      : "OCR 문구를 기준으로,",
-    firstLineHook ||
-      copyStructure ||
-      "첫 문장에서 시선을 잡고 다음 문장으로 구매 이유를 붙이는 구조입니다.",
-    toneOfVoice ? `말투는 ${toneOfVoice}` : "말투는 단순 브랜드 설명보다 소비자 입말에 가깝습니다.",
-    trendElements && !/특별한 밈 표현 없음/.test(trendElements)
-      ? `밈/유행어 요소는 ${trendElements}입니다.`
-      : "",
-    targetEmotion ? `유도 감정은 ${targetEmotion}입니다.` : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return [ocrText ? `OCR의 실제 표현("${ocrText.split(/\n/)[0].slice(0, 40)}")을 기준으로,` : "OCR 문구를 기준으로,", firstLineHook || copyStructure || "첫 문장에서 시선을 잡고 다음 문장으로 구매 이유를 붙이는 구조입니다.", toneOfVoice ? `말투는 ${toneOfVoice}` : "말투는 단순 브랜드 설명보다 소비자 입말에 가깝습니다.", trendElements && !/특별한 밈 표현 없음/.test(trendElements) ? `밈/유행어 요소는 ${trendElements}입니다.` : "", targetEmotion ? `유도 감정은 ${targetEmotion}입니다.` : ""].filter(Boolean).join(" ");
 }
 
-function normalizeDraft(
-  value: Partial<AdImageAnalysisDraft>,
-  fallbackCategory: string
-): AdImageAnalysisDraft {
+function normalizeDraft(value: Partial<AdImageAnalysisDraft>, fallbackCategory: string): AdImageAnalysisDraft {
   return {
     ocrText: String(value.ocrText ?? ""),
     category: pickOption(value.category, categoryOptions, fallbackCategory || "기타"),
@@ -380,21 +258,14 @@ copyNuance에는 단순 톤명이 아니라 "OCR 말투 + 문장 구조 + 밈/�
 }
 
 function openAiStatusMessage(status: number) {
-  if (status === 401)
-    return "OpenAI API 키가 유효하지 않습니다. .env.local의 OPENAI_API_KEY를 확인해주세요.";
-  if (status === 403)
-    return "OpenAI API 권한이 거부되었습니다. API 키의 프로젝트 권한을 확인해주세요.";
-  if (status === 429)
-    return "OpenAI 사용량 한도 또는 요청 제한에 걸렸습니다. 결제 상태, 크레딧, rate limit을 확인해주세요.";
+  if (status === 401) return "OpenAI API 키가 유효하지 않습니다. .env.local의 OPENAI_API_KEY를 확인해주세요.";
+  if (status === 403) return "OpenAI API 권한이 거부되었습니다. API 키의 프로젝트 권한을 확인해주세요.";
+  if (status === 429) return "OpenAI 사용량 한도 또는 요청 제한에 걸렸습니다. 결제 상태, 크레딧, rate limit을 확인해주세요.";
   if (status >= 500) return "OpenAI 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
   return `OpenAI Vision 분석 실패: HTTP ${status}`;
 }
 
-async function analyzeWithOpenAI(input: {
-  imagePathOrUrl: string;
-  brandName: string;
-  category: string;
-}) {
+async function analyzeWithOpenAI(input: { imagePathOrUrl: string; brandName: string; category: string }) {
   const imageUrl = await imageInputUrl(input.imagePathOrUrl);
   let response: Response;
 
@@ -420,9 +291,7 @@ async function analyzeWithOpenAI(input: {
       }),
     });
   } catch {
-    throw new Error(
-      "OpenAI 서버에 연결할 수 없습니다. dev 서버의 네트워크 권한, VPN, 방화벽 상태를 확인해주세요."
-    );
+    throw new Error("OpenAI 서버에 연결할 수 없습니다. dev 서버의 네트워크 권한, VPN, 방화벽 상태를 확인해주세요.");
   }
 
   if (!response.ok) {
@@ -450,15 +319,10 @@ export async function POST(request: Request) {
     const hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY);
 
     if (!imagePathOrUrl) {
-      return NextResponse.json(
-        { ok: false, error: "이미지 경로 또는 이미지 URL이 필요합니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "이미지 경로 또는 이미지 URL이 필요합니다." }, { status: 400 });
     }
 
-    const draft = hasOpenAiKey
-      ? await analyzeWithOpenAI({ imagePathOrUrl, brandName, category })
-      : mockDraft(brandName, category);
+    const draft = hasOpenAiKey ? await analyzeWithOpenAI({ imagePathOrUrl, brandName, category }) : mockDraft(brandName, category);
 
     return NextResponse.json({
       ok: true,
@@ -466,9 +330,6 @@ export async function POST(request: Request) {
       isMock: !hasOpenAiKey,
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "광고 이미지 분석 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "광고 이미지 분석 실패" }, { status: 500 });
   }
 }

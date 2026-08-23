@@ -30,9 +30,6 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ ok: true, image, images });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "이미지 메타데이터 저장 실패" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "이미지 메타데이터 저장 실패" }, { status: 500 });
   }
 }

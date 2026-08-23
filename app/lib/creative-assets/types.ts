@@ -1,11 +1,4 @@
-export const creativeAssetStatuses = [
-  "draft",
-  "generated",
-  "exported",
-  "running",
-  "performance_linked",
-  "learning_completed",
-] as const;
+export const creativeAssetStatuses = ["draft", "generated", "exported", "running", "performance_linked", "learning_completed"] as const;
 
 export type CreativeAssetStatus = (typeof creativeAssetStatuses)[number];
 
@@ -64,44 +57,7 @@ export type CreativeAsset = {
   updatedAt: string;
 };
 
-export type CreativeAssetSnapshot = Pick<
-  CreativeAsset,
-  | "id"
-  | "assetCode"
-  | "brandName"
-  | "productName"
-  | "hookType"
-  | "hookCode"
-  | "generatedImageUrl"
-  | "fileName"
-  | "recommendedAdName"
-  | "utmContent"
-  | "status"
-  | "version"
-  | "parentAssetCode"
-  | "createdAt"
-  | "advertiserId"
-  | "opportunityId"
-  | "analysisRunId"
-  | "opportunityType"
-  | "recommendedHookType"
-  | "appliedContentNoteIds"
-  | "reviewInsightIds"
-  | "originalHostProductNo"
-  | "mainMessage"
-  | "visualDirection"
-  | "generationRound"
-  | "variant"
-  | "experimentId"
-  | "testCode"
-  | "hookVariantCode"
-  | "explorationCode"
-  | "conceptCode"
-  | "primaryHookTag"
-  | "secondaryHookTags"
-  | "customerReason"
-  | "hypothesisId"
->;
+export type CreativeAssetSnapshot = Pick<CreativeAsset, "id" | "assetCode" | "brandName" | "productName" | "hookType" | "hookCode" | "generatedImageUrl" | "fileName" | "recommendedAdName" | "utmContent" | "status" | "version" | "parentAssetCode" | "createdAt" | "advertiserId" | "opportunityId" | "analysisRunId" | "opportunityType" | "recommendedHookType" | "appliedContentNoteIds" | "reviewInsightIds" | "originalHostProductNo" | "mainMessage" | "visualDirection" | "generationRound" | "variant" | "experimentId" | "testCode" | "hookVariantCode" | "explorationCode" | "conceptCode" | "primaryHookTag" | "secondaryHookTags" | "customerReason" | "hypothesisId">;
 
 export type CreateCreativeAssetInput = {
   brandId?: string;
@@ -184,10 +140,7 @@ export type PerformanceRecord = {
   source: string;
 };
 
-export type CreativeAssetMatchResult =
-  | { status: "matched"; assetCode: string; asset: CreativeAsset; matchType: "exact-code" }
-  | { status: "not-found"; assetCode?: string; reason: string }
-  | { status: "needs-review"; assetCode?: string; reason: "code-missing" | "duplicate-code" };
+export type CreativeAssetMatchResult = { status: "matched"; assetCode: string; asset: CreativeAsset; matchType: "exact-code" } | { status: "not-found"; assetCode?: string; reason: string } | { status: "needs-review"; assetCode?: string; reason: "code-missing" | "duplicate-code" };
 
 export function toCreativeAssetSnapshot(asset: CreativeAsset): CreativeAssetSnapshot {
   return {

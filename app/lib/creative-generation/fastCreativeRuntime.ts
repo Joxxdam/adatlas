@@ -22,9 +22,7 @@ function effort(value: string | undefined, fallback: FastCreativeRuntimeConfig["
   return value === "low" || value === "medium" || value === "high" ? value : fallback;
 }
 
-export function resolveFastCreativeRuntime(
-  env: NodeJS.ProcessEnv = process.env
-): FastCreativeRuntimeConfig {
+export function resolveFastCreativeRuntime(env: NodeJS.ProcessEnv = process.env): FastCreativeRuntimeConfig {
   return {
     enabled: flag(env.ADATLAS_FAST_CREATIVE_MODE, true),
     concurrency: bounded(env.ADATLAS_CREATIVE_CONCURRENCY, 3, 1, 3),
@@ -35,4 +33,3 @@ export function resolveFastCreativeRuntime(
     maxCreatives: bounded(env.ADATLAS_MAX_CREATIVES_PER_PRODUCT, 6, 1, 6),
   };
 }
-

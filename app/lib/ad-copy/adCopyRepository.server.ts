@@ -29,10 +29,16 @@ async function writeStore(store: Store) {
 async function serial<T>(work: () => Promise<T>) {
   const previous = state[lockKey] || Promise.resolve();
   let release!: () => void;
-  const current = new Promise<void>((resolve) => { release = resolve; });
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   state[lockKey] = previous.then(() => current);
   await previous;
-  try { return await work(); } finally { release(); }
+  try {
+    return await work();
+  } finally {
+    release();
+  }
 }
 
 export const adCopyRepository = {
@@ -66,7 +72,9 @@ export const adCopyRepository = {
         ...store.records[index],
         status: "approved",
         approvedAt: now,
-        approvalReason: String(input.reason || "사용자가 Meta 기본 문구를 승인").trim().slice(0, 500),
+        approvalReason: String(input.reason || "사용자가 Meta 기본 문구를 승인")
+          .trim()
+          .slice(0, 500),
         performanceData: input.performanceData,
         updatedAt: now,
       };

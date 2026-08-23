@@ -3,15 +3,7 @@
 import Link from "next/link";
 import { buildProductCreationHref } from "../../lib/product-creation/handoffUrl";
 import { useEffect, useMemo, useState } from "react";
-import type {
-  BigQueryAdvertiser,
-  BigQueryCandidateCapability,
-  BigQueryCandidateMetric,
-  BigQueryCandidatePeriod,
-  BigQueryCandidateResponse,
-  BigQueryConnectionStatus,
-  BigQueryRecommendationType,
-} from "../../lib/bigquery/types";
+import type { BigQueryAdvertiser, BigQueryCandidateCapability, BigQueryCandidateMetric, BigQueryCandidatePeriod, BigQueryCandidateResponse, BigQueryConnectionStatus, BigQueryRecommendationType } from "../../lib/bigquery/types";
 import styles from "./BigQueryCandidateWorkspace.module.css";
 
 const candidateLabels: Record<BigQueryRecommendationType, string> = {
@@ -63,10 +55,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
     async function initialize() {
       setLoading(true);
       try {
-        const [statusResponse, brandsResponse] = await Promise.all([
-          fetch("/api/bigquery/status", { cache: "no-store" }),
-          fetch("/api/ad-candidates/brands", { cache: "no-store" }),
-        ]);
+        const [statusResponse, brandsResponse] = await Promise.all([fetch("/api/bigquery/status", { cache: "no-store" }), fetch("/api/ad-candidates/brands", { cache: "no-store" })]);
         const statusPayload = (await statusResponse.json()) as {
           status?: BigQueryConnectionStatus;
         };
@@ -76,21 +65,14 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
         };
         if (cancelled) return;
         if (statusPayload.status) setStatus(statusPayload.status);
-        if (!brandsResponse.ok)
-          throw new Error(brandsPayload.error || "광고주 목록 조회에 실패했습니다.");
+        if (!brandsResponse.ok) throw new Error(brandsPayload.error || "광고주 목록 조회에 실패했습니다.");
         const nextAdvertisers = brandsPayload.advertisers || [];
         setAdvertisers(nextAdvertisers);
         setAdvertiserId(nextAdvertisers[0]?.id || "");
-        setMessage(
-          nextAdvertisers.length
-            ? `최근 집계가 있는 광고주 ${nextAdvertisers.length.toLocaleString("ko-KR")}곳을 찾았습니다.`
-            : "조회 가능한 광고주가 없습니다. 아래 URL 분석 흐름을 이용해 주세요."
-        );
+        setMessage(nextAdvertisers.length ? `최근 집계가 있는 광고주 ${nextAdvertisers.length.toLocaleString("ko-KR")}곳을 찾았습니다.` : "조회 가능한 광고주가 없습니다. 아래 URL 분석 흐름을 이용해 주세요.");
       } catch (error) {
         if (!cancelled) {
-          setMessage(
-            error instanceof Error ? error.message : "BigQuery 연결을 확인하지 못했습니다."
-          );
+          setMessage(error instanceof Error ? error.message : "BigQuery 연결을 확인하지 못했습니다.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -105,12 +87,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
   const filteredAdvertisers = useMemo(() => {
     const query = advertiserSearch.trim().toLocaleLowerCase("ko-KR");
     if (!query) return advertisers;
-    return advertisers.filter((advertiser) =>
-      [advertiser.name, advertiser.category || "", advertiser.storeUrl || ""]
-        .join(" ")
-        .toLocaleLowerCase("ko-KR")
-        .includes(query)
-    );
+    return advertisers.filter((advertiser) => [advertiser.name, advertiser.category || "", advertiser.storeUrl || ""].join(" ").toLocaleLowerCase("ko-KR").includes(query));
   }, [advertiserSearch, advertisers]);
 
   const selectedAdvertiser = advertisers.find((advertiser) => advertiser.id === advertiserId);
@@ -134,11 +111,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
       };
       if (!response.ok) throw new Error(payload.error || "광고 후보 조회에 실패했습니다.");
       setResult(payload);
-      setMessage(
-        payload.candidates.length
-          ? `근거가 있는 광고 후보 ${payload.candidates.length}건을 찾았습니다.`
-          : "현재 조건에서 근거가 충분한 후보가 없습니다. 기간이나 유형을 바꿔 보세요."
-      );
+      setMessage(payload.candidates.length ? `근거가 있는 광고 후보 ${payload.candidates.length}건을 찾았습니다.` : "현재 조건에서 근거가 충분한 후보가 없습니다. 기간이나 유형을 바꿔 보세요.");
     } catch (error) {
       setResult(null);
       setMessage(error instanceof Error ? error.message : "광고 후보를 불러오지 못했습니다.");
@@ -179,19 +152,14 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
         </div>
         <div className={`${styles.connection} ${status?.connected ? styles.connected : ""}`}>
           <span aria-hidden="true" />
-          <strong>
-            {status?.connected ? "BigQuery 연결됨" : loading ? "연결 확인 중" : "연결 확인 필요"}
-          </strong>
+          <strong>{status?.connected ? "BigQuery 연결됨" : loading ? "연결 확인 중" : "연결 확인 필요"}</strong>
           <small>읽기 전용 · {status?.location || "US"}</small>
         </div>
       </header>
 
       <div className={styles.notice} role="status">
         <strong>{message}</strong>
-        <span>
-          광고 추천도는 현재 판매 규모, 구매 반응, 노출 기회와 최근 흐름을 함께 분석해 광고 테스트
-          우선순위를 제안합니다.
-        </span>
+        <span>광고 추천도는 현재 판매 규모, 구매 반응, 노출 기회와 최근 흐름을 함께 분석해 광고 테스트 우선순위를 제안합니다.</span>
       </div>
 
       {!loading && (!status?.connected || !advertisers.length) ? (
@@ -209,12 +177,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
       <div className={styles.controls}>
         <label>
           <span>광고주 검색</span>
-          <input
-            onChange={(event) => setAdvertiserSearch(event.target.value)}
-            placeholder="브랜드명 또는 카테고리"
-            type="search"
-            value={advertiserSearch}
-          />
+          <input onChange={(event) => setAdvertiserSearch(event.target.value)} placeholder="브랜드명 또는 카테고리" type="search" value={advertiserSearch} />
         </label>
         <label className={styles.advertiserSelect}>
           <span>광고주</span>
@@ -229,8 +192,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
             <option value="">광고주 선택</option>
             {filteredAdvertisers.map((advertiser) => (
               <option key={advertiser.id} value={advertiser.id}>
-                {advertiser.name} · {advertiser.category || "카테고리 미확인"} · 상품{" "}
-                {advertiser.productCount}개
+                {advertiser.name} · {advertiser.category || "카테고리 미확인"} · 상품 {advertiser.productCount}개
               </option>
             ))}
           </select>
@@ -251,11 +213,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
             ))}
           </select>
         </label>
-        <button
-          disabled={querying || !advertiserId}
-          onClick={() => void findCandidates()}
-          type="button"
-        >
+        <button disabled={querying || !advertiserId} onClick={() => void findCandidates()} type="button">
           {querying ? "근거 계산 중" : "광고 후보 찾기"}
         </button>
       </div>
@@ -276,11 +234,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
           </div>
           <div>
             <span>브랜드 매칭</span>
-            <strong>
-              {selectedAdvertiser.brandMatchConfidence === "exact"
-                ? "정확히 연결"
-                : "상품 집계명 기준"}
-            </strong>
+            <strong>{selectedAdvertiser.brandMatchConfidence === "exact" ? "정확히 연결" : "상품 집계명 기준"}</strong>
           </div>
         </div>
       ) : null}
@@ -289,30 +243,17 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
         <>
           <div className={styles.resultToolbar}>
             <div className={styles.typeTabs} aria-label="후보 유형 필터">
-              <button
-                className={candidateType === "all" ? styles.active : ""}
-                onClick={() => filterResult("all")}
-                type="button"
-              >
-                전체 추천 ({Object.values(result.typeCounts).reduce((sum, count) => sum + count, 0)}
-                )
+              <button className={candidateType === "all" ? styles.active : ""} onClick={() => filterResult("all")} type="button">
+                전체 추천 ({Object.values(result.typeCounts).reduce((sum, count) => sum + count, 0)})
               </button>
               {typeOptions.map((capability) => (
-                <button
-                  className={candidateType === capability.type ? styles.active : ""}
-                  disabled={capability.availability !== "analysis-ready"}
-                  key={capability.type}
-                  onClick={() => filterResult(capability.type)}
-                  title={capability.reason}
-                  type="button"
-                >
+                <button className={candidateType === capability.type ? styles.active : ""} disabled={capability.availability !== "analysis-ready"} key={capability.type} onClick={() => filterResult(capability.type)} title={capability.reason} type="button">
                   {candidateLabels[capability.type]} ({result.typeCounts[capability.type] || 0})
                 </button>
               ))}
             </div>
             <p>
-              최신 {result.latestDataDate} · {periodLabels[result.period]} · 조회{" "}
-              {bytesText(result.processedBytes)}
+              최신 {result.latestDataDate} · {periodLabels[result.period]} · 조회 {bytesText(result.processedBytes)}
             </p>
           </div>
 
@@ -358,20 +299,12 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
                 </div>
                 <dl className={styles.metrics}>
                   {candidate.metrics
-                    .filter((metric) =>
-                      ["current-sales", "purchase-count", "sales-rank", "sales-share"].includes(
-                        metric.key
-                      )
-                    )
+                    .filter((metric) => ["current-sales", "purchase-count", "sales-rank", "sales-share"].includes(metric.key))
                     .map((metric) => (
                       <div key={metric.key} title={metric.note}>
                         <dt>{metric.label}</dt>
                         <dd>{metricText(metric)}</dd>
-                        <small>
-                          {metric.previousValue === null
-                            ? metric.note
-                            : `비교값 ${metric.unit === "rate" ? `${(metric.previousValue * 100).toFixed(1)}%` : Math.round(metric.previousValue).toLocaleString("ko-KR")}`}
-                        </small>
+                        <small>{metric.previousValue === null ? metric.note : `비교값 ${metric.unit === "rate" ? `${(metric.previousValue * 100).toFixed(1)}%` : Math.round(metric.previousValue).toLocaleString("ko-KR")}`}</small>
                       </div>
                     ))}
                 </dl>
@@ -386,16 +319,13 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
                 <details className={styles.details}>
                   <summary>데이터 기준과 주의사항</summary>
                   <p>
-                    분석 {candidate.analysisPeriodStart}~{candidate.analysisPeriodEnd} · 비교{" "}
-                    {candidate.comparisonPeriodStart}~{candidate.comparisonPeriodEnd}
+                    분석 {candidate.analysisPeriodStart}~{candidate.analysisPeriodEnd} · 비교 {candidate.comparisonPeriodStart}~{candidate.comparisonPeriodEnd}
                   </p>
                   <p>
                     최신 기준일 {candidate.latestDataDate} · 최근 흐름 {candidate.trendLabel}
                   </p>
                   <p>
-                    {candidate.productFamilyName} 제품군 · 매출 비중{" "}
-                    {(candidate.salesShare * 100).toFixed(1)}% · 구매 비중{" "}
-                    {(candidate.purchaseShare * 100).toFixed(1)}%
+                    {candidate.productFamilyName} 제품군 · 매출 비중 {(candidate.salesShare * 100).toFixed(1)}% · 구매 비중 {(candidate.purchaseShare * 100).toFixed(1)}%
                   </p>
                   <dl className={styles.detailMetrics}>
                     {candidate.metrics.map((metric) => (
@@ -414,12 +344,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
                   </ul>
                 </details>
                 <div className={styles.actions}>
-                  <Link
-                    href={buildProductCreationHref(
-                      { dataCandidateId: candidate.id },
-                      candidate.productUrl
-                    )}
-                  >
+                  <Link href={buildProductCreationHref({ dataCandidateId: candidate.id }, candidate.productUrl)}>
                     이 상품으로 후킹 6개 만들기
                     <span aria-hidden="true">→</span>
                   </Link>
@@ -439,9 +364,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
             <div>
               {result.capabilities.map((capability: BigQueryCandidateCapability) => (
                 <article key={capability.type}>
-                  <span data-state={capability.availability}>
-                    {candidateLabels[capability.type]}
-                  </span>
+                  <span data-state={capability.availability}>{candidateLabels[capability.type]}</span>
                   <p>{capability.reason}</p>
                 </article>
               ))}
@@ -451,10 +374,7 @@ export function BigQueryCandidateWorkspace({ onOpenSiteMode }: { onOpenSiteMode?
       ) : (
         <div className={styles.empty}>
           <strong>광고주와 기간을 선택해 후보를 찾아보세요.</strong>
-          <span>
-            연결 데이터가 없거나 원하는 상품이 없다면 기존 상세페이지 분석을 그대로 사용할 수
-            있습니다.
-          </span>
+          <span>연결 데이터가 없거나 원하는 상품이 없다면 기존 상세페이지 분석을 그대로 사용할 수 있습니다.</span>
           <button className={styles.inlineSiteAction} onClick={onOpenSiteMode} type="button">
             사이트 URL로 후보 찾기
           </button>

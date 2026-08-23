@@ -1,30 +1,8 @@
-import type {
-  ProductAnalysisSnapshot,
-  VideoConcept,
-  VideoCut,
-  VideoDuration,
-} from "./types.ts";
+import type { ProductAnalysisSnapshot, VideoConcept, VideoCut, VideoDuration } from "./types.ts";
 import { containsRawSeoTitle } from "./productName.ts";
 
-const ABSTRACT_SCENES = [
-  /고객(?:이|의)?.*(?:문제|상황).*보여준다/i,
-  /(?:제품|상품).*(?:USP|핵심|근거).*(?:클로즈업|제시|보여준다)/i,
-  /사용\s*전후.*비교/i,
-  /제품\s*전체.*CTA.*보여준다/i,
-  /고객이\s*제품을\s*사용하는\s*장면/i,
-];
-const GENERIC_COPY = [
-  /상품을 소개합니다/i,
-  /여름철 필수템/i,
-  /프리미엄 퀄리티/i,
-  /특별한 경험/i,
-  /놀라운 효과/i,
-  /지금 만나보세요/i,
-  /당신을 위한 선택/i,
-  /일상에 활력을/i,
-  /처음 보는 제품 자세히 보기/i,
-  /확인된 포인트를 설명합니다/i,
-];
+const ABSTRACT_SCENES = [/고객(?:이|의)?.*(?:문제|상황).*보여준다/i, /(?:제품|상품).*(?:USP|핵심|근거).*(?:클로즈업|제시|보여준다)/i, /사용\s*전후.*비교/i, /제품\s*전체.*CTA.*보여준다/i, /고객이\s*제품을\s*사용하는\s*장면/i];
+const GENERIC_COPY = [/상품을 소개합니다/i, /여름철 필수템/i, /프리미엄 퀄리티/i, /특별한 경험/i, /놀라운 효과/i, /지금 만나보세요/i, /당신을 위한 선택/i, /일상에 활력을/i, /처음 보는 제품 자세히 보기/i, /확인된 포인트를 설명합니다/i];
 
 export function segmentRange(duration: VideoDuration) {
   if (duration === 15) return { min: 15, max: 16, preferred: 15 };
@@ -35,17 +13,10 @@ export function segmentRange(duration: VideoDuration) {
 }
 
 export function hasVerifiedVideoBenefit(analysis: ProductAnalysisSnapshot) {
-  return Boolean(
-    analysis.discountInfo || analysis.promotion || analysis.originalPrice ||
-    analysis.minimumOrderQuantity || analysis.shippingConditions?.length || analysis.composition?.length ||
-    (analysis.verifiedFacts || []).some((fact) => /가격|할인|혜택|배송|증정|구성|쿠폰/i.test(`${fact.label} ${fact.value}`))
-  );
+  return Boolean(analysis.discountInfo || analysis.promotion || analysis.originalPrice || analysis.minimumOrderQuantity || analysis.shippingConditions?.length || analysis.composition?.length || (analysis.verifiedFacts || []).some((fact) => /가격|할인|혜택|배송|증정|구성|쿠폰/i.test(`${fact.label} ${fact.value}`)));
 }
 
-export function assignPlanningTimeline<T extends { caption: string; narration?: string; sceneDescription: string }>(
-  rows: T[],
-  duration: VideoDuration
-): Array<T & { startSecond: number; endSecond: number }> {
+export function assignPlanningTimeline<T extends { caption: string; narration?: string; sceneDescription: string }>(rows: T[], duration: VideoDuration): Array<T & { startSecond: number; endSecond: number }> {
   if (rows.length < 3) throw new Error("첫 3초를 구성할 대본 구간이 부족합니다.");
   const remainingCount = rows.length - 3;
   let previous = 0;
@@ -65,23 +36,7 @@ function normalizedNumbers(value: string) {
 }
 
 function allowedNumbers(analysis: ProductAnalysisSnapshot) {
-  return new Set(
-    normalizedNumbers(
-      [
-        analysis.productName,
-        analysis.price,
-        analysis.originalPrice,
-        analysis.discountInfo,
-        analysis.promotion,
-        analysis.volumeOrOption,
-        analysis.countryOfOrigin,
-        ...(analysis.verifiedNumbers || []),
-        ...(analysis.verifiedFacts || []).map((fact) => fact.value),
-        ...analysis.coreUsps,
-        ...analysis.keyFeatures,
-      ].join(" ")
-    )
-  );
+  return new Set(normalizedNumbers([analysis.productName, analysis.price, analysis.originalPrice, analysis.discountInfo, analysis.promotion, analysis.volumeOrOption, analysis.countryOfOrigin, ...(analysis.verifiedNumbers || []), ...(analysis.verifiedFacts || []).map((fact) => fact.value), ...analysis.coreUsps, ...analysis.keyFeatures].join(" ")));
 }
 
 function repeatedPhrases(cuts: VideoCut[]) {
@@ -94,13 +49,7 @@ function repeatedPhrases(cuts: VideoCut[]) {
   return [...counts.entries()].filter(([, count]) => count > 1).map(([key]) => key);
 }
 
-export type SceneProductionSignal =
-  | "setting"
-  | "subject"
-  | "action"
-  | "reaction"
-  | "firstFocus"
-  | "transition";
+export type SceneProductionSignal = "setting" | "subject" | "action" | "reaction" | "firstFocus" | "transition";
 
 export function missingSceneSignals(cut: VideoCut): SceneProductionSignal[] {
   const scene = cut.sceneDescription;
@@ -153,7 +102,9 @@ function compactTransitionCaption(value: string) {
 }
 
 function normalizePlanningCopy(value: string | undefined) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function fallbackPlanningCta(concept: VideoConcept) {
@@ -183,9 +134,7 @@ export function compactPlanningCta(value: string, fallback: string) {
 
 export function hasFinalPlanningCta(concept: VideoConcept) {
   const cta = normalizePlanningCopy(concept.cta);
-  const finalCaption = normalizePlanningCopy(
-    [...concept.cuts].sort((left, right) => left.startSecond - right.startSecond).at(-1)?.caption
-  );
+  const finalCaption = normalizePlanningCopy([...concept.cuts].sort((left, right) => left.startSecond - right.startSecond).at(-1)?.caption);
   return Boolean(cta && finalCaption && finalCaption.includes(cta));
 }
 
@@ -197,18 +146,11 @@ export function hasFinalPlanningCta(concept: VideoConcept) {
 export function repairDetailedPlanningCta(concept: VideoConcept) {
   if (!concept.cuts.length) return concept;
   const cta = compactPlanningCta(concept.cta, fallbackPlanningCta(concept));
-  const finalCut = [...concept.cuts].sort(
-    (left, right) => left.startSecond - right.startSecond
-  ).at(-1);
+  const finalCut = [...concept.cuts].sort((left, right) => left.startSecond - right.startSecond).at(-1);
   if (!finalCut) return concept;
-  const alreadyValid =
-    normalizePlanningCopy(concept.cta) === cta &&
-    normalizePlanningCopy(finalCut.caption).includes(cta) &&
-    finalCut.caption.length <= 34;
+  const alreadyValid = normalizePlanningCopy(concept.cta) === cta && normalizePlanningCopy(finalCut.caption).includes(cta) && finalCut.caption.length <= 34;
   if (alreadyValid) return concept;
-  const cuts = concept.cuts.map((cut) =>
-    cut.id === finalCut.id ? { ...cut, caption: cta } : cut
-  );
+  const cuts = concept.cuts.map((cut) => (cut.id === finalCut.id ? { ...cut, caption: cta } : cut));
   const fullScript = normalizePlanningCopy(concept.fullScript);
   return {
     ...concept,
@@ -224,10 +166,7 @@ export function repairDetailedPlanningCta(concept: VideoConcept) {
  * 느린 경로를 피하고, 제품 전용 B-roll처럼 사람이 없는 컷도 관찰 가능한 시각 반응으로
  * 명확하게 표현하기 위한 서버 측 정규화 단계다.
  */
-export function repairDetailedPlanningSceneDescriptions(
-  concept: VideoConcept,
-  analysis: ProductAnalysisSnapshot
-) {
+export function repairDetailedPlanningSceneDescriptions(concept: VideoConcept, analysis: ProductAnalysisSnapshot) {
   let changed = false;
   const cuts = concept.cuts.map((cut, index) => {
     const missing = missingSceneSignals(cut);
@@ -253,11 +192,7 @@ export function repairDetailedPlanningSceneDescriptions(
     }
     if (!additions.length && cut.sceneDescription.length >= 75) return cut;
     if (cut.sceneDescription.length < 75 && !additions.length) {
-      additions.push(
-        `첫 화면은 ${sceneSetting(analysis)} 중앙의 제품 패키지 클로즈업으로 시작하고, 손이 제품을 들어 정면 라벨을 비춘다.`,
-        observableReaction(analysis),
-        "동작이 끝나면 다음 구간 화면으로 매치컷 전환한다."
-      );
+      additions.push(`첫 화면은 ${sceneSetting(analysis)} 중앙의 제품 패키지 클로즈업으로 시작하고, 손이 제품을 들어 정면 라벨을 비춘다.`, observableReaction(analysis), "동작이 끝나면 다음 구간 화면으로 매치컷 전환한다.");
     }
     changed = true;
     return {
@@ -270,11 +205,7 @@ export function repairDetailedPlanningSceneDescriptions(
 
 export type PlanningQualityCheck = { key: string; passed: boolean; message: string };
 
-export function validateDetailedPlanning(
-  concept: VideoConcept,
-  analysis: ProductAnalysisSnapshot,
-  duration: VideoDuration
-) {
+export function validateDetailedPlanning(concept: VideoConcept, analysis: ProductAnalysisSnapshot, duration: VideoDuration) {
   const cuts = [...concept.cuts].sort((left, right) => left.startSecond - right.startSecond);
   const range = segmentRange(duration);
   const combined = cuts.map((cut) => `${cut.caption} ${cut.narration} ${cut.sceneDescription}`).join(" ");
@@ -282,15 +213,8 @@ export function validateDetailedPlanning(
   const firstThree = cuts.filter((cut) => cut.startSecond < 3 && cut.endSecond <= 3);
   const allowed = allowedNumbers(analysis);
   const unknownNumbers = normalizedNumbers(audienceCopy).filter((value) => !allowed.has(value));
-  const sceneSignalFailures = cuts
-    .map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut) }))
-    .filter((item) => item.missing.length > 0);
-  const abstract = cuts.filter(
-    (cut) =>
-      cut.sceneDescription.length < 75 ||
-      (ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription)) &&
-        missingSceneSignals(cut).length >= 2)
-  );
+  const sceneSignalFailures = cuts.map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut) })).filter((item) => item.missing.length > 0);
+  const abstract = cuts.filter((cut) => cut.sceneDescription.length < 75 || (ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription)) && missingSceneSignals(cut).length >= 2));
   const checks: PlanningQualityCheck[] = [
     {
       key: "segment-count",
@@ -314,10 +238,7 @@ export function validateDetailedPlanning(
     },
     {
       key: "timeline",
-      passed:
-        cuts[0]?.startSecond === 0 &&
-        cuts.at(-1)?.endSecond === duration &&
-        cuts.every((cut, index) => index === 0 || cut.startSecond === cuts[index - 1].endSecond),
+      passed: cuts[0]?.startSecond === 0 && cuts.at(-1)?.endSecond === duration && cuts.every((cut, index) => index === 0 || cut.startSecond === cuts[index - 1].endSecond),
       message: "구간 시간은 비거나 겹치지 않고 전체 영상 길이와 일치해야 합니다.",
     },
     {
@@ -337,23 +258,18 @@ export function validateDetailedPlanning(
     },
     {
       key: "natural-copy",
-      passed: cuts.every((cut) => cut.caption.length > 0 && cut.caption.length <= 34) &&
-        !GENERIC_COPY.some((pattern) => pattern.test(combined)),
+      passed: cuts.every((cut) => cut.caption.length > 0 && cut.caption.length <= 34) && !GENERIC_COPY.some((pattern) => pattern.test(combined)),
       message: "자막은 짧은 구어체여야 하며 범용 광고 문구를 사용하지 않아야 합니다.",
     },
     {
       key: "scene-specificity",
       passed: abstract.length === 0 && sceneSignalFailures.length === 0,
-      message: abstract.length || sceneSignalFailures.length
-        ? `구체성이 부족한 구간: ${sceneSignalFailures.map((item) => `${item.cutNumber}번(${item.missing.join(", ")})`).join(" · ") || "추상 장면"}. 각 구간에 장소·주체·행동·반응·첫 시각 요소·다음 전환을 모두 명시해 주세요.`
-        : "모든 장면에 장소·주체·행동·반응·첫 시각 요소·다음 전환이 구체적으로 포함되어 있습니다.",
+      message: abstract.length || sceneSignalFailures.length ? `구체성이 부족한 구간: ${sceneSignalFailures.map((item) => `${item.cutNumber}번(${item.missing.join(", ")})`).join(" · ") || "추상 장면"}. 각 구간에 장소·주체·행동·반응·첫 시각 요소·다음 전환을 모두 명시해 주세요.` : "모든 장면에 장소·주체·행동·반응·첫 시각 요소·다음 전환이 구체적으로 포함되어 있습니다.",
     },
     {
       key: "unsupported-numbers",
       passed: unknownNumbers.length === 0,
-      message: unknownNumbers.length
-        ? `상품 근거에 없는 수치가 있습니다: ${[...new Set(unknownNumbers)].join(", ")}`
-        : "근거 없는 수치가 없습니다.",
+      message: unknownNumbers.length ? `상품 근거에 없는 수치가 있습니다: ${[...new Set(unknownNumbers)].join(", ")}` : "근거 없는 수치가 없습니다.",
     },
     {
       key: "policy-safety",
@@ -376,17 +292,7 @@ export function validateDetailedPlanning(
 
 export function validateConceptDiversity(concepts: VideoConcept[]) {
   const hookTypes = new Set(concepts.map((concept) => concept.hookType));
-  const fields = concepts.map((concept) => [
-    concept.hookType,
-    concept.openingHook,
-    concept.centralIncident,
-    concept.customerProblem,
-    concept.usp,
-    concept.speakerPointOfView || concept.speaker,
-    concept.recommendedVisualStyle || concept.creativeStyle,
-    concept.narrativeStructure,
-    concept.cta,
-  ]);
+  const fields = concepts.map((concept) => [concept.hookType, concept.openingHook, concept.centralIncident, concept.customerProblem, concept.usp, concept.speakerPointOfView || concept.speaker, concept.recommendedVisualStyle || concept.creativeStyle, concept.narrativeStructure, concept.cta]);
   const pairSimilarities: number[] = [];
   for (let left = 0; left < fields.length; left += 1) {
     for (let right = left + 1; right < fields.length; right += 1) {
@@ -399,9 +305,7 @@ export function validateConceptDiversity(concepts: VideoConcept[]) {
   const isFourConceptPlanning = concepts.length === 4 || archetypes.size > 0;
   const hasAllArchetypes = [...requiredArchetypes].every((item) => archetypes.has(item));
   return {
-    valid: isFourConceptPlanning
-      ? concepts.length === 4 && hasAllArchetypes && pairSimilarities.every((score) => score < 0.45)
-      : concepts.length === 3 && hookTypes.size === concepts.length && pairSimilarities.every((score) => score < 0.45),
+    valid: isFourConceptPlanning ? concepts.length === 4 && hasAllArchetypes && pairSimilarities.every((score) => score < 0.45) : concepts.length === 3 && hookTypes.size === concepts.length && pairSimilarities.every((score) => score < 0.45),
     similarities: pairSimilarities,
   };
 }

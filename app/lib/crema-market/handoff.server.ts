@@ -42,9 +42,7 @@ export async function buildOpportunityProductCreationHandoff(opportunityId: stri
     oldPrice: currency(product.originalPrice),
     advertiserName: dataset.advertiser.name,
     brandName: dataset.advertiser.brandName,
-    discountInfo: product.originalPrice !== null && product.finalPrice !== null && product.originalPrice > product.finalPrice
-      ? `${Math.round((1 - product.finalPrice / product.originalPrice) * 100)}% 할인`
-      : "",
+    discountInfo: product.originalPrice !== null && product.finalPrice !== null && product.originalPrice > product.finalPrice ? `${Math.round((1 - product.finalPrice / product.originalPrice) * 100)}% 할인` : "",
     mainBenefit: [...opportunity.recommendation.messageAngles, ...insights.filter((insight) => insight.polarity === "positive").map((insight) => insight.summary)].slice(0, 3).join(" · "),
     targetCustomer: "상품의 실제 효용과 구매 근거를 비교하는 고객",
     landingUrl: product.url || "",
@@ -57,7 +55,15 @@ export async function buildOpportunityProductCreationHandoff(opportunityId: stri
     extractedGalleryImages: images,
     selectedBackgroundSource: images[0] || "",
     backgroundMode: images.length ? "auto-detail-blur-dark" : "none",
-    sourceImageCandidates: images.map((imagePath, index) => ({ id: `opportunity-image-${index + 1}`, type: index === 0 ? "hero" : "detail", imagePath, originalUrl: imagePath, label: index === 0 ? "크리마 상품 대표 이미지" : `상품 이미지 ${index + 1}`, selected: index === 0, createdAt: new Date().toISOString() })),
+    sourceImageCandidates: images.map((imagePath, index) => ({
+      id: `opportunity-image-${index + 1}`,
+      type: index === 0 ? "hero" : "detail",
+      imagePath,
+      originalUrl: imagePath,
+      label: index === 0 ? "크리마 상품 대표 이미지" : `상품 이미지 ${index + 1}`,
+      selected: index === 0,
+      createdAt: new Date().toISOString(),
+    })),
     selectedSourceImageId: images.length ? "opportunity-image-1" : "",
     selectedSourceImagePath: images[0] || "",
     verifiedBenefits: insights.filter((insight) => insight.polarity === "positive").map((insight) => insight.summary),

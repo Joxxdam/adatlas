@@ -1,10 +1,4 @@
-import type {
-  CopySlotKey,
-  GeneratedAdCopy,
-  GeneratedAdCopyVariant,
-  TemplateCopyLimits,
-  TemplateFittedCopy,
-} from "./types";
+import type { CopySlotKey, GeneratedAdCopy, GeneratedAdCopyVariant, TemplateCopyLimits, TemplateFittedCopy } from "./types";
 
 export const DEFAULT_TEMPLATE_COPY_LIMIT_CHARS: Record<CopySlotKey, number> = {
   headline: 14,
@@ -15,14 +9,7 @@ export const DEFAULT_TEMPLATE_COPY_LIMIT_CHARS: Record<CopySlotKey, number> = {
   price: 12,
 };
 
-const slotKeys: CopySlotKey[] = [
-  "headline",
-  "bodyCopy",
-  "highlightCopy",
-  "bottomBarCopy",
-  "cta",
-  "price",
-];
+const slotKeys: CopySlotKey[] = ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"];
 
 export function visibleTemplateCopyLength(value: string) {
   return [
@@ -48,16 +35,8 @@ function isBadFittedCopy(value: string, slot: CopySlotKey) {
     .replace(/\s+/g, "")
     .trim();
   if (!normalized && slot !== "price") return true;
-  if (
-    slot === "headline" &&
-    (/^\d+$/.test(normalized) ||
-      /^[\d,]+(?:원|만원|천원)?$/.test(normalized) ||
-      normalized.length < 4)
-  )
-    return true;
-  return /소비자|심리|반영|제시|자극|유도|레퍼런스|패턴|분석|구조|구매욕구|클릭욕구|상품이미지|고급스러운상품|대폭인하|인하된점|욕구를자극|부각시켜|강조합니다/.test(
-    normalized
-  );
+  if (slot === "headline" && (/^\d+$/.test(normalized) || /^[\d,]+(?:원|만원|천원)?$/.test(normalized) || normalized.length < 4)) return true;
+  return /소비자|심리|반영|제시|자극|유도|레퍼런스|패턴|분석|구조|구매욕구|클릭욕구|상품이미지|고급스러운상품|대폭인하|인하된점|욕구를자극|부각시켜|강조합니다/.test(normalized);
 }
 
 function slotFallback(slot: CopySlotKey, value: string) {
@@ -80,9 +59,7 @@ function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): str
     .trim();
   if (isBadFittedCopy(normalized, slot)) {
     const fallback = slotFallback(slot, normalized);
-    return visibleTemplateCopyLength(fallback) <= maxChars
-      ? fallback
-      : shortenToLimit(fallback, maxChars, slot);
+    return visibleTemplateCopyLength(fallback) <= maxChars ? fallback : shortenToLimit(fallback, maxChars, slot);
   }
   if (!normalized || visibleTemplateCopyLength(normalized) <= maxChars) return normalized;
   if (slot === "cta") return compactCta(normalized).slice(0, maxChars);
@@ -111,19 +88,14 @@ function shortenToLimit(value: string, maxChars: number, slot: CopySlotKey): str
   return output;
 }
 
-export function copyLimitCharSummary(
-  copyLimits?: TemplateCopyLimits
-): Partial<Record<CopySlotKey, number>> {
+export function copyLimitCharSummary(copyLimits?: TemplateCopyLimits): Partial<Record<CopySlotKey, number>> {
   return slotKeys.reduce<Partial<Record<CopySlotKey, number>>>((summary, slot) => {
     summary[slot] = maxCharsForCopySlot(copyLimits, slot);
     return summary;
   }, {});
 }
 
-export function getCopySlotOverflow(
-  copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>,
-  copyLimits?: TemplateCopyLimits
-) {
+export function getCopySlotOverflow(copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>, copyLimits?: TemplateCopyLimits) {
   return slotKeys.filter((slot) => {
     const value = String(copy[slot] || "");
     if (!value && slot !== "price") return true;
@@ -131,18 +103,11 @@ export function getCopySlotOverflow(
   });
 }
 
-export function hasCopyOverflow(
-  copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>,
-  copyLimits?: TemplateCopyLimits
-) {
+export function hasCopyOverflow(copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>, copyLimits?: TemplateCopyLimits) {
   return getCopySlotOverflow(copy, copyLimits).length > 0;
 }
 
-export function fitCopyToTemplate(params: {
-  copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>;
-  templateId: string;
-  copyLimits?: TemplateCopyLimits;
-}): TemplateFittedCopy {
+export function fitCopyToTemplate(params: { copy: Partial<GeneratedAdCopy | GeneratedAdCopyVariant>; templateId: string; copyLimits?: TemplateCopyLimits }): TemplateFittedCopy {
   const fitted = {} as Record<CopySlotKey, string>;
   const slotFits = slotKeys.map((key) => {
     const originalText = String(params.copy[key] || "");
@@ -150,14 +115,7 @@ export function fitCopyToTemplate(params: {
     const fittedText = shortenToLimit(originalText, maxChars, key);
     const currentChars = visibleTemplateCopyLength(fittedText);
     const originalChars = visibleTemplateCopyLength(originalText);
-    const status: "ok" | "trimmed" | "too-long" | "empty" | "needs-review" =
-      !fittedText && key !== "price"
-        ? "empty"
-        : originalChars > maxChars && currentChars <= maxChars
-          ? "trimmed"
-          : currentChars > maxChars
-            ? "too-long"
-            : "ok";
+    const status: "ok" | "trimmed" | "too-long" | "empty" | "needs-review" = !fittedText && key !== "price" ? "empty" : originalChars > maxChars && currentChars <= maxChars ? "trimmed" : currentChars > maxChars ? "too-long" : "ok";
 
     fitted[key] = fittedText;
     return {

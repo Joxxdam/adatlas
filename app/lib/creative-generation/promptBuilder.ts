@@ -37,9 +37,7 @@ export function buildMasterScenePrompt(profile: ProductReferenceProfile, spec: M
   const immutable = Object.entries(profile.immutableFacts)
     .filter(([, value]) => value !== undefined && (!Array.isArray(value) || value.length))
     .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`);
-  const adaptation = spec.generationMode === "real-photo-adaptation"
-    ? "첫 번째 실제 사용·착용·조리·연출 사진을 기반으로 배경을 자연스럽게 확장하고 광고 구도와 여백만 조정하라. 사진 속 실제 제품의 핵심 특징은 바꾸지 마라."
-    : "레퍼런스에 있는 동일 제품이 실제 상업 촬영 현장에 놓인 것처럼 제품을 포함한 전체 장면을 새로 구성하라.";
+  const adaptation = spec.generationMode === "real-photo-adaptation" ? "첫 번째 실제 사용·착용·조리·연출 사진을 기반으로 배경을 자연스럽게 확장하고 광고 구도와 여백만 조정하라. 사진 속 실제 제품의 핵심 특징은 바꾸지 마라." : "레퍼런스에 있는 동일 제품이 실제 상업 촬영 현장에 놓인 것처럼 제품을 포함한 전체 장면을 새로 구성하라.";
   return [
     "Create one photorealistic, text-free, 1:1 commercial advertising master visual for Korean performance advertising.",
     "첨부된 제품 이미지는 생성할 상품의 실제 레퍼런스다. 새로운 상품을 디자인하지 말고 동일한 상품이 실제 촬영 현장에 놓인 것처럼 표현하라. 제품의 형태, 비율, 대표 색상, 패키지 구조, 로고 위치, 구성 수량과 고유 특징을 유지하라.",
@@ -59,14 +57,12 @@ export function buildMasterScenePrompt(profile: ProductReferenceProfile, spec: M
     `추가 금지 요소: ${list(spec.forbiddenElements)}.`,
     options.retryFailures?.length ? `이전 후보의 실패 원인을 수정하라: ${options.retryFailures.join("; ")}` : "",
     "OUTPUT CONTRACT: one edge-to-edge opaque master visual, no typography, no letters, no numbers, no price, no CTA, no badge, no caption, no watermark. Do not invent a new product or a new brand.",
-  ].filter(Boolean).join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
-export function buildAiBackgroundPrompt(
-  profile: ProductReferenceProfile,
-  spec: MasterSceneSpec,
-  options: { retryFailures?: string[] } = {}
-) {
+export function buildAiBackgroundPrompt(profile: ProductReferenceProfile, spec: MasterSceneSpec, options: { retryFailures?: string[] } = {}) {
   const qualityContract = buildBenchmarkQualityContract();
   return [
     "Create one premium, photorealistic, text-free square advertising BACKGROUND PLATE for a Korean performance ad.",
@@ -83,19 +79,15 @@ export function buildAiBackgroundPrompt(
     "Do not create any product, package, bottle, tube, label, logo, badge, price, letters, numbers, watermark, UI screenshot or isolated hero object. The real verified product and all Korean copy are added after generation.",
     "Fill every pixel and all four corners with one continuous opaque environment. Avoid black empty fields, flat color placeholders, cutout holes and template-looking panels.",
     `Additional forbidden elements: ${list(spec.forbiddenElements)}.`,
-    options.retryFailures?.length
-      ? `Repair all previous quality failures: ${options.retryFailures.join("; ")}.`
-      : "",
+    options.retryFailures?.length ? `Repair all previous quality failures: ${options.retryFailures.join("; ")}.` : "",
     "Quality target: agency-ready ecommerce key visual, believable material detail, intentional art direction, clean separation between copy zone and product stage, suitable for an advertiser meeting.",
     "OUTPUT CONTRACT: exactly one edge-to-edge opaque 1:1 background plate with no typography and no sold product.",
-  ].filter(Boolean).join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
-export function buildAiFullCreativePrompt(
-  profile: ProductReferenceProfile,
-  spec: MasterSceneSpec,
-  options: { retryFailures?: string[] } = {}
-) {
+export function buildAiFullCreativePrompt(profile: ProductReferenceProfile, spec: MasterSceneSpec, options: { retryFailures?: string[] } = {}) {
   const qualityContract = buildBenchmarkQualityContract();
   return [
     "Create one finished, premium, photorealistic square advertising KEY VISUAL for a Korean performance ad.",
@@ -114,10 +106,10 @@ export function buildAiFullCreativePrompt(
     "Do not add advertising headline, Korean copy, price, discount, CTA, badge, graph, review count, watermark or extra brand logo. Exact Korean typography, verified price and the original logo are added after generation.",
     "Text that is physically printed on the actual product package may remain only as part of the referenced product identity. Do not redesign, rewrite or hallucinate the package label.",
     `Additional forbidden elements: ${list(spec.forbiddenElements)}.`,
-    options.retryFailures?.length
-      ? `Regenerate and repair every previous failure: ${options.retryFailures.join("; ")}.`
-      : "",
+    options.retryFailures?.length ? `Regenerate and repair every previous failure: ${options.retryFailures.join("; ")}.` : "",
     "Quality target: advertiser-meeting-ready campaign key visual, polished commercial photography, intentional hierarchy, product hero occupying approximately 35–60% of the useful visual area, believable materials and no generic stock-photo look.",
     "OUTPUT CONTRACT: one edge-to-edge opaque 1:1 finished key visual, with the referenced sold product integrated into the scene, but no added advertising typography.",
-  ].filter(Boolean).join("\n\n");
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }

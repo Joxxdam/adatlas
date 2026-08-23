@@ -2,12 +2,7 @@ import crypto from "node:crypto";
 import sharp from "sharp";
 import { readCreativeRasterAsset } from "./assets.server.ts";
 import { buildProductReferenceProfile } from "./productReferenceProfile.ts";
-import type {
-  CreativeImageAsset,
-  ProductReferenceImage,
-  ProductReferenceRole,
-  ProductTruth,
-} from "./types.ts";
+import type { CreativeImageAsset, ProductReferenceImage, ProductReferenceRole, ProductTruth } from "./types.ts";
 
 const roleWeights: Record<ProductReferenceRole, number> = {
   "primary-product": 100,

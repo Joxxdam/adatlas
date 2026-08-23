@@ -13,12 +13,12 @@ export type CreativeFontDefinition = {
 const root = path.join(process.cwd(), "public", "fonts");
 
 export const creativeFontRegistry: Record<FontRole, CreativeFontDefinition> = {
-  HEAVY_GOTHIC: { role:"HEAVY_GOTHIC", family:"Black Han Sans", file:path.join(root,"BlackHanSans-Regular.ttf"), license:path.join(root,"licenses","BlackHanSans-OFL.txt") },
-  DISPLAY_BLACK: { role:"DISPLAY_BLACK", family:"Do Hyeon", file:path.join(root,"DoHyeon-Regular.ttf"), license:path.join(root,"licenses","DoHyeon-OFL.txt") },
-  ROUNDED_BOLD: { role:"ROUNDED_BOLD", family:"Noto Sans KR", file:path.join(root,"NotoSansKR-Variable.ttf"), license:path.join(root,"licenses","NotoSansKR-OFL.txt") },
-  HANDWRITTEN_MARKER: { role:"HANDWRITTEN_MARKER", family:"Nanum Pen Script", file:path.join(root,"NanumPenScript-Regular.ttf"), license:path.join(root,"licenses","NanumPenScript-OFL.txt") },
-  HANDWRITTEN_BRUSH: { role:"HANDWRITTEN_BRUSH", family:"Nanum Pen Script", file:path.join(root,"NanumPenScript-Regular.ttf"), license:path.join(root,"licenses","NanumPenScript-OFL.txt"), fallbackRole:"HANDWRITTEN_MARKER" },
-  CLEAN_EDITORIAL: { role:"CLEAN_EDITORIAL", family:"Gowun Batang", file:path.join(root,"GowunBatang-Bold.ttf"), license:path.join(root,"licenses","GowunBatang-OFL.txt") },
+  HEAVY_GOTHIC: { role: "HEAVY_GOTHIC", family: "Black Han Sans", file: path.join(root, "BlackHanSans-Regular.ttf"), license: path.join(root, "licenses", "BlackHanSans-OFL.txt") },
+  DISPLAY_BLACK: { role: "DISPLAY_BLACK", family: "Do Hyeon", file: path.join(root, "DoHyeon-Regular.ttf"), license: path.join(root, "licenses", "DoHyeon-OFL.txt") },
+  ROUNDED_BOLD: { role: "ROUNDED_BOLD", family: "Noto Sans KR", file: path.join(root, "NotoSansKR-Variable.ttf"), license: path.join(root, "licenses", "NotoSansKR-OFL.txt") },
+  HANDWRITTEN_MARKER: { role: "HANDWRITTEN_MARKER", family: "Nanum Pen Script", file: path.join(root, "NanumPenScript-Regular.ttf"), license: path.join(root, "licenses", "NanumPenScript-OFL.txt") },
+  HANDWRITTEN_BRUSH: { role: "HANDWRITTEN_BRUSH", family: "Nanum Pen Script", file: path.join(root, "NanumPenScript-Regular.ttf"), license: path.join(root, "licenses", "NanumPenScript-OFL.txt"), fallbackRole: "HANDWRITTEN_MARKER" },
+  CLEAN_EDITORIAL: { role: "CLEAN_EDITORIAL", family: "Gowun Batang", file: path.join(root, "GowunBatang-Bold.ttf"), license: path.join(root, "licenses", "GowunBatang-OFL.txt") },
 };
 
 const fontData = new Map<string, Promise<string>>();

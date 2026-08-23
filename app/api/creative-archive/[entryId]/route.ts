@@ -9,10 +9,7 @@ function validEntryId(value: string) {
   return /^(?:asset|result):[A-Za-z0-9:_-]{8,240}$/.test(value);
 }
 
-export async function PATCH(
-  request: Request,
-  context: { params: Promise<{ entryId: string }> }
-) {
+export async function PATCH(request: Request, context: { params: Promise<{ entryId: string }> }) {
   try {
     verifyLocalGenerationAccess(request);
     const { entryId } = await context.params;
@@ -44,10 +41,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  context: { params: Promise<{ entryId: string }> }
-) {
+export async function DELETE(request: Request, context: { params: Promise<{ entryId: string }> }) {
   try {
     verifyLocalGenerationAccess(request);
     const { entryId } = await context.params;
@@ -57,9 +51,6 @@ export async function DELETE(
     const result = await deleteCreativeArchiveEntries([entryId]);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "이미지 콘텐츠를 삭제하지 못했습니다." },
-      { status: localAccessError(error) ? 403 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "이미지 콘텐츠를 삭제하지 못했습니다." }, { status: localAccessError(error) ? 403 : 400 });
   }
 }

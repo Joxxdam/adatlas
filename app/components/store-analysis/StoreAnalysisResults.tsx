@@ -1,8 +1,5 @@
 import Link from "next/link";
-import type {
-  ProductAdvertisingAnalysis,
-  StoreAnalysisResult,
-} from "../../lib/store-analysis/types";
+import type { ProductAdvertisingAnalysis, StoreAnalysisResult } from "../../lib/store-analysis/types";
 import { CategoryRecommendationList } from "./CategoryRecommendationList";
 import { ProductRecommendationCard } from "./ProductRecommendationCard";
 import { StoreAnalysisSummary } from "./StoreAnalysisSummary";
@@ -25,16 +22,13 @@ const GROUPS: Array<{
   {
     type: "rediscovery-candidate",
     title: "광고로 재발굴할 상품",
-    description:
-      "비주력 노출이어도 공개 USP와 여러 광고 각도로 다시 테스트할 가치가 있는 후보입니다.",
+    description: "비주력 노출이어도 공개 USP와 여러 광고 각도로 다시 테스트할 가치가 있는 후보입니다.",
   },
 ];
 
 export function StoreAnalysisResults({ result }: { result: StoreAnalysisResult }) {
   const detailById = new Map(result.products.map((detail) => [detail.product.id, detail]));
-  const lowPriority = result.products.filter(
-    (detail) => detail.advertisingAnalysis?.recommendationType === "low-priority"
-  );
+  const lowPriority = result.products.filter((detail) => detail.advertisingAnalysis?.recommendationType === "low-priority");
   return (
     <main className="store-results-page">
       <header className="store-results-header">
@@ -69,9 +63,7 @@ export function StoreAnalysisResults({ result }: { result: StoreAnalysisResult }
           <p>상품과 콘텐츠 가설을 선택하면 기존 제작 화면에 정보가 자동으로 전달됩니다.</p>
         </div>
         {GROUPS.map((group) => {
-          const candidates = result.recommendedProducts.filter(
-            (candidate) => candidate.analysis.recommendationType === group.type
-          );
+          const candidates = result.recommendedProducts.filter((candidate) => candidate.analysis.recommendationType === group.type);
           if (!candidates.length) return null;
           return (
             <section className="candidate-group" key={group.type}>
@@ -83,25 +75,13 @@ export function StoreAnalysisResults({ result }: { result: StoreAnalysisResult }
               <div className="product-recommendation-list">
                 {candidates.map((candidate) => {
                   const detail = detailById.get(candidate.product.id);
-                  return detail ? (
-                    <ProductRecommendationCard
-                      analysisId={result.analysisId}
-                      candidate={candidate}
-                      detail={detail}
-                      key={candidate.product.id}
-                    />
-                  ) : null;
+                  return detail ? <ProductRecommendationCard analysisId={result.analysisId} candidate={candidate} detail={detail} key={candidate.product.id} /> : null;
                 })}
               </div>
             </section>
           );
         })}
-        {!result.recommendedProducts.length ? (
-          <div className="analysis-empty-state">
-            공개 정보만으로 추천 기준을 충족한 상품을 찾지 못했습니다. 낮은 우선순위 이유를
-            확인하거나 상품 URL로 직접 제작해 주세요.
-          </div>
-        ) : null}
+        {!result.recommendedProducts.length ? <div className="analysis-empty-state">공개 정보만으로 추천 기준을 충족한 상품을 찾지 못했습니다. 낮은 우선순위 이유를 확인하거나 상품 URL로 직접 제작해 주세요.</div> : null}
       </section>
       {lowPriority.length ? (
         <details className="low-priority-panel">

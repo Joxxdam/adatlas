@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { CreativeArchiveEntry } from "../../lib/creative-archive/types";
-import {
-  archiveEntriesToMetaDrafts,
-  prepareArchivePerformanceSelection,
-} from "../../lib/meta/archivePerformanceSelection";
+import { archiveEntriesToMetaDrafts, prepareArchivePerformanceSelection } from "../../lib/meta/archivePerformanceSelection";
 import type { PerformanceTestType } from "../../lib/meta/types";
 import { MetaDraftRegistrationPanel } from "./MetaDraftRegistrationPanel";
 import styles from "./MetaOperations.module.css";
@@ -16,10 +13,7 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
   const first = selection.entries[0];
   const [landingUrl, setLandingUrl] = useState(first?.landingUrl || "");
   const [testType, setTestType] = useState<PerformanceTestType>(selection.testType);
-  const creatives = useMemo(
-    () => archiveEntriesToMetaDrafts(selection.entries, landingUrl.trim()),
-    [landingUrl, selection.entries]
-  );
+  const creatives = useMemo(() => archiveEntriesToMetaDrafts(selection.entries, landingUrl.trim()), [landingUrl, selection.entries]);
 
   if (!selection.entries.length) {
     return (
@@ -40,7 +34,9 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
         <div>
           <p className="eyebrow">ARCHIVE → PERFORMANCE</p>
           <h2>{first.productName}</h2>
-          <p>{first.advertiserName} · 선택 소재 {selection.entries.length}장</p>
+          <p>
+            {first.advertiserName} · 선택 소재 {selection.entries.length}장
+          </p>
         </div>
         <Link href="/archive">선택 다시 하기</Link>
       </header>
@@ -51,7 +47,10 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
             {/* Runtime-generated local files intentionally bypass Next image optimization. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img alt={`${entry.hookCode} ${entry.headline}`} src={entry.imageUrl} />
-            <div><strong>{entry.hookCode}</strong><span>{entry.assetCode}</span></div>
+            <div>
+              <strong>{entry.hookCode}</strong>
+              <span>{entry.assetCode}</span>
+            </div>
           </article>
         ))}
       </div>
@@ -63,23 +62,12 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
           <p>{selection.message}</p>
         </div>
         <div className={styles.testTypeChoices}>
-          <button
-            aria-pressed={testType === "hook-only"}
-            className={testType === "hook-only" ? styles.choiceActive : ""}
-            disabled={!selection.hookOnlyEligible}
-            onClick={() => setTestType("hook-only")}
-            type="button"
-          >
+          <button aria-pressed={testType === "hook-only"} className={testType === "hook-only" ? styles.choiceActive : ""} disabled={!selection.hookOnlyEligible} onClick={() => setTestType("hook-only")} type="button">
             <strong>후킹만 비교</strong>
             <span>동일 디자인에서 메인 후킹과 서브 문구만 다른 경우</span>
             {!selection.hookOnlyEligible ? <small>현재 소재는 디자인 조건이 동일하지 않아 선택할 수 없습니다.</small> : null}
           </button>
-          <button
-            aria-pressed={testType === "creative-combination"}
-            className={testType === "creative-combination" ? styles.choiceActive : ""}
-            onClick={() => setTestType("creative-combination")}
-            type="button"
-          >
+          <button aria-pressed={testType === "creative-combination"} className={testType === "creative-combination" ? styles.choiceActive : ""} onClick={() => setTestType("creative-combination")} type="button">
             <strong>전체 소재 조합 비교</strong>
             <span>후킹·장면·레이아웃이 함께 다른 완성 광고 성과를 비교</span>
             <small>결과를 후킹 단독 효과라고 단정하지 않습니다.</small>
@@ -89,31 +77,13 @@ export function ArchivePerformanceSetup({ entries }: { entries: CreativeArchiveE
 
       <label className={styles.landingField}>
         <span>상품 랜딩 URL</span>
-        <input
-          inputMode="url"
-          onChange={(event) => setLandingUrl(event.target.value)}
-          placeholder="https://..."
-          value={landingUrl}
-        />
+        <input inputMode="url" onChange={(event) => setLandingUrl(event.target.value)} placeholder="https://..." value={landingUrl} />
         <small>아카이브에 저장된 URL을 불러왔습니다. 등록 전 최종 상품 페이지인지 확인하세요.</small>
       </label>
 
       {!selection.valid ? <p className={styles.warning}>{selection.message}</p> : null}
-      {selection.valid && !landingUrl.trim() ? (
-        <p className={styles.warning}>상품 랜딩 URL을 입력해야 Meta PAUSED 초안을 설정할 수 있습니다.</p>
-      ) : null}
-      {selection.valid && landingUrl.trim() ? (
-        <MetaDraftRegistrationPanel
-          advertiserId={first.advertiserId || first.advertiserName}
-          advertiserName={first.advertiserName}
-          approvedCreatives={creatives}
-          archiveEntryIds={selection.entries.map((entry) => entry.id)}
-          landingUrl={landingUrl.trim()}
-          productId={first.productId || first.productName}
-          productName={first.productName}
-          testType={testType}
-        />
-      ) : null}
+      {selection.valid && !landingUrl.trim() ? <p className={styles.warning}>상품 랜딩 URL을 입력해야 Meta PAUSED 초안을 설정할 수 있습니다.</p> : null}
+      {selection.valid && landingUrl.trim() ? <MetaDraftRegistrationPanel advertiserId={first.advertiserId || first.advertiserName} advertiserName={first.advertiserName} approvedCreatives={creatives} archiveEntryIds={selection.entries.map((entry) => entry.id)} landingUrl={landingUrl.trim()} productId={first.productId || first.productName} productName={first.productName} testType={testType} /> : null}
     </section>
   );
 }

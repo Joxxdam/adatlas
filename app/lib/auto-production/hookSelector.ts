@@ -28,9 +28,7 @@ export function hookHypothesesFromJob(job: GenerationJob): AutoHookHypothesis[] 
 
 export function resultIdsForHookCodes(job: GenerationJob, hookCodes: string[]) {
   const requested = new Set(hookCodes);
-  return job.results
-    .filter((result) => requested.has(result.hookPlan.hookCode))
-    .map((result) => result.id);
+  return job.results.filter((result) => requested.has(result.hookPlan.hookCode)).map((result) => result.id);
 }
 
 export function allHookCodes(job: GenerationJob) {

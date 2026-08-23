@@ -13,20 +13,11 @@ export type FontCatalogOption = {
   sourceUrl?: string;
 };
 
-type FontOptions = Pick<
-  FontCatalogOption,
-  "fontWeight" | "file" | "bundled" | "role" | "license" | "sourceUrl"
->;
+type FontOptions = Pick<FontCatalogOption, "fontWeight" | "file" | "bundled" | "role" | "license" | "sourceUrl">;
 
 const sansFallback = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
 
-function font(
-  id: string,
-  label: string,
-  localNames: string[],
-  fallback = sansFallback,
-  options: FontOptions = {}
-): FontCatalogOption {
+function font(id: string, label: string, localNames: string[], fallback = sansFallback, options: FontOptions = {}): FontCatalogOption {
   return {
     id,
     label,
@@ -36,8 +27,7 @@ function font(
   };
 }
 
-const googleFontsSource = (family: string) =>
-  `https://github.com/google/fonts/tree/main/ofl/${family}`;
+const googleFontsSource = (family: string) => `https://github.com/google/fonts/tree/main/ofl/${family}`;
 
 export const bundledFontOptions: FontCatalogOption[] = [
   font("black-han-sans", "Black Han Sans · 강한 특가형", ["Black Han Sans"], sansFallback, {
@@ -85,54 +75,22 @@ export const bundledFontOptions: FontCatalogOption[] = [
 export const systemFontOptions: FontCatalogOption[] = [
   ...bundledFontOptions,
   font("cafe24-ohsquare", "Cafe24 Ohsquare · 로컬", ["Cafe24 Ohsquare OTF", "Cafe24 Ohsquare"]),
-  font("cafe24-dangdanghae", "Cafe24 Dangdanghae · 로컬", [
-    "Cafe24 Dangdanghae OTF",
-    "Cafe24 Dangdanghae",
-  ]),
-  font("cafe24-supermagic", "Cafe24 Supermagic · 로컬", [
-    "Cafe24 Supermagic OTF",
-    "Cafe24 Supermagic",
-  ]),
+  font("cafe24-dangdanghae", "Cafe24 Dangdanghae · 로컬", ["Cafe24 Dangdanghae OTF", "Cafe24 Dangdanghae"]),
+  font("cafe24-supermagic", "Cafe24 Supermagic · 로컬", ["Cafe24 Supermagic OTF", "Cafe24 Supermagic"]),
   font("cafe24-nyangi", "Cafe24 Nyangi · 로컬", ["Cafe24 Nyangi B", "Cafe24 Nyangi"]),
   font("cafe24-ssukssuk", "Cafe24 Ssukssuk · 로컬", ["Cafe24 Ssukssuk"]),
   font("cafe24-behappy", "Cafe24 Behappy · 로컬", ["Cafe24 Behappy"]),
   font("cafe24-pro-slim-max", "Cafe24 PRO Slim Max · 로컬", ["Cafe24 PRO Slim Max"]),
-  font(
-    "gmarket-bold",
-    "Gmarket Sans Bold · 로컬",
-    ["Gmarket Sans TTF", "Gmarket Sans"],
-    sansFallback,
-    {
-      fontWeight: 700,
-    }
-  ),
-  font(
-    "gmarket-medium",
-    "Gmarket Sans Medium · 로컬",
-    ["Gmarket Sans TTF", "Gmarket Sans"],
-    sansFallback,
-    {
-      fontWeight: 500,
-    }
-  ),
-  font(
-    "gmarket-light",
-    "Gmarket Sans Light · 로컬",
-    ["Gmarket Sans TTF", "Gmarket Sans"],
-    sansFallback,
-    {
-      fontWeight: 300,
-    }
-  ),
-  ...Array.from({ length: 9 }, (_, index) =>
-    font(
-      `scdream-${index + 1}`,
-      `S-Core Dream ${index + 1} · 로컬`,
-      [`S-Core Dream ${index + 1}`, "S-Core Dream"],
-      sansFallback,
-      { fontWeight: (index + 1) * 100 }
-    )
-  ),
+  font("gmarket-bold", "Gmarket Sans Bold · 로컬", ["Gmarket Sans TTF", "Gmarket Sans"], sansFallback, {
+    fontWeight: 700,
+  }),
+  font("gmarket-medium", "Gmarket Sans Medium · 로컬", ["Gmarket Sans TTF", "Gmarket Sans"], sansFallback, {
+    fontWeight: 500,
+  }),
+  font("gmarket-light", "Gmarket Sans Light · 로컬", ["Gmarket Sans TTF", "Gmarket Sans"], sansFallback, {
+    fontWeight: 300,
+  }),
+  ...Array.from({ length: 9 }, (_, index) => font(`scdream-${index + 1}`, `S-Core Dream ${index + 1} · 로컬`, [`S-Core Dream ${index + 1}`, "S-Core Dream"], sansFallback, { fontWeight: (index + 1) * 100 })),
   font("malgun-bold", "맑은 고딕 Bold · 로컬", ["Malgun Gothic"], sansFallback, {
     fontWeight: 700,
   }),
@@ -184,17 +142,8 @@ export function getFontOption(id: string): FontCatalogOption {
   return systemFontOptions.find((option) => option.id === id) || systemFontOptions[0];
 }
 
-export function resolveTemplateFontAssignment(
-  templateId: string,
-  headlinePresetId = "impact-korean-red"
-): { headline: FontCatalogOption; body: FontCatalogOption } {
-  const fallbackHeadlineId = headlinePresetId.includes("premium")
-    ? "gowun-batang-bold"
-    : headlinePresetId.includes("ugc")
-      ? "nanum-pen-script"
-      : headlinePresetId.includes("commerce")
-        ? "do-hyeon"
-        : "black-han-sans";
+export function resolveTemplateFontAssignment(templateId: string, headlinePresetId = "impact-korean-red"): { headline: FontCatalogOption; body: FontCatalogOption } {
+  const fallbackHeadlineId = headlinePresetId.includes("premium") ? "gowun-batang-bold" : headlinePresetId.includes("ugc") ? "nanum-pen-script" : headlinePresetId.includes("commerce") ? "do-hyeon" : "black-han-sans";
   const assignment = templateFontAssignments[templateId] || {
     headlineFontId: fallbackHeadlineId,
     bodyFontId: defaultBodyFontId,

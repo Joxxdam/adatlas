@@ -75,19 +75,13 @@ function scoreGuide(guide: CopyGuideIndexItem, input: CopyGuideMatchInput) {
     matchedBy.push("copyGuideId");
   }
 
-  if (
-    aliases.some((alias) => normalize(alias) === normalize(brand)) ||
-    normalize(guide.brandName) === normalize(brand)
-  ) {
+  if (aliases.some((alias) => normalize(alias) === normalize(brand)) || normalize(guide.brandName) === normalize(brand)) {
     score += 500;
     priorityRank = Math.max(priorityRank, 4);
     matchedBy.push("brandName");
   }
 
-  if (
-    aliases.some((alias) => normalize(alias) === normalize(advertiser)) ||
-    normalize(guide.brandName) === normalize(advertiser)
-  ) {
+  if (aliases.some((alias) => normalize(alias) === normalize(advertiser)) || normalize(guide.brandName) === normalize(advertiser)) {
     score += 500;
     priorityRank = Math.max(priorityRank, 4);
     matchedBy.push("advertiserName");
@@ -130,19 +124,12 @@ function safeGuidePath(filePath: string) {
   return resolved;
 }
 
-export async function loadCopyGuideForProduct(
-  input: CopyGuideMatchInput
-): Promise<LoadedCopyGuide | null> {
+export async function loadCopyGuideForProduct(input: CopyGuideMatchInput): Promise<LoadedCopyGuide | null> {
   try {
     const index = await readIndex();
     const matches = index.guides
       .map((guide) => ({ guide, ...scoreGuide(guide, input) }))
-      .filter(
-        (item) =>
-          item.priorityRank >= 2 ||
-          item.matchedBy.includes("copyGuideId") ||
-          item.guide.id === index.defaultGuideId
-      )
+      .filter((item) => item.priorityRank >= 2 || item.matchedBy.includes("copyGuideId") || item.guide.id === index.defaultGuideId)
       .sort((a, b) => b.priorityRank - a.priorityRank || b.score - a.score);
     const selected = matches[0];
 

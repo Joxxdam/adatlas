@@ -29,10 +29,7 @@ function absoluteUrl(src: string, baseUrl: string) {
 }
 
 function metaContent(html: string, name: string) {
-  const patterns = [
-    new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"),
-    new RegExp(`<meta[^>]+property=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"),
-  ];
+  const patterns = [new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']+)["']`, "i"), new RegExp(`<meta[^>]+property=["']${name}["'][^>]+content=["']([^"']+)["']`, "i")];
 
   for (const pattern of patterns) {
     const match = html.match(pattern);
@@ -45,13 +42,7 @@ function metaContent(html: string, name: string) {
 }
 
 function extractImages(html: string, baseUrl: string) {
-  const urls = [
-    metaContent(html, "og:image"),
-    metaContent(html, "twitter:image"),
-    ...[...html.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi)].map(
-      (match) => match[1]
-    ),
-  ]
+  const urls = [metaContent(html, "og:image"), metaContent(html, "twitter:image"), ...[...html.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi)].map((match) => match[1])]
     .map((src) => absoluteUrl(src, baseUrl))
     .filter((src) => /\.(png|jpe?g|webp|avif)(\?|$)/i.test(src))
     .filter((src) => !/(logo|favicon|sprite|icon)/i.test(src));
@@ -59,11 +50,7 @@ function extractImages(html: string, baseUrl: string) {
   return [...new Set(urls)].slice(0, 8);
 }
 
-async function fetchContent(
-  brand: WatchlistBrand,
-  source: CrawledContent["source"],
-  url?: string
-): Promise<CrawledContent> {
+async function fetchContent(brand: WatchlistBrand, source: CrawledContent["source"], url?: string): Promise<CrawledContent> {
   if (!url) {
     return {
       brandId: brand.id,
@@ -125,12 +112,7 @@ export async function crawlWatchlist(options: { limit?: number; priority?: strin
   const analyses: ContentAnalysis[] = [];
 
   for (const brand of watchlist) {
-    const contents = [
-      await fetchContent(brand, "watchlist"),
-      await fetchContent(brand, "meta", brand.urls.meta),
-      await fetchContent(brand, "google", brand.urls.google),
-      await fetchContent(brand, "website", brand.urls.website),
-    ];
+    const contents = [await fetchContent(brand, "watchlist"), await fetchContent(brand, "meta", brand.urls.meta), await fetchContent(brand, "google", brand.urls.google), await fetchContent(brand, "website", brand.urls.website)];
 
     for (const content of contents) {
       analyses.push(analyzeContent(brand, content));

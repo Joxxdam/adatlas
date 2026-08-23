@@ -17198,15 +17198,7 @@
       "previousStartsOn": "2026-07-15",
       "previousEndsOn": "2026-07-28",
       "productCount": 7,
-      "opportunityIds": [
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-z5m3ax-exclude_from_ads",
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-ylmvwz-exclude_from_ads",
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-zflozw-rising_product",
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-109ki2t-rising_product",
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-yvmhly-scale_candidate",
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-zplaov-high_interest_low_conversion",
-        "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-ybna80-review_powered"
-      ],
+      "opportunityIds": ["opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-z5m3ax-exclude_from_ads", "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-ylmvwz-exclude_from_ads", "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-zflozw-rising_product", "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-109ki2t-rising_product", "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-yvmhly-scale_candidate", "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-zplaov-high_interest_low_conversion", "opp-analysis-dev-crema-market-20260812150342-product-dev-crema-market-ybna80-review_powered"],
       "qualityReportId": "quality-dev-crema-market-20260812150342",
       "algorithmVersion": "opportunity-engine-v1",
       "createdAt": "2026-08-12T15:03:42.478Z",
@@ -17262,28 +17254,20 @@
       "recommendation": {
         "objective": "광고 제외",
         "hookTypes": [],
-        "messageAngles": [
-          "광고 집행 전 상태 확인"
-        ],
+        "messageAngles": ["광고 집행 전 상태 확인"],
         "imageDirection": "생성하지 않음",
         "promotionSuggestion": null,
-        "rationale": [
-          "품절·비노출·데이터 위험 등 제외 조건입니다."
-        ]
+        "rationale": ["품절·비노출·데이터 위험 등 제외 조건입니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:03:42.478Z",
       "primaryType": "EXCLUDE_FROM_ADS",
-      "secondaryTypes": [
-        "REVIEW_RISK"
-      ],
+      "secondaryTypes": ["REVIEW_RISK"],
       "opportunityScore": 100,
       "confidenceScore": 100,
       "recommendationStatus": "rejected",
       "summary": "재고·환불·리뷰·상품 상태 확인 후 광고 제외 · 보조 신호: REVIEW_RISK",
-      "risks": [
-        "반복 부정 후기와 낮은 평점"
-      ],
+      "risks": ["반복 부정 후기와 낮은 평점"],
       "recommendedAction": "광고 제외",
       "recommendedHookTypes": [],
       "recommendedObjective": "광고 제외",
@@ -17341,14 +17325,10 @@
       "recommendation": {
         "objective": "광고 제외",
         "hookTypes": [],
-        "messageAngles": [
-          "광고 집행 전 상태 확인"
-        ],
+        "messageAngles": ["광고 집행 전 상태 확인"],
         "imageDirection": "생성하지 않음",
         "promotionSuggestion": null,
-        "rationale": [
-          "품절·비노출·데이터 위험 등 제외 조건입니다."
-        ]
+        "rationale": ["품절·비노출·데이터 위험 등 제외 조건입니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:03:42.478Z",
@@ -17358,9 +17338,7 @@
       "confidenceScore": 90,
       "recommendationStatus": "rejected",
       "summary": "재고·환불·리뷰·상품 상태 확인 후 광고 제외",
-      "risks": [
-        "재고 부족"
-      ],
+      "risks": ["재고 부족"],
       "recommendedAction": "광고 제외",
       "recommendedHookTypes": [],
       "recommendedObjective": "광고 제외",
@@ -17428,36 +17406,23 @@
       ],
       "recommendation": {
         "objective": "상승세 확장",
-        "hookTypes": [
-          "urgency",
-          "social-proof"
-        ],
-        "messageAngles": [
-          "최근 반응 상승",
-          "지금 주목할 이유"
-        ],
+        "hookTypes": ["urgency", "social-proof"],
+        "messageAngles": ["최근 반응 상승", "지금 주목할 이유"],
         "imageDirection": "상승 흐름과 상품 사용 장면",
         "promotionSuggestion": null,
-        "rationale": [
-          "최근 기간 주문이 이전 기간보다 증가했습니다."
-        ]
+        "rationale": ["최근 기간 주문이 이전 기간보다 증가했습니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:03:42.478Z",
       "primaryType": "RISING_PRODUCT",
-      "secondaryTypes": [
-        "SCALE_CANDIDATE"
-      ],
+      "secondaryTypes": ["SCALE_CANDIDATE"],
       "opportunityScore": 97,
       "confidenceScore": 100,
       "recommendationStatus": "detected",
       "summary": "최근 주문 반응 상승 · 보조 신호: SCALE_CANDIDATE",
       "risks": [],
       "recommendedAction": "상승세 확장",
-      "recommendedHookTypes": [
-        "urgency",
-        "social-proof"
-      ],
+      "recommendedHookTypes": ["urgency", "social-proof"],
       "recommendedObjective": "상승세 확장",
       "analysisPeriodStart": "2026-07-29",
       "analysisPeriodEnd": "2026-08-11",
@@ -17545,39 +17510,23 @@
       ],
       "recommendation": {
         "objective": "상승세 확장",
-        "hookTypes": [
-          "urgency",
-          "social-proof"
-        ],
-        "messageAngles": [
-          "최근 반응 상승",
-          "지금 주목할 이유"
-        ],
+        "hookTypes": ["urgency", "social-proof"],
+        "messageAngles": ["최근 반응 상승", "지금 주목할 이유"],
         "imageDirection": "상승 흐름과 상품 사용 장면",
         "promotionSuggestion": null,
-        "rationale": [
-          "최근 기간 주문이 이전 기간보다 증가했습니다."
-        ]
+        "rationale": ["최근 기간 주문이 이전 기간보다 증가했습니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:06:18.912Z",
       "primaryType": "RISING_PRODUCT",
-      "secondaryTypes": [
-        "HIDDEN_WINNER",
-        "REVIEW_POWERED",
-        "UNDEREXPOSED",
-        "INVENTORY_OPPORTUNITY"
-      ],
+      "secondaryTypes": ["HIDDEN_WINNER", "REVIEW_POWERED", "UNDEREXPOSED", "INVENTORY_OPPORTUNITY"],
       "opportunityScore": 92,
       "confidenceScore": 100,
       "recommendationStatus": "creative_generated",
       "summary": "최근 주문 반응 상승 · 보조 신호: HIDDEN_WINNER, REVIEW_POWERED, UNDEREXPOSED, INVENTORY_OPPORTUNITY",
       "risks": [],
       "recommendedAction": "상승세 확장",
-      "recommendedHookTypes": [
-        "urgency",
-        "social-proof"
-      ],
+      "recommendedHookTypes": ["urgency", "social-proof"],
       "recommendedObjective": "상승세 확장",
       "analysisPeriodStart": "2026-07-29",
       "analysisPeriodEnd": "2026-08-11",
@@ -17665,38 +17614,23 @@
       ],
       "recommendation": {
         "objective": "예산 확장 테스트",
-        "hookTypes": [
-          "proof-data",
-          "product-hero"
-        ],
-        "messageAngles": [
-          "검증된 판매 반응",
-          "대표 혜택"
-        ],
+        "hookTypes": ["proof-data", "product-hero"],
+        "messageAngles": ["검증된 판매 반응", "대표 혜택"],
         "imageDirection": "대표 상품과 근거를 명확히",
         "promotionSuggestion": null,
-        "rationale": [
-          "판매 규모와 효율이 함께 확인됩니다."
-        ]
+        "rationale": ["판매 규모와 효율이 함께 확인됩니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:03:42.478Z",
       "primaryType": "SCALE_CANDIDATE",
-      "secondaryTypes": [
-        "REVIEW_POWERED",
-        "REPEAT_PURCHASE",
-        "BUNDLE_CANDIDATE"
-      ],
+      "secondaryTypes": ["REVIEW_POWERED", "REPEAT_PURCHASE", "BUNDLE_CANDIDATE"],
       "opportunityScore": 88,
       "confidenceScore": 100,
       "recommendationStatus": "detected",
       "summary": "판매 규모와 효율이 함께 확인된 확장 후보 · 보조 신호: REVIEW_POWERED, REPEAT_PURCHASE, BUNDLE_CANDIDATE",
       "risks": [],
       "recommendedAction": "예산 확장 테스트",
-      "recommendedHookTypes": [
-        "proof-data",
-        "product-hero"
-      ],
+      "recommendedHookTypes": ["proof-data", "product-hero"],
       "recommendedObjective": "예산 확장 테스트",
       "analysisPeriodStart": "2026-07-29",
       "analysisPeriodEnd": "2026-08-11",
@@ -17740,19 +17674,11 @@
       ],
       "recommendation": {
         "objective": "구매 장벽 해소",
-        "hookTypes": [
-          "comparison",
-          "objection"
-        ],
-        "messageAngles": [
-          "선택 기준",
-          "구매 전 걱정 해소"
-        ],
+        "hookTypes": ["comparison", "objection"],
+        "messageAngles": ["선택 기준", "구매 전 걱정 해소"],
         "imageDirection": "비교와 정보 위계 중심",
         "promotionSuggestion": "구매 장벽을 줄이는 혜택 검토",
-        "rationale": [
-          "관심 대비 구매 전환이 낮습니다."
-        ]
+        "rationale": ["관심 대비 구매 전환이 낮습니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:03:42.478Z",
@@ -17764,10 +17690,7 @@
       "summary": "관심은 높지만 구매 장벽이 큰 상품",
       "risks": [],
       "recommendedAction": "구매 장벽 해소",
-      "recommendedHookTypes": [
-        "comparison",
-        "objection"
-      ],
+      "recommendedHookTypes": ["comparison", "objection"],
       "recommendedObjective": "구매 장벽 해소",
       "analysisPeriodStart": "2026-07-29",
       "analysisPeriodEnd": "2026-08-11",
@@ -17855,38 +17778,23 @@
       ],
       "recommendation": {
         "objective": "후기 근거 확장",
-        "hookTypes": [
-          "review-ugc",
-          "social-proof"
-        ],
-        "messageAngles": [
-          "후기 반복 장점",
-          "실사용 만족"
-        ],
+        "hookTypes": ["review-ugc", "social-proof"],
+        "messageAngles": ["후기 반복 장점", "실사용 만족"],
         "imageDirection": "실제 상품과 후기형 레이아웃",
         "promotionSuggestion": null,
-        "rationale": [
-          "평점과 긍정 후기 근거가 충분합니다."
-        ]
+        "rationale": ["평점과 긍정 후기 근거가 충분합니다."]
       },
       "createdAt": "2026-08-12T15:03:42.478Z",
       "updatedAt": "2026-08-12T15:03:42.478Z",
       "primaryType": "REVIEW_POWERED",
-      "secondaryTypes": [
-        "NEW_PRODUCT_TEST",
-        "UNDEREXPOSED",
-        "INVENTORY_OPPORTUNITY"
-      ],
+      "secondaryTypes": ["NEW_PRODUCT_TEST", "UNDEREXPOSED", "INVENTORY_OPPORTUNITY"],
       "opportunityScore": 80,
       "confidenceScore": 100,
       "recommendationStatus": "detected",
       "summary": "후기 근거가 강한 광고 후보 · 보조 신호: NEW_PRODUCT_TEST, UNDEREXPOSED, INVENTORY_OPPORTUNITY",
       "risks": [],
       "recommendedAction": "후기 근거 확장",
-      "recommendedHookTypes": [
-        "review-ugc",
-        "social-proof"
-      ],
+      "recommendedHookTypes": ["review-ugc", "social-proof"],
       "recommendedObjective": "후기 근거 확장",
       "analysisPeriodStart": "2026-07-29",
       "analysisPeriodEnd": "2026-08-11",

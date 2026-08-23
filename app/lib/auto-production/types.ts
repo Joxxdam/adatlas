@@ -2,19 +2,11 @@ import type { ProductInfoForPrompt } from "../mvp/types";
 import type { GenerationResultStatus, HookMessageCode } from "../creative-generation/types";
 import type { ProductAdCopy } from "../ad-copy/types";
 
-export const autoProductionRoles = [
-  "core-expansion",
-  "low-exposure-opportunity",
-  "reactivation",
-  "new-exploration",
-] as const;
+export const autoProductionRoles = ["core-expansion", "low-exposure-opportunity", "reactivation", "new-exploration"] as const;
 
 export type AutoProductionRole = (typeof autoProductionRoles)[number];
 export type AutoProductionDataSource = "auto" | "bigquery" | "crema" | "site" | "admin";
-export type AutoProductionVisibilityMode =
-  | "site-visible-only"
-  | "include-crema-ad"
-  | "admin-only";
+export type AutoProductionVisibilityMode = "site-visible-only" | "include-crema-ad" | "admin-only";
 
 export type AutoProductionAdvertiserConfig = {
   advertiserId: string;
@@ -104,33 +96,10 @@ export type AutoHookHypothesis = {
   prohibitedClaims: string[];
 };
 
-export const autoProductionRunStatuses = [
-  "scheduled",
-  "selecting-products",
-  "analyzing-products",
-  "generating-hooks",
-  "queued",
-  "generating-creatives",
-  "completed",
-  "partial",
-  "failed",
-  "cancelled",
-  "skipped",
-] as const;
+export const autoProductionRunStatuses = ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives", "completed", "partial", "failed", "cancelled", "skipped"] as const;
 export type AutoProductionRunStatus = (typeof autoProductionRunStatuses)[number];
 
-export const autoProductionProductStatuses = [
-  "selected",
-  "analyzing",
-  "hooks-ready",
-  "queued",
-  "generating",
-  "completed",
-  "failed",
-  "skipped-duplicate",
-  "skipped-insufficient-data",
-  "skipped-unavailable",
-] as const;
+export const autoProductionProductStatuses = ["selected", "analyzing", "hooks-ready", "queued", "generating", "completed", "failed", "skipped-duplicate", "skipped-insufficient-data", "skipped-unavailable"] as const;
 export type AutoProductionProductStatus = (typeof autoProductionProductStatuses)[number];
 
 export type AutoProductionResult = {

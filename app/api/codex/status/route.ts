@@ -9,12 +9,15 @@ export async function GET() {
   // 유료 API 준비 상태는 향후 별도 동의 화면/서버 경로에서만 다룬다.
   const engine = "codex_local" as const;
   const status = await createCreativeGenerationProvider(engine).status();
-  return NextResponse.json({
-    ok: status.available,
-    status: {
-      ...status,
-      paidApiFallback: false,
-      imageGenerationAvailable: engine === "codex_local" ? status.available : status.available,
+  return NextResponse.json(
+    {
+      ok: status.available,
+      status: {
+        ...status,
+        paidApiFallback: false,
+        imageGenerationAvailable: engine === "codex_local" ? status.available : status.available,
+      },
     },
-  }, { status: status.available ? 200 : 503 });
+    { status: status.available ? 200 : 503 }
+  );
 }

@@ -14,17 +14,11 @@ function luminance(red: number, green: number, blue: number) {
 }
 
 function dataUrlBuffer(value: string) {
-  const matched = String(value || "").match(
-    /^data:image\/(?:png|jpe?g|webp|avif);base64,([a-z0-9+/=]+)$/i
-  );
+  const matched = String(value || "").match(/^data:image\/(?:png|jpe?g|webp|avif);base64,([a-z0-9+/=]+)$/i);
   return matched ? Buffer.from(matched[1], "base64") : null;
 }
 
-export async function detectLogoSurfaceTone(
-  surfaceBuffer: Buffer | undefined,
-  box?: SurfaceBox,
-  fallback: LogoSurfaceTone = "light"
-): Promise<LogoSurfaceTone> {
+export async function detectLogoSurfaceTone(surfaceBuffer: Buffer | undefined, box?: SurfaceBox, fallback: LogoSurfaceTone = "light"): Promise<LogoSurfaceTone> {
   if (!surfaceBuffer?.length) return fallback;
   try {
     let image = sharp(surfaceBuffer).rotate().resize(1200, 1200, {
@@ -59,12 +53,7 @@ export async function normalizeTransparentLogo(logoBuffer: Buffer) {
   // Preserve an existing alpha matte. For opaque uploads, only a consistent
   // border-connected background is removed so enclosed white logo details stay intact.
   if (transparentPixels < info.width * info.height * 0.01) {
-    const corners = [
-      0,
-      (info.width - 1) * info.channels,
-      (info.height - 1) * info.width * info.channels,
-      ((info.height - 1) * info.width + info.width - 1) * info.channels,
-    ];
+    const corners = [0, (info.width - 1) * info.channels, (info.height - 1) * info.width * info.channels, ((info.height - 1) * info.width + info.width - 1) * info.channels];
     const key = corners.reduce(
       (color, offset) => {
         color.r += data[offset];
@@ -96,11 +85,7 @@ export async function normalizeTransparentLogo(logoBuffer: Buffer) {
     while (cursor < queue.length) {
       const pixel = queue[cursor++];
       const offset = pixel * info.channels;
-      const distance = Math.hypot(
-        data[offset] - key.r,
-        data[offset + 1] - key.g,
-        data[offset + 2] - key.b
-      );
+      const distance = Math.hypot(data[offset] - key.r, data[offset + 1] - key.g, data[offset + 2] - key.b);
       if (distance > 42) continue;
       data[offset + 3] = Math.max(0, Math.min(255, Math.round((distance / 42) * 255)));
       const x = pixel % info.width;
@@ -122,10 +107,7 @@ export async function normalizeTransparentLogo(logoBuffer: Buffer) {
 
 export async function makeLightLogoVariant(logoBuffer: Buffer) {
   const normalized = await normalizeTransparentLogo(logoBuffer);
-  const { data, info } = await sharp(normalized)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(normalized).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   for (let offset = 0; offset < data.length; offset += info.channels) {
     if (data[offset + 3] <= 2) continue;
     const red = data[offset];
@@ -152,33 +134,13 @@ export async function makeLightLogoVariant(logoBuffer: Buffer) {
     .toBuffer();
 }
 
-export async function prepareLogoForSurface(params: {
-  logoBuffer: Buffer;
-  surfaceBuffer?: Buffer;
-  surfaceBox?: SurfaceBox;
-  surfaceTone?: LogoSurfaceTone;
-  fallbackTone?: LogoSurfaceTone;
-}) {
-  const surfaceTone =
-    params.surfaceTone ||
-    (await detectLogoSurfaceTone(
-      params.surfaceBuffer,
-      params.surfaceBox,
-      params.fallbackTone || "light"
-    ));
-  const buffer =
-    surfaceTone === "dark"
-      ? await makeLightLogoVariant(params.logoBuffer)
-      : await normalizeTransparentLogo(params.logoBuffer);
+export async function prepareLogoForSurface(params: { logoBuffer: Buffer; surfaceBuffer?: Buffer; surfaceBox?: SurfaceBox; surfaceTone?: LogoSurfaceTone; fallbackTone?: LogoSurfaceTone }) {
+  const surfaceTone = params.surfaceTone || (await detectLogoSurfaceTone(params.surfaceBuffer, params.surfaceBox, params.fallbackTone || "light"));
+  const buffer = surfaceTone === "dark" ? await makeLightLogoVariant(params.logoBuffer) : await normalizeTransparentLogo(params.logoBuffer);
   return { buffer, surfaceTone };
 }
 
-export async function prepareLogoDataUrlForSurface(params: {
-  logoDataUrl: string;
-  surfaceDataUrl?: string;
-  surfaceBox?: SurfaceBox;
-  fallbackTone?: LogoSurfaceTone;
-}) {
+export async function prepareLogoDataUrlForSurface(params: { logoDataUrl: string; surfaceDataUrl?: string; surfaceBox?: SurfaceBox; fallbackTone?: LogoSurfaceTone }) {
   const logoBuffer = dataUrlBuffer(params.logoDataUrl);
   if (!logoBuffer) return params.logoDataUrl;
   const prepared = await prepareLogoForSurface({

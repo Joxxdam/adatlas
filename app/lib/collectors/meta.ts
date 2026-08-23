@@ -1,13 +1,5 @@
 import { CollectRequest, CollectedReference } from "./types";
-import {
-  asArray,
-  asRecord,
-  asString,
-  fetchJson,
-  requireEnv,
-  stableId,
-  withCollectedAt,
-} from "./utils";
+import { asArray, asRecord, asString, fetchJson, requireEnv, stableId, withCollectedAt } from "./utils";
 
 export async function collectMeta(request: CollectRequest): Promise<CollectedReference[]> {
   const token = requireEnv("META_ACCESS_TOKEN");
@@ -21,21 +13,7 @@ export async function collectMeta(request: CollectRequest): Promise<CollectedRef
   url.searchParams.set("ad_delivery_date_max", request.toDate);
   url.searchParams.set("ad_type", "ALL");
   url.searchParams.set("limit", String(request.limit ?? 25));
-  url.searchParams.set(
-    "fields",
-    [
-      "id",
-      "page_name",
-      "ad_creation_time",
-      "ad_delivery_start_time",
-      "ad_delivery_stop_time",
-      "ad_creative_bodies",
-      "ad_creative_link_titles",
-      "ad_creative_link_descriptions",
-      "ad_snapshot_url",
-      "publisher_platforms",
-    ].join(",")
-  );
+  url.searchParams.set("fields", ["id", "page_name", "ad_creation_time", "ad_delivery_start_time", "ad_delivery_stop_time", "ad_creative_bodies", "ad_creative_link_titles", "ad_creative_link_descriptions", "ad_snapshot_url", "publisher_platforms"].join(","));
 
   const result = asRecord(await fetchJson(url));
 

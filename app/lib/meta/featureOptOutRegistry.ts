@@ -1,14 +1,4 @@
-export const META_FORBIDDEN_CREATIVE_FIELDS = [
-  "asset_feed_spec",
-  "catalog_id",
-  "product_set_id",
-  "degrees_of_freedom_spec",
-  "advantage_plus_creative",
-  "standard_enhancements",
-  "sitelink_spec",
-  "shop_destination",
-  "website_highlights",
-] as const;
+export const META_FORBIDDEN_CREATIVE_FIELDS = ["asset_feed_spec", "catalog_id", "product_set_id", "degrees_of_freedom_spec", "advantage_plus_creative", "standard_enhancements", "sitelink_spec", "shop_destination", "website_highlights"] as const;
 
 export const META_AUTOMATION_OFF_POLICY = {
   label: "ALL_AUTOMATIONS_OFF" as const,

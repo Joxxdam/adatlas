@@ -5,21 +5,8 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-import {
-  appendBackgroundLibraryItem,
-  deleteBackgroundLibraryItem,
-  readBackgroundLibrary,
-  resolvePublicBackgroundFile,
-  summarizeBackgroundLibrary,
-  updateBackgroundLibraryItem,
-} from "../../../lib/background-library/store";
-import {
-  audienceAgeGroups,
-  backgroundAssetTypes,
-  backgroundHookTypes,
-  backgroundPeopleTypes,
-  type BackgroundLibraryItem,
-} from "../../../lib/background-library/types";
+import { appendBackgroundLibraryItem, deleteBackgroundLibraryItem, readBackgroundLibrary, resolvePublicBackgroundFile, summarizeBackgroundLibrary, updateBackgroundLibraryItem } from "../../../lib/background-library/store";
+import { audienceAgeGroups, backgroundAssetTypes, backgroundHookTypes, backgroundPeopleTypes, type BackgroundLibraryItem } from "../../../lib/background-library/types";
 
 export const runtime = "nodejs";
 
@@ -29,9 +16,7 @@ const safeCategoryPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 async function readCategories() {
   try {
     const parsed = JSON.parse(await fs.readFile(categoriesPath, "utf8")) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.map(String).filter((value) => safeCategoryPattern.test(value))
-      : [];
+    return Array.isArray(parsed) ? parsed.map(String).filter((value) => safeCategoryPattern.test(value)) : [];
   } catch {
     return [];
   }
@@ -58,7 +43,10 @@ function enumList<T extends string>(value: FormDataEntryValue | null, allowed: r
 }
 
 function text(value: FormDataEntryValue | null, max = 160) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
 }
 
 function publicFileIsManaged(file: string) {
@@ -80,12 +68,11 @@ export async function POST(request: Request) {
     const contentType = request.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
       const body = (await request.json()) as { action?: string; category?: string };
-      const category = String(body.category || "").trim().toLowerCase();
+      const category = String(body.category || "")
+        .trim()
+        .toLowerCase();
       if (body.action !== "create-category" || !safeCategoryPattern.test(category)) {
-        return NextResponse.json(
-          { ok: false, error: "카테고리는 영문 소문자·숫자·하이픈으로 입력해주세요." },
-          { status: 400 }
-        );
+        return NextResponse.json({ ok: false, error: "카테고리는 영문 소문자·숫자·하이픈으로 입력해주세요." }, { status: 400 });
       }
       const categories = await writeCategories([...(await readCategories()), category]);
       await fs.mkdir(path.join(process.cwd(), "public", "background-library", category), {
@@ -97,10 +84,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const upload = form.get("file");
     if (!(upload instanceof File) || upload.size <= 0 || upload.size > 20 * 1024 * 1024) {
-      return NextResponse.json(
-        { ok: false, error: "20MB 이하의 정상 이미지 파일을 선택해주세요." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "20MB 이하의 정상 이미지 파일을 선택해주세요." }, { status: 400 });
     }
     if (!/^image\/(?:png|jpe?g|webp|avif)$/i.test(upload.type)) {
       return NextResponse.json({ ok: false, error: "지원하지 않는 이미지 형식입니다." }, { status: 400 });
@@ -114,16 +98,9 @@ export async function POST(request: Request) {
     const input = Buffer.from(await upload.arrayBuffer());
     const metadata = await sharp(input).metadata();
     if (!metadata.width || !metadata.height || Math.min(metadata.width, metadata.height) < 800) {
-      return NextResponse.json(
-        { ok: false, error: "짧은 변 기준 800px 이상의 이미지만 업로드할 수 있습니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "짧은 변 기준 800px 이상의 이미지만 업로드할 수 있습니다." }, { status: 400 });
     }
-    const optimized = await sharp(input)
-      .rotate()
-      .resize(1600, 1600, { fit: "cover", position: "attention", withoutEnlargement: false })
-      .webp({ quality: 83, effort: 5 })
-      .toBuffer();
+    const optimized = await sharp(input).rotate().resize(1600, 1600, { fit: "cover", position: "attention", withoutEnlargement: false }).webp({ quality: 83, effort: 5 }).toBuffer();
     const id = `user-${category}-${Date.now()}-${randomUUID().slice(0, 8)}`;
     const file = `/background-library/${category}/${id}.webp`;
     const outputFile = resolvePublicBackgroundFile(file);
@@ -142,15 +119,9 @@ export async function POST(request: Request) {
       subcategories: list(form.get("subcategories"), ["general"]),
       industries: list(form.get("industries"), [category]),
       assetType,
-      hookTypes: enumList(form.get("hookTypes"), backgroundHookTypes).length
-        ? enumList(form.get("hookTypes"), backgroundHookTypes)
-        : ["situation"],
-      ageGroups: includesPerson
-        ? enumList(form.get("ageGroups"), audienceAgeGroups)
-        : ["no_people"],
-      peopleType: includesPerson
-        ? enumList(form.get("peopleType"), backgroundPeopleTypes)
-        : ["no_people"],
+      hookTypes: enumList(form.get("hookTypes"), backgroundHookTypes).length ? enumList(form.get("hookTypes"), backgroundHookTypes) : ["situation"],
+      ageGroups: includesPerson ? enumList(form.get("ageGroups"), audienceAgeGroups) : ["no_people"],
+      peopleType: includesPerson ? enumList(form.get("peopleType"), backgroundPeopleTypes) : ["no_people"],
       peopleCount: includesPerson ? Math.max(1, Math.min(12, Number(form.get("peopleCount")) || 1)) : 0,
       includesPerson,
       personPosition: includesPerson ? text(form.get("personPosition"), 12) || "center" : "none",
@@ -182,10 +153,7 @@ export async function POST(request: Request) {
     await appendBackgroundLibraryItem(item);
     return NextResponse.json({ ok: true, item });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "배경 저장에 실패했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "배경 저장에 실패했습니다." }, { status: 500 });
   }
 }
 
@@ -213,14 +181,9 @@ export async function PATCH(request: Request) {
       changes.ageGroups = incoming.ageGroups.filter((value) => audienceAgeGroups.includes(value));
     }
     const item = await updateBackgroundLibraryItem(id, changes);
-    return item
-      ? NextResponse.json({ ok: true, item })
-      : NextResponse.json({ ok: false, error: "배경을 찾지 못했습니다." }, { status: 404 });
+    return item ? NextResponse.json({ ok: true, item }) : NextResponse.json({ ok: false, error: "배경을 찾지 못했습니다." }, { status: 404 });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "배경 수정에 실패했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "배경 수정에 실패했습니다." }, { status: 500 });
   }
 }
 
@@ -238,9 +201,6 @@ export async function DELETE(request: Request) {
     }
     return NextResponse.json({ ok: true, id });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "배경 삭제에 실패했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "배경 삭제에 실패했습니다." }, { status: 500 });
   }
 }

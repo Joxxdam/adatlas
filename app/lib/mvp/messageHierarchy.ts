@@ -10,10 +10,7 @@ export function copyToMessageHierarchy(copy: GeneratedAdCopy): MessageHierarchy 
   };
 }
 
-export function messageHierarchyToCopy(
-  hierarchy: MessageHierarchy,
-  base: GeneratedAdCopy
-): GeneratedAdCopy {
+export function messageHierarchyToCopy(hierarchy: MessageHierarchy, base: GeneratedAdCopy): GeneratedAdCopy {
   return {
     ...base,
     headline: hierarchy.primaryMessage,

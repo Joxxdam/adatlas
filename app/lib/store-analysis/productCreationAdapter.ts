@@ -1,10 +1,5 @@
 import type { ProductInfoForPrompt, SourceImageCandidate } from "../mvp/types";
-import type {
-  ContentAngleRecommendation,
-  ProductCreationHandoff,
-  ProductDetailAnalysis,
-  StoreAnalysisResult,
-} from "./types";
+import type { ContentAngleRecommendation, ProductCreationHandoff, ProductDetailAnalysis, StoreAnalysisResult } from "./types";
 import { uniqueStrings } from "./htmlUtils";
 
 function formatCurrency(value?: number) {
@@ -28,8 +23,7 @@ function angleTarget(angle?: ContentAngleRecommendation) {
   if (angle.type === "camping") return "캠핑·야외 사용 상품을 찾는 고객";
   if (angle.type === "gift") return "선물용 상품을 비교하는 고객";
   if (angle.type === "review") return "구매 전 후기 근거를 확인하는 고객";
-  if (angle.type === "price-shock" || angle.type === "bundle-value")
-    return "가격과 구성을 비교하는 고객";
+  if (angle.type === "price-shock" || angle.type === "bundle-value") return "가격과 구성을 비교하는 고객";
   if (angle.type === "new-product") return "새로운 상품을 먼저 경험하려는 고객";
   return "상품의 구체적인 효용을 비교하는 고객";
 }
@@ -47,21 +41,11 @@ function sourceCandidates(images: string[]): SourceImageCandidate[] {
   }));
 }
 
-export function productDetailToProductInfo(params: {
-  result: StoreAnalysisResult;
-  detail: ProductDetailAnalysis;
-  angle?: ContentAngleRecommendation;
-}): ProductInfoForPrompt {
+export function productDetailToProductInfo(params: { result: StoreAnalysisResult; detail: ProductDetailAnalysis; angle?: ContentAngleRecommendation }): ProductInfoForPrompt {
   const { result, detail, angle } = params;
-  const images = uniqueStrings(
-    [detail.product.imageUrl, ...detail.imageUrls, ...detail.detailImageUrls],
-    30
-  );
+  const images = uniqueStrings([detail.product.imageUrl, ...detail.imageUrls, ...detail.detailImageUrls], 30);
   const primaryImages = uniqueStrings(images, 4);
-  const benefit = uniqueStrings(
-    [angle?.bodyDirection, ...detail.uspCandidates, detail.description],
-    4
-  ).join(" · ");
+  const benefit = uniqueStrings([angle?.bodyDirection, ...detail.uspCandidates, detail.description], 4).join(" · ");
   return {
     productName: detail.product.name,
     category: mvpCategory(detail.product.category, detail.product.name),
@@ -90,18 +74,11 @@ export function productDetailToProductInfo(params: {
   };
 }
 
-export function buildProductCreationHandoff(params: {
-  result: StoreAnalysisResult;
-  productId: string;
-  angleIdOrType?: string;
-}): ProductCreationHandoff | null {
+export function buildProductCreationHandoff(params: { result: StoreAnalysisResult; productId: string; angleIdOrType?: string }): ProductCreationHandoff | null {
   const detail = params.result.products.find((item) => item.product.id === params.productId);
   const analysis = detail?.advertisingAnalysis;
   if (!detail || !analysis) return null;
-  const selectedContentAngle =
-    analysis.recommendedAngles.find(
-      (angle) => angle.id === params.angleIdOrType || angle.type === params.angleIdOrType
-    ) || analysis.recommendedAngles[0];
+  const selectedContentAngle = analysis.recommendedAngles.find((angle) => angle.id === params.angleIdOrType || angle.type === params.angleIdOrType) || analysis.recommendedAngles[0];
   const productInfo = productDetailToProductInfo({
     result: params.result,
     detail,

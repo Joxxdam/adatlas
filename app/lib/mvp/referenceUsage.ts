@@ -16,13 +16,7 @@ export const referenceUsageAspectOptions: Array<{
   { value: "cta-style", label: "CTA 방식" },
 ];
 
-const defaultAspects: ReferenceUsageAspect[] = [
-  "headline-structure",
-  "hook-style",
-  "appeal-point",
-  "tone",
-  "information-hierarchy",
-];
+const defaultAspects: ReferenceUsageAspect[] = ["headline-structure", "hook-style", "appeal-point", "tone", "information-hierarchy"];
 
 export function defaultReferenceUsage(label: AdImageLabel): ReferenceUsageSelection {
   return {
@@ -32,10 +26,7 @@ export function defaultReferenceUsage(label: AdImageLabel): ReferenceUsageSelect
   };
 }
 
-export function normalizeReferenceUsages(
-  labels: AdImageLabel[],
-  usages: ReferenceUsageSelection[]
-): ReferenceUsageSelection[] {
+export function normalizeReferenceUsages(labels: AdImageLabel[], usages: ReferenceUsageSelection[]): ReferenceUsageSelection[] {
   const byId = new Map(usages.map((usage) => [usage.imageId, usage]));
   return labels.map((label) => byId.get(label.imageId) || defaultReferenceUsage(label));
 }
@@ -43,11 +34,7 @@ export function normalizeReferenceUsages(
 export function referenceUsageSummary(usages: ReferenceUsageSelection[]): string {
   return usages
     .map((usage) => {
-      const labels = usage.aspects
-        .map(
-          (aspect) => referenceUsageAspectOptions.find((option) => option.value === aspect)?.label
-        )
-        .filter(Boolean);
+      const labels = usage.aspects.map((aspect) => referenceUsageAspectOptions.find((option) => option.value === aspect)?.label).filter(Boolean);
       return `${usage.imageId}: ${labels.join(", ") || "선택 없음"}`;
     })
     .join("\n");

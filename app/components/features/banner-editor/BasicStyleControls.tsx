@@ -10,13 +10,8 @@ export type BasicEditorSettings = {
   backgroundBrightness: "dark" | "balanced" | "bright";
 };
 
-export function BasicStyleControls(props: {
-  value: BasicEditorSettings;
-  onChange: (value: BasicEditorSettings) => void;
-  children?: ReactNode;
-}) {
-  const set = <Key extends keyof BasicEditorSettings>(key: Key, value: BasicEditorSettings[Key]) =>
-    props.onChange({ ...props.value, [key]: value });
+export function BasicStyleControls(props: { value: BasicEditorSettings; onChange: (value: BasicEditorSettings) => void; children?: ReactNode }) {
+  const set = <Key extends keyof BasicEditorSettings>(key: Key, value: BasicEditorSettings[Key]) => props.onChange({ ...props.value, [key]: value });
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -28,20 +23,11 @@ export function BasicStyleControls(props: {
       <div className={styles.controlGrid}>
         <label className={styles.field}>
           강조 색상
-          <input
-            type="color"
-            value={props.value.accentColor}
-            onChange={(event) => set("accentColor", event.target.value)}
-          />
+          <input type="color" value={props.value.accentColor} onChange={(event) => set("accentColor", event.target.value)} />
         </label>
         <label className={styles.field}>
           문구 크기
-          <select
-            value={props.value.textSizeLevel}
-            onChange={(event) =>
-              set("textSizeLevel", event.target.value as BasicEditorSettings["textSizeLevel"])
-            }
-          >
+          <select value={props.value.textSizeLevel} onChange={(event) => set("textSizeLevel", event.target.value as BasicEditorSettings["textSizeLevel"])}>
             <option value="small">작게</option>
             <option value="medium">보통</option>
             <option value="large">크게</option>
@@ -49,12 +35,7 @@ export function BasicStyleControls(props: {
         </label>
         <label className={styles.field}>
           상품 크기
-          <select
-            value={props.value.productSizeLevel}
-            onChange={(event) =>
-              set("productSizeLevel", event.target.value as BasicEditorSettings["productSizeLevel"])
-            }
-          >
+          <select value={props.value.productSizeLevel} onChange={(event) => set("productSizeLevel", event.target.value as BasicEditorSettings["productSizeLevel"])}>
             <option value="small">작게</option>
             <option value="medium">보통</option>
             <option value="large">크게</option>
@@ -62,15 +43,7 @@ export function BasicStyleControls(props: {
         </label>
         <label className={styles.field}>
           배경 밝기
-          <select
-            value={props.value.backgroundBrightness}
-            onChange={(event) =>
-              set(
-                "backgroundBrightness",
-                event.target.value as BasicEditorSettings["backgroundBrightness"]
-              )
-            }
-          >
+          <select value={props.value.backgroundBrightness} onChange={(event) => set("backgroundBrightness", event.target.value as BasicEditorSettings["backgroundBrightness"])}>
             <option value="dark">어둡게</option>
             <option value="balanced">보통</option>
             <option value="bright">밝게</option>

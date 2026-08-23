@@ -9,21 +9,9 @@
       "productId": "65",
       "url": "https://originalsource.co.kr/product/오리지널소스-민트-티트리-쿨링-샤워젤-·-바디워시-250ml/65/category/91/display/1/",
       "cutout": "/product-cutouts/original-source/mint-tea-tree-250ml.png",
-      "cutoutReferenceFiles": [
-        "민트젤 01 (1).jpg"
-      ],
-      "keywords": [
-        "민트",
-        "민트티트리",
-        "mintteatree",
-        "7927"
-      ],
-      "colors": [
-        "teal",
-        "navy",
-        "cyan",
-        "green"
-      ],
+      "cutoutReferenceFiles": ["민트젤 01 (1).jpg"],
+      "keywords": ["민트", "민트티트리", "mintteatree", "7927"],
+      "colors": ["teal", "navy", "cyan", "green"],
       "cutoutSource": "user-supplied-reference-content",
       "backgrounds": [
         {
@@ -134,21 +122,9 @@
       "productId": "77",
       "url": "https://originalsource.co.kr/product/오리지널소스-레몬-티트리-상쾌-샤워젤-·-바디워시-250ml/77/category/91/display/1/",
       "cutout": "/product-cutouts/original-source/lemon-tea-tree-250ml.png",
-      "cutoutReferenceFiles": [
-        "755128586_880033851848590_6295451492637865095_n.jpg"
-      ],
-      "keywords": [
-        "레몬",
-        "레몬티트리",
-        "lemonteatree",
-        "시칠리아"
-      ],
-      "colors": [
-        "yellow",
-        "orange",
-        "blue",
-        "white"
-      ],
+      "cutoutReferenceFiles": ["755128586_880033851848590_6295451492637865095_n.jpg"],
+      "keywords": ["레몬", "레몬티트리", "lemonteatree", "시칠리아"],
+      "colors": ["yellow", "orange", "blue", "white"],
       "cutoutSource": "user-supplied-reference-content",
       "backgrounds": [
         {
@@ -259,22 +235,9 @@
       "productId": "80",
       "url": "https://originalsource.co.kr/product/오리지널소스-코코넛-시어버터-보습-샤워젤-·-바디워시-250ml/80/category/91/display/1/",
       "cutout": "/product-cutouts/original-source/coconut-shea-butter-250ml.png",
-      "cutoutReferenceFiles": [
-        "02.jpg"
-      ],
-      "keywords": [
-        "코코넛",
-        "코코넛시어버터",
-        "coconutsheabutter",
-        "보습",
-        "7872"
-      ],
-      "colors": [
-        "ivory",
-        "cream",
-        "brown",
-        "sand"
-      ],
+      "cutoutReferenceFiles": ["02.jpg"],
+      "keywords": ["코코넛", "코코넛시어버터", "coconutsheabutter", "보습", "7872"],
+      "colors": ["ivory", "cream", "brown", "sand"],
       "cutoutSource": "user-supplied-reference-content",
       "backgrounds": [
         {
@@ -385,20 +348,9 @@
       "productId": "82",
       "url": "https://originalsource.co.kr/product/오리지널소스-라임-생기-샤워젤-·-바디워시-250ml/82/category/91/display/1/",
       "cutout": "/product-cutouts/original-source/lime-250ml.png",
-      "cutoutReferenceFiles": [
-        "03.jpg"
-      ],
-      "keywords": [
-        "라임",
-        "zingylime",
-        "생기"
-      ],
-      "colors": [
-        "lime",
-        "green",
-        "black",
-        "white"
-      ],
+      "cutoutReferenceFiles": ["03.jpg"],
+      "keywords": ["라임", "zingylime", "생기"],
+      "colors": ["lime", "green", "black", "white"],
       "cutoutSource": "user-supplied-reference-content",
       "backgrounds": [
         {
@@ -509,22 +461,9 @@
       "productId": "84",
       "url": "https://originalsource.co.kr/product/오리지널소스-루바브-라즈베리-진정-샤워젤-·-바디워시-250ml/84/category/91/display/1/",
       "cutout": "/product-cutouts/original-source/rhubarb-raspberry-250ml.png",
-      "cutoutReferenceFiles": [
-        "03.jpg"
-      ],
-      "keywords": [
-        "루바브",
-        "루바브라즈베리",
-        "rhubarbraspberry",
-        "진정",
-        "4essentialoils"
-      ],
-      "colors": [
-        "coral",
-        "pink",
-        "raspberry",
-        "burgundy"
-      ],
+      "cutoutReferenceFiles": ["03.jpg"],
+      "keywords": ["루바브", "루바브라즈베리", "rhubarbraspberry", "진정", "4essentialoils"],
+      "colors": ["coral", "pink", "raspberry", "burgundy"],
       "cutoutSource": "user-supplied-reference-content",
       "backgrounds": [
         {

@@ -31,14 +31,16 @@ ADATLAS_PAID_API_EXPLICIT_ENABLED=false
 
 `CreativeGenerationProvider`는 현재 기본 경로에서 다음 계약을 가집니다.
 
-- `generate(input)`: 신규 `reference-staged-edit`에서는 `product-replacement`, `copy-replacement`, 치명 오류의 `qa-repair`에만 완성 래스터를 저장
+- `openSession()`: H 결과 하나에 대한 짧은 격리 세션을 한 번만 생성
+- `session.generate(input)`: 신규 `reference-staged-edit`에서는 `product-replacement`, `copy-replacement`, 치명 오류의 `qa-repair`에만 완성 래스터를 저장
 - 구조 단계: provider를 호출하지 않고 원본을 바이트 동일하게 `01-structure`로 복사. `structure-recreation` 타입은 과거 저장 작업 읽기 호환용으로만 유지
-- `validate(input)`: 최종 광고, 선택 ZIP 레퍼런스, URL 상품 원본을 비교하고 구조 충실도·상품 동일성·문구 정확성을 JSON으로 반환
+- `session.validate(input)`: 생성에 사용한 같은 세션에서 최종 광고, 선택 ZIP 레퍼런스, URL 상품 원본을 비교하고 구조 충실도·상품 동일성·문구 정확성을 JSON으로 반환
+- `session.close()`: 성공·실패와 관계없이 메모리 참조를 해제하고 재사용을 차단
 - 각 단계의 `sourceImagePath`는 첫 번째 편집 소스
 - `productReferencePaths`는 URL 상세페이지에서 검증한 상품 이미지
 - `adReferencePath`는 작업 생성 시 무작위 선택해 고정한 ZIP 광고
 
-각 결과는 독립된 일회성 실행을 사용하며 결과·prompt version·시간·오류·중간 경로를 GenerationJob에 남깁니다.
+각 결과는 독립된 세션 하나를 사용하며 상품 교체 → 문구 교체 → QA → 최대 1회 보정 → 재검수를 같은 세션에서 연속 수행합니다. 결과·prompt version·시간·오류·중간 경로는 GenerationJob에 남기지만 세션 ID는 저장하지 않습니다. 현재 SDK에 archive/delete API가 없어 `close()`는 서버 메모리 참조만 해제합니다.
 
 ## 유료 OpenAI provider
 

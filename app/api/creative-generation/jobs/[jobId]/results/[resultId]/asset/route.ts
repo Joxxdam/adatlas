@@ -8,10 +8,7 @@ import { toPublicGenerationError, toPublicGenerationJob } from "../../../../../.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ jobId: string; resultId: string }> }
-) {
+export async function POST(request: Request, context: { params: Promise<{ jobId: string; resultId: string }> }) {
   try {
     verifyLocalGenerationAccess(request);
     const { jobId, resultId } = await context.params;
@@ -59,9 +56,6 @@ export async function POST(
       result: publicJob.results.find((item) => item.id === resultId),
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: toPublicGenerationError(error, "소재코드 발급에 실패했습니다.") },
-      { status: localAccessError(error) ? 403 : 500 }
-    );
+    return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "소재코드 발급에 실패했습니다.") }, { status: localAccessError(error) ? 403 : 500 });
   }
 }

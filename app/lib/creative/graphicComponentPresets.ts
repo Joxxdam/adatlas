@@ -1,12 +1,6 @@
 import type { GraphicComponentPreset } from "./types";
 
-function component(
-  id: string,
-  label: string,
-  layer: GraphicComponentPreset["layer"],
-  purpose: string,
-  editable: GraphicComponentPreset["editable"] = ["text", "visible", "position", "size", "style", "zIndex"]
-): GraphicComponentPreset {
+function component(id: string, label: string, layer: GraphicComponentPreset["layer"], purpose: string, editable: GraphicComponentPreset["editable"] = ["text", "visible", "position", "size", "style", "zIndex"]): GraphicComponentPreset {
   return { id, label, layer, purpose, editable };
 }
 

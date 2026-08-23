@@ -9,9 +9,7 @@ export function decodeHtmlEntities(value: string) {
     .replace(/&gt;/gi, ">")
     .replace(/&nbsp;/gi, " ")
     .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) =>
-      String.fromCodePoint(Number.parseInt(code, 16))
-    );
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCodePoint(Number.parseInt(code, 16)));
 }
 
 export function cleanText(value: string, maxLength = 500) {
@@ -28,16 +26,7 @@ export function cleanText(value: string, maxLength = 500) {
 
 export function metaContent(html: string, key: string) {
   const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const patterns = [
-    new RegExp(
-      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']*)["'][^>]*>`,
-      "i"
-    ),
-    new RegExp(
-      `<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${escaped}["'][^>]*>`,
-      "i"
-    ),
-  ];
+  const patterns = [new RegExp(`<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']*)["'][^>]*>`, "i"), new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${escaped}["'][^>]*>`, "i")];
   for (const pattern of patterns) {
     const match = html.match(pattern);
     if (match?.[1]) return cleanText(match[1]);
@@ -89,9 +78,7 @@ export function extractImageUrls(html: string, baseUrl: string, max = 40) {
   const push = (value: string) => {
     const url = absoluteHttpUrl(value, baseUrl);
     if (!url || images.includes(url)) return;
-    if (
-      /(?:logo|icon|sprite|button|arrow|favicon|kakao|naver|facebook|instagram|youtube)/i.test(url)
-    ) {
+    if (/(?:logo|icon|sprite|button|arrow|favicon|kakao|naver|facebook|instagram|youtube)/i.test(url)) {
       return;
     }
     images.push(url);
@@ -102,11 +89,7 @@ export function extractImageUrls(html: string, baseUrl: string, max = 40) {
     const width = Number(tagAttribute(tag, "width")) || 0;
     const height = Number(tagAttribute(tag, "height")) || 0;
     if ((width && width < 120) || (height && height < 120)) continue;
-    push(
-      tagAttribute(tag, "data-original") ||
-        tagAttribute(tag, "data-src") ||
-        tagAttribute(tag, "src")
-    );
+    push(tagAttribute(tag, "data-original") || tagAttribute(tag, "data-src") || tagAttribute(tag, "src"));
     if (images.length >= max) break;
   }
   return images.slice(0, max);
@@ -123,9 +106,7 @@ function collectJsonNodes(value: unknown): Record<string, unknown>[] {
 
 export function extractJsonLdNodes(html: string) {
   const nodes: Record<string, unknown>[] = [];
-  for (const match of html.matchAll(
-    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
-  )) {
+  for (const match of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
     const raw = decodeHtmlEntities(match[1]).trim();
     if (!raw) continue;
     try {
@@ -171,9 +152,7 @@ export function discountRateFromPrices(originalPrice?: number, salePrice?: numbe
 }
 
 export function uniqueStrings(values: Array<string | undefined>, limit = 50) {
-  return Array.from(
-    new Set(values.map((value) => String(value || "").trim()).filter(Boolean))
-  ).slice(0, limit);
+  return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean))).slice(0, limit);
 }
 
 export function stableId(prefix: string, value: string) {

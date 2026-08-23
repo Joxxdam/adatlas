@@ -6,47 +6,13 @@ export type ExperimentObjective = (typeof experimentObjectives)[number];
 export const experimentStages = ["DISCOVERY", "VALIDATION", "REFINEMENT"] as const;
 export type ExperimentStage = (typeof experimentStages)[number];
 
-export const experimentStatuses = [
-  "draft",
-  "generating",
-  "ready_for_registration",
-  "running",
-  "analyzing",
-  "additional_data_required",
-  "completed",
-] as const;
+export const experimentStatuses = ["draft", "generating", "ready_for_registration", "running", "analyzing", "additional_data_required", "completed"] as const;
 export type ExperimentStatus = (typeof experimentStatuses)[number];
 
-export const experimentHookCodes = [
-  "SEN",
-  "CUR",
-  "PRB",
-  "BRD",
-  "PRC",
-  "REV",
-  "USP",
-  "EMP",
-  "URG",
-  "VAL",
-  "EVT",
-  "RPT",
-  "CRT",
-  "BND",
-  "NEW",
-  "GRW",
-  "CTL",
-] as const;
+export const experimentHookCodes = ["SEN", "CUR", "PRB", "BRD", "PRC", "REV", "USP", "EMP", "URG", "VAL", "EVT", "RPT", "CRT", "BND", "NEW", "GRW", "CTL"] as const;
 export type ExperimentHookCode = (typeof experimentHookCodes)[number];
 
-export type VisualExpressionType =
-  | "COPY_INFORMATION"
-  | "SCENE_VISUAL"
-  | "PRODUCT_HERO"
-  | "USAGE_SCENE"
-  | "INFORMATION_FOCUS"
-  | "TRUST_PROOF"
-  | "PROMOTION_VISUAL"
-  | "PROBLEM_EMPATHY";
+export type VisualExpressionType = "COPY_INFORMATION" | "SCENE_VISUAL" | "PRODUCT_HERO" | "USAGE_SCENE" | "INFORMATION_FOCUS" | "TRUST_PROOF" | "PROMOTION_VISUAL" | "PROBLEM_EMPATHY";
 
 export type HookRecommendation = {
   hookType: string;
@@ -167,8 +133,7 @@ export type ExperimentAsset = {
   updatedAt: string;
 };
 
-export type PerformanceMatchStatus =
-  "matched" | "needs_review" | "code_missing" | "duplicate_code" | "asset_not_found";
+export type PerformanceMatchStatus = "matched" | "needs_review" | "code_missing" | "duplicate_code" | "asset_not_found";
 
 export type PerformanceRecord = {
   id: string;

@@ -17,11 +17,7 @@ type WatchlistSummary = {
   }[];
 };
 
-type CrawlState =
-  | { status: "idle"; message: string }
-  | { status: "loading"; message: string }
-  | { status: "success"; message: string }
-  | { status: "error"; message: string };
+type CrawlState = { status: "idle"; message: string } | { status: "loading"; message: string } | { status: "success"; message: string } | { status: "error"; message: string };
 
 export function ReferenceCollectionPanel() {
   const [summary, setSummary] = useState<WatchlistSummary | null>(null);

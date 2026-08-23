@@ -54,12 +54,14 @@ function stableHash(value: string) {
 }
 
 function tokens(value: string) {
-  return String(value || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .match(/[a-z0-9]+/g)
-    ?.filter((token) => !BOILERPLATE_TOKENS.has(token)) || [];
+  return (
+    String(value || "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .match(/[a-z0-9]+/g)
+      ?.filter((token) => !BOILERPLATE_TOKENS.has(token)) || []
+  );
 }
 
 function readableCode(value: string) {
@@ -68,7 +70,10 @@ function readableCode(value: string) {
   const first = parts[0].toUpperCase();
   if (first.length >= 3 && first.length <= 5) return first;
   if (parts.length > 1) {
-    const acronym = `${first.slice(0, 2)}${parts.slice(1).map((part) => part[0]).join("")}`;
+    const acronym = `${first.slice(0, 2)}${parts
+      .slice(1)
+      .map((part) => part[0])
+      .join("")}`;
     if (acronym.length >= 3) return acronym.slice(0, 5).toUpperCase();
   }
   return first.slice(0, 5).padEnd(3, stableHash(value).slice(0, 3));
@@ -92,7 +97,9 @@ export function createProductCode(productName: string, stableProductId?: string)
 }
 
 export function getHookCode(hookType: string): CreativeHookCode {
-  const normalized = String(hookType || "").toLowerCase().replace(/[_\s]+/g, "-");
+  const normalized = String(hookType || "")
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
   if ((Object.keys(hookCodeLabels) as string[]).includes(normalized.toUpperCase())) {
     return normalized.toUpperCase() as CreativeHookCode;
   }
@@ -124,14 +131,7 @@ function compactDate(date: Date) {
   return `${pad(date.getFullYear() % 100)}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
 }
 
-export function generateCreativeAssetCode(input: {
-  brandCode: string;
-  productCode: string;
-  hookType?: string;
-  hookCode?: CreativeHookCode;
-  createdAt?: string | Date;
-  unique?: string;
-}) {
+export function generateCreativeAssetCode(input: { brandCode: string; productCode: string; hookType?: string; hookCode?: CreativeHookCode; createdAt?: string | Date; unique?: string }) {
   const brandCode = createBrandCode(input.brandCode);
   const productCode = createProductCode(input.productCode);
   const hookCode = input.hookCode || getHookCode(input.hookType || "");
@@ -142,34 +142,18 @@ export function generateCreativeAssetCode(input: {
   return `AT-${brandCode}-${productCode}-${hookCode}-${compactDate(createdAt)}-${unique}`;
 }
 
-export function createHookVariantAssetCode(input: {
-  brandCode: string;
-  productCode: string;
-  testCode: string;
-  hookVariantCode: string;
-  version?: number;
-}) {
+export function createHookVariantAssetCode(input: { brandCode: string; productCode: string; testCode: string; hookVariantCode: string; version?: number }) {
   const brandCode = createBrandCode(input.brandCode);
   const productCode = createProductCode(input.productCode);
   const testCode = String(input.testCode || "").toUpperCase();
   const hookVariantCode = String(input.hookVariantCode || "").toUpperCase();
   if (!/^T\d{2}$/.test(testCode)) throw new Error("후킹 테스트 코드는 T01 형식이어야 합니다.");
-  if (!/^H0[1-6]$/.test(hookVariantCode))
-    throw new Error("후킹 변형 코드는 H01~H06이어야 합니다.");
+  if (!/^H0[1-6]$/.test(hookVariantCode)) throw new Error("후킹 변형 코드는 H01~H06이어야 합니다.");
   const version = Math.max(1, Math.floor(input.version || 1));
-  return `AT-${brandCode}-${productCode}-${testCode}-${hookVariantCode}${
-    version > 1 ? `-V${String(version).padStart(2, "0")}` : ""
-  }`;
+  return `AT-${brandCode}-${productCode}-${testCode}-${hookVariantCode}${version > 1 ? `-V${String(version).padStart(2, "0")}` : ""}`;
 }
 
-export function createExplorationAssetCode(input: {
-  brandCode: string;
-  productCode: string;
-  explorationCode?: string;
-  hookVariantCode: string;
-  conceptCode: string;
-  version?: number;
-}) {
+export function createExplorationAssetCode(input: { brandCode: string; productCode: string; explorationCode?: string; hookVariantCode: string; conceptCode: string; version?: number }) {
   const brandCode = createBrandCode(input.brandCode);
   const productCode = createProductCode(input.productCode);
   const explorationCode = String(input.explorationCode || "E01").toUpperCase();
@@ -179,9 +163,7 @@ export function createExplorationAssetCode(input: {
   if (!/^H0[1-6]$/.test(hookVariantCode)) throw new Error("탐색 후킹 코드는 H01~H06이어야 합니다.");
   if (!/^C\d{2}$/.test(conceptCode)) throw new Error("광고 콘셉트 코드는 C01 형식이어야 합니다.");
   const version = Math.max(1, Math.floor(input.version || 1));
-  return `AT-${brandCode}-${productCode}-${explorationCode}-${hookVariantCode}-${conceptCode}${
-    version > 1 ? `-V${String(version).padStart(2, "0")}` : ""
-  }`;
+  return `AT-${brandCode}-${productCode}-${explorationCode}-${hookVariantCode}-${conceptCode}${version > 1 ? `-V${String(version).padStart(2, "0")}` : ""}`;
 }
 
 const legacyHookCodeSource = Object.keys(hookCodeLabels).join("|");
@@ -210,10 +192,7 @@ export function validateCreativeAssetCode(value: string) {
 }
 
 export function extractCreativeAssetCode(value: string) {
-  const candidates = Array.from(
-    String(value || "").matchAll(new RegExp(`(?:^|[^A-Z0-9])(${explorationAssetCodeSource}|${hookVariantAssetCodeSource}|${experimentAssetCodeSource}|${assetCodeSource})(?![A-Z0-9])`, "g")),
-    (match) => match[1]
-  );
+  const candidates = Array.from(String(value || "").matchAll(new RegExp(`(?:^|[^A-Z0-9])(${explorationAssetCodeSource}|${hookVariantAssetCodeSource}|${experimentAssetCodeSource}|${assetCodeSource})(?![A-Z0-9])`, "g")), (match) => match[1]);
   return candidates.find((candidate) => validateCreativeAssetCode(candidate)) || null;
 }
 

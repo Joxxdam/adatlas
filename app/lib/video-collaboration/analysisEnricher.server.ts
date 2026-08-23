@@ -4,7 +4,10 @@ import type { ProductAnalysisSnapshot } from "./types.ts";
 import { runVideoPlanningAi } from "./videoPlanningAi.server.ts";
 
 function clean(value: unknown, max = 220) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
 }
 
 function compact(value: unknown, limit = 6) {
@@ -15,16 +18,7 @@ function compact(value: unknown, limit = 6) {
 const analysisSchema = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "targetCustomers",
-    "customerProblems",
-    "useSituations",
-    "purchaseHesitations",
-    "purchaseReasons",
-    "differentiators",
-    "visualizableElements",
-    "unsupportedClaims",
-  ],
+  required: ["targetCustomers", "customerProblems", "useSituations", "purchaseHesitations", "purchaseReasons", "differentiators", "visualizableElements", "unsupportedClaims"],
   properties: {
     targetCustomers: { type: "array", minItems: 2, maxItems: 4, items: { type: "string", maxLength: 120 } },
     customerProblems: { type: "array", minItems: 2, maxItems: 4, items: { type: "string", maxLength: 140 } },
@@ -41,9 +35,7 @@ function normalizedNumbers(value: string) {
   return (value.match(/\d[\d,.]*/g) || []).map((item) => item.replace(/[,.]/g, ""));
 }
 
-export async function enrichVideoProductAnalysis(
-  snapshot: ProductAnalysisSnapshot
-): Promise<ProductAnalysisSnapshot> {
+export async function enrichVideoProductAnalysis(snapshot: ProductAnalysisSnapshot): Promise<ProductAnalysisSnapshot> {
   const facts = {
     productName: snapshot.productName,
     brandName: snapshot.brandName,
@@ -130,8 +122,6 @@ export async function enrichVideoProductAnalysis(
       source: "AI 근거 검수",
       bucket: "unsupported" as const,
     })),
-    analysisNotes: [
-      "상품명·가격·구성·USP·후기 근거는 공개정보이며, 타깃·고객 문제·상황·구매 이유는 그 사실을 바탕으로 한 AI 기획 해석입니다.",
-    ],
+    analysisNotes: ["상품명·가격·구성·USP·후기 근거는 공개정보이며, 타깃·고객 문제·상황·구매 이유는 그 사실을 바탕으로 한 AI 기획 해석입니다."],
   };
 }

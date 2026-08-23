@@ -2,21 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
-  assertReadOnlyBigQuery,
-  BigQueryReadOnlyError,
-} from "../app/lib/bigquery/readonlyGuard.ts";
-import {
-  buildCandidatesFromSignals,
-  buildProductFamilies,
-  detectOfferVariant,
-  normalizeProductFamilyName,
-  resolveBigQueryProductUrl,
-} from "../app/lib/bigquery/scoring.ts";
-import {
-  assertInternalApiAccess,
-  InternalApiAccessError,
-} from "../app/lib/internal-api/access.server.ts";
+import { assertReadOnlyBigQuery, BigQueryReadOnlyError } from "../app/lib/bigquery/readonlyGuard.ts";
+import { buildCandidatesFromSignals, buildProductFamilies, detectOfferVariant, normalizeProductFamilyName, resolveBigQueryProductUrl } from "../app/lib/bigquery/scoring.ts";
+import { assertInternalApiAccess, InternalApiAccessError } from "../app/lib/internal-api/access.server.ts";
 
 const allowedSql = `
 SELECT BRAND_NAME, SUM(PURCHASE_AMOUNT) AS sales
@@ -46,27 +34,7 @@ test("BigQuery 가드는 WITH로 시작하는 단일 SELECT를 허용한다", ()
   assert.equal(result.references.length, 1);
 });
 
-for (const keyword of [
-  "INSERT",
-  "UPDATE",
-  "DELETE",
-  "MERGE",
-  "CREATE",
-  "DROP",
-  "ALTER",
-  "TRUNCATE",
-  "CALL",
-  "EXPORT",
-  "LOAD",
-  "EXECUTE",
-  "REPLACE",
-  "COPY",
-  "GRANT",
-  "REVOKE",
-  "BEGIN",
-  "COMMIT",
-  "ROLLBACK",
-]) {
+for (const keyword of ["INSERT", "UPDATE", "DELETE", "MERGE", "CREATE", "DROP", "ALTER", "TRUNCATE", "CALL", "EXPORT", "LOAD", "EXECUTE", "REPLACE", "COPY", "GRANT", "REVOKE", "BEGIN", "COMMIT", "ROLLBACK"]) {
   test(`BigQuery 가드는 ${keyword} 명령을 차단한다`, () => {
     assert.throws(
       () =>
@@ -89,10 +57,7 @@ for (const [name, sql] of [
   ["해시 주석 우회", "SELECT BRAND_NAME FROM `first-project-394906.FACT_HOST24.PRODUCT` # DROP\n WHERE BRAND_NAME = @brandName"],
 ]) {
   test(`BigQuery 가드는 ${name}를 차단한다`, () => {
-    assert.throws(
-      () => assertReadOnlyBigQuery({ sql, namedParameters: { brandName: "브랜드", name: "값" } }),
-      BigQueryReadOnlyError
-    );
+    assert.throws(() => assertReadOnlyBigQuery({ sql, namedParameters: { brandName: "브랜드", name: "값" } }), BigQueryReadOnlyError);
   });
 }
 
@@ -142,10 +107,7 @@ test("내부 BigQuery API 접근은 개발 환경에서 열리고 production 설
 });
 
 test("BigQuery 가드는 누락된 named parameter와 위치 매개변수를 차단한다", () => {
-  assert.throws(
-    () => assertReadOnlyBigQuery({ sql: allowedSql, namedParameters: { brandName: "브랜드" } }),
-    /rowLimit/
-  );
+  assert.throws(() => assertReadOnlyBigQuery({ sql: allowedSql, namedParameters: { brandName: "브랜드" } }), /rowLimit/);
   assert.throws(
     () =>
       assertReadOnlyBigQuery({
@@ -261,10 +223,7 @@ test("후보 상품 ID와 쇼핑몰 주소를 제작 화면용 상세 URL로 보
       candidateId: () => "candidate-with-url",
     }
   );
-  assert.equal(
-    candidates[0].productUrl,
-    "https://originalsource.co.kr/product/detail.html?product_no=65"
-  );
+  assert.equal(candidates[0].productUrl, "https://originalsource.co.kr/product/detail.html?product_no=65");
 });
 
 const candidateContext = {
@@ -409,53 +368,56 @@ test("오리지널소스 주력 단품 하락은 핵심 회복, 상위 혜택상
 });
 
 test("저노출·고효율은 최소 기준 충족 시에만 숨은 잠재 상품이 된다", () => {
-  const qualified = buildCandidatesFromSignals(originalSourceRows, candidateContext)
-    .find((item) => item.productId === "66");
-  const underMinimum = buildCandidatesFromSignals([
-    signal({
-      productName: "소량 반응 상품",
-      currentSales: 20_000,
-      currentExposures: 20,
-      currentPurchases: 2,
-      currentCarts: 2,
-      conversionRate: 0.1,
-      averageExposures: 1_000,
-      brandConversionRate: 0.02,
-      salesRank: 9,
-      purchaseRank: 9,
-    }),
-  ], candidateContext);
+  const qualified = buildCandidatesFromSignals(originalSourceRows, candidateContext).find((item) => item.productId === "66");
+  const underMinimum = buildCandidatesFromSignals(
+    [
+      signal({
+        productName: "소량 반응 상품",
+        currentSales: 20_000,
+        currentExposures: 20,
+        currentPurchases: 2,
+        currentCarts: 2,
+        conversionRate: 0.1,
+        averageExposures: 1_000,
+        brandConversionRate: 0.02,
+        salesRank: 9,
+        purchaseRank: 9,
+      }),
+    ],
+    candidateContext
+  );
   assert.equal(qualified?.primaryType, "hidden-potential");
   assert.equal(underMinimum.length, 0);
 });
 
 test("고노출·저효율이면서 사업 기여가 있는 상품은 콘텐츠 개선 후보가 된다", () => {
-  const candidate = buildCandidatesFromSignals(originalSourceRows, candidateContext)
-    .find((item) => item.productId === "67");
+  const candidate = buildCandidatesFromSignals(originalSourceRows, candidateContext).find((item) => item.productId === "67");
   assert.equal(candidate?.primaryType, "creative-improvement");
   assert.ok(candidate?.recommendedHookTypes.includes("문제해결형"));
 });
 
 test("0% 성장과 기간 비교 불가는 나머지 근거를 재정규화해 정상 점수를 만든다", () => {
-  const stableCandidate = buildCandidatesFromSignals(originalSourceRows, candidateContext)
-    .find((item) => item.productId === "68");
-  const noPrevious = buildCandidatesFromSignals([
-    signal({
-      productName: "새 비교기간 상품",
-      currentSales: 1_000_000,
-      previousSales: 0,
-      previousPurchases: 0,
-      salesChangeRate: null,
-      recent4WeekSales: 1_000_000,
-      previous4WeekSales: 0,
-      previous4WeekPurchases: 0,
-      recent8WeekSales: 1_000_000,
-      recent12WeekSales: 1_000_000,
-      periodsAvailable: 1,
-      salesRank: 1,
-      purchaseRank: 1,
-    }),
-  ], candidateContext)[0];
+  const stableCandidate = buildCandidatesFromSignals(originalSourceRows, candidateContext).find((item) => item.productId === "68");
+  const noPrevious = buildCandidatesFromSignals(
+    [
+      signal({
+        productName: "새 비교기간 상품",
+        currentSales: 1_000_000,
+        previousSales: 0,
+        previousPurchases: 0,
+        salesChangeRate: null,
+        recent4WeekSales: 1_000_000,
+        previous4WeekSales: 0,
+        previous4WeekPurchases: 0,
+        recent8WeekSales: 1_000_000,
+        recent12WeekSales: 1_000_000,
+        periodsAvailable: 1,
+        salesRank: 1,
+        purchaseRank: 1,
+      }),
+    ],
+    candidateContext
+  )[0];
   assert.equal(stableCandidate?.trendState, "stable");
   assert.ok((stableCandidate?.recommendationScore || 0) >= 60);
   assert.ok(Number.isFinite(noPrevious.recommendationScore));
@@ -472,10 +434,7 @@ test("매출·구매 비중과 상품군 합산을 계산하고 향이 다른 �
   assert.equal(mintFamily?.productNames.length, 2);
   assert.equal(mintFamily?.totalSales, 7_000_000);
   assert.equal(mintFamily?.totalPurchases, 540);
-  assert.notEqual(
-    normalizeProductFamilyName("오리지널소스 민트티트리 샤워젤 250ml"),
-    normalizeProductFamilyName("오리지널소스 레몬 샤워젤 250ml")
-  );
+  assert.notEqual(normalizeProductFamilyName("오리지널소스 민트티트리 샤워젤 250ml"), normalizeProductFamilyName("오리지널소스 레몬 샤워젤 250ml"));
 });
 
 test("혜택 구성 표현을 offerVariant로 감지한다", () => {
@@ -486,10 +445,7 @@ test("혜택 구성 표현을 offerVariant로 감지한다", () => {
 });
 
 test("BigQuery 업체 화면은 부정적인 기술 충분도 문구를 노출하지 않는다", async () => {
-  const source = await readFile(
-    new URL("../app/components/bigquery/BigQueryCandidateWorkspace.tsx", import.meta.url),
-    "utf8"
-  );
+  const source = await readFile(new URL("../app/components/bigquery/BigQueryCandidateWorkspace.tsx", import.meta.url), "utf8");
   for (const phrase of ["신뢰도 낮음", "데이터 부족", "표본 부족", "검증 불충분", "신뢰할 수 없음"]) {
     assert.equal(source.includes(phrase), false, `${phrase} 문구가 UI에 남아 있습니다.`);
   }

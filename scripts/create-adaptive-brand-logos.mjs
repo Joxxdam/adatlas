@@ -5,11 +5,7 @@ import { makeLightLogoVariant, normalizeTransparentLogo } from "../app/lib/mvp/a
 
 const root = process.cwd();
 const logoRoot = path.join(root, "public", "brand-logos");
-const logos = [
-  "gukdae-hanwoo-logo-exact.png",
-  "original-source-logo.png",
-  "ririnco-logo.png",
-];
+const logos = ["gukdae-hanwoo-logo-exact.png", "original-source-logo.png", "ririnco-logo.png"];
 
 for (const file of logos) {
   const sourcePath = path.join(logoRoot, file);

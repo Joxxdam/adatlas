@@ -1,13 +1,7 @@
-import type {
-  ProductDailyMetric,
-  ProductWeeklyMetric,
-} from "./types.ts";
+import type { ProductDailyMetric, ProductWeeklyMetric } from "./types.ts";
 import { safeDivide, sumNullable } from "./math.ts";
 
-export type AggregatedProductMetric = Omit<
-  ProductDailyMetric,
-  "date" | "source" | "ratingSum" | "ratingCount"
-> & {
+export type AggregatedProductMetric = Omit<ProductDailyMetric, "date" | "source" | "ratingSum" | "ratingCount"> & {
   startsOn: string;
   endsOn: string;
   ratingSum: number | null;
@@ -26,7 +20,11 @@ export function isoDateShift(date: string, days: number) {
 }
 
 export function latestMetricDate(metrics: ProductDailyMetric[], fallback = new Date()) {
-  const latest = metrics.map((metric) => metric.date).filter(Boolean).sort().at(-1);
+  const latest = metrics
+    .map((metric) => metric.date)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
   if (latest) return latest;
   const seoul = new Date(fallback.getTime() + 9 * 60 * 60 * 1000);
   return seoul.toISOString().slice(0, 10);
@@ -36,11 +34,7 @@ function inRange(date: string, startsOn: string, endsOn: string) {
   return date >= startsOn && date <= endsOn;
 }
 
-export function aggregateProductMetrics(
-  metrics: ProductDailyMetric[],
-  startsOn: string,
-  endsOn: string
-): AggregatedProductMetric[] {
+export function aggregateProductMetrics(metrics: ProductDailyMetric[], startsOn: string, endsOn: string): AggregatedProductMetric[] {
   const byProduct = new Map<string, ProductDailyMetric[]>();
   for (const metric of metrics) {
     if (!inRange(metric.date, startsOn, endsOn)) continue;
@@ -49,8 +43,7 @@ export function aggregateProductMetrics(
     byProduct.set(metric.productId, rows);
   }
   return Array.from(byProduct, ([productId, rows]) => {
-    const total = (field: keyof ProductDailyMetric) =>
-      sumNullable(rows.map((row) => (typeof row[field] === "number" ? row[field] as number : null)));
+    const total = (field: keyof ProductDailyMetric) => sumNullable(rows.map((row) => (typeof row[field] === "number" ? (row[field] as number) : null)));
     const ratingSum = total("ratingSum");
     const ratingCount = total("ratingCount");
     const views = total("views");
@@ -71,7 +64,11 @@ export function aggregateProductMetrics(
       refunds,
       refundAmount: total("refundAmount"),
       repeatOrders: total("repeatOrders"),
-      stockCount: rows.map((row) => row.stockCount).filter((value): value is number => value !== null).at(-1) ?? null,
+      stockCount:
+        rows
+          .map((row) => row.stockCount)
+          .filter((value): value is number => value !== null)
+          .at(-1) ?? null,
       reviewCount: total("reviewCount"),
       photoReviewCount: total("photoReviewCount"),
       ratingSum,
@@ -138,13 +135,8 @@ export function deduplicateDailyMetrics(metrics: ProductDailyMetric[]) {
     groups.set(key, rows);
   }
   return Array.from(groups.values(), (rows) => {
-    const source = rows.some((row) => row.source === "file_upload")
-      ? "file_upload"
-      : rows.some((row) => row.source === "crema_api")
-        ? "crema_api"
-        : "development_fixture";
-    const total = (field: keyof ProductDailyMetric) =>
-      sumNullable(rows.map((row) => typeof row[field] === "number" ? row[field] as number : null));
+    const source = rows.some((row) => row.source === "file_upload") ? "file_upload" : rows.some((row) => row.source === "crema_api") ? "crema_api" : "development_fixture";
+    const total = (field: keyof ProductDailyMetric) => sumNullable(rows.map((row) => (typeof row[field] === "number" ? (row[field] as number) : null)));
     return {
       ...rows[0],
       impressions: total("impressions"),
@@ -156,7 +148,11 @@ export function deduplicateDailyMetrics(metrics: ProductDailyMetric[]) {
       refunds: total("refunds"),
       refundAmount: total("refundAmount"),
       repeatOrders: total("repeatOrders"),
-      stockCount: rows.map((row) => row.stockCount).filter((value): value is number => value !== null).at(-1) ?? null,
+      stockCount:
+        rows
+          .map((row) => row.stockCount)
+          .filter((value): value is number => value !== null)
+          .at(-1) ?? null,
       reviewCount: total("reviewCount"),
       photoReviewCount: total("photoReviewCount"),
       ratingSum: total("ratingSum"),
@@ -173,7 +169,11 @@ export function deduplicateDailyMetrics(metrics: ProductDailyMetric[]) {
       netOrders: total("netOrders"),
       netQuantity: total("netQuantity"),
       netRevenue: total("netRevenue"),
-      stockQuantity: rows.map((row) => row.stockQuantity).filter((value): value is number => value !== null && value !== undefined).at(-1) ?? null,
+      stockQuantity:
+        rows
+          .map((row) => row.stockQuantity)
+          .filter((value): value is number => value !== null && value !== undefined)
+          .at(-1) ?? null,
       newCustomers: total("newCustomers"),
       returningCustomers: total("returningCustomers"),
       newReviewCount: total("newReviewCount"),

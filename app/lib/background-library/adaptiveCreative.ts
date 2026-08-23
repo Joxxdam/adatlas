@@ -1,14 +1,6 @@
 import type { ExtractedPalette, GeneratedAdCopy, ProductInfoForPrompt } from "../mvp/types.ts";
 import { chooseTextColor, contrastRatio, ensureContrast, mixColors } from "../mvp/colorUtils.ts";
-import type {
-  AdaptiveCreativePlan,
-  AdaptiveLayoutVariant,
-  AdaptivePlacementBox,
-  AutomaticLayoutPreset,
-  BackgroundHookType,
-  BackgroundLibraryItem,
-  BackgroundSelectionMode,
-} from "./types.ts";
+import type { AdaptiveCreativePlan, AdaptiveLayoutVariant, AdaptivePlacementBox, AutomaticLayoutPreset, BackgroundHookType, BackgroundLibraryItem, BackgroundSelectionMode } from "./types.ts";
 
 type LayoutContext = {
   background: BackgroundLibraryItem;
@@ -23,11 +15,7 @@ type LayoutContext = {
   now?: string;
 };
 
-const variants: AdaptiveLayoutVariant[] = [
-  "copy-focused",
-  "product-focused",
-  "content-focused",
-];
+const variants: AdaptiveLayoutVariant[] = ["copy-focused", "product-focused", "content-focused"];
 
 function unique<T>(values: T[]) {
   return Array.from(new Set(values));
@@ -42,8 +30,7 @@ function preferredSide(background: BackgroundLibraryItem) {
 function layoutCandidates(context: LayoutContext): AutomaticLayoutPreset[] {
   const { background, hookType } = context;
   const side = preferredSide(background);
-  const priceDriven = Boolean(context.product.price || context.product.discountInfo) &&
-    ["price_offer", "urgency", "gifting"].includes(hookType);
+  const priceDriven = Boolean(context.product.price || context.product.discountInfo) && ["price_offer", "urgency", "gifting"].includes(hookType);
   const layouts: AutomaticLayoutPreset[] = [];
 
   if (priceDriven) layouts.push("price-focused", "centered-product-promotion");
@@ -70,15 +57,8 @@ function layoutCandidates(context: LayoutContext): AutomaticLayoutPreset[] {
   return unique(layouts).slice(0, 3);
 }
 
-function boxesFor(
-  layout: AutomaticLayoutPreset,
-  variant: AdaptiveLayoutVariant,
-  aspectRatio = 0.82,
-  background?: BackgroundLibraryItem
-) {
-  const productWidth = Math.round(
-    variant === "product-focused" ? 570 : variant === "content-focused" ? 390 : 475
-  );
+function boxesFor(layout: AutomaticLayoutPreset, variant: AdaptiveLayoutVariant, aspectRatio = 0.82, background?: BackgroundLibraryItem) {
+  const productWidth = Math.round(variant === "product-focused" ? 570 : variant === "content-focused" ? 390 : 475);
   const productHeight = Math.round(Math.min(730, productWidth / Math.max(0.48, aspectRatio)));
   const leftText = { x: 70, y: 88, width: 510, height: 250 };
   const rightText = { x: 620, y: 88, width: 510, height: 250 };
@@ -134,17 +114,12 @@ function boxesFor(
     cta = { x: 804, y: 970, width: 324, height: 90 };
   } else if (["lifestyle-caption", "people-scene", "editorial-overlay"].includes(layout)) {
     const textOnRight = (background?.textSafeArea || "top-left").includes("right");
-    text = textOnRight
-      ? { x: 642, y: 72, width: 488, height: 210 }
-      : { x: 70, y: 72, width: 500, height: 210 };
+    text = textOnRight ? { x: 642, y: 72, width: 488, height: 210 } : { x: 70, y: 72, width: 500, height: 210 };
     body = { ...text, y: 294, height: 86 };
     const gaze = background?.personGaze || "none";
-    const productOnLeft = gaze === "left" ||
-      (gaze !== "right" && (background?.personPosition === "right" || textOnRight));
+    const productOnLeft = gaze === "left" || (gaze !== "right" && (background?.personPosition === "right" || textOnRight));
     const sceneProductHeight = Math.min(productHeight, 520);
-    product = productOnLeft
-      ? { x: 64, y: 1200 - sceneProductHeight - 62, width: productWidth, height: sceneProductHeight }
-      : { x: 1200 - productWidth - 64, y: 1200 - sceneProductHeight - 62, width: productWidth, height: sceneProductHeight };
+    product = productOnLeft ? { x: 64, y: 1200 - sceneProductHeight - 62, width: productWidth, height: sceneProductHeight } : { x: 1200 - productWidth - 64, y: 1200 - sceneProductHeight - 62, width: productWidth, height: sceneProductHeight };
     price = { x: text.x, y: 430, width: 300, height: 78 };
     cta = { x: text.x, y: 524, width: 230, height: 74 };
   } else if (layout === "premium-minimal") {
@@ -167,29 +142,15 @@ function boxesFor(
 function planPalette(background: BackgroundLibraryItem, palette: ExtractedPalette) {
   const darkBackground = background.brightness === "dark";
   const sample = darkBackground ? "#181818" : palette.backgroundColor;
-  const initialText = darkBackground
-    ? "#ffffff"
-    : chooseTextColor(sample, "#151515", "#ffffff");
+  const initialText = darkBackground ? "#ffffff" : chooseTextColor(sample, "#151515", "#ffffff");
   const headline = ensureContrast(initialText, sample, 4.5);
   const body = ensureContrast(headline, sample, 4.5);
-  const accent = ensureContrast(
-    contrastRatio(palette.accentColor, sample) >= 3
-      ? palette.accentColor
-      : palette.primaryColor,
-    sample,
-    3.2
-  );
-  const ctaBackground = contrastRatio(accent, sample) >= 2.2
-    ? accent
-    : mixColors(accent, headline, 0.28);
+  const accent = ensureContrast(contrastRatio(palette.accentColor, sample) >= 3 ? palette.accentColor : palette.primaryColor, sample, 3.2);
+  const ctaBackground = contrastRatio(accent, sample) >= 2.2 ? accent : mixColors(accent, headline, 0.28);
   return {
     headline,
     body,
-    price: ensureContrast(
-      darkBackground ? palette.highlightColor : palette.dangerColor,
-      sample,
-      4.5
-    ),
+    price: ensureContrast(darkBackground ? palette.highlightColor : palette.dangerColor, sample, 4.5),
     accent,
     ctaBackground,
     ctaText: chooseTextColor(ctaBackground),
@@ -203,10 +164,7 @@ function alignFor(layout: AutomaticLayoutPreset): "left" | "center" | "right" {
   return "left";
 }
 
-function gradientDirection(
-  layout: AutomaticLayoutPreset,
-  background: BackgroundLibraryItem
-) {
+function gradientDirection(layout: AutomaticLayoutPreset, background: BackgroundLibraryItem) {
   if (["text-right-product-left", "fashion-lookbook"].includes(layout)) return "right" as const;
   if (["text-top-product-bottom", "ingredient-story"].includes(layout)) return "top" as const;
   if (layout === "text-bottom-product-top") return "bottom" as const;
@@ -219,10 +177,7 @@ function gradientDirection(
   return "left" as const;
 }
 
-function decorationFor(
-  background: BackgroundLibraryItem,
-  layout: AutomaticLayoutPreset
-): AdaptiveCreativePlan["decorationStyle"] {
+function decorationFor(background: BackgroundLibraryItem, layout: AutomaticLayoutPreset): AdaptiveCreativePlan["decorationStyle"] {
   if (["price-focused", "centered-product-promotion"].includes(layout)) return "promotion";
   if (layout === "ingredient-story" || background.assetType === "ingredient_scene") return "ingredient";
   if (["fashion-lookbook", "editorial-overlay", "premium-minimal"].includes(layout)) return "editorial";
@@ -319,23 +274,13 @@ export function generateAdaptiveCreativePlans(context: LayoutContext): AdaptiveC
         offsetY: 0,
       },
       decorationStyle: decorationFor(context.background, layout),
-      rationale:
-        variant === "copy-focused"
-          ? "안전 영역의 큰 후킹과 동일 상품 3개 겹침을 조합한 반복 강조형"
-          : variant === "product-focused"
-            ? "접지면과 대형 상품 비율을 우선한 단일 히어로형"
-            : context.background.includesPerson
-              ? `${context.background.personAction || "인물 행동"}을 가리지 않는 큰 상품+작은 상품 대비형`
-              : "배경 장면과 큰 상품+작은 상품을 함께 보여주는 크기 대비형",
+      rationale: variant === "copy-focused" ? "안전 영역의 큰 후킹과 동일 상품 3개 겹침을 조합한 반복 강조형" : variant === "product-focused" ? "접지면과 대형 상품 비율을 우선한 단일 히어로형" : context.background.includesPerson ? `${context.background.personAction || "인물 행동"}을 가리지 않는 큰 상품+작은 상품 대비형` : "배경 장면과 큰 상품+작은 상품을 함께 보여주는 크기 대비형",
       createdAt: now,
       updatedAt: now,
     };
   });
 }
 
-export function updateAdaptiveCreativePlan(
-  plan: AdaptiveCreativePlan,
-  patch: Partial<AdaptiveCreativePlan>
-): AdaptiveCreativePlan {
+export function updateAdaptiveCreativePlan(plan: AdaptiveCreativePlan, patch: Partial<AdaptiveCreativePlan>): AdaptiveCreativePlan {
   return { ...plan, ...patch, updatedAt: new Date().toISOString() };
 }

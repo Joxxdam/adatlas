@@ -8,11 +8,7 @@ function percent(value?: number) {
   return value === undefined ? "정보 부족" : `${Math.round(value * 100)}%`;
 }
 
-export function CategoryRecommendationList({
-  categories,
-}: {
-  categories: StoreCategoryAnalysis[];
-}) {
+export function CategoryRecommendationList({ categories }: { categories: StoreCategoryAnalysis[] }) {
   return (
     <section className="analysis-result-section">
       <div className="result-section-heading">

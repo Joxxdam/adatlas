@@ -1,17 +1,6 @@
 import type { PipelineStageName } from "./types.ts";
 
-export const VIDEO_PLANNING_PIPELINE: PipelineStageName[] = [
-  "productAnalysis",
-  "hookCandidates",
-  "conceptCandidates",
-  "conceptScoring",
-  "selectedConcept",
-  "storyboard",
-  "visualBible",
-  "scenePrompts",
-  "validation",
-  "finalRevision",
-];
+export const VIDEO_PLANNING_PIPELINE: PipelineStageName[] = ["productAnalysis", "hookCandidates", "conceptCandidates", "conceptScoring", "selectedConcept", "storyboard", "visualBible", "scenePrompts", "validation", "finalRevision"];
 
 export const VIDEO_PLANNER_SYSTEM_PROMPT = `당신은 퍼포먼스 광고용 세로 숏폼 영상 기획자다.
 목표는 예쁜 영상을 묘사하는 것이 아니라, 확인된 상품 사실에서 시작해 첫 3초 정지력과 구매 행동을 만드는 제작 가능한 기획서를 쓰는 것이다.
@@ -28,7 +17,5 @@ export const VIDEO_PLANNER_SYSTEM_PROMPT = `당신은 퍼포먼스 광고용 세
 9. 결과는 요청된 JSON 스키마만 반환한다.`;
 
 export function buildVideoPlannerPrompt(input: unknown, duration: number) {
-  return `${VIDEO_PLANNER_SYSTEM_PROMPT}\n\n전체 길이: ${duration}초\n입력 JSON:\n${JSON.stringify(
-    input
-  )}\n\n출력에는 hookCandidates 5개 이상, 상위 conceptCandidates 3개, 각 콘셉트의 점수, storyboard, visualBible, scenePrompts, validation을 포함한다.`;
+  return `${VIDEO_PLANNER_SYSTEM_PROMPT}\n\n전체 길이: ${duration}초\n입력 JSON:\n${JSON.stringify(input)}\n\n출력에는 hookCandidates 5개 이상, 상위 conceptCandidates 3개, 각 콘셉트의 점수, storyboard, visualBible, scenePrompts, validation을 포함한다.`;
 }

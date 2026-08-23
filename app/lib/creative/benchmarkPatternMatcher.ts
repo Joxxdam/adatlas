@@ -1,18 +1,14 @@
 import { loadBenchmarkAnalysis } from "./benchmarkLoader.ts";
 
 function stringList(value: unknown) {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
-    : [];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())) : [];
 }
 
 export function buildBenchmarkQualityContract() {
   const analysis = loadBenchmarkAnalysis();
   const patterns = analysis.globalPatterns;
   const thresholds = analysis.qualityThresholds;
-  const readTime = typeof patterns.hookReadTimeSeconds === "number"
-    ? patterns.hookReadTimeSeconds
-    : 2;
+  const readTime = typeof patterns.hookReadTimeSeconds === "number" ? patterns.hookReadTimeSeconds : 2;
 
   return [
     "Use the benchmark only as an abstract quality bar. Never reproduce any benchmark's exact layout, framing, copy, product, logo, badge, palette arrangement or brand identity.",
@@ -36,11 +32,7 @@ function normalizedCategory(value: string) {
   return "generic";
 }
 
-export function matchBenchmarkPatterns(params: {
-  category: string;
-  archetypeId: string;
-  limit?: number;
-}) {
+export function matchBenchmarkPatterns(params: { category: string; archetypeId: string; limit?: number }) {
   const analysis = loadBenchmarkAnalysis();
   const category = normalizedCategory(params.category);
   const ranked = analysis.images
@@ -59,7 +51,5 @@ export function matchBenchmarkPatterns(params: {
     .flatMap(({ image }) => image.reusablePatterns)
     .filter((pattern, index, values) => values.indexOf(pattern) === index);
 
-  return patterns.length
-    ? patterns
-    : ["one dominant hook", "real product hero", "quiet text-safe zone", "grouped offer block"];
+  return patterns.length ? patterns : ["one dominant hook", "real product hero", "quiet text-safe zone", "grouped offer block"];
 }

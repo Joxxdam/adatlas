@@ -15,11 +15,7 @@ function single(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function CreateProductPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function CreateProductPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const analysisId = single(params.analysisId);
   const productId = single(params.productId);
@@ -29,21 +25,13 @@ export default async function CreateProductPage({
   const siteCandidateId = single(params.siteCandidateId);
   const initialProductUrl = normalizeProductCreationUrl(single(params.productUrl));
   const view = single(params.view);
+  const generationJobId = single(params.jobId);
   const requestedStep = single(params.step);
   if (requestedStep === "meta") {
     redirect("/archive");
   }
-  const initialWorkflowStep =
-    view === "results"
-      ? "results"
-      : ["product", "hooks", "creative"].includes(requestedStep || "")
-        ? (requestedStep as "product" | "hooks" | "creative")
-        : "product";
-  const [brands, images, generated] = await Promise.all([
-    readBrands(),
-    readCollectedAdImages(),
-    readGenerated(),
-  ]);
+  const initialWorkflowStep = view === "results" ? "results" : ["product", "hooks", "creative"].includes(requestedStep || "") ? (requestedStep as "product" | "hooks" | "creative") : "product";
+  const [brands, images, generated] = await Promise.all([readBrands(), readCollectedAdImages(), readGenerated()]);
   let initialCreationHandoff = null;
   if (siteCandidateId) {
     try {
@@ -77,16 +65,5 @@ export default async function CreateProductPage({
       initialCreationHandoff = null;
     }
   }
-  return (
-    <MvpDashboard
-      activeFeature="creative-production"
-      initialActiveMenu={view === "results" ? "결과 다운로드" : "광고 생성"}
-      initialWorkflowStep={initialWorkflowStep}
-      initialBrands={brands}
-      initialCreationHandoff={initialCreationHandoff}
-      initialProductUrl={initialProductUrl}
-      initialGenerated={generated}
-      initialImages={images}
-    />
-  );
+  return <MvpDashboard activeFeature="creative-production" initialActiveMenu={view === "results" && !generationJobId ? "결과 다운로드" : "광고 생성"} initialWorkflowStep={initialWorkflowStep} initialBrands={brands} initialCreationHandoff={initialCreationHandoff} initialProductUrl={initialProductUrl} initialGenerated={generated} initialImages={images} />;
 }

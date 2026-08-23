@@ -21,10 +21,7 @@ function actionValue(actions: unknown, types: string[]) {
   }, 0);
 }
 
-export function createMetaInsightsService(options?: {
-  provider?: MetaProvider;
-  repository?: Repository;
-}) {
+export function createMetaInsightsService(options?: { provider?: MetaProvider; repository?: Repository }) {
   const config = readMetaServerConfig();
   const repository = options?.repository || metaRepository;
   const provider =
@@ -49,18 +46,13 @@ export function createMetaInsightsService(options?: {
       if (!experiment.trackingEnabled) throw new Error("성과 추적을 먼저 시작해 주세요.");
       const range = recentThreeDayRange();
       const adIds = experiment.rows.map((row) => row.adId);
-      const response = await client.read<{ data?: Array<Record<string, unknown>> }>(
-        "insights",
-        `${experiment.adAccountId}/insights`,
-        {
-          level: "ad",
-          fields:
-            "ad_id,date_start,date_stop,impressions,reach,spend,clicks,outbound_clicks,actions,action_values",
-          time_range: range,
-          filtering: [{ field: "ad.id", operator: "IN", value: adIds }],
-          time_increment: 1,
-        }
-      );
+      const response = await client.read<{ data?: Array<Record<string, unknown>> }>("insights", `${experiment.adAccountId}/insights`, {
+        level: "ad",
+        fields: "ad_id,date_start,date_stop,impressions,reach,spend,clicks,outbound_clicks,actions,action_values",
+        time_range: range,
+        filtering: [{ field: "ad.id", operator: "IN", value: adIds }],
+        time_increment: 1,
+      });
       const fetchedAt = new Date().toISOString();
       const snapshots: MetaInsightSnapshot[] = (response.data || []).map((row) => ({
         adId: String(row.ad_id || ""),
@@ -73,10 +65,7 @@ export function createMetaInsightsService(options?: {
         outboundClicks: actionValue(row.outbound_clicks, ["outbound_click"]),
         landingPageViews: actionValue(row.actions, ["landing_page_view"]),
         purchases: actionValue(row.actions, ["purchase", "offsite_conversion.fb_pixel_purchase"]),
-        purchaseValue: actionValue(row.action_values, [
-          "purchase",
-          "offsite_conversion.fb_pixel_purchase",
-        ]),
+        purchaseValue: actionValue(row.action_values, ["purchase", "offsite_conversion.fb_pixel_purchase"]),
         fetchedAt,
       }));
       await repository.upsertSnapshots(snapshots);

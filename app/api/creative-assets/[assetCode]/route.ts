@@ -8,7 +8,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function scopeKey(value: string, fallback: string) {
-  return value.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").replace(/^-|-$/g, "").slice(0, 64) || fallback;
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9가-힣]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 64) || fallback
+  );
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ assetCode: string }> }) {
@@ -18,10 +24,7 @@ export async function GET(_request: Request, context: { params: Promise<{ assetC
     if (!asset) return NextResponse.json({ ok: false, error: "소재를 찾지 못했습니다." }, { status: 404 });
     return NextResponse.json({ ok: true, asset });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "소재 조회에 실패했습니다." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "소재 조회에 실패했습니다." }, { status: 400 });
   }
 }
 
@@ -43,13 +46,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ asset
       const positive = body.feedback.sentiment === "positive";
       const scope = body.feedback.scope || "product";
       const advertiserId = asset.advertiserId || asset.brandId;
-      const scopeId = scope === "advertiser"
-        ? advertiserId
-        : scope === "category"
-          ? scopeKey(asset.category, "category")
-          : scope === "promotion"
-            ? String(body.feedback.promotionId || "").trim()
-            : asset.productId;
+      const scopeId = scope === "advertiser" ? advertiserId : scope === "category" ? scopeKey(asset.category, "category") : scope === "promotion" ? String(body.feedback.promotionId || "").trim() : asset.productId;
       if (!scopeId) return NextResponse.json({ ok: false, error: "프로모션 범위에는 프로모션 ID가 필요합니다." }, { status: 400 });
       const note = await creativeContentNoteRepository.create({
         advertiserId,
@@ -77,9 +74,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ asset
     const asset = await creativeAssetRepository.updateStatus(assetCode, body.status);
     return NextResponse.json({ ok: true, asset });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "소재 상태 변경에 실패했습니다." },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "소재 상태 변경에 실패했습니다." }, { status: 400 });
   }
 }

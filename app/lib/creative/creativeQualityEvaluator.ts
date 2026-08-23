@@ -6,9 +6,7 @@ function clamp(value: number) {
 }
 
 function numbers(value: string) {
-  return Array.from(
-    value.matchAll(/\d[\d,.]*(?:\s*(?:만원대|만원|천원|%|kg|g|ml|l|원|개|팩|세트|장|병))?/gi)
-  ).map((match) => match[0].replace(/[\s,]/g, "").toLowerCase());
+  return Array.from(value.matchAll(/\d[\d,.]*(?:\s*(?:만원대|만원|천원|%|kg|g|ml|l|원|개|팩|세트|장|병))?/gi)).map((match) => match[0].replace(/[\s,]/g, "").toLowerCase());
 }
 
 function priceValue(token: string) {
@@ -35,13 +33,7 @@ function numberIsSupported(token: string, factTokens: string[]) {
   return factTokens.some((fact) => priceValue(fact) === claimedPrice);
 }
 
-export function evaluateCreativeQuality(params: {
-  direction: VisualDirection;
-  product: ProductInfoForPrompt;
-  copy?: Partial<GeneratedAdCopy>;
-  productImagePaths?: string[];
-  sceneCandidate?: SceneCandidate | null;
-}): CreativeQualityScore {
+export function evaluateCreativeQuality(params: { direction: VisualDirection; product: ProductInfoForPrompt; copy?: Partial<GeneratedAdCopy>; productImagePaths?: string[]; sceneCandidate?: SceneCandidate | null }): CreativeQualityScore {
   const warnings: string[] = [];
   const recommendations: string[] = [];
   const headline = String(params.copy?.headline || "").trim();
@@ -49,9 +41,7 @@ export function evaluateCreativeQuality(params: {
   const productFacts = [params.product.productName, params.product.price, params.product.originalPrice, params.product.oldPrice, params.product.discountInfo, params.product.mainBenefit, params.product.extractedDescription].filter(Boolean).join(" ");
   const productImages = (params.productImagePaths || []).filter(Boolean);
   const factNumbers = numbers(productFacts);
-  const unverifiedNumbers = numbers(allCopy).filter(
-    (number) => !numberIsSupported(number, factNumbers)
-  );
+  const unverifiedNumbers = numbers(allCopy).filter((number) => !numberIsSupported(number, factNumbers));
 
   let hookStrength = headline ? 88 : 42;
   if (headline.length > 28) {
@@ -70,12 +60,8 @@ export function evaluateCreativeQuality(params: {
   const sceneRelevance = clamp(params.sceneCandidate ? 90 : 72);
   if (!params.sceneCandidate) recommendations.push("추천 장면 후보를 생성하면 카테고리 적합도를 높일 수 있습니다.");
   const textReadability = clamp(params.direction.scenePromptPlan.textSafeZones.length ? 88 : 62);
-  const compositionBalance = clamp(
-    params.direction.scenePromptPlan.productSafeZone.widthRatio >= 0.42 ? 88 : 68
-  );
-  const benchmarkSimilarity = clamp(
-    70 + Math.min(18, params.direction.benchmarkPatternsUsed.length * 4)
-  );
+  const compositionBalance = clamp(params.direction.scenePromptPlan.productSafeZone.widthRatio >= 0.42 ? 88 : 68);
+  const benchmarkSimilarity = clamp(70 + Math.min(18, params.direction.benchmarkPatternsUsed.length * 4));
   let factualSafety = 96;
   if (unverifiedNumbers.length) {
     factualSafety -= Math.min(36, unverifiedNumbers.length * 12);
@@ -92,16 +78,7 @@ export function evaluateCreativeQuality(params: {
     benchmarkSimilarity,
     factualSafety: clamp(factualSafety),
   };
-  const overall = clamp(
-    scores.hookStrength * 0.15 +
-      scores.hierarchy * 0.13 +
-      scores.productVisibility * 0.17 +
-      scores.sceneRelevance * 0.12 +
-      scores.textReadability * 0.13 +
-      scores.compositionBalance * 0.12 +
-      scores.benchmarkSimilarity * 0.1 +
-      scores.factualSafety * 0.08
-  );
+  const overall = clamp(scores.hookStrength * 0.15 + scores.hierarchy * 0.13 + scores.productVisibility * 0.17 + scores.sceneRelevance * 0.12 + scores.textReadability * 0.13 + scores.compositionBalance * 0.12 + scores.benchmarkSimilarity * 0.1 + scores.factualSafety * 0.08);
   if (overall < 78) recommendations.push("상품 크기, 헤드라인 길이, 장면 대비를 조정한 뒤 다시 렌더링하세요.");
 
   return { ...scores, overall, warnings, recommendations };

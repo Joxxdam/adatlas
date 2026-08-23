@@ -16,17 +16,10 @@ export const defaultAdBrief: AdBrief = {
   creativeIntensity: "balanced",
 };
 
-export function productInfoToAdBrief(
-  product: ProductInfoForPrompt,
-  current: AdBrief = defaultAdBrief
-): AdBrief {
+export function productInfoToAdBrief(product: ProductInfoForPrompt, current: AdBrief = defaultAdBrief): AdBrief {
   const notes = product.creativeContext?.appliedContentNotes || [];
-  const requiredNotes = notes
-    .filter((note) => note.required || note.type === "MUST_INCLUDE")
-    .map((note) => note.content);
-  const prohibitedNotes = notes
-    .filter((note) => note.prohibited || note.type === "PROHIBITED_EXPRESSION")
-    .map((note) => note.content);
+  const requiredNotes = notes.filter((note) => note.required || note.type === "MUST_INCLUDE").map((note) => note.content);
+  const prohibitedNotes = notes.filter((note) => note.prohibited || note.type === "PROHIBITED_EXPRESSION").map((note) => note.content);
   const toneNote = notes.find((note) => ["TONE_OF_VOICE", "TONE_AND_MANNER"].includes(note.type) && !note.prohibited)?.content;
   const hookNote = notes.find((note) => note.type === "PREFERRED_HOOK" && !note.prohibited)?.content;
   return {
@@ -44,16 +37,11 @@ export function productInfoToAdBrief(
     prohibitedClaims: Array.from(new Set([...(current.prohibitedClaims || []), ...prohibitedNotes])),
     desiredHookType: hookNote || product.creativeContext?.recommendedHookTypes?.[0] || current.desiredHookType,
     tonePreference: toneNote || current.tonePreference,
-    additionalEmphasis: [current.additionalEmphasis, ...(product.creativeContext?.recommendedMessageAngles || [])]
-      .filter(Boolean)
-      .join(" · "),
+    additionalEmphasis: [current.additionalEmphasis, ...(product.creativeContext?.recommendedMessageAngles || [])].filter(Boolean).join(" · "),
   };
 }
 
-export function applyAdBriefToProductInfo(
-  brief: AdBrief,
-  product: ProductInfoForPrompt
-): ProductInfoForPrompt {
+export function applyAdBriefToProductInfo(brief: AdBrief, product: ProductInfoForPrompt): ProductInfoForPrompt {
   return {
     ...product,
     productName: brief.productName,

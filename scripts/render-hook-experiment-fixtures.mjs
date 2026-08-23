@@ -14,12 +14,8 @@ import { designFingerprintForMaster } from "../app/lib/creative-generation/maste
 
 const root = process.cwd();
 const outDir = process.argv[2] || "/tmp/adatlas-hook-experiment-fixtures";
-const fixtures = JSON.parse(
-  await readFile(path.join(root, "tests/fixtures/creative-products.json"), "utf8")
-);
-const library = JSON.parse(
-  await readFile(path.join(root, "data/background-library.json"), "utf8")
-);
+const fixtures = JSON.parse(await readFile(path.join(root, "tests/fixtures/creative-products.json"), "utf8"));
+const library = JSON.parse(await readFile(path.join(root, "data/background-library.json"), "utf8"));
 
 await mkdir(outDir, { recursive: true });
 const selected = fixtures;
@@ -84,9 +80,7 @@ for (const fixture of selected) {
       .resize(300, 300, { fit: "cover" })
       .composite([
         {
-          input: Buffer.from(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect x="8" y="8" width="62" height="32" rx="16" fill="#07110f" fill-opacity=".86"/><text x="39" y="30" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">${result.hookPlan.hookCode}</text></svg>`
-          ),
+          input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect x="8" y="8" width="62" height="32" rx="16" fill="#07110f" fill-opacity=".86"/><text x="39" y="30" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">${result.hookPlan.hookCode}</text></svg>`),
           left: 0,
           top: 0,
         },
@@ -127,26 +121,26 @@ for (const fixture of selected) {
     .toBuffer();
   const contactSheet = path.join(fixtureDir, "contact-sheet.webp");
   await writeFile(contactSheet, sheet);
-  await writeFile(
-    path.join(fixtureDir, "generation-summary.json"),
-    `${JSON.stringify(buildGenerationSummary(job), null, 2)}\n`,
-    "utf8"
-  );
+  await writeFile(path.join(fixtureDir, "generation-summary.json"), `${JSON.stringify(buildGenerationSummary(job), null, 2)}\n`, "utf8");
   await writeFile(
     path.join(fixtureDir, "qa.json"),
-    `${JSON.stringify({
-      fixtureId: fixture.id,
-      expected: 8,
-      passed: results.filter((result) => result.qa.passed).length,
-      designFingerprint: job.creativePlan.masterDesign.designFingerprint,
-      results: results.map((result) => ({
-        hookCode: result.hookCode,
-        passed: result.qa.passed,
-        score: result.qa.score,
-        designLockVerified: result.qa.designLockVerified,
-        findings: result.qa.findings,
-      })),
-    }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        fixtureId: fixture.id,
+        expected: 8,
+        passed: results.filter((result) => result.qa.passed).length,
+        designFingerprint: job.creativePlan.masterDesign.designFingerprint,
+        results: results.map((result) => ({
+          hookCode: result.hookCode,
+          passed: result.qa.passed,
+          score: result.qa.score,
+          designLockVerified: result.qa.designLockVerified,
+          findings: result.qa.findings,
+        })),
+      },
+      null,
+      2
+    )}\n`,
     "utf8"
   );
   reports.push({
@@ -165,11 +159,7 @@ for (const fixture of selected) {
   });
 }
 
-await writeFile(
-  path.join(outDir, "report.json"),
-  `${JSON.stringify({ generatedAt: new Date().toISOString(), reports }, null, 2)}\n`,
-  "utf8"
-);
+await writeFile(path.join(outDir, "report.json"), `${JSON.stringify({ generatedAt: new Date().toISOString(), reports }, null, 2)}\n`, "utf8");
 if (reports.length !== fixtures.length || reports.some((report) => report.results.length !== 8)) {
   throw new Error(`${fixtures.length}개 상품 × H01~H08 fixture가 모두 생성되지 않았습니다.`);
 }

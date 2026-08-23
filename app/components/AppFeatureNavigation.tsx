@@ -2,15 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { DaywizBrand } from "./DaywizBrand";
 
-export type AppFeatureKey =
-  | "store-analysis"
-  | "creative-production"
-  | "video-planning"
-  | "performance"
-  | "archive"
-  | "auto-production"
-  | "advertisers"
-  | "references";
+export type AppFeatureKey = "store-analysis" | "creative-production" | "video-planning" | "performance" | "archive" | "auto-production" | "advertisers" | "references";
 
 export const PERFORMANCE_FEATURE = {
   key: "performance" as const,
@@ -50,12 +42,7 @@ export const ARCHIVE_FEATURE = {
   description: "완성 콘텐츠를 보관하고 테스트 소재를 선택합니다",
 };
 
-export const MAIN_FEATURES = [
-  ...IMAGE_CONTENT_FEATURES,
-  PERFORMANCE_FEATURE,
-  VIDEO_PLANNING_FEATURE,
-  ARCHIVE_FEATURE,
-];
+export const MAIN_FEATURES = [...IMAGE_CONTENT_FEATURES, PERFORMANCE_FEATURE, VIDEO_PLANNING_FEATURE, ARCHIVE_FEATURE];
 
 export const MANAGEMENT_FEATURES = [
   { key: "auto-production" as const, href: "/admin/auto-production", label: "자동 제작 관리" },
@@ -73,12 +60,7 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
         </div>
         <div className="feature-navigation-links">
           {IMAGE_CONTENT_FEATURES.map((feature) => (
-            <Link
-              aria-current={activeFeature === feature.key ? "page" : undefined}
-              className={activeFeature === feature.key ? "active" : ""}
-              href={feature.href}
-              key={feature.key}
-            >
+            <Link aria-current={activeFeature === feature.key ? "page" : undefined} className={activeFeature === feature.key ? "active" : ""} href={feature.href} key={feature.key}>
               <span>{feature.index}</span>
               <div>
                 <strong>{feature.label}</strong>
@@ -87,27 +69,17 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
             </Link>
           ))}
         </div>
-        <details
-          className="feature-navigation-management feature-navigation-performance-menu"
-          open={activeFeature === PERFORMANCE_FEATURE.key}
-        >
+        <details className="feature-navigation-management feature-navigation-performance-menu" open={activeFeature === PERFORMANCE_FEATURE.key}>
           <summary>
             <span>성과 확인</span>
           </summary>
           <nav className="app-auxiliary-navigation" aria-label="성과 확인">
-            <Link
-              aria-current={activeFeature === PERFORMANCE_FEATURE.key ? "page" : undefined}
-              className={activeFeature === PERFORMANCE_FEATURE.key ? "active" : ""}
-              href={PERFORMANCE_FEATURE.href}
-            >
+            <Link aria-current={activeFeature === PERFORMANCE_FEATURE.key ? "page" : undefined} className={activeFeature === PERFORMANCE_FEATURE.key ? "active" : ""} href={PERFORMANCE_FEATURE.href}>
               광고 성과 확인
             </Link>
           </nav>
         </details>
-        <details
-          className="feature-navigation-management"
-          open={MANAGEMENT_FEATURES.some((feature) => feature.key === activeFeature)}
-        >
+        <details className="feature-navigation-management" open={MANAGEMENT_FEATURES.some((feature) => feature.key === activeFeature)}>
           <summary>
             <span>이미지 제작 관리 도구</span>
           </summary>
@@ -120,11 +92,7 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
           <span>VIDEO CONTENT</span>
           <strong>영상 콘텐츠</strong>
         </div>
-        <Link
-          aria-current={activeFeature === VIDEO_PLANNING_FEATURE.key ? "page" : undefined}
-          className={`feature-navigation-video-link${activeFeature === VIDEO_PLANNING_FEATURE.key ? " active" : ""}`}
-          href={VIDEO_PLANNING_FEATURE.href}
-        >
+        <Link aria-current={activeFeature === VIDEO_PLANNING_FEATURE.key ? "page" : undefined} className={`feature-navigation-video-link${activeFeature === VIDEO_PLANNING_FEATURE.key ? " active" : ""}`} href={VIDEO_PLANNING_FEATURE.href}>
           <span>VIDEO</span>
           <div>
             <strong>{VIDEO_PLANNING_FEATURE.label}</strong>
@@ -138,11 +106,7 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
           <span>ASSET LIBRARY</span>
           <strong>콘텐츠 보관</strong>
         </div>
-        <Link
-          aria-current={activeFeature === ARCHIVE_FEATURE.key ? "page" : undefined}
-          className={`feature-navigation-archive-link${activeFeature === ARCHIVE_FEATURE.key ? " active" : ""}`}
-          href={ARCHIVE_FEATURE.href}
-        >
+        <Link aria-current={activeFeature === ARCHIVE_FEATURE.key ? "page" : undefined} className={`feature-navigation-archive-link${activeFeature === ARCHIVE_FEATURE.key ? " active" : ""}`} href={ARCHIVE_FEATURE.href}>
           <span>ALL</span>
           <div>
             <strong>{ARCHIVE_FEATURE.label}</strong>
@@ -150,7 +114,6 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
           </div>
         </Link>
       </section>
-
     </nav>
   );
 }
@@ -159,12 +122,7 @@ export function AuxiliaryFeatureNavigation({ activeFeature }: { activeFeature?: 
   return (
     <nav className="app-auxiliary-navigation" aria-label="이미지 제작 관리 도구">
       {MANAGEMENT_FEATURES.map((feature) => (
-        <Link
-          aria-current={activeFeature === feature.key ? "page" : undefined}
-          className={activeFeature === feature.key ? "active" : ""}
-          href={feature.href}
-          key={feature.key}
-        >
+        <Link aria-current={activeFeature === feature.key ? "page" : undefined} className={activeFeature === feature.key ? "active" : ""} href={feature.href} key={feature.key}>
           {feature.label}
         </Link>
       ))}
@@ -172,15 +130,7 @@ export function AuxiliaryFeatureNavigation({ activeFeature }: { activeFeature?: 
   );
 }
 
-export function AppSidebar({
-  activeFeature,
-  className = "feature-sidebar",
-  id,
-}: {
-  activeFeature?: AppFeatureKey;
-  className?: string;
-  id?: string;
-}) {
+export function AppSidebar({ activeFeature, className = "feature-sidebar", id }: { activeFeature?: AppFeatureKey; className?: string; id?: string }) {
   return (
     <aside className={className} id={id}>
       <Link className="feature-sidebar-brand adatlas-sidebar-brand" href="/">
@@ -199,13 +149,7 @@ export function AppSidebar({
   );
 }
 
-export function FeaturePageShell({
-  activeFeature,
-  children,
-}: {
-  activeFeature?: AppFeatureKey;
-  children: ReactNode;
-}) {
+export function FeaturePageShell({ activeFeature, children }: { activeFeature?: AppFeatureKey; children: ReactNode }) {
   return (
     <div className="feature-page-shell">
       <AppSidebar activeFeature={activeFeature} />

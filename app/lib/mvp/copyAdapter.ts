@@ -1,9 +1,4 @@
-import type {
-  CopySlotKey,
-  GeneratedAdCopy,
-  GeneratedAdCopyVariant,
-  TemplateCopyLimits,
-} from "./types";
+import type { CopySlotKey, GeneratedAdCopy, GeneratedAdCopyVariant, TemplateCopyLimits } from "./types";
 
 export const DEFAULT_COPY_LIMITS: Required<TemplateCopyLimits> = {
   headline: {
@@ -50,14 +45,7 @@ export const DEFAULT_COPY_LIMITS: Required<TemplateCopyLimits> = {
   },
 };
 
-const slotKeys: CopySlotKey[] = [
-  "headline",
-  "bodyCopy",
-  "highlightCopy",
-  "bottomBarCopy",
-  "cta",
-  "price",
-];
+const slotKeys: CopySlotKey[] = ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"];
 
 function normalizeVariant(copy: GeneratedAdCopy | GeneratedAdCopyVariant): GeneratedAdCopyVariant {
   return {
@@ -153,11 +141,7 @@ function shortenVariant(variant: GeneratedAdCopyVariant, limits: Required<Templa
   return { fitted, warnings };
 }
 
-export function adaptCopyToTemplate(params: {
-  copy: GeneratedAdCopy;
-  copyLimits?: TemplateCopyLimits;
-  preferredVariant?: "short" | "medium" | "long";
-}): {
+export function adaptCopyToTemplate(params: { copy: GeneratedAdCopy; copyLimits?: TemplateCopyLimits; preferredVariant?: "short" | "medium" | "long" }): {
   fittedCopy: GeneratedAdCopyVariant;
   selectedVariant: "short" | "medium" | "long" | "custom";
   warnings: string[];
@@ -169,11 +153,7 @@ export function adaptCopyToTemplate(params: {
     medium: fallbackMedium,
     long: fallbackMedium,
   };
-  const order: Array<"short" | "medium" | "long"> = params.preferredVariant
-    ? (
-        [params.preferredVariant, "medium", "short", "long"] as Array<"short" | "medium" | "long">
-      ).filter((value, index, array) => array.indexOf(value) === index)
-    : ["long", "medium", "short"];
+  const order: Array<"short" | "medium" | "long"> = params.preferredVariant ? ([params.preferredVariant, "medium", "short", "long"] as Array<"short" | "medium" | "long">).filter((value, index, array) => array.indexOf(value) === index) : ["long", "medium", "short"];
 
   for (const key of order) {
     const variant = normalizeVariant(variants[key] || fallbackMedium);

@@ -1,6 +1,9 @@
 import type { AutoProductionAdvertiserConfig } from "./types";
 
 const SEOUL_TIMEZONE = "Asia/Seoul";
+// 예약 작업은 예약 시각을 놓친 뒤 하루 종일 보충 실행하지 않는다.
+// 1분 tick의 드리프트와 짧은 서버 재시작만 허용하는 실행 창이다.
+export const AUTO_PRODUCTION_SCHEDULE_WINDOW_MINUTES = 10;
 
 export type SeoulClock = {
   date: string;
@@ -20,8 +23,7 @@ export function seoulClock(at = new Date()): SeoulClock {
     hourCycle: "h23",
     weekday: "short",
   }).formatToParts(at);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value || "";
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || "";
   const weekdays: Record<string, number> = {
     Sun: 0,
     Mon: 1,
@@ -41,7 +43,7 @@ export function seoulClock(at = new Date()): SeoulClock {
 
 export function scheduleMinutes(scheduleTime: string) {
   const match = scheduleTime.match(/^(\d{2}):(\d{2})$/);
-  if (!match) return 9 * 60;
+  if (!match) return 0;
   return Math.min(23, Number(match[1])) * 60 + Math.min(59, Number(match[2]));
 }
 
@@ -49,14 +51,12 @@ export function scheduledRunKey(config: Pick<AutoProductionAdvertiserConfig, "ad
   return `${seoulClock(at).date}:${config.advertiserId}:${config.scheduleTime}`;
 }
 
-export function isScheduleDue(
-  config: Pick<AutoProductionAdvertiserConfig, "enabled" | "scheduleDays" | "scheduleTime">,
-  at = new Date()
-) {
+export function isScheduleDue(config: Pick<AutoProductionAdvertiserConfig, "enabled" | "scheduleDays" | "scheduleTime">, at = new Date()) {
   if (!config.enabled) return false;
   const clock = seoulClock(at);
   if (!config.scheduleDays.includes(clock.weekday)) return false;
-  return clock.hour * 60 + clock.minute >= scheduleMinutes(config.scheduleTime);
+  const elapsed = clock.hour * 60 + clock.minute - scheduleMinutes(config.scheduleTime);
+  return elapsed >= 0 && elapsed < AUTO_PRODUCTION_SCHEDULE_WINDOW_MINUTES;
 }
 
 function dateKeyAfter(date: string, days: number) {
@@ -65,10 +65,7 @@ function dateKeyAfter(date: string, days: number) {
   return seoulClock(base).date;
 }
 
-export function nextScheduledAt(
-  config: Pick<AutoProductionAdvertiserConfig, "enabled" | "scheduleDays" | "scheduleTime">,
-  at = new Date()
-) {
+export function nextScheduledAt(config: Pick<AutoProductionAdvertiserConfig, "enabled" | "scheduleDays" | "scheduleTime">, at = new Date()) {
   if (!config.enabled) return "";
   const clock = seoulClock(at);
   const nowMinutes = clock.hour * 60 + clock.minute;
@@ -82,12 +79,13 @@ export function nextScheduledAt(
   return "";
 }
 
-export function dueAdvertisers(
-  configs: AutoProductionAdvertiserConfig[],
-  existingRunKeys: ReadonlySet<string>,
-  at = new Date()
-) {
-  return configs.filter(
-    (config) => isScheduleDue(config, at) && !existingRunKeys.has(scheduledRunKey(config, at))
-  );
+export function dueAdvertisers(configs: AutoProductionAdvertiserConfig[], existingRunKeys: ReadonlySet<string>, at = new Date()) {
+  const businessDate = seoulClock(at).date;
+  return configs.filter((config) => {
+    if (!isScheduleDue(config, at)) return false;
+    // 예약 시각을 바꿔도 같은 날짜·광고주의 작업을 다시 만들지 않습니다.
+    // 예: 오늘 07:00 실행 후 00:00으로 바꿔도 오늘 작업을 중복 생성하지 않고 다음 날부터 적용합니다.
+    const advertiserDayPrefix = `${businessDate}:${config.advertiserId}:`;
+    return !Array.from(existingRunKeys).some((key) => key.startsWith(advertiserDayPrefix));
+  });
 }

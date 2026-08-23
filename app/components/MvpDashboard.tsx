@@ -6,67 +6,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CreativeQualityScore, VisualDirection } from "../lib/creative/types";
 import { evaluateCreativeQuality } from "../lib/creative/creativeQualityEvaluator";
 import { getCreativeTextStylePreset } from "../lib/creative/textStylePresets";
-import type {
-  AdaptiveCreativePlan,
-  AdaptiveCreativeRenderResult,
-  AudienceProfile,
-  BackgroundLibraryItem,
-  BackgroundRecommendation,
-  BackgroundRecommendationHistory,
-  CreativeGenerationMode,
-} from "../lib/background-library/types";
-import type {
-  AdImageAnalysisDraft,
-  AdImageLabel,
-  BatchRenderResult,
-  BatchRenderStatus,
-  CollectedAdImage,
-  CreativeStrategy,
-  GeneratedAdImage,
-  GeneratedAdCopy,
-  GeneratedImageAsset,
-  GptImageCandidate,
-  GptImageFailureReason,
-  GptImageGenerationMode,
-  GptImagePreservationMode,
-  GptImageSourceMode,
-  GptPromptTemplateMode,
-  GptCustomPromptState,
-  ExtractedProductInfo,
-  MvpBrand,
-  ProductImageEffectPreset,
-  ProductCutoutQuality,
-  ProductExtractionScope,
-  ProductImageMode,
-  ProductRepresentation,
-  ProductRepresentationType,
-  ProductImageRenderEffect,
-  ProductImageState,
-  ProductInfoForPrompt,
-  RenderDiagnostics,
-  SelectedAdImageSource,
-  SelectedAdImageState,
-  SourceImageCandidate,
-  SourceImageSelectionState,
-  TemplateCopyApplyMode,
-  TemplateCopyPreview,
-  TemplateFittedCopy,
-} from "../lib/mvp/types";
+import type { AdaptiveCreativePlan, AdaptiveCreativeRenderResult, AudienceProfile, BackgroundLibraryItem, BackgroundRecommendation, BackgroundRecommendationHistory, CreativeGenerationMode } from "../lib/background-library/types";
+import type { AdImageAnalysisDraft, AdImageLabel, BatchRenderResult, BatchRenderStatus, CollectedAdImage, CreativeStrategy, GeneratedAdImage, GeneratedAdCopy, GeneratedImageAsset, GptImageCandidate, GptImageFailureReason, GptImageGenerationMode, GptImagePreservationMode, GptImageSourceMode, GptPromptTemplateMode, GptCustomPromptState, ExtractedProductInfo, MvpBrand, ProductImageEffectPreset, ProductCutoutQuality, ProductExtractionScope, ProductImageMode, ProductRepresentation, ProductRepresentationType, ProductImageRenderEffect, ProductImageState, ProductInfoForPrompt, RenderDiagnostics, SelectedAdImageSource, SelectedAdImageState, SourceImageCandidate, SourceImageSelectionState, TemplateCopyApplyMode, TemplateCopyPreview, TemplateFittedCopy } from "../lib/mvp/types";
 import { inferProductRepresentation } from "../lib/mvp/productImagePipeline";
 import { evaluateCopyQuality, tightenCopyToTemplate } from "../lib/mvp/copyQualityEvaluator";
 import { resolveTemplateFontAssignment, systemFontOptions } from "../lib/mvp/fontCatalog";
 import { copyToMessageHierarchy, messageHierarchyToCopy } from "../lib/mvp/messageHierarchy";
 import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
 import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
-import {
-  compactUniqueImagePaths,
-  resolveCurrentProductImagePaths,
-} from "../lib/mvp/imageSelectionResolver";
+import { compactUniqueImagePaths, resolveCurrentProductImagePaths } from "../lib/mvp/imageSelectionResolver";
 import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
-import {
-  BasicStyleControls,
-  type BasicEditorSettings,
-} from "./features/banner-editor/BasicStyleControls";
+import { BasicStyleControls, type BasicEditorSettings } from "./features/banner-editor/BasicStyleControls";
 import { CanvasPreview } from "./features/banner-editor/CanvasPreview";
 import { CreativeQualityPanel } from "./features/banner-editor/CreativeQualityPanel";
 import { CopyQualityPanel } from "./features/copy-generator/CopyQualityPanel";
@@ -81,20 +31,10 @@ import { BackgroundCatalogPanel } from "./features/background-library/Background
 import ProductImageWorkbench from "./features/product-image/ProductImageWorkbench";
 import ReviewCreativeWorkbench from "./features/review-creative/ReviewCreativeWorkbench";
 import { HookExperimentCreativeGenerator } from "./features/creative-generation/SixCreativeGenerator";
-import {
-  CreativeAssetActions,
-  markCreativeAssetExported,
-} from "./features/creative-assets/CreativeAssetActions";
+import { CreativeAssetActions, markCreativeAssetExported } from "./features/creative-assets/CreativeAssetActions";
 import { CreativeAssetLibrary } from "./features/creative-assets/CreativeAssetLibrary";
 import type { CreateCreativeAssetInput, CreativeAsset } from "../lib/creative-assets/types";
-import {
-  beautyCategoryTemplates,
-  foodCategoryTemplates,
-  foodImpactHeroTemplate,
-  healthCategoryTemplates,
-  qualityFoodTemplates,
-  type BannerTemplateDefinition,
-} from "../../lib/bannerTemplates";
+import { beautyCategoryTemplates, foodCategoryTemplates, foodImpactHeroTemplate, healthCategoryTemplates, qualityFoodTemplates, type BannerTemplateDefinition } from "../../lib/bannerTemplates";
 import type { ProductCreationHandoff } from "../lib/store-analysis/types";
 import { AppSidebar, type AppFeatureKey } from "./AppFeatureNavigation";
 import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
@@ -147,9 +87,7 @@ function normalizeStoredProductUrl(value: string) {
 }
 
 function productAnalysisStorageKey(productUrl: string) {
-  return `${productAnalysisStorageKeyPrefix}${encodeURIComponent(
-    normalizeStoredProductUrl(productUrl)
-  )}`;
+  return `${productAnalysisStorageKeyPrefix}${encodeURIComponent(normalizeStoredProductUrl(productUrl))}`;
 }
 
 function readStoredProductAnalysis(productUrl: string): StoredProductAnalysis | null {
@@ -158,11 +96,7 @@ function readStoredProductAnalysis(productUrl: string): StoredProductAnalysis | 
     const raw = window.localStorage.getItem(productAnalysisStorageKey(productUrl));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredProductAnalysis>;
-    if (
-      !parsed.productInfo?.productName ||
-      normalizeStoredProductUrl(parsed.productInfo.landingUrl || "") !==
-        normalizeStoredProductUrl(productUrl)
-    ) {
+    if (!parsed.productInfo?.productName || normalizeStoredProductUrl(parsed.productInfo.landingUrl || "") !== normalizeStoredProductUrl(productUrl)) {
       return null;
     }
     return {
@@ -177,8 +111,7 @@ function readStoredProductAnalysis(productUrl: string): StoredProductAnalysis | 
 }
 
 type HeadlineStyleOverrides = {
-  headlineFontPreset?:
-    "impact-korean-red" | "commerce-heavy-black" | "premium-serif-gold" | "ugc-bold-white";
+  headlineFontPreset?: "impact-korean-red" | "commerce-heavy-black" | "premium-serif-gold" | "ugc-bold-white";
   headlineFontSize?: number;
   headlineFontWeight?: number;
   headlineLetterSpacing?: number;
@@ -239,12 +172,7 @@ type ProductCutoutRequestOptions = {
   expectedUnitCount?: number;
 };
 
-async function requestProductCutout(
-  imagePath: string,
-  effectPreset: ProductImageEffectPreset,
-  candidateImagePaths: string[] = [],
-  options: ProductCutoutRequestOptions = {}
-): Promise<ProductCutoutApiResult> {
+async function requestProductCutout(imagePath: string, effectPreset: ProductImageEffectPreset, candidateImagePaths: string[] = [], options: ProductCutoutRequestOptions = {}): Promise<ProductCutoutApiResult> {
   const response = await fetch("/api/image/remove-background", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -266,14 +194,7 @@ async function requestProductCutout(
 
 function batchZipTimestamp(date = new Date()) {
   const pad = (value: number) => String(value).padStart(2, "0");
-  return (
-    String(date.getFullYear()) +
-    pad(date.getMonth() + 1) +
-    pad(date.getDate()) +
-    "-" +
-    pad(date.getHours()) +
-    pad(date.getMinutes())
-  );
+  return String(date.getFullYear()) + pad(date.getMonth() + 1) + pad(date.getDate()) + "-" + pad(date.getHours()) + pad(date.getMinutes());
 }
 
 function batchResultImageUrl(result: BatchRenderResult) {
@@ -499,45 +420,9 @@ const fixedSourceReferenceImages: SourceImageCandidate[] = [
   },
 ];
 
-const categoryOptions = [
-  "식품/선물",
-  "뷰티/스킨케어",
-  "패션/의류",
-  "생활용품",
-  "건강기능식품",
-  "디지털/앱",
-  "인테리어/리빙",
-  "기타",
-];
-const hookTypeOptions = [
-  "가격정당화형",
-  "가격소구형",
-  "문제제기형",
-  "공감형",
-  "후기/리뷰형",
-  "UGC형",
-  "비포애프터형",
-  "전문가/권위형",
-  "선물명분형",
-  "긴급/한정형",
-  "반전/궁금증형",
-  "상황제안형",
-];
-const appealPointOptions = [
-  "가성비",
-  "선물명분",
-  "고급감",
-  "실속",
-  "불편해소",
-  "체형보완",
-  "성분/효능",
-  "시간절약",
-  "후기신뢰",
-  "희소성",
-  "즉시혜택",
-  "자기관리",
-  "사회적 인정",
-];
+const categoryOptions = ["식품/선물", "뷰티/스킨케어", "패션/의류", "생활용품", "건강기능식품", "디지털/앱", "인테리어/리빙", "기타"];
+const hookTypeOptions = ["가격정당화형", "가격소구형", "문제제기형", "공감형", "후기/리뷰형", "UGC형", "비포애프터형", "전문가/권위형", "선물명분형", "긴급/한정형", "반전/궁금증형", "상황제안형"];
+const appealPointOptions = ["가성비", "선물명분", "고급감", "실속", "불편해소", "체형보완", "성분/효능", "시간절약", "후기신뢰", "희소성", "즉시혜택", "자기관리", "사회적 인정"];
 
 const labelFields: { key: keyof AdImageAnalysisDraft; label: string }[] = [
   { key: "ocrText", label: "이미지 문구" },
@@ -640,23 +525,13 @@ function normalizeProductCategory(...values: string[]) {
   const firstCategory = values.find((value) => categoryOptions.includes(value));
   if (firstCategory) return firstCategory;
 
-  if (
-    /(식품|선물|한우|고기|소고기|돼지고기|갈비|등심|안심|스테이크|정육|육류|과일|복숭아|사과|배|포도|감귤|귤|딸기|수박|참외|멜론|토마토|채소|야채|쌀|잡곡|고구마|감자|옥수수|농산|농가|수산|간식|명절|추석|설날|푸드|food|meat|beef|gift)/i.test(
-      text
-    )
-  )
-    return "식품/선물";
-  if (/(뷰티|화장품|스킨|케어|크림|앰플|향수|메이크업|beauty|cosmetic|skin)/i.test(text))
-    return "뷰티/스킨케어";
-  if (/(패션|의류|옷|룩|자켓|셔츠|신발|가방|주얼리|웨어|fashion|apparel)/i.test(text))
-    return "패션/의류";
+  if (/(식품|선물|한우|고기|소고기|돼지고기|갈비|등심|안심|스테이크|정육|육류|과일|복숭아|사과|배|포도|감귤|귤|딸기|수박|참외|멜론|토마토|채소|야채|쌀|잡곡|고구마|감자|옥수수|농산|농가|수산|간식|명절|추석|설날|푸드|food|meat|beef|gift)/i.test(text)) return "식품/선물";
+  if (/(뷰티|화장품|스킨|케어|크림|앰플|향수|메이크업|beauty|cosmetic|skin)/i.test(text)) return "뷰티/스킨케어";
+  if (/(패션|의류|옷|룩|자켓|셔츠|신발|가방|주얼리|웨어|fashion|apparel)/i.test(text)) return "패션/의류";
   if (/(생활|용품|주방|청소|정리|세제|수납|daily|household)/i.test(text)) return "생활용품";
-  if (/(건강|영양|비타민|유산균|홍삼|오메가|기능식품|health|supplement)/i.test(text))
-    return "건강기능식품";
-  if (/(디지털|앱|어플|소프트웨어|전자|가전|모바일|digital|app|software)/i.test(text))
-    return "디지털/앱";
-  if (/(인테리어|리빙|가구|침구|조명|홈데코|interior|living|furniture)/i.test(text))
-    return "인테리어/리빙";
+  if (/(건강|영양|비타민|유산균|홍삼|오메가|기능식품|health|supplement)/i.test(text)) return "건강기능식품";
+  if (/(디지털|앱|어플|소프트웨어|전자|가전|모바일|digital|app|software)/i.test(text)) return "디지털/앱";
+  if (/(인테리어|리빙|가구|침구|조명|홈데코|interior|living|furniture)/i.test(text)) return "인테리어/리빙";
 
   return "기타";
 }
@@ -721,13 +596,8 @@ function normalizeProductRenderEffect(effect: ProductImageRenderEffect): Product
 
 function buildSourceImageCandidates(extracted: ExtractedProductInfo): SourceImageCandidate[] {
   const createdAt = new Date().toISOString();
-  const heroImage =
-    extracted.heroImage || extracted.mainImage || extracted.galleryImages?.[0] || "";
-  const detailImages = (
-    extracted.detailImages?.length ? extracted.detailImages : (extracted.galleryImages ?? [])
-  )
-    .filter((imagePath) => imagePath && imagePath !== heroImage)
-    .slice(0, 30);
+  const heroImage = extracted.heroImage || extracted.mainImage || extracted.galleryImages?.[0] || "";
+  const detailImages = (extracted.detailImages?.length ? extracted.detailImages : (extracted.galleryImages ?? [])).filter((imagePath) => imagePath && imagePath !== heroImage).slice(0, 30);
   const candidates: SourceImageCandidate[] = [];
 
   if (heroImage) {
@@ -757,17 +627,8 @@ function buildSourceImageCandidates(extracted: ExtractedProductInfo): SourceImag
   return candidates;
 }
 
-function extractedProductImagePaths(
-  extracted: ExtractedProductInfo,
-  sourceCandidates: SourceImageCandidate[] = []
-) {
-  return compactUniqueImagePaths([
-    extracted.mainImage,
-    extracted.heroImage,
-    ...(extracted.galleryImages ?? []),
-    ...(extracted.detailImages ?? []),
-    ...sourceCandidates.map((candidate) => candidate.imagePath),
-  ]);
+function extractedProductImagePaths(extracted: ExtractedProductInfo, sourceCandidates: SourceImageCandidate[] = []) {
+  return compactUniqueImagePaths([extracted.mainImage, extracted.heroImage, ...(extracted.galleryImages ?? []), ...(extracted.detailImages ?? []), ...sourceCandidates.map((candidate) => candidate.imagePath)]);
 }
 
 const emptyBannerCopy: GeneratedAdCopy = {
@@ -787,8 +648,7 @@ const legacyFoodImpactTemplateOption: BannerTemplateDefinition = {
   name: "기존 식품 임팩트 템플릿",
   category: "식품/선물",
   templateGroup: "food-legacy",
-  description:
-    "기존 food-impact-hero-001 템플릿입니다. 새 템플릿과 별도로 원래 형태를 선택할 수 있습니다.",
+  description: "기존 food-impact-hero-001 템플릿입니다. 새 템플릿과 별도로 원래 형태를 선택할 수 있습니다.",
   recommendedHookTypes: ["기존", "가격정당화형", "공감형"],
   recommendedAppealPoints: ["가성비", "구성", "즉시구매"],
   style: foodImpactHeroTemplate.style as Record<string, string | number | boolean>,
@@ -803,55 +663,24 @@ const legacyFoodImpactTemplateOption: BannerTemplateDefinition = {
   },
 };
 
-const allCreatableTemplates = Array.from(
-  new Map(
-    [
-      ...beautyCategoryTemplates,
-      ...healthCategoryTemplates,
-      ...qualityFoodTemplates,
-      ...foodCategoryTemplates,
-      legacyFoodImpactTemplateOption,
-    ].map((template) => [template.id, template])
-  ).values()
-);
+const allCreatableTemplates = Array.from(new Map([...beautyCategoryTemplates, ...healthCategoryTemplates, ...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption].map((template) => [template.id, template])).values());
 
-export function MvpDashboard({
-  activeFeature = "creative-production",
-  initialActiveMenu = "광고 생성",
-  initialWorkflowStep = "product",
-  initialCreationHandoff,
-  initialProductUrl = "",
-  initialGenerated,
-  initialImages,
-}: Props) {
+export function MvpDashboard({ activeFeature = "creative-production", initialActiveMenu = "광고 생성", initialWorkflowStep = "product", initialCreationHandoff, initialProductUrl = "", initialGenerated, initialImages }: Props) {
   const handoffProductInfo = initialCreationHandoff?.productInfo;
-  const initialLandingUrl =
-    handoffProductInfo?.landingUrl || initialCreationHandoff?.productUrl || initialProductUrl;
+  const initialLandingUrl = handoffProductInfo?.landingUrl || initialCreationHandoff?.productUrl || initialProductUrl;
   const handoffImagePaths = initialCreationHandoff?.productImagePaths ?? emptyRecommendationIds;
-  const recommendedTemplateIds =
-    initialCreationHandoff?.recommendedTemplateIds ?? emptyRecommendationIds;
-  const recommendedReferenceLabelIds =
-    initialCreationHandoff?.recommendedReferenceLabelIds ?? emptyRecommendationIds;
-  const initialAdvertiserName =
-    advertiserOptions.find(
-      (option) => option.guideId === initialCreationHandoff?.matchedCopyGuideId
-    )?.value || "";
+  const recommendedTemplateIds = initialCreationHandoff?.recommendedTemplateIds ?? emptyRecommendationIds;
+  const recommendedReferenceLabelIds = initialCreationHandoff?.recommendedReferenceLabelIds ?? emptyRecommendationIds;
+  const initialAdvertiserName = advertiserOptions.find((option) => option.guideId === initialCreationHandoff?.matchedCopyGuideId)?.value || "";
   const handoffAnalysisSource = initialCreationHandoff?.creativeContext?.analysisSource;
-  const handoffSourceLabel =
-    handoffAnalysisSource === "SITE_PUBLIC_DATA"
-      ? "사이트 공개정보 기반 후보"
-      : handoffAnalysisSource === "BIGQUERY"
-        ? "데이터 기반 광고 기회"
-        : "업체 분석 추천";
+  const handoffSourceLabel = handoffAnalysisSource === "SITE_PUBLIC_DATA" ? "사이트 공개정보 기반 후보" : handoffAnalysisSource === "BIGQUERY" ? "데이터 기반 광고 기회" : "업체 분석 추천";
   const [activeMenu, setActiveMenu] = useState<MvpMenu>(initialActiveMenu);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [recentProducts, setRecentProducts] = useState<RecentProductSummary[]>([]);
   const [images, setImages] = useState(initialImages);
   const [generated, setGenerated] = useState(initialGenerated);
   const [labels, setLabels] = useState<AdImageLabel[]>([]);
-  const [selectedImage, setSelectedImage] = useState<CollectedAdImage | null>(
-    initialImages[0] ?? null
-  );
+  const [selectedImage, setSelectedImage] = useState<CollectedAdImage | null>(initialImages[0] ?? null);
   const [aiDraft, setAiDraft] = useState<AdImageAnalysisDraft>(emptyDraft);
   const [finalLabel, setFinalLabel] = useState<AdImageAnalysisDraft>(emptyDraft);
   const [labelStatus, setLabelStatus] = useState<Status>({
@@ -864,45 +693,33 @@ export function MvpDashboard({
     landingUrl: initialLandingUrl,
   }));
   const [selectedAdvertiserName, setSelectedAdvertiserName] = useState(initialAdvertiserName);
-  const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState(
-    initialCreationHandoff ? initialLandingUrl : ""
-  );
+  const [lastLoadedProductUrl, setLastLoadedProductUrl] = useState(initialCreationHandoff ? initialLandingUrl : "");
   const [generationPlanConfirmed, setGenerationPlanConfirmed] = useState(false);
   const [productAnalysisRevision, setProductAnalysisRevision] = useState(0);
   const restoredProductUrlRef = useRef("");
-  const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(
-    () => ({
-      ...emptySourceImageSelection,
-      candidates: handoffProductInfo?.sourceImageCandidates ?? [],
-      selectedSourceImageId: handoffProductInfo?.selectedSourceImageId,
-      selectedSourceImagePath: handoffProductInfo?.selectedSourceImagePath,
-    })
-  );
+  const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(() => ({
+    ...emptySourceImageSelection,
+    candidates: handoffProductInfo?.sourceImageCandidates ?? [],
+    selectedSourceImageId: handoffProductInfo?.selectedSourceImageId,
+    selectedSourceImagePath: handoffProductInfo?.selectedSourceImagePath,
+  }));
   const [sourceImageStatus, setSourceImageStatus] = useState<Status>({
     kind: "idle",
     message: "GPT 이미지 생성 기준이 될 원본 이미지를 선택해주세요.",
   });
   const [productExtractStatus, setProductExtractStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
-    message: initialCreationHandoff
-      ? `${handoffSourceLabel}에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다.`
-      : initialLandingUrl
-        ? "광고 분석 결과에서 선택한 상품 URL을 자동으로 입력했습니다. 상품 분석하기를 눌러 상세정보를 불러오세요."
-        : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
+    message: initialCreationHandoff ? `${handoffSourceLabel}에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다.` : initialLandingUrl ? "광고 분석 결과에서 선택한 상품 URL을 자동으로 입력했습니다. 상품 분석하기를 눌러 상세정보를 불러오세요." : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
   });
   const [strategyStatus, setStrategyStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
-    message: initialCreationHandoff?.selectedContentAngle
-      ? `${handoffSourceLabel} 전략 '${initialCreationHandoff.selectedContentAngle.name}'을 상품 브리프에 반영했습니다.`
-      : "상품 정보를 불러오면 관련 내부 신호를 자동으로 찾아 후킹을 제안합니다.",
+    message: initialCreationHandoff?.selectedContentAngle ? `${handoffSourceLabel} 전략 '${initialCreationHandoff.selectedContentAngle.name}'을 상품 브리프에 반영했습니다.` : "상품 정보를 불러오면 관련 내부 신호를 자동으로 찾아 후킹을 제안합니다.",
   });
   const [copyResult, setCopyResult] = useState<GeneratedAdCopy | null>(null);
   const [automaticCopySet, setAutomaticCopySet] = useState<GeneratedAdCopy[]>([]);
   const [copyStatus, setCopyStatus] = useState<Status>({
     kind: "idle",
-    message: initialCreationHandoff
-      ? "분석 추천 방향을 반영해 광고문구 6개를 자동 생성하세요."
-      : "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
+    message: initialCreationHandoff ? "분석 추천 방향을 반영해 광고문구 6개를 자동 생성하세요." : "상품 URL을 입력하면 저장된 라벨 데이터를 참고해 광고 문구를 생성합니다.",
   });
   const [templateFittedCopy, setTemplateFittedCopy] = useState<TemplateFittedCopy | null>(null);
   const [masterCopy, setMasterCopy] = useState<GeneratedAdCopy>(emptyBannerCopy);
@@ -931,22 +748,15 @@ export function MvpDashboard({
     kind: "idle",
     message: "문구를 만든 뒤 상품과 광고 전략에 맞는 비주얼 방향 3개를 추천합니다.",
   });
-  const [backgroundRecommendations, setBackgroundRecommendations] = useState<
-    BackgroundRecommendation[]
-  >([]);
-  const [recentBackgroundRecommendationIds, setRecentBackgroundRecommendationIds] = useState<
-    string[]
-  >([]);
-  const [backgroundAudienceProfile, setBackgroundAudienceProfile] =
-    useState<AudienceProfile | null>(null);
+  const [backgroundRecommendations, setBackgroundRecommendations] = useState<BackgroundRecommendation[]>([]);
+  const [recentBackgroundRecommendationIds, setRecentBackgroundRecommendationIds] = useState<string[]>([]);
+  const [backgroundAudienceProfile, setBackgroundAudienceProfile] = useState<AudienceProfile | null>(null);
   const [selectedLibraryBackgroundId, setSelectedLibraryBackgroundId] = useState("");
   const [backgroundRecommendationStatus, setBackgroundRecommendationStatus] = useState<Status>({
     kind: "idle",
     message: "대표 광고문구가 적용되면 합성하기 좋은 배경을 자동 추천합니다.",
   });
-  const [backgroundRecommendationHistory, setBackgroundRecommendationHistory] = useState<
-    BackgroundRecommendationHistory[]
-  >(() => {
+  const [backgroundRecommendationHistory, setBackgroundRecommendationHistory] = useState<BackgroundRecommendationHistory[]>(() => {
     if (typeof window === "undefined") return [];
     try {
       const saved = window.sessionStorage.getItem("adatlas-background-recommendation-history");
@@ -956,19 +766,14 @@ export function MvpDashboard({
     }
   });
   const [adaptiveLayoutPlans, setAdaptiveLayoutPlans] = useState<AdaptiveCreativePlan[]>([]);
-  const [automaticAdaptiveLayoutPlans, setAutomaticAdaptiveLayoutPlans] = useState<
-    AdaptiveCreativePlan[]
-  >([]);
+  const [automaticAdaptiveLayoutPlans, setAutomaticAdaptiveLayoutPlans] = useState<AdaptiveCreativePlan[]>([]);
   const [selectedAdaptivePlanId, setSelectedAdaptivePlanId] = useState("");
   const [adaptiveLayoutStatus, setAdaptiveLayoutStatus] = useState<Status>({
     kind: "idle",
     message: "배경을 선택하면 서로 다른 위계의 레이아웃 3안을 만듭니다.",
   });
-  const [creativeGenerationMode, setCreativeGenerationMode] =
-    useState<CreativeGenerationMode>("hook-based");
-  const [adaptiveCreativeResults, setAdaptiveCreativeResults] = useState<
-    AdaptiveCreativeRenderResult[]
-  >([]);
+  const [creativeGenerationMode, setCreativeGenerationMode] = useState<CreativeGenerationMode>("hook-based");
+  const [adaptiveCreativeResults, setAdaptiveCreativeResults] = useState<AdaptiveCreativeRenderResult[]>([]);
   const [adaptiveCreativeGenerating, setAdaptiveCreativeGenerating] = useState(false);
   const [bannerTextColors, setBannerTextColors] = useState<BannerTextColorState>({
     bodyColor: "#111111",
@@ -999,12 +804,8 @@ export function MvpDashboard({
   const [gptTextAdAsset, setGptTextAdAsset] = useState<GeneratedImageAsset | null>(null);
   const [gptReferenceImages, setGptReferenceImages] = useState<SourceImageCandidate[]>([]);
   const [gptImageCandidates, setGptImageCandidates] = useState<GptImageCandidate[]>([]);
-  const [selectedGptImageCandidateId, setSelectedGptImageCandidateId] = useState<string | null>(
-    null
-  );
-  const [selectedImageFailureReasons, setSelectedImageFailureReasons] = useState<
-    GptImageFailureReason[]
-  >([]);
+  const [selectedGptImageCandidateId, setSelectedGptImageCandidateId] = useState<string | null>(null);
+  const [selectedImageFailureReasons, setSelectedImageFailureReasons] = useState<GptImageFailureReason[]>([]);
   const [imageCustomFeedback, setImageCustomFeedback] = useState("");
   const [imageRevisionPrompt, setImageRevisionPrompt] = useState("");
   const [numImageCandidates, setNumImageCandidates] = useState(1);
@@ -1020,13 +821,10 @@ export function MvpDashboard({
     kind: "idle",
     message: "참고 이미지는 분위기/구도 참고용으로만 사용됩니다.",
   });
-  const [imageGenerationProvider, setImageGenerationProvider] =
-    useState<ImageGenerationProvider>("openai");
+  const [imageGenerationProvider, setImageGenerationProvider] = useState<ImageGenerationProvider>("openai");
   const [gptImageSourceMode, setGptImageSourceMode] = useState<GptImageSourceMode>("image-edit");
-  const [gptPreservationMode, setGptPreservationMode] =
-    useState<GptImagePreservationMode>("preserve-product");
-  const [gptPromptTemplateMode, setGptPromptTemplateMode] =
-    useState<GptPromptTemplateMode>("visual-only");
+  const [gptPreservationMode, setGptPreservationMode] = useState<GptImagePreservationMode>("preserve-product");
+  const [gptPromptTemplateMode, setGptPromptTemplateMode] = useState<GptPromptTemplateMode>("visual-only");
   const [gptPromptState, setGptPromptState] = useState<GptCustomPromptState>({
     promptMode: "auto",
     autoPrompt: "",
@@ -1046,12 +844,8 @@ export function MvpDashboard({
     ...emptyProductImageState,
     originalImagePath: handoffImagePaths[0] || handoffProductInfo?.productImagePath || "",
   }));
-  const activeProductImagePathRef = useRef(
-    handoffImagePaths[0] || handoffProductInfo?.productImagePath || ""
-  );
-  const [cutoutProductEffect, setCutoutProductEffect] = useState<ProductImageRenderEffect>(
-    defaultCutoutProductEffect
-  );
+  const activeProductImagePathRef = useRef(handoffImagePaths[0] || handoffProductInfo?.productImagePath || "");
+  const [cutoutProductEffect, setCutoutProductEffect] = useState<ProductImageRenderEffect>(defaultCutoutProductEffect);
   const [productImageProcessStatus, setProductImageProcessStatus] = useState<Status>({
     kind: "idle",
     message: "AI 전체 광고는 상세페이지 원본 이미지를 그대로 참조합니다.",
@@ -1066,9 +860,7 @@ export function MvpDashboard({
   const [mainDetailScrollPercent, setMainDetailScrollPercent] = useState(0);
   const [selectedHeadlineFontId, setSelectedHeadlineFontId] = useState(systemFontOptions[0].id);
   const [selectedBodyFontId, setSelectedBodyFontId] = useState("noto-sans-kr");
-  const [selectedTemplateId, setSelectedTemplateId] = useState(
-    recommendedTemplateIds[0] || "food-template-001"
-  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState(recommendedTemplateIds[0] || "food-template-001");
   const [generatedBannerPath, setGeneratedBannerPath] = useState("");
   const [generatedBannerAsset, setGeneratedBannerAsset] = useState<CreativeAsset | null>(null);
   const [renderDiagnostics, setRenderDiagnostics] = useState<RenderDiagnostics | null>(null);
@@ -1088,10 +880,7 @@ export function MvpDashboard({
   const [hookTypeFilter, setHookTypeFilter] = useState("all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [labelStateFilter, setLabelStateFilter] = useState("all");
-  const labelsByImageId = useMemo(
-    () => new Map(labels.map((label) => [label.imageId, label])),
-    [labels]
-  );
+  const labelsByImageId = useMemo(() => new Map(labels.map((label) => [label.imageId, label])), [labels]);
   const creativeWorkflow = useCreativeWorkflow({
     productInfo,
     allReferences: labels,
@@ -1099,14 +888,7 @@ export function MvpDashboard({
     advertiserName: selectedAdvertiserName,
   });
   const autoMatchedReferenceLabels = creativeWorkflow.references;
-  const gptGenerationReferenceImagePaths = useMemo(
-    () =>
-      compactUniqueImagePaths([
-        ...gptReferenceImages.map((image) => image.imagePath),
-        ...autoMatchedReferenceLabels.map((label) => label.localImagePath),
-      ]).slice(0, 5),
-    [autoMatchedReferenceLabels, gptReferenceImages]
-  );
+  const gptGenerationReferenceImagePaths = useMemo(() => compactUniqueImagePaths([...gptReferenceImages.map((image) => image.imagePath), ...autoMatchedReferenceLabels.map((label) => label.localImagePath)]).slice(0, 5), [autoMatchedReferenceLabels, gptReferenceImages]);
   const backgroundImageOptions = useMemo(() => {
     const seen = new Set<string>();
     const sources = [
@@ -1125,11 +907,7 @@ export function MvpDashboard({
       seen.add(source.value);
       return true;
     });
-  }, [
-    productInfo.extractedGalleryImages,
-    productInfo.extractedMainImage,
-    productInfo.productImagePath,
-  ]);
+  }, [productInfo.extractedGalleryImages, productInfo.extractedMainImage, productInfo.productImagePath]);
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setMainDetailScrollPercent(0);
@@ -1138,16 +916,11 @@ export function MvpDashboard({
     return () => window.cancelAnimationFrame(frame);
   }, [backgroundImageOptions.length, mainImageSourceMode]);
   const sourceImageCandidatesForDisplay = useMemo(() => {
-    const existing = sourceImageSelection.candidates.length
-      ? sourceImageSelection.candidates
-      : (productInfo.sourceImageCandidates ?? []);
+    const existing = sourceImageSelection.candidates.length ? sourceImageSelection.candidates : (productInfo.sourceImageCandidates ?? []);
 
     if (existing.length) {
       const seen = new Set(existing.map((candidate) => candidate.imagePath));
-      return [
-        ...existing,
-        ...fixedSourceReferenceImages.filter((candidate) => !seen.has(candidate.imagePath)),
-      ];
+      return [...existing, ...fixedSourceReferenceImages.filter((candidate) => !seen.has(candidate.imagePath))];
     }
 
     const createdAt = new Date().toISOString();
@@ -1164,24 +937,8 @@ export function MvpDashboard({
       ...fixedSourceReferenceImages,
     ];
   }, [backgroundImageOptions, productInfo.sourceImageCandidates, sourceImageSelection.candidates]);
-  const selectedSourceImage =
-    sourceImageCandidatesForDisplay.find(
-      (candidate) => candidate.id === sourceImageSelection.selectedSourceImageId
-    ) ||
-    sourceImageCandidatesForDisplay.find(
-      (candidate) => candidate.imagePath === sourceImageSelection.selectedSourceImagePath
-    ) ||
-    sourceImageCandidatesForDisplay.find(
-      (candidate) => candidate.imagePath === productInfo.selectedSourceImagePath
-    ) ||
-    sourceImageCandidatesForDisplay[0];
-  const selectedSourceImagePath =
-    selectedSourceImage?.imagePath ||
-    sourceImageSelection.selectedSourceImagePath ||
-    productInfo.selectedSourceImagePath ||
-    productInfo.productImagePath ||
-    backgroundImageOptions[0]?.value ||
-    "";
+  const selectedSourceImage = sourceImageCandidatesForDisplay.find((candidate) => candidate.id === sourceImageSelection.selectedSourceImageId) || sourceImageCandidatesForDisplay.find((candidate) => candidate.imagePath === sourceImageSelection.selectedSourceImagePath) || sourceImageCandidatesForDisplay.find((candidate) => candidate.imagePath === productInfo.selectedSourceImagePath) || sourceImageCandidatesForDisplay[0];
+  const selectedSourceImagePath = selectedSourceImage?.imagePath || sourceImageSelection.selectedSourceImagePath || productInfo.selectedSourceImagePath || productInfo.productImagePath || backgroundImageOptions[0]?.value || "";
   const activeProductRepresentation: ProductRepresentation = useMemo(
     () =>
       productImageState.representation ||
@@ -1193,64 +950,23 @@ export function MvpDashboard({
         packageType: productInfo.packageType,
         imageType: productInfo.imageType,
       }),
-    [
-      productImageState.representation,
-      productInfo.category,
-      productInfo.extractedDescription,
-      productInfo.imageType,
-      productInfo.mainBenefit,
-      productInfo.packageType,
-      productInfo.productName,
-      productInfo.productRepresentation,
-    ]
+    [productImageState.representation, productInfo.category, productInfo.extractedDescription, productInfo.imageType, productInfo.mainBenefit, productInfo.packageType, productInfo.productName, productInfo.productRepresentation]
   );
-  const selectedBackgroundRecommendation = useMemo(
-    () =>
-      backgroundRecommendations.find(
-        (recommendation) => recommendation.background.id === selectedLibraryBackgroundId
-      ) || null,
-    [backgroundRecommendations, selectedLibraryBackgroundId]
-  );
+  const selectedBackgroundRecommendation = useMemo(() => backgroundRecommendations.find((recommendation) => recommendation.background.id === selectedLibraryBackgroundId) || null, [backgroundRecommendations, selectedLibraryBackgroundId]);
   const selectedLibraryBackground = selectedBackgroundRecommendation?.background || null;
-  const selectedAdaptivePlan =
-    adaptiveLayoutPlans.find((plan) => plan.id === selectedAdaptivePlanId) ||
-    adaptiveLayoutPlans[0] ||
-    null;
-  const currentBackgroundSource =
-    selectedLibraryBackground?.file ||
-    (productInfo.backgroundMode === "auto-detail-blur-dark"
-      ? productInfo.selectedBackgroundSource ||
-        productInfo.productImagePath ||
-        productInfo.extractedMainImage ||
-        ""
-      : productInfo.backgroundMode === "selected-detail-blur-dark"
-        ? productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value || ""
-        : "");
-  const currentBackgroundMode: BackgroundMode = currentBackgroundSource
-    ? "selected-detail-blur-dark"
-    : productInfo.backgroundMode || "none";
+  const selectedAdaptivePlan = adaptiveLayoutPlans.find((plan) => plan.id === selectedAdaptivePlanId) || adaptiveLayoutPlans[0] || null;
+  const currentBackgroundSource = selectedLibraryBackground?.file || (productInfo.backgroundMode === "auto-detail-blur-dark" ? productInfo.selectedBackgroundSource || productInfo.productImagePath || productInfo.extractedMainImage || "" : productInfo.backgroundMode === "selected-detail-blur-dark" ? productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value || "" : "");
+  const currentBackgroundMode: BackgroundMode = currentBackgroundSource ? "selected-detail-blur-dark" : productInfo.backgroundMode || "none";
   const currentBackgroundComposition = {
     sourceId: selectedLibraryBackground?.id || "manual-or-auto-background",
     sourceType: selectedLibraryBackground ? "library" : "manual",
     hookType: creativeWorkflow.selectedStrategy?.hookType,
-    layoutPreset:
-      selectedAdaptivePlan?.layoutType || selectedBackgroundRecommendation?.automaticLayout,
-    productPosition:
-      selectedLibraryBackground?.productPosition ||
-      creativeWorkflow.selectedStrategy?.productPosition,
-    textSafeArea:
-      selectedLibraryBackground?.textSafeArea || creativeWorkflow.selectedStrategy?.textSafeArea,
+    layoutPreset: selectedAdaptivePlan?.layoutType || selectedBackgroundRecommendation?.automaticLayout,
+    productPosition: selectedLibraryBackground?.productPosition || creativeWorkflow.selectedStrategy?.productPosition,
+    textSafeArea: selectedLibraryBackground?.textSafeArea || creativeWorkflow.selectedStrategy?.textSafeArea,
   };
-  const originalMainProductImage =
-    mainImageSourceMode === "upload"
-      ? uploadedMainImageDataUrl
-      : mainImageSourceMode === "gpt"
-        ? gptMainImagePath
-        : productInfo.productImagePath;
-  const baseCurrentMainProductImage =
-    productImageState.selectedImageMode === "original"
-      ? originalMainProductImage
-      : getSelectedProductImagePath(productImageState) || originalMainProductImage;
+  const originalMainProductImage = mainImageSourceMode === "upload" ? uploadedMainImageDataUrl : mainImageSourceMode === "gpt" ? gptMainImagePath : productInfo.productImagePath;
+  const baseCurrentMainProductImage = productImageState.selectedImageMode === "original" ? originalMainProductImage : getSelectedProductImagePath(productImageState) || originalMainProductImage;
   const resolvedProductImages = useMemo(
     () =>
       resolveCurrentProductImagePaths({
@@ -1263,52 +979,17 @@ export function MvpDashboard({
         gptMainImagePath,
         backgroundImagePath: currentBackgroundSource,
       }),
-    [
-      currentBackgroundSource,
-      gptMainImagePath,
-      productImageState,
-      productInfo,
-      selectedAdImages,
-      selectedSourceImagePath,
-      sourceImageSelection,
-      uploadedMainImageDataUrl,
-    ]
+    [currentBackgroundSource, gptMainImagePath, productImageState, productInfo, selectedAdImages, selectedSourceImagePath, sourceImageSelection, uploadedMainImageDataUrl]
   );
   const currentProductImagePaths = resolvedProductImages.productImagePaths;
   const hookExperimentProductImagePaths = useMemo(() => {
-    const paths = compactUniqueImagePaths([
-      ...selectedAdImages.selectedImagePaths,
-      productInfo.extractedMainImage,
-      ...(productInfo.extractedGalleryImages || []),
-      productInfo.productImagePath,
-      ...(productInfo.productImagePaths || []),
-      ...(productInfo.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
-      uploadedMainImageDataUrl,
-    ]);
-    const originals = paths.filter(
-      (imagePath) => !/\/(?:processed-products|product-cutouts)\//i.test(imagePath)
-    );
+    const paths = compactUniqueImagePaths([...selectedAdImages.selectedImagePaths, productInfo.extractedMainImage, ...(productInfo.extractedGalleryImages || []), productInfo.productImagePath, ...(productInfo.productImagePaths || []), ...(productInfo.sourceImageCandidates || []).map((candidate) => candidate.imagePath), uploadedMainImageDataUrl]);
+    const originals = paths.filter((imagePath) => !/\/(?:processed-products|product-cutouts)\//i.test(imagePath));
     return (originals.length ? originals : paths).slice(0, 12);
-  }, [
-    selectedAdImages.selectedImagePaths,
-    productInfo.extractedGalleryImages,
-    productInfo.extractedMainImage,
-    productInfo.productImagePath,
-    productInfo.productImagePaths,
-    productInfo.sourceImageCandidates,
-    uploadedMainImageDataUrl,
-  ]);
-  const currentMainProductImage =
-    resolvedProductImages.productImagePath || baseCurrentMainProductImage;
-  const currentSecondaryProductImage =
-    resolvedProductImages.secondaryProductImagePath ||
-    productInfo.secondaryProductImagePath ||
-    backgroundImageOptions.find((option) => option.value !== originalMainProductImage)?.value ||
-    currentMainProductImage;
-  const selectedVisualDirection = useMemo(
-    () => visualDirections.find((direction) => direction.id === selectedVisualDirectionId) || null,
-    [selectedVisualDirectionId, visualDirections]
-  );
+  }, [selectedAdImages.selectedImagePaths, productInfo.extractedGalleryImages, productInfo.extractedMainImage, productInfo.productImagePath, productInfo.productImagePaths, productInfo.sourceImageCandidates, uploadedMainImageDataUrl]);
+  const currentMainProductImage = resolvedProductImages.productImagePath || baseCurrentMainProductImage;
+  const currentSecondaryProductImage = resolvedProductImages.secondaryProductImagePath || productInfo.secondaryProductImagePath || backgroundImageOptions.find((option) => option.value !== originalMainProductImage)?.value || currentMainProductImage;
+  const selectedVisualDirection = useMemo(() => visualDirections.find((direction) => direction.id === selectedVisualDirectionId) || null, [selectedVisualDirectionId, visualDirections]);
   const creativeQualityScore = useMemo(
     () =>
       selectedVisualDirection
@@ -1323,52 +1004,19 @@ export function MvpDashboard({
   );
   const categoryTemplates = useMemo(() => {
     const category = productInfo.category || "";
-    const productContext = [
-      category,
-      productInfo.productName,
-      productInfo.mainBenefit,
-      productInfo.extractedDescription,
-    ].join(" ");
+    const productContext = [category, productInfo.productName, productInfo.mainBenefit, productInfo.extractedDescription].join(" ");
     const normalizedCategory = productContext.toLowerCase();
-    const isFoodGiftCategory =
-      category === "식품/선물" ||
-      /식품|선물|농산|축산|한우|정육|육류|과일|채소/.test(productContext) ||
-      normalizedCategory.includes("food") ||
-      normalizedCategory.includes("beef");
-    const isBeautyCategory =
-      /뷰티|화장품|스킨|바디|샤워젤|바디워시|클렌징|퍼스널케어|멘톨|쿨링/.test(productContext) ||
-      /beauty|cosmetic|shower\s*gel|body\s*wash|personal\s*care/.test(normalizedCategory);
-    const isHealthCategory =
-      /건강기능|영양제|비타민|프로바이오틱스/.test(productContext) ||
-      normalizedCategory.includes("supplement") ||
-      normalizedCategory.includes("wellness");
-    const preferredTemplates = isHealthCategory
-      ? healthCategoryTemplates
-      : isBeautyCategory
-        ? beautyCategoryTemplates
-        : isFoodGiftCategory
-          ? [...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption]
-          : [];
+    const isFoodGiftCategory = category === "식품/선물" || /식품|선물|농산|축산|한우|정육|육류|과일|채소/.test(productContext) || normalizedCategory.includes("food") || normalizedCategory.includes("beef");
+    const isBeautyCategory = /뷰티|화장품|스킨|바디|샤워젤|바디워시|클렌징|퍼스널케어|멘톨|쿨링/.test(productContext) || /beauty|cosmetic|shower\s*gel|body\s*wash|personal\s*care/.test(normalizedCategory);
+    const isHealthCategory = /건강기능|영양제|비타민|프로바이오틱스/.test(productContext) || normalizedCategory.includes("supplement") || normalizedCategory.includes("wellness");
+    const preferredTemplates = isHealthCategory ? healthCategoryTemplates : isBeautyCategory ? beautyCategoryTemplates : isFoodGiftCategory ? [...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption] : [];
     const preferredIds = new Set(preferredTemplates.map((template) => template.id));
-    return [
-      ...preferredTemplates,
-      ...allCreatableTemplates.filter((template) => !preferredIds.has(template.id)),
-    ];
-  }, [
-    productInfo.category,
-    productInfo.extractedDescription,
-    productInfo.mainBenefit,
-    productInfo.productName,
-  ]);
-  const selectedTemplate =
-    categoryTemplates.find((template) => template.id === selectedTemplateId) ??
-    categoryTemplates[0];
+    return [...preferredTemplates, ...allCreatableTemplates.filter((template) => !preferredIds.has(template.id))];
+  }, [productInfo.category, productInfo.extractedDescription, productInfo.mainBenefit, productInfo.productName]);
+  const selectedTemplate = categoryTemplates.find((template) => template.id === selectedTemplateId) ?? categoryTemplates[0];
   useEffect(() => {
     if (!selectedTemplate?.id) return;
-    const recommendedFonts = resolveTemplateFontAssignment(
-      selectedTemplate.id,
-      headlineStyleOverrides.headlineFontPreset
-    );
+    const recommendedFonts = resolveTemplateFontAssignment(selectedTemplate.id, headlineStyleOverrides.headlineFontPreset);
     const frame = window.requestAnimationFrame(() => {
       setSelectedHeadlineFontId(recommendedFonts.headline.id);
       setSelectedBodyFontId(recommendedFonts.body.id);
@@ -1385,33 +1033,10 @@ export function MvpDashboard({
       }),
     [bannerCopy, creativeWorkflow.adBrief, selectedCopyLimits]
   );
-  const hasMasterCopy = Boolean(
-    masterCopy.headline ||
-    masterCopy.bodyCopy ||
-    masterCopy.highlightCopy ||
-    masterCopy.bottomBarCopy
-  );
-  const selectedTemplateCopyPreview = templateCopyPreviews.find(
-    (preview) => preview.templateId === selectedTemplate?.id
-  );
-  const selectedAdvertiserOption =
-    advertiserOptions.find((option) => option.value === selectedAdvertiserName) ??
-    advertiserOptions[0];
-  const slotMaxChars = (
-    key: "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price"
-  ) =>
-    selectedCopyLimits?.[key]?.maxChars ||
-    (key === "headline"
-      ? 14
-      : key === "bodyCopy"
-        ? 32
-        : key === "highlightCopy"
-          ? 24
-          : key === "bottomBarCopy"
-            ? 28
-            : key === "cta"
-              ? 8
-              : 12);
+  const hasMasterCopy = Boolean(masterCopy.headline || masterCopy.bodyCopy || masterCopy.highlightCopy || masterCopy.bottomBarCopy);
+  const selectedTemplateCopyPreview = templateCopyPreviews.find((preview) => preview.templateId === selectedTemplate?.id);
+  const selectedAdvertiserOption = advertiserOptions.find((option) => option.value === selectedAdvertiserName) ?? advertiserOptions[0];
+  const slotMaxChars = (key: "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price") => selectedCopyLimits?.[key]?.maxChars || (key === "headline" ? 14 : key === "bodyCopy" ? 32 : key === "highlightCopy" ? 24 : key === "bottomBarCopy" ? 28 : key === "cta" ? 8 : 12);
   const autoGptImagePrompt = useMemo(() => {
     const reference = autoMatchedReferenceLabels[0]?.finalLabel;
     return buildAutoImagePrompt({
@@ -1438,32 +1063,9 @@ export function MvpDashboard({
       preservationMode: gptPreservationMode,
       customPromptNote: gptPromptState.customPromptNote,
     }).promptText;
-  }, [
-    bannerCopy,
-    gptPreservationMode,
-    gptGenerationReferenceImagePaths,
-    gptPromptState.customPromptNote,
-    gptPromptTemplateMode,
-    productInfo.category,
-    productInfo.discountInfo,
-    productInfo.mainBenefit,
-    productInfo.price,
-    productInfo.productName,
-    productInfo.targetCustomer,
-    copyResult?.hookType,
-    autoMatchedReferenceLabels,
-    selectedSourceImagePath,
-  ]);
-  const finalGptImagePrompt =
-    gptPromptState.promptMode === "custom" && gptPromptState.customPrompt.trim()
-      ? gptPromptState.customPrompt.trim()
-      : autoGptImagePrompt.trim();
-  const selectedGptImageCandidate = useMemo(
-    () =>
-      gptImageCandidates.find((candidate) => candidate.id === selectedGptImageCandidateId) ||
-      gptImageCandidates[0],
-    [gptImageCandidates, selectedGptImageCandidateId]
-  );
+  }, [bannerCopy, gptPreservationMode, gptGenerationReferenceImagePaths, gptPromptState.customPromptNote, gptPromptTemplateMode, productInfo.category, productInfo.discountInfo, productInfo.mainBenefit, productInfo.price, productInfo.productName, productInfo.targetCustomer, copyResult?.hookType, autoMatchedReferenceLabels, selectedSourceImagePath]);
+  const finalGptImagePrompt = gptPromptState.promptMode === "custom" && gptPromptState.customPrompt.trim() ? gptPromptState.customPrompt.trim() : autoGptImagePrompt.trim();
+  const selectedGptImageCandidate = useMemo(() => gptImageCandidates.find((candidate) => candidate.id === selectedGptImageCandidateId) || gptImageCandidates[0], [gptImageCandidates, selectedGptImageCandidateId]);
   const analyzedImages = images.filter((image) => labelsByImageId.has(image.id));
   const filteredImages = images.filter((image) => {
     const label = labelsByImageId.get(image.id);
@@ -1473,24 +1075,10 @@ export function MvpDashboard({
     const platform = String(image.sourcePlatform || "").toLowerCase();
     const isLabeled = labelsByImageId.has(image.id);
 
-    return (
-      (categoryFilter === "all" || category === categoryFilter) &&
-      (hookTypeFilter === "all" || hookType === hookTypeFilter) &&
-      (appealPointFilter === "all" || appealPoint === appealPointFilter) &&
-      (platformFilter === "all" || platform === platformFilter) &&
-      (labelStateFilter === "all" || (labelStateFilter === "done" ? isLabeled : !isLabeled))
-    );
+    return (categoryFilter === "all" || category === categoryFilter) && (hookTypeFilter === "all" || hookType === hookTypeFilter) && (appealPointFilter === "all" || appealPoint === appealPointFilter) && (platformFilter === "all" || platform === platformFilter) && (labelStateFilter === "all" || (labelStateFilter === "done" ? isLabeled : !isLabeled));
   });
-  const categoryCount = new Set(
-    images
-      .map((image) => labelsByImageId.get(image.id)?.finalLabel.category || image.category)
-      .filter(Boolean)
-  ).size;
-  const hookTypeCount = new Set(
-    images
-      .map((image) => labelsByImageId.get(image.id)?.finalLabel.hookType || image.hookType)
-      .filter(Boolean)
-  ).size;
+  const categoryCount = new Set(images.map((image) => labelsByImageId.get(image.id)?.finalLabel.category || image.category).filter(Boolean)).size;
+  const hookTypeCount = new Set(images.map((image) => labelsByImageId.get(image.id)?.finalLabel.hookType || image.hookType).filter(Boolean)).size;
   const metrics = [
     ["전체 수집 이미지 수", images.length + crawledItems.length],
     ["라벨 필요 이미지 수", Math.max(0, images.length - analyzedImages.length)],
@@ -1498,18 +1086,12 @@ export function MvpDashboard({
     ["카테고리 수", categoryCount],
     ["후킹 유형 수", hookTypeCount],
   ];
-  const currentProductLoaded = Boolean(
-    lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl
-  );
+  const currentProductLoaded = Boolean(lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl);
 
   useEffect(() => {
     if (initialCreationHandoff) return;
     const currentUrl = productInfo.landingUrl.trim();
-    if (
-      !currentUrl ||
-      currentUrl === lastLoadedProductUrl ||
-      restoredProductUrlRef.current === currentUrl
-    ) {
+    if (!currentUrl || currentUrl === lastLoadedProductUrl || restoredProductUrlRef.current === currentUrl) {
       return;
     }
 
@@ -1522,12 +1104,7 @@ export function MvpDashboard({
       ...stored.productInfo,
       landingUrl: currentUrl,
     };
-    const restoredImagePaths = compactUniqueImagePaths([
-      restoredProductInfo.productImagePath,
-      ...(restoredProductInfo.productImagePaths ?? []),
-      restoredProductInfo.extractedMainImage,
-      ...(restoredProductInfo.extractedGalleryImages ?? []),
-    ]).slice(0, 4);
+    const restoredImagePaths = compactUniqueImagePaths([restoredProductInfo.productImagePath, ...(restoredProductInfo.productImagePaths ?? []), restoredProductInfo.extractedMainImage, ...(restoredProductInfo.extractedGalleryImages ?? [])]).slice(0, 4);
     const restoredMainImage = restoredImagePaths[0] || "";
 
     setProductInfo(restoredProductInfo);
@@ -1553,8 +1130,7 @@ export function MvpDashboard({
         restoredProductInfo.productRepresentation ||
         inferProductRepresentation({
           productName: restoredProductInfo.productName,
-          description:
-            restoredProductInfo.extractedDescription || restoredProductInfo.mainBenefit,
+          description: restoredProductInfo.extractedDescription || restoredProductInfo.mainBenefit,
           category: restoredProductInfo.category,
         }),
     });
@@ -1576,20 +1152,11 @@ export function MvpDashboard({
         generationPlanConfirmed,
         savedAt: new Date().toISOString(),
       };
-      window.localStorage.setItem(
-        productAnalysisStorageKey(lastLoadedProductUrl),
-        JSON.stringify(stored)
-      );
+      window.localStorage.setItem(productAnalysisStorageKey(lastLoadedProductUrl), JSON.stringify(stored));
     } catch {
       // 분석 결과 복원은 편의 기능이므로 브라우저 저장소 오류가 제작을 막지 않게 합니다.
     }
-  }, [
-    currentProductLoaded,
-    generationPlanConfirmed,
-    lastLoadedProductUrl,
-    productInfo,
-    selectedAdvertiserName,
-  ]);
+  }, [currentProductLoaded, generationPlanConfirmed, lastLoadedProductUrl, productInfo, selectedAdvertiserName]);
 
   useEffect(() => {
     refreshImages().catch(() => undefined);
@@ -1597,9 +1164,7 @@ export function MvpDashboard({
 
   useEffect(() => {
     try {
-      const stored = JSON.parse(
-        window.localStorage.getItem(recentProductsStorageKey) || "[]"
-      ) as RecentProductSummary[];
+      const stored = JSON.parse(window.localStorage.getItem(recentProductsStorageKey) || "[]") as RecentProductSummary[];
       setRecentProducts(stored.filter((item) => item?.landingUrl && item?.productName).slice(0, 3));
     } catch {
       setRecentProducts([]);
@@ -1611,32 +1176,16 @@ export function MvpDashboard({
     const nextProduct: RecentProductSummary = {
       productName: productInfo.productName,
       landingUrl: lastLoadedProductUrl,
-      imagePath:
-        hookExperimentProductImagePaths[0] ||
-        productInfo.productImagePath ||
-        productInfo.extractedMainImage ||
-        "",
+      imagePath: hookExperimentProductImagePaths[0] || productInfo.productImagePath || productInfo.extractedMainImage || "",
       brandName: productInfo.brandName || productInfo.advertiserName || "",
       price: productInfo.price || "",
     };
     setRecentProducts((current) => {
-      const next = [
-        nextProduct,
-        ...current.filter((item) => item.landingUrl !== nextProduct.landingUrl),
-      ].slice(0, 3);
+      const next = [nextProduct, ...current.filter((item) => item.landingUrl !== nextProduct.landingUrl)].slice(0, 3);
       window.localStorage.setItem(recentProductsStorageKey, JSON.stringify(next));
       return next;
     });
-  }, [
-    hookExperimentProductImagePaths,
-    lastLoadedProductUrl,
-    productInfo.advertiserName,
-    productInfo.brandName,
-    productInfo.extractedMainImage,
-    productInfo.price,
-    productInfo.productImagePath,
-    productInfo.productName,
-  ]);
+  }, [hookExperimentProductImagePaths, lastLoadedProductUrl, productInfo.advertiserName, productInfo.brandName, productInfo.extractedMainImage, productInfo.price, productInfo.productImagePath, productInfo.productName]);
 
   useEffect(() => {
     if (generatedBannerAsset && generatedBannerAsset.generatedImageUrl !== generatedBannerPath) {
@@ -1645,10 +1194,7 @@ export function MvpDashboard({
   }, [generatedBannerAsset, generatedBannerPath]);
 
   useEffect(() => {
-    window.sessionStorage.setItem(
-      "adatlas-background-recommendation-history",
-      JSON.stringify(backgroundRecommendationHistory.slice(-12))
-    );
+    window.sessionStorage.setItem("adatlas-background-recommendation-history", JSON.stringify(backgroundRecommendationHistory.slice(-12)));
   }, [backgroundRecommendationHistory]);
 
   useEffect(() => {
@@ -1674,13 +1220,7 @@ export function MvpDashboard({
   useEffect(() => {
     if (selectedAdvertiserName) return;
     const landingUrl = productInfo.landingUrl || "";
-    const matchedAdvertiser = /kookdae\.co\.kr/i.test(landingUrl)
-      ? "국대한우"
-      : /koreakoreanbeef\.com/i.test(landingUrl)
-        ? "대한한우"
-        : /fightingfarm\.com/i.test(landingUrl)
-          ? "힘내라농가"
-          : "";
+    const matchedAdvertiser = /kookdae\.co\.kr/i.test(landingUrl) ? "국대한우" : /koreakoreanbeef\.com/i.test(landingUrl) ? "대한한우" : /fightingfarm\.com/i.test(landingUrl) ? "힘내라농가" : "";
 
     if (matchedAdvertiser) {
       const frame = window.requestAnimationFrame(() => {
@@ -1729,9 +1269,7 @@ export function MvpDashboard({
       );
       setProductImageProcessStatus({
         kind: "idle",
-        message: imagePath
-          ? "AI 전체 광고는 누끼 없이 상세페이지 원본 이미지를 참조합니다."
-          : "상품 이미지를 불러오면 상세페이지 원본을 참조합니다.",
+        message: imagePath ? "AI 전체 광고는 누끼 없이 상세페이지 원본 이미지를 참조합니다." : "상품 이미지를 불러오면 상세페이지 원본을 참조합니다.",
       });
     });
     return () => window.cancelAnimationFrame(frame);
@@ -1742,18 +1280,14 @@ export function MvpDashboard({
       setGptPromptState((current) => ({
         ...current,
         autoPrompt: autoGptImagePrompt,
-        finalPrompt:
-          current.promptMode === "custom" && current.customPrompt.trim()
-            ? current.customPrompt.trim()
-            : autoGptImagePrompt,
+        finalPrompt: current.promptMode === "custom" && current.customPrompt.trim() ? current.customPrompt.trim() : autoGptImagePrompt,
       }));
     });
     return () => window.cancelAnimationFrame(frame);
   }, [autoGptImagePrompt]);
 
   function buildPromptForImageMode(imageGenerationMode: GptImageGenerationMode) {
-    const templateMode: GptPromptTemplateMode =
-      imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only";
+    const templateMode: GptPromptTemplateMode = imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only";
     const reference = autoMatchedReferenceLabels[0]?.finalLabel;
     return buildAutoImagePrompt({
       templateMode,
@@ -1783,9 +1317,7 @@ export function MvpDashboard({
 
   function finalPromptForImageMode(imageGenerationMode: GptImageGenerationMode) {
     const autoPrompt = buildPromptForImageMode(imageGenerationMode);
-    return gptPromptState.promptMode === "custom" && gptPromptState.customPrompt.trim()
-      ? gptPromptState.customPrompt.trim()
-      : autoPrompt;
+    return gptPromptState.promptMode === "custom" && gptPromptState.customPrompt.trim() ? gptPromptState.customPrompt.trim() : autoPrompt;
   }
 
   async function refreshImages() {
@@ -1813,9 +1345,7 @@ export function MvpDashboard({
     setActiveMenu("이미지 수집");
     setLabelStatus({
       kind: existing ? "success" : "idle",
-      message: existing
-        ? "저장된 라벨을 먼저 불러왔습니다. 다시 호출하려면 재분석하기를 누르세요."
-        : "AI 분석하기를 누르거나 직접 라벨을 입력하세요.",
+      message: existing ? "저장된 라벨을 먼저 불러왔습니다. 다시 호출하려면 재분석하기를 누르세요." : "AI 분석하기를 누르거나 직접 라벨을 입력하세요.",
     });
   }
 
@@ -1849,9 +1379,7 @@ export function MvpDashboard({
       setFinalLabel(normalizedDraft);
       setLabelStatus({
         kind: "success",
-        message: result.isMock
-          ? "OPENAI_API_KEY가 없어 mock 분석 초안을 만들었습니다."
-          : "AI 분석 초안을 만들었습니다.",
+        message: result.isMock ? "OPENAI_API_KEY가 없어 mock 분석 초안을 만들었습니다." : "AI 분석 초안을 만들었습니다.",
       });
     } catch (error) {
       setLabelStatus({
@@ -1921,8 +1449,7 @@ export function MvpDashboard({
     } catch (error) {
       setStatus({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "이미지 메타데이터 저장 중 오류가 발생했습니다.",
+        message: error instanceof Error ? error.message : "이미지 메타데이터 저장 중 오류가 발생했습니다.",
       });
     }
   }
@@ -1979,17 +1506,11 @@ export function MvpDashboard({
     }));
     setCutoutProductEffect((current) => ({
       ...current,
-      productScale:
-        next.productSizeLevel === "small" ? 0.86 : next.productSizeLevel === "large" ? 1.16 : 1,
+      productScale: next.productSizeLevel === "small" ? 0.86 : next.productSizeLevel === "large" ? 1.16 : 1,
     }));
     setBackgroundStyle((current) => ({
       ...current,
-      dimLevel:
-        next.backgroundBrightness === "dark"
-          ? "high"
-          : next.backgroundBrightness === "bright"
-            ? "low"
-            : "medium",
+      dimLevel: next.backgroundBrightness === "dark" ? "high" : next.backgroundBrightness === "bright" ? "low" : "medium",
     }));
   }
 
@@ -2000,147 +1521,46 @@ export function MvpDashboard({
     creativeWorkflow.setMessageHierarchy(copyToMessageHierarchy(tightened));
   }
 
-  function mergeExtractedProductInfo(
-    current: ProductInfoForPrompt,
-    extracted: ExtractedProductInfo,
-    replaceExtractedFields: boolean
-  ): ProductInfoForPrompt {
-    const extractedCategory = normalizeProductCategory(
-      extracted.category,
-      extracted.productName,
-      extracted.description
-    );
+  function mergeExtractedProductInfo(current: ProductInfoForPrompt, extracted: ExtractedProductInfo, replaceExtractedFields: boolean): ProductInfoForPrompt {
+    const extractedCategory = normalizeProductCategory(extracted.category, extracted.productName, extracted.description);
 
-    const sourceCandidates = (
-      extracted.sourceImageCandidates?.length
-        ? extracted.sourceImageCandidates
-        : buildSourceImageCandidates(extracted)
-    ).filter(
-      (candidate, index, candidates) =>
-        candidate.imagePath &&
-        candidates.findIndex((item) => item.imagePath === candidate.imagePath) === index
-    );
+    const sourceCandidates = (extracted.sourceImageCandidates?.length ? extracted.sourceImageCandidates : buildSourceImageCandidates(extracted)).filter((candidate, index, candidates) => candidate.imagePath && candidates.findIndex((item) => item.imagePath === candidate.imagePath) === index);
     const galleryImages = extractedProductImagePaths(extracted, sourceCandidates);
-    const selectedCandidate =
-      sourceCandidates.find((candidate) => candidate.selected) || sourceCandidates[0];
-    const shouldRefreshSelectedBackground =
-      !current.selectedBackgroundSource ||
-      current.selectedBackgroundSource === current.extractedMainImage ||
-      current.selectedBackgroundSource === current.productImagePath;
-    const selectedBackgroundSource = shouldRefreshSelectedBackground
-      ? extracted.mainImage || galleryImages[0] || ""
-      : current.selectedBackgroundSource;
+    const selectedCandidate = sourceCandidates.find((candidate) => candidate.selected) || sourceCandidates[0];
+    const shouldRefreshSelectedBackground = !current.selectedBackgroundSource || current.selectedBackgroundSource === current.extractedMainImage || current.selectedBackgroundSource === current.productImagePath;
+    const selectedBackgroundSource = shouldRefreshSelectedBackground ? extracted.mainImage || galleryImages[0] || "" : current.selectedBackgroundSource;
     const nextProductImagePaths = galleryImages.slice(0, 4);
-    const defaultSelectedProductImagePaths =
-      nextProductImagePaths.length > 0 ? [nextProductImagePaths[0]] : [];
+    const defaultSelectedProductImagePaths = nextProductImagePaths.length > 0 ? [nextProductImagePaths[0]] : [];
 
     return {
       ...current,
-      productName: replaceExtractedFields
-        ? extracted.productName || ""
-        : current.productName || extracted.productName || "",
+      productName: replaceExtractedFields ? extracted.productName || "" : current.productName || extracted.productName || "",
       category: replaceExtractedFields ? extractedCategory : current.category || extractedCategory,
-      productSubCategory: replaceExtractedFields
-        ? extracted.productSubCategory || ""
-        : current.productSubCategory || extracted.productSubCategory || "",
-      detectedProductType: replaceExtractedFields
-        ? extracted.detectedProductType || ""
-        : current.detectedProductType || extracted.detectedProductType || "",
-      brandName: replaceExtractedFields
-        ? extracted.brandName || current.brandName || ""
-        : current.brandName || extracted.brandName || "",
-      price: replaceExtractedFields
-        ? extracted.price || ""
-        : current.price || extracted.price || "",
-      originalPrice: replaceExtractedFields
-        ? extracted.originalPrice || extracted.oldPrice || ""
-        : current.originalPrice ||
-          current.oldPrice ||
-          extracted.originalPrice ||
-          extracted.oldPrice ||
-          "",
-      oldPrice: replaceExtractedFields
-        ? extracted.oldPrice || extracted.originalPrice || ""
-        : current.oldPrice ||
-          current.originalPrice ||
-          extracted.oldPrice ||
-          extracted.originalPrice ||
-          "",
-      discountInfo: replaceExtractedFields
-        ? extracted.discountInfo || ""
-        : extracted.discountInfo || current.discountInfo || "",
-      mainBenefit: replaceExtractedFields
-        ? extracted.mainBenefit || extracted.extractedDescription || extracted.description || ""
-        : current.mainBenefit ||
-          extracted.mainBenefit ||
-          extracted.extractedDescription ||
-          extracted.description ||
-          "",
-      landingUrl: replaceExtractedFields
-        ? extracted.landingUrl || current.landingUrl || ""
-        : current.landingUrl || extracted.landingUrl || "",
-      productImagePath: replaceExtractedFields
-        ? nextProductImagePaths[0] || ""
-        : nextProductImagePaths[0] || current.productImagePath || "",
-      secondaryProductImagePath: replaceExtractedFields
-        ? nextProductImagePaths[1] || ""
-        : current.secondaryProductImagePath || nextProductImagePaths[1] || "",
-      productImagePaths: replaceExtractedFields
-        ? nextProductImagePaths
-        : current.productImagePaths?.length
-          ? current.productImagePaths
-          : defaultSelectedProductImagePaths,
+      productSubCategory: replaceExtractedFields ? extracted.productSubCategory || "" : current.productSubCategory || extracted.productSubCategory || "",
+      detectedProductType: replaceExtractedFields ? extracted.detectedProductType || "" : current.detectedProductType || extracted.detectedProductType || "",
+      brandName: replaceExtractedFields ? extracted.brandName || current.brandName || "" : current.brandName || extracted.brandName || "",
+      price: replaceExtractedFields ? extracted.price || "" : current.price || extracted.price || "",
+      originalPrice: replaceExtractedFields ? extracted.originalPrice || extracted.oldPrice || "" : current.originalPrice || current.oldPrice || extracted.originalPrice || extracted.oldPrice || "",
+      oldPrice: replaceExtractedFields ? extracted.oldPrice || extracted.originalPrice || "" : current.oldPrice || current.originalPrice || extracted.oldPrice || extracted.originalPrice || "",
+      discountInfo: replaceExtractedFields ? extracted.discountInfo || "" : extracted.discountInfo || current.discountInfo || "",
+      mainBenefit: replaceExtractedFields ? extracted.mainBenefit || extracted.extractedDescription || extracted.description || "" : current.mainBenefit || extracted.mainBenefit || extracted.extractedDescription || extracted.description || "",
+      landingUrl: replaceExtractedFields ? extracted.landingUrl || current.landingUrl || "" : current.landingUrl || extracted.landingUrl || "",
+      productImagePath: replaceExtractedFields ? nextProductImagePaths[0] || "" : nextProductImagePaths[0] || current.productImagePath || "",
+      secondaryProductImagePath: replaceExtractedFields ? nextProductImagePaths[1] || "" : current.secondaryProductImagePath || nextProductImagePaths[1] || "",
+      productImagePaths: replaceExtractedFields ? nextProductImagePaths : current.productImagePaths?.length ? current.productImagePaths : defaultSelectedProductImagePaths,
       backgroundImagePath: replaceExtractedFields ? "" : current.backgroundImagePath || "",
-      extractedDescription: replaceExtractedFields
-        ? extracted.extractedDescription || extracted.description || ""
-        : extracted.extractedDescription ||
-          extracted.description ||
-          current.extractedDescription ||
-          "",
-      extractedMainImage: replaceExtractedFields
-        ? nextProductImagePaths[0] || ""
-        : nextProductImagePaths[0] || current.extractedMainImage || "",
-      extractedGalleryImages: replaceExtractedFields
-        ? galleryImages
-        : galleryImages.length
-          ? galleryImages
-          : current.extractedGalleryImages || [],
-      selectedBackgroundSource: replaceExtractedFields
-        ? nextProductImagePaths[0] || ""
-        : selectedBackgroundSource,
-      backgroundMode:
-        current.backgroundMode === "none"
-          ? "auto-detail-blur-dark"
-          : current.backgroundMode || "auto-detail-blur-dark",
-      sourceImageCandidates: replaceExtractedFields
-        ? sourceCandidates
-        : current.sourceImageCandidates?.length
-          ? current.sourceImageCandidates
-          : sourceCandidates,
-      selectedSourceImageId: replaceExtractedFields
-        ? selectedCandidate?.id || ""
-        : current.selectedSourceImageId || selectedCandidate?.id || "",
-      selectedSourceImagePath: replaceExtractedFields
-        ? selectedCandidate?.imagePath || ""
-        : current.selectedSourceImagePath || selectedCandidate?.imagePath || "",
-      productRepresentation: replaceExtractedFields
-        ? extracted.productRepresentation
-        : current.productRepresentation || extracted.productRepresentation,
-      reviewSources: replaceExtractedFields
-        ? extracted.reviewSources || []
-        : current.reviewSources?.length
-          ? current.reviewSources
-          : extracted.reviewSources || [],
-      verifiedBenefits: replaceExtractedFields
-        ? extracted.verifiedBenefits || []
-        : current.verifiedBenefits?.length
-          ? current.verifiedBenefits
-          : extracted.verifiedBenefits || [],
-      ingredients: replaceExtractedFields
-        ? extracted.ingredients || []
-        : current.ingredients?.length
-          ? current.ingredients
-          : extracted.ingredients || [],
+      extractedDescription: replaceExtractedFields ? extracted.extractedDescription || extracted.description || "" : extracted.extractedDescription || extracted.description || current.extractedDescription || "",
+      extractedMainImage: replaceExtractedFields ? nextProductImagePaths[0] || "" : nextProductImagePaths[0] || current.extractedMainImage || "",
+      extractedGalleryImages: replaceExtractedFields ? galleryImages : galleryImages.length ? galleryImages : current.extractedGalleryImages || [],
+      selectedBackgroundSource: replaceExtractedFields ? nextProductImagePaths[0] || "" : selectedBackgroundSource,
+      backgroundMode: current.backgroundMode === "none" ? "auto-detail-blur-dark" : current.backgroundMode || "auto-detail-blur-dark",
+      sourceImageCandidates: replaceExtractedFields ? sourceCandidates : current.sourceImageCandidates?.length ? current.sourceImageCandidates : sourceCandidates,
+      selectedSourceImageId: replaceExtractedFields ? selectedCandidate?.id || "" : current.selectedSourceImageId || selectedCandidate?.id || "",
+      selectedSourceImagePath: replaceExtractedFields ? selectedCandidate?.imagePath || "" : current.selectedSourceImagePath || selectedCandidate?.imagePath || "",
+      productRepresentation: replaceExtractedFields ? extracted.productRepresentation : current.productRepresentation || extracted.productRepresentation,
+      reviewSources: replaceExtractedFields ? extracted.reviewSources || [] : current.reviewSources?.length ? current.reviewSources : extracted.reviewSources || [],
+      verifiedBenefits: replaceExtractedFields ? extracted.verifiedBenefits || [] : current.verifiedBenefits?.length ? current.verifiedBenefits : extracted.verifiedBenefits || [],
+      ingredients: replaceExtractedFields ? extracted.ingredients || [] : current.ingredients?.length ? current.ingredients : extracted.ingredients || [],
     };
   }
 
@@ -2177,11 +1597,7 @@ export function MvpDashboard({
       let mergedProductInfo = productInfo;
       const replaceExtractedFieldsForUrl = isNewProductUrl;
       setProductInfo((current) => {
-        mergedProductInfo = mergeExtractedProductInfo(
-          current,
-          result.productInfo,
-          replaceExtractedFieldsForUrl
-        );
+        mergedProductInfo = mergeExtractedProductInfo(current, result.productInfo, replaceExtractedFieldsForUrl);
         return mergedProductInfo;
       });
       setSourceImageSelection({
@@ -2189,8 +1605,7 @@ export function MvpDashboard({
         selectedSourceImageId: mergedProductInfo.selectedSourceImageId,
         selectedSourceImagePath: mergedProductInfo.selectedSourceImagePath,
       });
-      const nextMainProductImage =
-        mergedProductInfo.productImagePath || mergedProductInfo.extractedMainImage || "";
+      const nextMainProductImage = mergedProductInfo.productImagePath || mergedProductInfo.extractedMainImage || "";
       setProductImageState((current) =>
         current.originalImagePath === nextMainProductImage
           ? current
@@ -2201,17 +1616,13 @@ export function MvpDashboard({
                 mergedProductInfo.productRepresentation ||
                 inferProductRepresentation({
                   productName: mergedProductInfo.productName,
-                  description:
-                    mergedProductInfo.extractedDescription || mergedProductInfo.mainBenefit,
+                  description: mergedProductInfo.extractedDescription || mergedProductInfo.mainBenefit,
                   category: mergedProductInfo.category,
                 }),
             }
       );
       if (replaceExtractedFieldsForUrl) {
-        const initialImagePaths = compactUniqueImagePaths([
-          mergedProductInfo.productImagePath,
-          ...(mergedProductInfo.productImagePaths ?? []),
-        ]).slice(0, 4);
+        const initialImagePaths = compactUniqueImagePaths([mergedProductInfo.productImagePath, ...(mergedProductInfo.productImagePaths ?? [])]).slice(0, 4);
         setSelectedAdImages({
           selectedImagePaths: initialImagePaths,
           primaryImagePath: initialImagePaths[0] || "",
@@ -2275,12 +1686,7 @@ export function MvpDashboard({
 
   function selectVisualDirection(direction: VisualDirection) {
     const textPreset = getCreativeTextStylePreset(direction.textStylePresetId);
-    const headlinePreset: HeadlineStyleOverrides["headlineFontPreset"] =
-      direction.textStylePresetId === "premium-food"
-        ? "commerce-heavy-black"
-        : direction.textStylePresetId === "community-review"
-          ? "ugc-bold-white"
-          : "impact-korean-red";
+    const headlinePreset: HeadlineStyleOverrides["headlineFontPreset"] = direction.textStylePresetId === "premium-food" ? "commerce-heavy-black" : direction.textStylePresetId === "community-review" ? "ugc-bold-white" : "impact-korean-red";
 
     setSelectedVisualDirectionId(direction.id);
     setCutoutProductEffect(direction.productTreatment);
@@ -2288,10 +1694,7 @@ export function MvpDashboard({
     if (productImageState.cutoutApplied) {
       setProductImageProcessStatus({
         kind: "success",
-        message:
-          direction.productTreatment.outline || direction.productTreatment.glow
-            ? "대표 광고문구에 맞춰 누끼 상품에 테두리·광원·그림자 효과를 자동 적용합니다."
-            : "대표 광고문구에 맞춰 누끼 상품에 자연스러운 접지 그림자를 자동 적용합니다.",
+        message: direction.productTreatment.outline || direction.productTreatment.glow ? "대표 광고문구에 맞춰 누끼 상품에 테두리·광원·그림자 효과를 자동 적용합니다." : "대표 광고문구에 맞춰 누끼 상품에 자연스러운 접지 그림자를 자동 적용합니다.",
       });
     }
     setBannerAccentColor(textPreset.highlightColors[0] || "#fff200");
@@ -2303,11 +1706,7 @@ export function MvpDashboard({
       ...current,
       accentColor: textPreset.highlightColors[0] || current.accentColor,
       textSizeLevel: textPreset.headlineScale >= 1.12 ? "large" : "medium",
-      productSizeLevel:
-        direction.productArrangement.scale === "hero" ||
-        direction.productArrangement.scale === "large"
-          ? "large"
-          : "medium",
+      productSizeLevel: direction.productArrangement.scale === "hero" || direction.productArrangement.scale === "large" ? "large" : "medium",
     }));
     setHeadlineStyleOverrides((current) => {
       const next = {
@@ -2332,9 +1731,7 @@ export function MvpDashboard({
       overlayOpacity: 0.08,
     }));
     setProductInfo((current) => {
-      const generatedSceneSelected = String(current.selectedBackgroundSource || "").startsWith(
-        "/background-images/scene-"
-      );
+      const generatedSceneSelected = String(current.selectedBackgroundSource || "").startsWith("/background-images/scene-");
       if (!generatedSceneSelected) return current;
       return {
         ...current,
@@ -2343,20 +1740,13 @@ export function MvpDashboard({
         selectedBackgroundSource: "",
       };
     });
-    if (
-      direction.recommendedTemplateId &&
-      categoryTemplates.some((template) => template.id === direction.recommendedTemplateId)
-    ) {
+    if (direction.recommendedTemplateId && categoryTemplates.some((template) => template.id === direction.recommendedTemplateId)) {
       setSelectedTemplateId(direction.recommendedTemplateId);
     }
     setGeneratedBannerPath("");
   }
 
-  async function generateVisualDirections(
-    copyOverride: Partial<GeneratedAdCopy> = bannerCopy,
-    productOverride: ProductInfoForPrompt = productInfo,
-    strategyOverride: CreativeStrategy | null = creativeWorkflow.selectedStrategy
-  ) {
+  async function generateVisualDirections(copyOverride: Partial<GeneratedAdCopy> = bannerCopy, productOverride: ProductInfoForPrompt = productInfo, strategyOverride: CreativeStrategy | null = creativeWorkflow.selectedStrategy) {
     if (!productOverride.productName && !productOverride.category && !productOverride.mainBenefit) {
       setVisualDirectionStatus({
         kind: "error",
@@ -2371,12 +1761,7 @@ export function MvpDashboard({
     });
 
     try {
-      const productImagesForDirection = compactUniqueImagePaths([
-        ...selectedAdImages.selectedImagePaths,
-        ...currentProductImagePaths,
-        ...(productOverride.productImagePaths || []),
-        productOverride.productImagePath,
-      ]).slice(0, 4);
+      const productImagesForDirection = compactUniqueImagePaths([...selectedAdImages.selectedImagePaths, ...currentProductImagePaths, ...(productOverride.productImagePaths || []), productOverride.productImagePath]).slice(0, 4);
       const response = await fetch("/api/strategy/generate-visual-directions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2410,9 +1795,7 @@ export function MvpDashboard({
       selectVisualDirection(result.directions[0]);
       setVisualDirectionStatus({
         kind: "success",
-        message: result.usedProductOnlyFallback
-          ? "관련 레퍼런스가 없어 상품 정보와 광고주 프로필만으로 3개 방향을 구성했습니다."
-          : "자동 매칭 레퍼런스의 구조를 반영한 비주얼 방향 3개를 구성했습니다.",
+        message: result.usedProductOnlyFallback ? "관련 레퍼런스가 없어 상품 정보와 광고주 프로필만으로 3개 방향을 구성했습니다." : "자동 매칭 레퍼런스의 구조를 반영한 비주얼 방향 3개를 구성했습니다.",
       });
       creativeWorkflow.setActiveStep("visual");
       return result.directions;
@@ -2425,12 +1808,7 @@ export function MvpDashboard({
     }
   }
 
-  async function requestAdaptiveLayouts(
-    recommendation: BackgroundRecommendation,
-    strategy: CreativeStrategy,
-    selectionMode: "recommended" | "library" | "fixed" = "recommended",
-    copyOverride: GeneratedAdCopy = bannerCopy
-  ) {
+  async function requestAdaptiveLayouts(recommendation: BackgroundRecommendation, strategy: CreativeStrategy, selectionMode: "recommended" | "library" | "fixed" = "recommended", copyOverride: GeneratedAdCopy = bannerCopy) {
     const response = await fetch("/api/background-library/layouts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2455,17 +1833,9 @@ export function MvpDashboard({
     return result.plans;
   }
 
-  async function selectLibraryBackground(
-    recommendation: BackgroundRecommendation,
-    strategyOverride: CreativeStrategy | null = creativeWorkflow.selectedStrategy,
-    copyOverride: GeneratedAdCopy = bannerCopy
-  ) {
+  async function selectLibraryBackground(recommendation: BackgroundRecommendation, strategyOverride: CreativeStrategy | null = creativeWorkflow.selectedStrategy, copyOverride: GeneratedAdCopy = bannerCopy) {
     const item = recommendation.background;
-    setBackgroundRecommendations((current) =>
-      current.some((candidate) => candidate.background.id === item.id)
-        ? current
-        : [recommendation, ...current]
-    );
+    setBackgroundRecommendations((current) => (current.some((candidate) => candidate.background.id === item.id) ? current : [recommendation, ...current]));
     setSelectedLibraryBackgroundId(item.id);
     setProductInfo((current) => ({
       ...current,
@@ -2491,19 +1861,12 @@ export function MvpDashboard({
       message: "배경의 안전 영역과 상품 비율을 분석하고 있습니다.",
     });
     setBackgroundRecommendationHistory((current) => {
-      const next = current.map((history, index) =>
-        index === current.length - 1 ? { ...history, selectedBackgroundId: item.id } : history
-      );
+      const next = current.map((history, index) => (index === current.length - 1 ? { ...history, selectedBackgroundId: item.id } : history));
       return next.slice(-12);
     });
     try {
       if (!strategyOverride) throw new Error("자동 템플릿을 만들 광고 방향이 없습니다.");
-      const plans = await requestAdaptiveLayouts(
-        recommendation,
-        strategyOverride,
-        recommendation.score > 0 ? "recommended" : "library",
-        copyOverride
-      );
+      const plans = await requestAdaptiveLayouts(recommendation, strategyOverride, recommendation.score > 0 ? "recommended" : "library", copyOverride);
       setAdaptiveLayoutPlans(plans);
       setAutomaticAdaptiveLayoutPlans(plans);
       setSelectedAdaptivePlanId(plans[0]?.id || "");
@@ -2524,8 +1887,7 @@ export function MvpDashboard({
 
   function selectFixedBackground(source: string, label: string) {
     let labelHash = 0;
-    for (const character of label)
-      labelHash = ((labelHash << 5) - labelHash + character.charCodeAt(0)) | 0;
+    for (const character of label) labelHash = ((labelHash << 5) - labelHash + character.charCodeAt(0)) | 0;
     const id = `fixed-${Math.abs(labelHash) || 1}`;
     const background: BackgroundLibraryItem = {
       id,
@@ -2577,11 +1939,7 @@ export function MvpDashboard({
     });
   }
 
-  async function loadBackgroundRecommendations(
-    strategy: CreativeStrategy,
-    excludeIds: string[] = [],
-    copyOverride: GeneratedAdCopy = bannerCopy
-  ) {
+  async function loadBackgroundRecommendations(strategy: CreativeStrategy, excludeIds: string[] = [], copyOverride: GeneratedAdCopy = bannerCopy) {
     const shouldClearRecommendedBackground = Boolean(selectedLibraryBackgroundId);
     setBackgroundRecommendations([]);
     setBackgroundAudienceProfile(null);
@@ -2592,11 +1950,7 @@ export function MvpDashboard({
     setAdaptiveCreativeResults([]);
     setProductInfo((current) => {
       const selectedSource = String(current.selectedBackgroundSource || "");
-      if (
-        !shouldClearRecommendedBackground &&
-        !selectedSource.startsWith("/background-library/") &&
-        !selectedSource.startsWith("/background-images/scene-")
-      ) {
+      if (!shouldClearRecommendedBackground && !selectedSource.startsWith("/background-library/") && !selectedSource.startsWith("/background-images/scene-")) {
         return current;
       }
       return {
@@ -2619,9 +1973,7 @@ export function MvpDashboard({
           hook: strategy,
           limit: 12,
           excludeIds,
-          selectedIds: backgroundRecommendationHistory
-            .map((history) => history.selectedBackgroundId)
-            .filter(Boolean),
+          selectedIds: backgroundRecommendationHistory.map((history) => history.selectedBackgroundId).filter(Boolean),
           recommendationPage: backgroundRecommendationHistory.length,
         }),
       });
@@ -2637,11 +1989,7 @@ export function MvpDashboard({
       const nextRecommendations = result.recommendations || [];
       setBackgroundRecommendations(nextRecommendations);
       setBackgroundAudienceProfile(result.audienceProfile || null);
-      setRecentBackgroundRecommendationIds((current) =>
-        Array.from(
-          new Set([...current, ...nextRecommendations.map((item) => item.background.id)])
-        ).slice(-72)
-      );
+      setRecentBackgroundRecommendationIds((current) => Array.from(new Set([...current, ...nextRecommendations.map((item) => item.background.id)])).slice(-72));
       setBackgroundRecommendationHistory((current) =>
         [
           ...current,
@@ -2657,9 +2005,7 @@ export function MvpDashboard({
       );
       setBackgroundRecommendationStatus({
         kind: "success",
-        message: nextRecommendations.length
-          ? "상품과 후킹에 가장 잘 맞는 배경을 자동 선택하고 템플릿을 설계합니다."
-          : "다른 후보가 없습니다. 후킹을 다시 선택하면 추천 이력이 초기화됩니다.",
+        message: nextRecommendations.length ? "상품과 후킹에 가장 잘 맞는 배경을 자동 선택하고 템플릿을 설계합니다." : "다른 후보가 없습니다. 후킹을 다시 선택하면 추천 이력이 초기화됩니다.",
       });
       if (nextRecommendations[0]) {
         await selectLibraryBackground(nextRecommendations[0], strategy, copyOverride);
@@ -2677,9 +2023,7 @@ export function MvpDashboard({
     if (productImageState.selectedImageMode === "original") return undefined;
     const renderBackground = backgroundOverride || selectedLibraryBackground;
     if (!renderBackground) return normalized;
-    const promotionLike =
-      renderBackground.category === "promotion" ||
-      ["designed_asset", "pattern_texture"].includes(renderBackground.assetType);
+    const promotionLike = renderBackground.category === "promotion" || ["designed_asset", "pattern_texture"].includes(renderBackground.assetType);
     return {
       ...normalized,
       outline: promotionLike,
@@ -2693,10 +2037,7 @@ export function MvpDashboard({
     };
   }
 
-  async function generateBannerCopy(
-    strategyOverride?: CreativeStrategy,
-    strategySet: CreativeStrategy[] = creativeWorkflow.strategies
-  ) {
+  async function generateBannerCopy(strategyOverride?: CreativeStrategy, strategySet: CreativeStrategy[] = creativeWorkflow.strategies) {
     const strategy = strategyOverride || creativeWorkflow.selectedStrategy;
     if (!strategy) {
       setCopyStatus({
@@ -2715,9 +2056,7 @@ export function MvpDashboard({
     try {
       let productInfoForCopy = productInfo;
       const hasUrl = Boolean(productInfo.landingUrl.trim());
-      const hasExtractedDetails = Boolean(
-        productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription
-      );
+      const hasExtractedDetails = Boolean(productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription);
       const isDifferentUrl = productInfo.landingUrl.trim() !== lastLoadedProductUrl;
 
       if (hasUrl && (!hasExtractedDetails || isDifferentUrl)) {
@@ -2766,11 +2105,8 @@ export function MvpDashboard({
       }
 
       const generatedCopy = result.copy as GeneratedAdCopy;
-      const generatedCopies = Array.isArray(result.copies)
-        ? (result.copies as GeneratedAdCopy[]).slice(0, 6)
-        : [generatedCopy];
-      const generatedHierarchy =
-        generatedCopy.messageHierarchy || copyToMessageHierarchy(generatedCopy);
+      const generatedCopies = Array.isArray(result.copies) ? (result.copies as GeneratedAdCopy[]).slice(0, 6) : [generatedCopy];
+      const generatedHierarchy = generatedCopy.messageHierarchy || copyToMessageHierarchy(generatedCopy);
       const mappedGeneratedCopy = messageHierarchyToCopy(generatedHierarchy, generatedCopy);
       setCopyResult(mappedGeneratedCopy);
       setAutomaticCopySet(generatedCopies);
@@ -2818,9 +2154,7 @@ export function MvpDashboard({
       );
       setCopyStatus({
         kind: "success",
-        message: result.isMock
-          ? "OPENAI_API_KEY가 없어 규칙 기반 광고문구 6개를 생성했습니다."
-          : "광고문구 6개와 길이별 문구 세트를 생성했습니다.",
+        message: result.isMock ? "OPENAI_API_KEY가 없어 규칙 기반 광고문구 6개를 생성했습니다." : "광고문구 6개와 길이별 문구 세트를 생성했습니다.",
       });
       creativeWorkflow.setActiveStep("copy");
       await generateVisualDirections(mappedGeneratedCopy, productInfoForCopy, strategy);
@@ -2834,15 +2168,10 @@ export function MvpDashboard({
     }
   }
 
-  async function generateAndApplyAutomaticCopies(
-    generator: () => Promise<CreativeStrategy[]>,
-    refresh = false
-  ) {
+  async function generateAndApplyAutomaticCopies(generator: () => Promise<CreativeStrategy[]>, refresh = false) {
     setStrategyStatus({
       kind: "loading",
-      message: refresh
-        ? "상품 사실을 유지하면서 새로운 광고문구 6개를 만들고 있습니다."
-        : "상품 사실과 광고 목표를 분석해 광고문구 6개를 만들고 있습니다.",
+      message: refresh ? "상품 사실을 유지하면서 새로운 광고문구 6개를 만들고 있습니다." : "상품 사실과 광고 목표를 분석해 광고문구 6개를 만들고 있습니다.",
     });
     setBackgroundRecommendations([]);
     setSelectedLibraryBackgroundId("");
@@ -2874,16 +2203,11 @@ export function MvpDashboard({
     await loadBackgroundRecommendations(primaryStrategy, [], appliedCopy);
     setStrategyStatus({
       kind: "success",
-      message: creativeWorkflow.referenceMatches.length
-        ? `내부 레퍼런스 ${creativeWorkflow.referenceMatches.length}개와 상품 근거로 문구 6개를 만들고 1번 문구를 대표 소재에 자동 적용했습니다.`
-        : "상품 상세페이지 근거로 문구 6개를 만들고 1번 문구를 대표 소재에 자동 적용했습니다.",
+      message: creativeWorkflow.referenceMatches.length ? `내부 레퍼런스 ${creativeWorkflow.referenceMatches.length}개와 상품 근거로 문구 6개를 만들고 1번 문구를 대표 소재에 자동 적용했습니다.` : "상품 상세페이지 근거로 문구 6개를 만들고 1번 문구를 대표 소재에 자동 적용했습니다.",
     });
   }
 
-  function setHeadlineStyleOverride<Key extends keyof HeadlineStyleOverrides>(
-    key: Key,
-    value: HeadlineStyleOverrides[Key] | ""
-  ) {
+  function setHeadlineStyleOverride<Key extends keyof HeadlineStyleOverrides>(key: Key, value: HeadlineStyleOverrides[Key] | "") {
     if (key === "headlineColor") setManualTextColors(true);
     setHeadlineStyleOverrides((current) => {
       const next = { ...current };
@@ -2904,8 +2228,7 @@ export function MvpDashboard({
     setHeadlineStyleOverrides((current) => ({
       ...current,
       headlineTextStroke: enabled,
-      headlineTextStrokeWidth:
-        enabled && !current.headlineTextStrokeWidth ? 4 : current.headlineTextStrokeWidth,
+      headlineTextStrokeWidth: enabled && !current.headlineTextStrokeWidth ? 4 : current.headlineTextStrokeWidth,
     }));
   }
 
@@ -2940,11 +2263,7 @@ export function MvpDashboard({
     }
   }
 
-  function applySelectedAdImagePaths(
-    imagePaths: string[],
-    source: SelectedAdImageSource,
-    options: { syncProductInfo?: boolean } = {}
-  ) {
+  function applySelectedAdImagePaths(imagePaths: string[], source: SelectedAdImageSource, options: { syncProductInfo?: boolean } = {}) {
     const compact = compactUniqueImagePaths(imagePaths).slice(0, 4);
     const nextSelectedAdImages: SelectedAdImageState = {
       selectedImagePaths: compact,
@@ -2980,15 +2299,9 @@ export function MvpDashboard({
   function toggleSelectedAdImage(imagePath: string) {
     if (!imagePath) return;
 
-    const currentPaths = selectedAdImages.selectedImagePaths.length
-      ? selectedAdImages.selectedImagePaths
-      : currentProductImagePaths;
+    const currentPaths = selectedAdImages.selectedImagePaths.length ? selectedAdImages.selectedImagePaths : currentProductImagePaths;
     const exists = currentPaths.includes(imagePath);
-    const nextPaths = exists
-      ? currentPaths.filter((path) => path !== imagePath)
-      : currentPaths.length >= 4
-        ? currentPaths
-        : [...currentPaths, imagePath];
+    const nextPaths = exists ? currentPaths.filter((path) => path !== imagePath) : currentPaths.length >= 4 ? currentPaths : [...currentPaths, imagePath];
 
     if (!exists && currentPaths.length >= 4) {
       setRenderStatus({
@@ -3002,16 +2315,13 @@ export function MvpDashboard({
     setMainImageSourceMode("detail");
     setRenderStatus({
       kind: "idle",
-      message: nextPaths.length
-        ? `선택한 상세 이미지 ${nextPaths.length}장이 모든 템플릿에 공통 적용됩니다.`
-        : "이미지 선택을 초기화했습니다. 상품 기본 이미지를 fallback으로 사용합니다.",
+      message: nextPaths.length ? `선택한 상세 이미지 ${nextPaths.length}장이 모든 템플릿에 공통 적용됩니다.` : "이미지 선택을 초기화했습니다. 상품 기본 이미지를 fallback으로 사용합니다.",
     });
   }
 
   function resetSelectedAdImages() {
     setSelectedAdImages(emptySelectedAdImages);
-    const fallbackPrimary =
-      productInfo.extractedMainImage || productInfo.sourceImageCandidates?.[0]?.imagePath || "";
+    const fallbackPrimary = productInfo.extractedMainImage || productInfo.sourceImageCandidates?.[0]?.imagePath || "";
     setProductInfo((current) => {
       return {
         ...current,
@@ -3036,9 +2346,7 @@ export function MvpDashboard({
   }
 
   function selectSourceImage(candidate: SourceImageCandidate) {
-    const baseCandidates = sourceImageCandidatesForDisplay.length
-      ? sourceImageCandidatesForDisplay
-      : sourceImageSelection.candidates;
+    const baseCandidates = sourceImageCandidatesForDisplay.length ? sourceImageCandidatesForDisplay : sourceImageSelection.candidates;
     const candidates = baseCandidates.map((item) => ({
       ...item,
       selected: item.id === candidate.id,
@@ -3079,10 +2387,7 @@ export function MvpDashboard({
 
       const candidate = result.candidate as SourceImageCandidate;
       setSourceImageSelection((current) => {
-        const candidates = [
-          ...current.candidates.filter((item) => item.imagePath !== candidate.imagePath),
-          candidate,
-        ];
+        const candidates = [...current.candidates.filter((item) => item.imagePath !== candidate.imagePath), candidate];
         return {
           candidates,
           selectedSourceImageId: current.selectedSourceImageId || candidate.id,
@@ -3090,12 +2395,7 @@ export function MvpDashboard({
         };
       });
       setProductInfo((current) => {
-        const candidates = [
-          ...(current.sourceImageCandidates ?? []).filter(
-            (item) => item.imagePath !== candidate.imagePath
-          ),
-          candidate,
-        ];
+        const candidates = [...(current.sourceImageCandidates ?? []).filter((item) => item.imagePath !== candidate.imagePath), candidate];
         return {
           ...current,
           sourceImageCandidates: candidates,
@@ -3136,12 +2436,7 @@ export function MvpDashboard({
       }
 
       const candidate = result.candidate as SourceImageCandidate;
-      setGptReferenceImages((current) =>
-        [
-          ...current.filter((item) => item.imagePath !== candidate.imagePath),
-          { ...candidate, label: candidate.label.replace("직접 업로드", "참고 이미지") },
-        ].slice(-3)
-      );
+      setGptReferenceImages((current) => [...current.filter((item) => item.imagePath !== candidate.imagePath), { ...candidate, label: candidate.label.replace("직접 업로드", "참고 이미지") }].slice(-3));
       setGptReferenceImageStatus({
         kind: "success",
         message: "참고 이미지를 추가했습니다. 상품 원본은 바꾸지 않고 분위기/구도만 참고합니다.",
@@ -3186,16 +2481,9 @@ export function MvpDashboard({
   }
 
   async function generateGptImage(imageGenerationMode: GptImageGenerationMode) {
-    const hasProductContext = Boolean(
-      productInfo.productName ||
-      productInfo.mainBenefit ||
-      productInfo.extractedDescription ||
-      bannerCopy.headline
-    );
+    const hasProductContext = Boolean(productInfo.productName || productInfo.mainBenefit || productInfo.extractedDescription || bannerCopy.headline);
     const isTextInImage = imageGenerationMode === "text-in-image";
-    const promptTemplateMode: GptPromptTemplateMode = isTextInImage
-      ? "ad-image-with-copy"
-      : "visual-only";
+    const promptTemplateMode: GptPromptTemplateMode = isTextInImage ? "ad-image-with-copy" : "visual-only";
     const autoPromptForGeneration = buildPromptForImageMode(imageGenerationMode);
     const promptForGeneration = finalPromptForImageMode(imageGenerationMode);
     setGptPromptTemplateMode(promptTemplateMode);
@@ -3334,12 +2622,7 @@ export function MvpDashboard({
     } catch (error) {
       const errorStatus = {
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : isTextInImage
-              ? "텍스트 포함 광고 이미지 생성에 실패했습니다."
-              : "GPT 이미지 생성에 실패했습니다.",
+        message: error instanceof Error ? error.message : isTextInImage ? "텍스트 포함 광고 이미지 생성에 실패했습니다." : "GPT 이미지 생성에 실패했습니다.",
       } as const;
       if (isTextInImage) setGptTextAdStatus(errorStatus);
       else setGptImageStatus(errorStatus);
@@ -3389,35 +2672,23 @@ export function MvpDashboard({
   }
 
   function toggleImageFailureReason(reason: GptImageFailureReason) {
-    setSelectedImageFailureReasons((current) =>
-      current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason]
-    );
+    setSelectedImageFailureReasons((current) => (current.includes(reason) ? current.filter((item) => item !== reason) : [...current, reason]));
   }
 
-  async function saveImageFeedbackRecord(params: {
-    revisionPrompt: string;
-    candidate?: GptImageCandidate;
-    generatedImagePath?: string;
-    attempt?: number;
-  }) {
+  async function saveImageFeedbackRecord(params: { revisionPrompt: string; candidate?: GptImageCandidate; generatedImagePath?: string; attempt?: number }) {
     try {
       const candidate = params.candidate || selectedGptImageCandidate;
       await fetch("/api/image/feedbacks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceImagePath:
-            candidate?.sourceImagePath ||
-            candidate?.selectedSourceImagePath ||
-            selectedSourceImagePath,
+          sourceImagePath: candidate?.sourceImagePath || candidate?.selectedSourceImagePath || selectedSourceImagePath,
           generatedImagePath: params.generatedImagePath || candidate?.imagePath,
           parentCandidateId: candidate?.parentCandidateId || candidate?.id,
           candidateId: candidate?.id,
           promptTemplateMode: candidate?.promptTemplateMode || gptPromptTemplateMode,
           canvasPreset: candidate?.canvasPreset || "sns-square-1200",
-          imageGenerationMode:
-            candidate?.imageGenerationMode ||
-            (gptPromptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only"),
+          imageGenerationMode: candidate?.imageGenerationMode || (gptPromptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only"),
           imageSourceMode: candidate?.imageSourceMode || gptImageSourceMode,
           preservationMode: candidate?.preservationMode || gptPreservationMode,
           productName: productInfo.productName,
@@ -3432,10 +2703,7 @@ export function MvpDashboard({
         }),
       });
     } catch {
-      const statusSetter =
-        selectedGptImageCandidate?.imageGenerationMode === "text-in-image"
-          ? setGptTextAdStatus
-          : setGptImageStatus;
+      const statusSetter = selectedGptImageCandidate?.imageGenerationMode === "text-in-image" ? setGptTextAdStatus : setGptImageStatus;
       statusSetter({
         kind: "error",
         message: "이미지는 유지됐지만 피드백 JSON 저장에 실패했습니다.",
@@ -3481,10 +2749,7 @@ export function MvpDashboard({
       return;
     }
     const isTextInImage = candidate.imageGenerationMode === "text-in-image";
-    const basePromptForCandidate =
-      candidate.basePrompt ||
-      candidate.promptUsed ||
-      buildPromptForImageMode(candidate.imageGenerationMode);
+    const basePromptForCandidate = candidate.basePrompt || candidate.promptUsed || buildPromptForImageMode(candidate.imageGenerationMode);
     if (isTextInImage) {
       setGptTextAdStatus({
         kind: "loading",
@@ -3507,15 +2772,10 @@ export function MvpDashboard({
           imageSourceMode: "image-edit",
           preservationMode: "preserve-product",
           promptMode: gptPromptState.promptMode,
-          promptTemplateMode:
-            candidate.promptTemplateMode ||
-            (candidate.imageGenerationMode === "text-in-image"
-              ? "ad-image-with-copy"
-              : "visual-only"),
+          promptTemplateMode: candidate.promptTemplateMode || (candidate.imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only"),
           canvasPreset: candidate.canvasPreset || "sns-square-1200",
           productName: productInfo.productName,
-          autoPrompt:
-            candidate.autoPrompt || buildPromptForImageMode(candidate.imageGenerationMode),
+          autoPrompt: candidate.autoPrompt || buildPromptForImageMode(candidate.imageGenerationMode),
           customPromptNote: candidate.customPromptNote || gptPromptState.customPromptNote,
           productInfo: {
             ...productInfo,
@@ -3558,30 +2818,19 @@ export function MvpDashboard({
               {
                 id: `revision-${Date.now()}`,
                 imagePath: result.imagePath,
-                imageProvider:
-                  result.imageProvider || candidate.imageProvider || imageGenerationProvider,
+                imageProvider: result.imageProvider || candidate.imageProvider || imageGenerationProvider,
                 imageGenerationMode: candidate.imageGenerationMode,
                 imageSourceMode: "image-edit",
                 preservationMode: "preserve-product",
-                promptTemplateMode:
-                  candidate.promptTemplateMode ||
-                  (candidate.imageGenerationMode === "text-in-image"
-                    ? "ad-image-with-copy"
-                    : "visual-only"),
+                promptTemplateMode: candidate.promptTemplateMode || (candidate.imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only"),
                 canvasPreset: "sns-square-1200",
                 sourceImagePath: sourcePath,
                 productName: productInfo.productName,
                 category: productInfo.category,
                 selectedSourceImagePath: sourcePath,
                 promptUsed: result.promptUsed || revisionPrompt,
-                autoPrompt:
-                  result.autoPrompt ||
-                  candidate.autoPrompt ||
-                  buildPromptForImageMode(candidate.imageGenerationMode),
-                customPromptNote:
-                  result.customPromptNote ||
-                  candidate.customPromptNote ||
-                  gptPromptState.customPromptNote,
+                autoPrompt: result.autoPrompt || candidate.autoPrompt || buildPromptForImageMode(candidate.imageGenerationMode),
+                customPromptNote: result.customPromptNote || candidate.customPromptNote || gptPromptState.customPromptNote,
                 basePrompt: basePromptForCandidate,
                 revisionPrompt,
                 failureReasons: selectedImageFailureReasons,
@@ -3622,9 +2871,7 @@ export function MvpDashboard({
   }
 
   function setProductImageSlot(index: number, value: string) {
-    const base = selectedAdImages.selectedImagePaths.length
-      ? selectedAdImages.selectedImagePaths
-      : currentProductImagePaths;
+    const base = selectedAdImages.selectedImagePaths.length ? selectedAdImages.selectedImagePaths : currentProductImagePaths;
     const next = [...base];
     next[index] = value;
     const compact = compactUniqueImagePaths(next).slice(0, 4);
@@ -3662,12 +2909,7 @@ export function MvpDashboard({
 
   function selectWorkbenchSource(candidate: SourceImageCandidate) {
     selectSourceImage(candidate);
-    const nextPaths = compactUniqueImagePaths([
-      candidate.imagePath,
-      ...selectedAdImages.selectedImagePaths.filter(
-        (imagePath) => imagePath !== candidate.imagePath
-      ),
-    ]).slice(0, 4);
+    const nextPaths = compactUniqueImagePaths([candidate.imagePath, ...selectedAdImages.selectedImagePaths.filter((imagePath) => imagePath !== candidate.imagePath)]).slice(0, 4);
     applySelectedAdImagePaths(nextPaths, candidate.type === "upload" ? "upload" : "detail", {
       syncProductInfo: true,
     });
@@ -3677,25 +2919,14 @@ export function MvpDashboard({
       originalImagePath: candidate.imagePath,
       representation: activeProductRepresentation,
       selectedExtractionScope: activeProductRepresentation.selectedExtractionScope,
-      selectedObjectIds: candidate.detectedObjects
-        ?.filter((object) => object.selected)
-        .map((object) => object.id),
+      selectedObjectIds: candidate.detectedObjects?.filter((object) => object.selected).map((object) => object.id),
       selectedGroupBox: candidate.detectedGroupBox,
     });
     setMainImageSourceMode(candidate.type === "upload" ? "upload" : "detail");
   }
 
-  async function reprocessWorkbenchImage(options: {
-    imagePath: string;
-    representationType: ProductRepresentationType;
-    extractionScope: ProductExtractionScope;
-    selectedObjectIds: string[];
-    selectedObjectBoxes?: Array<{ x: number; y: number; width: number; height: number }>;
-    cropBox?: { x: number; y: number; width: number; height: number };
-  }) {
-    const candidate = sourceImageCandidatesForDisplay.find(
-      (item) => item.imagePath === options.imagePath
-    );
+  async function reprocessWorkbenchImage(options: { imagePath: string; representationType: ProductRepresentationType; extractionScope: ProductExtractionScope; selectedObjectIds: string[]; selectedObjectBoxes?: Array<{ x: number; y: number; width: number; height: number }>; cropBox?: { x: number; y: number; width: number; height: number } }) {
+    const candidate = sourceImageCandidatesForDisplay.find((item) => item.imagePath === options.imagePath);
     if (candidate && candidate.imagePath !== productImageState.originalImagePath) {
       selectWorkbenchSource(candidate);
     }
@@ -3716,10 +2947,7 @@ export function MvpDashboard({
       if (!result.success || !result.cutoutImagePath) {
         setProductImageProcessStatus({
           kind: "error",
-          message:
-            result.fallbackMessage ||
-            result.error ||
-            "품질 기준을 통과하지 못해 원본을 유지했습니다.",
+          message: result.fallbackMessage || result.error || "품질 기준을 통과하지 못해 원본을 유지했습니다.",
         });
         return;
       }
@@ -3748,9 +2976,7 @@ export function MvpDashboard({
       setProductInfo((current) => ({ ...current, productRepresentation: representation }));
       setProductImageProcessStatus({
         kind: "success",
-        message:
-          result.message ||
-          `품질 ${Math.round((result.quality?.score || 0) * 100)}점 누끼를 적용했습니다.`,
+        message: result.message || `품질 ${Math.round((result.quality?.score || 0) * 100)}점 누끼를 적용했습니다.`,
       });
     } catch (error) {
       setProductImageProcessStatus({
@@ -3772,9 +2998,7 @@ export function MvpDashboard({
     }));
     setProductImageProcessStatus({
       kind: quality.usable ? "success" : "error",
-      message: quality.usable
-        ? "수동 마스크 수정 결과를 적용했습니다."
-        : "수동 수정 결과에 품질 경고가 있습니다. 배경별 미리보기를 확인해 주세요.",
+      message: quality.usable ? "수동 마스크 수정 결과를 적용했습니다." : "수동 수정 결과에 품질 경고가 있습니다. 배경별 미리보기를 확인해 주세요.",
     });
   }
 
@@ -3794,18 +3018,13 @@ export function MvpDashboard({
     });
 
     try {
-      const result = await requestProductCutout(
-        imagePath,
-        productImageState.effectPreset || "commerce-shadow",
-        [],
-        {
-          representationType: activeProductRepresentation.type,
-          extractionScope: activeProductRepresentation.selectedExtractionScope,
-          selectedObjectIds: productImageState.selectedObjectIds,
-          cropBox: productImageState.selectedGroupBox,
-          expectedUnitCount: activeProductRepresentation.expectedUnitCount,
-        }
-      );
+      const result = await requestProductCutout(imagePath, productImageState.effectPreset || "commerce-shadow", [], {
+        representationType: activeProductRepresentation.type,
+        extractionScope: activeProductRepresentation.selectedExtractionScope,
+        selectedObjectIds: productImageState.selectedObjectIds,
+        cropBox: productImageState.selectedGroupBox,
+        expectedUnitCount: activeProductRepresentation.expectedUnitCount,
+      });
 
       if (activeProductImagePathRef.current !== imagePath) return;
 
@@ -3817,10 +3036,7 @@ export function MvpDashboard({
         }));
         setProductImageProcessStatus({
           kind: "error",
-          message:
-            result.fallbackMessage ||
-            result.error ||
-            "Background removal failed. Keeping the original image.",
+          message: result.fallbackMessage || result.error || "Background removal failed. Keeping the original image.",
         });
         return;
       }
@@ -3845,18 +3061,12 @@ export function MvpDashboard({
       );
       setProductImageProcessStatus({
         kind: "success",
-        message:
-          result.message ||
-          result.fallbackMessage ||
-          "Cutout image created. You can choose the original or cutout image.",
+        message: result.message || result.fallbackMessage || "Cutout image created. You can choose the original or cutout image.",
       });
     } catch (error) {
       setProductImageProcessStatus({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
+        message: error instanceof Error ? error.message : "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
       });
     }
   }
@@ -3902,18 +3112,13 @@ export function MvpDashboard({
     } catch (error) {
       setProductImageProcessStatus({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "효과 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
+        message: error instanceof Error ? error.message : "효과 적용에 실패했습니다. 다른 이미지를 선택해 주세요.",
       });
     }
   }
 
   function updateBatchResult(id: string, patch: Partial<BatchRenderResult>) {
-    setBatchRenderResults((current) =>
-      current.map((result) => (result.id === id ? { ...result, ...patch } : result))
-    );
+    setBatchRenderResults((current) => current.map((result) => (result.id === id ? { ...result, ...patch } : result)));
   }
 
   function triggerDownload(url: string, filename: string) {
@@ -3964,16 +3169,13 @@ export function MvpDashboard({
       productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
       productName: productInfo.productName,
       category: productInfo.category,
-      hookType:
-        creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
-      advertisingHypothesis:
-        creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
+      hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+      advertisingHypothesis: creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
       headline: bannerCopy.headline,
       subCopy: bannerCopy.bodyCopy,
       benefitCopy: [bannerCopy.highlightCopy, bannerCopy.bottomBarCopy].filter(Boolean).join(" · "),
       templateId: renderDiagnostics?.templateId || selectedTemplate?.id || "existing-render",
-      layoutType:
-        selectedAdaptivePlan?.layoutType || selectedTemplate?.templateGroup || "existing-render",
+      layoutType: selectedAdaptivePlan?.layoutType || selectedTemplate?.templateGroup || "existing-render",
       backgroundType: currentBackgroundComposition.sourceType,
       backgroundId: currentBackgroundComposition.sourceId,
       sourceProductImage: currentMainProductImage,
@@ -3985,12 +3187,7 @@ export function MvpDashboard({
     return asset;
   }
 
-  async function renderAdaptiveVariant(params: {
-    recommendation: BackgroundRecommendation;
-    plan: AdaptiveCreativePlan;
-    strategy: CreativeStrategy;
-    copy: GeneratedAdCopy;
-  }) {
+  async function renderAdaptiveVariant(params: { recommendation: BackgroundRecommendation; plan: AdaptiveCreativePlan; strategy: CreativeStrategy; copy: GeneratedAdCopy }) {
     const resolvedImages = resolveCurrentProductImagePaths({
       selectedAdImages,
       productInfo,
@@ -4001,15 +3198,8 @@ export function MvpDashboard({
       gptMainImagePath,
       backgroundImagePath: params.recommendation.background.file,
     });
-    const fontTemplateId =
-      selectedVisualDirection?.recommendedTemplateId ||
-      selectedTemplate?.id ||
-      categoryTemplates[0]?.id ||
-      "food-template-001";
-    const templateFonts = resolveTemplateFontAssignment(
-      fontTemplateId,
-      headlineStyleOverrides.headlineFontPreset
-    );
+    const fontTemplateId = selectedVisualDirection?.recommendedTemplateId || selectedTemplate?.id || categoryTemplates[0]?.id || "food-template-001";
+    const templateFonts = resolveTemplateFontAssignment(fontTemplateId, headlineStyleOverrides.headlineFontPreset);
     const response = await fetch("/api/render/template-ad", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -4086,10 +3276,7 @@ export function MvpDashboard({
     setAdaptiveCreativeResults([]);
     setAdaptiveLayoutStatus({
       kind: "loading",
-      message:
-        creativeGenerationMode === "hook-based"
-          ? "자동 광고문구 6개를 각각 다른 배경·레이아웃에 적용하고 있습니다."
-          : "서로 다른 광고 시안 3개를 구성하고 있습니다.",
+      message: creativeGenerationMode === "hook-based" ? "자동 광고문구 6개를 각각 다른 배경·레이아웃에 적용하고 있습니다." : "서로 다른 광고 시안 3개를 구성하고 있습니다.",
     });
     try {
       const jobs: Array<{
@@ -4109,22 +3296,9 @@ export function MvpDashboard({
           });
         }
       } else if (creativeGenerationMode === "diverse-backgrounds") {
-        const candidates = [
-          selectedBackgroundRecommendation,
-          ...backgroundRecommendations.filter(
-            (item) => item.background.id !== selectedBackgroundRecommendation.background.id
-          ),
-        ].slice(0, 3);
+        const candidates = [selectedBackgroundRecommendation, ...backgroundRecommendations.filter((item) => item.background.id !== selectedBackgroundRecommendation.background.id)].slice(0, 3);
         for (const [index, recommendation] of candidates.entries()) {
-          const plans =
-            recommendation.background.id === selectedBackgroundRecommendation.background.id
-              ? adaptiveLayoutPlans
-              : await requestAdaptiveLayouts(
-                  recommendation,
-                  creativeWorkflow.selectedStrategy,
-                  "recommended",
-                  bannerCopy
-                );
+          const plans = recommendation.background.id === selectedBackgroundRecommendation.background.id ? adaptiveLayoutPlans : await requestAdaptiveLayouts(recommendation, creativeWorkflow.selectedStrategy, "recommended", bannerCopy);
           jobs.push({
             recommendation,
             plan: plans[index % Math.max(1, plans.length)],
@@ -4143,9 +3317,7 @@ export function MvpDashboard({
               hook: strategy,
               limit: 6,
               excludeIds: usedBackgroundIds,
-              selectedIds: backgroundRecommendationHistory
-                .map((history) => history.selectedBackgroundId)
-                .filter((id): id is string => Boolean(id)),
+              selectedIds: backgroundRecommendationHistory.map((history) => history.selectedBackgroundId).filter((id): id is string => Boolean(id)),
             }),
           });
           const result = (await response.json()) as {
@@ -4153,9 +3325,7 @@ export function MvpDashboard({
             error?: string;
             recommendations?: BackgroundRecommendation[];
           };
-          const recommendation = result.recommendations?.find(
-            (item) => !usedBackgroundIds.includes(item.background.id)
-          );
+          const recommendation = result.recommendations?.find((item) => !usedBackgroundIds.includes(item.background.id));
           if (!response.ok || !result.ok || !recommendation) {
             throw new Error(result.error || "문구별 배경 추천에 실패했습니다.");
           }
@@ -4167,12 +3337,7 @@ export function MvpDashboard({
             bodyCopy: strategy.subCopy || strategy.appeal || bannerCopy.bodyCopy,
             highlightCopy: strategy.keyAppeal || bannerCopy.highlightCopy,
           };
-          const plans = await requestAdaptiveLayouts(
-            recommendation,
-            strategy,
-            "recommended",
-            hookCopy
-          );
+          const plans = await requestAdaptiveLayouts(recommendation, strategy, "recommended", hookCopy);
           jobs.push({
             recommendation,
             plan: plans[index % plans.length],
@@ -4195,18 +3360,10 @@ export function MvpDashboard({
 
       for (const [index, job] of jobs.entries()) {
         const id = initialResults[index].id;
-        setAdaptiveCreativeResults((current) =>
-          current.map((result) => (result.id === id ? { ...result, status: "running" } : result))
-        );
+        setAdaptiveCreativeResults((current) => current.map((result) => (result.id === id ? { ...result, status: "running" } : result)));
         try {
           const rendered = await renderAdaptiveVariant(job);
-          setAdaptiveCreativeResults((current) =>
-            current.map((result) =>
-              result.id === id
-                ? { ...result, status: "success", imagePath: rendered.imagePath }
-                : result
-            )
-          );
+          setAdaptiveCreativeResults((current) => current.map((result) => (result.id === id ? { ...result, status: "success", imagePath: rendered.imagePath } : result)));
         } catch (error) {
           setAdaptiveCreativeResults((current) =>
             current.map((result) =>
@@ -4236,9 +3393,7 @@ export function MvpDashboard({
   }
 
   function useAdaptiveCreativeResult(result: AdaptiveCreativeRenderResult) {
-    const recommendation = backgroundRecommendations.find(
-      (item) => item.background.id === result.background.id
-    ) || {
+    const recommendation = backgroundRecommendations.find((item) => item.background.id === result.background.id) || {
       background: result.background,
       score: 0,
       matchScore: 0,
@@ -4246,11 +3401,7 @@ export function MvpDashboard({
       reasons: ["생성 시안에서 선택"],
       automaticLayout: result.plan.layoutType,
     };
-    setBackgroundRecommendations((current) =>
-      current.some((item) => item.background.id === result.background.id)
-        ? current
-        : [recommendation, ...current]
-    );
+    setBackgroundRecommendations((current) => (current.some((item) => item.background.id === result.background.id) ? current : [recommendation, ...current]));
     setSelectedLibraryBackgroundId(result.background.id);
     setAdaptiveLayoutPlans([result.plan]);
     setAutomaticAdaptiveLayoutPlans([result.plan]);
@@ -4279,9 +3430,7 @@ export function MvpDashboard({
       return;
     }
 
-    const selectedTemplates = categoryTemplates.filter((template) =>
-      templateIds.includes(template.id)
-    );
+    const selectedTemplates = categoryTemplates.filter((template) => templateIds.includes(template.id));
 
     if (!selectedTemplates.length) {
       setBatchProgressMessage("일괄 생성할 템플릿을 선택해 주세요.");
@@ -4306,9 +3455,7 @@ export function MvpDashboard({
 
     for (const [index, template] of selectedTemplates.entries()) {
       const resultId = initialResults[index].id;
-      setBatchProgressMessage(
-        index + 1 + "/" + selectedTemplates.length + " 생성 중: " + template.name
-      );
+      setBatchProgressMessage(index + 1 + "/" + selectedTemplates.length + " 생성 중: " + template.name);
       updateBatchResult(resultId, { status: "running" });
 
       try {
@@ -4339,10 +3486,7 @@ export function MvpDashboard({
           cta: showCta ? copyForRender.cta : "",
           price: copyForRender.price || productInfo.price,
         };
-        const templateFonts = resolveTemplateFontAssignment(
-          template.id,
-          headlineStyleOverrides.headlineFontPreset
-        );
+        const templateFonts = resolveTemplateFontAssignment(template.id, headlineStyleOverrides.headlineFontPreset);
 
         const response = await fetch("/api/render/template-ad", {
           method: "POST",
@@ -4356,8 +3500,7 @@ export function MvpDashboard({
             copyVariants: masterCopy.copyVariants,
             selectedVariant: copyResolution.preview.selectedVariant,
             productImagePath: resolvedImages.productImagePath || currentMainProductImage,
-            secondaryProductImagePath:
-              resolvedImages.secondaryProductImagePath || currentSecondaryProductImage,
+            secondaryProductImagePath: resolvedImages.secondaryProductImagePath || currentSecondaryProductImage,
             productImagePaths: resolvedImages.productImagePaths,
             selectedProductImagePath: resolvedImages.productImagePath,
             imageSource: resolvedImages.source,
@@ -4421,22 +3564,16 @@ export function MvpDashboard({
           productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
           productName: productInfo.productName,
           category: productInfo.category,
-          hookType:
-            creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
-          advertisingHypothesis:
-            creativeWorkflow.selectedStrategy?.explanation ||
-            creativeWorkflow.selectedStrategy?.title,
+          hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+          advertisingHypothesis: creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
           headline: copyPayload.headline,
           subCopy: copyPayload.bodyCopy,
-          benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy]
-            .filter(Boolean)
-            .join(" · "),
+          benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy].filter(Boolean).join(" · "),
           templateId: template.id,
           layoutType: template.templateGroup || template.id,
           backgroundType: currentBackgroundComposition?.sourceType || currentBackgroundMode,
           backgroundId: currentBackgroundComposition?.sourceId,
-          sourceProductImage:
-            resolvedImages.productImagePath || resolvedImages.productImagePaths[0],
+          sourceProductImage: resolvedImages.productImagePath || resolvedImages.productImagePaths[0],
           generatedImageUrl: renderResult.imagePath || renderResult.path || "",
           objective: creativeWorkflow.adBrief.adObjective,
           generationRequestKey: `mvp-batch:${resultId}`,
@@ -4445,8 +3582,7 @@ export function MvpDashboard({
         updateBatchResult(resultId, {
           status: "success",
           imagePath: renderResult.imagePath || renderResult.path || "",
-          downloadUrl:
-            renderResult.downloadUrl || renderResult.imagePath || renderResult.path || "",
+          downloadUrl: renderResult.downloadUrl || renderResult.imagePath || renderResult.path || "",
           selectedVariant: copyResolution.preview.selectedVariant,
           hasOverflow: copyResolution.preview.hasOverflow,
           overflowSlots: copyResolution.preview.overflowSlots,
@@ -4464,22 +3600,13 @@ export function MvpDashboard({
       }
     }
 
-    const finalStatus: BatchRenderStatus =
-      successCount === selectedTemplates.length
-        ? "success"
-        : successCount > 0
-          ? "partial-success"
-          : "error";
+    const finalStatus: BatchRenderStatus = successCount === selectedTemplates.length ? "success" : successCount > 0 ? "partial-success" : "error";
     setBatchRenderStatus(finalStatus);
-    setBatchProgressMessage(
-      selectedTemplates.length + "개 중 " + successCount + "개 성공, " + errorCount + "개 실패"
-    );
+    setBatchProgressMessage(selectedTemplates.length + "개 중 " + successCount + "개 성공, " + errorCount + "개 실패");
   }
 
   async function downloadBatchResultsAsZip() {
-    const successResults = batchRenderResults.filter(
-      (result) => result.status === "success" && batchResultImageUrl(result)
-    );
+    const successResults = batchRenderResults.filter((result) => result.status === "success" && batchResultImageUrl(result));
 
     if (!successResults.length) {
       setBatchProgressMessage("다운로드할 생성 결과가 없습니다.");
@@ -4531,8 +3658,7 @@ export function MvpDashboard({
     const strategy = creativeWorkflow.selectedStrategy || creativeWorkflow.strategies[0];
     if (!strategy) throw new Error("자동 템플릿을 만들 광고 방향이 없습니다.");
 
-    let recommendation: BackgroundRecommendation | null =
-      selectedBackgroundRecommendation || backgroundRecommendations[0] || null;
+    let recommendation: BackgroundRecommendation | null = selectedBackgroundRecommendation || backgroundRecommendations[0] || null;
 
     if (!recommendation) {
       setBackgroundRecommendationStatus({
@@ -4546,9 +3672,7 @@ export function MvpDashboard({
           product: productInfo,
           hook: strategy,
           limit: 6,
-          selectedIds: backgroundRecommendationHistory
-            .map((history) => history.selectedBackgroundId)
-            .filter((id): id is string => Boolean(id)),
+          selectedIds: backgroundRecommendationHistory.map((history) => history.selectedBackgroundId).filter((id): id is string => Boolean(id)),
         }),
       });
       const result = (await response.json()) as {
@@ -4567,21 +3691,12 @@ export function MvpDashboard({
 
     // Rebuild the layout with the final copy so CTA/price visibility and product geometry
     // are never inherited from the placeholder copy used during early recommendations.
-    const plans = await requestAdaptiveLayouts(
-      recommendation,
-      strategy,
-      recommendation.score > 0 ? "recommended" : "library",
-      copyForLayout
-    );
+    const plans = await requestAdaptiveLayouts(recommendation, strategy, recommendation.score > 0 ? "recommended" : "library", copyForLayout);
     const currentPlan = plans.find((plan) => plan.id === selectedAdaptivePlanId);
     const plan = currentPlan || plans[0];
     if (!plan) throw new Error("자동 템플릿 레이아웃을 만들지 못했습니다.");
 
-    setBackgroundRecommendations((current) =>
-      current.some((item) => item.background.id === recommendation.background.id)
-        ? current
-        : [recommendation, ...current]
-    );
+    setBackgroundRecommendations((current) => (current.some((item) => item.background.id === recommendation.background.id) ? current : [recommendation, ...current]));
     setSelectedLibraryBackgroundId(recommendation.background.id);
     setAdaptiveLayoutPlans(plans);
     setAutomaticAdaptiveLayoutPlans(plans);
@@ -4611,8 +3726,7 @@ export function MvpDashboard({
     });
 
     try {
-      const generationRequestId =
-        globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const generationRequestId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const copyForRender = { ...bannerCopy };
       const automaticDesign = await ensureAutomaticBannerDesign(copyForRender);
       const automaticBackground = automaticDesign.recommendation.background;
@@ -4627,15 +3741,8 @@ export function MvpDashboard({
         gptMainImagePath,
         backgroundImagePath: automaticBackground.file,
       });
-      const fontTemplateId =
-        selectedVisualDirection?.recommendedTemplateId ||
-        selectedTemplate?.id ||
-        categoryTemplates[0]?.id ||
-        "food-template-001";
-      const templateFonts = resolveTemplateFontAssignment(
-        fontTemplateId,
-        headlineStyleOverrides.headlineFontPreset
-      );
+      const fontTemplateId = selectedVisualDirection?.recommendedTemplateId || selectedTemplate?.id || categoryTemplates[0]?.id || "food-template-001";
+      const templateFonts = resolveTemplateFontAssignment(fontTemplateId, headlineStyleOverrides.headlineFontPreset);
       setActiveRenderCopy(copyForRender);
       setBannerCopy(copyForRender);
       setTemplateFittedCopy(null);
@@ -4659,8 +3766,7 @@ export function MvpDashboard({
           copyVariants: masterCopy.copyVariants,
           selectedVariant: automaticPlan.layoutVariant,
           productImagePath: resolvedImages.productImagePath || currentMainProductImage,
-          secondaryProductImagePath:
-            resolvedImages.secondaryProductImagePath || currentSecondaryProductImage,
+          secondaryProductImagePath: resolvedImages.secondaryProductImagePath || currentSecondaryProductImage,
           productImagePaths: resolvedImages.productImagePaths,
           selectedProductImagePath: resolvedImages.productImagePath,
           imageSource: resolvedImages.source,
@@ -4729,16 +3835,11 @@ export function MvpDashboard({
         productId: productInfo.creativeContext?.productId || productInfo.landingUrl || undefined,
         productName: productInfo.productName,
         category: productInfo.category,
-        hookType:
-          creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
-        advertisingHypothesis:
-          creativeWorkflow.selectedStrategy?.explanation ||
-          creativeWorkflow.selectedStrategy?.title,
+        hookType: creativeWorkflow.selectedStrategy?.hookType || copyResult?.hookType || "feature-usp",
+        advertisingHypothesis: creativeWorkflow.selectedStrategy?.explanation || creativeWorkflow.selectedStrategy?.title,
         headline: copyPayload.headline,
         subCopy: copyPayload.bodyCopy,
-        benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy]
-          .filter(Boolean)
-          .join(" · "),
+        benefitCopy: [copyPayload.highlightCopy, copyPayload.bottomBarCopy].filter(Boolean).join(" · "),
         templateId: `auto-${automaticPlan.layoutType}`,
         layoutType: automaticPlan.layoutType,
         backgroundType: automaticBackground.sourceType || "library",
@@ -4769,9 +3870,7 @@ export function MvpDashboard({
     const candidates = mainDetailCandidatesRef.current;
     if (!candidates) return;
     const maxScroll = candidates.scrollWidth - candidates.clientWidth;
-    setMainDetailScrollPercent(
-      maxScroll > 0 ? Math.round((candidates.scrollLeft / maxScroll) * 100) : 0
-    );
+    setMainDetailScrollPercent(maxScroll > 0 ? Math.round((candidates.scrollLeft / maxScroll) * 100) : 0);
   }
 
   function scrollMainDetailCandidates(percent: number) {
@@ -4794,61 +3893,23 @@ export function MvpDashboard({
   return (
     <main className="mvp-shell mvp-shell-simplified">
       {hoveredDetailImage ? (
-        <div
-          className="floating-detail-preview"
-          style={{ left: hoveredDetailImage.x, top: hoveredDetailImage.y }}
-        >
+        <div className="floating-detail-preview" style={{ left: hoveredDetailImage.x, top: hoveredDetailImage.y }}>
           <img alt={`${hoveredDetailImage.label} 크게 보기`} src={hoveredDetailImage.src} />
           <span>{hoveredDetailImage.label}</span>
         </div>
       ) : null}
-      <button
-        aria-controls="adatlas-workspace-navigation"
-        aria-expanded={mobileNavOpen}
-        className="mvp-mobile-navigation-button"
-        onClick={() => setMobileNavOpen((current) => !current)}
-        type="button"
-      >
+      <button aria-controls="adatlas-workspace-navigation" aria-expanded={mobileNavOpen} className="mvp-mobile-navigation-button" onClick={() => setMobileNavOpen((current) => !current)} type="button">
         {mobileNavOpen ? "메뉴 닫기" : "메뉴"}
       </button>
-      {mobileNavOpen ? (
-        <button
-          aria-label="메뉴 닫기"
-          className="mvp-navigation-backdrop"
-          onClick={() => setMobileNavOpen(false)}
-          type="button"
-        />
-      ) : null}
-      <AppSidebar
-        activeFeature={activeFeature}
-        className={`mvp-sidebar ${mobileNavOpen ? "open" : ""}`}
-        id="adatlas-workspace-navigation"
-      />
+      {mobileNavOpen ? <button aria-label="메뉴 닫기" className="mvp-navigation-backdrop" onClick={() => setMobileNavOpen(false)} type="button" /> : null}
+      <AppSidebar activeFeature={activeFeature} className={`mvp-sidebar ${mobileNavOpen ? "open" : ""}`} id="adatlas-workspace-navigation" />
 
       <section className="mvp-workspace">
         <header className={`mvp-hero ${activeMenu === "광고 생성" ? "creation-page-hero" : ""}`}>
           <div>
-            <p className="eyebrow">
-              {activeMenu === "광고 생성"
-                ? "CREATE"
-                : activeMenu === "결과 다운로드"
-                  ? "RESULTS"
-                  : "ADMIN"}
-            </p>
-            <h2>
-              {activeMenu === "광고 생성"
-                ? "광고 만들기"
-                : activeMenu === "결과 다운로드"
-                  ? "제작 결과"
-                  : "이미지 관리 현황"}
-            </h2>
-            <p>
-              {activeMenu === "광고 생성"
-                ? "상품 페이지 주소를 입력하면 상품을 분석하고 광고 콘텐츠를 제작합니다."
-                : activeMenu === "결과 다운로드"
-                  ? "생성한 광고와 소재코드를 다시 확인하고 내려받습니다."
-                  : "수집 이미지, 라벨, 카테고리와 생성 설정을 관리합니다."}
-            </p>
+            <p className="eyebrow">{activeMenu === "광고 생성" ? "CREATE" : activeMenu === "결과 다운로드" ? "RESULTS" : "ADMIN"}</p>
+            <h2>{activeMenu === "광고 생성" ? "광고 만들기" : activeMenu === "결과 다운로드" ? "제작 결과" : "이미지 관리 현황"}</h2>
+            <p>{activeMenu === "광고 생성" ? "상품 페이지 주소를 입력하면 상품을 분석하고 광고 콘텐츠를 제작합니다." : activeMenu === "결과 다운로드" ? "생성한 광고와 소재코드를 다시 확인하고 내려받습니다." : "수집 이미지, 라벨, 카테고리와 생성 설정을 관리합니다."}</p>
           </div>
         </header>
 
@@ -4888,38 +3949,11 @@ export function MvpDashboard({
                 이미지 새로고침
               </button>
             </div>
-            <FilterBar
-              appealPointFilter={appealPointFilter}
-              categoryFilter={categoryFilter}
-              hookTypeFilter={hookTypeFilter}
-              labelStateFilter={labelStateFilter}
-              platformFilter={platformFilter}
-              setAppealPointFilter={setAppealPointFilter}
-              setCategoryFilter={setCategoryFilter}
-              setHookTypeFilter={setHookTypeFilter}
-              setLabelStateFilter={setLabelStateFilter}
-              setPlatformFilter={setPlatformFilter}
-            />
+            <FilterBar appealPointFilter={appealPointFilter} categoryFilter={categoryFilter} hookTypeFilter={hookTypeFilter} labelStateFilter={labelStateFilter} platformFilter={platformFilter} setAppealPointFilter={setAppealPointFilter} setCategoryFilter={setCategoryFilter} setHookTypeFilter={setHookTypeFilter} setLabelStateFilter={setLabelStateFilter} setPlatformFilter={setPlatformFilter} />
             {crawledItems.length ? <CrawledGrid items={crawledItems} /> : null}
             <div className="labeling-workspace">
-              <ImageGrid
-                images={filteredImages}
-                labelsByImageId={labelsByImageId}
-                onAnalyze={analyzeImage}
-                onMetadataSave={saveImageMetadata}
-                onSelect={openLabelPanel}
-                selectedImageId={selectedImage?.id}
-              />
-              <LabelPanel
-                aiDraft={aiDraft}
-                finalLabel={finalLabel}
-                hasExistingLabel={Boolean(selectedImage && labelsByImageId.has(selectedImage.id))}
-                image={selectedImage}
-                onAnalyze={analyzeImage}
-                onDraftChange={setFinalLabel}
-                onSave={saveLabel}
-                status={labelStatus}
-              />
+              <ImageGrid images={filteredImages} labelsByImageId={labelsByImageId} onAnalyze={analyzeImage} onMetadataSave={saveImageMetadata} onSelect={openLabelPanel} selectedImageId={selectedImage?.id} />
+              <LabelPanel aiDraft={aiDraft} finalLabel={finalLabel} hasExistingLabel={Boolean(selectedImage && labelsByImageId.has(selectedImage.id))} image={selectedImage} onAnalyze={analyzeImage} onDraftChange={setFinalLabel} onSave={saveLabel} status={labelStatus} />
             </div>
           </section>
         ) : null}
@@ -4928,30 +3962,11 @@ export function MvpDashboard({
           <section className="mvp-panel">
             <div className="mvp-panel-head">
               <h3>이미지 분석</h3>
-              <span className="panel-note">
-                이미지별 카드에서 AI 분석 또는 재분석을 실행하세요.
-              </span>
+              <span className="panel-note">이미지별 카드에서 AI 분석 또는 재분석을 실행하세요.</span>
             </div>
             <div className="labeling-workspace">
-              <ImageGrid
-                images={filteredImages}
-                labelsByImageId={labelsByImageId}
-                onAnalyze={analyzeImage}
-                onMetadataSave={saveImageMetadata}
-                onSelect={openLabelPanel}
-                selectedImageId={selectedImage?.id}
-                showAnalysis
-              />
-              <LabelPanel
-                aiDraft={aiDraft}
-                finalLabel={finalLabel}
-                hasExistingLabel={Boolean(selectedImage && labelsByImageId.has(selectedImage.id))}
-                image={selectedImage}
-                onAnalyze={analyzeImage}
-                onDraftChange={setFinalLabel}
-                onSave={saveLabel}
-                status={labelStatus}
-              />
+              <ImageGrid images={filteredImages} labelsByImageId={labelsByImageId} onAnalyze={analyzeImage} onMetadataSave={saveImageMetadata} onSelect={openLabelPanel} selectedImageId={selectedImage?.id} showAnalysis />
+              <LabelPanel aiDraft={aiDraft} finalLabel={finalLabel} hasExistingLabel={Boolean(selectedImage && labelsByImageId.has(selectedImage.id))} image={selectedImage} onAnalyze={analyzeImage} onDraftChange={setFinalLabel} onSave={saveLabel} status={labelStatus} />
             </div>
           </section>
         ) : null}
@@ -4965,16 +3980,7 @@ export function MvpDashboard({
                 ["creative", "03 ZIP 광고 제작"],
                 ["results", "04 제작 결과"],
               ].map(([step, label]) => (
-                <Link
-                  aria-current={initialWorkflowStep === step ? "step" : undefined}
-                  className={initialWorkflowStep === step ? "active" : ""}
-                  href={`/create-product?${step === "results" ? "view=results" : `step=${step}`}${
-                    productInfo.landingUrl
-                      ? `&productUrl=${encodeURIComponent(productInfo.landingUrl)}`
-                      : ""
-                  }`}
-                  key={step}
-                >
+                <Link aria-current={initialWorkflowStep === step ? "step" : undefined} className={initialWorkflowStep === step ? "active" : ""} href={`/create-product?${step === "results" ? "view=results" : `step=${step}`}${productInfo.landingUrl ? `&productUrl=${encodeURIComponent(productInfo.landingUrl)}` : ""}`} key={step}>
                   {label}
                 </Link>
               ))}
@@ -4984,15 +3990,10 @@ export function MvpDashboard({
                 <details className="analysis-handoff-notice">
                   <summary>
                     <span>{handoffSourceLabel}에서 선택한 상품을 불러왔습니다.</span>
-                    <strong>
-                      {initialCreationHandoff.selectedContentAngle?.name || "추천 방향 적용됨"}
-                    </strong>
+                    <strong>{initialCreationHandoff.selectedContentAngle?.name || "추천 방향 적용됨"}</strong>
                   </summary>
                   <div>
-                    <p>
-                      {initialCreationHandoff.selectedContentAngle?.reason ||
-                        "상품정보와 이미지 후보를 광고 제작에 연결했습니다."}
-                    </p>
+                    <p>{initialCreationHandoff.selectedContentAngle?.reason || "상품정보와 이미지 후보를 광고 제작에 연결했습니다."}</p>
                     {initialCreationHandoff.selectedContentAngle?.evidence.length ? (
                       <ul>
                         {initialCreationHandoff.selectedContentAngle.evidence.map((evidence) => (
@@ -5000,23 +4001,12 @@ export function MvpDashboard({
                         ))}
                       </ul>
                     ) : null}
-                    <a
-                      href={
-                        initialCreationHandoff.creativeContext?.opportunityId
-                          ? "/analyze-store"
-                          : `/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`
-                      }
-                    >
-                      다른 추천 상품 보기
-                    </a>
+                    <a href={initialCreationHandoff.creativeContext?.opportunityId ? "/analyze-store" : `/analyze-store/results?analysisId=${encodeURIComponent(initialCreationHandoff.analysisId)}`}>다른 추천 상품 보기</a>
                   </div>
                 </details>
               ) : null}
 
-              <CreativeCreationSteps
-                currentProductLoaded={currentProductLoaded}
-                generationPlanConfirmed={generationPlanConfirmed}
-              />
+              <CreativeCreationSteps currentProductLoaded={currentProductLoaded} generationPlanConfirmed={generationPlanConfirmed} />
 
               <div className="ad-generation-flow">
                 <div className="banner-builder">
@@ -5027,29 +4017,14 @@ export function MvpDashboard({
                     <div className="product-url-entry">
                       <label>
                         <span className="sr-only">상품 페이지 주소</span>
-                        <input
-                          id="product-url-input"
-                          onChange={(event) =>
-                            updateProductInfoField("landingUrl", event.target.value)
-                          }
-                          placeholder="https://shop.example.com/products/123"
-                          value={productInfo.landingUrl}
-                        />
+                        <input id="product-url-input" onChange={(event) => updateProductInfoField("landingUrl", event.target.value)} placeholder="https://shop.example.com/products/123" value={productInfo.landingUrl} />
                       </label>
-                      <button
-                        disabled={productExtractStatus.kind === "loading"}
-                        onClick={() => loadProductInfoFromUrl()}
-                        type="button"
-                      >
-                        {productExtractStatus.kind === "loading"
-                          ? "상품을 확인하고 있어요…"
-                          : "상품 분석하기"}
+                      <button disabled={productExtractStatus.kind === "loading"} onClick={() => loadProductInfoFromUrl()} type="button">
+                        {productExtractStatus.kind === "loading" ? "상품을 확인하고 있어요…" : "상품 분석하기"}
                       </button>
                     </div>
                     <small>예: 브랜드몰·스마트스토어·카페24의 개별 상품 주소</small>
-                    <div className={`mvp-status ${productExtractStatus.kind}`}>
-                      {productExtractStatus.message}
-                    </div>
+                    <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
                     {recentProducts.length ? (
                       <div className="recent-product-list" aria-label="최근 분석한 상품">
                         <span>최근 상품</span>
@@ -5059,9 +4034,7 @@ export function MvpDashboard({
                               key={item.landingUrl}
                               onClick={() => {
                                 updateProductInfoField("landingUrl", item.landingUrl);
-                                window.requestAnimationFrame(() =>
-                                  document.getElementById("product-url-input")?.focus()
-                                );
+                                window.requestAnimationFrame(() => document.getElementById("product-url-input")?.focus());
                               }}
                               type="button"
                             >
@@ -5081,23 +4054,18 @@ export function MvpDashboard({
                   <ProductAnalysisSummary
                     brief={creativeWorkflow.adBrief}
                     imagePaths={hookExperimentProductImagePaths}
-                    loaded={currentProductLoaded && !generationPlanConfirmed}
+                    loaded={currentProductLoaded}
                     onChooseOther={() => {
                       document.getElementById("product-url-input")?.focus();
-                      document
-                        .getElementById("product-url-step")
-                        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      document.getElementById("product-url-step")?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
                     onUseProduct={() => {
                       setGenerationPlanConfirmed(true);
-                      window.requestAnimationFrame(() =>
-                        document
-                          .getElementById("creative-results")
-                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                      );
+                      window.requestAnimationFrame(() => document.getElementById("creative-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
                     }}
                     product={productInfo}
                     references={autoMatchedReferenceLabels}
+                    selectedForGeneration={generationPlanConfirmed}
                   />
                   <details className="product-info-details" hidden={!currentProductLoaded}>
                     <summary>불러온 상품 정보 확인·수정</summary>
@@ -5109,12 +4077,7 @@ export function MvpDashboard({
                           <label key={field.key}>
                             <span>{field.label}</span>
                             {field.key === "category" ? (
-                              <select
-                                onChange={(event) =>
-                                  updateProductInfoField("category", event.target.value)
-                                }
-                                value={productInfo.category || "기타"}
-                              >
+                              <select onChange={(event) => updateProductInfoField("category", event.target.value)} value={productInfo.category || "기타"}>
                                 {categoryOptions.map((option) => (
                                   <option key={option} value={option}>
                                     {option}
@@ -5122,49 +4085,21 @@ export function MvpDashboard({
                                 ))}
                               </select>
                             ) : (
-                              <input
-                                onChange={(event) =>
-                                  updateProductInfoField(field.key, event.target.value)
-                                }
-                                placeholder={field.placeholder}
-                                value={String(productInfo[field.key] || "")}
-                              />
+                              <input onChange={(event) => updateProductInfoField(field.key, event.target.value)} placeholder={field.placeholder} value={String(productInfo[field.key] || "")} />
                             )}
                           </label>
                         ))}
                     </section>
                   </details>
                   <div>
-                    <HookExperimentCreativeGenerator
-                      adBrief={creativeWorkflow.adBrief}
-                      analysisRevision={productAnalysisRevision}
-                      analyzedProductUrl={lastLoadedProductUrl}
-                      logoPath={brandLogoPath}
-                      planConfirmed={generationPlanConfirmed}
-                      productLoaded={currentProductLoaded}
-                      product={productInfo}
-                      productImagePaths={hookExperimentProductImagePaths}
-                      selectedAdImages={selectedAdImages.selectedImagePaths}
-                      source={
-                        lastLoadedProductUrl &&
-                        productInfo.landingUrl.trim() === lastLoadedProductUrl
-                          ? "landing-page"
-                          : "user-input"
-                      }
-                    />
+                    <HookExperimentCreativeGenerator adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
                   </div>
                   {legacyManualProductionToolsAvailable ? (
-                    <details
-                      className="advanced-production-workspace"
-                      hidden={!currentProductLoaded}
-                      id="advanced-generation-settings"
-                    >
+                    <details className="advanced-production-workspace" hidden={!currentProductLoaded} id="advanced-generation-settings">
                       <summary>
                         <span>
                           <b>고급 설정 · 대표 소재 직접 조정</b>
-                          <small>
-                            업체 카피 가이드, 문구 전략, 배경, 레이아웃을 수동으로 바꿀 때만 사용
-                          </small>
+                          <small>업체 카피 가이드, 문구 전략, 배경, 레이아웃을 수동으로 바꿀 때만 사용</small>
                         </span>
                       </summary>
                       <div className="advanced-production-body">
@@ -5187,88 +4122,30 @@ export function MvpDashboard({
                           <p className="eyebrow">Auto Template</p>
                           <label>
                             <span>업체별 카피 가이드</span>
-                            <select
-                              onChange={(event) => setSelectedAdvertiserName(event.target.value)}
-                              value={selectedAdvertiserName}
-                            >
+                            <select onChange={(event) => setSelectedAdvertiserName(event.target.value)} value={selectedAdvertiserName}>
                               {advertiserOptions.map((option) => (
                                 <option key={option.value || "none"} value={option.value}>
                                   {option.label}
                                 </option>
                               ))}
                             </select>
-                            <small>
-                              {selectedAdvertiserOption.guideId
-                                ? `${selectedAdvertiserOption.label} 카피 가이드 적용 예정`
-                                : "업체별 카피 가이드 미적용"}
-                            </small>
+                            <small>{selectedAdvertiserOption.guideId ? `${selectedAdvertiserOption.label} 카피 가이드 적용 예정` : "업체별 카피 가이드 미적용"}</small>
                           </label>
                           <h4>상품별 자동 템플릿</h4>
-                          <p className="template-limit-summary">
-                            자동 생성된 대표 문구에 맞춰 배경·문구 영역·상품 위치·가격·CTA·색상을
-                            조합한 전용 템플릿을 생성합니다. 고정 템플릿을 선택할 필요가 없습니다.
-                          </p>
+                          <p className="template-limit-summary">자동 생성된 대표 문구에 맞춰 배경·문구 영역·상품 위치·가격·CTA·색상을 조합한 전용 템플릿을 생성합니다. 고정 템플릿을 선택할 필요가 없습니다.</p>
                           {selectedTemplate ? (
                             <p className="template-limit-summary">
-                              자동 폰트 스타일 참고: {selectedTemplate.name} · 문구 제한 headline{" "}
-                              {slotMaxChars("headline")}자 / body {slotMaxChars("bodyCopy")}자 /
-                              하단 {slotMaxChars("bottomBarCopy")}자 / CTA {slotMaxChars("cta")}자
+                              자동 폰트 스타일 참고: {selectedTemplate.name} · 문구 제한 headline {slotMaxChars("headline")}자 / body {slotMaxChars("bodyCopy")}자 / 하단 {slotMaxChars("bottomBarCopy")}자 / CTA {slotMaxChars("cta")}자
                             </p>
                           ) : null}
-                          <p className="copy-generation-note">
-                            문구를 선택하는 단계 없이 6개를 만들고, 1번은 대표 소재에 적용하며
-                            나머지는 문구별 시안 생성에 자동 반영합니다.
-                          </p>
+                          <p className="copy-generation-note">문구를 선택하는 단계 없이 6개를 만들고, 1번은 대표 소재에 적용하며 나머지는 문구별 시안 생성에 자동 반영합니다.</p>
                         </section>
-                        <div className={`mvp-status ${strategyStatus.kind}`}>
-                          {strategyStatus.message}
-                        </div>
-                        <StrategySelector
-                          copies={automaticCopySet}
-                          isGenerating={
-                            creativeWorkflow.isGeneratingStrategies ||
-                            copyStatus.kind === "loading" ||
-                            backgroundRecommendationStatus.kind === "loading"
-                          }
-                          onGenerate={() =>
-                            void generateAndApplyAutomaticCopies(
-                              creativeWorkflow.generateStrategies
-                            )
-                          }
-                          onGenerateMore={() =>
-                            void generateAndApplyAutomaticCopies(
-                              creativeWorkflow.generateMoreStrategies,
-                              true
-                            )
-                          }
-                          selectedStrategyId={creativeWorkflow.selectedStrategyId}
-                          strategies={creativeWorkflow.strategies}
-                        />
+                        <div className={`mvp-status ${strategyStatus.kind}`}>{strategyStatus.message}</div>
+                        <StrategySelector copies={automaticCopySet} isGenerating={creativeWorkflow.isGeneratingStrategies || copyStatus.kind === "loading" || backgroundRecommendationStatus.kind === "loading"} onGenerate={() => void generateAndApplyAutomaticCopies(creativeWorkflow.generateStrategies)} onGenerateMore={() => void generateAndApplyAutomaticCopies(creativeWorkflow.generateMoreStrategies, true)} selectedStrategyId={creativeWorkflow.selectedStrategyId} strategies={creativeWorkflow.strategies} />
                         {creativeWorkflow.selectedStrategy ? (
                           <>
-                            <BackgroundRecommendationPanel
-                              audienceProfile={backgroundAudienceProfile}
-                              loading={backgroundRecommendationStatus.kind === "loading"}
-                              onRefresh={() =>
-                                void loadBackgroundRecommendations(
-                                  creativeWorkflow.selectedStrategy!,
-                                  recentBackgroundRecommendationIds
-                                )
-                              }
-                              onSelectBackground={selectLibraryBackground}
-                              recommendations={backgroundRecommendations}
-                              selectedBackgroundId={selectedLibraryBackgroundId}
-                              status={backgroundRecommendationStatus.message}
-                            />
-                            <BackgroundCatalogPanel
-                              hook={creativeWorkflow.selectedStrategy}
-                              onSelectBackground={selectLibraryBackground}
-                              onSelectFixedBackground={selectFixedBackground}
-                              product={productInfo}
-                              selectedBackgroundSource={String(
-                                productInfo.selectedBackgroundSource || ""
-                              )}
-                            />
+                            <BackgroundRecommendationPanel audienceProfile={backgroundAudienceProfile} loading={backgroundRecommendationStatus.kind === "loading"} onRefresh={() => void loadBackgroundRecommendations(creativeWorkflow.selectedStrategy!, recentBackgroundRecommendationIds)} onSelectBackground={selectLibraryBackground} recommendations={backgroundRecommendations} selectedBackgroundId={selectedLibraryBackgroundId} status={backgroundRecommendationStatus.message} />
+                            <BackgroundCatalogPanel hook={creativeWorkflow.selectedStrategy} onSelectBackground={selectLibraryBackground} onSelectFixedBackground={selectFixedBackground} product={productInfo} selectedBackgroundSource={String(productInfo.selectedBackgroundSource || "")} />
                           </>
                         ) : null}
                         {selectedLibraryBackground ? (
@@ -5278,9 +4155,7 @@ export function MvpDashboard({
                             generating={adaptiveCreativeGenerating}
                             loading={adaptiveLayoutStatus.kind === "loading"}
                             onChangePlan={(nextPlan) => {
-                              setAdaptiveLayoutPlans((current) =>
-                                current.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan))
-                              );
+                              setAdaptiveLayoutPlans((current) => current.map((plan) => (plan.id === nextPlan.id ? nextPlan : plan)));
                               setGeneratedBannerPath("");
                             }}
                             onGenerateVariants={() => void generateAdaptiveCreativeVariants()}
@@ -5290,13 +4165,7 @@ export function MvpDashboard({
                             }}
                             onReset={() => {
                               setAdaptiveLayoutPlans(automaticAdaptiveLayoutPlans);
-                              setSelectedAdaptivePlanId(
-                                automaticAdaptiveLayoutPlans.find(
-                                  (plan) => plan.id === selectedAdaptivePlanId
-                                )?.id ||
-                                  automaticAdaptiveLayoutPlans[0]?.id ||
-                                  ""
-                              );
+                              setSelectedAdaptivePlanId(automaticAdaptiveLayoutPlans.find((plan) => plan.id === selectedAdaptivePlanId)?.id || automaticAdaptiveLayoutPlans[0]?.id || "");
                               setGeneratedBannerPath("");
                             }}
                             onSelectPlan={(id) => {
@@ -5311,11 +4180,7 @@ export function MvpDashboard({
                           />
                         ) : null}
                         <div className="workflow-primary-action">
-                          <span>
-                            {creativeWorkflow.selectedStrategy
-                              ? `대표 적용: ${creativeWorkflow.selectedStrategy.title} · 배경과 템플릿도 자동 적용`
-                              : "광고문구 6개를 생성하면 대표 문구·배경·템플릿이 자동 적용됩니다."}
-                          </span>
+                          <span>{creativeWorkflow.selectedStrategy ? `대표 적용: ${creativeWorkflow.selectedStrategy.title} · 배경과 템플릿도 자동 적용` : "광고문구 6개를 생성하면 대표 문구·배경·템플릿이 자동 적용됩니다."}</span>
                         </div>
                       </div>
                     </details>
@@ -5323,10 +4188,7 @@ export function MvpDashboard({
                 </div>
 
                 {legacyManualProductionToolsAvailable ? (
-                  <details
-                    className="advanced-production-workspace advanced-editor-workspace"
-                    hidden={!currentProductLoaded}
-                  >
+                  <details className="advanced-production-workspace advanced-editor-workspace" hidden={!currentProductLoaded}>
                     <summary>
                       <span>
                         <b>세부 문구·이미지·배너 편집기</b>
@@ -5339,9 +4201,7 @@ export function MvpDashboard({
                           <p className="eyebrow">Editable Copy</p>
                           <h4>생성 문구 수정</h4>
                         </div>
-                        {(
-                          ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta"] as const
-                        ).map((key) => (
+                        {(["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta"] as const).map((key) => (
                           <label key={key}>
                             <span>
                               {key}
@@ -5367,47 +4227,26 @@ export function MvpDashboard({
                               rows={key === "headline" ? 2 : 3}
                               value={bannerCopy[key]}
                             />
-                            {copyVisibleLength(bannerCopy[key]) > slotMaxChars(key) ? (
-                              <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
-                            ) : null}
+                            {copyVisibleLength(bannerCopy[key]) > slotMaxChars(key) ? <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small> : null}
                           </label>
                         ))}
                         {hasMasterCopy ? (
                           <>
-                            <MessageHierarchyEditor
-                              onChange={updateMessageHierarchy}
-                              value={creativeWorkflow.messageHierarchy}
-                            />
-                            <CopyQualityPanel
-                              onTighten={applyTemplateTightCopy}
-                              report={copyQualityReport}
-                            />
+                            <MessageHierarchyEditor onChange={updateMessageHierarchy} value={creativeWorkflow.messageHierarchy} />
+                            <CopyQualityPanel onTighten={applyTemplateTightCopy} report={copyQualityReport} />
                           </>
                         ) : null}
-                        <BasicStyleControls
-                          onChange={updateBasicEditor}
-                          value={basicEditorSettings}
-                        />
+                        <BasicStyleControls onChange={updateBasicEditor} value={basicEditorSettings} />
                         <label>
                           <span>CTA 표시</span>
-                          <select
-                            onChange={(event) => setShowCta(event.target.value === "show")}
-                            value={showCta ? "show" : "hide"}
-                          >
+                          <select onChange={(event) => setShowCta(event.target.value === "show")} value={showCta ? "show" : "hide"}>
                             <option value="show">표시</option>
                             <option value="hide">표시 안 함</option>
                           </select>
                         </label>
                         <label>
                           <span>제목 글씨 스타일</span>
-                          <select
-                            onChange={(event) =>
-                              selectHeadlinePreset(
-                                event.target.value as HeadlineStyleOverrides["headlineFontPreset"]
-                              )
-                            }
-                            value={headlineStyleOverrides.headlineFontPreset || "impact-korean-red"}
-                          >
+                          <select onChange={(event) => selectHeadlinePreset(event.target.value as HeadlineStyleOverrides["headlineFontPreset"])} value={headlineStyleOverrides.headlineFontPreset || "impact-korean-red"}>
                             <option value="impact-korean-red">빨간 특가형</option>
                             <option value="commerce-heavy-black">검정 굵은형</option>
                             <option value="premium-serif-gold">고급 선물형</option>
@@ -5417,153 +4256,57 @@ export function MvpDashboard({
                         <div className="copy-accent-controls">
                           <label>
                             <span>강조할 문구</span>
-                            <input
-                              onChange={(event) => setBannerAccentPhrase(event.target.value)}
-                              placeholder="비워두면 자동 선택. 예: 입안에서 육즙 폭발, 등심"
-                              value={bannerAccentPhrase}
-                            />
-                            <small>
-                              비워두면 가격/상품명/혜택 표현을 자동 강조합니다. 수동 입력은 쉼표로
-                              구분하고, 문구 안에서 [[등심]]처럼 감싸도 됩니다.
-                            </small>
+                            <input onChange={(event) => setBannerAccentPhrase(event.target.value)} placeholder="비워두면 자동 선택. 예: 입안에서 육즙 폭발, 등심" value={bannerAccentPhrase} />
+                            <small>비워두면 가격/상품명/혜택 표현을 자동 강조합니다. 수동 입력은 쉼표로 구분하고, 문구 안에서 [[등심]]처럼 감싸도 됩니다.</small>
                           </label>
                           <label>
                             <span>강조 색상</span>
-                            <input
-                              onChange={(event) => setBannerAccentColor(event.target.value)}
-                              type="color"
-                              value={bannerAccentColor}
-                            />
+                            <input onChange={(event) => setBannerAccentColor(event.target.value)} type="color" value={bannerAccentColor} />
                           </label>
                         </div>
-                        <button
-                          className="secondary-tool-button"
-                          onClick={() => setShowAdvancedHeadlineStyle((current) => !current)}
-                          type="button"
-                        >
+                        <button className="secondary-tool-button" onClick={() => setShowAdvancedHeadlineStyle((current) => !current)} type="button">
                           제목 세부 조정 {showAdvancedHeadlineStyle ? "닫기" : "열기"}
                         </button>
                         {showAdvancedHeadlineStyle ? (
                           <div className="advanced-style-grid">
                             <label>
                               <span>글씨 크기</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineFontSize",
-                                    event.target.value ? Number(event.target.value) : ""
-                                  )
-                                }
-                                placeholder="자동"
-                                type="number"
-                                value={headlineStyleOverrides.headlineFontSize ?? ""}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineFontSize", event.target.value ? Number(event.target.value) : "")} placeholder="자동" type="number" value={headlineStyleOverrides.headlineFontSize ?? ""} />
                             </label>
                             <label>
                               <span>굵기</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineFontWeight",
-                                    event.target.value ? Number(event.target.value) : ""
-                                  )
-                                }
-                                placeholder="900"
-                                type="number"
-                                value={headlineStyleOverrides.headlineFontWeight ?? ""}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineFontWeight", event.target.value ? Number(event.target.value) : "")} placeholder="900" type="number" value={headlineStyleOverrides.headlineFontWeight ?? ""} />
                             </label>
                             <label>
                               <span>자간</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineLetterSpacing",
-                                    event.target.value ? Number(event.target.value) : ""
-                                  )
-                                }
-                                placeholder="-4"
-                                type="number"
-                                value={headlineStyleOverrides.headlineLetterSpacing ?? ""}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineLetterSpacing", event.target.value ? Number(event.target.value) : "")} placeholder="-4" type="number" value={headlineStyleOverrides.headlineLetterSpacing ?? ""} />
                             </label>
                             <label>
                               <span>줄 간격</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineLineHeight",
-                                    event.target.value ? Number(event.target.value) : ""
-                                  )
-                                }
-                                placeholder="0.95"
-                                step="0.01"
-                                type="number"
-                                value={headlineStyleOverrides.headlineLineHeight ?? ""}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineLineHeight", event.target.value ? Number(event.target.value) : "")} placeholder="0.95" step="0.01" type="number" value={headlineStyleOverrides.headlineLineHeight ?? ""} />
                             </label>
                             <label>
                               <span>제목 색상</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride("headlineColor", event.target.value)
-                                }
-                                type="color"
-                                value={headlineStyleOverrides.headlineColor || "#ff1f1f"}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineColor", event.target.value)} type="color" value={headlineStyleOverrides.headlineColor || "#ff1f1f"} />
                             </label>
                             <label>
                               <span>외곽선</span>
-                              <select
-                                onChange={(event) =>
-                                  setHeadlineStrokeEnabled(event.target.value === "on")
-                                }
-                                value={headlineStyleOverrides.headlineTextStroke ? "on" : "off"}
-                              >
+                              <select onChange={(event) => setHeadlineStrokeEnabled(event.target.value === "on")} value={headlineStyleOverrides.headlineTextStroke ? "on" : "off"}>
                                 <option value="off">끄기</option>
                                 <option value="on">켜기</option>
                               </select>
                             </label>
                             <label>
                               <span>외곽선 색상</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineTextStrokeColor",
-                                    event.target.value
-                                  )
-                                }
-                                type="color"
-                                value={headlineStyleOverrides.headlineTextStrokeColor || "#111111"}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineTextStrokeColor", event.target.value)} type="color" value={headlineStyleOverrides.headlineTextStrokeColor || "#111111"} />
                             </label>
                             <label>
                               <span>외곽선 두께</span>
-                              <input
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineTextStrokeWidth",
-                                    event.target.value ? Number(event.target.value) : ""
-                                  )
-                                }
-                                placeholder="0"
-                                type="number"
-                                value={headlineStyleOverrides.headlineTextStrokeWidth ?? ""}
-                              />
+                              <input onChange={(event) => setHeadlineStyleOverride("headlineTextStrokeWidth", event.target.value ? Number(event.target.value) : "")} placeholder="0" type="number" value={headlineStyleOverrides.headlineTextStrokeWidth ?? ""} />
                             </label>
                             <label>
                               <span>그림자</span>
-                              <select
-                                onChange={(event) =>
-                                  setHeadlineStyleOverride(
-                                    "headlineShadow",
-                                    event.target.value === "on"
-                                  )
-                                }
-                                value={
-                                  headlineStyleOverrides.headlineShadow === false ? "off" : "on"
-                                }
-                              >
+                              <select onChange={(event) => setHeadlineStyleOverride("headlineShadow", event.target.value === "on")} value={headlineStyleOverrides.headlineShadow === false ? "off" : "on"}>
                                 <option value="on">켜기</option>
                                 <option value="off">끄기</option>
                               </select>
@@ -5583,18 +4326,10 @@ export function MvpDashboard({
                             }
                             value={productInfo.price}
                           />
-                          {copyVisibleLength(productInfo.price) > slotMaxChars("price") ? (
-                            <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small>
-                          ) : null}
+                          {copyVisibleLength(productInfo.price) > slotMaxChars("price") ? <small className="copy-warning">템플릿에서 잘릴 수 있습니다.</small> : null}
                         </label>
-                        {templateFittedCopy?.slotFits.some((slot) => slot.status === "trimmed") ? (
-                          <p className="copy-validation-note">
-                            선택한 템플릿 제한에 맞춰 일부 문구가 자동 압축되었습니다.
-                          </p>
-                        ) : null}
-                        {copyResult ? (
-                          <p className="strategy-empty">{copyResult.whyThisWorks}</p>
-                        ) : null}
+                        {templateFittedCopy?.slotFits.some((slot) => slot.status === "trimmed") ? <p className="copy-validation-note">선택한 템플릿 제한에 맞춰 일부 문구가 자동 압축되었습니다.</p> : null}
+                        {copyResult ? <p className="strategy-empty">{copyResult.whyThisWorks}</p> : null}
                         {copyResult?.copyGuideUsage ? (
                           <details className="reference-pattern-usage">
                             <summary>적용된 업체별 카피 가이드</summary>
@@ -5602,8 +4337,7 @@ export function MvpDashboard({
                               <div>
                                 <dt>가이드</dt>
                                 <dd>
-                                  {copyResult.copyGuideUsage.brandName} /{" "}
-                                  {copyResult.copyGuideUsage.guideId}
+                                  {copyResult.copyGuideUsage.brandName} / {copyResult.copyGuideUsage.guideId}
                                 </dd>
                               </div>
                               <div>
@@ -5628,62 +4362,28 @@ export function MvpDashboard({
                                 return (
                                   <div key={variantKey}>
                                     <dt>{variantKey}</dt>
-                                    <dd>
-                                      {[
-                                        variant.headline,
-                                        variant.bodyCopy,
-                                        variant.highlightCopy,
-                                        variant.bottomBarCopy,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" / ")}
-                                    </dd>
+                                    <dd>{[variant.headline, variant.bodyCopy, variant.highlightCopy, variant.bottomBarCopy].filter(Boolean).join(" / ")}</dd>
                                   </div>
                                 );
                               })}
                             </dl>
                           </details>
                         ) : null}
-                        {copyResult?.copyValidation?.bodyCopy &&
-                        (!copyResult.copyValidation.bodyCopy.ok ||
-                          copyResult.copyValidation.bodyCopy.original !==
-                            copyResult.copyValidation.bodyCopy.normalized) ? (
-                          <p className="copy-validation-note">
-                            바디카피의 반말/비격식 표현이 존댓말형으로 보정되었습니다.
-                          </p>
-                        ) : null}
+                        {copyResult?.copyValidation?.bodyCopy && (!copyResult.copyValidation.bodyCopy.ok || copyResult.copyValidation.bodyCopy.original !== copyResult.copyValidation.bodyCopy.normalized) ? <p className="copy-validation-note">바디카피의 반말/비격식 표현이 존댓말형으로 보정되었습니다.</p> : null}
                         {copyResult?.referencePatternUsage ? (
                           <details className="reference-pattern-usage">
                             <summary>참고한 레퍼런스 패턴</summary>
                             <dl>
                               {[
-                                [
-                                  "적용 패턴",
-                                  copyResult.referencePatternUsage.appliedPatterns?.join(", "),
-                                ],
-                                [
-                                  "직접 복사 회피",
-                                  copyResult.referencePatternUsage.avoidedDirectCopy ? "예" : "",
-                                ],
+                                ["적용 패턴", copyResult.referencePatternUsage.appliedPatterns?.join(", ")],
+                                ["직접 복사 회피", copyResult.referencePatternUsage.avoidedDirectCopy ? "예" : ""],
                                 ["후킹 패턴", copyResult.referencePatternUsage.usedHookPattern],
                                 ["문구 구조", copyResult.referencePatternUsage.usedCopyStructure],
                                 ["톤앤매너", copyResult.referencePatternUsage.usedToneOfVoice],
-                                [
-                                  "소비자 인사이트",
-                                  copyResult.referencePatternUsage.usedConsumerInsight,
-                                ],
-                                [
-                                  "구매 트리거",
-                                  copyResult.referencePatternUsage.usedPurchaseTrigger,
-                                ],
-                                [
-                                  "재사용 문구 패턴",
-                                  copyResult.referencePatternUsage.usedReusablePattern,
-                                ],
-                                [
-                                  "비주얼/문구 관계",
-                                  copyResult.referencePatternUsage.usedVisualCopyRelation,
-                                ],
+                                ["소비자 인사이트", copyResult.referencePatternUsage.usedConsumerInsight],
+                                ["구매 트리거", copyResult.referencePatternUsage.usedPurchaseTrigger],
+                                ["재사용 문구 패턴", copyResult.referencePatternUsage.usedReusablePattern],
+                                ["비주얼/문구 관계", copyResult.referencePatternUsage.usedVisualCopyRelation],
                               ]
                                 .filter(([, value]) => Boolean(value))
                                 .map(([label, value]) => (
@@ -5700,24 +4400,10 @@ export function MvpDashboard({
                       <section className="banner-preview-panel">
                         <div>
                           <p className="eyebrow">PNG Preview</p>
-                          <h4>
-                            {renderDiagnostics?.templateId ||
-                              (selectedAdaptivePlan
-                                ? `auto-${selectedAdaptivePlan.layoutType}`
-                                : "자동 템플릿 대기")}
-                          </h4>
-                          <small className="preview-context">
-                            1200×1200 ·{" "}
-                            {creativeWorkflow.selectedStrategy?.title || "문구 자동 생성 전"}
-                          </small>
+                          <h4>{renderDiagnostics?.templateId || (selectedAdaptivePlan ? `auto-${selectedAdaptivePlan.layoutType}` : "자동 템플릿 대기")}</h4>
+                          <small className="preview-context">1200×1200 · {creativeWorkflow.selectedStrategy?.title || "문구 자동 생성 전"}</small>
                         </div>
-                        {generatedBannerPath ? (
-                          <img
-                            alt="현재 1200x1200 배너 미리보기"
-                            className="sticky-live-preview"
-                            src={generatedBannerPath}
-                          />
-                        ) : null}
+                        {generatedBannerPath ? <img alt="현재 1200x1200 배너 미리보기" className="sticky-live-preview" src={generatedBannerPath} /> : null}
                         <details className="template-picker source-image-dropdown">
                           <summary>
                             <div>
@@ -5733,55 +4419,30 @@ export function MvpDashboard({
                           </div>
                           <label className="copy-mode-selector">
                             <span>문구 적용 방식</span>
-                            <select
-                              onChange={(event) =>
-                                setTemplateCopyMode(event.target.value as TemplateCopyApplyMode)
-                              }
-                              value={templateCopyMode}
-                            >
+                            <select onChange={(event) => setTemplateCopyMode(event.target.value as TemplateCopyApplyMode)} value={templateCopyMode}>
                               <option value="auto-variant">길이별 자동 선택</option>
                               <option value="original">원문 그대로</option>
                               <option value="force-fit">강제 자동축약</option>
                             </select>
-                            <small>
-                              {selectedTemplateCopyPreview
-                                ? `선택 variant: ${selectedTemplateCopyPreview.selectedVariant}${selectedTemplateCopyPreview.hasOverflow ? " / 일부 자동축약" : " / 맞음"}`
-                                : "문구 생성 후 템플릿별 적용 결과가 표시됩니다."}
-                            </small>
+                            <small>{selectedTemplateCopyPreview ? `선택 variant: ${selectedTemplateCopyPreview.selectedVariant}${selectedTemplateCopyPreview.hasOverflow ? " / 일부 자동축약" : " / 맞음"}` : "문구 생성 후 템플릿별 적용 결과가 표시됩니다."}</small>
                           </label>
                           {categoryTemplates.length ? (
                             <div className="template-card-list">
                               {categoryTemplates.map((template, index) => (
-                                <button
-                                  className={`${selectedTemplateId === template.id ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
-                                  key={template.id}
-                                  onClick={() => setSelectedTemplateId(template.id)}
-                                  type="button"
-                                >
+                                <button className={`${selectedTemplateId === template.id ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()} key={template.id} onClick={() => setSelectedTemplateId(template.id)} type="button">
                                   <div>
                                     <strong>
                                       {index + 1}. {template.name}
                                     </strong>
                                     <span>{template.description.split(".")[0]}</span>
                                     <small>
-                                      문구 제한: headline{" "}
-                                      {template.copyLimits?.headline?.maxChars || 14}자 / body{" "}
-                                      {template.copyLimits?.bodyCopy?.maxChars || 32}자 / 하단{" "}
-                                      {template.copyLimits?.bottomBarCopy?.maxChars || 28}자 / CTA{" "}
-                                      {template.copyLimits?.cta?.maxChars || 8}자
+                                      문구 제한: headline {template.copyLimits?.headline?.maxChars || 14}자 / body {template.copyLimits?.bodyCopy?.maxChars || 32}자 / 하단 {template.copyLimits?.bottomBarCopy?.maxChars || 28}자 / CTA {template.copyLimits?.cta?.maxChars || 8}자
                                     </small>
                                   </div>
-                                  {recommendedTemplateIds.includes(template.id) ? (
-                                    <em className="analysis-template-badge">분석 추천</em>
-                                  ) : null}
+                                  {recommendedTemplateIds.includes(template.id) ? <em className="analysis-template-badge">분석 추천</em> : null}
                                   {selectedTemplateId === template.id ? <b>선택됨</b> : null}
                                   <div className="template-palette" aria-hidden="true">
-                                    {[
-                                      "headlineColor",
-                                      "highlightBackground",
-                                      "bottomBarColor",
-                                      "ctaBarColor",
-                                    ].map((key) => (
+                                    {["headlineColor", "highlightBackground", "bottomBarColor", "ctaBarColor"].map((key) => (
                                       <i
                                         key={key}
                                         style={{
@@ -5807,90 +4468,42 @@ export function MvpDashboard({
                               <strong>전체 {categoryTemplates.length}개 제작 가능</strong>
                             </div>
                             <div className="batch-actions">
-                              <button
-                                className="primary"
-                                disabled={
-                                  !categoryTemplates.length || batchRenderStatus === "running"
-                                }
-                                onClick={() =>
-                                  void renderSelectedTemplatesBatch(
-                                    categoryTemplates.map((template) => template.id)
-                                  )
-                                }
-                                type="button"
-                              >
+                              <button className="primary" disabled={!categoryTemplates.length || batchRenderStatus === "running"} onClick={() => void renderSelectedTemplatesBatch(categoryTemplates.map((template) => template.id))} type="button">
                                 선택 배경으로 모든 템플릿 비교
                               </button>
-                              <button
-                                disabled={
-                                  batchRenderStatus === "running" ||
-                                  !selectedBatchTemplateIds.length
-                                }
-                                onClick={() => void renderSelectedTemplatesBatch()}
-                                type="button"
-                              >
+                              <button disabled={batchRenderStatus === "running" || !selectedBatchTemplateIds.length} onClick={() => void renderSelectedTemplatesBatch()} type="button">
                                 고른 템플릿만 생성 ({selectedBatchTemplateIds.length})
                               </button>
-                              <button
-                                disabled={batchRenderStatus === "running"}
-                                onClick={() =>
-                                  setSelectedBatchTemplateIds(
-                                    categoryTemplates.map((template) => template.id)
-                                  )
-                                }
-                                type="button"
-                              >
+                              <button disabled={batchRenderStatus === "running"} onClick={() => setSelectedBatchTemplateIds(categoryTemplates.map((template) => template.id))} type="button">
                                 전체 선택
                               </button>
-                              <button
-                                disabled={batchRenderStatus === "running"}
-                                onClick={() => setSelectedBatchTemplateIds([])}
-                                type="button"
-                              >
+                              <button disabled={batchRenderStatus === "running"} onClick={() => setSelectedBatchTemplateIds([])} type="button">
                                 전체 해제
                               </button>
-                              <button
-                                disabled={
-                                  batchRenderStatus === "running" && !batchRenderResults.length
-                                }
-                                onClick={resetBatchRenderResults}
-                                type="button"
-                              >
+                              <button disabled={batchRenderStatus === "running" && !batchRenderResults.length} onClick={resetBatchRenderResults} type="button">
                                 일괄 생성 결과 초기화
                               </button>
                             </div>
                             {categoryTemplates.length ? (
                               <details className="source-image-dropdown">
-                                <summary>
-                                  일부 템플릿만 만들기 (선택사항 · {selectedBatchTemplateIds.length}
-                                  개 선택)
-                                </summary>
+                                <summary>일부 템플릿만 만들기 (선택사항 · {selectedBatchTemplateIds.length}개 선택)</summary>
                                 <div className="template-card-list batch-template-list">
                                   {categoryTemplates.map((template, index) => {
                                     const checked = selectedBatchTemplateIds.includes(template.id);
                                     return (
-                                      <label
-                                        className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()}
-                                        key={template.id}
-                                      >
+                                      <label className={`${checked ? "selected" : ""} ${recommendedTemplateIds.includes(template.id) ? "analysis-recommended" : ""}`.trim()} key={template.id}>
                                         <input
                                           checked={checked}
                                           onChange={(event) => {
                                             event.stopPropagation();
-                                            setSelectedBatchTemplateIds((current) =>
-                                              event.target.checked
-                                                ? Array.from(new Set([...current, template.id]))
-                                                : current.filter((id) => id !== template.id)
-                                            );
+                                            setSelectedBatchTemplateIds((current) => (event.target.checked ? Array.from(new Set([...current, template.id])) : current.filter((id) => id !== template.id)));
                                           }}
                                           onClick={(event) => event.stopPropagation()}
                                           type="checkbox"
                                         />
                                         <span>
                                           {index + 1}. {template.name}
-                                          {recommendedTemplateIds.includes(template.id)
-                                            ? " · 분석 추천"
-                                            : ""}
+                                          {recommendedTemplateIds.includes(template.id) ? " · 분석 추천" : ""}
                                         </span>
                                       </label>
                                     );
@@ -5898,22 +4511,7 @@ export function MvpDashboard({
                                 </div>
                               </details>
                             ) : null}
-                            <div
-                              className={
-                                "mvp-status " +
-                                (batchRenderStatus === "error"
-                                  ? "error"
-                                  : batchRenderStatus === "running"
-                                    ? "loading"
-                                    : batchRenderStatus === "success" ||
-                                        batchRenderStatus === "partial-success"
-                                      ? "success"
-                                      : "idle")
-                              }
-                            >
-                              {batchProgressMessage ||
-                                "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}
-                            </div>
+                            <div className={"mvp-status " + (batchRenderStatus === "error" ? "error" : batchRenderStatus === "running" ? "loading" : batchRenderStatus === "success" || batchRenderStatus === "partial-success" ? "success" : "idle")}>{batchProgressMessage || "선택한 템플릿을 한 번에 순차 생성할 수 있습니다."}</div>
                             <section className="batch-result-panel">
                               <div className="section-heading-row">
                                 <div>
@@ -5921,29 +4519,10 @@ export function MvpDashboard({
                                   <h4>일괄 생성 결과</h4>
                                 </div>
                                 <strong>
-                                  성공{" "}
-                                  {
-                                    batchRenderResults.filter(
-                                      (result) => result.status === "success"
-                                    ).length
-                                  }
-                                  개 / 실패{" "}
-                                  {
-                                    batchRenderResults.filter((result) => result.status === "error")
-                                      .length
-                                  }
-                                  개
+                                  성공 {batchRenderResults.filter((result) => result.status === "success").length}개 / 실패 {batchRenderResults.filter((result) => result.status === "error").length}개
                                 </strong>
                               </div>
-                              <button
-                                className="download-button"
-                                disabled={
-                                  isZipDownloading ||
-                                  !batchRenderResults.some((result) => result.status === "success")
-                                }
-                                onClick={downloadBatchResultsAsZip}
-                                type="button"
-                              >
+                              <button className="download-button" disabled={isZipDownloading || !batchRenderResults.some((result) => result.status === "success")} onClick={downloadBatchResultsAsZip} type="button">
                                 {isZipDownloading ? "ZIP 생성 중" : "ZIP 다운로드"}
                               </button>
                               {batchRenderResults.length ? (
@@ -5951,41 +4530,20 @@ export function MvpDashboard({
                                   {batchRenderResults.map((result) => {
                                     const imageUrl = batchResultImageUrl(result);
                                     return (
-                                      <article
-                                        className={"batch-result-card " + result.status}
-                                        key={result.id}
-                                      >
+                                      <article className={"batch-result-card " + result.status} key={result.id}>
                                         <div>
                                           <strong>{result.templateName}</strong>
-                                          <span>
-                                            {result.status === "pending"
-                                              ? "대기"
-                                              : result.status === "running"
-                                                ? "생성 중"
-                                                : result.status === "success"
-                                                  ? "생성 완료"
-                                                  : "실패"}
-                                          </span>
+                                          <span>{result.status === "pending" ? "대기" : result.status === "running" ? "생성 중" : result.status === "success" ? "생성 완료" : "실패"}</span>
                                         </div>
-                                        {imageUrl ? (
-                                          <img alt={result.templateName + " 배너"} src={imageUrl} />
-                                        ) : null}
+                                        {imageUrl ? <img alt={result.templateName + " 배너"} src={imageUrl} /> : null}
                                         {result.status === "success" ? (
                                           <p>
                                             적용 문구: {result.selectedVariant || "base"}
                                             {result.hasOverflow ? " / 일부 자동축약" : ""}
                                           </p>
                                         ) : null}
-                                        {result.errorMessage ? (
-                                          <p className="copy-warning">{result.errorMessage}</p>
-                                        ) : null}
-                                        {result.creativeAsset ? (
-                                          <CreativeAssetActions
-                                            asset={result.creativeAsset}
-                                            compact
-                                            onMessage={setBatchProgressMessage}
-                                          />
-                                        ) : null}
+                                        {result.errorMessage ? <p className="copy-warning">{result.errorMessage}</p> : null}
+                                        {result.creativeAsset ? <CreativeAssetActions asset={result.creativeAsset} compact onMessage={setBatchProgressMessage} /> : null}
                                       </article>
                                     );
                                   })}
@@ -6004,86 +4562,48 @@ export function MvpDashboard({
                             <div>
                               <p className="eyebrow">GPT Source</p>
                               <strong>원본 기준 이미지 선택 / GPT 이미지 생성</strong>
-                              <span>
-                                GPT 생성이 필요할 때만 열어서 기준 이미지, 생성 옵션, 결과를
-                                관리하세요.
-                              </span>
+                              <span>GPT 생성이 필요할 때만 열어서 기준 이미지, 생성 옵션, 결과를 관리하세요.</span>
                             </div>
                             <b>{selectedSourceImagePath ? "기준 이미지 있음" : "선택 필요"}</b>
                           </summary>
                           <div className="source-image-panel-body">
                             <label>
                               <span>직접 업로드</span>
-                              <input
-                                accept="image/png,image/jpeg,image/webp"
-                                onChange={(event) => uploadSourceImage(event.target.files?.[0])}
-                                type="file"
-                              />
+                              <input accept="image/png,image/jpeg,image/webp" onChange={(event) => uploadSourceImage(event.target.files?.[0])} type="file" />
                             </label>
-                            <div className={`mvp-status ${sourceImageStatus.kind}`}>
-                              {sourceImageStatus.message}
-                            </div>
+                            <div className={`mvp-status ${sourceImageStatus.kind}`}>{sourceImageStatus.message}</div>
                             <div className="source-image-layout">
                               <div className="source-image-candidates">
                                 {sourceImageCandidatesForDisplay.length ? (
                                   sourceImageCandidatesForDisplay.map((candidate) => (
-                                    <button
-                                      className={
-                                        candidate.id === selectedSourceImage?.id ? "selected" : ""
-                                      }
-                                      key={candidate.id}
-                                      onClick={() => selectSourceImage(candidate)}
-                                      type="button"
-                                    >
+                                    <button className={candidate.id === selectedSourceImage?.id ? "selected" : ""} key={candidate.id} onClick={() => selectSourceImage(candidate)} type="button">
                                       <img alt={candidate.label} src={candidate.imagePath} />
-                                      <span>
-                                        {candidate.type === "hero"
-                                          ? "대표 이미지"
-                                          : candidate.type === "upload"
-                                            ? "직접 업로드"
-                                            : "상세 이미지"}
-                                      </span>
+                                      <span>{candidate.type === "hero" ? "대표 이미지" : candidate.type === "upload" ? "직접 업로드" : "상세 이미지"}</span>
                                       <strong>{candidate.label}</strong>
-                                      {candidate.id === selectedSourceImage?.id ? (
-                                        <b>현재 원본 기준</b>
-                                      ) : null}
+                                      {candidate.id === selectedSourceImage?.id ? <b>현재 원본 기준</b> : null}
                                     </button>
                                   ))
                                 ) : (
-                                  <p className="strategy-empty">
-                                    상품정보를 불러오면 상세페이지 이미지가 원본 기준 후보로
-                                    표시됩니다.
-                                  </p>
+                                  <p className="strategy-empty">상품정보를 불러오면 상세페이지 이미지가 원본 기준 후보로 표시됩니다.</p>
                                 )}
                               </div>
                               <div className="source-image-preview">
                                 <strong>현재 GPT 생성 기준 이미지</strong>
                                 {selectedSourceImagePath ? (
                                   <>
-                                    <img
-                                      alt="현재 GPT 생성 기준 이미지"
-                                      src={selectedSourceImagePath}
-                                    />
+                                    <img alt="현재 GPT 생성 기준 이미지" src={selectedSourceImagePath} />
                                     <span>{selectedSourceImage?.label || "기본 대표 이미지"}</span>
-                                    <small>
-                                      이 이미지를 기준으로 상품 원형, 색상, 포장, 표면 디테일을
-                                      최대한 유지합니다.
-                                    </small>
+                                    <small>이 이미지를 기준으로 상품 원형, 색상, 포장, 표면 디테일을 최대한 유지합니다.</small>
                                   </>
                                 ) : (
-                                  <p className="strategy-empty">
-                                    아직 선택된 기준 이미지가 없습니다.
-                                  </p>
+                                  <p className="strategy-empty">아직 선택된 기준 이미지가 없습니다.</p>
                                 )}
                               </div>
                             </div>
                             <div className="gpt-reference-upload">
                               <div>
                                 <strong>GPT 참고 이미지</strong>
-                                <small>
-                                  원본 상품은 위 기준 이미지를 유지하고, 참고 이미지는
-                                  분위기/구도/조명만 참고합니다. 최대 3장까지 첨부됩니다.
-                                </small>
+                                <small>원본 상품은 위 기준 이미지를 유지하고, 참고 이미지는 분위기/구도/조명만 참고합니다. 최대 3장까지 첨부됩니다.</small>
                               </div>
                               <label>
                                 <span>참고 이미지 첨부</span>
@@ -6102,27 +4622,16 @@ export function MvpDashboard({
                                     <article key={image.id}>
                                       <img alt={image.label} src={image.imagePath} />
                                       <span>{image.label}</span>
-                                      <button
-                                        onClick={() =>
-                                          setGptReferenceImages((current) =>
-                                            current.filter((item) => item.id !== image.id)
-                                          )
-                                        }
-                                        type="button"
-                                      >
+                                      <button onClick={() => setGptReferenceImages((current) => current.filter((item) => item.id !== image.id))} type="button">
                                         제거
                                       </button>
                                     </article>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="strategy-empty">
-                                  참고 이미지가 없으면 원본 기준 이미지만 사용합니다.
-                                </p>
+                                <p className="strategy-empty">참고 이미지가 없으면 원본 기준 이미지만 사용합니다.</p>
                               )}
-                              <p className={`mvp-status ${gptReferenceImageStatus.kind}`}>
-                                {gptReferenceImageStatus.message}
-                              </p>
+                              <p className={`mvp-status ${gptReferenceImageStatus.kind}`}>{gptReferenceImageStatus.message}</p>
                             </div>
                             <details className="gpt-generator-dropdown">
                               <summary>
@@ -6131,78 +4640,38 @@ export function MvpDashboard({
                                   <strong>GPT 이미지 생성</strong>
                                   <span>선택한 원본 기준 이미지로 광고용 이미지를 생성합니다.</span>
                                 </div>
-                                <b>
-                                  {gptVisualAsset || gptTextAdAsset
-                                    ? "생성 결과 있음"
-                                    : "선택 사항"}
-                                </b>
+                                <b>{gptVisualAsset || gptTextAdAsset ? "생성 결과 있음" : "선택 사항"}</b>
                               </summary>
                               <div className="gpt-image-generator">
                                 <div>
                                   <p className="eyebrow">GPT Image</p>
                                   <h4>GPT 이미지 생성</h4>
-                                  <p className="source-help">
-                                    상품 원본을 최대한 유지하려면 “선택 이미지 기준 생성 + 상품 원본
-                                    최대한 유지”를 사용하세요.
-                                  </p>
+                                  <p className="source-help">상품 원본을 최대한 유지하려면 “선택 이미지 기준 생성 + 상품 원본 최대한 유지”를 사용하세요.</p>
                                 </div>
                                 <div className="gpt-compact-controls">
                                   <label>
                                     <span>이미지 생성 엔진</span>
-                                    <select
-                                      onChange={(event) =>
-                                        setImageGenerationProvider(
-                                          event.target.value as ImageGenerationProvider
-                                        )
-                                      }
-                                      value={imageGenerationProvider}
-                                    >
+                                    <select onChange={(event) => setImageGenerationProvider(event.target.value as ImageGenerationProvider)} value={imageGenerationProvider}>
                                       <option value="openai">GPT 이미지 생성</option>
                                       <option value="gemini">나노바나나</option>
                                     </select>
-                                    <small>
-                                      {imageGenerationProvider === "gemini"
-                                        ? "Gemini API Key로 나노바나나 이미지 생성을 사용합니다."
-                                        : "OpenAI 이미지 생성 API를 사용합니다."}
-                                    </small>
+                                    <small>{imageGenerationProvider === "gemini" ? "Gemini API Key로 나노바나나 이미지 생성을 사용합니다." : "OpenAI 이미지 생성 API를 사용합니다."}</small>
                                   </label>
                                   <label>
                                     <span>생성 방식</span>
-                                    <select
-                                      onChange={(event) =>
-                                        setGptImageSourceMode(
-                                          event.target.value as GptImageSourceMode
-                                        )
-                                      }
-                                      value={gptImageSourceMode}
-                                    >
+                                    <select onChange={(event) => setGptImageSourceMode(event.target.value as GptImageSourceMode)} value={gptImageSourceMode}>
                                       <option value="image-edit">선택 이미지 기준으로 생성</option>
                                       <option value="text-to-image">새 이미지 생성</option>
                                     </select>
-                                    <small>
-                                      {gptImageSourceMode === "image-edit"
-                                        ? "선택한 원본 기준 이미지를 바탕으로 배경/조명/무드를 보정합니다."
-                                        : "상품 정보를 바탕으로 새 이미지를 생성합니다. 원본 상품 유지력은 낮을 수 있습니다."}
-                                    </small>
+                                    <small>{gptImageSourceMode === "image-edit" ? "선택한 원본 기준 이미지를 바탕으로 배경/조명/무드를 보정합니다." : "상품 정보를 바탕으로 새 이미지를 생성합니다. 원본 상품 유지력은 낮을 수 있습니다."}</small>
                                   </label>
                                   <label>
                                     <span>원본 유지</span>
-                                    <select
-                                      onChange={(event) =>
-                                        setGptPreservationMode(
-                                          event.target.value as GptImagePreservationMode
-                                        )
-                                      }
-                                      value={gptPreservationMode}
-                                    >
-                                      <option value="preserve-product">
-                                        상품 원본 최대한 유지
-                                      </option>
+                                    <select onChange={(event) => setGptPreservationMode(event.target.value as GptImagePreservationMode)} value={gptPreservationMode}>
+                                      <option value="preserve-product">상품 원본 최대한 유지</option>
                                       <option value="free-generate">자유 생성</option>
                                     </select>
-                                    <small>
-                                      상품 형태, 포장, 색상, 개수, 라벨 위치 보존 여부입니다.
-                                    </small>
+                                    <small>상품 형태, 포장, 색상, 개수, 라벨 위치 보존 여부입니다.</small>
                                   </label>
                                   <label>
                                     <span>프롬프트</span>
@@ -6211,11 +4680,7 @@ export function MvpDashboard({
                                         setGptPromptState((current) => ({
                                           ...current,
                                           promptMode: event.target.value as "auto" | "custom",
-                                          finalPrompt:
-                                            event.target.value === "custom" &&
-                                            current.customPrompt.trim()
-                                              ? current.customPrompt.trim()
-                                              : autoGptImagePrompt,
+                                          finalPrompt: event.target.value === "custom" && current.customPrompt.trim() ? current.customPrompt.trim() : autoGptImagePrompt,
                                         }))
                                       }
                                       value={gptPromptState.promptMode}
@@ -6223,18 +4688,13 @@ export function MvpDashboard({
                                       <option value="auto">자동 프롬프트</option>
                                       <option value="custom">직접 작성 프롬프트</option>
                                     </select>
-                                    <small>
-                                      {gptPromptState.promptMode === "custom"
-                                        ? "직접 작성한 프롬프트가 실제 생성에 우선 적용됩니다."
-                                        : "상품정보와 기준 이미지로 자동 생성합니다."}
-                                    </small>
+                                    <small>{gptPromptState.promptMode === "custom" ? "직접 작성한 프롬프트가 실제 생성에 우선 적용됩니다." : "상품정보와 기준 이미지로 자동 생성합니다."}</small>
                                   </label>
                                   <label>
                                     <span>자동 프롬프트 목적</span>
                                     <select
                                       onChange={(event) => {
-                                        const templateMode = event.target
-                                          .value as GptPromptTemplateMode;
+                                        const templateMode = event.target.value as GptPromptTemplateMode;
                                         setGptPromptTemplateMode(templateMode);
                                         setGptPromptState((current) => ({
                                           ...current,
@@ -6245,30 +4705,19 @@ export function MvpDashboard({
                                       value={gptPromptTemplateMode}
                                     >
                                       <option value="visual-only">글씨 없는 광고 비주얼</option>
-                                      <option value="ad-image-with-copy">
-                                        문구 포함 광고 배너
-                                      </option>
+                                      <option value="ad-image-with-copy">문구 포함 광고 배너</option>
                                     </select>
-                                    <small>
-                                      두 모드 모두 1200x1200 SNS 배너 기준으로 자동 작성됩니다.
-                                    </small>
+                                    <small>두 모드 모두 1200x1200 SNS 배너 기준으로 자동 작성됩니다.</small>
                                   </label>
                                   <label>
                                     <span>후보 개수</span>
-                                    <select
-                                      onChange={(event) =>
-                                        setNumImageCandidates(Number(event.target.value))
-                                      }
-                                      value={numImageCandidates}
-                                    >
+                                    <select onChange={(event) => setNumImageCandidates(Number(event.target.value))} value={numImageCandidates}>
                                       <option value={1}>1개</option>
                                       <option value={2}>2개</option>
                                       <option value={3}>3개</option>
                                       <option value={4}>4개</option>
                                     </select>
-                                    <small>
-                                      빠르게 보려면 1개, 비교가 필요하면 2~4개를 선택하세요.
-                                    </small>
+                                    <small>빠르게 보려면 1개, 비교가 필요하면 2~4개를 선택하세요.</small>
                                   </label>
                                 </div>
                                 <details className="gpt-prompt-panel">
@@ -6286,10 +4735,7 @@ export function MvpDashboard({
                                       rows={3}
                                       value={gptPromptState.customPromptNote || ""}
                                     />
-                                    <small>
-                                      전체 프롬프트를 다시 쓰지 않고, 자동 프롬프트 뒤에 추가로 붙일
-                                      지시만 적습니다.
-                                    </small>
+                                    <small>전체 프롬프트를 다시 쓰지 않고, 자동 프롬프트 뒤에 추가로 붙일 지시만 적습니다.</small>
                                   </label>
                                   <label>
                                     <span>자동 생성 프롬프트</span>
@@ -6303,17 +4749,9 @@ export function MvpDashboard({
                                         }))
                                       }
                                       rows={9}
-                                      value={
-                                        gptPromptState.promptMode === "custom" &&
-                                        gptPromptState.customPrompt
-                                          ? gptPromptState.customPrompt
-                                          : autoGptImagePrompt
-                                      }
+                                      value={gptPromptState.promptMode === "custom" && gptPromptState.customPrompt ? gptPromptState.customPrompt : autoGptImagePrompt}
                                     />
-                                    <small>
-                                      자동 프롬프트를 직접 수정하면 직접 작성 프롬프트 모드로
-                                      전환됩니다.
-                                    </small>
+                                    <small>자동 프롬프트를 직접 수정하면 직접 작성 프롬프트 모드로 전환됩니다.</small>
                                   </label>
                                   <label>
                                     <span>직접 작성 프롬프트</span>
@@ -6361,10 +4799,8 @@ export function MvpDashboard({
                                     <button
                                       onClick={() =>
                                         setGptPromptState((current) => {
-                                          const base =
-                                            current.customPrompt.trim() || autoGptImagePrompt;
-                                          const customPrompt =
-                                            `${base}\n\n${noPackageChangePromptTemplate}`.trim();
+                                          const base = current.customPrompt.trim() || autoGptImagePrompt;
+                                          const customPrompt = `${base}\n\n${noPackageChangePromptTemplate}`.trim();
                                           return {
                                             ...current,
                                             promptMode: "custom",
@@ -6395,31 +4831,15 @@ export function MvpDashboard({
                                   />
                                 </label>
                                 <div className="gpt-image-actions">
-                                  <button
-                                    disabled={gptImageStatus.kind === "loading"}
-                                    onClick={() => generateGptImage("visual-only")}
-                                    type="button"
-                                  >
-                                    {gptImageStatus.kind === "loading"
-                                      ? "이미지 생성 중..."
-                                      : "이미지만 생성"}
+                                  <button disabled={gptImageStatus.kind === "loading"} onClick={() => generateGptImage("visual-only")} type="button">
+                                    {gptImageStatus.kind === "loading" ? "이미지 생성 중..." : "이미지만 생성"}
                                   </button>
-                                  <button
-                                    disabled={gptTextAdStatus.kind === "loading"}
-                                    onClick={() => generateGptImage("text-in-image")}
-                                    type="button"
-                                  >
-                                    {gptTextAdStatus.kind === "loading"
-                                      ? "광고 생성 중..."
-                                      : "글씨까지 생성"}
+                                  <button disabled={gptTextAdStatus.kind === "loading"} onClick={() => generateGptImage("text-in-image")} type="button">
+                                    {gptTextAdStatus.kind === "loading" ? "광고 생성 중..." : "글씨까지 생성"}
                                   </button>
                                 </div>
-                                <p className={`mvp-status ${gptImageStatus.kind}`}>
-                                  {gptImageStatus.message}
-                                </p>
-                                <p className={`mvp-status ${gptTextAdStatus.kind}`}>
-                                  {gptTextAdStatus.message}
-                                </p>
+                                <p className={`mvp-status ${gptImageStatus.kind}`}>{gptImageStatus.message}</p>
+                                <p className={`mvp-status ${gptTextAdStatus.kind}`}>{gptTextAdStatus.message}</p>
                               </div>
                             </details>
                             <details className="gpt-generator-dropdown gpt-result-dropdown">
@@ -6427,40 +4847,21 @@ export function MvpDashboard({
                                 <div>
                                   <p className="eyebrow">Optional GPT</p>
                                   <strong>GPT 생성 결과</strong>
-                                  <span>
-                                    생성한 이미지가 있을 때만 열어서 메인 이미지나 최종 광고안으로
-                                    채택하세요.
-                                  </span>
+                                  <span>생성한 이미지가 있을 때만 열어서 메인 이미지나 최종 광고안으로 채택하세요.</span>
                                 </div>
-                                <b>
-                                  {gptImageCandidates.length ||
-                                  gptVisualAsset ||
-                                  gptTextAdAsset ||
-                                  gptMainImagePath ||
-                                  gptTextAdImagePath
-                                    ? "결과 있음"
-                                    : "비어 있음"}
-                                </b>
+                                <b>{gptImageCandidates.length || gptVisualAsset || gptTextAdAsset || gptMainImagePath || gptTextAdImagePath ? "결과 있음" : "비어 있음"}</b>
                               </summary>
-                              <p className="source-help">
-                                이미지 생성 결과가 마음에 들지 않으면 실패 이유를 선택하고 다시
-                                생성할 수 있습니다. 정확한 상품 형태, 한글 문구, 가격, CTA는 이미지
-                                생성보다 템플릿 합성이 더 안정적입니다.
-                              </p>
+                              <p className="source-help">이미지 생성 결과가 마음에 들지 않으면 실패 이유를 선택하고 다시 생성할 수 있습니다. 정확한 상품 형태, 한글 문구, 가격, CTA는 이미지 생성보다 템플릿 합성이 더 안정적입니다.</p>
                               <div className="gpt-result-grid">
                                 <article className="gpt-image-result">
                                   <strong>GPT 이미지 생성 결과</strong>
                                   <span>글씨 없는 비주얼</span>
                                   {gptVisualAsset?.imagePath || gptMainImagePath ? (
                                     <>
-                                      <img
-                                        alt="GPT 이미지 전용 결과"
-                                        src={gptVisualAsset?.imagePath || gptMainImagePath}
-                                      />
+                                      <img alt="GPT 이미지 전용 결과" src={gptVisualAsset?.imagePath || gptMainImagePath} />
                                       <button
                                         onClick={() => {
-                                          const imagePath =
-                                            gptVisualAsset?.imagePath || gptMainImagePath;
+                                          const imagePath = gptVisualAsset?.imagePath || gptMainImagePath;
                                           setGptMainImagePath(imagePath);
                                           setMainImageSourceMode("gpt");
                                         }}
@@ -6470,9 +4871,7 @@ export function MvpDashboard({
                                       </button>
                                     </>
                                   ) : (
-                                    <p className="strategy-empty">
-                                      [이미지만 생성] 결과가 여기에 표시됩니다.
-                                    </p>
+                                    <p className="strategy-empty">[이미지만 생성] 결과가 여기에 표시됩니다.</p>
                                   )}
                                 </article>
                                 <article className="gpt-image-result">
@@ -6480,14 +4879,10 @@ export function MvpDashboard({
                                   <span>완성형 광고안</span>
                                   {gptTextAdAsset?.imagePath || gptTextAdImagePath ? (
                                     <>
-                                      <img
-                                        alt="GPT 글씨 포함 광고 결과"
-                                        src={gptTextAdAsset?.imagePath || gptTextAdImagePath}
-                                      />
+                                      <img alt="GPT 글씨 포함 광고 결과" src={gptTextAdAsset?.imagePath || gptTextAdImagePath} />
                                       <button
                                         onClick={() => {
-                                          const imagePath =
-                                            gptTextAdAsset?.imagePath || gptTextAdImagePath;
+                                          const imagePath = gptTextAdAsset?.imagePath || gptTextAdImagePath;
                                           setGeneratedBannerPath(imagePath);
                                         }}
                                         type="button"
@@ -6496,9 +4891,7 @@ export function MvpDashboard({
                                       </button>
                                     </>
                                   ) : (
-                                    <p className="strategy-empty">
-                                      [글씨까지 생성] 결과가 여기에 표시됩니다.
-                                    </p>
+                                    <p className="strategy-empty">[글씨까지 생성] 결과가 여기에 표시됩니다.</p>
                                   )}
                                 </article>
                               </div>
@@ -6510,46 +4903,24 @@ export function MvpDashboard({
                                   </div>
                                   <div className="source-candidate-grid">
                                     {gptImageCandidates.map((candidate) => (
-                                      <article
-                                        className={`source-candidate-card ${selectedGptImageCandidate?.id === candidate.id ? "selected" : ""}`}
-                                        key={candidate.id}
-                                      >
-                                        <button
-                                          onClick={() => selectGptCandidate(candidate)}
-                                          type="button"
-                                        >
+                                      <article className={`source-candidate-card ${selectedGptImageCandidate?.id === candidate.id ? "selected" : ""}`} key={candidate.id}>
+                                        <button onClick={() => selectGptCandidate(candidate)} type="button">
                                           <img alt="GPT 생성 후보" src={candidate.imagePath} />
                                           <span>
-                                            {candidate.imageGenerationMode === "text-in-image"
-                                              ? "글씨 포함"
-                                              : "이미지 전용"}{" "}
-                                            · {candidate.attempt}차
+                                            {candidate.imageGenerationMode === "text-in-image" ? "글씨 포함" : "이미지 전용"} · {candidate.attempt}차
                                           </span>
-                                          <small>
-                                            {candidate.imageSourceMode === "image-edit"
-                                              ? "원본 기준"
-                                              : "새 생성"}
-                                          </small>
+                                          <small>{candidate.imageSourceMode === "image-edit" ? "원본 기준" : "새 생성"}</small>
                                         </button>
                                         <div className="gpt-prompt-actions">
-                                          <button
-                                            onClick={() => selectGptCandidate(candidate)}
-                                            type="button"
-                                          >
+                                          <button onClick={() => selectGptCandidate(candidate)} type="button">
                                             이 이미지 선택
                                           </button>
                                           <button
                                             onClick={() => {
                                               setSelectedGptImageCandidateId(candidate.id);
-                                              setSelectedImageFailureReasons(
-                                                candidate.failureReasons || []
-                                              );
-                                              setImageCustomFeedback(
-                                                candidate.customFeedback || ""
-                                              );
-                                              setImageRevisionPrompt(
-                                                candidate.revisionPrompt || ""
-                                              );
+                                              setSelectedImageFailureReasons(candidate.failureReasons || []);
+                                              setImageCustomFeedback(candidate.customFeedback || "");
+                                              setImageRevisionPrompt(candidate.revisionPrompt || "");
                                             }}
                                             type="button"
                                           >
@@ -6609,31 +4980,19 @@ export function MvpDashboard({
                                 <div>
                                   <p className="eyebrow">Feedback Loop</p>
                                   <h4>실패 이유 선택 후 다시 생성</h4>
-                                  <p className="source-help">
-                                    선택한 후보의 원본 기준 이미지를 유지한 채, 아래 피드백을 수정
-                                    프롬프트로 바꿔 재생성합니다.
-                                  </p>
+                                  <p className="source-help">선택한 후보의 원본 기준 이미지를 유지한 채, 아래 피드백을 수정 프롬프트로 바꿔 재생성합니다.</p>
                                 </div>
                                 <div className="feedback-reason-list">
                                   {gptImageFailureReasonOptions.map((option) => (
                                     <label className="feedback-reason-option" key={option.value}>
-                                      <input
-                                        checked={selectedImageFailureReasons.includes(option.value)}
-                                        onChange={() => toggleImageFailureReason(option.value)}
-                                        type="checkbox"
-                                      />
+                                      <input checked={selectedImageFailureReasons.includes(option.value)} onChange={() => toggleImageFailureReason(option.value)} type="checkbox" />
                                       <span>{option.label}</span>
                                     </label>
                                   ))}
                                 </div>
                                 <label>
                                   <span>추가 피드백</span>
-                                  <textarea
-                                    onChange={(event) => setImageCustomFeedback(event.target.value)}
-                                    placeholder="예: 고기 색감은 유지하고 배경만 더 깔끔하게. 포장 트레이처럼 만들지 말 것."
-                                    rows={4}
-                                    value={imageCustomFeedback}
-                                  />
+                                  <textarea onChange={(event) => setImageCustomFeedback(event.target.value)} placeholder="예: 고기 색감은 유지하고 배경만 더 깔끔하게. 포장 트레이처럼 만들지 말 것." rows={4} value={imageCustomFeedback} />
                                 </label>
                                 <label>
                                   <span>수정 프롬프트</span>
@@ -6643,15 +5002,7 @@ export function MvpDashboard({
                                   <button onClick={makeImageRevisionPrompt} type="button">
                                     수정 프롬프트 만들기
                                   </button>
-                                  <button
-                                    disabled={
-                                      !selectedGptImageCandidate ||
-                                      gptImageStatus.kind === "loading" ||
-                                      gptTextAdStatus.kind === "loading"
-                                    }
-                                    onClick={regenerateImageWithFeedback}
-                                    type="button"
-                                  >
+                                  <button disabled={!selectedGptImageCandidate || gptImageStatus.kind === "loading" || gptTextAdStatus.kind === "loading"} onClick={regenerateImageWithFeedback} type="button">
                                     이 피드백으로 다시 생성
                                   </button>
                                 </div>
@@ -6670,11 +5021,7 @@ export function MvpDashboard({
                             <div>
                               <p className="eyebrow">Render Background</p>
                               <strong>상품 원본 이미지</strong>
-                              <span>
-                                {currentMainProductImage
-                                  ? productImageModeLabel(productImageState.selectedImageMode)
-                                  : "이미지 선택 필요"}
-                              </span>
+                              <span>{currentMainProductImage ? productImageModeLabel(productImageState.selectedImageMode) : "이미지 선택 필요"}</span>
                             </div>
                             <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
                           </summary>
@@ -6684,12 +5031,7 @@ export function MvpDashboard({
                           </div>
                           <label>
                             <span>메인 이미지 소스</span>
-                            <select
-                              onChange={(event) =>
-                                setMainImageSourceMode(event.target.value as MainImageSourceMode)
-                              }
-                              value={mainImageSourceMode}
-                            >
+                            <select onChange={(event) => setMainImageSourceMode(event.target.value as MainImageSourceMode)} value={mainImageSourceMode}>
                               <option value="detail">상세페이지 이미지 선택</option>
                               <option value="upload">내 이미지 첨부</option>
                               <option value="gpt">GPT 생성 이미지 경로</option>
@@ -6699,15 +5041,7 @@ export function MvpDashboard({
                             <>
                               <label>
                                 <span>메인으로 쓸 상세 이미지</span>
-                                <select
-                                  disabled={!backgroundImageOptions.length}
-                                  onChange={(event) => setProductImageSlot(0, event.target.value)}
-                                  value={
-                                    currentProductImagePaths[0] ||
-                                    backgroundImageOptions[0]?.value ||
-                                    ""
-                                  }
-                                >
+                                <select disabled={!backgroundImageOptions.length} onChange={(event) => setProductImageSlot(0, event.target.value)} value={currentProductImagePaths[0] || backgroundImageOptions[0]?.value || ""}>
                                   {backgroundImageOptions.length ? (
                                     backgroundImageOptions.map((option) => (
                                       <option key={option.value} value={option.value}>
@@ -6721,27 +5055,15 @@ export function MvpDashboard({
                               </label>
                               <label>
                                 <span>선택 이미지 수</span>
-                                <small>
-                                  선택한 이미지 개수만 배치합니다. 1개면 1장, 2개면 2장, 최대
-                                  4장까지 들어갑니다.
-                                </small>
+                                <small>선택한 이미지 개수만 배치합니다. 1개면 1장, 2개면 2장, 최대 4장까지 들어갑니다.</small>
                               </label>
                               {[1, 2, 3].map((slotIndex) => (
                                 <label key={`product-image-slot-${slotIndex}`}>
                                   <span>{slotIndex + 1}번째 상품 이미지</span>
-                                  <select
-                                    disabled={!backgroundImageOptions.length}
-                                    onChange={(event) =>
-                                      setProductImageSlot(slotIndex, event.target.value)
-                                    }
-                                    value={currentProductImagePaths[slotIndex] || ""}
-                                  >
+                                  <select disabled={!backgroundImageOptions.length} onChange={(event) => setProductImageSlot(slotIndex, event.target.value)} value={currentProductImagePaths[slotIndex] || ""}>
                                     <option value="">선택 안 함</option>
                                     {backgroundImageOptions.map((option) => (
-                                      <option
-                                        key={`slot-${slotIndex}-${option.value}`}
-                                        value={option.value}
-                                      >
+                                      <option key={`slot-${slotIndex}-${option.value}`} value={option.value}>
                                         {option.label}
                                       </option>
                                     ))}
@@ -6749,22 +5071,12 @@ export function MvpDashboard({
                                 </label>
                               ))}
                               <div className="main-detail-scroll-shell">
-                                <button
-                                  aria-label="Scroll image candidates left"
-                                  className="main-detail-scroll-button"
-                                  onClick={() => moveMainDetailCandidates(-1)}
-                                  type="button"
-                                >
+                                <button aria-label="Scroll image candidates left" className="main-detail-scroll-button" onClick={() => moveMainDetailCandidates(-1)} type="button">
                                   ‹
                                 </button>
-                                <div
-                                  className="source-image-candidates main-detail-candidates"
-                                  onScroll={updateMainDetailScrollPercent}
-                                  ref={mainDetailCandidatesRef}
-                                >
+                                <div className="source-image-candidates main-detail-candidates" onScroll={updateMainDetailScrollPercent} ref={mainDetailCandidatesRef}>
                                   {backgroundImageOptions.map((option) => {
-                                    const selectedOrder =
-                                      selectedAdImages.selectedImagePaths.indexOf(option.value);
+                                    const selectedOrder = selectedAdImages.selectedImagePaths.indexOf(option.value);
                                     return (
                                       <button
                                         aria-label={`${option.label} 광고 이미지 선택 토글`}
@@ -6775,10 +5087,7 @@ export function MvpDashboard({
                                           setHoveredDetailImage({
                                             src: option.value,
                                             label: option.label,
-                                            x: Math.min(
-                                              event.clientX + 20,
-                                              window.innerWidth - 300
-                                            ),
+                                            x: Math.min(event.clientX + 20, window.innerWidth - 300),
                                             y: Math.max(20, event.clientY - 80),
                                           })
                                         }
@@ -6787,71 +5096,31 @@ export function MvpDashboard({
                                           setHoveredDetailImage({
                                             src: option.value,
                                             label: option.label,
-                                            x: Math.min(
-                                              event.clientX + 20,
-                                              window.innerWidth - 300
-                                            ),
+                                            x: Math.min(event.clientX + 20, window.innerWidth - 300),
                                             y: Math.max(20, event.clientY - 80),
                                           })
                                         }
                                         type="button"
                                       >
                                         <img alt={option.label} src={option.value} />
-                                        <span>
-                                          {selectedOrder >= 0
-                                            ? `${selectedOrder + 1}. ${option.label}`
-                                            : option.label}
-                                        </span>
-                                        <img
-                                          alt={`${option.label} 크게 보기`}
-                                          className="detail-image-hover-preview"
-                                          src={option.value}
-                                        />
+                                        <span>{selectedOrder >= 0 ? `${selectedOrder + 1}. ${option.label}` : option.label}</span>
+                                        <img alt={`${option.label} 크게 보기`} className="detail-image-hover-preview" src={option.value} />
                                       </button>
                                     );
                                   })}
                                 </div>
-                                <button
-                                  aria-label="Scroll image candidates right"
-                                  className="main-detail-scroll-button"
-                                  onClick={() => moveMainDetailCandidates(1)}
-                                  type="button"
-                                >
+                                <button aria-label="Scroll image candidates right" className="main-detail-scroll-button" onClick={() => moveMainDetailCandidates(1)} type="button">
                                   ›
                                 </button>
                               </div>
-                              <input
-                                aria-label="메인 이미지 후보 가로 스크롤"
-                                className="main-detail-scroll-range"
-                                max={100}
-                                min={0}
-                                onChange={(event) =>
-                                  scrollMainDetailCandidates(Number(event.target.value))
-                                }
-                                onInput={(event) =>
-                                  scrollMainDetailCandidates(Number(event.currentTarget.value))
-                                }
-                                type="range"
-                                value={mainDetailScrollPercent}
-                              />
+                              <input aria-label="메인 이미지 후보 가로 스크롤" className="main-detail-scroll-range" max={100} min={0} onChange={(event) => scrollMainDetailCandidates(Number(event.target.value))} onInput={(event) => scrollMainDetailCandidates(Number(event.currentTarget.value))} type="range" value={mainDetailScrollPercent} />
                               <div className="selected-ad-image-status">
                                 <div>
-                                  <strong>
-                                    선택된 광고 이미지: {selectedAdImages.selectedImagePaths.length}
-                                    장
-                                  </strong>
+                                  <strong>선택된 광고 이미지: {selectedAdImages.selectedImagePaths.length}장</strong>
                                   <span>
-                                    출처: {selectedAdImages.source} / 렌더 순서:{" "}
-                                    {selectedAdImages.selectedImagePaths.length
-                                      ? selectedAdImages.selectedImagePaths
-                                          .map((_, index) => index + 1)
-                                          .join(" → ")
-                                      : "기본 상품 이미지 fallback"}
+                                    출처: {selectedAdImages.source} / 렌더 순서: {selectedAdImages.selectedImagePaths.length ? selectedAdImages.selectedImagePaths.map((_, index) => index + 1).join(" → ") : "기본 상품 이미지 fallback"}
                                   </span>
-                                  <small>
-                                    선택한 상세 이미지가 모든 템플릿에 공통 적용됩니다. 첫 번째 선택
-                                    이미지가 대표 이미지입니다.
-                                  </small>
+                                  <small>선택한 상세 이미지가 모든 템플릿에 공통 적용됩니다. 첫 번째 선택 이미지가 대표 이미지입니다.</small>
                                 </div>
                                 <button onClick={resetSelectedAdImages} type="button">
                                   이미지 선택 초기화
@@ -6862,92 +5131,28 @@ export function MvpDashboard({
                           {mainImageSourceMode === "upload" ? (
                             <label>
                               <span>이미지 첨부</span>
-                              <input
-                                accept="image/png,image/jpeg,image/webp"
-                                onChange={(event) =>
-                                  selectUploadedMainImage(event.target.files?.[0])
-                                }
-                                type="file"
-                              />
+                              <input accept="image/png,image/jpeg,image/webp" onChange={(event) => selectUploadedMainImage(event.target.files?.[0])} type="file" />
                             </label>
                           ) : null}
                           {currentMainProductImage ? (
                             <div className="background-preview-thumb">
-                              <img
-                                alt="선택된 메인 상품 이미지 미리보기"
-                                src={currentMainProductImage}
-                              />
-                              <span>
-                                현재 배너에 사용하는 이미지:{" "}
-                                {productImageModeLabel(productImageState.selectedImageMode)}
-                              </span>
+                              <img alt="선택된 메인 상품 이미지 미리보기" src={currentMainProductImage} />
+                              <span>현재 배너에 사용하는 이미지: {productImageModeLabel(productImageState.selectedImageMode)}</span>
                             </div>
                           ) : (
-                            <p className="strategy-empty">
-                              상세페이지 이미지, 첨부 이미지, GPT 생성 이미지 중 하나를
-                              선택해주세요.
-                            </p>
+                            <p className="strategy-empty">상세페이지 이미지, 첨부 이미지, GPT 생성 이미지 중 하나를 선택해주세요.</p>
                           )}
-                          <ProductImageWorkbench
-                            key={productImageState.originalImagePath || selectedSourceImagePath}
-                            busy={productImageProcessStatus.kind === "loading"}
-                            candidates={(sourceImageSelection.candidates.length
-                              ? sourceImageSelection.candidates
-                              : productInfo.sourceImageCandidates || []
-                            ).slice(0, 6)}
-                            imageState={productImageState}
-                            onManualResult={applyManualMaskResult}
-                            onReprocess={reprocessWorkbenchImage}
-                            onRepresentationChange={updateProductRepresentationType}
-                            onScopeChange={updateProductExtractionScope}
-                            onSourceChange={selectWorkbenchSource}
-                            onUpload={selectUploadedMainImage}
-                            onUseCutout={() => selectProductImageMode("cutout")}
-                            onUseOriginal={() => selectProductImageMode("original")}
-                            recommendedBackgroundPath={currentBackgroundSource}
-                            representation={activeProductRepresentation}
-                            selectedSourceImagePath={
-                              productImageState.originalImagePath || selectedSourceImagePath
-                            }
-                            statusMessage={productImageProcessStatus.message}
-                          />
-                          <ReviewCreativeWorkbench
-                            key={`review-${productInfo.landingUrl || "empty"}`}
-                            accentColor={bannerAccentColor}
-                            backgroundImagePath={currentBackgroundSource}
-                            initialCandidates={productInfo.reviewSources || []}
-                            productDescription={productInfo.extractedDescription}
-                            productImagePath={
-                              resolvedProductImages.productImagePath || currentMainProductImage
-                            }
-                            productName={productInfo.productName}
-                          />
+                          <ProductImageWorkbench key={productImageState.originalImagePath || selectedSourceImagePath} busy={productImageProcessStatus.kind === "loading"} candidates={(sourceImageSelection.candidates.length ? sourceImageSelection.candidates : productInfo.sourceImageCandidates || []).slice(0, 6)} imageState={productImageState} onManualResult={applyManualMaskResult} onReprocess={reprocessWorkbenchImage} onRepresentationChange={updateProductRepresentationType} onScopeChange={updateProductExtractionScope} onSourceChange={selectWorkbenchSource} onUpload={selectUploadedMainImage} onUseCutout={() => selectProductImageMode("cutout")} onUseOriginal={() => selectProductImageMode("original")} recommendedBackgroundPath={currentBackgroundSource} representation={activeProductRepresentation} selectedSourceImagePath={productImageState.originalImagePath || selectedSourceImagePath} statusMessage={productImageProcessStatus.message} />
+                          <ReviewCreativeWorkbench key={`review-${productInfo.landingUrl || "empty"}`} accentColor={bannerAccentColor} backgroundImagePath={currentBackgroundSource} initialCandidates={productInfo.reviewSources || []} productDescription={productInfo.extractedDescription} productImagePath={resolvedProductImages.productImagePath || currentMainProductImage} productName={productInfo.productName} />
                           <div className="product-cutout-panel">
                             <details>
                               <summary>고급 효과 및 이전 호환 설정</summary>
-                              <p>
-                                AI 전체 광고에는 사용하지 않습니다. 이전 템플릿 합성이 필요한
-                                경우에만 아래에서 수동으로 누끼를 만들 수 있습니다.
-                              </p>
+                              <p>AI 전체 광고에는 사용하지 않습니다. 이전 템플릿 합성이 필요한 경우에만 아래에서 수동으로 누끼를 만들 수 있습니다.</p>
                               <div className="background-style-grid">
-                                <button
-                                  disabled={
-                                    !productImageState.originalImagePath ||
-                                    productImageProcessStatus.kind === "loading"
-                                  }
-                                  onClick={applyCutoutToProductImage}
-                                  type="button"
-                                >
+                                <button disabled={!productImageState.originalImagePath || productImageProcessStatus.kind === "loading"} onClick={applyCutoutToProductImage} type="button">
                                   누끼 다시 적용
                                 </button>
-                                <button
-                                  disabled={
-                                    !productImageState.cutoutImagePath ||
-                                    productImageProcessStatus.kind === "loading"
-                                  }
-                                  onClick={applyEffectToCutout}
-                                  type="button"
-                                >
+                                <button disabled={!productImageState.cutoutImagePath || productImageProcessStatus.kind === "loading"} onClick={applyEffectToCutout} type="button">
                                   효과 적용
                                 </button>
                               </div>
@@ -6971,104 +5176,39 @@ export function MvpDashboard({
                               </label>
                               <label>
                                 <span>배너 이미지 모드</span>
-                                <select
-                                  onChange={(event) =>
-                                    selectProductImageMode(event.target.value as ProductImageMode)
-                                  }
-                                  value={productImageState.selectedImageMode}
-                                >
+                                <select onChange={(event) => selectProductImageMode(event.target.value as ProductImageMode)} value={productImageState.selectedImageMode}>
                                   <option value="original">원본 이미지 사용</option>
-                                  <option
-                                    disabled={!productImageState.cutoutImagePath}
-                                    value="cutout"
-                                  >
+                                  <option disabled={!productImageState.cutoutImagePath} value="cutout">
                                     누끼 이미지 사용
                                   </option>
-                                  <option
-                                    disabled={!productImageState.styledCutoutImagePath}
-                                    value="styled-cutout"
-                                  >
+                                  <option disabled={!productImageState.styledCutoutImagePath} value="styled-cutout">
                                     효과 적용 누끼 사용
                                   </option>
                                 </select>
                               </label>
-                              <div className={`mvp-status ${productImageProcessStatus.kind}`}>
-                                {productImageProcessStatus.message}
-                              </div>
+                              <div className={`mvp-status ${productImageProcessStatus.kind}`}>{productImageProcessStatus.message}</div>
                               <div className="product-image-variant-grid">
-                                <button
-                                  className={
-                                    productImageState.selectedImageMode === "original"
-                                      ? "selected"
-                                      : ""
-                                  }
-                                  disabled={!productImageState.originalImagePath}
-                                  onClick={() => selectProductImageMode("original")}
-                                  type="button"
-                                >
-                                  {productImageState.originalImagePath ? (
-                                    <img
-                                      alt="원본 이미지"
-                                      src={productImageState.originalImagePath}
-                                    />
-                                  ) : null}
+                                <button className={productImageState.selectedImageMode === "original" ? "selected" : ""} disabled={!productImageState.originalImagePath} onClick={() => selectProductImageMode("original")} type="button">
+                                  {productImageState.originalImagePath ? <img alt="원본 이미지" src={productImageState.originalImagePath} /> : null}
                                   <span>원본</span>
                                 </button>
-                                <button
-                                  className={
-                                    productImageState.selectedImageMode === "cutout"
-                                      ? "selected"
-                                      : ""
-                                  }
-                                  disabled={!productImageState.cutoutImagePath}
-                                  onClick={() => selectProductImageMode("cutout")}
-                                  type="button"
-                                >
-                                  {productImageState.cutoutImagePath ? (
-                                    <img
-                                      alt="누끼 이미지"
-                                      src={productImageState.cutoutImagePath}
-                                    />
-                                  ) : null}
+                                <button className={productImageState.selectedImageMode === "cutout" ? "selected" : ""} disabled={!productImageState.cutoutImagePath} onClick={() => selectProductImageMode("cutout")} type="button">
+                                  {productImageState.cutoutImagePath ? <img alt="누끼 이미지" src={productImageState.cutoutImagePath} /> : null}
                                   <span>누끼본</span>
                                 </button>
-                                <button
-                                  className={
-                                    productImageState.selectedImageMode === "styled-cutout"
-                                      ? "selected"
-                                      : ""
-                                  }
-                                  disabled={!productImageState.styledCutoutImagePath}
-                                  onClick={() => selectProductImageMode("styled-cutout")}
-                                  type="button"
-                                >
-                                  {productImageState.styledCutoutImagePath ? (
-                                    <img
-                                      alt="효과 적용 누끼 이미지"
-                                      src={productImageState.styledCutoutImagePath}
-                                    />
-                                  ) : null}
+                                <button className={productImageState.selectedImageMode === "styled-cutout" ? "selected" : ""} disabled={!productImageState.styledCutoutImagePath} onClick={() => selectProductImageMode("styled-cutout")} type="button">
+                                  {productImageState.styledCutoutImagePath ? <img alt="효과 적용 누끼 이미지" src={productImageState.styledCutoutImagePath} /> : null}
                                   <span>효과본</span>
                                 </button>
                               </div>
                             </details>
                             {productImageState.cutoutImagePath ? (
-                              <details
-                                className="cutout-effect-controls"
-                                open={productImageState.selectedImageMode !== "original"}
-                              >
+                              <details className="cutout-effect-controls" open={productImageState.selectedImageMode !== "original"}>
                                 <summary>누끼 이미지 효과</summary>
-                                <p className="strategy-empty">
-                                  미리보기는 대략적인 효과이며, 최종 배너는 1200x1200 렌더링 결과를
-                                  기준으로 확인해주세요.
-                                </p>
+                                <p className="strategy-empty">미리보기는 대략적인 효과이며, 최종 배너는 1200x1200 렌더링 결과를 기준으로 확인해주세요.</p>
                                 <div className="cutout-effect-presets">
                                   {cutoutProductEffectPresets.map((preset) => (
-                                    <button
-                                      key={preset.id}
-                                      onClick={() => setCutoutProductEffect(preset.effect)}
-                                      type="button"
-                                    >
+                                    <button key={preset.id} onClick={() => setCutoutProductEffect(preset.effect)} type="button">
                                       {preset.label}
                                     </button>
                                   ))}
@@ -7084,9 +5224,7 @@ export function MvpDashboard({
                                     alt="누끼 효과 미리보기"
                                     src={productImageState.cutoutImagePath}
                                     style={{
-                                      filter: cutoutProductEffect.outline
-                                        ? `drop-shadow(0 0 ${Math.max(1, cutoutProductEffect.outlineWidth / 2)}px ${cutoutProductEffect.outlineColor})`
-                                        : undefined,
+                                      filter: cutoutProductEffect.outline ? `drop-shadow(0 0 ${Math.max(1, cutoutProductEffect.outlineWidth / 2)}px ${cutoutProductEffect.outlineColor})` : undefined,
                                     }}
                                   />
                                 </div>
@@ -7159,9 +5297,7 @@ export function MvpDashboard({
                                     />
                                   </label>
                                   <label>
-                                    <span>
-                                      그림자 투명도 {cutoutProductEffect.shadowOpacity ?? 0.45}
-                                    </span>
+                                    <span>그림자 투명도 {cutoutProductEffect.shadowOpacity ?? 0.45}</span>
                                     <input
                                       max="1"
                                       min="0"
@@ -7248,9 +5384,7 @@ export function MvpDashboard({
                                     />
                                   </label>
                                   <label>
-                                    <span>
-                                      글로우 투명도 {cutoutProductEffect.glowOpacity ?? 0.55}
-                                    </span>
+                                    <span>글로우 투명도 {cutoutProductEffect.glowOpacity ?? 0.55}</span>
                                     <input
                                       max="1"
                                       min="0"
@@ -7351,11 +5485,7 @@ export function MvpDashboard({
                             <div>
                               <p className="eyebrow">Render Image</p>
                               <strong>상품 원본 이미지</strong>
-                              <span>
-                                {currentMainProductImage
-                                  ? productImageModeLabel(productImageState.selectedImageMode)
-                                  : "이미지 선택 필요"}
-                              </span>
+                              <span>{currentMainProductImage ? productImageModeLabel(productImageState.selectedImageMode) : "이미지 선택 필요"}</span>
                             </div>
                             <b>{currentMainProductImage ? "설정됨" : "선택 필요"}</b>
                           </summary>
@@ -7378,18 +5508,13 @@ export function MvpDashboard({
                             >
                               <option value="none">배경 없음</option>
                               <option value="auto-detail-blur-dark">대표 이미지 자동 배경</option>
-                              <option value="selected-detail-blur-dark">
-                                상세 이미지 선택 배경
-                              </option>
+                              <option value="selected-detail-blur-dark">상세 이미지 선택 배경</option>
                             </select>
                           </label>
                           <label>
                             <span>상세 이미지 선택</span>
                             <select
-                              disabled={
-                                productInfo.backgroundMode !== "selected-detail-blur-dark" ||
-                                !backgroundImageOptions.length
-                              }
+                              disabled={productInfo.backgroundMode !== "selected-detail-blur-dark" || !backgroundImageOptions.length}
                               onChange={(event) => {
                                 setSelectedLibraryBackgroundId("");
                                 setProductInfo((current) => ({
@@ -7398,11 +5523,7 @@ export function MvpDashboard({
                                 }));
                                 setGeneratedBannerPath("");
                               }}
-                              value={
-                                productInfo.selectedBackgroundSource ||
-                                backgroundImageOptions[0]?.value ||
-                                ""
-                              }
+                              value={productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value || ""}
                             >
                               {backgroundImageOptions.length ? (
                                 backgroundImageOptions.map((option) => (
@@ -7420,12 +5541,7 @@ export function MvpDashboard({
                               {backgroundImageOptions.map((option) => (
                                 <button
                                   aria-label={`${option.label} 배경 이미지로 선택`}
-                                  className={
-                                    (productInfo.selectedBackgroundSource ||
-                                      backgroundImageOptions[0]?.value) === option.value
-                                      ? "selected"
-                                      : ""
-                                  }
+                                  className={(productInfo.selectedBackgroundSource || backgroundImageOptions[0]?.value) === option.value ? "selected" : ""}
                                   key={`background-${option.value}`}
                                   onClick={() => {
                                     setSelectedLibraryBackgroundId("");
@@ -7456,11 +5572,7 @@ export function MvpDashboard({
                                 >
                                   <img alt={option.label} src={option.value} />
                                   <span>{option.label}</span>
-                                  <img
-                                    alt={`${option.label} 크게 보기`}
-                                    className="detail-image-hover-preview"
-                                    src={option.value}
-                                  />
+                                  <img alt={`${option.label} 크게 보기`} className="detail-image-hover-preview" src={option.value} />
                                 </button>
                               ))}
                             </div>
@@ -7563,9 +5675,7 @@ export function MvpDashboard({
                               />
                             </label>
                             <label>
-                              <span>
-                                오버레이 {Math.round(backgroundStyle.overlayOpacity * 100)}%
-                              </span>
+                              <span>오버레이 {Math.round(backgroundStyle.overlayOpacity * 100)}%</span>
                               <input
                                 max="0.72"
                                 min="0"
@@ -7621,33 +5731,18 @@ export function MvpDashboard({
                                   transform: `translate(${backgroundStyle.offsetX / 10}px, ${backgroundStyle.offsetY / 10}px) scale(${backgroundStyle.flipHorizontal ? -backgroundStyle.scale : backgroundStyle.scale}, ${backgroundStyle.scale})`,
                                 }}
                               />
-                              <span>
-                                {productInfo.backgroundMode === "auto-detail-blur-dark"
-                                  ? "대표 이미지 자동 배경"
-                                  : "선택한 상세 이미지 배경"}
-                              </span>
+                              <span>{productInfo.backgroundMode === "auto-detail-blur-dark" ? "대표 이미지 자동 배경" : "선택한 상세 이미지 배경"}</span>
                             </div>
                           ) : (
-                            <p className="strategy-empty">
-                              상품정보를 불러오면 상세페이지 이미지가 배경 후보로 표시됩니다.
-                            </p>
+                            <p className="strategy-empty">상품정보를 불러오면 상세페이지 이미지가 배경 후보로 표시됩니다.</p>
                           )}
                           <label>
                             <span>헤드라인 색상</span>
-                            <input
-                              onChange={(event) =>
-                                setHeadlineStyleOverride("headlineColor", event.target.value)
-                              }
-                              type="color"
-                              value={headlineStyleOverrides.headlineColor || "#ff1f1f"}
-                            />
+                            <input onChange={(event) => setHeadlineStyleOverride("headlineColor", event.target.value)} type="color" value={headlineStyleOverrides.headlineColor || "#ff1f1f"} />
                           </label>
                           <label>
                             <span>헤드라인 폰트</span>
-                            <select
-                              onChange={(event) => setSelectedHeadlineFontId(event.target.value)}
-                              value={selectedHeadlineFontId}
-                            >
+                            <select onChange={(event) => setSelectedHeadlineFontId(event.target.value)} value={selectedHeadlineFontId}>
                               {systemFontOptions.map((option) => (
                                 <option key={option.id} value={option.id}>
                                   {option.label}
@@ -7671,10 +5766,7 @@ export function MvpDashboard({
                           </label>
                           <label>
                             <span>배너 폰트</span>
-                            <select
-                              onChange={(event) => setSelectedBodyFontId(event.target.value)}
-                              value={selectedBodyFontId}
-                            >
+                            <select onChange={(event) => setSelectedBodyFontId(event.target.value)} value={selectedBodyFontId}>
                               {systemFontOptions.map((option) => (
                                 <option key={option.id} value={option.id}>
                                   {option.label}
@@ -7726,9 +5818,7 @@ export function MvpDashboard({
                             <span>기본 로고 선택</span>
                             <select
                               onChange={(event) => {
-                                const logo = presetBrandLogos.find(
-                                  (item) => item.imagePath === event.target.value
-                                );
+                                const logo = presetBrandLogos.find((item) => item.imagePath === event.target.value);
                                 setBrandLogoPath(event.target.value);
                                 setBrandLogoStatus(
                                   event.target.value
@@ -7739,11 +5829,7 @@ export function MvpDashboard({
                                     : { kind: "idle", message: "로고를 선택하지 않았습니다." }
                                 );
                               }}
-                              value={
-                                presetBrandLogos.some((item) => item.imagePath === brandLogoPath)
-                                  ? brandLogoPath
-                                  : ""
-                              }
+                              value={presetBrandLogos.some((item) => item.imagePath === brandLogoPath) ? brandLogoPath : ""}
                             >
                               <option value="">선택 안 함</option>
                               {presetBrandLogos.map((logo) => (
@@ -7780,22 +5866,12 @@ export function MvpDashboard({
                               </button>
                             </div>
                           ) : (
-                            <p className="strategy-empty">
-                              로고를 선택하면 템플릿 2 오른쪽 상단에 배치됩니다.
-                            </p>
+                            <p className="strategy-empty">로고를 선택하면 템플릿 2 오른쪽 상단에 배치됩니다.</p>
                           )}
-                          <div className={`mvp-status ${brandLogoStatus.kind}`}>
-                            {brandLogoStatus.message}
-                          </div>
+                          <div className={`mvp-status ${brandLogoStatus.kind}`}>{brandLogoStatus.message}</div>
                         </details>
-                        <button
-                          disabled={!bannerCopy.headline || renderStatus.kind === "loading"}
-                          onClick={renderBanner}
-                          type="button"
-                        >
-                          {renderStatus.kind === "loading"
-                            ? "자동 템플릿 제작 중..."
-                            : "자동 템플릿으로 배너 생성"}
+                        <button disabled={!bannerCopy.headline || renderStatus.kind === "loading"} onClick={renderBanner} type="button">
+                          {renderStatus.kind === "loading" ? "자동 템플릿 제작 중..." : "자동 템플릿으로 배너 생성"}
                         </button>
                         <details className="background-settings ai-disclosure-settings source-image-dropdown">
                           <summary>
@@ -7812,31 +5888,18 @@ export function MvpDashboard({
                           </div>
                           <label>
                             <span>표시 여부</span>
-                            <select
-                              onChange={(event) =>
-                                setShowAiDisclosure(event.target.value === "show")
-                              }
-                              value={showAiDisclosure ? "show" : "hide"}
-                            >
+                            <select onChange={(event) => setShowAiDisclosure(event.target.value === "show")} value={showAiDisclosure ? "show" : "hide"}>
                               <option value="hide">표시 안 함</option>
                               <option value="show">가운데 하단에 표시</option>
                             </select>
                           </label>
                           <label>
                             <span>자막 문구</span>
-                            <input
-                              disabled={!showAiDisclosure}
-                              onChange={(event) => setAiDisclosureText(event.target.value)}
-                              value={aiDisclosureText}
-                            />
+                            <input disabled={!showAiDisclosure} onChange={(event) => setAiDisclosureText(event.target.value)} value={aiDisclosureText} />
                           </label>
-                          <p className="strategy-empty">
-                            선택한 경우에만 모든 템플릿의 가운데 하단에 아주 작게 들어갑니다.
-                          </p>
+                          <p className="strategy-empty">선택한 경우에만 모든 템플릿의 가운데 하단에 아주 작게 들어갑니다.</p>
                         </details>
-                        <div className={`mvp-status ${renderStatus.kind}`}>
-                          {renderStatus.message}
-                        </div>
+                        <div className={`mvp-status ${renderStatus.kind}`}>{renderStatus.message}</div>
                         {renderDiagnostics ? (
                           <details className="render-diagnostics" open>
                             <summary>
@@ -7844,30 +5907,13 @@ export function MvpDashboard({
                                 <p className="eyebrow">AUTO DESIGN QA</p>
                                 <strong>자동 디자인 최적화</strong>
                               </div>
-                              <span
-                                className={`diagnostic-grade ${renderDiagnostics.qualityStatus}`}
-                              >
-                                {renderDiagnostics.qualityStatus === "stable"
-                                  ? "안정"
-                                  : renderDiagnostics.qualityStatus === "review"
-                                    ? "검토 권장"
-                                    : "수정 필요"}{" "}
-                                {renderDiagnostics.qualityScore}점
+                              <span className={`diagnostic-grade ${renderDiagnostics.qualityStatus}`}>
+                                {renderDiagnostics.qualityStatus === "stable" ? "안정" : renderDiagnostics.qualityStatus === "review" ? "검토 권장" : "수정 필요"} {renderDiagnostics.qualityScore}점
                               </span>
                             </summary>
                             <div className="diagnostic-palette" aria-label="자동 추출 색상">
-                              {[
-                                renderDiagnostics.palette.primaryColor,
-                                renderDiagnostics.palette.secondaryColor,
-                                renderDiagnostics.palette.accentColor,
-                                renderDiagnostics.palette.highlightColor,
-                                renderDiagnostics.palette.backgroundColor,
-                              ].map((color, index) => (
-                                <span
-                                  key={color + index}
-                                  style={{ backgroundColor: color }}
-                                  title={color}
-                                />
+                              {[renderDiagnostics.palette.primaryColor, renderDiagnostics.palette.secondaryColor, renderDiagnostics.palette.accentColor, renderDiagnostics.palette.highlightColor, renderDiagnostics.palette.backgroundColor].map((color, index) => (
+                                <span key={color + index} style={{ backgroundColor: color }} title={color} />
                               ))}
                             </div>
                             <dl className="diagnostic-grid">
@@ -7881,14 +5927,7 @@ export function MvpDashboard({
                               </div>
                               <div>
                                 <dt>텍스트 맞춤</dt>
-                                <dd>
-                                  {
-                                    renderDiagnostics.fitResults.filter(
-                                      (item) => item.status !== "exact"
-                                    ).length
-                                  }
-                                  개 조정
-                                </dd>
+                                <dd>{renderDiagnostics.fitResults.filter((item) => item.status !== "exact").length}개 조정</dd>
                               </div>
                               <div>
                                 <dt>사용 이미지</dt>
@@ -7903,11 +5942,7 @@ export function MvpDashboard({
                               ))}
                             </div>
                             <p className="diagnostic-reason">{renderDiagnostics.variantReason}</p>
-                            {renderDiagnostics.warnings.length ? (
-                              <p className="diagnostic-warning">
-                                {renderDiagnostics.warnings.join(" / ")}
-                              </p>
-                            ) : null}
+                            {renderDiagnostics.warnings.length ? <p className="diagnostic-warning">{renderDiagnostics.warnings.join(" / ")}</p> : null}
                           </details>
                         ) : null}
                         {generatedBannerPath ? (
@@ -7918,27 +5953,17 @@ export function MvpDashboard({
                               onCopyChange={(nextCopy) => {
                                 setBannerCopy(nextCopy);
                                 setActiveRenderCopy(nextCopy);
-                                creativeWorkflow.setMessageHierarchy(
-                                  copyToMessageHierarchy(nextCopy)
-                                );
+                                creativeWorkflow.setMessageHierarchy(copyToMessageHierarchy(nextCopy));
                               }}
                               onProductEffectChange={setCutoutProductEffect}
                               onRender={renderBanner}
                               productEffect={cutoutProductEffect}
                             />
                             {generatedBannerAsset ? (
-                              <CreativeAssetActions
-                                asset={generatedBannerAsset}
-                                onMessage={(message) =>
-                                  setRenderStatus({ kind: "success", message })
-                                }
-                              />
+                              <CreativeAssetActions asset={generatedBannerAsset} onMessage={(message) => setRenderStatus({ kind: "success", message })} />
                             ) : (
                               <div className="creative-asset-migration">
-                                <p>
-                                  이전 생성 결과입니다. 다운로드 전에 소재코드를 한 번 발급해
-                                  주세요.
-                                </p>
+                                <p>이전 생성 결과입니다. 다운로드 전에 소재코드를 한 번 발급해 주세요.</p>
                                 <button
                                   onClick={() =>
                                     void issueCodeForExistingBanner()
@@ -7951,10 +5976,7 @@ export function MvpDashboard({
                                       .catch((error) =>
                                         setRenderStatus({
                                           kind: "error",
-                                          message:
-                                            error instanceof Error
-                                              ? error.message
-                                              : "소재코드 발급에 실패했습니다.",
+                                          message: error instanceof Error ? error.message : "소재코드 발급에 실패했습니다.",
                                         })
                                       )
                                   }
@@ -7991,10 +6013,7 @@ export function MvpDashboard({
                 <p className="eyebrow">STEP 4 · RESULTS</p>
                 <h3>H01~H06 제작 결과</h3>
               </div>
-              <Link
-                className="mvp-primary-link"
-                href="/archive"
-              >
+              <Link className="mvp-primary-link" href="/archive">
                 아카이브에서 성과 테스트 설정
               </Link>
             </div>
@@ -8005,12 +6024,7 @@ export function MvpDashboard({
                 ["creative", "03 AI 광고 제작"],
                 ["results", "04 제작 결과"],
               ].map(([step, label]) => (
-                <Link
-                  aria-current={step === "results" ? "step" : undefined}
-                  className={step === "results" ? "active" : ""}
-                  href={`/create-product?${step === "results" ? "view=results" : `step=${step}`}`}
-                  key={step}
-                >
+                <Link aria-current={step === "results" ? "step" : undefined} className={step === "results" ? "active" : ""} href={`/create-product?${step === "results" ? "view=results" : `step=${step}`}`} key={step}>
                   {label}
                 </Link>
               ))}
@@ -8043,10 +6057,7 @@ function CrawledGrid({ items }: { items: MetaCrawlItem[] }) {
     <div className="mvp-image-grid">
       {items.map((item) => (
         <article key={`${item.imageUrl}-${item.originalAdUrl}`}>
-          <img
-            alt={`${item.brandName} 수집 광고 이미지`}
-            src={item.localImagePath || item.imageUrl}
-          />
+          <img alt={`${item.brandName} 수집 광고 이미지`} src={item.localImagePath || item.imageUrl} />
           <div>
             <strong>{item.brandName}</strong>
             <span>{new Date(item.collectedAt).toLocaleString("ko-KR")}</span>
@@ -8075,29 +6086,7 @@ function TaxonomyGroup({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-function FilterBar({
-  appealPointFilter,
-  categoryFilter,
-  hookTypeFilter,
-  labelStateFilter,
-  platformFilter,
-  setAppealPointFilter,
-  setCategoryFilter,
-  setHookTypeFilter,
-  setLabelStateFilter,
-  setPlatformFilter,
-}: {
-  appealPointFilter: string;
-  categoryFilter: string;
-  hookTypeFilter: string;
-  labelStateFilter: string;
-  platformFilter: string;
-  setAppealPointFilter: (value: string) => void;
-  setCategoryFilter: (value: string) => void;
-  setHookTypeFilter: (value: string) => void;
-  setLabelStateFilter: (value: string) => void;
-  setPlatformFilter: (value: string) => void;
-}) {
+function FilterBar({ appealPointFilter, categoryFilter, hookTypeFilter, labelStateFilter, platformFilter, setAppealPointFilter, setCategoryFilter, setHookTypeFilter, setLabelStateFilter, setPlatformFilter }: { appealPointFilter: string; categoryFilter: string; hookTypeFilter: string; labelStateFilter: string; platformFilter: string; setAppealPointFilter: (value: string) => void; setCategoryFilter: (value: string) => void; setHookTypeFilter: (value: string) => void; setLabelStateFilter: (value: string) => void; setPlatformFilter: (value: string) => void }) {
   return (
     <div className="taxonomy-filters">
       <label>
@@ -8113,10 +6102,7 @@ function FilterBar({
       </label>
       <label>
         <span>소구점</span>
-        <select
-          value={appealPointFilter}
-          onChange={(event) => setAppealPointFilter(event.target.value)}
-        >
+        <select value={appealPointFilter} onChange={(event) => setAppealPointFilter(event.target.value)}>
           <option value="all">전체</option>
           {appealPointOptions.map((option) => (
             <option key={option} value={option}>
@@ -8147,10 +6133,7 @@ function FilterBar({
       </label>
       <label>
         <span>라벨 상태</span>
-        <select
-          value={labelStateFilter}
-          onChange={(event) => setLabelStateFilter(event.target.value)}
-        >
+        <select value={labelStateFilter} onChange={(event) => setLabelStateFilter(event.target.value)}>
           <option value="all">전체</option>
           <option value="needed">라벨 필요</option>
           <option value="done">라벨 완료</option>
@@ -8160,70 +6143,35 @@ function FilterBar({
   );
 }
 
-function ImageGrid({
-  images,
-  labelsByImageId,
-  onAnalyze,
-  onMetadataSave,
-  onSelect,
-  selectedImageId,
-  showAnalysis = false,
-}: {
-  images: CollectedAdImage[];
-  labelsByImageId: Map<string, AdImageLabel>;
-  onAnalyze: (image: CollectedAdImage) => void;
-  onMetadataSave: (image: CollectedAdImage, updates: Partial<CollectedAdImage>) => void;
-  onSelect: (image: CollectedAdImage) => void;
-  selectedImageId?: string;
-  showAnalysis?: boolean;
-}) {
+function ImageGrid({ images, labelsByImageId, onAnalyze, onMetadataSave, onSelect, selectedImageId, showAnalysis = false }: { images: CollectedAdImage[]; labelsByImageId: Map<string, AdImageLabel>; onAnalyze: (image: CollectedAdImage) => void; onMetadataSave: (image: CollectedAdImage, updates: Partial<CollectedAdImage>) => void; onSelect: (image: CollectedAdImage) => void; selectedImageId?: string; showAnalysis?: boolean }) {
   return (
     <div className="mvp-image-grid">
       {images.map((image) => (
-        <article
-          className={selectedImageId === image.id ? "selected" : ""}
-          key={image.id}
-          onClick={() => onSelect(image)}
-        >
+        <article className={selectedImageId === image.id ? "selected" : ""} key={image.id} onClick={() => onSelect(image)}>
           {(() => {
             const existingLabel = labelsByImageId.get(image.id);
             const displayCategory = existingLabel?.finalLabel.category || image.category || "기타";
             const displayHookType = existingLabel?.finalLabel.hookType || image.hookType || "";
-            const displayAppealPoint =
-              existingLabel?.finalLabel.appealPoint || image.appealPoint || "";
+            const displayAppealPoint = existingLabel?.finalLabel.appealPoint || image.appealPoint || "";
 
             return (
               <>
-                <div className={`label-badge ${existingLabel ? "done" : "needed"}`}>
-                  {existingLabel ? "라벨 완료" : "라벨 필요"}
-                </div>
-                <img
-                  alt={`${image.category || "광고"} 이미지`}
-                  src={image.localImagePath || image.imageUrl}
-                />
+                <div className={`label-badge ${existingLabel ? "done" : "needed"}`}>{existingLabel ? "라벨 완료" : "라벨 필요"}</div>
+                <img alt={`${image.category || "광고"} 이미지`} src={image.localImagePath || image.imageUrl} />
                 <div>
                   <strong>{displayCategory}</strong>
                   <span>
-                    {displayHookType || "후킹 미지정"} / {displayAppealPoint || "소구점 미지정"} /{" "}
-                    {image.sourcePlatform}
+                    {displayHookType || "후킹 미지정"} / {displayAppealPoint || "소구점 미지정"} / {image.sourcePlatform}
                   </span>
                   <div className="metadata-editor" onClick={(event) => event.stopPropagation()}>
-                    <select
-                      aria-label="카테고리"
-                      defaultValue={displayCategory}
-                      onChange={(event) => onMetadataSave(image, { category: event.target.value })}
-                    >
+                    <select aria-label="카테고리" defaultValue={displayCategory} onChange={(event) => onMetadataSave(image, { category: event.target.value })}>
                       {categoryOptions.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>
                       ))}
                     </select>
-                    <select
-                      aria-label="후킹 유형"
-                      defaultValue={displayHookType}
-                      onChange={(event) => onMetadataSave(image, { hookType: event.target.value })}
-                    >
+                    <select aria-label="후킹 유형" defaultValue={displayHookType} onChange={(event) => onMetadataSave(image, { hookType: event.target.value })}>
                       <option value="">후킹 유형</option>
                       {hookTypeOptions.map((option) => (
                         <option key={option} value={option}>
@@ -8231,13 +6179,7 @@ function ImageGrid({
                         </option>
                       ))}
                     </select>
-                    <select
-                      aria-label="소구점"
-                      defaultValue={displayAppealPoint}
-                      onChange={(event) =>
-                        onMetadataSave(image, { appealPoint: event.target.value })
-                      }
-                    >
+                    <select aria-label="소구점" defaultValue={displayAppealPoint} onChange={(event) => onMetadataSave(image, { appealPoint: event.target.value })}>
                       <option value="">소구점</option>
                       {appealPointOptions.map((option) => (
                         <option key={option} value={option}>
@@ -8268,11 +6210,7 @@ function ImageGrid({
                       <option value="manual">manual</option>
                     </select>
                   </div>
-                  {showAnalysis && existingLabel ? (
-                    <p>
-                      {existingLabel.finalLabel.copyNuance || existingLabel.finalLabel.hookType}
-                    </p>
-                  ) : null}
+                  {showAnalysis && existingLabel ? <p>{existingLabel.finalLabel.copyNuance || existingLabel.finalLabel.hookType}</p> : null}
                   <button
                     onClick={(event) => {
                       event.stopPropagation();
@@ -8292,41 +6230,18 @@ function ImageGrid({
   );
 }
 
-function LabelPanel({
-  aiDraft,
-  finalLabel,
-  hasExistingLabel,
-  image,
-  onAnalyze,
-  onDraftChange,
-  onSave,
-  status,
-}: {
-  aiDraft: AdImageAnalysisDraft;
-  finalLabel: AdImageAnalysisDraft;
-  hasExistingLabel: boolean;
-  image: CollectedAdImage | null;
-  onAnalyze: (image: CollectedAdImage) => void;
-  onDraftChange: (draft: AdImageAnalysisDraft) => void;
-  onSave: () => void;
-  status: Status;
-}) {
+function LabelPanel({ aiDraft, finalLabel, hasExistingLabel, image, onAnalyze, onDraftChange, onSave, status }: { aiDraft: AdImageAnalysisDraft; finalLabel: AdImageAnalysisDraft; hasExistingLabel: boolean; image: CollectedAdImage | null; onAnalyze: (image: CollectedAdImage) => void; onDraftChange: (draft: AdImageAnalysisDraft) => void; onSave: () => void; status: Status }) {
   return (
     <aside className="label-panel">
       {image ? (
         <>
           <div className="label-preview">
-            <img
-              alt={`${image.category || "광고"} 라벨 편집 이미지`}
-              src={image.localImagePath || image.imageUrl}
-            />
+            <img alt={`${image.category || "광고"} 라벨 편집 이미지`} src={image.localImagePath || image.imageUrl} />
             <div>
               <p className="eyebrow">Ad Image Label</p>
               <h3>{finalLabel.category || image.category || "기타"}</h3>
               <span>
-                {finalLabel.hookType || image.hookType || "후킹 미지정"} /{" "}
-                {finalLabel.appealPoint || image.appealPoint || "소구점 미지정"} /{" "}
-                {image.sourcePlatform}
+                {finalLabel.hookType || image.hookType || "후킹 미지정"} / {finalLabel.appealPoint || image.appealPoint || "소구점 미지정"} / {image.sourcePlatform}
               </span>
             </div>
           </div>
@@ -8348,35 +6263,17 @@ function LabelPanel({
             {labelFields.map((field) => (
               <label key={field.key}>
                 <span>{field.label}</span>
-                {field.key === "category" ||
-                field.key === "hookType" ||
-                field.key === "appealPoint" ? (
-                  <select
-                    onChange={(event) =>
-                      onDraftChange({ ...finalLabel, [field.key]: event.target.value })
-                    }
-                    value={finalLabel[field.key]}
-                  >
+                {field.key === "category" || field.key === "hookType" || field.key === "appealPoint" ? (
+                  <select onChange={(event) => onDraftChange({ ...finalLabel, [field.key]: event.target.value })} value={finalLabel[field.key]}>
                     <option value="">선택</option>
-                    {(field.key === "category"
-                      ? categoryOptions
-                      : field.key === "hookType"
-                        ? hookTypeOptions
-                        : appealPointOptions
-                    ).map((option) => (
+                    {(field.key === "category" ? categoryOptions : field.key === "hookType" ? hookTypeOptions : appealPointOptions).map((option) => (
                       <option key={option} value={option}>
                         {option}
                       </option>
                     ))}
                   </select>
                 ) : (
-                  <textarea
-                    onChange={(event) =>
-                      onDraftChange({ ...finalLabel, [field.key]: event.target.value })
-                    }
-                    rows={field.key === "whyItWorks" || field.key === "recommendedUse" ? 4 : 3}
-                    value={finalLabel[field.key]}
-                  />
+                  <textarea onChange={(event) => onDraftChange({ ...finalLabel, [field.key]: event.target.value })} rows={field.key === "whyItWorks" || field.key === "recommendedUse" ? 4 : 3} value={finalLabel[field.key]} />
                 )}
               </label>
             ))}
@@ -8384,17 +6281,7 @@ function LabelPanel({
             {advancedLabelFields.map((field) => (
               <label key={field.key}>
                 <span>{field.label}</span>
-                <textarea
-                  onChange={(event) =>
-                    onDraftChange({ ...finalLabel, [field.key]: event.target.value })
-                  }
-                  rows={
-                    field.key === "reusableCopyPattern" || field.key === "visualCopyRelation"
-                      ? 4
-                      : 3
-                  }
-                  value={finalLabel[field.key]}
-                />
+                <textarea onChange={(event) => onDraftChange({ ...finalLabel, [field.key]: event.target.value })} rows={field.key === "reusableCopyPattern" || field.key === "visualCopyRelation" ? 4 : 3} value={finalLabel[field.key]} />
               </label>
             ))}
           </form>

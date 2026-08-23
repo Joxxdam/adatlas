@@ -1,13 +1,4 @@
-import type {
-  AdBrief,
-  AdHookType,
-  AdImageLabel,
-  AdProductPosition,
-  AdTextSafeArea,
-  CreativeStrategy,
-  ProductInfoForPrompt,
-  ReferenceUsageSelection,
-} from "./types";
+import type { AdBrief, AdHookType, AdImageLabel, AdProductPosition, AdTextSafeArea, CreativeStrategy, ProductInfoForPrompt, ReferenceUsageSelection } from "./types";
 import { inferAdBriefContext } from "./adBriefInference";
 import { getAdObjectiveProfile } from "./adObjective";
 import { analyzeProductUsp, buildTargetedStrategyContent } from "./productUsp";
@@ -118,14 +109,7 @@ function referenceText(labels: AdImageLabel[]) {
   return labels
     .flatMap((label) => {
       const final = label.finalLabel;
-      return [
-        final?.hookType,
-        final?.appealPoint,
-        final?.copyNuance,
-        final?.consumerInsight,
-        final?.purchaseTrigger,
-        final?.whyItWorks,
-      ];
+      return [final?.hookType, final?.appealPoint, final?.copyNuance, final?.consumerInsight, final?.purchaseTrigger, final?.whyItWorks];
     })
     .filter(Boolean)
     .join(" ");
@@ -140,33 +124,12 @@ function scoreSeed(seed: StrategySeed, brief: AdBrief, labels: AdImageLabel[]) {
   if (seed.key === "curiosity" && /UGC|밈|반전|궁금|끊|유행|SNS/.test(pool)) score += 5;
   if (seed.key === "benefit-first" && brief.mainBenefit) score += 3;
   if (seed.key === "occasion" && /선물|모임|상황|부모님|집들이|출근|주말/.test(pool)) score += 4;
-  if (
-    brief.creativeIntensity === "performance" &&
-    ["value-proof", "problem-solution", "curiosity"].includes(seed.key)
-  )
-    score += 2;
-  if (brief.creativeIntensity === "brand" && ["benefit-first", "occasion"].includes(seed.key))
-    score += 2;
-  if (
-    brief.adObjective === "purchase" &&
-    ["value-proof", "benefit-first", "problem-solution"].includes(seed.key)
-  )
-    score += 4;
-  if (
-    brief.adObjective === "signup" &&
-    ["benefit-first", "problem-solution", "curiosity"].includes(seed.key)
-  )
-    score += 4;
-  if (
-    brief.adObjective === "awareness" &&
-    ["benefit-first", "occasion", "curiosity"].includes(seed.key)
-  )
-    score += 4;
-  if (
-    brief.adObjective === "retargeting" &&
-    ["value-proof", "social-proof", "occasion"].includes(seed.key)
-  )
-    score += 4;
+  if (brief.creativeIntensity === "performance" && ["value-proof", "problem-solution", "curiosity"].includes(seed.key)) score += 2;
+  if (brief.creativeIntensity === "brand" && ["benefit-first", "occasion"].includes(seed.key)) score += 2;
+  if (brief.adObjective === "purchase" && ["value-proof", "benefit-first", "problem-solution"].includes(seed.key)) score += 4;
+  if (brief.adObjective === "signup" && ["benefit-first", "problem-solution", "curiosity"].includes(seed.key)) score += 4;
+  if (brief.adObjective === "awareness" && ["benefit-first", "occasion", "curiosity"].includes(seed.key)) score += 4;
+  if (brief.adObjective === "retargeting" && ["value-proof", "social-proof", "occasion"].includes(seed.key)) score += 4;
   return score;
 }
 
@@ -196,29 +159,21 @@ function strategyAppeal(seed: StrategySeed, brief: AdBrief) {
   const offer = confirmedOffer(brief);
 
   if (seed.key === "value-proof") {
-    return offer
-      ? `확인된 구매 조건(${offer})과 상품 이점을 선명하게 전달`
-      : `${productName}의 구성과 구매 이점을 명확하게 전달`;
+    return offer ? `확인된 구매 조건(${offer})과 상품 이점을 선명하게 전달` : `${productName}의 구성과 구매 이점을 명확하게 전달`;
   }
   if (seed.key === "problem-solution") {
-    return benefit
-      ? `고객의 고민을 ${benefit}과 연결해 해결 이유를 제시`
-      : `${productName}이 필요한 고객 고민과 해결 이유를 연결`;
+    return benefit ? `고객의 고민을 ${benefit}과 연결해 해결 이유를 제시` : `${productName}이 필요한 고객 고민과 해결 이유를 연결`;
   }
   if (seed.key === "social-proof") {
     return `${productName}의 확인된 정보와 사용 맥락으로 선택 신뢰를 강화`;
   }
   if (seed.key === "curiosity") {
-    return benefit
-      ? `${benefit}이 왜 다른지 궁금하게 만드는 발견형 소구`
-      : `${productName}의 차이점을 궁금하게 만드는 발견형 소구`;
+    return benefit ? `${benefit}이 왜 다른지 궁금하게 만드는 발견형 소구` : `${productName}의 차이점을 궁금하게 만드는 발견형 소구`;
   }
   if (seed.key === "occasion") {
     return `${brief.targetCustomer || "고객"}이 상품을 필요로 하는 순간과 사용 장면을 제안`;
   }
-  return benefit
-    ? `${benefit}을 핵심 차별점으로 가장 먼저 전달`
-    : `${productName}의 핵심 차별점을 한눈에 전달`;
+  return benefit ? `${benefit}을 핵심 차별점으로 가장 먼저 전달` : `${productName}의 핵심 차별점을 한눈에 전달`;
 }
 
 function strategyMainCopy(seed: StrategySeed, brief: AdBrief) {
@@ -227,13 +182,10 @@ function strategyMainCopy(seed: StrategySeed, brief: AdBrief) {
   const offer = confirmedOffer(brief);
 
   if (seed.key === "value-proof") return offer || `${productName}, 선택할 이유가 분명해요`;
-  if (seed.key === "problem-solution")
-    return benefit ? `${benefit}, 고민을 덜어보세요` : `${productName}으로 고민을 덜어보세요`;
+  if (seed.key === "problem-solution") return benefit ? `${benefit}, 고민을 덜어보세요` : `${productName}으로 고민을 덜어보세요`;
   if (seed.key === "social-proof") return `${productName}, 선별 기준부터 확인하세요`;
-  if (seed.key === "curiosity")
-    return benefit ? `${benefit}, 왜 다를까요?` : `${productName}, 무엇이 다를까요?`;
-  if (seed.key === "occasion")
-    return benefit ? `${benefit}, 필요한 순간에` : `${productName}, 필요한 순간에`;
+  if (seed.key === "curiosity") return benefit ? `${benefit}, 왜 다를까요?` : `${productName}, 무엇이 다를까요?`;
+  if (seed.key === "occasion") return benefit ? `${benefit}, 필요한 순간에` : `${productName}, 필요한 순간에`;
   return benefit || `${productName}의 핵심 차이`;
 }
 
@@ -245,9 +197,7 @@ function strategyAudience(brief: AdBrief) {
   return `구매를 비교하고 결정하려는 ${target}`;
 }
 
-function backgroundHookFor(
-  seed: StrategySeed
-): NonNullable<CreativeStrategy["backgroundHookType"]> {
+function backgroundHookFor(seed: StrategySeed): NonNullable<CreativeStrategy["backgroundHookType"]> {
   const mapping: Record<AdHookType, NonNullable<CreativeStrategy["backgroundHookType"]>> = {
     "price-benefit": "price_offer",
     "feature-usp": "usp_proof",
@@ -263,12 +213,9 @@ function backgroundHookFor(
   return mapping[seed.hookType];
 }
 
-function preferredAssetsFor(
-  seed: StrategySeed
-): NonNullable<CreativeStrategy["preferredAssetTypes"]> {
+function preferredAssetsFor(seed: StrategySeed): NonNullable<CreativeStrategy["preferredAssetTypes"]> {
   const hook = backgroundHookFor(seed);
-  if (["price_offer", "urgency"].includes(hook))
-    return ["product_set", "designed_asset", "pattern_texture"];
+  if (["price_offer", "urgency"].includes(hook)) return ["product_set", "designed_asset", "pattern_texture"];
   if (["problem_solution", "review_ugc", "situation", "family"].includes(hook)) {
     return ["people_photo", "lifestyle_photo", "ai_generated"];
   }
@@ -278,18 +225,9 @@ function preferredAssetsFor(
   return ["product_set", "ingredient_scene", "lifestyle_photo"];
 }
 
-export function buildCreativeStrategies(params: {
-  brief: AdBrief;
-  references: AdImageLabel[];
-  usages: ReferenceUsageSelection[];
-  batch?: number;
-  product?: ProductInfoForPrompt;
-}): CreativeStrategy[] {
+export function buildCreativeStrategies(params: { brief: AdBrief; references: AdImageLabel[]; usages: ReferenceUsageSelection[]; batch?: number; product?: ProductInfoForPrompt }): CreativeStrategy[] {
   const batch = params.batch || 0;
-  const scored = [...seeds].sort(
-    (a, b) =>
-      scoreSeed(b, params.brief, params.references) - scoreSeed(a, params.brief, params.references)
-  );
+  const scored = [...seeds].sort((a, b) => scoreSeed(b, params.brief, params.references) - scoreSeed(a, params.brief, params.references));
   const offset = (batch * 6) % scored.length;
   const ordered = [...scored.slice(offset), ...scored.slice(0, offset)];
   const unique = ordered.slice(0, 6);
@@ -297,9 +235,7 @@ export function buildCreativeStrategies(params: {
     .map((label) => label.brandName || label.finalLabel?.hookType || label.imageId)
     .filter(Boolean)
     .join(", ");
-  const usedAspects = Array.from(new Set(params.usages.flatMap((usage) => usage.aspects))).join(
-    ", "
-  );
+  const usedAspects = Array.from(new Set(params.usages.flatMap((usage) => usage.aspects))).join(", ");
   const inferred = inferAdBriefContext({
     product: {
       productName: params.brief.productName,
@@ -317,18 +253,7 @@ export function buildCreativeStrategies(params: {
     references: params.references,
   });
   const matchedReferenceIds = params.references.map((label) => label.imageId);
-  const matchedReferencePatterns = Array.from(
-    new Set(
-      params.references
-        .flatMap((label) => [
-          label.finalLabel?.hookType,
-          label.finalLabel?.appealPoint,
-          label.finalLabel?.reusableCopyPattern,
-          label.finalLabel?.layoutPattern,
-        ])
-        .filter(Boolean) as string[]
-    )
-  ).slice(0, 5);
+  const matchedReferencePatterns = Array.from(new Set(params.references.flatMap((label) => [label.finalLabel?.hookType, label.finalLabel?.appealPoint, label.finalLabel?.reusableCopyPattern, label.finalLabel?.layoutPattern]).filter(Boolean) as string[])).slice(0, 5);
 
   const product: ProductInfoForPrompt = params.product || {
     productName: params.brief.productName,
@@ -354,17 +279,9 @@ export function buildCreativeStrategies(params: {
       index: index + batch * 6,
       targetIndex: index + batch * 6,
     });
-    const appeal =
-      productAnalysis.evidenceStrength === "limited"
-        ? strategyAppeal(seed, params.brief)
-        : targeted.appeal;
-    const mainCopy =
-      productAnalysis.evidenceStrength === "limited"
-        ? strategyMainCopy(seed, params.brief)
-        : targeted.headline;
-    const audience = productAnalysis.targetSegments.length
-      ? targeted.audience
-      : strategyAudience(params.brief);
+    const appeal = productAnalysis.evidenceStrength === "limited" ? strategyAppeal(seed, params.brief) : targeted.appeal;
+    const mainCopy = productAnalysis.evidenceStrength === "limited" ? strategyMainCopy(seed, params.brief) : targeted.headline;
+    const audience = productAnalysis.targetSegments.length ? targeted.audience : strategyAudience(params.brief);
     return {
       id: `${seed.key}-${batch}-${index}`,
       title: seed.title,
@@ -384,21 +301,13 @@ export function buildCreativeStrategies(params: {
       mainHookAngle: mainCopy,
       coreAppealPoint: appeal,
       audienceFit: audience,
-      referenceFit: referenceNames
-        ? `자동 매칭된 ${params.references.length}개 레퍼런스의 ${usedAspects || "후킹·소구·레이아웃 패턴"}만 참고하고 원문은 복제하지 않습니다.`
-        : "관련 레퍼런스가 없어 상품 상세페이지의 사실 정보만 사용합니다.",
+      referenceFit: referenceNames ? `자동 매칭된 ${params.references.length}개 레퍼런스의 ${usedAspects || "후킹·소구·레이아웃 패턴"}만 참고하고 원문은 복제하지 않습니다.` : "관련 레퍼런스가 없어 상품 상세페이지의 사실 정보만 사용합니다.",
       suggestedVisualEmphasis: `${inferred.visualEmphasis}. ${seed.visual}`,
       risk: seed.risk,
       expectedCustomerProblem: targeted.targetTension || inferred.customerProblem,
       purchaseBarrierResponse: `${targeted.targetTension || inferred.purchaseBarrier}. 구매 근거: ${targeted.evidence || seed.appeal}`,
       recommendedTone: `${objectiveProfile.label}: ${objectiveProfile.messageSequence}. ${inferred.tone}`,
-      inferredEvidence: Array.from(
-        new Set(
-          [targeted.evidence, ...productAnalysis.proofSignals, ...inferred.proofElements].filter(
-            Boolean
-          )
-        )
-      ).slice(0, 6),
+      inferredEvidence: Array.from(new Set([targeted.evidence, ...productAnalysis.proofSignals, ...inferred.proofElements].filter(Boolean))).slice(0, 6),
       matchedReferenceIds,
       matchedReferencePatterns,
       backgroundHookType: backgroundHookFor(seed),

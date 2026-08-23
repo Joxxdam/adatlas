@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { CreativeArchiveEntry, CreativeArchiveResponse } from "../../lib/creative-archive/types";
-import {
-  isArchivePerformanceEligible,
-  prepareArchivePerformanceSelection,
-} from "../../lib/meta/archivePerformanceSelection";
+import { AI_GENERATED_IMAGE_DISCLOSURE, advertiserLogos, findAdvertiserLogo } from "../../lib/creative-generation/deliveryBranding";
+import { isArchivePerformanceEligible, prepareArchivePerformanceSelection } from "../../lib/meta/archivePerformanceSelection";
 import styles from "./CreativeArchiveWorkspace.module.css";
 
 const statusLabels: Record<string, string> = {
@@ -28,6 +26,24 @@ function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((left, right) => left.localeCompare(right, "ko"));
 }
 
+function normalizedLabel(value: string) {
+  return value
+    .normalize("NFKC")
+    .toLocaleLowerCase("ko-KR")
+    .replace(/[^가-힣a-z0-9]+/g, "");
+}
+
+function matchingAdvertiserLogoId(advertiserName: string) {
+  const target = normalizedLabel(advertiserName);
+  if (!target) return "";
+  return (
+    advertiserLogos.find((logo) => {
+      const label = normalizedLabel(logo.label);
+      return label === target || label.includes(target) || target.includes(label);
+    })?.id || ""
+  );
+}
+
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
@@ -42,25 +58,7 @@ function downloadFileName(entry: CreativeArchiveEntry) {
   return entry.fileName || `${entry.productName}-${entry.hookCode}.jpg`;
 }
 
-function ArchiveCard({
-  entry,
-  selected,
-  deletionSelected,
-  onSelect,
-  onToggleDeletion,
-  onDelete,
-  onUpdate,
-  onNotice,
-}: {
-  entry: CreativeArchiveEntry;
-  selected: boolean;
-  deletionSelected: boolean;
-  onSelect: (entry: CreativeArchiveEntry) => void;
-  onToggleDeletion: (entry: CreativeArchiveEntry) => void;
-  onDelete: (entry: CreativeArchiveEntry) => void;
-  onUpdate: (entry: CreativeArchiveEntry) => void;
-  onNotice: (message: string) => void;
-}) {
+function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSelect, onToggleDeletion, onToggleBranding, onDelete, onUpdate, onNotice }: { entry: CreativeArchiveEntry; selected: boolean; deletionSelected: boolean; brandingSelected: boolean; onSelect: (entry: CreativeArchiveEntry) => void; onToggleDeletion: (entry: CreativeArchiveEntry) => void; onToggleBranding: (entry: CreativeArchiveEntry) => void; onDelete: (entry: CreativeArchiveEntry) => void; onUpdate: (entry: CreativeArchiveEntry) => void; onNotice: (message: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(entry.note);
@@ -111,7 +109,7 @@ function ArchiveCard({
   }
 
   return (
-    <article className={`${styles.card}${entry.savedAsReference ? ` ${styles.referenceCard}` : ""}${selected ? ` ${styles.selectedCard}` : ""}${deletionSelected ? ` ${styles.deletionSelectedCard}` : ""}`}>
+    <article className={`${styles.card}${entry.savedAsReference ? ` ${styles.referenceCard}` : ""}${selected ? ` ${styles.selectedCard}` : ""}${deletionSelected ? ` ${styles.deletionSelectedCard}` : ""}${brandingSelected ? ` ${styles.brandingSelectedCard}` : ""}`}>
       <div className={styles.media}>
         {/* Runtime-generated local files intentionally bypass Next image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -119,36 +117,26 @@ function ArchiveCard({
         <div className={styles.mediaBadges}>
           <span>{entry.hookCode || "후킹"}</span>
           {entry.qaScore !== undefined ? <span>QA {entry.qaScore}</span> : null}
+          {entry.deliveryBranding?.logoId ? <span>로고 적용</span> : null}
+          {entry.deliveryBranding?.aiDisclosure ? <span>AI 고지</span> : null}
         </div>
-        <button
-          aria-label={entry.savedAsReference ? "업체 레퍼런스 해제" : "업체 레퍼런스로 저장"}
-          className={entry.savedAsReference ? styles.referenceActive : ""}
-          disabled={busy}
-          onClick={() => void patch({ savedAsReference: !entry.savedAsReference })}
-          type="button"
-        >
+        {brandingSelected ? <span className={styles.brandingSelectionBadge}>✓ 로고·AI 적용 대상</span> : null}
+        <button aria-label={entry.savedAsReference ? "업체 레퍼런스 해제" : "업체 레퍼런스로 저장"} className={entry.savedAsReference ? styles.referenceActive : ""} disabled={busy} onClick={() => void patch({ savedAsReference: !entry.savedAsReference })} type="button">
           {entry.savedAsReference ? "★ 레퍼런스" : "☆ 레퍼런스 저장"}
         </button>
-        <button
-          aria-pressed={selected}
-          className={`${styles.performanceSelect}${selected ? ` ${styles.performanceSelected}` : ""}`}
-          disabled={!isArchivePerformanceEligible(entry)}
-          onClick={() => onSelect(entry)}
-          title={isArchivePerformanceEligible(entry) ? "성과 테스트에 사용할 소재 선택" : "소재코드와 H01~H06이 필요합니다"}
-          type="button"
-        >
+        <button aria-pressed={selected} className={`${styles.performanceSelect}${selected ? ` ${styles.performanceSelected}` : ""}`} disabled={!isArchivePerformanceEligible(entry)} onClick={() => onSelect(entry)} title={isArchivePerformanceEligible(entry) ? "성과 테스트에 사용할 소재 선택" : "소재코드와 H01~H06이 필요합니다"} type="button">
           {selected ? "✓ 테스트 선택됨" : "+ 성과 테스트"}
         </button>
         <label className={styles.deletionSelect}>
-          <input
-            checked={deletionSelected}
-            onChange={() => onToggleDeletion(entry)}
-            type="checkbox"
-          />
+          <input checked={deletionSelected} onChange={() => onToggleDeletion(entry)} type="checkbox" />
           <span>{deletionSelected ? "삭제 선택됨" : "삭제 선택"}</span>
         </label>
       </div>
       <div className={styles.cardBody}>
+        <label className={`${styles.brandingSelect}${brandingSelected ? ` ${styles.brandingSelected}` : ""}`}>
+          <input checked={brandingSelected} disabled={!entry.brandingEligible} onChange={() => onToggleBranding(entry)} type="checkbox" />
+          <span>{entry.brandingEligible ? (brandingSelected ? "로고·AI 고지 적용 선택됨" : "로고·AI 고지 적용 선택") : "이전 소재 · 후처리 미지원"}</span>
+        </label>
         <div className={styles.cardHeading}>
           <div>
             <p>{entry.hookType || "후킹 유형 미기록"}</p>
@@ -158,45 +146,62 @@ function ArchiveCard({
         </div>
         {entry.subCopy ? <p className={styles.subCopy}>{entry.subCopy}</p> : null}
         <dl className={styles.meta}>
-          <div><dt>생성일</dt><dd>{dateLabel(entry.createdAt)}</dd></div>
-          {entry.assetCode ? <div><dt>소재코드</dt><dd><code>{entry.assetCode}</code></dd></div> : null}
+          <div>
+            <dt>생성일</dt>
+            <dd>{dateLabel(entry.createdAt)}</dd>
+          </div>
+          {entry.assetCode ? (
+            <div>
+              <dt>소재코드</dt>
+              <dd>
+                <code>{entry.assetCode}</code>
+              </dd>
+            </div>
+          ) : null}
         </dl>
         {entry.tags.length ? (
-          <div className={styles.tags}>{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
+          <div className={styles.tags}>
+            {entry.tags.map((tag) => (
+              <span key={tag}>#{tag}</span>
+            ))}
+          </div>
         ) : null}
         {entry.note ? <p className={styles.note}>{entry.note}</p> : null}
         <div className={styles.actions}>
-          <button disabled={busy} onClick={() => void download()} type="button">다운로드</button>
+          <button disabled={busy} onClick={() => void download()} type="button">
+            다운로드
+          </button>
           {entry.resultUrl ? <Link href={entry.resultUrl}>제작 결과 열기</Link> : null}
-          <button onClick={() => setEditing((current) => !current)} type="button">태그·메모</button>
-          <button className={styles.deleteButton} disabled={busy} onClick={() => onDelete(entry)} type="button">개별 삭제</button>
+          <button onClick={() => setEditing((current) => !current)} type="button">
+            태그·메모
+          </button>
+          <button className={styles.deleteButton} disabled={busy} onClick={() => onDelete(entry)} type="button">
+            개별 삭제
+          </button>
         </div>
         {editing ? (
           <div className={styles.editor}>
             <label>
               <span>분류 태그</span>
-              <input
-                maxLength={240}
-                onChange={(event) => setTags(event.target.value)}
-                placeholder="예: 여름, 쿨링, 미팅 우선안"
-                value={tags}
-              />
+              <input maxLength={240} onChange={(event) => setTags(event.target.value)} placeholder="예: 여름, 쿨링, 미팅 우선안" value={tags} />
             </label>
             <label>
               <span>레퍼런스 메모</span>
-              <textarea
-                maxLength={500}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder="성과나 재사용할 포인트를 기록하세요."
-                value={note}
-              />
+              <textarea maxLength={500} onChange={(event) => setNote(event.target.value)} placeholder="성과나 재사용할 포인트를 기록하세요." value={note} />
             </label>
             <button
               disabled={busy}
-              onClick={() => void patch({
-                tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-                note,
-              }).then((saved) => { if (saved) setEditing(false); })}
+              onClick={() =>
+                void patch({
+                  tags: tags
+                    .split(",")
+                    .map((tag) => tag.trim())
+                    .filter(Boolean),
+                  note,
+                }).then((saved) => {
+                  if (saved) setEditing(false);
+                })
+              }
               type="button"
             >
               {busy ? "저장 중…" : "메모 저장"}
@@ -220,35 +225,22 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deletionIds, setDeletionIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
+  const [brandingIds, setBrandingIds] = useState<string[]>([]);
+  const [brandingAdvertiser, setBrandingAdvertiser] = useState("");
+  const [brandingProduct, setBrandingProduct] = useState("");
+  const [selectedDeliveryLogoId, setSelectedDeliveryLogoId] = useState("");
+  const [logoQuery, setLogoQuery] = useState("");
+  const [includeAiDisclosure, setIncludeAiDisclosure] = useState(false);
+  const [brandingApplying, setBrandingApplying] = useState(false);
 
   const advertisers = useMemo(() => unique(entries.map((entry) => entry.advertiserName)), [entries]);
-  const products = useMemo(
-    () => unique(entries.filter((entry) => !advertiser || entry.advertiserName === advertiser).map((entry) => entry.productName)),
-    [advertiser, entries]
-  );
+  const products = useMemo(() => unique(entries.filter((entry) => !advertiser || entry.advertiserName === advertiser).map((entry) => entry.productName)), [advertiser, entries]);
   const hooks = useMemo(() => unique(entries.map((entry) => entry.hookCode)), [entries]);
   const visible = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return entries.filter((entry) => {
-      const haystack = [
-        entry.advertiserName,
-        entry.brandName,
-        entry.productName,
-        entry.assetCode,
-        entry.hookCode,
-        entry.hookType,
-        entry.headline,
-        entry.subCopy,
-        entry.note,
-        ...entry.tags,
-      ].join(" ").toLowerCase();
-      return (
-        (!normalizedQuery || haystack.includes(normalizedQuery)) &&
-        (!advertiser || entry.advertiserName === advertiser) &&
-        (!product || entry.productName === product) &&
-        (!hook || entry.hookCode === hook) &&
-        (!referencesOnly || entry.savedAsReference)
-      );
+      const haystack = [entry.advertiserName, entry.brandName, entry.productName, entry.assetCode, entry.hookCode, entry.hookType, entry.headline, entry.subCopy, entry.note, ...entry.tags].join(" ").toLowerCase();
+      return (!normalizedQuery || haystack.includes(normalizedQuery)) && (!advertiser || entry.advertiserName === advertiser) && (!product || entry.productName === product) && (!hook || entry.hookCode === hook) && (!referencesOnly || entry.savedAsReference);
     });
   }, [advertiser, entries, hook, product, query, referencesOnly]);
   const groups = useMemo(() => {
@@ -261,37 +253,106 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
     }
     return Array.from(grouped.values());
   }, [visible]);
-  const stats = useMemo(() => ({
-    total: entries.length,
-    references: entries.filter((entry) => entry.savedAsReference).length,
-    advertisers: unique(entries.map((entry) => entry.advertiserName)).length,
-    products: unique(entries.map((entry) => `${entry.advertiserName}:${entry.productName}`)).length,
-  }), [entries]);
-  const selectedEntries = useMemo(
-    () => selectedIds.map((id) => entries.find((entry) => entry.id === id)).filter((entry): entry is CreativeArchiveEntry => Boolean(entry)),
-    [entries, selectedIds]
+  const stats = useMemo(
+    () => ({
+      total: entries.length,
+      references: entries.filter((entry) => entry.savedAsReference).length,
+      advertisers: unique(entries.map((entry) => entry.advertiserName)).length,
+      products: unique(entries.map((entry) => `${entry.advertiserName}:${entry.productName}`)).length,
+    }),
+    [entries]
   );
-  const performanceSelection = useMemo(
-    () => prepareArchivePerformanceSelection(selectedEntries),
-    [selectedEntries]
-  );
+  const selectedEntries = useMemo(() => selectedIds.map((id) => entries.find((entry) => entry.id === id)).filter((entry): entry is CreativeArchiveEntry => Boolean(entry)), [entries, selectedIds]);
+  const performanceSelection = useMemo(() => prepareArchivePerformanceSelection(selectedEntries), [selectedEntries]);
+  const selectedDeliveryLogo = findAdvertiserLogo(selectedDeliveryLogoId);
+  const brandingProducts = useMemo(() => unique(entries.filter((entry) => !brandingAdvertiser || entry.advertiserName === brandingAdvertiser).map((entry) => entry.productName)), [brandingAdvertiser, entries]);
+  const brandingAdvertiserEntries = useMemo(() => entries.filter((entry) => entry.brandingEligible && entry.advertiserName === brandingAdvertiser), [brandingAdvertiser, entries]);
+  const brandingProductEntries = useMemo(() => brandingAdvertiserEntries.filter((entry) => entry.productName === brandingProduct), [brandingAdvertiserEntries, brandingProduct]);
+  const visibleLogos = useMemo(() => {
+    const target = normalizedLabel(logoQuery);
+    return target ? advertiserLogos.filter((logo) => normalizedLabel(logo.label).includes(target)) : advertiserLogos;
+  }, [logoQuery]);
+  const brandingSelectedEntries = useMemo(() => brandingIds.map((id) => entries.find((entry) => entry.id === id)).filter((entry): entry is CreativeArchiveEntry => Boolean(entry)), [brandingIds, entries]);
+  const brandingSelectionStats = useMemo(() => {
+    return {
+      advertisers: unique(brandingSelectedEntries.map((entry) => entry.advertiserName)).length,
+      products: unique(brandingSelectedEntries.map((entry) => `${entry.advertiserName}:${entry.productName}`)).length,
+    };
+  }, [brandingSelectedEntries]);
+  const brandedSelectedCount = useMemo(() => brandingIds.filter((id) => entries.find((entry) => entry.id === id)?.deliveryBranding).length, [brandingIds, entries]);
 
   function updateEntry(next: CreativeArchiveEntry) {
-    setEntries((current) => current.map((entry) => entry.id === next.id ? next : entry));
+    setEntries((current) => current.map((entry) => (entry.id === next.id ? next : entry)));
   }
 
   function toggleDeletionSelection(entry: CreativeArchiveEntry) {
-    setDeletionIds((current) => current.includes(entry.id)
-      ? current.filter((id) => id !== entry.id)
-      : [...current, entry.id]);
+    setDeletionIds((current) => (current.includes(entry.id) ? current.filter((id) => id !== entry.id) : [...current, entry.id]));
+  }
+
+  function toggleBrandingSelection(entry: CreativeArchiveEntry) {
+    if (!entry.brandingEligible) {
+      setNotice("이전 제작 방식으로 저장된 이 이미지는 원본 연결 정보가 없어 로고·AI 고지 후처리를 지원하지 않습니다.");
+      return;
+    }
+    setBrandingIds((current) => (current.includes(entry.id) ? current.filter((id) => id !== entry.id) : [...current, entry.id]));
+  }
+
+  function toggleBrandingScope(scopeEntries: CreativeArchiveEntry[], label: string) {
+    const eligibleIds = scopeEntries.filter((entry) => entry.brandingEligible).map((entry) => entry.id);
+    if (!eligibleIds.length) {
+      setNotice(`${label}에는 로고·AI 고지를 적용할 수 있는 이미지가 없습니다.`);
+      return;
+    }
+    const allSelected = eligibleIds.every((id) => brandingIds.includes(id));
+    setBrandingIds((current) => (allSelected ? current.filter((id) => !eligibleIds.includes(id)) : Array.from(new Set([...current, ...eligibleIds]))));
+    setNotice(allSelected ? `${label} 이미지 ${eligibleIds.length}장의 후처리 선택을 해제했습니다.` : `${label} 이미지 ${eligibleIds.length}장만 후처리 대상으로 선택했습니다.`);
+  }
+
+  async function applyArchiveBranding(clear = false) {
+    if (!brandingIds.length || brandingApplying) return;
+    setBrandingApplying(true);
+    try {
+      const batches = Array.from({ length: Math.ceil(brandingIds.length / 100) }, (_, index) => brandingIds.slice(index * 100, index * 100 + 100));
+      let appliedCount = 0;
+      let failedCount = 0;
+      let nextEntries = entries;
+      for (const entryIds of batches) {
+        const response = await fetch("/api/creative-archive/delivery-branding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entryIds,
+            clear,
+            logoId: clear ? undefined : selectedDeliveryLogoId || undefined,
+            aiDisclosure: clear ? false : includeAiDisclosure,
+          }),
+        });
+        const payload = (await response.json()) as Partial<CreativeArchiveResponse> & {
+          appliedCount?: number;
+          failedCount?: number;
+          error?: string;
+        };
+        if (!response.ok || !payload.entries || !payload.appliedCount) {
+          throw new Error(payload.error || "선택한 이미지 후처리에 실패했습니다.");
+        }
+        appliedCount += payload.appliedCount;
+        failedCount += payload.failedCount || 0;
+        nextEntries = payload.entries;
+      }
+      setEntries(nextEntries);
+      setBrandingIds([]);
+      setNotice(clear ? `선택한 이미지 ${appliedCount}장을 원본으로 되돌렸습니다.${failedCount ? ` ${failedCount}장은 처리하지 못했습니다.` : ""} 대상 선택을 초기화했습니다.` : `선택한 이미지 ${appliedCount}장에 로고·AI 고지를 적용했습니다.${failedCount ? ` ${failedCount}장은 처리하지 못했습니다.` : ""} 대상 선택을 초기화했습니다.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "선택한 이미지 후처리에 실패했습니다.");
+    } finally {
+      setBrandingApplying(false);
+    }
   }
 
   function toggleGroupDeletionSelection(groupEntries: CreativeArchiveEntry[]) {
     const ids = groupEntries.map((entry) => entry.id);
     const allSelected = ids.every((id) => deletionIds.includes(id));
-    setDeletionIds((current) => allSelected
-      ? current.filter((id) => !ids.includes(id))
-      : Array.from(new Set([...current, ...ids])));
+    setDeletionIds((current) => (allSelected ? current.filter((id) => !ids.includes(id)) : Array.from(new Set([...current, ...ids]))));
   }
 
   async function deleteEntries(entryIds: string[], label: string) {
@@ -311,6 +372,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       setEntries(payload.entries);
       setDeletionIds((current) => current.filter((id) => !removed.has(id)));
       setSelectedIds((current) => current.filter((id) => !removed.has(id)));
+      setBrandingIds((current) => current.filter((id) => !removed.has(id)));
       setNotice(`${payload.deletedIds.length}장의 이미지 콘텐츠를 아카이브에서 삭제했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "선택한 이미지를 삭제하지 못했습니다.");
@@ -359,6 +421,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       const availableIds = new Set(payload.entries.map((entry) => entry.id));
       setDeletionIds((current) => current.filter((id) => availableIds.has(id)));
       setSelectedIds((current) => current.filter((id) => availableIds.has(id)));
+      setBrandingIds((current) => current.filter((id) => availableIds.has(id)));
       setNotice(`최신 이미지 콘텐츠 ${payload.entries.length}개를 반영했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "아카이브를 새로고침하지 못했습니다.");
@@ -381,42 +444,234 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       </header>
 
       <section className={styles.stats} aria-label="아카이브 요약">
-        <article><span>전체 콘텐츠</span><strong>{stats.total}</strong></article>
-        <article><span>업체 레퍼런스</span><strong>{stats.references}</strong></article>
-        <article><span>광고주</span><strong>{stats.advertisers}</strong></article>
-        <article><span>상품</span><strong>{stats.products}</strong></article>
+        <article>
+          <span>전체 콘텐츠</span>
+          <strong>{stats.total}</strong>
+        </article>
+        <article>
+          <span>업체 레퍼런스</span>
+          <strong>{stats.references}</strong>
+        </article>
+        <article>
+          <span>광고주</span>
+          <strong>{stats.advertisers}</strong>
+        </article>
+        <article>
+          <span>상품</span>
+          <strong>{stats.products}</strong>
+        </article>
       </section>
 
-      <p aria-live="polite" className={styles.notice}>{notice}</p>
+      <p aria-live="polite" className={styles.notice}>
+        {notice}
+      </p>
+
+      <section className={styles.brandingPanel} aria-label="아카이브 이미지 로고와 AI 생성 고지 적용">
+        <div className={styles.brandingIntro}>
+          <span>선택 후처리</span>
+          <strong>아카이브 이미지에 로고·AI 고지 적용</strong>
+          <small>업체·상품·개별 이미지를 먼저 선택하면 로고와 AI 고지 설정이 열립니다. 원본은 보존되며 언제든 되돌릴 수 있습니다.</small>
+        </div>
+
+        <div className={styles.brandingTargets}>
+          <div className={styles.targetGuide}>
+            <strong>1. 적용할 업체·상품 선택</strong>
+            <small>업체 전체, 상품 전체 또는 아래 카드의 개별 체크박스 중 원하는 범위만 선택하세요.</small>
+          </div>
+          <label>
+            <span>업체</span>
+            <select
+              onChange={(event) => {
+                const nextAdvertiser = event.target.value;
+                setBrandingAdvertiser(nextAdvertiser);
+                setBrandingProduct("");
+                const matchedLogoId = matchingAdvertiserLogoId(nextAdvertiser);
+                if (matchedLogoId) setSelectedDeliveryLogoId(matchedLogoId);
+              }}
+              value={brandingAdvertiser}
+            >
+              <option value="">업체를 선택하세요</option>
+              {advertisers.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button disabled={!brandingAdvertiser || !brandingAdvertiserEntries.length} onClick={() => toggleBrandingScope(brandingAdvertiserEntries, brandingAdvertiser)} type="button">
+            {brandingAdvertiser && brandingAdvertiserEntries.every((entry) => brandingIds.includes(entry.id)) ? `업체 ${brandingAdvertiserEntries.length}장 선택 해제` : `업체 ${brandingAdvertiserEntries.length}장 선택`}
+          </button>
+          <label>
+            <span>상품</span>
+            <select disabled={!brandingAdvertiser} onChange={(event) => setBrandingProduct(event.target.value)} value={brandingProduct}>
+              <option value="">상품을 선택하세요</option>
+              {brandingProducts.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button disabled={!brandingProduct || !brandingProductEntries.length} onClick={() => toggleBrandingScope(brandingProductEntries, brandingProduct)} type="button">
+            {brandingProduct && brandingProductEntries.every((entry) => brandingIds.includes(entry.id)) ? `상품 ${brandingProductEntries.length}장 선택 해제` : `상품 ${brandingProductEntries.length}장 선택`}
+          </button>
+        </div>
+
+        {brandingIds.length ? (
+          <>
+            <div className={styles.brandingTargetPreview} aria-label="현재 로고·AI 고지 적용 대상">
+              <div className={styles.brandingTargetPreviewHeader}>
+                <div>
+                  <strong>현재 선택된 이미지 {brandingSelectedEntries.length}장</strong>
+                  <small>아래 썸네일과 원본 카드의 파란 테두리로 적용 대상을 확인할 수 있습니다.</small>
+                </div>
+                <span>썸네일을 누르면 선택 해제</span>
+              </div>
+              <div className={styles.brandingTargetPreviewGrid}>
+                {brandingSelectedEntries.slice(0, 12).map((entry, index) => (
+                  <button aria-label={`${entry.productName} ${entry.hookCode} 후처리 선택 해제`} key={entry.id} onClick={() => toggleBrandingSelection(entry)} type="button">
+                    <span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img alt="" src={entry.imageUrl} />
+                      <b>{index + 1}</b>
+                      <i>선택됨</i>
+                    </span>
+                    <small>
+                      {entry.hookCode || "후킹"} · {entry.productName}
+                    </small>
+                  </button>
+                ))}
+              </div>
+              {brandingSelectedEntries.length > 12 ? <p>외 {brandingSelectedEntries.length - 12}장은 아래 원본 카드의 파란 표시에서 확인할 수 있습니다.</p> : null}
+            </div>
+            <div className={styles.logoCatalog}>
+              <div className={styles.logoCatalogHeader}>
+                <div>
+                  <strong>2. 우측 상단 업체 로고 선택</strong>
+                  <small>선택한 이미지에 적용할 로고를 고르세요.</small>
+                </div>
+                <label>
+                  <span>로고 검색</span>
+                  <input onChange={(event) => setLogoQuery(event.target.value)} placeholder="업체명 검색" value={logoQuery} />
+                </label>
+              </div>
+              <div className={styles.logoGrid}>
+                <button aria-pressed={!selectedDeliveryLogoId} className={!selectedDeliveryLogoId ? styles.logoTileSelected : ""} onClick={() => setSelectedDeliveryLogoId("")} type="button">
+                  <span className={styles.noLogoMark}>로고 없음</span>
+                  <strong>적용 안 함</strong>
+                </button>
+                {visibleLogos.map((logo) => (
+                  <button aria-pressed={selectedDeliveryLogoId === logo.id} className={selectedDeliveryLogoId === logo.id ? styles.logoTileSelected : ""} key={logo.id} onClick={() => setSelectedDeliveryLogoId(logo.id)} type="button">
+                    <span className={styles.logoTileImage}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img alt={`${logo.label} 로고`} loading="lazy" src={logo.imagePath} />
+                    </span>
+                    <strong>{logo.label}</strong>
+                  </button>
+                ))}
+              </div>
+              {!visibleLogos.length ? <p className={styles.noLogoResult}>검색한 업체 로고가 없습니다.</p> : null}
+            </div>
+
+            <div className={styles.brandingOptions}>
+              <div className={styles.selectedLogoSummary}>
+                <span>선택 로고</span>
+                {selectedDeliveryLogo ? (
+                  <>
+                    <span className={styles.selectedLogoImage}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img alt={`${selectedDeliveryLogo.label} 로고 미리보기`} src={selectedDeliveryLogo.imagePath} />
+                    </span>
+                    <strong>{selectedDeliveryLogo.label}</strong>
+                  </>
+                ) : (
+                  <strong>적용 안 함</strong>
+                )}
+              </div>
+              <label className={styles.disclosureOption}>
+                <input checked={includeAiDisclosure} onChange={(event) => setIncludeAiDisclosure(event.target.checked)} type="checkbox" />
+                <span>
+                  <strong>AI 생성 이미지 고지 추가</strong>
+                  <small>{AI_GENERATED_IMAGE_DISCLOSURE}</small>
+                </span>
+              </label>
+            </div>
+          </>
+        ) : (
+          <div className={styles.brandingPending}>
+            <strong>2. 로고·AI 고지 선택</strong>
+            <span>적용할 이미지가 선택되면 설정이 표시됩니다.</span>
+          </div>
+        )}
+
+        <div className={styles.brandingSelectionSummary}>
+          <strong>{brandingIds.length}장 선택</strong>
+          <span>{brandingIds.length ? `${brandingSelectionStats.advertisers}개 업체 · ${brandingSelectionStats.products}개 상품${brandedSelectedCount ? ` · 현재 ${brandedSelectedCount}장 후처리 적용됨` : ""}` : "업체·상품을 선택하거나 카드에서 이미지 한 장씩 고르세요."}</span>
+          <button
+            disabled={!brandingIds.length}
+            onClick={() => {
+              setBrandingIds([]);
+              setLogoQuery("");
+            }}
+            type="button"
+          >
+            선택 초기화
+          </button>
+        </div>
+        {brandingIds.length ? (
+          <div className={styles.brandingActions}>
+            <button disabled={brandingApplying || !brandingIds.length || (!selectedDeliveryLogoId && !includeAiDisclosure)} onClick={() => void applyArchiveBranding(false)} type="button">
+              {brandingApplying ? "적용 중…" : `선택한 ${brandingIds.length}장에만 적용`}
+            </button>
+            <button disabled={brandingApplying || !brandingIds.length || !brandedSelectedCount} onClick={() => void applyArchiveBranding(true)} type="button">
+              선택 이미지 원본으로
+            </button>
+          </div>
+        ) : null}
+      </section>
 
       <section className={styles.filters} aria-label="아카이브 검색과 필터">
         <label className={styles.search}>
           <span>검색</span>
-          <input
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="업체·상품·후킹·문구·소재코드 검색"
-            value={query}
-          />
+          <input onChange={(event) => setQuery(event.target.value)} placeholder="업체·상품·후킹·문구·소재코드 검색" value={query} />
         </label>
         <label>
           <span>광고주</span>
-          <select onChange={(event) => { setAdvertiser(event.target.value); setProduct(""); }} value={advertiser}>
+          <select
+            onChange={(event) => {
+              setAdvertiser(event.target.value);
+              setProduct("");
+            }}
+            value={advertiser}
+          >
             <option value="">전체 광고주</option>
-            {advertisers.map((name) => <option key={name} value={name}>{name}</option>)}
+            {advertisers.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </select>
         </label>
         <label>
           <span>상품</span>
           <select onChange={(event) => setProduct(event.target.value)} value={product}>
             <option value="">전체 상품</option>
-            {products.map((name) => <option key={name} value={name}>{name}</option>)}
+            {products.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </select>
         </label>
         <label>
           <span>후킹</span>
           <select onChange={(event) => setHook(event.target.value)} value={hook}>
             <option value="">전체 후킹</option>
-            {hooks.map((name) => <option key={name} value={name}>{name}</option>)}
+            {hooks.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </select>
         </label>
         <label className={styles.referenceToggle}>
@@ -426,27 +681,33 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       </section>
 
       <div className={styles.resultSummary}>
-        <div><strong>{visible.length}개 콘텐츠</strong><span>{groups.length}개 업체·상품 묶음</span></div>
+        <div>
+          <strong>{visible.length}개 콘텐츠</strong>
+          <span>{groups.length}개 업체·상품 묶음</span>
+        </div>
         <button
           disabled={!visible.length}
           onClick={() => {
             const visibleIds = visible.map((entry) => entry.id);
             const allSelected = visibleIds.every((id) => deletionIds.includes(id));
-            setDeletionIds((current) => allSelected
-              ? current.filter((id) => !visibleIds.includes(id))
-              : Array.from(new Set([...current, ...visibleIds])));
+            setDeletionIds((current) => (allSelected ? current.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...current, ...visibleIds]))));
           }}
           type="button"
         >
-          {visible.length > 0 && visible.every((entry) => deletionIds.includes(entry.id)) ? "현재 목록 선택 해제" : "현재 목록 전체 선택"}
+          {visible.length > 0 && visible.every((entry) => deletionIds.includes(entry.id)) ? "검색 결과 삭제 선택 해제" : "검색 결과 삭제 전체 선택"}
         </button>
       </div>
 
       {deletionIds.length ? (
         <section className={styles.deletionTray} aria-label="삭제할 이미지 선택">
-          <div><strong>{deletionIds.length}장 삭제 선택</strong><span>상품별 선택 또는 개별 선택한 이미지만 삭제합니다.</span></div>
           <div>
-            <button disabled={deleting} onClick={() => setDeletionIds([])} type="button">삭제 선택 해제</button>
+            <strong>{deletionIds.length}장 삭제 선택</strong>
+            <span>상품별 선택 또는 개별 선택한 이미지만 삭제합니다.</span>
+          </div>
+          <div>
+            <button disabled={deleting} onClick={() => setDeletionIds([])} type="button">
+              삭제 선택 해제
+            </button>
             <button disabled={deleting} onClick={() => void deleteEntries(deletionIds, "선택한 이미지")} type="button">
               {deleting ? "삭제 중…" : "선택한 이미지 모두 삭제"}
             </button>
@@ -458,7 +719,9 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         <section className={styles.performanceTray} aria-label="성과 테스트 선택 소재">
           <div>
             <p>PERFORMANCE SETUP</p>
-            <strong>{selectedEntries[0].productName} · {selectedEntries.length}/6장 선택</strong>
+            <strong>
+              {selectedEntries[0].productName} · {selectedEntries.length}/6장 선택
+            </strong>
             <span>{performanceSelection.message}</span>
           </div>
           <div className={styles.selectedHooks}>
@@ -469,14 +732,10 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
             ))}
           </div>
           <div className={styles.performanceTrayActions}>
-            <button onClick={() => setSelectedIds([])} type="button">선택 초기화</button>
-            {performanceSelection.valid ? (
-              <Link href={`/performance?setup=archive&entryIds=${encodeURIComponent(performanceSelection.entries.map((entry) => entry.id).join(","))}`}>
-                선택 소재로 성과 설정
-              </Link>
-            ) : (
-              <span>2장 이상 선택</span>
-            )}
+            <button onClick={() => setSelectedIds([])} type="button">
+              선택 초기화
+            </button>
+            {performanceSelection.valid ? <Link href={`/performance?setup=archive&entryIds=${encodeURIComponent(performanceSelection.entries.map((entry) => entry.id).join(","))}`}>선택 소재로 성과 설정</Link> : <span>2장 이상 선택</span>}
           </div>
         </section>
       ) : null}
@@ -486,19 +745,27 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
           {groups.map((group) => (
             <section className={styles.group} key={`${group.advertiserName}:${group.productName}`}>
               <header>
-                <div><span>{group.advertiserName}</span><h2>{group.productName}</h2></div>
+                <div>
+                  <span>{group.advertiserName}</span>
+                  <h2>{group.productName}</h2>
+                </div>
                 <div className={styles.groupActions}>
-                  <label>
-                    <input
-                      checked={group.entries.every((entry) => deletionIds.includes(entry.id))}
-                      onChange={() => toggleGroupDeletionSelection(group.entries)}
-                      type="checkbox"
-                    />
+                  <label className={styles.groupBrandingSelect}>
+                    <input checked={group.entries.filter((entry) => entry.brandingEligible).length > 0 && group.entries.filter((entry) => entry.brandingEligible).every((entry) => brandingIds.includes(entry.id))} disabled={!group.entries.some((entry) => entry.brandingEligible)} onChange={() => toggleBrandingScope(group.entries, group.productName)} type="checkbox" />
+                    <span>로고·AI: 이 상품 전체</span>
+                  </label>
+                  <label className={styles.groupDeletionSelect}>
+                    <input checked={group.entries.every((entry) => deletionIds.includes(entry.id))} onChange={() => toggleGroupDeletionSelection(group.entries)} type="checkbox" />
                     <span>이 상품 전체 선택</span>
                   </label>
                   <button
                     disabled={deleting || !group.entries.some((entry) => deletionIds.includes(entry.id))}
-                    onClick={() => void deleteEntries(group.entries.filter((entry) => deletionIds.includes(entry.id)).map((entry) => entry.id), group.productName)}
+                    onClick={() =>
+                      void deleteEntries(
+                        group.entries.filter((entry) => deletionIds.includes(entry.id)).map((entry) => entry.id),
+                        group.productName
+                      )
+                    }
                     type="button"
                   >
                     선택 삭제
@@ -508,17 +775,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
               </header>
               <div className={styles.grid}>
                 {group.entries.map((entry) => (
-                  <ArchiveCard
-                    entry={entry}
-                    key={entry.id}
-                    deletionSelected={deletionIds.includes(entry.id)}
-                    onDelete={(target) => void deleteEntries([target.id], target.productName)}
-                    onNotice={setNotice}
-                    onSelect={togglePerformanceSelection}
-                    onToggleDeletion={toggleDeletionSelection}
-                    onUpdate={updateEntry}
-                    selected={selectedIds.includes(entry.id)}
-                  />
+                  <ArchiveCard entry={entry} key={entry.id} brandingSelected={brandingIds.includes(entry.id)} deletionSelected={deletionIds.includes(entry.id)} onDelete={(target) => void deleteEntries([target.id], target.productName)} onNotice={setNotice} onSelect={togglePerformanceSelection} onToggleDeletion={toggleDeletionSelection} onToggleBranding={toggleBrandingSelection} onUpdate={updateEntry} selected={selectedIds.includes(entry.id)} />
                 ))}
               </div>
             </section>

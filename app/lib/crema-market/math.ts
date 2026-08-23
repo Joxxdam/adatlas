@@ -21,9 +21,7 @@ export function averageNullable(values: Array<number | null>) {
 }
 
 export function percentile(values: Array<number | null>, quantile: number) {
-  const sorted = values
-    .filter((value): value is number => value !== null && Number.isFinite(value))
-    .sort((left, right) => left - right);
+  const sorted = values.filter((value): value is number => value !== null && Number.isFinite(value)).sort((left, right) => left - right);
   if (!sorted.length) return null;
   const position = Math.max(0, Math.min(1, quantile)) * (sorted.length - 1);
   const lower = Math.floor(position);
@@ -37,12 +35,7 @@ export function clampScore(value: number) {
   return Math.round(Math.max(0, Math.min(100, value)) * 10) / 10;
 }
 
-export function smoothedConversionRate(params: {
-  orders: number | null;
-  views: number | null;
-  categoryRate: number | null;
-  priorStrength?: number;
-}) {
+export function smoothedConversionRate(params: { orders: number | null; views: number | null; categoryRate: number | null; priorStrength?: number }) {
   const { orders, views } = params;
   if (orders === null || views === null || views < 0) return null;
   const priorStrength = Math.max(0, params.priorStrength ?? 20);
@@ -52,16 +45,9 @@ export function smoothedConversionRate(params: {
   return (orders + categoryRate * priorStrength) / denominator;
 }
 
-export function weightedAvailableScore(
-  factors: Array<{ value: number | null; weight: number }>
-) {
-  const available = factors.filter(
-    (factor): factor is { value: number; weight: number } =>
-      factor.value !== null && Number.isFinite(factor.value) && factor.weight > 0
-  );
+export function weightedAvailableScore(factors: Array<{ value: number | null; weight: number }>) {
+  const available = factors.filter((factor): factor is { value: number; weight: number } => factor.value !== null && Number.isFinite(factor.value) && factor.weight > 0);
   const totalWeight = available.reduce((sum, factor) => sum + factor.weight, 0);
   if (!totalWeight) return null;
-  return clampScore(
-    available.reduce((sum, factor) => sum + factor.value * factor.weight, 0) / totalWeight
-  );
+  return clampScore(available.reduce((sum, factor) => sum + factor.value * factor.weight, 0) / totalWeight);
 }

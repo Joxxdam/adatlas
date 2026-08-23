@@ -33,17 +33,9 @@
       "targetCustomer": "외출할 때 샤워용품을 간단히 챙기려는 고객",
       "landingUrl": "https://originalsource.co.kr/product/오리지널소스-미니-샤워젤-3종-세트-여행용-휴대용-바디워시/122/category/94/display/1/",
       "productImagePath": "/product-cutouts/original-source/mint-tea-tree-250ml.png",
-      "productImagePaths": [
-        "/product-cutouts/original-source/mint-tea-tree-250ml.png",
-        "/product-cutouts/original-source/lemon-tea-tree-250ml.png",
-        "/product-cutouts/original-source/coconut-shea-butter-250ml.png"
-      ],
+      "productImagePaths": ["/product-cutouts/original-source/mint-tea-tree-250ml.png", "/product-cutouts/original-source/lemon-tea-tree-250ml.png", "/product-cutouts/original-source/coconut-shea-butter-250ml.png"],
       "backgroundImagePath": "",
-      "verifiedBenefits": [
-        "미니 샤워젤 3종 구성",
-        "파우치 포함",
-        "여행·헬스장·캠핑 휴대용"
-      ],
+      "verifiedBenefits": ["미니 샤워젤 3종 구성", "파우치 포함", "여행·헬스장·캠핑 휴대용"],
       "brandColors": ["#00d9b1", "#ffd32a", "#f3eee4"]
     }
   },

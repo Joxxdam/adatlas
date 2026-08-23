@@ -62,51 +62,9 @@ const products = [
   },
 ];
 
-const scenes = [
-  "ingredient premium stage",
-  "shower room",
-  "ingredient splash",
-  "editorial studio",
-  "problem situation person",
-  "lifestyle person",
-  "ingredient flatlay",
-  "outdoor origin scene",
-  "premium dark stage",
-  "clean bathroom",
-  "review ugc cards",
-  "problem solution abstract",
-  "daily routine space",
-  "seasonal lifestyle",
-  "sensory macro",
-  "ritual spa",
-  "target audience person",
-  "ingredient editorial",
-  "promotion stage",
-  "sensory atmosphere",
-];
+const scenes = ["ingredient premium stage", "shower room", "ingredient splash", "editorial studio", "problem situation person", "lifestyle person", "ingredient flatlay", "outdoor origin scene", "premium dark stage", "clean bathroom", "review ugc cards", "problem solution abstract", "daily routine space", "seasonal lifestyle", "sensory macro", "ritual spa", "target audience person", "ingredient editorial", "promotion stage", "sensory atmosphere"];
 
-const hookTypes = [
-  ["usp_proof", "premium"],
-  ["situation", "freshness"],
-  ["sensory", "freshness"],
-  ["premium", "usp_proof"],
-  ["problem_solution", "situation"],
-  ["situation", "review_ugc"],
-  ["usp_proof", "sensory"],
-  ["origin_story", "freshness"],
-  ["premium", "sensory"],
-  ["convenience", "freshness"],
-  ["review_ugc", "social-proof"].filter((value) => value !== "social-proof"),
-  ["problem_solution", "sensory"],
-  ["situation", "convenience"],
-  ["situation", "origin_story"],
-  ["sensory", "usp_proof"],
-  ["premium", "situation"],
-  ["situation", "review_ugc"],
-  ["usp_proof", "origin_story"],
-  ["price_offer", "urgency"],
-  ["sensory", "freshness"],
-];
+const hookTypes = [["usp_proof", "premium"], ["situation", "freshness"], ["sensory", "freshness"], ["premium", "usp_proof"], ["problem_solution", "situation"], ["situation", "review_ugc"], ["usp_proof", "sensory"], ["origin_story", "freshness"], ["premium", "sensory"], ["convenience", "freshness"], ["review_ugc", "social-proof"].filter((value) => value !== "social-proof"), ["problem_solution", "sensory"], ["situation", "convenience"], ["situation", "origin_story"], ["sensory", "usp_proof"], ["premium", "situation"], ["situation", "review_ugc"], ["usp_proof", "origin_story"], ["price_offer", "urgency"], ["sensory", "freshness"]];
 
 function placement(index) {
   const productPosition = index % 3 === 0 ? "center" : index % 2 === 0 ? "center-left" : "center-right";
@@ -186,8 +144,5 @@ for (const product of products) {
 }
 
 await fs.writeFile(libraryPath, `${JSON.stringify(next, null, 2)}\n`);
-await fs.writeFile(
-  catalogPath,
-  `${JSON.stringify({ version: 1, generatedAt, sourceStoreUrl: "https://originalsource.co.kr/category/%EC%87%BC%ED%95%91/91/", products: productCatalog }, null, 2)}\n`
-);
+await fs.writeFile(catalogPath, `${JSON.stringify({ version: 1, generatedAt, sourceStoreUrl: "https://originalsource.co.kr/category/%EC%87%BC%ED%95%91/91/", products: productCatalog }, null, 2)}\n`);
 process.stdout.write(`registered ${productCatalog.length} products / ${productCatalog.reduce((sum, item) => sum + item.backgrounds.length, 0)} backgrounds\n`);

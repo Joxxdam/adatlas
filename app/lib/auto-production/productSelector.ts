@@ -26,11 +26,7 @@ function roleScore(candidate: AutoProductionProductCandidate, role: AutoProducti
   return candidate.selectionScore + (candidate.isNew ? 25 : 0) + (candidate.isSeasonal ? 16 : 0) + (candidate.reviewCount ? 6 : 0);
 }
 
-export function eligibleAutoProductionCandidates(
-  candidates: AutoProductionProductCandidate[],
-  config: AutoProductionAdvertiserConfig,
-  recentProductIds: ReadonlySet<string> = new Set()
-) {
+export function eligibleAutoProductionCandidates(candidates: AutoProductionProductCandidate[], config: AutoProductionAdvertiserConfig, recentProductIds: ReadonlySet<string> = new Set()) {
   const urls = new Set<string>();
   const identityKeys = new Set<string>();
   return candidates.filter((candidate) => {
@@ -50,11 +46,7 @@ export function eligibleAutoProductionCandidates(
   });
 }
 
-export function selectAutoProductionCandidates(
-  candidates: AutoProductionProductCandidate[],
-  config: AutoProductionAdvertiserConfig,
-  recentProductIds: ReadonlySet<string> = new Set()
-) {
+export function selectAutoProductionCandidates(candidates: AutoProductionProductCandidate[], config: AutoProductionAdvertiserConfig, recentProductIds: ReadonlySet<string> = new Set()) {
   const eligible = eligibleAutoProductionCandidates(candidates, config, recentProductIds);
   const limit = config.productsPerRun;
   const selected: AutoProductionProductCandidate[] = [];
@@ -64,10 +56,7 @@ export function selectAutoProductionCandidates(
 
   for (const requiredId of config.requiredProductIds) {
     if (selected.length >= limit) break;
-    const required = eligible.find((candidate) =>
-      !selectedIds.has(candidate.id) &&
-      (candidate.id === requiredId || candidate.externalId === requiredId)
-    );
+    const required = eligible.find((candidate) => !selectedIds.has(candidate.id) && (candidate.id === requiredId || candidate.externalId === requiredId));
     if (!required) continue;
     const family = required.productFamilyKey || productFamilyKey(required);
     if (selectedFamilies.has(family)) continue;
@@ -77,9 +66,7 @@ export function selectAutoProductionCandidates(
   }
 
   for (const role of priorities) {
-    const best = eligible
-      .filter((candidate) => !selectedIds.has(candidate.id) && !selectedFamilies.has(candidate.productFamilyKey || productFamilyKey(candidate)))
-      .sort((left, right) => roleScore(right, role) - roleScore(left, role))[0];
+    const best = eligible.filter((candidate) => !selectedIds.has(candidate.id) && !selectedFamilies.has(candidate.productFamilyKey || productFamilyKey(candidate))).sort((left, right) => roleScore(right, role) - roleScore(left, role))[0];
     if (!best || selected.length >= limit) continue;
     const family = best.productFamilyKey || productFamilyKey(best);
     selected.push({ ...best, productFamilyKey: family, recommendationRole: role, recommendationReason: autoProductionRoleLabels[role] });

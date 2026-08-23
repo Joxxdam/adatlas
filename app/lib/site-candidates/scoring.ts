@@ -1,13 +1,5 @@
 import { stableId, uniqueStrings } from "../store-analysis/htmlUtils.ts";
-import type {
-  SiteAdCandidate,
-  SiteAdFitSection,
-  SiteAdFitSectionKey,
-  SiteCandidateScore,
-  SiteEvidenceLevel,
-  SiteProductRecord,
-  SiteRecommendationType,
-} from "./types";
+import type { SiteAdCandidate, SiteAdFitSection, SiteAdFitSectionKey, SiteCandidateScore, SiteEvidenceLevel, SiteProductRecord, SiteRecommendationType } from "./types";
 
 type Indicator = {
   available: boolean;
@@ -42,20 +34,13 @@ function bounded(value: number) {
   return Math.max(0, Math.min(1, value));
 }
 
-export function scoreEvidenceSection(
-  key: SiteAdFitSectionKey,
-  indicators: Indicator[]
-): SiteAdFitSection {
+export function scoreEvidenceSection(key: SiteAdFitSectionKey, indicators: Indicator[]): SiteAdFitSection {
   const available = indicators.filter((indicator) => indicator.available);
-  const rawRatio = available.length
-    ? available.reduce((sum, indicator) => sum + bounded(indicator.ratio), 0) / available.length
-    : 0;
+  const rawRatio = available.length ? available.reduce((sum, indicator) => sum + bounded(indicator.ratio), 0) / available.length : 0;
   const evidenceSufficiency = indicators.length ? available.length / indicators.length : 0;
   // 확인된 값만 평균내면 근거 한 개로 만점에 가까워질 수 있다. 관측 평균에
   // 근거 충족도 계수를 적용하되, 미확인 정보를 사실상 0점이라고 표시하지 않는다.
-  const confidenceCoefficient = evidenceSufficiency
-    ? Math.pow(evidenceSufficiency, 0.75)
-    : 0;
+  const confidenceCoefficient = evidenceSufficiency ? Math.pow(evidenceSufficiency, 0.75) : 0;
   return {
     key,
     label: SECTION_LABELS[key],
@@ -68,12 +53,7 @@ export function scoreEvidenceSection(
     evidenceCount: available.length,
     indicatorCount: indicators.length,
     evidenceSufficiency,
-    status:
-      available.length === 0
-        ? "unavailable"
-        : evidenceSufficiency < 0.67
-          ? "limited"
-          : "scored",
+    status: available.length === 0 ? "unavailable" : evidenceSufficiency < 0.67 ? "limited" : "scored",
   };
 }
 
@@ -95,9 +75,7 @@ function normalized(value: string) {
 }
 
 function isOfferOrOperationSignal(value: string) {
-  return /무료\s*배송|배송비|당일\s*출고|출고|배송|쿠폰|할인|적립|증정|사은품|회원\s*혜택|세트\s*구성|묶음|패키지|\d+\s*\+\s*\d+/i.test(
-    value
-  );
+  return /무료\s*배송|배송비|당일\s*출고|출고|배송|쿠폰|할인|적립|증정|사은품|회원\s*혜택|세트\s*구성|묶음|패키지|\d+\s*\+\s*\d+/i.test(value);
 }
 
 function usableUspCandidates(product: SiteProductRecord) {
@@ -135,26 +113,11 @@ function currentSeasonPattern(now: Date) {
 
 function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScore {
   const usableUsps = usableUspCandidates(product);
-  const messageText = [
-    product.description,
-    ...usableUsps,
-    ...product.ingredients,
-    product.origin,
-    ...product.certifications,
-    ...product.usageContexts,
-    ...product.targetSignals,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const messageText = [product.description, ...usableUsps, ...product.ingredients, product.origin, ...product.certifications, ...product.usageContexts, ...product.targetSignals].filter(Boolean).join(" ");
   const broaderText = [product.productName, messageText, ...product.badges].filter(Boolean).join(" ");
   const availableImageCount = imageCount(product);
-  const hasProblem = includesAny(
-    [product.description, ...usableUsps].filter(Boolean).join(" "),
-    /불편|고민|문제|부족|건조|냄새|땀|피로|번거|민감|자극|해결|개선|완화/i
-  );
-  const hasNumericProof = /\d+(?:\.\d+)?\s*(?:mg|g|kg|ml|개|회|시간|일|장|배)/i.test(
-    [...usableUsps, ...product.ingredients, product.origin || "", ...product.certifications].join(" ")
-  );
+  const hasProblem = includesAny([product.description, ...usableUsps].filter(Boolean).join(" "), /불편|고민|문제|부족|건조|냄새|땀|피로|번거|민감|자극|해결|개선|완화/i);
+  const hasNumericProof = /\d+(?:\.\d+)?\s*(?:mg|g|kg|ml|개|회|시간|일|장|배)/i.test([...usableUsps, ...product.ingredients, product.origin || "", ...product.certifications].join(" "));
   const hasTarget = product.targetSignals.length > 0;
   const hasContext = product.usageContexts.length > 0;
 
@@ -162,9 +125,7 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
     {
       available: hasEvidence(product, "usp") || hasEvidence(product, "description"),
       ratio: Math.min(1, usableUsps.length / 3),
-      reason: usableUsps.length
-        ? `USP ${usableUsps.slice(0, 2).join(" · ")}`
-        : undefined,
+      reason: usableUsps.length ? `USP ${usableUsps.slice(0, 2).join(" · ")}` : undefined,
     },
     {
       available: Boolean(product.description),
@@ -178,50 +139,21 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
     },
     {
       available: Boolean(product.ingredients.length || product.origin || product.certifications.length),
-      ratio: Math.min(
-        1,
-        (product.ingredients.length + Number(Boolean(product.origin)) + product.certifications.length) /
-          4
-      ),
-      reason:
-        product.ingredients.length || product.origin || product.certifications.length
-          ? uniqueStrings(
-              [
-                product.ingredients.length ? `성분 ${product.ingredients.slice(0, 2).join(" · ")}` : undefined,
-                product.origin ? `원산지 ${product.origin}` : undefined,
-                product.certifications.length ? `인증 ${product.certifications.slice(0, 2).join(" · ")}` : undefined,
-              ],
-              3
-            ).join(" · ")
-          : undefined,
+      ratio: Math.min(1, (product.ingredients.length + Number(Boolean(product.origin)) + product.certifications.length) / 4),
+      reason: product.ingredients.length || product.origin || product.certifications.length ? uniqueStrings([product.ingredients.length ? `성분 ${product.ingredients.slice(0, 2).join(" · ")}` : undefined, product.origin ? `원산지 ${product.origin}` : undefined, product.certifications.length ? `인증 ${product.certifications.slice(0, 2).join(" · ")}` : undefined], 3).join(" · ") : undefined,
     },
     {
       available: hasTarget || hasContext,
       ratio: (Number(hasTarget) + Number(hasContext)) / 2,
-      reason:
-        hasTarget || hasContext
-          ? uniqueStrings(
-              [
-                hasTarget ? `타깃 ${product.targetSignals.slice(0, 2).join(" · ")}` : undefined,
-                hasContext ? `사용 상황 ${product.usageContexts.slice(0, 2).join(" · ")}` : undefined,
-              ],
-              2
-            ).join(" · ")
-          : undefined,
+      reason: hasTarget || hasContext ? uniqueStrings([hasTarget ? `타깃 ${product.targetSignals.slice(0, 2).join(" · ")}` : undefined, hasContext ? `사용 상황 ${product.usageContexts.slice(0, 2).join(" · ")}` : undefined], 2).join(" · ") : undefined,
     },
   ]);
 
   const trust = scoreEvidenceSection("trust", [
     {
       available: hasEvidence(product, "reviews") || typeof product.reviewCount === "number",
-      ratio: product.reviewCount
-        ? Math.min(1, Math.log10(product.reviewCount + 1) / 3.2)
-        : product.rating
-          ? 0.35
-          : 0,
-      reason: product.reviewCount
-        ? `리뷰 ${product.reviewCount.toLocaleString("ko-KR")}개`
-        : undefined,
+      ratio: product.reviewCount ? Math.min(1, Math.log10(product.reviewCount + 1) / 3.2) : product.rating ? 0.35 : 0,
+      reason: product.reviewCount ? `리뷰 ${product.reviewCount.toLocaleString("ko-KR")}개` : undefined,
     },
     {
       available: typeof product.rating === "number",
@@ -231,9 +163,7 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
     {
       available: hasEvidence(product, "reviews") || product.extractedReviewPhrases.length > 0,
       ratio: Math.min(1, product.extractedReviewPhrases.length / 3),
-      reason: product.extractedReviewPhrases.length
-        ? `후기 표현 ${product.extractedReviewPhrases.length}개`
-        : undefined,
+      reason: product.extractedReviewPhrases.length ? `후기 표현 ${product.extractedReviewPhrases.length}개` : undefined,
     },
     {
       available: hasEvidence(product, "certifications"),
@@ -243,12 +173,7 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
     {
       available: hasEvidence(product, "origin") || product.ingredients.length > 0,
       ratio: Math.min(1, (Number(Boolean(product.origin)) + product.ingredients.length) / 3),
-      reason:
-        product.origin || product.ingredients.length
-          ? [product.origin ? `원산지 ${product.origin}` : "", product.ingredients[0] ? `성분 ${product.ingredients[0]}` : ""]
-              .filter(Boolean)
-              .join(" · ")
-          : undefined,
+      reason: product.origin || product.ingredients.length ? [product.origin ? `원산지 ${product.origin}` : "", product.ingredients[0] ? `성분 ${product.ingredients[0]}` : ""].filter(Boolean).join(" · ") : undefined,
     },
     {
       available: Boolean(product.brandName),
@@ -286,13 +211,7 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
     {
       available: Boolean(product.giftBenefit || product.membershipBenefit || product.promotionEndsAt),
       ratio: product.giftBenefit || product.membershipBenefit || product.promotionEndsAt ? 1 : 0,
-      reason:
-        product.giftBenefit || product.membershipBenefit || product.promotionEndsAt
-          ? uniqueStrings(
-              [product.giftBenefit, product.membershipBenefit, product.promotionEndsAt ? `프로모션 종료 ${product.promotionEndsAt}` : undefined],
-              2
-            ).join(" · ")
-          : undefined,
+      reason: product.giftBenefit || product.membershipBenefit || product.promotionEndsAt ? uniqueStrings([product.giftBenefit, product.membershipBenefit, product.promotionEndsAt ? `프로모션 종료 ${product.promotionEndsAt}` : undefined], 2).join(" · ") : undefined,
     },
   ]);
 
@@ -320,10 +239,7 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
     {
       available: Boolean(product.description || product.uspCandidates.length),
       ratio: product.description && product.uspCandidates.length ? 1 : 0.5,
-      reason:
-        product.description || product.uspCandidates.length
-          ? "이미지와 함께 설명할 상품 근거 확인"
-          : undefined,
+      reason: product.description || product.uspCandidates.length ? "이미지와 함께 설명할 상품 근거 확인" : undefined,
     },
   ]);
 
@@ -388,13 +304,7 @@ function scoreSections(product: SiteProductRecord, now: Date): SiteCandidateScor
 }
 
 export function evidenceLevelForProduct(product: SiteProductRecord): SiteEvidenceLevel {
-  const groups = [
-    Boolean(product.productName && (product.description || product.uspCandidates.length)),
-    Boolean(product.salePrice || product.benefits.length),
-    Boolean(product.reviewCount || product.rating || product.extractedReviewPhrases.length),
-    Boolean(product.representativeImage && product.additionalImages.length),
-    Boolean(product.hasPurchaseButton && product.stockStatus !== "sold-out"),
-  ];
+  const groups = [Boolean(product.productName && (product.description || product.uspCandidates.length)), Boolean(product.salePrice || product.benefits.length), Boolean(product.reviewCount || product.rating || product.extractedReviewPhrases.length), Boolean(product.representativeImage && product.additionalImages.length), Boolean(product.hasPurchaseButton && product.stockStatus !== "sold-out")];
   const present = groups.filter(Boolean).length;
   if (present >= 5) return "high";
   if (present >= 3) return "medium";
@@ -402,16 +312,10 @@ export function evidenceLevelForProduct(product: SiteProductRecord): SiteEvidenc
 }
 
 function reviewSignalStrength(product: SiteProductRecord) {
-  const reviewStrength = product.reviewCount
-    ? Math.min(1, Math.log10(product.reviewCount + 1) / 3.2)
-    : 0;
+  const reviewStrength = product.reviewCount ? Math.min(1, Math.log10(product.reviewCount + 1) / 3.2) : 0;
   const ratingStrength = product.rating ? bounded((product.rating - 3) / 2) : 0;
   const phraseStrength = Math.min(1, product.extractedReviewPhrases.length / 3);
-  const parts = [
-    ...(product.reviewCount ? [reviewStrength] : []),
-    ...(product.rating ? [ratingStrength] : []),
-    ...(product.extractedReviewPhrases.length ? [phraseStrength] : []),
-  ];
+  const parts = [...(product.reviewCount ? [reviewStrength] : []), ...(product.rating ? [ratingStrength] : []), ...(product.extractedReviewPhrases.length ? [phraseStrength] : [])];
   return parts.length ? parts.reduce((sum, value) => sum + value, 0) / parts.length : 0;
 }
 
@@ -420,65 +324,24 @@ function recommendationSignals(product: SiteProductRecord, score: SiteCandidateS
   const usps = usableUspCandidates(product);
   const problemText = `${product.description || ""} ${usps.join(" ")}`;
   const hasProblem = /불편|고민|문제|냄새|땀|건조|자극|해결|개선|완화/i.test(problemText);
-  const offerSignalCount = [
-    Boolean(product.discountRate),
-    Boolean(product.coupon),
-    Boolean(product.freeShipping),
-    Boolean(product.setComposition),
-    Boolean(product.giftBenefit || product.membershipBenefit || product.promotionEndsAt),
-  ].filter(Boolean).length;
-  const uspSpecificity = Math.min(
-    1,
-    (usps.length + Number(product.ingredients.length > 0) + Number(Boolean(product.origin)) + Number(product.certifications.length > 0)) / 4
-  );
+  const offerSignalCount = [Boolean(product.discountRate), Boolean(product.coupon), Boolean(product.freeShipping), Boolean(product.setComposition), Boolean(product.giftBenefit || product.membershipBenefit || product.promotionEndsAt)].filter(Boolean).length;
+  const uspSpecificity = Math.min(1, (usps.length + Number(product.ingredients.length > 0) + Number(Boolean(product.origin)) + Number(product.certifications.length > 0)) / 4);
   const add = (type: SiteRecommendationType, strength: number, available: boolean) => {
     if (!available) return;
     signals.push({ type, strength: bounded(strength) });
   };
 
   const reviewStrength = reviewSignalStrength(product);
-  add(
-    "review-trust",
-    sectionRatio(score.sections.trust) * 0.4 + reviewStrength * 0.6,
-    reviewStrength > 0
-  );
-  add(
-    "core-usp",
-    sectionRatio(score.sections.messageUsp) * 0.7 + uspSpecificity * 0.3,
-    Boolean(usps.length || product.ingredients.length || product.origin || product.certifications.length)
-  );
-  add(
-    "price-benefit",
-    sectionRatio(score.sections.offer) * 0.7 + Math.min(1, offerSignalCount / 4) * 0.3,
-    offerSignalCount > 0
-  );
-  add(
-    "problem-solution",
-    sectionRatio(score.sections.messageUsp) * 0.55 + 0.18,
-    hasProblem
-  );
-  add(
-    "situation",
-    sectionRatio(score.sections.season) * 0.4 + Math.min(1, product.usageContexts.length / 2) * 0.3,
-    product.usageContexts.length > 0
-  );
-  add(
-    "visual-hook",
-    sectionRatio(score.sections.creative),
-    Boolean(product.representativeImage && product.additionalImages.length >= 2)
-  );
+  add("review-trust", sectionRatio(score.sections.trust) * 0.4 + reviewStrength * 0.6, reviewStrength > 0);
+  add("core-usp", sectionRatio(score.sections.messageUsp) * 0.7 + uspSpecificity * 0.3, Boolean(usps.length || product.ingredients.length || product.origin || product.certifications.length));
+  add("price-benefit", sectionRatio(score.sections.offer) * 0.7 + Math.min(1, offerSignalCount / 4) * 0.3, offerSignalCount > 0);
+  add("problem-solution", sectionRatio(score.sections.messageUsp) * 0.55 + 0.18, hasProblem);
+  add("situation", sectionRatio(score.sections.season) * 0.4 + Math.min(1, product.usageContexts.length / 2) * 0.3, product.usageContexts.length > 0);
+  add("visual-hook", sectionRatio(score.sections.creative), Boolean(product.representativeImage && product.additionalImages.length >= 2));
   add("new-product-test", 0.82, product.badges.includes("신상품"));
   add("seasonal-test", sectionRatio(score.sections.season), score.sections.season.score >= 5);
-  add(
-    "bundle-value",
-    Math.max(sectionRatio(score.sections.offer), 0.78),
-    Boolean(product.setComposition)
-  );
-  add(
-    "clear-target",
-    sectionRatio(score.sections.messageUsp) * 0.45 + Math.min(1, product.targetSignals.length / 2) * 0.25,
-    product.targetSignals.length > 0
-  );
+  add("bundle-value", Math.max(sectionRatio(score.sections.offer), 0.78), Boolean(product.setComposition));
+  add("clear-target", sectionRatio(score.sections.messageUsp) * 0.45 + Math.min(1, product.targetSignals.length / 2) * 0.25, product.targetSignals.length > 0);
 
   if (!signals.length && product.representativeImage) {
     signals.push({ type: "visual-hook", strength: sectionRatio(score.sections.creative) });
@@ -487,41 +350,16 @@ function recommendationSignals(product: SiteProductRecord, score: SiteCandidateS
 }
 
 function trustFacts(product: SiteProductRecord) {
-  return uniqueStrings(
-    [
-      product.reviewCount ? `리뷰 ${product.reviewCount.toLocaleString("ko-KR")}개` : undefined,
-      product.rating ? `평점 ${product.rating.toFixed(1)}` : undefined,
-      product.extractedReviewPhrases.length ? `후기 표현 ${product.extractedReviewPhrases.length}개` : undefined,
-    ],
-    3
-  );
+  return uniqueStrings([product.reviewCount ? `리뷰 ${product.reviewCount.toLocaleString("ko-KR")}개` : undefined, product.rating ? `평점 ${product.rating.toFixed(1)}` : undefined, product.extractedReviewPhrases.length ? `후기 표현 ${product.extractedReviewPhrases.length}개` : undefined], 3);
 }
 
 function offerFacts(product: SiteProductRecord) {
-  return uniqueStrings(
-    [
-      product.discountRate ? `${product.discountRate}% 할인` : undefined,
-      product.coupon ? `쿠폰 ${product.coupon}` : undefined,
-      product.freeShipping ? "무료배송" : undefined,
-      product.setComposition ? `세트 구성 ${product.setComposition}` : undefined,
-      product.giftBenefit,
-      product.membershipBenefit,
-    ],
-    4
-  );
+  return uniqueStrings([product.discountRate ? `${product.discountRate}% 할인` : undefined, product.coupon ? `쿠폰 ${product.coupon}` : undefined, product.freeShipping ? "무료배송" : undefined, product.setComposition ? `세트 구성 ${product.setComposition}` : undefined, product.giftBenefit, product.membershipBenefit], 4);
 }
 
 function messageFacts(product: SiteProductRecord) {
   const usps = usableUspCandidates(product);
-  return uniqueStrings(
-    [
-      ...usps.slice(0, 2).map((value) => `USP ${value}`),
-      product.ingredients.length ? `성분 ${product.ingredients.slice(0, 2).join(" · ")}` : undefined,
-      product.origin ? `원산지 ${product.origin}` : undefined,
-      product.certifications.length ? `인증 ${product.certifications.slice(0, 2).join(" · ")}` : undefined,
-    ],
-    3
-  );
+  return uniqueStrings([...usps.slice(0, 2).map((value) => `USP ${value}`), product.ingredients.length ? `성분 ${product.ingredients.slice(0, 2).join(" · ")}` : undefined, product.origin ? `원산지 ${product.origin}` : undefined, product.certifications.length ? `인증 ${product.certifications.slice(0, 2).join(" · ")}` : undefined], 3);
 }
 
 function strengthEvidence(product: SiteProductRecord, key: SiteAdFitSectionKey) {
@@ -533,24 +371,9 @@ function strengthEvidence(product: SiteProductRecord, key: SiteAdFitSectionKey) 
   if (key === "messageUsp") return messageFacts(product).join(", ");
   if (key === "creative") return imageCount(product) ? `활용 이미지 ${imageCount(product)}개` : "";
   if (key === "season") {
-    return uniqueStrings(
-      [
-        product.usageContexts.length ? `사용 상황 ${product.usageContexts.slice(0, 2).join(" · ")}` : undefined,
-        product.badges.includes("신상품") ? "신상품 배지" : undefined,
-        product.badges.includes("한정") ? "한정 배지" : undefined,
-      ],
-      2
-    ).join(", ");
+    return uniqueStrings([product.usageContexts.length ? `사용 상황 ${product.usageContexts.slice(0, 2).join(" · ")}` : undefined, product.badges.includes("신상품") ? "신상품 배지" : undefined, product.badges.includes("한정") ? "한정 배지" : undefined], 2).join(", ");
   }
-  return uniqueStrings(
-    [
-      product.hasPurchaseButton ? "구매 버튼 확인" : undefined,
-      product.salePrice ? `가격 ${formatPrice(product.salePrice)}` : undefined,
-      product.stockStatus === "in-stock" ? "판매 가능 상태 확인" : undefined,
-      product.shippingInfo ? "배송 안내 확인" : undefined,
-    ],
-    3
-  ).join(", ");
+  return uniqueStrings([product.hasPurchaseButton ? "구매 버튼 확인" : undefined, product.salePrice ? `가격 ${formatPrice(product.salePrice)}` : undefined, product.stockStatus === "in-stock" ? "판매 가능 상태 확인" : undefined, product.shippingInfo ? "배송 안내 확인" : undefined], 3).join(", ");
 }
 
 const TEST_LABELS: Record<SiteRecommendationType, string> = {
@@ -566,11 +389,7 @@ const TEST_LABELS: Record<SiteRecommendationType, string> = {
   "clear-target": "타깃 공감형",
 };
 
-function coreRecommendationReason(
-  product: SiteProductRecord,
-  primaryType: SiteRecommendationType,
-  insufficientData: boolean
-) {
+function coreRecommendationReason(product: SiteProductRecord, primaryType: SiteRecommendationType, insufficientData: boolean) {
   if (insufficientData) {
     return "확인 가능한 공개정보가 적어 상세페이지 추가 확인이 필요합니다.";
   }
@@ -601,17 +420,9 @@ function coreRecommendationReason(
   return `활용 이미지 ${imageCount(product)}개가 확인되어 상품 인지형 후킹에 사용할 시각 근거가 충분합니다.`;
 }
 
-function recommendationSummary(
-  product: SiteProductRecord,
-  score: SiteCandidateScore,
-  evidenceLevel: SiteEvidenceLevel,
-  signals: RecommendationSignal[]
-) {
+function recommendationSummary(product: SiteProductRecord, score: SiteCandidateScore, evidenceLevel: SiteEvidenceLevel, signals: RecommendationSignal[]) {
   const primaryType = signals[0]?.type || "core-usp";
-  const totalEvidence = Object.values(score.sections).reduce(
-    (sum, sectionItem) => sum + sectionItem.evidenceCount,
-    0
-  );
+  const totalEvidence = Object.values(score.sections).reduce((sum, sectionItem) => sum + sectionItem.evidenceCount, 0);
   const insufficientData = evidenceLevel === "low" && (score.total < 45 || totalEvidence < 8);
   const topStrengths = Object.values(score.sections)
     .filter((item) => item.score > 0 && item.reasons.length > 0)
@@ -623,17 +434,13 @@ function recommendationSummary(
       evidence: strengthEvidence(product, item.key) || item.reasons.slice(0, 2).join(" · "),
     }))
     .filter((item) => Boolean(item.evidence))
-    .sort(
-      (left, right) =>
-        right.score - left.score || right.score / right.maxScore - left.score / left.maxScore
-    )
+    .sort((left, right) => right.score - left.score || right.score / right.maxScore - left.score / left.maxScore)
     .slice(0, 3);
-  const testTypes = uniqueStrings(signals.map((item) => item.type), 2) as SiteRecommendationType[];
-  const recommendedTest = insufficientData
-    ? "추가 근거 확인 후 비교할 후킹 가설을 설정하세요."
-    : testTypes.length >= 2
-      ? `${TEST_LABELS[testTypes[0]]} ↔ ${TEST_LABELS[testTypes[1]]} 후킹 비교`
-      : `${TEST_LABELS[testTypes[0] || primaryType]} 후킹 우선 검증`;
+  const testTypes = uniqueStrings(
+    signals.map((item) => item.type),
+    2
+  ) as SiteRecommendationType[];
+  const recommendedTest = insufficientData ? "추가 근거 확인 후 비교할 후킹 가설을 설정하세요." : testTypes.length >= 2 ? `${TEST_LABELS[testTypes[0]]} ↔ ${TEST_LABELS[testTypes[1]]} 후킹 비교` : `${TEST_LABELS[testTypes[0] || primaryType]} 후킹 우선 검증`;
   return {
     primaryType,
     summary: {
@@ -645,24 +452,12 @@ function recommendationSummary(
   };
 }
 
-function recommendationReasons(
-  score: SiteCandidateScore,
-  summary: ReturnType<typeof recommendationSummary>["summary"]
-) {
-  return uniqueStrings(
-    [
-      summary.coreReason,
-      ...Object.values(score.sections).flatMap((item) => item.reasons),
-      `추천 테스트: ${summary.recommendedTest}`,
-    ],
-    10
-  );
+function recommendationReasons(score: SiteCandidateScore, summary: ReturnType<typeof recommendationSummary>["summary"]) {
+  return uniqueStrings([summary.coreReason, ...Object.values(score.sections).flatMap((item) => item.reasons), `추천 테스트: ${summary.recommendedTest}`], 10);
 }
 
 function cautions(product: SiteProductRecord, evidenceLevel: SiteEvidenceLevel) {
-  const messages = [
-    "사이트 공개정보 기반 추천이며 실제 판매·전환·ROAS는 광고 테스트로 검증해야 합니다.",
-  ];
+  const messages = ["사이트 공개정보 기반 추천이며 실제 판매·전환·ROAS는 광고 테스트로 검증해야 합니다."];
   if (!product.salePrice) messages.push("판매가를 확인하지 못해 가격 메시지는 추가 확인이 필요합니다.");
   if (!product.reviewCount && !product.rating) {
     messages.push("리뷰가 0개인 것이 아니라 공개 페이지에서 리뷰 지표를 확인하지 못했습니다.");
@@ -678,18 +473,8 @@ export function buildSiteAdCandidate(product: SiteProductRecord, now = new Date(
   const evidenceLevel = evidenceLevelForProduct(product);
   const signals = recommendationSignals(product, score);
   const types = signals.slice(0, 5).map((item) => item.type);
-  const { primaryType: primaryRecommendationType, summary } = recommendationSummary(
-    product,
-    score,
-    evidenceLevel,
-    signals
-  );
-  const tier =
-    evidenceLevel === "high" && score.total >= 65
-      ? "evidence-backed"
-      : product.badges.includes("신상품") || primaryRecommendationType === "seasonal-test"
-        ? "experiment"
-        : "content-potential";
+  const { primaryType: primaryRecommendationType, summary } = recommendationSummary(product, score, evidenceLevel, signals);
+  const tier = evidenceLevel === "high" && score.total >= 65 ? "evidence-backed" : product.badges.includes("신상품") || primaryRecommendationType === "seasonal-test" ? "experiment" : "content-potential";
   return {
     id: stableId("site-candidate", product.productUrl),
     rank: 0,
@@ -702,9 +487,7 @@ export function buildSiteAdCandidate(product: SiteProductRecord, now = new Date(
     recommendationSummary: summary,
     recommendationReasons: recommendationReasons(score, summary),
     cautions: cautions(product, evidenceLevel),
-    unavailableInformation: product.evidence
-      .filter((field) => field.state !== "present")
-      .map((field) => `${field.label}: ${field.state === "absent" ? "없음" : "확인 불가"}`),
+    unavailableInformation: product.evidence.filter((field) => field.state !== "present").map((field) => `${field.label}: ${field.state === "absent" ? "없음" : "확인 불가"}`),
   };
 }
 

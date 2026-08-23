@@ -6,25 +6,12 @@ import path from "node:path";
 import test from "node:test";
 
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
-import {
-  resequenceVideoCuts,
-  videoScriptCsv,
-} from "../app/lib/video-collaboration/script.ts";
+import { resequenceVideoCuts, videoScriptCsv } from "../app/lib/video-collaboration/script.ts";
 import { generateGroundedVideoConcepts } from "../app/lib/video-collaboration/scriptGenerator.ts";
-import {
-  buildProductLockedAsset,
-  buildVideoHookCandidates,
-  buildVisualBible,
-  selectTopDistinctHooks,
-  validateVideoPlan,
-} from "../app/lib/video-collaboration/planningPipeline.ts";
+import { buildProductLockedAsset, buildVideoHookCandidates, buildVisualBible, selectTopDistinctHooks, validateVideoPlan } from "../app/lib/video-collaboration/planningPipeline.ts";
 import { detectSceneReferenceType } from "../app/lib/video-collaboration/referenceImage.ts";
 import { detectVideoType } from "../app/lib/video-collaboration/videoFile.ts";
-import {
-  canTransitionVideoProject,
-  createVideoMaterialCode,
-  validateVideoMaterialCode,
-} from "../app/lib/video-collaboration/workflow.ts";
+import { canTransitionVideoProject, createVideoMaterialCode, validateVideoMaterialCode } from "../app/lib/video-collaboration/workflow.ts";
 import { validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
 
 const analysis = {
@@ -116,17 +103,21 @@ test("후킹 후보는 5개 이상 평가하고 서로 다른 상위 3개만 선
       { id: "fact-usp", label: "USP", value: "민트와 티트리의 상쾌한 사용감", source: "상품 상세페이지", bucket: "verified" },
     ],
     verifiedNumbers: ["12,000원"],
-    unsupportedClaims: [
-      { id: "unsupported-1", label: "사용 금지", value: "체감온도 -8.9도", source: "검증 규칙", bucket: "unsupported" },
-    ],
+    unsupportedClaims: [{ id: "unsupported-1", label: "사용 금지", value: "체감온도 -8.9도", source: "검증 규칙", bucket: "unsupported" }],
   };
   const candidates = buildVideoHookCandidates(grounded);
   const selected = selectTopDistinctHooks(candidates);
   assert.equal(candidates.length >= 5, true);
   assert.equal(selected.length, 3);
   assert.equal(new Set(selected.map((item) => item.hookType)).size, 3);
-  assert.equal(candidates.every((item) => item.score.total >= 0 && item.score.total <= 100), true);
-  assert.equal(candidates.some((item) => item.hook.includes("체감온도 -8.9도")), false);
+  assert.equal(
+    candidates.every((item) => item.score.total >= 0 && item.score.total <= 100),
+    true
+  );
+  assert.equal(
+    candidates.some((item) => item.hook.includes("체감온도 -8.9도")),
+    false
+  );
 });
 
 test("20초 기획은 후킹→문제→제품→근거→CTA가 빈 시간 없이 이어진다", () => {
@@ -140,10 +131,22 @@ test("20초 기획은 후킹→문제→제품→근거→CTA가 빈 시간 없�
   })[0];
   assert.deepEqual(
     concept.cuts.map((cut) => [cut.startSecond, cut.endSecond]),
-    [[0, 3], [3, 7], [7, 12], [12, 18], [18, 20]]
+    [
+      [0, 3],
+      [3, 7],
+      [7, 12],
+      [12, 18],
+      [18, 20],
+    ]
   );
-  assert.equal(concept.cuts.every((cut) => cut.cameraComposition && cut.motionDirection && cut.transition && cut.generationPrompt), true);
-  assert.equal(concept.cuts.slice(2).every((cut) => cut.productLockInstruction?.useOriginalComposite), true);
+  assert.equal(
+    concept.cuts.every((cut) => cut.cameraComposition && cut.motionDirection && cut.transition && cut.generationPrompt),
+    true
+  );
+  assert.equal(
+    concept.cuts.slice(2).every((cut) => cut.productLockInstruction?.useOriginalComposite),
+    true
+  );
   assert.equal(validateVideoPlan(concept, analysis, 20).valid, true);
   const csv = videoScriptCsv({
     projectName: "CSV 테스트",
@@ -170,7 +173,10 @@ test("카테고리별 비주얼 바이블과 상품 원본 고정 규칙을 만�
     role: "product-original",
   });
   assert.equal(locked?.filePath, "/video-collaboration/references/product.png");
-  assert.equal(locked?.preserveRules.some((rule) => rule.includes("로고")), true);
+  assert.equal(
+    locked?.preserveRules.some((rule) => rule.includes("로고")),
+    true
+  );
 });
 
 test("상태 전이는 제작 시작과 업로드 검수를 건너뛰지 않는다", () => {
@@ -273,10 +279,7 @@ test("장면별 참고 이미지와 메모가 재조회와 대본 재생성 후�
     });
     const afterRegeneration = await reloadedRepository.get(created.id);
     assert.equal(afterRegeneration?.concepts[0].cuts[0].referenceImages.length, 1);
-    assert.equal(
-      afterRegeneration?.concepts[0].cuts[0].referenceImages[0].description,
-      "제품이 중앙에 보이는 구도"
-    );
+    assert.equal(afterRegeneration?.concepts[0].cuts[0].referenceImages[0].description, "제품이 중앙에 보이는 구도");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -324,9 +327,7 @@ test("수동 저장 버전은 이전 내용을 덮어쓰지 않고 복원할 수
     });
 
     const saved = await repository.get(created.id);
-    const secondRevision = saved?.scriptRevisions.find(
-      (revision) => revision.snapshot.openingHook === second.openingHook
-    );
+    const secondRevision = saved?.scriptRevisions.find((revision) => revision.snapshot.openingHook === second.openingHook);
     assert.ok(secondRevision);
     await repository.restoreScriptRevision(created.id, secondRevision.id, "박마케팅");
     const restored = await createVideoProjectRepository({ dataDirectory: directory }).get(created.id);
@@ -363,30 +364,10 @@ test("프로젝트·버전·피드백·승인 이력이 재조회 후에도 유�
       now: new Date("2026-08-18T00:00:00.000Z"),
     });
     await repository.saveGeneratedConcepts(created.id, concepts);
-    await assert.rejects(
-      repository.updateConcept(
-        created.id,
-        concepts[0].id,
-        { ...concepts[0], openingHook: "무조건 1위 상품" },
-        "마케터"
-      ),
-      /금지 문구/
-    );
+    await assert.rejects(repository.updateConcept(created.id, concepts[0].id, { ...concepts[0], openingHook: "무조건 1위 상품" }, "마케터"), /금지 문구/);
     const detailed = structuredClone(concepts[0]);
-    const actions = [
-      "젖은 운동복을 내려놓는다", "이마의 땀을 닦는다", "샤워기 손잡이를 돌린다",
-      "거울 속 표정을 바라본다", "선반 문을 천천히 연다", "상품을 손으로 꺼낸다",
-      "손바닥에 내용물을 덜어낸다", "손가락으로 질감을 펼친다", "양손으로 거품을 만든다",
-      "어깨를 따라 거품을 문지른다", "샤워기 물로 씻어낸다", "수건을 들고 웃는다",
-      "깨끗한 옷을 가방에 넣는다", "현관에서 신발을 신는다", "상세 화면을 손으로 누른다",
-    ];
-    const captions = [
-      "씻고도 금방 찝찝했죠", "운동 뒤엔 더 빨랐고요", "샤워 순서부터 봐요",
-      "익숙한 방식은 잠깐", "남은 답답함을 보고", "상쾌함이 필요한 순간",
-      "민트와 티트리가 보여요", "사용감부터 확인해요", "손에 덜어 살펴봐요",
-      "거품이 부드럽게 퍼져요", "물과 함께 산뜻하게", "표정도 한결 편안해져요",
-      "다음 운동도 가볍게", "샤워 루틴을 바꾼다면", concepts[0].cta,
-    ];
+    const actions = ["젖은 운동복을 내려놓는다", "이마의 땀을 닦는다", "샤워기 손잡이를 돌린다", "거울 속 표정을 바라본다", "선반 문을 천천히 연다", "상품을 손으로 꺼낸다", "손바닥에 내용물을 덜어낸다", "손가락으로 질감을 펼친다", "양손으로 거품을 만든다", "어깨를 따라 거품을 문지른다", "샤워기 물로 씻어낸다", "수건을 들고 웃는다", "깨끗한 옷을 가방에 넣는다", "현관에서 신발을 신는다", "상세 화면을 손으로 누른다"];
+    const captions = ["씻고도 금방 찝찝했죠", "운동 뒤엔 더 빨랐고요", "샤워 순서부터 봐요", "익숙한 방식은 잠깐", "남은 답답함을 보고", "상쾌함이 필요한 순간", "민트와 티트리가 보여요", "사용감부터 확인해요", "손에 덜어 살펴봐요", "거품이 부드럽게 퍼져요", "물과 함께 산뜻하게", "표정도 한결 편안해져요", "다음 운동도 가볍게", "샤워 루틴을 바꾼다면", concepts[0].cta];
     detailed.cuts = actions.map((action, index) => ({
       ...structuredClone(concepts[0].cuts[0]),
       id: crypto.randomUUID(),
@@ -470,9 +451,7 @@ test("프로젝트·버전·피드백·승인 이력이 재조회 후에도 유�
     await repository.addVersion(created.id, secondVersion, "김디자인");
     await repository.approveVersion(created.id, secondVersion.id, "마케터");
 
-    const reloaded = await createVideoProjectRepository({ dataDirectory: directory }).get(
-      created.id
-    );
+    const reloaded = await createVideoProjectRepository({ dataDirectory: directory }).get(created.id);
     assert.equal(reloaded?.status, "approved");
     assert.equal(reloaded?.versions.length, 2);
     assert.equal(reloaded?.comments[0].timecodeSeconds, 5);
@@ -531,10 +510,7 @@ test("같은 저장 경로를 쓰는 repository 동시 갱신도 JSON 데이터�
       productAnalysis: analysis,
       brandGuideline: guideline,
     });
-    await Promise.all([
-      first.updateDetails(created.id, { marketerName: "박마케팅" }),
-      second.updateDetails(created.id, { productionNotes: "동시 저장 메모" }),
-    ]);
+    await Promise.all([first.updateDetails(created.id, { marketerName: "박마케팅" }), second.updateDetails(created.id, { productionNotes: "동시 저장 메모" })]);
     const reloaded = await first.get(created.id);
     assert.equal(reloaded?.marketerName, "박마케팅");
     assert.equal(reloaded?.productionNotes, "동시 저장 메모");

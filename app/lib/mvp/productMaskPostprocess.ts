@@ -1,9 +1,5 @@
 import sharp from "sharp";
-import type {
-  NormalizedImageBox,
-  ProductExtractionScope,
-  ProductRepresentationType,
-} from "./types";
+import type { NormalizedImageBox, ProductExtractionScope, ProductRepresentationType } from "./types";
 
 type MaskOptions = {
   representationType?: ProductRepresentationType;
@@ -50,14 +46,7 @@ function findComponents(alpha: Buffer, width: number, height: number) {
       maxY = Math.max(maxY, y);
       const neighbors = [position - 1, position + 1, position - width, position + width];
       for (const neighbor of neighbors) {
-        if (
-          neighbor < 0 ||
-          neighbor >= alpha.length ||
-          visited[neighbor] ||
-          alpha[neighbor] <= 20 ||
-          Math.abs((neighbor % width) - x) > 1
-        )
-          continue;
+        if (neighbor < 0 || neighbor >= alpha.length || visited[neighbor] || alpha[neighbor] <= 20 || Math.abs((neighbor % width) - x) > 1) continue;
         visited[neighbor] = 1;
         queue.push(neighbor);
       }
@@ -73,12 +62,7 @@ export async function refineProductCutoutAlpha(buffer: Buffer, options: MaskOpti
   const metadata = await image.metadata();
   const originalWidth = metadata.width || 1;
   const originalHeight = metadata.height || 1;
-  const sample = await image
-    .clone()
-    .resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: true })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const sample = await image.clone().resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const alpha = Buffer.alloc(sample.info.width * sample.info.height);
   for (let position = 0; position < alpha.length; position += 1) {
     alpha[position] = sample.data[position * 4 + 3];
@@ -86,19 +70,8 @@ export async function refineProductCutoutAlpha(buffer: Buffer, options: MaskOpti
   const components = findComponents(alpha, sample.info.width, sample.info.height);
   if (!components.length) return sharp(buffer).rotate().png().toBuffer();
   const totalPixels = sample.info.width * sample.info.height;
-  const multiUnit = [
-    "multi-unit-set",
-    "bundle-components",
-    "irregular-product",
-    "packaged-product",
-    "product-package-group",
-    "plated-product",
-    "apparel-or-soft-product",
-    "transparent-or-reflective-product",
-    "already-transparent",
-  ].includes(options.representationType || "");
-  const minimumRatio =
-    options.cleanupStrength === "strong" ? 0.0015 : options.cleanupStrength === "light" ? 0.0002 : 0.0006;
+  const multiUnit = ["multi-unit-set", "bundle-components", "irregular-product", "packaged-product", "product-package-group", "plated-product", "apparel-or-soft-product", "transparent-or-reflective-product", "already-transparent"].includes(options.representationType || "");
+  const minimumRatio = options.cleanupStrength === "strong" ? 0.0015 : options.cleanupStrength === "light" ? 0.0002 : 0.0006;
   const primary = components[0];
   const kept = components.filter((component, index) => {
     const relativeArea = component.area / totalPixels;
@@ -137,22 +110,14 @@ export async function refineProductCutoutAlpha(buffer: Buffer, options: MaskOpti
     .toBuffer();
 }
 
-export async function applySelectedObjectBoxes(
-  buffer: Buffer,
-  boxes: NormalizedImageBox[],
-  cropBox?: NormalizedImageBox
-) {
+export async function applySelectedObjectBoxes(buffer: Buffer, boxes: NormalizedImageBox[], cropBox?: NormalizedImageBox) {
   if (!boxes.length) return buffer;
   const image = await sharp(buffer).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const cropMargin = cropBox ? 0.035 : 0;
   const cropX = cropBox ? Math.max(0, cropBox.x - cropMargin) : 0;
   const cropY = cropBox ? Math.max(0, cropBox.y - cropMargin) : 0;
-  const cropWidth = cropBox
-    ? Math.min(1, cropBox.x + cropBox.width + cropMargin) - cropX
-    : 1;
-  const cropHeight = cropBox
-    ? Math.min(1, cropBox.y + cropBox.height + cropMargin) - cropY
-    : 1;
+  const cropWidth = cropBox ? Math.min(1, cropBox.x + cropBox.width + cropMargin) - cropX : 1;
+  const cropHeight = cropBox ? Math.min(1, cropBox.y + cropBox.height + cropMargin) - cropY : 1;
   const relativeBoxes = boxes.map((box) => {
     const margin = 0.018;
     const x = (box.x - margin - cropX) / Math.max(0.001, cropWidth);
@@ -170,13 +135,7 @@ export async function applySelectedObjectBoxes(
     for (let x = 0; x < image.info.width; x += 1) {
       const normalizedX = x / image.info.width;
       const normalizedY = y / image.info.height;
-      const selected = relativeBoxes.some(
-        (box) =>
-          normalizedX >= box.x &&
-          normalizedX <= box.x + box.width &&
-          normalizedY >= box.y &&
-          normalizedY <= box.y + box.height
-      );
+      const selected = relativeBoxes.some((box) => normalizedX >= box.x && normalizedX <= box.x + box.width && normalizedY >= box.y && normalizedY <= box.y + box.height);
       if (selected) continue;
       const index = (y * image.info.width + x) * 4;
       image.data[index] = 0;

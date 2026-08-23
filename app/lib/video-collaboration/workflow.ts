@@ -1,10 +1,5 @@
 import { createBrandCode, createProductCode } from "../creative-assets/code.ts";
-import type {
-  ProductAnalysisSnapshot,
-  VideoHookType,
-  VideoProject,
-  VideoProjectStatus,
-} from "./types.ts";
+import type { ProductAnalysisSnapshot, VideoHookType, VideoProject, VideoProjectStatus } from "./types.ts";
 
 export const VIDEO_STATUS_LABELS: Record<VideoProjectStatus, string> = {
   script_pending: "기획 중",
@@ -69,9 +64,7 @@ export function canTransitionVideoProject(from: VideoProjectStatus, to: VideoPro
 
 export function assertVideoProjectTransition(from: VideoProjectStatus, to: VideoProjectStatus) {
   if (!canTransitionVideoProject(from, to)) {
-    throw new Error(
-      `${VIDEO_STATUS_LABELS[from]} 상태에서는 ${VIDEO_STATUS_LABELS[to]} 상태로 변경할 수 없습니다.`
-    );
+    throw new Error(`${VIDEO_STATUS_LABELS[from]} 상태에서는 ${VIDEO_STATUS_LABELS[to]} 상태로 변경할 수 없습니다.`);
   }
 }
 
@@ -113,21 +106,9 @@ function dateSegment(value: Date) {
   return `${byType.year}${byType.month}${byType.day}`;
 }
 
-export function createVideoMaterialCode(input: {
-  advertiserName: string;
-  productName: string;
-  hookType: VideoHookType;
-  existingCodes?: string[];
-  createdAt?: Date;
-}) {
-  const brand = readableSegment(
-    input.advertiserName,
-    createBrandCode(input.advertiserName || "브랜드", input.advertiserName || "brand")
-  );
-  const product = readableSegment(
-    input.productName,
-    createProductCode(input.productName || "상품", input.productName || "product")
-  );
+export function createVideoMaterialCode(input: { advertiserName: string; productName: string; hookType: VideoHookType; existingCodes?: string[]; createdAt?: Date }) {
+  const brand = readableSegment(input.advertiserName, createBrandCode(input.advertiserName || "브랜드", input.advertiserName || "brand"));
+  const product = readableSegment(input.productName, createProductCode(input.productName || "상품", input.productName || "product"));
   const base = `VIDEO_${brand}_${product}_${hookCode[input.hookType]}_${dateSegment(input.createdAt || new Date())}`;
   const occupied = new Set((input.existingCodes || []).map((value) => value.toUpperCase()));
   for (let index = 1; index <= 99; index += 1) {
@@ -138,9 +119,7 @@ export function createVideoMaterialCode(input: {
 }
 
 export function validateVideoMaterialCode(value: string) {
-  return /^VIDEO_[A-Z0-9_]{2,24}_[A-Z0-9_]{2,24}_(?:PROBLEM|BENEFIT|USP|SENSORY|CURIOSITY|REVIEW|BRAND|LOSS|COMPARE|ORIGIN|CHANGE|SEASON|MYTH|MONOLOGUE)_\d{8}_\d{2}$/.test(
-    value
-  );
+  return /^VIDEO_[A-Z0-9_]{2,24}_[A-Z0-9_]{2,24}_(?:PROBLEM|BENEFIT|USP|SENSORY|CURIOSITY|REVIEW|BRAND|LOSS|COMPARE|ORIGIN|CHANGE|SEASON|MYTH|MONOLOGUE)_\d{8}_\d{2}$/.test(value);
 }
 
 function compactUnique(values: unknown[], limit = 8) {
@@ -176,11 +155,7 @@ type ExistingProductExtraction = {
   reviewSources?: Array<{ keySentence?: string; ocrText?: string }>;
 };
 
-export function buildVideoProductAnalysis(
-  productUrl: string,
-  product: ExistingProductExtraction,
-  analyzedAt = new Date().toISOString()
-): ProductAnalysisSnapshot {
+export function buildVideoProductAnalysis(productUrl: string, product: ExistingProductExtraction, analyzedAt = new Date().toISOString()): ProductAnalysisSnapshot {
   const description = String(product.extractedDescription || product.description || "").trim();
   const descriptionParts = description
     .split(/\s*[·•|]\s*|[.!?]\s+/)
@@ -194,20 +169,10 @@ export function buildVideoProductAnalysis(
   );
   const features = compactUnique([...verified, ...ingredients, ...descriptionParts], 8);
   const verifiedNumbers = compactUnique(
-    [product.price, product.originalPrice, product.discountInfo, ...verified, ...features].flatMap(
-      (value) => String(value || "").match(/[^\s,;]*\d[\d,.]*[^\s,;]*/g) || []
-    ),
+    [product.price, product.originalPrice, product.discountInfo, ...verified, ...features].flatMap((value) => String(value || "").match(/[^\s,;]*\d[\d,.]*[^\s,;]*/g) || []),
     12
   );
-  const facts = [
-    ["상품명", product.productName, "상품 상세페이지"],
-    ["브랜드", product.brandName, "상품 상세페이지"],
-    ["가격", product.price, "상품 상세페이지"],
-    ["할인·혜택", product.discountInfo, "상품 상세페이지"],
-    ...verified.map((value) => ["확인된 혜택", value, "상품 상세페이지"]),
-    ...ingredients.map((value) => ["성분·원재료", value, "상품 상세페이지"]),
-    ...trustSignals.map((value) => ["공개 후기 문구", value, "공개 후기"]),
-  ]
+  const facts = [["상품명", product.productName, "상품 상세페이지"], ["브랜드", product.brandName, "상품 상세페이지"], ["가격", product.price, "상품 상세페이지"], ["할인·혜택", product.discountInfo, "상품 상세페이지"], ...verified.map((value) => ["확인된 혜택", value, "상품 상세페이지"]), ...ingredients.map((value) => ["성분·원재료", value, "상품 상세페이지"]), ...trustSignals.map((value) => ["공개 후기 문구", value, "공개 후기"])]
     .filter((item) => String(item[1] || "").trim())
     .map((item, index) => ({
       id: `fact-${index + 1}`,
@@ -229,14 +194,8 @@ export function buildVideoProductAnalysis(
     targetCustomers: [],
     customerProblems: [],
     trustSignals,
-    cautionPhrases: [
-      "상세페이지에서 확인되지 않은 효능·수치·판매 성과를 추가하지 않습니다.",
-      "가격과 혜택은 게시 시점에 다시 확인합니다.",
-    ],
-    imageUrls: compactUnique(
-      [product.mainImage, ...(product.galleryImages || []), ...(product.detailImages || [])],
-      16
-    ),
+    cautionPhrases: ["상세페이지에서 확인되지 않은 효능·수치·판매 성과를 추가하지 않습니다.", "가격과 혜택은 게시 시점에 다시 확인합니다."],
+    imageUrls: compactUnique([product.mainImage, ...(product.galleryImages || []), ...(product.detailImages || [])], 16),
     rawDescription: description.slice(0, 2400),
     ingredients,
     attributes: features,
@@ -248,13 +207,22 @@ export function buildVideoProductAnalysis(
     visualizableElements: compactUnique([...ingredients, ...verified, ...features], 6),
     verifiedFacts: facts,
     productType: String(product.category || "").trim(),
-    composition: compactUnique(verified.filter((value) => /구성|세트|입|개|팩|병|묶음/i.test(value)), 6),
+    composition: compactUnique(
+      verified.filter((value) => /구성|세트|입|개|팩|병|묶음/i.test(value)),
+      6
+    ),
     shippingConditions: compactUnique(
       [product.discountInfo, ...verified].filter((value) => /배송|출고|택배|도착/i.test(String(value || ""))),
       5
     ),
-    manufacturingProcess: compactUnique(descriptionParts.filter((value) => /제조|생산|가공|착즙|숙성|수확|배합|공정/i.test(value)), 6),
-    certifications: compactUnique(descriptionParts.filter((value) => /인증|검사|HACCP|비건|유기/i.test(value)), 6),
+    manufacturingProcess: compactUnique(
+      descriptionParts.filter((value) => /제조|생산|가공|착즙|숙성|수확|배합|공정/i.test(value)),
+      6
+    ),
+    certifications: compactUnique(
+      descriptionParts.filter((value) => /인증|검사|HACCP|비건|유기/i.test(value)),
+      6
+    ),
     actualBenefits: compactUnique([String(product.discountInfo || ""), ...verified].filter(Boolean), 8),
     adUsableFacts: facts,
     evidenceCoverage: facts.length >= 4 ? "sufficient" : "limited",
@@ -266,9 +234,7 @@ export function buildVideoProductAnalysis(
 }
 
 export function videoProjectSummary(project: VideoProject) {
-  const selected =
-    project.concepts.find((concept) => concept.id === project.selectedConceptId) ||
-    project.finalScript;
+  const selected = project.concepts.find((concept) => concept.id === project.selectedConceptId) || project.finalScript;
   return {
     id: project.id,
     projectName: project.projectName,
@@ -278,10 +244,7 @@ export function videoProjectSummary(project: VideoProject) {
     marketerName: project.marketerName,
     designerName: project.designerName,
     duration: project.duration,
-    status:
-      project.status === "script_review" && project.selectedConceptId
-        ? ("concept_selected" as const)
-        : project.status,
+    status: project.status === "script_review" && project.selectedConceptId ? ("concept_selected" as const) : project.status,
     selectedConceptId: project.selectedConceptId,
     deadline: project.deadline,
     hookType: selected?.hookType,

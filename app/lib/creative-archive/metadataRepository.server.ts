@@ -13,7 +13,10 @@ const emptyStore = (): CreativeArchiveMetadataStore => ({
 });
 
 function cleanText(value: unknown, maxLength: number) {
-  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function cleanTags(value: unknown) {
@@ -49,7 +52,10 @@ export function createCreativeArchiveMetadataRepository(options: { dataDirectory
 
   function locked<T>(operation: () => Promise<T>) {
     const next = queue.then(operation, operation);
-    queue = next.then(() => undefined, () => undefined);
+    queue = next.then(
+      () => undefined,
+      () => undefined
+    );
     return next;
   }
 
@@ -58,27 +64,41 @@ export function createCreativeArchiveMetadataRepository(options: { dataDirectory
       return (await readStore()).entries;
     },
 
-    async update(
-      entryId: string,
-      input: Partial<Pick<CreativeArchiveMetadata, "savedAsReference" | "tags" | "note">>
-    ) {
+    async update(entryId: string, input: Partial<Pick<CreativeArchiveMetadata, "savedAsReference" | "tags" | "note">>) {
       return locked(async () => {
         const store = await readStore();
         const current = store.entries[entryId];
         const metadata: CreativeArchiveMetadata = {
           entryId,
-          savedAsReference:
-            typeof input.savedAsReference === "boolean"
-              ? input.savedAsReference
-              : current?.savedAsReference || false,
+          savedAsReference: typeof input.savedAsReference === "boolean" ? input.savedAsReference : current?.savedAsReference || false,
           tags: input.tags === undefined ? current?.tags || [] : cleanTags(input.tags),
           note: input.note === undefined ? current?.note || "" : cleanText(input.note, 500),
+          ...(current?.deliveryBranding ? { deliveryBranding: current.deliveryBranding } : {}),
           ...(current?.deletedAt ? { deletedAt: current.deletedAt } : {}),
           updatedAt: new Date().toISOString(),
         };
         store.entries[entryId] = metadata;
         await writeStore(store);
         return metadata;
+      });
+    },
+
+    async updateDeliveryBranding(entryId: string, deliveryBranding: CreativeArchiveMetadata["deliveryBranding"]) {
+      return locked(async () => {
+        const store = await readStore();
+        const current = store.entries[entryId];
+        const updatedAt = new Date().toISOString();
+        store.entries[entryId] = {
+          entryId,
+          savedAsReference: current?.savedAsReference || false,
+          tags: current?.tags || [],
+          note: current?.note || "",
+          ...(deliveryBranding ? { deliveryBranding } : {}),
+          ...(current?.deletedAt ? { deletedAt: current.deletedAt } : {}),
+          updatedAt,
+        };
+        await writeStore(store);
+        return store.entries[entryId];
       });
     },
 
@@ -94,6 +114,7 @@ export function createCreativeArchiveMetadataRepository(options: { dataDirectory
             savedAsReference: false,
             tags: current?.tags || [],
             note: current?.note || "",
+            ...(current?.deliveryBranding ? { deliveryBranding: current.deliveryBranding } : {}),
             deletedAt,
             updatedAt: deletedAt,
           };

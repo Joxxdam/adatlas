@@ -3,19 +3,9 @@
 import type { CreativeQualityScore, VisualDirection } from "../../../lib/creative/types";
 import styles from "./VisualDirection.module.css";
 
-export function VisualDirectionCard(props: {
-  direction: VisualDirection;
-  quality?: CreativeQualityScore;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+export function VisualDirectionCard(props: { direction: VisualDirection; quality?: CreativeQualityScore; selected: boolean; onSelect: () => void }) {
   return (
-    <button
-      aria-pressed={props.selected}
-      className={`${styles.directionCard} ${props.selected ? styles.selected : ""}`}
-      onClick={props.onSelect}
-      type="button"
-    >
+    <button aria-pressed={props.selected} className={`${styles.directionCard} ${props.selected ? styles.selected : ""}`} onClick={props.onSelect} type="button">
       <span className={styles.cardTopline}>
         <b>{props.direction.title}</b>
         {props.quality ? <em>{props.quality.overall}점</em> : null}

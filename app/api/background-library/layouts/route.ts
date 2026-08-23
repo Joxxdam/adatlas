@@ -6,21 +6,10 @@ import { NextResponse } from "next/server";
 import { generateAdaptiveCreativePlans } from "../../../lib/background-library/adaptiveCreative";
 import { toBackgroundHookType } from "../../../lib/background-library/recommender";
 import { readBackgroundLibrary } from "../../../lib/background-library/store";
-import {
-  findBackgroundCatalogItem,
-  catalogItemToLegacy,
-} from "../../../lib/background-library/catalogStore.server";
-import type {
-  BackgroundLibraryItem,
-  BackgroundSelectionMode,
-  BackgroundHookType,
-} from "../../../lib/background-library/types";
+import { findBackgroundCatalogItem, catalogItemToLegacy } from "../../../lib/background-library/catalogStore.server";
+import type { BackgroundLibraryItem, BackgroundSelectionMode, BackgroundHookType } from "../../../lib/background-library/types";
 import { extractPaletteFromImage } from "../../../lib/mvp/colorPaletteExtractor";
-import type {
-  CreativeStrategy,
-  GeneratedAdCopy,
-  ProductInfoForPrompt,
-} from "../../../lib/mvp/types";
+import type { CreativeStrategy, GeneratedAdCopy, ProductInfoForPrompt } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
@@ -54,17 +43,12 @@ async function productGeometry(source: string) {
       return { aspectRatio: 0.82, transparentBoundsAnalyzed: false, hasUsefulTransparency: false };
     }
     const metadata = await sharp(buffer).metadata();
-    const alphaSample = await sharp(buffer)
-      .resize(96, 96, { fit: "inside", withoutEnlargement: true })
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    const alphaSample = await sharp(buffer).resize(96, 96, { fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     let transparentPixels = 0;
     for (let offset = 3; offset < alphaSample.data.length; offset += alphaSample.info.channels) {
       if (alphaSample.data[offset] < 245) transparentPixels += 1;
     }
-    const hasUsefulTransparency =
-      transparentPixels / Math.max(1, alphaSample.info.width * alphaSample.info.height) >= 0.025;
+    const hasUsefulTransparency = transparentPixels / Math.max(1, alphaSample.info.width * alphaSample.info.height) >= 0.025;
     const trimmed = await sharp(buffer)
       .ensureAlpha()
       .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
@@ -87,15 +71,10 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as LayoutRequest;
     if (!body.backgroundId || !body.hook) {
-      return NextResponse.json(
-        { ok: false, error: "선택한 배경과 후킹이 필요합니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "선택한 배경과 후킹이 필요합니다." }, { status: 400 });
     }
     const items = await readBackgroundLibrary();
-    let background = items.find(
-      (item) => item.id === body.backgroundId && item.enabled !== false
-    );
+    let background = items.find((item) => item.id === body.backgroundId && item.enabled !== false);
     if (!background) {
       const catalogItem = await findBackgroundCatalogItem(body.backgroundId);
       if (catalogItem?.status === "approved" && catalogItem.licenseStatus === "verified") {
@@ -109,17 +88,10 @@ export async function POST(request: Request) {
       }
     }
     if (!background) {
-      return NextResponse.json(
-        { ok: false, error: "선택한 배경을 찾을 수 없습니다." },
-        { status: 404 }
-      );
+      return NextResponse.json({ ok: false, error: "선택한 배경을 찾을 수 없습니다." }, { status: 404 });
     }
-    const hookType = (body.hook.backgroundHookType ||
-      (body.hook.hookType ? toBackgroundHookType(body.hook.hookType) : "usp_proof")) as BackgroundHookType;
-    const [palette, geometry] = await Promise.all([
-      extractPaletteFromImage(background.file, background.category),
-      productGeometry(body.productImagePath || body.product?.productImagePath || ""),
-    ]);
+    const hookType = (body.hook.backgroundHookType || (body.hook.hookType ? toBackgroundHookType(body.hook.hookType) : "usp_proof")) as BackgroundHookType;
+    const [palette, geometry] = await Promise.all([extractPaletteFromImage(background.file, background.category), productGeometry(body.productImagePath || body.product?.productImagePath || "")]);
     const plans = generateAdaptiveCreativePlans({
       background,
       hookType,

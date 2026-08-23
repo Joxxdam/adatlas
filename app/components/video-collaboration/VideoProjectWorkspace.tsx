@@ -2,19 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type {
-  ReviewComment,
-  VideoConcept,
-  VideoCut,
-  VideoProject,
-  VideoVersion,
-} from "../../lib/video-collaboration/types";
-import {
-  VIDEO_FORMAT_LABELS,
-  VIDEO_HOOK_LABELS,
-  VIDEO_OBJECTIVE_LABELS,
-  VIDEO_STATUS_LABELS,
-} from "../../lib/video-collaboration/workflow";
+import type { ReviewComment, VideoConcept, VideoCut, VideoProject, VideoVersion } from "../../lib/video-collaboration/types";
+import { VIDEO_FORMAT_LABELS, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS, VIDEO_STATUS_LABELS } from "../../lib/video-collaboration/workflow";
 import styles from "./VideoCollaboration.module.css";
 
 function formatDate(value: string) {
@@ -25,9 +14,7 @@ function formatDate(value: string) {
 }
 
 function fileSize(value: number) {
-  return value >= 1024 * 1024
-    ? `${(value / 1024 / 1024).toFixed(1)}MB`
-    : `${Math.ceil(value / 1024)}KB`;
+  return value >= 1024 * 1024 ? `${(value / 1024 / 1024).toFixed(1)}MB` : `${Math.ceil(value / 1024)}KB`;
 }
 
 function timecode(value?: number) {
@@ -36,21 +23,7 @@ function timecode(value?: number) {
 }
 
 function conceptClipboard(concept: VideoConcept) {
-  return [
-    `[${concept.materialCode}] ${concept.title}`,
-    `후킹 유형: ${VIDEO_HOOK_LABELS[concept.hookType]}`,
-    `핵심 타깃: ${concept.coreTarget}`,
-    `첫 3초: ${concept.openingHook}`,
-    `전체 대본: ${concept.fullScript}`,
-    "",
-    ...concept.cuts.map(
-      (cut) =>
-        `컷 ${cut.cutNumber} (${cut.startSecond}-${cut.endSecond}초)\n장면: ${cut.sceneDescription}\n자막: ${cut.caption}\n내레이션: ${cut.narration}\n필요 소스: ${cut.requiredSources.join(", ")}`
-    ),
-    "",
-    `CTA: ${concept.cta}`,
-    `제작 주의: ${concept.productionCautions.join(" · ")}`,
-  ].join("\n");
+  return [`[${concept.materialCode}] ${concept.title}`, `후킹 유형: ${VIDEO_HOOK_LABELS[concept.hookType]}`, `핵심 타깃: ${concept.coreTarget}`, `첫 3초: ${concept.openingHook}`, `전체 대본: ${concept.fullScript}`, "", ...concept.cuts.map((cut) => `컷 ${cut.cutNumber} (${cut.startSecond}-${cut.endSecond}초)\n장면: ${cut.sceneDescription}\n자막: ${cut.caption}\n내레이션: ${cut.narration}\n필요 소스: ${cut.requiredSources.join(", ")}`), "", `CTA: ${concept.cta}`, `제작 주의: ${concept.productionCautions.join(" · ")}`].join("\n");
 }
 
 function lines(value: string) {
@@ -71,13 +44,7 @@ const statusStep = {
   approved: 5,
 } as const;
 
-export function VideoProjectWorkspace({
-  projectId,
-  basePath = "/video-collaboration",
-}: {
-  projectId: string;
-  basePath?: "/video-collaboration" | "/video-planning";
-}) {
+export function VideoProjectWorkspace({ projectId, basePath = "/video-collaboration" }: { projectId: string; basePath?: "/video-collaboration" | "/video-planning" }) {
   const [project, setProject] = useState<VideoProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -107,9 +74,7 @@ export function VideoProjectWorkspace({
         setProject(payload.project);
         setDeadline(payload.project.deadline || "");
         setUploadedBy(payload.project.designerName || "");
-        setActiveVersionId(
-          payload.project.approvedVersionId || payload.project.versions.at(-1)?.id || ""
-        );
+        setActiveVersionId(payload.project.approvedVersionId || payload.project.versions.at(-1)?.id || "");
       })
       .catch((caught) => {
         if (active) setError(caught instanceof Error ? caught.message : "프로젝트 조회 실패");
@@ -131,17 +96,8 @@ export function VideoProjectWorkspace({
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
 
-  const activeVersion = useMemo(
-    () =>
-      project?.versions.find((version) => version.id === activeVersionId) ||
-      project?.versions.at(-1) ||
-      null,
-    [project, activeVersionId]
-  );
-  const activeComments = useMemo(
-    () => project?.comments.filter((comment) => comment.versionId === activeVersion?.id) || [],
-    [project, activeVersion]
-  );
+  const activeVersion = useMemo(() => project?.versions.find((version) => version.id === activeVersionId) || project?.versions.at(-1) || null, [project, activeVersionId]);
+  const activeComments = useMemo(() => project?.comments.filter((comment) => comment.versionId === activeVersion?.id) || [], [project, activeVersion]);
 
   async function patch(body: Record<string, unknown>, successMessage: string) {
     setBusy(String(body.action || "save"));
@@ -179,19 +135,13 @@ export function VideoProjectWorkspace({
       });
       const payload = await response.json();
       if (!response.ok && payload.failure?.code === "GENERATION_ALREADY_RUNNING") {
-        setNotice(
-          "같은 영상 기획 생성이 이미 진행 중입니다. 완료 후 저장 결과를 다시 확인해 주세요."
-        );
+        setNotice("같은 영상 기획 생성이 이미 진행 중입니다. 완료 후 저장 결과를 다시 확인해 주세요.");
         return;
       }
       if (!response.ok) throw new Error(payload.error || "기획안 생성에 실패했습니다.");
       setProject(payload.project);
       setEditing(null);
-      setNotice(
-        conceptId
-          ? "선택한 후킹 기획안을 다시 생성했습니다."
-          : "서로 다른 후킹 기획안 4개를 생성했습니다."
-      );
+      setNotice(conceptId ? "선택한 후킹 기획안을 다시 생성했습니다." : "서로 다른 후킹 기획안 4개를 생성했습니다.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "기획안 생성 실패");
     } finally {
@@ -201,10 +151,7 @@ export function VideoProjectWorkspace({
 
   async function saveConcept() {
     if (!editing) return;
-    const updated = await patch(
-      { action: "update-concept", conceptId: editing.id, concept: editing, actor: "마케터" },
-      "기획안 수정 내용을 저장했습니다."
-    );
+    const updated = await patch({ action: "update-concept", conceptId: editing.id, concept: editing, actor: "마케터" }, "기획안 수정 내용을 저장했습니다.");
     if (updated) setEditing(null);
   }
 
@@ -236,8 +183,7 @@ export function VideoProjectWorkspace({
     setUploadProgress(1);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `/api/video-projects/${projectId}/versions`);
-    xhr.upload.onprogress = (event) =>
-      event.lengthComputable && setUploadProgress(Math.round((event.loaded / event.total) * 100));
+    xhr.upload.onprogress = (event) => event.lengthComputable && setUploadProgress(Math.round((event.loaded / event.total) * 100));
     xhr.onload = () => {
       const payload = JSON.parse(xhr.responseText || "{}");
       if (xhr.status < 200 || xhr.status >= 300) {
@@ -284,11 +230,7 @@ export function VideoProjectWorkspace({
       setCommentBody("");
       setCommentTime("");
       setRequestRevision(false);
-      setNotice(
-        requestRevision
-          ? "피드백을 저장하고 수정 요청 상태로 변경했습니다."
-          : "피드백을 저장했습니다."
-      );
+      setNotice(requestRevision ? "피드백을 저장하고 수정 요청 상태로 변경했습니다." : "피드백을 저장했습니다.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "피드백 저장 실패");
     } finally {
@@ -316,10 +258,7 @@ export function VideoProjectWorkspace({
 
   const currentStep = statusStep[project.status];
   const canUpload = ["in_production", "revision_requested"].includes(project.status);
-  const scriptHref =
-    basePath === "/video-planning" && project.selectedConceptId
-      ? `/video-planning/${project.id}/concept/${project.selectedConceptId}`
-      : `${basePath}/${project.id}${basePath === "/video-collaboration" ? "/script" : ""}`;
+  const scriptHref = basePath === "/video-planning" && project.selectedConceptId ? `/video-planning/${project.id}/concept/${project.selectedConceptId}` : `${basePath}/${project.id}${basePath === "/video-collaboration" ? "/script" : ""}`;
 
   return (
     <main className={styles.page}>
@@ -329,8 +268,7 @@ export function VideoProjectWorkspace({
           <p className={styles.eyebrow}>VIDEO PROJECT</p>
           <h1>{project.projectName}</h1>
           <p>
-            {project.advertiserName} · {project.productAnalysis.productName} · 담당{" "}
-            {project.designerName}
+            {project.advertiserName} · {project.productAnalysis.productName} · 담당 {project.designerName}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -347,11 +285,7 @@ export function VideoProjectWorkspace({
 
       <ol className={styles.workflowSteps}>
         {["상품 분석", "대본 검토", "영상 제작", "마케터 검수", "최종 승인"].map((label, index) => (
-          <li
-            data-active={currentStep >= index + 1}
-            data-current={currentStep === index + 1}
-            key={label}
-          >
+          <li data-active={currentStep >= index + 1} data-current={currentStep === index + 1} key={label}>
             <span>{index + 1}</span>
             {label}
           </li>
@@ -360,17 +294,7 @@ export function VideoProjectWorkspace({
       <div className={styles.nextAction}>
         <strong>현재 단계</strong>
         <span>{VIDEO_STATUS_LABELS[project.status]}</span>
-        <p>
-          {project.status === "script_review"
-            ? "후킹 기획안을 비교하고 하나를 확정해 제작 요청하세요."
-            : project.status === "marketer_review"
-              ? "최신 영상을 검수하고 피드백 또는 최종 승인을 선택하세요."
-              : project.status === "revision_requested"
-                ? "수정본을 새 버전으로 업로드하세요."
-                : project.status === "approved"
-                  ? "최종 승인 버전과 권장 파일명을 확인하세요."
-                  : "현재 단계에서 표시된 주요 작업을 완료하세요."}
-        </p>
+        <p>{project.status === "script_review" ? "후킹 기획안을 비교하고 하나를 확정해 제작 요청하세요." : project.status === "marketer_review" ? "최신 영상을 검수하고 피드백 또는 최종 승인을 선택하세요." : project.status === "revision_requested" ? "수정본을 새 버전으로 업로드하세요." : project.status === "approved" ? "최종 승인 버전과 권장 파일명을 확인하세요." : "현재 단계에서 표시된 주요 작업을 완료하세요."}</p>
       </div>
       {error ? <div className={styles.error}>{error}</div> : null}
       {notice ? (
@@ -431,34 +355,19 @@ export function VideoProjectWorkspace({
           </div>
           <div>
             <span>확인된 사실</span>
-            <p>
-              {project.productAnalysis.verifiedFacts
-                ?.map((fact) => `${fact.label}: ${fact.value}`)
-                .join(" · ") || "상세페이지에서 구조화된 사실을 추가 확인해야 합니다."}
-            </p>
+            <p>{project.productAnalysis.verifiedFacts?.map((fact) => `${fact.label}: ${fact.value}`).join(" · ") || "상세페이지에서 구조화된 사실을 추가 확인해야 합니다."}</p>
           </div>
           <div>
             <span>시스템 추천 해석</span>
-            <p>
-              {project.productAnalysis.inferredAngles?.map((fact) => fact.value).join(" · ") ||
-                "없음"}
-            </p>
+            <p>{project.productAnalysis.inferredAngles?.map((fact) => fact.value).join(" · ") || "없음"}</p>
           </div>
           <div>
             <span>사용 금지·확인 필요</span>
-            <p>
-              {project.productAnalysis.unsupportedClaims?.map((fact) => fact.value).join(" · ") ||
-                project.productAnalysis.cautionPhrases.join(" · ") ||
-                "없음"}
-            </p>
+            <p>{project.productAnalysis.unsupportedClaims?.map((fact) => fact.value).join(" · ") || project.productAnalysis.cautionPhrases.join(" · ") || "없음"}</p>
           </div>
           <div>
             <span>상품 원본 고정</span>
-            <p>
-              {project.productLockedAsset
-                ? `${project.productLockedAsset.originalFileName} · 형태·비율·뚜껑·로고·라벨·색상 유지`
-                : "원본 상품 이미지가 없어 제품 합성 전 추가 업로드가 필요합니다."}
-            </p>
+            <p>{project.productLockedAsset ? `${project.productLockedAsset.originalFileName} · 형태·비율·뚜껑·로고·라벨·색상 유지` : "원본 상품 이미지가 없어 제품 합성 전 추가 업로드가 필요합니다."}</p>
           </div>
         </div>
       </details>
@@ -506,8 +415,7 @@ export function VideoProjectWorkspace({
           {project.referenceAnalyses.map((analysis) => (
             <div className={styles.cutPreview} key={analysis.assetId}>
               <strong>
-                {analysis.assetName} ·{" "}
-                {analysis.analysisStatus === "limited" ? "제한 분석" : "정지 이미지"}
+                {analysis.assetName} · {analysis.analysisStatus === "limited" ? "제한 분석" : "정지 이미지"}
               </strong>
               <span>
                 오프닝: {analysis.openingHookMethod} · 자막: {analysis.subtitlePosition}
@@ -523,11 +431,7 @@ export function VideoProjectWorkspace({
           <div className={styles.empty}>
             <strong>아직 영상 대본이 없습니다.</strong>
             <span>상품 근거를 사용해 서로 다른 후킹 전략 3개를 생성합니다.</span>
-            <button
-              className={styles.primaryButton}
-              disabled={Boolean(busy)}
-              onClick={() => generate()}
-            >
+            <button className={styles.primaryButton} disabled={Boolean(busy)} onClick={() => generate()}>
               {busy ? "대본 생성 중…" : "후킹 대본 3개 생성"}
             </button>
           </div>
@@ -542,27 +446,18 @@ export function VideoProjectWorkspace({
               <p>서로 다른 고객 심리와 메시지 가설을 비교합니다.</p>
             </div>
             {project.status === "script_review" ? (
-              <button
-                className={styles.secondaryButton}
-                disabled={Boolean(busy)}
-                onClick={() => generate()}
-              >
+              <button className={styles.secondaryButton} disabled={Boolean(busy)} onClick={() => generate()}>
                 모든 기획안 다시 생성
               </button>
             ) : null}
           </div>
           <div className={styles.conceptGrid}>
             {project.concepts.map((concept) => (
-              <article
-                className={styles.conceptCard}
-                data-selected={project.selectedConceptId === concept.id}
-                key={concept.id}
-              >
+              <article className={styles.conceptCard} data-selected={project.selectedConceptId === concept.id} key={concept.id}>
                 <div className={styles.cardTop}>
                   <span className={styles.hookBadge}>{VIDEO_HOOK_LABELS[concept.hookType]}</span>
                   <small>
-                    rev.{concept.revision} ·{" "}
-                    {concept.generationSource === "openai" ? "AI" : "근거 기반"}
+                    rev.{concept.revision} · {concept.generationSource === "openai" ? "AI" : "근거 기반"}
                   </small>
                 </div>
                 <h3>{concept.title}</h3>
@@ -591,8 +486,7 @@ export function VideoProjectWorkspace({
                 <small>{concept.recommendationReason}</small>
                 {concept.validation ? (
                   <small className={concept.validation.valid ? undefined : styles.warning}>
-                    자동 검증 {concept.validation.score}점 ·{" "}
-                    {concept.validation.valid ? "통과" : "확인 필요"}
+                    자동 검증 {concept.validation.score}점 · {concept.validation.valid ? "통과" : "확인 필요"}
                   </small>
                 ) : null}
                 <code>{concept.materialCode}</code>
@@ -602,15 +496,7 @@ export function VideoProjectWorkspace({
                   </small>
                 ))}
                 <div className={styles.cardActions}>
-                  <button
-                    onClick={() =>
-                      navigator.clipboard
-                        .writeText(conceptClipboard(concept))
-                        .then(() => setNotice("기획안을 클립보드에 복사했습니다."))
-                    }
-                  >
-                    복사
-                  </button>
+                  <button onClick={() => navigator.clipboard.writeText(conceptClipboard(concept)).then(() => setNotice("기획안을 클립보드에 복사했습니다."))}>복사</button>
                   {project.status === "script_review" ? (
                     <button
                       onClick={() => {
@@ -627,16 +513,7 @@ export function VideoProjectWorkspace({
                     </button>
                   ) : null}
                   {project.status === "script_review" ? (
-                    <button
-                      className={styles.selectButton}
-                      disabled={Boolean(busy)}
-                      onClick={() =>
-                        patch(
-                          { action: "select-concept", conceptId: concept.id },
-                          "제작 요청할 기획안을 선택했습니다."
-                        )
-                      }
-                    >
+                    <button className={styles.selectButton} disabled={Boolean(busy)} onClick={() => patch({ action: "select-concept", conceptId: concept.id }, "제작 요청할 기획안을 선택했습니다.")}>
                       {project.selectedConceptId === concept.id ? "선택됨" : "이 기획안 선택"}
                     </button>
                   ) : null}
@@ -767,70 +644,34 @@ export function VideoProjectWorkspace({
                   <strong>컷 {cut.cutNumber}</strong>
                   <label>
                     시작
-                    <input
-                      min={0}
-                      max={project.duration}
-                      type="number"
-                      value={cut.startSecond}
-                      onChange={(event) =>
-                        updateCut(cut.id, { startSecond: Number(event.target.value) })
-                      }
-                    />
+                    <input min={0} max={project.duration} type="number" value={cut.startSecond} onChange={(event) => updateCut(cut.id, { startSecond: Number(event.target.value) })} />
                   </label>
                   <label>
                     종료
-                    <input
-                      min={0}
-                      max={project.duration}
-                      type="number"
-                      value={cut.endSecond}
-                      onChange={(event) =>
-                        updateCut(cut.id, { endSecond: Number(event.target.value) })
-                      }
-                    />
+                    <input min={0} max={project.duration} type="number" value={cut.endSecond} onChange={(event) => updateCut(cut.id, { endSecond: Number(event.target.value) })} />
                   </label>
                 </div>
                 <label>
                   장면 설명
-                  <textarea
-                    value={cut.sceneDescription}
-                    onChange={(event) =>
-                      updateCut(cut.id, { sceneDescription: event.target.value })
-                    }
-                  />
+                  <textarea value={cut.sceneDescription} onChange={(event) => updateCut(cut.id, { sceneDescription: event.target.value })} />
                 </label>
                 <label>
                   화면 자막
-                  <textarea
-                    value={cut.caption}
-                    onChange={(event) => updateCut(cut.id, { caption: event.target.value })}
-                  />
+                  <textarea value={cut.caption} onChange={(event) => updateCut(cut.id, { caption: event.target.value })} />
                 </label>
                 <label>
                   내레이션
-                  <textarea
-                    value={cut.narration}
-                    onChange={(event) => updateCut(cut.id, { narration: event.target.value })}
-                  />
+                  <textarea value={cut.narration} onChange={(event) => updateCut(cut.id, { narration: event.target.value })} />
                 </label>
                 <label>
                   필요 소스
-                  <textarea
-                    value={cut.requiredSources.join("\n")}
-                    onChange={(event) =>
-                      updateCut(cut.id, { requiredSources: lines(event.target.value) })
-                    }
-                  />
+                  <textarea value={cut.requiredSources.join("\n")} onChange={(event) => updateCut(cut.id, { requiredSources: lines(event.target.value) })} />
                 </label>
               </article>
             ))}
           </div>
           <div className={styles.formActions}>
-            <button
-              className={styles.primaryButton}
-              disabled={!dirty || Boolean(busy)}
-              onClick={saveConcept}
-            >
+            <button className={styles.primaryButton} disabled={!dirty || Boolean(busy)} onClick={saveConcept}>
               수정 내용 저장
             </button>
           </div>
@@ -846,19 +687,11 @@ export function VideoProjectWorkspace({
           </div>
           <label>
             제작 마감일
-            <input
-              min={new Date().toISOString().slice(0, 10)}
-              type="date"
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-            />
+            <input min={new Date().toISOString().slice(0, 10)} type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} />
           </label>
           <label>
             요청 메모
-            <textarea
-              value={requestNote}
-              onChange={(event) => setRequestNote(event.target.value)}
-            />
+            <textarea value={requestNote} onChange={(event) => setRequestNote(event.target.value)} />
           </label>
           <button
             className={styles.primaryButton}
@@ -935,16 +768,7 @@ export function VideoProjectWorkspace({
           </details>
           {project.status === "production_requested" ? (
             <div className={styles.formActions}>
-              <button
-                className={styles.primaryButton}
-                disabled={Boolean(busy)}
-                onClick={() =>
-                  patch(
-                    { action: "start-production", actor: project.designerName },
-                    "영상 제작 중 상태로 변경했습니다."
-                  )
-                }
-              >
+              <button className={styles.primaryButton} disabled={Boolean(busy)} onClick={() => patch({ action: "start-production", actor: project.designerName }, "영상 제작 중 상태로 변경했습니다.")}>
                 디자이너 작업 시작
               </button>
             </div>
@@ -955,14 +779,8 @@ export function VideoProjectWorkspace({
       {canUpload ? (
         <section className={styles.calloutPanel}>
           <div>
-            <p className={styles.eyebrow}>
-              {project.status === "revision_requested" ? "UPLOAD REVISION" : "UPLOAD VIDEO"}
-            </p>
-            <h2>
-              {project.status === "revision_requested"
-                ? `수정본 v${project.versions.length + 1} 업로드`
-                : "완성 영상 업로드"}
-            </h2>
+            <p className={styles.eyebrow}>{project.status === "revision_requested" ? "UPLOAD REVISION" : "UPLOAD VIDEO"}</p>
+            <h2>{project.status === "revision_requested" ? `수정본 v${project.versions.length + 1} 업로드` : "완성 영상 업로드"}</h2>
             <p>MP4·MOV·WEBM, 최대 200MB. 업로드 시 버전 번호가 자동 증가합니다.</p>
           </div>
           <label>
@@ -971,11 +789,7 @@ export function VideoProjectWorkspace({
           </label>
           <label>
             영상 파일
-            <input
-              accept="video/mp4,video/quicktime,video/webm,.mov"
-              type="file"
-              onChange={(event) => setUploadFile(event.target.files?.[0] || null)}
-            />
+            <input accept="video/mp4,video/quicktime,video/webm,.mov" type="file" onChange={(event) => setUploadFile(event.target.files?.[0] || null)} />
             {uploadFile ? (
               <small>
                 {uploadFile.name} · {fileSize(uploadFile.size)}
@@ -983,14 +797,8 @@ export function VideoProjectWorkspace({
             ) : null}
           </label>
           {uploadProgress ? <progress max={100} value={uploadProgress} /> : null}
-          <button
-            className={styles.primaryButton}
-            disabled={!uploadFile || Boolean(busy)}
-            onClick={uploadVideo}
-          >
-            {busy === "upload"
-              ? `업로드 ${uploadProgress}%`
-              : `v${project.versions.length + 1} 업로드`}
+          <button className={styles.primaryButton} disabled={!uploadFile || Boolean(busy)} onClick={uploadVideo}>
+            {busy === "upload" ? `업로드 ${uploadProgress}%` : `v${project.versions.length + 1} 업로드`}
           </button>
         </section>
       ) : null}
@@ -1004,11 +812,7 @@ export function VideoProjectWorkspace({
             </div>
             <div className={styles.versionTabs}>
               {project.versions.map((version) => (
-                <button
-                  data-active={activeVersion?.id === version.id}
-                  key={version.id}
-                  onClick={() => setActiveVersionId(version.id)}
-                >
+                <button data-active={activeVersion?.id === version.id} key={version.id} onClick={() => setActiveVersionId(version.id)}>
                   v{version.versionNumber}
                 </button>
               ))}
@@ -1017,12 +821,7 @@ export function VideoProjectWorkspace({
           {activeVersion ? (
             <div className={styles.reviewLayout}>
               <div className={styles.videoPanel}>
-                <video
-                  controls
-                  key={activeVersion.filePath}
-                  preload="metadata"
-                  src={activeVersion.filePath}
-                >
+                <video controls key={activeVersion.filePath} preload="metadata" src={activeVersion.filePath}>
                   이 브라우저는 영상 미리보기를 지원하지 않습니다.
                 </video>
                 <div>
@@ -1030,8 +829,7 @@ export function VideoProjectWorkspace({
                     v{activeVersion.versionNumber} · {activeVersion.originalFileName}
                   </strong>
                   <span>
-                    {activeVersion.uploadedBy} · {formatDate(activeVersion.uploadedAt)} ·{" "}
-                    {fileSize(activeVersion.size)}
+                    {activeVersion.uploadedBy} · {formatDate(activeVersion.uploadedAt)} · {fileSize(activeVersion.size)}
                   </span>
                   <a download={activeVersion.storedFileName} href={activeVersion.filePath}>
                     권장 파일명으로 다운로드
@@ -1077,36 +875,18 @@ export function VideoProjectWorkspace({
                   <div className={styles.feedbackForm}>
                     <label>
                       작성자
-                      <input
-                        value={commentAuthor}
-                        onChange={(event) => setCommentAuthor(event.target.value)}
-                      />
+                      <input value={commentAuthor} onChange={(event) => setCommentAuthor(event.target.value)} />
                     </label>
                     <label>
                       시간(초, 선택)
-                      <input
-                        min={0}
-                        max={project.duration}
-                        type="number"
-                        value={commentTime}
-                        onChange={(event) => setCommentTime(event.target.value)}
-                      />
+                      <input min={0} max={project.duration} type="number" value={commentTime} onChange={(event) => setCommentTime(event.target.value)} />
                     </label>
                     <label className={styles.wide}>
                       피드백
-                      <textarea
-                        placeholder="예: 첫 자막을 더 짧게 수정"
-                        value={commentBody}
-                        onChange={(event) => setCommentBody(event.target.value)}
-                      />
+                      <textarea placeholder="예: 첫 자막을 더 짧게 수정" value={commentBody} onChange={(event) => setCommentBody(event.target.value)} />
                     </label>
                     <label className={styles.checkLabel}>
-                      <input
-                        checked={requestRevision}
-                        onChange={(event) => setRequestRevision(event.target.checked)}
-                        type="checkbox"
-                      />{" "}
-                      이 피드백과 함께 수정 요청 상태로 변경
+                      <input checked={requestRevision} onChange={(event) => setRequestRevision(event.target.checked)} type="checkbox" /> 이 피드백과 함께 수정 요청 상태로 변경
                     </label>
                     <button disabled={!commentBody.trim() || Boolean(busy)} onClick={addComment}>
                       {requestRevision ? "피드백 저장 및 수정 요청" : "피드백 저장"}
@@ -1130,9 +910,7 @@ export function VideoProjectWorkspace({
 
       {project.status === "approved" && project.approvedVersionId
         ? (() => {
-            const approved = project.versions.find(
-              (version) => version.id === project.approvedVersionId
-            );
+            const approved = project.versions.find((version) => version.id === project.approvedVersionId);
             return approved ? (
               <section className={styles.approvedPanel}>
                 <span>✓</span>
@@ -1169,23 +947,16 @@ export function VideoProjectWorkspace({
       </details>
 
       <aside className={styles.localNotice}>
-        영상 파일은 현재 서버의 <code>public/video-collaboration/videos</code>에 저장됩니다.
-        서버리스 배포나 인스턴스 교체 환경에서는 외부 오브젝트 스토리지 연결이 필요합니다.
+        영상 파일은 현재 서버의 <code>public/video-collaboration/videos</code>에 저장됩니다. 서버리스 배포나 인스턴스 교체 환경에서는 외부 오브젝트 스토리지 연결이 필요합니다.
       </aside>
 
       {approvalVersion ? (
         <div className={styles.modalBackdrop} role="presentation">
-          <div
-            aria-labelledby="approve-title"
-            aria-modal="true"
-            className={styles.modal}
-            role="dialog"
-          >
+          <div aria-labelledby="approve-title" aria-modal="true" className={styles.modal} role="dialog">
             <p className={styles.eyebrow}>FINAL APPROVAL</p>
             <h2 id="approve-title">v{approvalVersion.versionNumber}을 최종 승인할까요?</h2>
             <p>
-              최종 승인 버전은 <strong>{approvalVersion.storedFileName}</strong>으로 표시됩니다.
-              기존 버전과 피드백은 유지됩니다.
+              최종 승인 버전은 <strong>{approvalVersion.storedFileName}</strong>으로 표시됩니다. 기존 버전과 피드백은 유지됩니다.
             </p>
             <div className={styles.formActions}>
               <button className={styles.secondaryButton} onClick={() => setApprovalVersion(null)}>
@@ -1195,10 +966,7 @@ export function VideoProjectWorkspace({
                 className={styles.primaryButton}
                 disabled={Boolean(busy)}
                 onClick={async () => {
-                  const updated = await patch(
-                    { action: "approve-version", versionId: approvalVersion.id, actor: "마케터" },
-                    `v${approvalVersion.versionNumber}을 최종 승인했습니다.`
-                  );
+                  const updated = await patch({ action: "approve-version", versionId: approvalVersion.id, actor: "마케터" }, `v${approvalVersion.versionNumber}을 최종 승인했습니다.`);
                   if (updated) setApprovalVersion(null);
                 }}
               >

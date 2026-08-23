@@ -1,11 +1,4 @@
-import type {
-  AdBrief,
-  CreativeStrategy,
-  GeneratedAdCopy,
-  ProductImageRenderEffect,
-  ProductInfoForPrompt,
-  ReferenceMatchResult,
-} from "../mvp/types";
+import type { AdBrief, CreativeStrategy, GeneratedAdCopy, ProductImageRenderEffect, ProductInfoForPrompt, ReferenceMatchResult } from "../mvp/types";
 
 export type AdvertiserProfile = {
   id: string;

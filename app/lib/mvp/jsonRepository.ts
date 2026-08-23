@@ -18,11 +18,7 @@ export class JsonArrayRepository<T> {
       if (!Array.isArray(parsed)) return [];
       return this.normalize ? parsed.map((record) => this.normalize?.(record as T) as T) : parsed;
     } catch (error) {
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        (error as NodeJS.ErrnoException).code !== "ENOENT"
-      ) {
+      if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code !== "ENOENT") {
         throw error;
       }
       return [];

@@ -24,9 +24,7 @@ export async function POST(request: Request) {
       limit: body.limit || 6,
       excludeIds: Array.isArray(body.excludeIds) ? body.excludeIds.slice(0, 72) : [],
       selectedIds: Array.isArray(body.selectedIds) ? body.selectedIds.slice(0, 24) : [],
-      recommendationPage: Number.isFinite(body.recommendationPage)
-        ? Number(body.recommendationPage)
-        : 0,
+      recommendationPage: Number.isFinite(body.recommendationPage) ? Number(body.recommendationPage) : 0,
     });
     return NextResponse.json({
       ok: true,
@@ -34,9 +32,6 @@ export async function POST(request: Request) {
       summary: summarizeBackgroundLibrary(items),
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "배경 추천에 실패했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "배경 추천에 실패했습니다." }, { status: 500 });
   }
 }

@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type {
-  ProductDetailAnalysis,
-  RecommendedProductCandidate,
-} from "../../lib/store-analysis/types";
+import type { ProductDetailAnalysis, RecommendedProductCandidate } from "../../lib/store-analysis/types";
 import { buildProductCreationHref } from "../../lib/product-creation/handoffUrl";
 import { ContentAngleList } from "./ContentAngleList";
 
@@ -31,21 +28,9 @@ const SCORE_LABELS = [
   ["detailPageQualityScore", "상세페이지 품질", "detailPageQuality"],
 ] as const;
 
-export function ProductRecommendationCard({
-  analysisId,
-  candidate,
-  detail,
-}: {
-  analysisId: string;
-  candidate: RecommendedProductCandidate;
-  detail: ProductDetailAnalysis;
-}) {
-  const [selectedAngleId, setSelectedAngleId] = useState(
-    candidate.analysis.recommendedAngles[0]?.id
-  );
-  const selectedAngle =
-    candidate.analysis.recommendedAngles.find((angle) => angle.id === selectedAngleId) ||
-    candidate.analysis.recommendedAngles[0];
+export function ProductRecommendationCard({ analysisId, candidate, detail }: { analysisId: string; candidate: RecommendedProductCandidate; detail: ProductDetailAnalysis }) {
+  const [selectedAngleId, setSelectedAngleId] = useState(candidate.analysis.recommendedAngles[0]?.id);
+  const selectedAngle = candidate.analysis.recommendedAngles.find((angle) => angle.id === selectedAngleId) || candidate.analysis.recommendedAngles[0];
   const createHref = buildProductCreationHref(
     {
       analysisId,
@@ -59,18 +44,11 @@ export function ProductRecommendationCard({
       <div className="product-card-media">
         {candidate.product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt={candidate.product.name}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            src={candidate.product.imageUrl}
-          />
+          <img alt={candidate.product.name} loading="lazy" referrerPolicy="no-referrer" src={candidate.product.imageUrl} />
         ) : (
           <div className="product-image-placeholder">이미지 정보 없음</div>
         )}
-        <span className={`candidate-badge ${candidate.analysis.recommendationType}`}>
-          {TYPE_LABELS[candidate.analysis.recommendationType]}
-        </span>
+        <span className={`candidate-badge ${candidate.analysis.recommendationType}`}>{TYPE_LABELS[candidate.analysis.recommendationType]}</span>
         <strong className="product-rank">#{candidate.rank}</strong>
       </div>
       <div className="product-card-content">
@@ -78,9 +56,7 @@ export function ProductRecommendationCard({
         <h3>{candidate.product.name}</h3>
         <div className="product-price-row">
           <strong>{currency(candidate.product.salePrice)}</strong>
-          {candidate.product.originalPrice ? (
-            <del>{currency(candidate.product.originalPrice)}</del>
-          ) : null}
+          {candidate.product.originalPrice ? <del>{currency(candidate.product.originalPrice)}</del> : null}
           {candidate.product.discountRate ? <b>{candidate.product.discountRate}% 할인</b> : null}
         </div>
         <div className="product-public-signals">
@@ -136,9 +112,7 @@ export function ProductRecommendationCard({
           {detail.detailPageQuality ? (
             <div className="detail-quality-note">
               <b>상세페이지 보완 제안</b>
-              <span>
-                {detail.detailPageQuality.recommendations.join(" · ") || "추가 보완 제안 없음"}
-              </span>
+              <span>{detail.detailPageQuality.recommendations.join(" · ") || "추가 보완 제안 없음"}</span>
             </div>
           ) : null}
         </details>
@@ -146,11 +120,7 @@ export function ProductRecommendationCard({
           <strong>추천 콘텐츠 가설</strong>
           <span>제작에 적용할 방향을 선택하세요.</span>
         </div>
-        <ContentAngleList
-          angles={candidate.analysis.recommendedAngles}
-          onSelect={setSelectedAngleId}
-          selectedId={selectedAngleId}
-        />
+        <ContentAngleList angles={candidate.analysis.recommendedAngles} onSelect={setSelectedAngleId} selectedId={selectedAngleId} />
         <div className="recommended-template-row">
           <strong>추천 템플릿</strong>
           {candidate.analysis.recommendedTemplateIds.map((id) => (

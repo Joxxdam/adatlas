@@ -4,16 +4,7 @@ import type { CreativeQualityScore, VisualDirection } from "../../../lib/creativ
 import { VisualDirectionCard } from "./VisualDirectionCard";
 import styles from "./VisualDirection.module.css";
 
-export function VisualDirectionPanel(props: {
-  directions: VisualDirection[];
-  selectedDirectionId: string;
-  qualityScores: Record<string, CreativeQualityScore>;
-  advertiserName?: string;
-  loading: boolean;
-  status: string;
-  onGenerate: () => void;
-  onSelect: (direction: VisualDirection) => void;
-}) {
+export function VisualDirectionPanel(props: { directions: VisualDirection[]; selectedDirectionId: string; qualityScores: Record<string, CreativeQualityScore>; advertiserName?: string; loading: boolean; status: string; onGenerate: () => void; onSelect: (direction: VisualDirection) => void }) {
   return (
     <section className={styles.panel}>
       <header className={styles.header}>
@@ -29,13 +20,7 @@ export function VisualDirectionPanel(props: {
       {props.directions.length ? (
         <div className={styles.directionGrid}>
           {props.directions.map((direction) => (
-            <VisualDirectionCard
-              direction={direction}
-              key={direction.id}
-              onSelect={() => props.onSelect(direction)}
-              quality={props.qualityScores[direction.id]}
-              selected={props.selectedDirectionId === direction.id}
-            />
+            <VisualDirectionCard direction={direction} key={direction.id} onSelect={() => props.onSelect(direction)} quality={props.qualityScores[direction.id]} selected={props.selectedDirectionId === direction.id} />
           ))}
         </div>
       ) : (

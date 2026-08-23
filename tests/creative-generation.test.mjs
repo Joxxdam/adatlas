@@ -6,40 +6,14 @@ import sharp from "sharp";
 
 import { validateBlueprintCatalog } from "../app/lib/creative-generation/blueprints.ts";
 import { buildGenerationSummary } from "../app/lib/creative-generation/generationSummary.ts";
-import {
-  BANNED_HOOK_PHRASES,
-  PENALIZED_HOOK_PATTERNS,
-  buildFallbackHookMessages,
-  categoryContamination,
-  messageSimilarity,
-  selectCoreEvidence,
-  generateHookMessages,
-  validateHookMessages,
-} from "../app/lib/creative-generation/hookMessages.server.ts";
-import {
-  buildCreativePlan,
-  buildExplorationCreativePlan,
-  createGenerationJob,
-  planAiScenes,
-  planScenes,
-} from "../app/lib/creative-generation/planner.ts";
-import {
-  buildProductHookExploration,
-  buildProductInsightProfile,
-  generateHookHypothesisCandidates,
-  selectDiverseHookHypotheses,
-} from "../app/lib/creative-generation/hookHypothesisEngine.ts";
+import { BANNED_HOOK_PHRASES, PENALIZED_HOOK_PATTERNS, buildFallbackHookMessages, categoryContamination, messageSimilarity, selectCoreEvidence, generateHookMessages, validateHookMessages } from "../app/lib/creative-generation/hookMessages.server.ts";
+import { buildCreativePlan, buildExplorationCreativePlan, createGenerationJob, planAiScenes, planScenes } from "../app/lib/creative-generation/planner.ts";
+import { buildProductHookExploration, buildProductInsightProfile, generateHookHypothesisCandidates, selectDiverseHookHypotheses } from "../app/lib/creative-generation/hookHypothesisEngine.ts";
 import { buildCategoryHookPriorFromHistory } from "../app/lib/creative-generation/hookLearning.server.ts";
 import { matchBrandProfile, matchCategoryProfile } from "../app/lib/creative-generation/profiles.ts";
-import {
-  buildProductTruth,
-  validateCopyAgainstTruth,
-} from "../app/lib/creative-generation/productTruth.ts";
+import { buildProductTruth, validateCopyAgainstTruth } from "../app/lib/creative-generation/productTruth.ts";
 import { qaRenderedCreative } from "../app/lib/creative-generation/qa.ts";
-import {
-  buildRenderPlan,
-  renderCreativeResult,
-} from "../app/lib/creative-generation/renderer.server.ts";
+import { buildRenderPlan, renderCreativeResult } from "../app/lib/creative-generation/renderer.server.ts";
 import { hookMessageCodes } from "../app/lib/creative-generation/types.ts";
 import { applyKnownProductAssets } from "../app/lib/creative/knownProductAssets.ts";
 import { analyzeProductReferences } from "../app/lib/creative-generation/referenceAnalyzer.server.ts";
@@ -51,12 +25,8 @@ import { buildBenchmarkQualityContract } from "../app/lib/creative/benchmarkPatt
 import { loadBenchmarkAnalysis } from "../app/lib/creative/benchmarkLoader.ts";
 
 const root = process.cwd();
-const fixtures = JSON.parse(
-  await readFile(path.join(root, "tests/fixtures/creative-products.json"), "utf8")
-);
-const categoryFixtures = fixtures.filter(
-  (fixture) => fixture.id !== "original-source-mini-shower-gel-set"
-);
+const fixtures = JSON.parse(await readFile(path.join(root, "tests/fixtures/creative-products.json"), "utf8"));
+const categoryFixtures = fixtures.filter((fixture) => fixture.id !== "original-source-mini-shower-gel-set");
 const library = JSON.parse(await readFile(path.join(root, "data/background-library.json"), "utf8"));
 
 const genericProduct = {
@@ -147,11 +117,7 @@ test("오리지널소스 미니 3종 세트 fixture는 고정 문구 없이 휴�
   assert.equal(exploration.selected.length, 6);
   assert.ok(exploration.candidates.some((item) => item.primaryTag === "bundle-choice"));
   assert.ok(exploration.candidates.some((item) => item.primaryTag === "convenience"));
-  assert.ok(
-    exploration.candidates.some((item) => /여행|헬스장|캠핑|휴대|파우치|3종/.test(
-      `${item.mainHook} ${item.subCopy} ${item.customerReason}`
-    ))
-  );
+  assert.ok(exploration.candidates.some((item) => /여행|헬스장|캠핑|휴대|파우치|3종/.test(`${item.mainHook} ${item.subCopy} ${item.customerReason}`)));
   assert.ok(exploration.selected.every((item) => item.evidence.length > 0));
   assert.equal(new Set(exploration.selected.map((item) => item.creativeBrief.sceneDescription)).size, 6);
   assert.ok(exploration.selected.every((item) => item.creativeBrief.forbiddenElements.length >= 4));
@@ -196,15 +162,17 @@ test("uncertain source images stay needs-confirmation and never enter composite 
     productImagePath: "",
     productImagePaths: [],
     selectedSourceImagePath: "/images/candidate.jpg",
-    sourceImageCandidates: [{
-      id: "candidate",
-      type: "upload",
-      imagePath: "/images/candidate.jpg",
-      label: "자동 발견 이미지",
-      selected: true,
-      createdAt: new Date().toISOString(),
-      sourceType: "unknown",
-    }],
+    sourceImageCandidates: [
+      {
+        id: "candidate",
+        type: "upload",
+        imagePath: "/images/candidate.jpg",
+        label: "자동 발견 이미지",
+        selected: true,
+        createdAt: new Date().toISOString(),
+        sourceType: "unknown",
+      },
+    ],
   };
   const truth = buildProductTruth({ product, source: "landing-page" });
   assert.equal(truth.imagePaths.length, 0);
@@ -218,7 +186,10 @@ test("fallback copy returns six distinct, fact-linked category-safe message hypo
     const hooks = buildFallbackHookMessages(truth);
     const validation = validateHookMessages(hooks, truth);
     assert.equal(validation.valid, true, validation.errors.join("\n"));
-    assert.deepEqual(hooks.map((hook) => hook.code), hookMessageCodes);
+    assert.deepEqual(
+      hooks.map((hook) => hook.code),
+      hookMessageCodes
+    );
     assert.equal(new Set(hooks.map((hook) => hook.hookType)).size, 6);
     assert.equal(new Set(hooks.map((hook) => hook.mainHook)).size, 6);
     assert.ok(hooks.every((hook) => hook.factIds.length > 0));
@@ -261,13 +232,7 @@ test("후킹 후보 점수는 사실성·구체성·차별성·주목도·장면
   const favored = generateHookHypothesisCandidates(truth, profile, { "feature-usp": 100 });
   for (const candidate of neutral) {
     const score = candidate.score;
-    const expected = Math.round(
-      score.evidenceStrength * 0.18 + score.specificity * 0.12 +
-      score.purchaseReasonStrength * 0.12 + score.distinctiveness * 0.12 +
-      score.attentionPotential * 0.1 + score.visualizability * 0.12 +
-      score.advertisingFit * 0.09 + score.claimSafety * 0.1 +
-      score.categoryPrior * 0.03 + score.novelty * 0.02
-    );
+    const expected = Math.round(score.evidenceStrength * 0.18 + score.specificity * 0.12 + score.purchaseReasonStrength * 0.12 + score.distinctiveness * 0.12 + score.attentionPotential * 0.1 + score.visualizability * 0.12 + score.advertisingFit * 0.09 + score.claimSafety * 0.1 + score.categoryPrior * 0.03 + score.novelty * 0.02);
     assert.equal(score.total, expected);
     assert.ok(score.total >= 0 && score.total <= 100);
   }
@@ -286,10 +251,13 @@ test("카테고리 학습은 콜드 스타트를 중립 처리하고 적은 표�
     analyses: [],
     insights: [],
   };
-  assert.deepEqual(buildCategoryHookPriorFromHistory(emptyStore, {
-    categoryId: "바디워시",
-    objective: "SLS",
-  }), {});
+  assert.deepEqual(
+    buildCategoryHookPriorFromHistory(emptyStore, {
+      categoryId: "바디워시",
+      objective: "SLS",
+    }),
+    {}
+  );
   const baseRecord = {
     experimentId: "experiment-1",
     platform: "META",
@@ -410,10 +378,7 @@ test("마스터 장면 캐시는 실제 선택한 상품 사진별로 분리된�
     promptVersion: "test",
     imageModel: "local",
   };
-  assert.notEqual(
-    masterSceneCacheKey({ ...base, sourceAssetFile: "/product/apple-whole.jpg" }),
-    masterSceneCacheKey({ ...base, sourceAssetFile: "/product/apple-slice.jpg" })
-  );
+  assert.notEqual(masterSceneCacheKey({ ...base, sourceAssetFile: "/product/apple-whole.jpg" }), masterSceneCacheKey({ ...base, sourceAssetFile: "/product/apple-slice.jpg" }));
 });
 
 test("광고 콘셉트 탐색 모드는 6개 가설에 서로 다른 brief와 디자인을 연결한다", () => {
@@ -435,94 +400,88 @@ test("광고 콘셉트 탐색 모드는 6개 가설에 서로 다른 brief와 �
   assert.equal(new Set(job.results.map((result) => result.scenePlan.sceneAsset.id)).size >= 4, true);
 });
 
-test(
-  "AI 전용 제작은 후킹마다 상세페이지 레퍼런스로 완성형 키비주얼 전체를 만든다",
-  { timeout: 30_000 },
-  async () => {
-    const truth = truthFor(fixtures[0].product);
-    const creativePlan = buildExplorationCreativePlan(truth);
-    const scenes = planAiScenes(creativePlan);
-    const job = createGenerationJob({
+test("AI 전용 제작은 후킹마다 상세페이지 레퍼런스로 완성형 키비주얼 전체를 만든다", { timeout: 30_000 }, async () => {
+  const truth = truthFor(fixtures[0].product);
+  const creativePlan = buildExplorationCreativePlan(truth);
+  const scenes = planAiScenes(creativePlan);
+  const job = createGenerationJob({
+    truth,
+    creativePlan,
+    scenes,
+    planningMs: 1,
+    concurrency: 1,
+    paidImageGenerationEnabled: true,
+  });
+  assert.equal(scenes.length, creativePlan.hookPlans.length);
+  assert.equal(new Set(scenes.map((scene) => scene.sceneAsset.id)).size, scenes.length);
+  assert.ok(scenes.every((scene) => scene.provider === "openai"));
+  assert.ok(scenes.every((scene) => scene.sceneAsset.file === ""));
+  assert.ok(scenes.every((scene) => scene.generationMode === "ai-reference-full-creative"));
+  assert.equal(job.concurrency, 1);
+
+  const analyzedProfile = await analyzeProductReferences(truth);
+  const profile = { ...analyzedProfile, referenceSufficiency: "high" };
+  const spec = planMasterScene({
+    productId: truth.productId,
+    profile,
+    masterDesign: job.results[0].creativeDesign,
+    aiFullCreative: true,
+    strategyVariation: 1,
+    creativeBrief: job.results[0].hookPlan.creativeBrief,
+  });
+  assert.equal(spec.generationMode, "ai-reference-full-creative");
+  assert.ok(spec.benchmarkPatterns.length > 0);
+  const prompt = buildAiFullCreativePrompt(profile, spec);
+  assert.match(prompt, /advertising KEY VISUAL/);
+  assert.match(prompt, /authoritative product-page references/);
+  assert.match(prompt, /abstract quality bar/i);
+  assert.match(prompt, /Never reproduce any benchmark's exact layout/i);
+  assert.match(prompt, /fresh hook-specific scene/i);
+
+  const background = await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"><defs><pattern id="p" width="64" height="64" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#061a24"/><rect x="32" y="32" width="32" height="32" fill="#061a24"/><rect x="32" width="32" height="32" fill="#b7f7e8"/><rect y="32" width="32" height="32" fill="#b7f7e8"/></pattern></defs><rect width="1024" height="1024" fill="url(#p)"/></svg>`)).png().toBuffer();
+  const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+  const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+  process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
+  process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
+  let sceneCalls = 0;
+  const provider = {
+    id: "openai",
+    isConfigured: () => true,
+    supports: () => true,
+    generateScene: async () => {
+      throw new Error("AI 전체 콘텐츠 모드에서 텍스트 전용 장면 생성을 호출하면 안 됩니다.");
+    },
+    generateReferenceImage: async (input) => {
+      sceneCalls += 1;
+      assert.ok(input.referenceImages.length >= 1);
+      assert.equal(input.referenceImages[0], truth.confirmedProductImage.path);
+      return { imageBuffer: background, provider: "openai" };
+    },
+  };
+  try {
+    const master = await createOrReuseMasterScene({
       truth,
-      creativePlan,
-      scenes,
-      planningMs: 1,
-      concurrency: 1,
-      paidImageGenerationEnabled: true,
-    });
-    assert.equal(scenes.length, creativePlan.hookPlans.length);
-    assert.equal(new Set(scenes.map((scene) => scene.sceneAsset.id)).size, scenes.length);
-    assert.ok(scenes.every((scene) => scene.provider === "openai"));
-    assert.ok(scenes.every((scene) => scene.sceneAsset.file === ""));
-    assert.ok(scenes.every((scene) => scene.generationMode === "ai-reference-full-creative"));
-    assert.equal(job.concurrency, 1);
-
-    const analyzedProfile = await analyzeProductReferences(truth);
-    const profile = { ...analyzedProfile, referenceSufficiency: "high" };
-    const spec = planMasterScene({
-      productId: truth.productId,
       profile,
-      masterDesign: job.results[0].creativeDesign,
-      aiFullCreative: true,
-      strategyVariation: 1,
-      creativeBrief: job.results[0].hookPlan.creativeBrief,
+      spec,
+      forceRevision: true,
+      revision: Date.now(),
+      provider,
     });
-    assert.equal(spec.generationMode, "ai-reference-full-creative");
-    assert.ok(spec.benchmarkPatterns.length > 0);
-    const prompt = buildAiFullCreativePrompt(profile, spec);
-    assert.match(prompt, /advertising KEY VISUAL/);
-    assert.match(prompt, /authoritative product-page references/);
-    assert.match(prompt, /abstract quality bar/i);
-    assert.match(prompt, /Never reproduce any benchmark's exact layout/i);
-    assert.match(prompt, /fresh hook-specific scene/i);
-
-    const background = await sharp(Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"><defs><pattern id="p" width="64" height="64" patternUnits="userSpaceOnUse"><rect width="32" height="32" fill="#061a24"/><rect x="32" y="32" width="32" height="32" fill="#061a24"/><rect x="32" width="32" height="32" fill="#b7f7e8"/><rect y="32" width="32" height="32" fill="#b7f7e8"/></pattern></defs><rect width="1024" height="1024" fill="url(#p)"/></svg>`
-    )).png().toBuffer();
-    const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
-    const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
-    process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
-    process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
-    let sceneCalls = 0;
-    const provider = {
-      id: "openai",
-      isConfigured: () => true,
-      supports: () => true,
-      generateScene: async () => {
-        throw new Error("AI 전체 콘텐츠 모드에서 텍스트 전용 장면 생성을 호출하면 안 됩니다.");
-      },
-      generateReferenceImage: async (input) => {
-        sceneCalls += 1;
-        assert.ok(input.referenceImages.length >= 1);
-        assert.equal(input.referenceImages[0], truth.confirmedProductImage.path);
-        return { imageBuffer: background, provider: "openai" };
-      },
-    };
-    try {
-      const master = await createOrReuseMasterScene({
-        truth,
-        profile,
-        spec,
-        forceRevision: true,
-        revision: Date.now(),
-        provider,
-      });
-      assert.equal(sceneCalls, 1);
-      assert.equal(master.generationMode, "ai-reference-full-creative");
-      assert.equal(master.includesProduct, true);
-      assert.equal(master.provider, "openai");
-      assert.ok(master.productIdentityScore >= 55);
-      assert.ok(master.sceneQualityResult.copySafetyScore < 45);
-      assert.ok(master.warnings.some((warning) => warning.includes("가독성 보호 그라데이션")));
-      assert.ok(master.warnings.some((warning) => warning.includes("완성형 키비주얼 전체")));
-    } finally {
-      if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
-      else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
-      if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
-      else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
-    }
+    assert.equal(sceneCalls, 1);
+    assert.equal(master.generationMode, "ai-reference-full-creative");
+    assert.equal(master.includesProduct, true);
+    assert.equal(master.provider, "openai");
+    assert.ok(master.productIdentityScore >= 55);
+    assert.ok(master.sceneQualityResult.copySafetyScore < 45);
+    assert.ok(master.warnings.some((warning) => warning.includes("가독성 보호 그라데이션")));
+    assert.ok(master.warnings.some((warning) => warning.includes("완성형 키비주얼 전체")));
+  } finally {
+    if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+    else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
+    if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+    else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
   }
-);
+});
 
 test("품질 레퍼런스는 21개를 추상 기준으로만 사용하고 신규 구도를 요구한다", () => {
   const analysis = loadBenchmarkAnalysis();
@@ -555,9 +514,7 @@ test("AI 후킹 한 개가 실패하면 통과한 5개를 유지하고 해당 �
     factIds: hook.factIds,
     confidence: hook.confidence,
   }));
-  const broken = safe.map((hook) =>
-    hook.code === "H02" ? { ...hook, mainHook: "직접 확인해보세요" } : hook
-  );
+  const broken = safe.map((hook) => (hook.code === "H02" ? { ...hook, mainHook: "직접 확인해보세요" } : hook));
   const previousFetch = globalThis.fetch;
   const previousKey = process.env.OPENAI_API_KEY;
   const calls = [];
@@ -628,68 +585,59 @@ test("master and background preservation keeps every fixed design variable stabl
     preserveBackgroundAssetId: first.scenes[0].sceneAsset.id,
   });
   assert.equal(secondPlan.masterDesign.id, first.creativePlan.masterDesign.id);
-  assert.deepEqual(
-    secondPlan.masterDesign.productComposition,
-    first.creativePlan.masterDesign.productComposition
-  );
+  assert.deepEqual(secondPlan.masterDesign.productComposition, first.creativePlan.masterDesign.productComposition);
   assert.equal(secondScenes[0].sceneAsset.id, first.scenes[0].sceneAsset.id);
 });
 
-test(
-  "H01-H06 render as decodable ads with identical fixed geometry and passing split QA",
-  { timeout: 120_000 },
-  async () => {
-    const { job } = makeJob(fixtures[0].product);
-    const rendered = [];
-    for (const result of job.results) rendered.push(await renderCreativeResult({ job, result }));
-    assert.equal(rendered.length, 6);
-    const geometry = JSON.stringify({
-      product: rendered[0].renderPlan.productComposition,
-      slots: rendered[0].renderPlan.renderedSlots.map((slot) => ({
-        id: slot.id,
-        box: slot.box,
-        fontSize: slot.fontSize,
-        textColor: slot.textColor,
-        fillColor: slot.fillColor,
-      })),
-    });
-    for (const item of rendered) {
-      assert.equal(item.qa.passed, true, JSON.stringify(item.qa.findings));
-      assert.equal(item.qa.technicalPassed, true);
-      assert.equal(item.qa.creativePassed, true);
-      assert.equal(item.qa.designLockVerified, true);
-      assert.ok(item.qa.score >= 85);
-      assert.equal(item.qa.width, 1200);
-      assert.equal(item.qa.height, 1200);
-      assert.equal(item.qa.format, "webp");
-      assert.ok(item.qa.fileSizeBytes <= 800 * 1024);
-      assert.ok(item.qa.productAreaRatio >= 0.09);
-      assert.equal(item.renderPlan.renderedSlots.filter((slot) => slot.id === "cta").length, 1);
-      assert.equal(
-        JSON.stringify({
-          product: item.renderPlan.productComposition,
-          slots: item.renderPlan.renderedSlots.map((slot) => ({
-            id: slot.id,
-            box: slot.box,
-            fontSize: slot.fontSize,
-            textColor: slot.textColor,
-            fillColor: slot.fillColor,
-          })),
-        }),
-        geometry
-      );
-      const metadata = await sharp(
-        path.join(root, "public", item.imagePath.replace(/^\//, ""))
-      ).metadata();
-      assert.equal(metadata.width, 1200);
-      assert.equal(metadata.height, 1200);
-    }
-    assert.equal(new Set(rendered.map((item) => item.renderPlan.masterDesignId)).size, 1);
-    assert.equal(new Set(rendered.map((item) => item.renderPlan.backgroundAssetId)).size, 1);
-    assert.equal(new Set(rendered.map((item) => item.renderPlan.designFingerprint)).size, 1);
-    assert.equal(new Set(rendered.map((item) => item.qa.productAreaRatio)).size, 1);
+test("H01-H06 render as decodable ads with identical fixed geometry and passing split QA", { timeout: 120_000 }, async () => {
+  const { job } = makeJob(fixtures[0].product);
+  const rendered = [];
+  for (const result of job.results) rendered.push(await renderCreativeResult({ job, result }));
+  assert.equal(rendered.length, 6);
+  const geometry = JSON.stringify({
+    product: rendered[0].renderPlan.productComposition,
+    slots: rendered[0].renderPlan.renderedSlots.map((slot) => ({
+      id: slot.id,
+      box: slot.box,
+      fontSize: slot.fontSize,
+      textColor: slot.textColor,
+      fillColor: slot.fillColor,
+    })),
+  });
+  for (const item of rendered) {
+    assert.equal(item.qa.passed, true, JSON.stringify(item.qa.findings));
+    assert.equal(item.qa.technicalPassed, true);
+    assert.equal(item.qa.creativePassed, true);
+    assert.equal(item.qa.designLockVerified, true);
+    assert.ok(item.qa.score >= 85);
+    assert.equal(item.qa.width, 1200);
+    assert.equal(item.qa.height, 1200);
+    assert.equal(item.qa.format, "webp");
+    assert.ok(item.qa.fileSizeBytes <= 800 * 1024);
+    assert.ok(item.qa.productAreaRatio >= 0.09);
+    assert.equal(item.renderPlan.renderedSlots.filter((slot) => slot.id === "cta").length, 1);
+    assert.equal(
+      JSON.stringify({
+        product: item.renderPlan.productComposition,
+        slots: item.renderPlan.renderedSlots.map((slot) => ({
+          id: slot.id,
+          box: slot.box,
+          fontSize: slot.fontSize,
+          textColor: slot.textColor,
+          fillColor: slot.fillColor,
+        })),
+      }),
+      geometry
+    );
+    const metadata = await sharp(path.join(root, "public", item.imagePath.replace(/^\//, ""))).metadata();
+    assert.equal(metadata.width, 1200);
+    assert.equal(metadata.height, 1200);
   }
-);
+  assert.equal(new Set(rendered.map((item) => item.renderPlan.masterDesignId)).size, 1);
+  assert.equal(new Set(rendered.map((item) => item.renderPlan.backgroundAssetId)).size, 1);
+  assert.equal(new Set(rendered.map((item) => item.renderPlan.designFingerprint)).size, 1);
+  assert.equal(new Set(rendered.map((item) => item.qa.productAreaRatio)).size, 1);
+});
 
 test("Creative QA rejects contamination, unsupported graphs, tiny products, and invalid image roles", async () => {
   const { truth, job } = makeJob(categoryFixtures[1].product);
@@ -753,8 +701,7 @@ test("Original Source URL jobs still use the registered product cutout and dedic
   const rawProduct = {
     ...fixtures[0].product,
     productName: "오리지널소스 민트 티트리 쿨링 샤워젤 · 바디워시 250ml",
-    landingUrl:
-      "https://originalsource.co.kr/product/%EC%98%A4%EB%A6%AC%EC%A7%80%EB%84%90%EC%86%8C%EC%8A%A4-%EB%AF%BC%ED%8A%B8-%ED%8B%B0%ED%8A%B8%EB%A6%AC-%EC%BF%A8%EB%A7%81-%EC%83%A4%EC%9B%8C%EC%A0%A4/65/category/91/display/1/",
+    landingUrl: "https://originalsource.co.kr/product/%EC%98%A4%EB%A6%AC%EC%A7%80%EB%84%90%EC%86%8C%EC%8A%A4-%EB%AF%BC%ED%8A%B8-%ED%8B%B0%ED%8A%B8%EB%A6%AC-%EC%BF%A8%EB%A7%81-%EC%83%A4%EC%9B%8C%EC%A0%A4/65/category/91/display/1/",
     productImagePath: "https://originalsource.co.kr/web/product/big/product.jpg",
     productImagePaths: ["https://originalsource.co.kr/web/product/big/product.jpg"],
   };
@@ -809,137 +756,37 @@ test("category scene planning uses real references and emits a no-text identity-
   assert.ok(environments.size >= 5);
 });
 
-test(
-  "scene-provider failure keeps the job data and falls back to an actual-product protected master",
-  { timeout: 30_000 },
-  async () => {
-    const fixture = fixtures[0];
-    const { truth, creativePlan, scenes } = makeJob(fixture.product);
-    const profile = await analyzeProductReferences(truth);
-    const spec = planMasterScene({
-      productId: truth.productId,
-      profile,
-      masterDesign: creativePlan.masterDesign,
-      generationModePreference: "ai-full-scene",
-      strategyVariation: 2,
-    });
-    const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
-    const previousPaid = process.env.PAID_IMAGE_GENERATION_ENABLED;
-    const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
-    const calls = [];
-    process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
-    process.env.PAID_IMAGE_GENERATION_ENABLED = "false";
-    process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
-    const failingProvider = {
-      id: "mock",
-      isConfigured: () => true,
-      supports: () => true,
-      generateScene: async () => { throw new Error("fixture provider failure"); },
-      generateReferenceImage: async (input) => {
-        calls.push(input);
-        throw new Error("fixture provider failure");
-      },
-    };
-    try {
-      const master = await createOrReuseMasterScene({
-        truth,
-        profile,
-        spec,
-        fallbackScene: scenes[0].sceneAsset,
-        forceRevision: true,
-        revision: Date.now(),
-        provider: failingProvider,
-      });
-      assert.ok(calls.length >= 1);
-      assert.deepEqual(calls[0].referenceImages, spec.referenceImageUrls);
-      assert.equal(master.generationMode, "protected-product-composite");
-      assert.equal(master.includesProduct, true);
-      assert.equal(master.productIdentityScore, 100);
-      assert.ok(master.file.startsWith("/generated-master-scenes/"));
-      assert.ok(master.warnings.some((warning) => warning.includes("실제 상품")));
-    } finally {
-      if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
-      else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
-      if (previousPaid === undefined) delete process.env.PAID_IMAGE_GENERATION_ENABLED;
-      else process.env.PAID_IMAGE_GENERATION_ENABLED = previousPaid;
-      if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
-      else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
-    }
-  }
-);
-
-test(
-  "three unverified AI candidates are rejected before protected-product fallback",
-  { timeout: 30_000 },
-  async () => {
-    const { truth, creativePlan, scenes } = makeJob(categoryFixtures[5].product);
-    const profile = await analyzeProductReferences(truth);
-    const spec = planMasterScene({
-      productId: truth.productId,
-      profile,
-      masterDesign: creativePlan.masterDesign,
-      generationModePreference: "ai-full-scene",
-    });
-    const generatedWithoutProduct = await readFile(
-      path.join(root, "public", scenes[0].sceneAsset.file.replace(/^\//, ""))
-    );
-    const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
-    const previousCandidates = process.env.ADATLAS_MAX_SCENE_CANDIDATES;
-    const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
-    process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
-    process.env.ADATLAS_MAX_SCENE_CANDIDATES = "3";
-    process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
-    let calls = 0;
-    const unverifiedProvider = {
-      id: "openai",
-      isConfigured: () => true,
-      supports: () => true,
-      generateScene: async () => { throw new Error("not used"); },
-      generateReferenceImage: async () => {
-        calls += 1;
-        return { imageBuffer: generatedWithoutProduct, provider: "openai" };
-      },
-    };
-    try {
-      const master = await createOrReuseMasterScene({
-        truth,
-        profile,
-        spec,
-        fallbackScene: scenes[0].sceneAsset,
-        forceRevision: true,
-        revision: Date.now(),
-        provider: unverifiedProvider,
-      });
-      assert.equal(calls, 3);
-      assert.equal(master.candidates.filter((candidate) => candidate.provider === "openai").length, 3);
-      assert.ok(master.candidates
-        .filter((candidate) => candidate.provider === "openai")
-        .every((candidate) => candidate.quality.recommendation !== "approve"));
-      assert.equal(master.generationMode, "protected-product-composite");
-      assert.equal(master.productIdentityScore, 100);
-    } finally {
-      if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
-      else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
-      if (previousCandidates === undefined) delete process.env.ADATLAS_MAX_SCENE_CANDIDATES;
-      else process.env.ADATLAS_MAX_SCENE_CANDIDATES = previousCandidates;
-      if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
-      else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
-    }
-  }
-);
-
-test(
-  "H01-H06 plans lock one masterSceneId, fingerprint, digest and identical master pixels",
-  { timeout: 30_000 },
-  async () => {
-    const { truth, creativePlan, scenes } = makeJob(categoryFixtures[5].product);
-    const profile = await analyzeProductReferences(truth);
-    const spec = planMasterScene({
-      productId: truth.productId,
-      profile,
-      masterDesign: creativePlan.masterDesign,
-      generationModePreference: "actual-product",
-    });
+test("scene-provider failure keeps the job data and falls back to an actual-product protected master", { timeout: 30_000 }, async () => {
+  const fixture = fixtures[0];
+  const { truth, creativePlan, scenes } = makeJob(fixture.product);
+  const profile = await analyzeProductReferences(truth);
+  const spec = planMasterScene({
+    productId: truth.productId,
+    profile,
+    masterDesign: creativePlan.masterDesign,
+    generationModePreference: "ai-full-scene",
+    strategyVariation: 2,
+  });
+  const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+  const previousPaid = process.env.PAID_IMAGE_GENERATION_ENABLED;
+  const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+  const calls = [];
+  process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
+  process.env.PAID_IMAGE_GENERATION_ENABLED = "false";
+  process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
+  const failingProvider = {
+    id: "mock",
+    isConfigured: () => true,
+    supports: () => true,
+    generateScene: async () => {
+      throw new Error("fixture provider failure");
+    },
+    generateReferenceImage: async (input) => {
+      calls.push(input);
+      throw new Error("fixture provider failure");
+    },
+  };
+  try {
     const master = await createOrReuseMasterScene({
       truth,
       profile,
@@ -947,42 +794,125 @@ test(
       fallbackScene: scenes[0].sceneAsset,
       forceRevision: true,
       revision: Date.now(),
+      provider: failingProvider,
     });
-    const masterScenes = scenes.map((scene) => ({
-      ...scene,
-      sceneAsset: { ...scene.sceneAsset, file: master.file },
-      masterSceneId: master.id,
-      generationMode: master.generationMode,
-    }));
-    const job = createGenerationJob({
-      truth,
-      creativePlan,
-      scenes: masterScenes,
-      planningMs: 1,
-      productReferenceProfile: profile,
-      masterScene: master,
-    });
-    const renderPlans = [];
-    for (const result of job.results) renderPlans.push(await buildRenderPlan(job, result));
-    assert.equal(new Set(renderPlans.map((plan) => plan.masterSceneId)).size, 1);
-    assert.equal(new Set(renderPlans.map((plan) => plan.designFingerprint)).size, 1);
-    assert.equal(new Set(renderPlans.map((plan) => plan.masterVisualDigest)).size, 1);
-    assert.equal(new Set(job.results.map((result) => result.scenePlan.sceneAsset.file)).size, 1);
-    const masterPixels = await readFile(path.join(root, "public", master.file.replace(/^\//, "")));
-    const repeatedPixels = await Promise.all(
-      job.results.map(() => readFile(path.join(root, "public", master.file.replace(/^\//, ""))))
-    );
-    assert.ok(repeatedPixels.every((buffer) => buffer.equals(masterPixels)));
-    assert.ok(renderPlans.every((plan) => plan.productLayerRequired === false));
-    assert.equal(new Set(renderPlans.map((plan) => plan.renderedSlots.find((slot) => slot.id === "headline")?.fontSize)).size, 1);
+    assert.ok(calls.length >= 1);
+    assert.deepEqual(calls[0].referenceImages, spec.referenceImageUrls);
+    assert.equal(master.generationMode, "protected-product-composite");
+    assert.equal(master.includesProduct, true);
+    assert.equal(master.productIdentityScore, 100);
+    assert.ok(master.file.startsWith("/generated-master-scenes/"));
+    assert.ok(master.warnings.some((warning) => warning.includes("실제 상품")));
+  } finally {
+    if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+    else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
+    if (previousPaid === undefined) delete process.env.PAID_IMAGE_GENERATION_ENABLED;
+    else process.env.PAID_IMAGE_GENERATION_ENABLED = previousPaid;
+    if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+    else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
   }
-);
+});
+
+test("three unverified AI candidates are rejected before protected-product fallback", { timeout: 30_000 }, async () => {
+  const { truth, creativePlan, scenes } = makeJob(categoryFixtures[5].product);
+  const profile = await analyzeProductReferences(truth);
+  const spec = planMasterScene({
+    productId: truth.productId,
+    profile,
+    masterDesign: creativePlan.masterDesign,
+    generationModePreference: "ai-full-scene",
+  });
+  const generatedWithoutProduct = await readFile(path.join(root, "public", scenes[0].sceneAsset.file.replace(/^\//, "")));
+  const previousEnabled = process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+  const previousCandidates = process.env.ADATLAS_MAX_SCENE_CANDIDATES;
+  const previousExplicitPaid = process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+  process.env.ADATLAS_IMAGE_GENERATION_ENABLED = "true";
+  process.env.ADATLAS_MAX_SCENE_CANDIDATES = "3";
+  process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = "true";
+  let calls = 0;
+  const unverifiedProvider = {
+    id: "openai",
+    isConfigured: () => true,
+    supports: () => true,
+    generateScene: async () => {
+      throw new Error("not used");
+    },
+    generateReferenceImage: async () => {
+      calls += 1;
+      return { imageBuffer: generatedWithoutProduct, provider: "openai" };
+    },
+  };
+  try {
+    const master = await createOrReuseMasterScene({
+      truth,
+      profile,
+      spec,
+      fallbackScene: scenes[0].sceneAsset,
+      forceRevision: true,
+      revision: Date.now(),
+      provider: unverifiedProvider,
+    });
+    assert.equal(calls, 3);
+    assert.equal(master.candidates.filter((candidate) => candidate.provider === "openai").length, 3);
+    assert.ok(master.candidates.filter((candidate) => candidate.provider === "openai").every((candidate) => candidate.quality.recommendation !== "approve"));
+    assert.equal(master.generationMode, "protected-product-composite");
+    assert.equal(master.productIdentityScore, 100);
+  } finally {
+    if (previousEnabled === undefined) delete process.env.ADATLAS_IMAGE_GENERATION_ENABLED;
+    else process.env.ADATLAS_IMAGE_GENERATION_ENABLED = previousEnabled;
+    if (previousCandidates === undefined) delete process.env.ADATLAS_MAX_SCENE_CANDIDATES;
+    else process.env.ADATLAS_MAX_SCENE_CANDIDATES = previousCandidates;
+    if (previousExplicitPaid === undefined) delete process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED;
+    else process.env.ADATLAS_PAID_API_EXPLICIT_ENABLED = previousExplicitPaid;
+  }
+});
+
+test("H01-H06 plans lock one masterSceneId, fingerprint, digest and identical master pixels", { timeout: 30_000 }, async () => {
+  const { truth, creativePlan, scenes } = makeJob(categoryFixtures[5].product);
+  const profile = await analyzeProductReferences(truth);
+  const spec = planMasterScene({
+    productId: truth.productId,
+    profile,
+    masterDesign: creativePlan.masterDesign,
+    generationModePreference: "actual-product",
+  });
+  const master = await createOrReuseMasterScene({
+    truth,
+    profile,
+    spec,
+    fallbackScene: scenes[0].sceneAsset,
+    forceRevision: true,
+    revision: Date.now(),
+  });
+  const masterScenes = scenes.map((scene) => ({
+    ...scene,
+    sceneAsset: { ...scene.sceneAsset, file: master.file },
+    masterSceneId: master.id,
+    generationMode: master.generationMode,
+  }));
+  const job = createGenerationJob({
+    truth,
+    creativePlan,
+    scenes: masterScenes,
+    planningMs: 1,
+    productReferenceProfile: profile,
+    masterScene: master,
+  });
+  const renderPlans = [];
+  for (const result of job.results) renderPlans.push(await buildRenderPlan(job, result));
+  assert.equal(new Set(renderPlans.map((plan) => plan.masterSceneId)).size, 1);
+  assert.equal(new Set(renderPlans.map((plan) => plan.designFingerprint)).size, 1);
+  assert.equal(new Set(renderPlans.map((plan) => plan.masterVisualDigest)).size, 1);
+  assert.equal(new Set(job.results.map((result) => result.scenePlan.sceneAsset.file)).size, 1);
+  const masterPixels = await readFile(path.join(root, "public", master.file.replace(/^\//, "")));
+  const repeatedPixels = await Promise.all(job.results.map(() => readFile(path.join(root, "public", master.file.replace(/^\//, "")))));
+  assert.ok(repeatedPixels.every((buffer) => buffer.equals(masterPixels)));
+  assert.ok(renderPlans.every((plan) => plan.productLayerRequired === false));
+  assert.equal(new Set(renderPlans.map((plan) => plan.renderedSlots.find((slot) => slot.id === "headline")?.fontSize)).size, 1);
+});
 
 test("client bundle source never references server image API credentials", async () => {
-  const clientSource = await readFile(
-    path.join(root, "app/components/features/creative-generation/SixCreativeGenerator.tsx"),
-    "utf8"
-  );
+  const clientSource = await readFile(path.join(root, "app/components/features/creative-generation/SixCreativeGenerator.tsx"), "utf8");
   assert.ok(!clientSource.includes("OPENAI_API_KEY"));
   assert.ok(!clientSource.includes("ADATLAS_IMAGE_MODEL"));
   assert.ok(!clientSource.includes("PAID_IMAGE_GENERATION_ENABLED"));

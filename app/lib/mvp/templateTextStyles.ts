@@ -2,23 +2,7 @@ import { ensureContrast } from "./colorUtils";
 import { fontFamilyForRegistryId } from "./fontRegistry";
 import type { ExtractedPalette } from "./types";
 
-export type TextStyleRole =
-  | "headline"
-  | "subheadline"
-  | "bodyCopy"
-  | "highlight"
-  | "price"
-  | "originalPrice"
-  | "productName"
-  | "productBadge"
-  | "urgency"
-  | "reviewQuote"
-  | "socialProof"
-  | "benefitChip"
-  | "bottomBar"
-  | "cta"
-  | "footer"
-  | "disclaimer";
+export type TextStyleRole = "headline" | "subheadline" | "bodyCopy" | "highlight" | "price" | "originalPrice" | "productName" | "productBadge" | "urgency" | "reviewQuote" | "socialProof" | "benefitChip" | "bottomBar" | "cta" | "footer" | "disclaimer";
 
 export type TextStylePreset = {
   fontFamily: string;
@@ -130,12 +114,7 @@ const common: TemplateTextStyleSet = {
 };
 
 function mergeSet(overrides: TemplateTextStyleSet): TemplateTextStyleSet {
-  return Object.fromEntries(
-    Object.entries({ ...common, ...overrides }).map(([role, style]) => [
-      role,
-      { ...(common[role as TextStyleRole] || {}), ...(style || {}) },
-    ])
-  ) as TemplateTextStyleSet;
+  return Object.fromEntries(Object.entries({ ...common, ...overrides }).map(([role, style]) => [role, { ...(common[role as TextStyleRole] || {}), ...(style || {}) }])) as TemplateTextStyleSet;
 }
 
 export const templateTextStylePresets: Record<string, TemplateTextStyleSet> = {
@@ -288,31 +267,16 @@ export const templateTextStylePresets: Record<string, TemplateTextStyleSet> = {
   }),
 };
 
-export function resolveTemplateTextStyles(
-  presetKey: string | undefined,
-  palette: ExtractedPalette
-) {
-  const preset =
-    templateTextStylePresets[presetKey || "foodImpact"] || templateTextStylePresets.foodImpact;
+export function resolveTemplateTextStyles(presetKey: string | undefined, palette: ExtractedPalette) {
+  const preset = templateTextStylePresets[presetKey || "foodImpact"] || templateTextStylePresets.foodImpact;
   const resolved = {} as TemplateTextStyleSet;
   for (const [role, style] of Object.entries(preset)) {
     if (!style) continue;
-    const preserveDarkOverlayText =
-      ["bodyProof", "productRepeatImpact", "featureProof"].includes(presetKey || "") &&
-      ["headline", "bodyCopy", "subheadline", "reviewQuote"].includes(role);
-    const surface =
-      role === "headline" && presetKey === "bodyProof"
-        ? palette.secondaryColor
-        : palette.backgroundColor;
+    const preserveDarkOverlayText = ["bodyProof", "productRepeatImpact", "featureProof"].includes(presetKey || "") && ["headline", "bodyCopy", "subheadline", "reviewQuote"].includes(role);
+    const surface = role === "headline" && presetKey === "bodyProof" ? palette.secondaryColor : palette.backgroundColor;
     resolved[role as TextStyleRole] = {
       ...style,
-      fill: preserveDarkOverlayText
-        ? style.fill
-        : role === "price"
-          ? palette.dangerColor
-          : role === "highlight" || role === "benefitChip"
-            ? ensureContrast(style.fill, palette.highlightColor, 4.5)
-            : ensureContrast(style.fill, surface, 4.5),
+      fill: preserveDarkOverlayText ? style.fill : role === "price" ? palette.dangerColor : role === "highlight" || role === "benefitChip" ? ensureContrast(style.fill, palette.highlightColor, 4.5) : ensureContrast(style.fill, surface, 4.5),
     };
   }
   return resolved;

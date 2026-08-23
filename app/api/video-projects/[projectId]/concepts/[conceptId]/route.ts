@@ -1,43 +1,24 @@
 import { NextResponse } from "next/server";
 import { videoProjectRepository } from "../../../../../lib/video-collaboration/repository.server";
-import {
-  generateDetailedVideoScriptAi,
-  regeneratePlanningSegmentAi,
-} from "../../../../../lib/video-collaboration/videoPlanningGenerator.server";
-import {
-  VideoPlanningGenerationError,
-  videoPlanningFailureHttpStatus,
-} from "../../../../../lib/video-collaboration/videoPlanningAi.server";
-import {
-  hasReusableDetailedVideoPlan,
-  videoPlanningGenerationKey,
-  withVideoPlanningGenerationLock,
-} from "../../../../../lib/video-collaboration/videoPlanningRequestGuards";
+import { generateDetailedVideoScriptAi, regeneratePlanningSegmentAi } from "../../../../../lib/video-collaboration/videoPlanningGenerator.server";
+import { VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "../../../../../lib/video-collaboration/videoPlanningAi.server";
+import { hasReusableDetailedVideoPlan, videoPlanningGenerationKey, withVideoPlanningGenerationLock } from "../../../../../lib/video-collaboration/videoPlanningRequestGuards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ projectId: string; conceptId: string }> }
-) {
+export async function GET(_request: Request, context: { params: Promise<{ projectId: string; conceptId: string }> }) {
   const { projectId, conceptId } = await context.params;
   const project = await videoProjectRepository.get(projectId);
   const concept = project?.concepts.find((item) => item.id === conceptId);
   if (!project || !concept) {
-    return NextResponse.json(
-      { ok: false, error: "영상 기획안을 찾지 못했습니다." },
-      { status: 404 }
-    );
+    return NextResponse.json({ ok: false, error: "영상 기획안을 찾지 못했습니다." }, { status: 404 });
   }
   return NextResponse.json({ ok: true, project, concept });
 }
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ projectId: string; conceptId: string }> }
-) {
+export async function POST(request: Request, context: { params: Promise<{ projectId: string; conceptId: string }> }) {
   const { projectId, conceptId } = await context.params;
   try {
     const body = (await request.json().catch(() => ({}))) as {
@@ -50,19 +31,11 @@ export async function POST(
     const concept = project?.concepts.find((item) => item.id === conceptId);
     if (!project || !concept) throw new Error("영상 기획안을 찾지 못했습니다.");
     const action = body.action || "generate-detail";
-    if (
-      action === "generate-detail" &&
-      !body.feedback?.trim() &&
-      hasReusableDetailedVideoPlan(concept, project.duration)
-    ) {
+    if (action === "generate-detail" && !body.feedback?.trim() && hasReusableDetailedVideoPlan(concept, project.duration)) {
       return NextResponse.json({ ok: true, project, concept, reused: true });
     }
     return await withVideoPlanningGenerationLock({
-      key: videoPlanningGenerationKey(
-        projectId,
-        conceptId,
-        body.cutId ? `${action}:${body.cutId}` : action
-      ),
+      key: videoPlanningGenerationKey(projectId, conceptId, body.cutId ? `${action}:${body.cutId}` : action),
       stage: "detailed-script",
       run: async () => {
         let generated;
@@ -76,13 +49,7 @@ export async function POST(
             field: action === "regenerate-caption" ? "caption" : "sceneDescription",
             duration: project.duration,
           });
-          const updated = await videoProjectRepository.saveScript(
-            projectId,
-            conceptId,
-            generated,
-            body.actor || project.marketerName,
-            { createRevision: true }
-          );
+          const updated = await videoProjectRepository.saveScript(projectId, conceptId, generated, body.actor || project.marketerName, { createRevision: true });
           return NextResponse.json({ ok: true, project: updated, concept: generated });
         }
         generated = await generateDetailedVideoScriptAi({
@@ -113,13 +80,8 @@ export async function POST(
             failedAt: new Date().toISOString(),
           };
     if (failure.code !== "GENERATION_ALREADY_RUNNING") {
-      await videoProjectRepository
-        .saveGenerationFailure(projectId, failure, { conceptId })
-        .catch(() => undefined);
+      await videoProjectRepository.saveGenerationFailure(projectId, failure, { conceptId }).catch(() => undefined);
     }
-    return NextResponse.json(
-      { ok: false, error: failure.message, failure },
-      { status: videoPlanningFailureHttpStatus(failure.code) }
-    );
+    return NextResponse.json({ ok: false, error: failure.message, failure }, { status: videoPlanningFailureHttpStatus(failure.code) });
   }
 }

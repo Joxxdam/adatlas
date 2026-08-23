@@ -1,21 +1,12 @@
 import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
-import type {
-  NormalizedImageBox,
-  ProductExtractionScope,
-  ProductImageEffectPreset,
-  ProductImageState,
-  ProductRepresentationType,
-} from "./types.ts";
+import type { NormalizedImageBox, ProductExtractionScope, ProductImageEffectPreset, ProductImageState, ProductRepresentationType } from "./types.ts";
 
 const processedDir = path.join(process.cwd(), "public", "processed-products");
 
 export function getSelectedProductImagePath(productImageState: ProductImageState) {
-  if (
-    productImageState.selectedImageMode === "styled-cutout" &&
-    productImageState.styledCutoutImagePath
-  ) {
+  if (productImageState.selectedImageMode === "styled-cutout" && productImageState.styledCutoutImagePath) {
     return productImageState.styledCutoutImagePath;
   }
 
@@ -88,11 +79,7 @@ function sampleBackgroundColors(data: Buffer, width: number, height: number) {
     return average.map((value) => value / Math.max(1, samples.length));
   });
 
-  const clusteredColors = cornerColors.filter((color, index) =>
-    cornerColors.some(
-      (otherColor, otherIndex) => otherIndex !== index && colorDistance(color, otherColor) <= 58
-    )
-  );
+  const clusteredColors = cornerColors.filter((color, index) => cornerColors.some((otherColor, otherIndex) => otherIndex !== index && colorDistance(color, otherColor) <= 58));
 
   if (clusteredColors.length >= 2) return clusteredColors;
 
@@ -116,9 +103,7 @@ function isLikelyConnectedBackground(data: Buffer, index: number, backgroundColo
   const red = data[index];
   const green = data[index + 1];
   const blue = data[index + 2];
-  const distance = Math.min(
-    ...backgroundColors.map((backgroundColor) => colorDistance([red, green, blue], backgroundColor))
-  );
+  const distance = Math.min(...backgroundColors.map((backgroundColor) => colorDistance([red, green, blue], backgroundColor)));
   return distance <= 38;
 }
 
@@ -147,26 +132,17 @@ function normalizedCropRegion(box: NormalizedImageBox | undefined, width: number
   };
 }
 
-export async function prepareProductSourceBuffer(
-  sourceImageBuffer: Buffer,
-  cropBox?: NormalizedImageBox
-) {
+export async function prepareProductSourceBuffer(sourceImageBuffer: Buffer, cropBox?: NormalizedImageBox) {
   let pipeline = sharp(sourceImageBuffer).rotate();
   const metadata = await pipeline.metadata();
   const width = metadata.width || 1;
   const height = metadata.height || 1;
   const cropRegion = normalizedCropRegion(cropBox, width, height);
   if (cropRegion) pipeline = pipeline.extract(cropRegion);
-  return pipeline
-    .resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true })
-    .png()
-    .toBuffer();
+  return pipeline.resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true }).png().toBuffer();
 }
 
-export async function removeBackgroundToPng(
-  sourceImageBuffer: Buffer,
-  options: LocalBackgroundRemovalOptions = {}
-) {
+export async function removeBackgroundToPng(sourceImageBuffer: Buffer, options: LocalBackgroundRemovalOptions = {}) {
   if (options.extractionScope === "original") {
     return prepareProductSourceBuffer(sourceImageBuffer, options.cropBox);
   }
@@ -191,11 +167,7 @@ export async function removeBackgroundToPng(
     const red = data[index];
     const green = data[index + 1];
     const blue = data[index + 2];
-    const distance = Math.min(
-      ...backgroundColors.map((backgroundColor) =>
-        colorDistance([red, green, blue], backgroundColor)
-      )
-    );
+    const distance = Math.min(...backgroundColors.map((backgroundColor) => colorDistance([red, green, blue], backgroundColor)));
     if (!matchesDefault && distance > (options.threshold || 38)) return;
     visited[position] = 1;
     removeMask[position] = 1;
@@ -250,9 +222,7 @@ export async function removeBackgroundToPng(
   }
   for (let position = 0; position < totalPixels; position += 1) {
     const index = position * 4;
-    const nextAlpha = removeMask[position]
-      ? Math.min(softenedAlpha[position], 96)
-      : Math.max(softenedAlpha[position], alpha[position]);
+    const nextAlpha = removeMask[position] ? Math.min(softenedAlpha[position], 96) : Math.max(softenedAlpha[position], alpha[position]);
     data[index + 3] = nextAlpha <= 5 ? 0 : nextAlpha;
     if (data[index + 3] === 0) {
       data[index] = 0;
@@ -261,25 +231,20 @@ export async function removeBackgroundToPng(
     }
   }
 
-  return sharp(data, { raw: { width, height, channels: 4 } }).png().toBuffer();
+  return sharp(data, { raw: { width, height, channels: 4 } })
+    .png()
+    .toBuffer();
 }
 
 function effectConfig(effectPreset: ProductImageEffectPreset) {
-  if (effectPreset === "clean-outline")
-    return { outlineWidth: 2, glowBlur: 0, shadowBlur: 0, shadowY: 0 };
-  if (effectPreset === "soft-glow")
-    return { outlineWidth: 0, glowBlur: 18, shadowBlur: 0, shadowY: 0 };
-  if (effectPreset === "commerce-shadow")
-    return { outlineWidth: 0, glowBlur: 0, shadowBlur: 22, shadowY: 16 };
-  if (effectPreset === "outline-glow-shadow")
-    return { outlineWidth: 5, glowBlur: 10, shadowBlur: 18, shadowY: 12 };
+  if (effectPreset === "clean-outline") return { outlineWidth: 2, glowBlur: 0, shadowBlur: 0, shadowY: 0 };
+  if (effectPreset === "soft-glow") return { outlineWidth: 0, glowBlur: 18, shadowBlur: 0, shadowY: 0 };
+  if (effectPreset === "commerce-shadow") return { outlineWidth: 0, glowBlur: 0, shadowBlur: 22, shadowY: 16 };
+  if (effectPreset === "outline-glow-shadow") return { outlineWidth: 5, glowBlur: 10, shadowBlur: 18, shadowY: 12 };
   return { outlineWidth: 0, glowBlur: 0, shadowBlur: 0, shadowY: 0 };
 }
 
-export async function applyProductEffectToPng(
-  cutoutImageBuffer: Buffer,
-  effectPreset: ProductImageEffectPreset
-) {
+export async function applyProductEffectToPng(cutoutImageBuffer: Buffer, effectPreset: ProductImageEffectPreset) {
   const image = sharp(cutoutImageBuffer).rotate().ensureAlpha();
   const metadata = await image.metadata();
   const width = metadata.width || 1;

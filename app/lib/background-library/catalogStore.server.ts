@@ -1,19 +1,9 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import type {
-  BackgroundCatalogFilters,
-  BackgroundCatalogItem,
-  BackgroundCatalogManifest,
-  BackgroundCatalogSummary,
-  BackgroundCollectionConfig,
-} from "./catalogTypes.ts";
+import type { BackgroundCatalogFilters, BackgroundCatalogItem, BackgroundCatalogManifest, BackgroundCatalogSummary, BackgroundCollectionConfig } from "./catalogTypes.ts";
 import { backgroundStorage } from "./storage.ts";
-import type {
-  BackgroundCategory,
-  BackgroundLibraryItem,
-  BackgroundSourceType,
-} from "./types.ts";
+import type { BackgroundCategory, BackgroundLibraryItem, BackgroundSourceType } from "./types.ts";
 
 const configPath = path.join(process.cwd(), "background-library", "config", "collections.json");
 const manifestKey = "manifests/library.json";
@@ -66,10 +56,7 @@ export async function writeBackgroundCatalogManifest(manifest: BackgroundCatalog
   return normalized;
 }
 
-export async function upsertBackgroundCatalogItems(
-  incoming: BackgroundCatalogItem[],
-  options: { dryRun?: boolean } = {}
-) {
+export async function upsertBackgroundCatalogItems(incoming: BackgroundCatalogItem[], options: { dryRun?: boolean } = {}) {
   const current = await readBackgroundCatalogManifest();
   const byId = new Map(current.items.map((item) => [item.id, item]));
   incoming.forEach((item) => byId.set(item.id, item));
@@ -77,10 +64,7 @@ export async function upsertBackgroundCatalogItems(
   return options.dryRun ? next : writeBackgroundCatalogManifest(next);
 }
 
-export async function updateBackgroundCatalogItem(
-  id: string,
-  changes: Partial<Pick<BackgroundCatalogItem, "status" | "primaryCategory" | "secondaryCategories" | "favorite" | "moodTags" | "analysisStatus" | "analysisConfidence" | "textRisk" | "logoRisk" | "endorsementRisk">>
-) {
+export async function updateBackgroundCatalogItem(id: string, changes: Partial<Pick<BackgroundCatalogItem, "status" | "primaryCategory" | "secondaryCategories" | "favorite" | "moodTags" | "analysisStatus" | "analysisConfidence" | "textRisk" | "logoRisk" | "endorsementRisk">>) {
   const manifest = await readBackgroundCatalogManifest();
   const index = manifest.items.findIndex((item) => item.id === id);
   if (index < 0) return null;
@@ -99,10 +83,7 @@ export function productionReady(item: BackgroundCatalogItem) {
 }
 
 export async function summarizeBackgroundCatalog(items?: BackgroundCatalogItem[]) {
-  const [configs, manifest] = await Promise.all([
-    readBackgroundCollectionConfigs(),
-    items ? Promise.resolve(null) : readBackgroundCatalogManifest(),
-  ]);
+  const [configs, manifest] = await Promise.all([readBackgroundCollectionConfigs(), items ? Promise.resolve(null) : readBackgroundCatalogManifest()]);
   const all = items || manifest?.items || [];
   const summary: BackgroundCatalogSummary = {
     total: all.length,
@@ -114,9 +95,7 @@ export async function summarizeBackgroundCatalog(items?: BackgroundCatalogItem[]
     duplicateRemoved: all.filter((item) => item.rejectionReasons.includes("duplicate")).length,
     lowResolutionRejected: all.filter((item) => item.rejectionReasons.includes("low-resolution")).length,
     brokenRejected: all.filter((item) => item.rejectionReasons.includes("decode-failed")).length,
-    riskReviewCount: all.filter((item) =>
-      [item.textRisk, item.logoRisk, item.endorsementRisk].some((risk) => risk === "high" || risk === "pending")
-    ).length,
+    riskReviewCount: all.filter((item) => [item.textRisk, item.logoRisk, item.endorsementRisk].some((risk) => risk === "high" || risk === "pending")).length,
     totalBytes: all.reduce((sum, item) => sum + Number(item.fileSize || 0), 0),
     thumbnailMissing: 0,
     collections: configs.map((config) => {
@@ -130,19 +109,13 @@ export async function summarizeBackgroundCatalog(items?: BackgroundCatalogItem[]
         productionReadyCount: collectionItems.filter(productionReady).length,
         missingCount: Math.max(0, config.targetCount - approvedCount),
         categories: Object.entries(config.categories).map(([id, targetCount]) => {
-          const count = collectionItems.filter(
-            (item) => item.primaryCategory === id && item.status === "approved"
-          ).length;
+          const count = collectionItems.filter((item) => item.primaryCategory === id && item.status === "approved").length;
           return { id, targetCount, approvedCount: count, missingCount: Math.max(0, targetCount - count) };
         }),
       };
     }),
   };
-  summary.thumbnailMissing = (
-    await Promise.all(
-      all.filter((item) => item.status === "approved").map((item) => backgroundStorage.exists(item.thumbnailPath))
-    )
-  ).filter((exists) => !exists).length;
+  summary.thumbnailMissing = (await Promise.all(all.filter((item) => item.status === "approved").map((item) => backgroundStorage.exists(item.thumbnailPath)))).filter((exists) => !exists).length;
   return summary;
 }
 
@@ -157,7 +130,9 @@ function deterministicShuffleScore(id: string, page: number) {
 }
 
 export function filterBackgroundCatalog(items: BackgroundCatalogItem[], filters: BackgroundCatalogFilters) {
-  const search = String(filters.search || "").trim().toLowerCase();
+  const search = String(filters.search || "")
+    .trim()
+    .toLowerCase();
   const filtered = items.filter((item) => {
     if (filters.collectionId && !item.collectionIds.includes(filters.collectionId)) return false;
     if (filters.category && item.primaryCategory !== filters.category) return false;
@@ -173,13 +148,7 @@ export function filterBackgroundCatalog(items: BackgroundCatalogItem[], filters:
     if (filters.sourceType && item.sourceType !== filters.sourceType) return false;
     if (filters.status && item.status !== filters.status) return false;
     if (filters.favorite && !item.favorite) return false;
-    if (search && ![
-      item.primaryCategory,
-      item.sceneType,
-      item.matchedQuery,
-      ...item.moodTags,
-      ...item.collectionIds,
-    ].join(" ").toLowerCase().includes(search)) return false;
+    if (search && ![item.primaryCategory, item.sceneType, item.matchedQuery, ...item.moodTags, ...item.collectionIds].join(" ").toLowerCase().includes(search)) return false;
     return true;
   });
   const sort = filters.sort || "latest";
@@ -204,11 +173,7 @@ export function catalogAssetUrl(id: string, size: "processed" | "thumbnail" = "p
 }
 
 export function catalogItemToLegacy(item: BackgroundCatalogItem): BackgroundLibraryItem {
-  const sourceType: BackgroundSourceType = item.sourceType === "pexels"
-    ? "stock_photo"
-    : item.sourceType === "local-generation"
-      ? "ai_generated"
-      : "user_uploaded";
+  const sourceType: BackgroundSourceType = item.sourceType === "pexels" ? "stock_photo" : item.sourceType === "local-generation" ? "ai_generated" : "user_uploaded";
   const includesPerson = item.peoplePresence === "background" || item.peoplePresence === "prominent";
   return {
     id: item.id,

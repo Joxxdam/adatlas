@@ -297,15 +297,7 @@ export async function queryBigQueryAdvertisers() {
   return { ...result, rows: advertisers };
 }
 
-export async function queryBigQueryProductSignals(input: {
-  source: "host24" | "hostmk";
-  brandName: string;
-  currentStart: string;
-  currentEnd: string;
-  previousStart: string;
-  previousEnd: string;
-  historyStart: string;
-}) {
+export async function queryBigQueryProductSignals(input: { source: "host24" | "hostmk"; brandName: string; currentStart: string; currentEnd: string; previousStart: string; previousEnd: string; historyStart: string }) {
   const result = await runReadOnlyBigQuery<ProductSignalQueryRow>({
     queryName: `ad-candidates-${input.source}`,
     sql: productSignalSql(input.source),

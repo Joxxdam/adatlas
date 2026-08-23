@@ -3,11 +3,23 @@ import type { GenerationResultStatus } from "../creative-generation/types";
 
 export type CreativeArchiveSource = "creative-asset" | "generation-result";
 
+export type CreativeArchiveDeliveryBranding = {
+  logoId?: string;
+  aiDisclosure: boolean;
+  updatedAt: string;
+};
+
+export type StoredCreativeArchiveDeliveryBranding = CreativeArchiveDeliveryBranding & {
+  imagePath: string;
+  sourceImagePath: string;
+};
+
 export type CreativeArchiveMetadata = {
   entryId: string;
   savedAsReference: boolean;
   tags: string[];
   note: string;
+  deliveryBranding?: StoredCreativeArchiveDeliveryBranding;
   deletedAt?: string;
   updatedAt: string;
 };
@@ -45,6 +57,8 @@ export type CreativeArchiveEntry = {
   savedAsReference: boolean;
   tags: string[];
   note: string;
+  brandingEligible: boolean;
+  deliveryBranding?: CreativeArchiveDeliveryBranding;
 };
 
 export type CreativeArchiveResponse = {

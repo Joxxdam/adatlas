@@ -1,16 +1,6 @@
 import { getCreativeBlueprint } from "./blueprints.ts";
 import { chooseTextColor, relativeLuminance } from "../mvp/colorUtils.ts";
-import type {
-  BrandProfile,
-  CategoryDesignVariant,
-  CategoryProfile,
-  CreativeBlueprintId,
-  DynamicTextBox,
-  MasterCreativeDirection,
-  PlacementBox,
-  ProductCompositionPlan,
-  ProductTruth,
-} from "./types.ts";
+import type { BrandProfile, CategoryDesignVariant, CategoryProfile, CreativeBlueprintId, DynamicTextBox, MasterCreativeDirection, PlacementBox, ProductCompositionPlan, ProductTruth } from "./types.ts";
 import { creativeBlueprintIds } from "./types.ts";
 
 type MasterLayoutGeometry = {
@@ -71,16 +61,9 @@ const geometry: Record<CreativeBlueprintId, MasterLayoutGeometry> = {
 };
 
 function masterPalette(brand: BrandProfile, fallback: string[]) {
-  const palette = [...brand.primaryColors, ...brand.secondaryColors, ...fallback].filter((color) =>
-    /^#[0-9a-f]{6}$/i.test(color)
-  );
-  const background = [...palette].sort(
-    (left, right) => relativeLuminance(left) - relativeLuminance(right)
-  )[0] || "#101827";
-  const accent =
-    palette.find((color) => color !== background && relativeLuminance(color) >= 0.28) ||
-    palette.find((color) => color !== background) ||
-    "#08d8b6";
+  const palette = [...brand.primaryColors, ...brand.secondaryColors, ...fallback].filter((color) => /^#[0-9a-f]{6}$/i.test(color));
+  const background = [...palette].sort((left, right) => relativeLuminance(left) - relativeLuminance(right))[0] || "#101827";
+  const accent = palette.find((color) => color !== background && relativeLuminance(color) >= 0.28) || palette.find((color) => color !== background) || "#08d8b6";
   return {
     background,
     foreground: chooseTextColor(background),
@@ -112,23 +95,10 @@ function textBox(
   const constraint = slotConstraint(blueprintId, slotId);
   return {
     ...box,
-    maxChars:
-      slotId === "headline"
-        ? 32
-        : slotId === "body"
-          ? 42
-          : constraint?.maxChars || defaults.maxChars,
-    maxLines:
-      slotId === "headline" || slotId === "body"
-        ? 3
-        : constraint?.maxLines || defaults.maxLines,
+    maxChars: slotId === "headline" ? 32 : slotId === "body" ? 42 : constraint?.maxChars || defaults.maxChars,
+    maxLines: slotId === "headline" || slotId === "body" ? 3 : constraint?.maxLines || defaults.maxLines,
     fontSize: defaults.fontSize,
-    minFontSize:
-      slotId === "headline"
-        ? 48
-        : slotId === "body"
-          ? 28
-          : Math.max(defaults.minFontSize, constraint?.minFontSize || defaults.minFontSize),
+    minFontSize: slotId === "headline" ? 48 : slotId === "body" ? 28 : Math.max(defaults.minFontSize, constraint?.minFontSize || defaults.minFontSize),
     lineHeight: slotId === "headline" ? 1.12 : 1.18,
     padding: defaults.padding,
     align: defaults.align || "left",
@@ -139,10 +109,7 @@ function textBox(
 }
 
 function proofText(truth: ProductTruth) {
-  const numericBenefit = truth.facts.find(
-    (fact) =>
-      /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length > 0
-  );
+  const numericBenefit = truth.facts.find((fact) => /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length > 0);
   return numericBenefit?.value || "";
 }
 
@@ -150,9 +117,7 @@ function selectCategoryVariant(truth: ProductTruth, categoryId: string): Categor
   const text = truth.facts.map((fact) => `${fact.key} ${fact.value}`).join(" ");
   const hasOffer = Boolean(truth.product.price || truth.product.discountInfo);
   const hasIngredients = truth.facts.some((fact) => /^ingredient/.test(fact.key));
-  const hasNumericProof = truth.facts.some(
-    (fact) => /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length
-  );
+  const hasNumericProof = truth.facts.some((fact) => /^(verified-benefit|ingredient)/.test(fact.key) && fact.numericTokens.length);
   const hasSet = /세트|구성|묶음|팩|\d+\s*개/i.test(text);
   if (categoryId === "packaged-food") {
     if (hasIngredients || hasNumericProof) return "ingredient-proof";
@@ -198,47 +163,36 @@ function stableHash(value: string) {
   return (hash >>> 0).toString(36);
 }
 
-export function designFingerprintForMaster(
-  master: Omit<MasterCreativeDirection, "designFingerprint"> & { designFingerprint?: string }
-) {
-  return `design-${stableHash(JSON.stringify({
-    layoutFamily: master.layoutFamily,
-    categoryVariant: master.categoryVariant,
-    backgroundAssetId: master.backgroundAssetId,
-    productImage: master.productComposition,
-    productPosition: master.productPosition,
-    productScale: master.productScale,
-    headlineBox: master.headlineBox,
-    subCopyBox: master.subCopyBox,
-    proof: master.fixedFacts.proof || "",
-    offer: master.fixedFacts.offer || "",
-    cta: master.fixedFacts.cta,
-    fontPreset: master.fontPreset,
-    palette: master.palette,
-    overlay: master.overlay,
-  }))}`;
+export function designFingerprintForMaster(master: Omit<MasterCreativeDirection, "designFingerprint"> & { designFingerprint?: string }) {
+  return `design-${stableHash(
+    JSON.stringify({
+      layoutFamily: master.layoutFamily,
+      categoryVariant: master.categoryVariant,
+      backgroundAssetId: master.backgroundAssetId,
+      productImage: master.productComposition,
+      productPosition: master.productPosition,
+      productScale: master.productScale,
+      headlineBox: master.headlineBox,
+      subCopyBox: master.subCopyBox,
+      proof: master.fixedFacts.proof || "",
+      offer: master.fixedFacts.offer || "",
+      cta: master.fixedFacts.cta,
+      fontPreset: master.fontPreset,
+      palette: master.palette,
+      overlay: master.overlay,
+    })
+  )}`;
 }
 
 function hasReviewEvidence(truth: ProductTruth) {
-  return Boolean(
-    truth.product.reviewSources?.length ||
-      truth.product.creativeContext?.reviewInsightSummaries?.length ||
-      truth.facts.some((fact) => /^review/.test(fact.key))
-  );
+  return Boolean(truth.product.reviewSources?.length || truth.product.creativeContext?.reviewInsightSummaries?.length || truth.facts.some((fact) => /^review/.test(fact.key)));
 }
 
 function hasComparisonEvidence(truth: ProductTruth) {
-  return Boolean(
-    (truth.product.originalPrice || truth.product.oldPrice) && truth.product.price
-  );
+  return Boolean((truth.product.originalPrice || truth.product.oldPrice) && truth.product.price);
 }
 
-function selectBlueprint(params: {
-  truth: ProductTruth;
-  brand: BrandProfile;
-  category: CategoryProfile;
-  excluded?: CreativeBlueprintId[];
-}) {
+function selectBlueprint(params: { truth: ProductTruth; brand: BrandProfile; category: CategoryProfile; excluded?: CreativeBlueprintId[] }) {
   const { truth, brand, category } = params;
   const excluded = new Set(params.excluded || []);
   const transparent = Boolean(truth.confirmedProductImage?.transparent);
@@ -255,16 +209,8 @@ function selectBlueprint(params: {
       if (id === "proof-data" && !proof && !hasComparisonEvidence(truth)) score -= 100;
       if (id === "chat-ugc" && !hasReviewEvidence(truth)) score -= 65;
       if (id === "comparison-versus" && !hasComparisonEvidence(truth)) score -= 25;
-      if (
-        ["food-meat", "agriculture", "fashion"].includes(category.id) &&
-        id === "editorial-story"
-      )
-        score += 32;
-      if (
-        ["personal-care", "household-goods"].includes(category.id) &&
-        id === "problem-solution-split"
-      )
-        score += 32;
+      if (["food-meat", "agriculture", "fashion"].includes(category.id) && id === "editorial-story") score += 32;
+      if (["personal-care", "household-goods"].includes(category.id) && id === "problem-solution-split") score += 32;
       if (category.id === "generic-commerce" && id === "product-hero-lifestyle") score += 34;
       if (!transparent && id === "product-hero-lifestyle") score += 18;
       return { id, score };
@@ -273,11 +219,7 @@ function selectBlueprint(params: {
   return scored[0]?.id || "product-hero-lifestyle";
 }
 
-function productComposition(
-  blueprintId: CreativeBlueprintId,
-  truth: ProductTruth,
-  productBox: PlacementBox
-): ProductCompositionPlan {
+function productComposition(blueprintId: CreativeBlueprintId, truth: ProductTruth, productBox: PlacementBox): ProductCompositionPlan {
   const requested = getCreativeBlueprint(blueprintId).productComposition;
   if (requested && (!requested.requiresTransparentProduct || truth.confirmedProductImage?.transparent)) {
     const original = getCreativeBlueprint(blueprintId).productBox;
@@ -297,22 +239,12 @@ function productComposition(
   return {
     mode: "single",
     requiresTransparentProduct: false,
-    instances: [
-      { ...productBox, role: "primary", fit: "contain", rotation: 0 },
-    ],
+    instances: [{ ...productBox, role: "primary", fit: "contain", rotation: 0 }],
   };
 }
 
-export function selectMasterCreativeDirection(params: {
-  truth: ProductTruth;
-  brand: BrandProfile;
-  category: CategoryProfile;
-  preserveMasterDesignId?: string;
-  excludedMasterDesignIds?: CreativeBlueprintId[];
-}): MasterCreativeDirection {
-  const preserved = creativeBlueprintIds.find((blueprintId) =>
-    params.preserveMasterDesignId?.includes(`-${blueprintId}-`)
-  );
+export function selectMasterCreativeDirection(params: { truth: ProductTruth; brand: BrandProfile; category: CategoryProfile; preserveMasterDesignId?: string; excludedMasterDesignIds?: CreativeBlueprintId[] }): MasterCreativeDirection {
+  const preserved = creativeBlueprintIds.find((blueprintId) => params.preserveMasterDesignId?.includes(`-${blueprintId}-`));
   const blueprintId =
     preserved ||
     selectBlueprint({
@@ -324,9 +256,7 @@ export function selectMasterCreativeDirection(params: {
   const layout = geometry[blueprintId];
   const colors = masterPalette(params.brand, params.category.fallbackColors);
   const proof = proofText(params.truth);
-  const offer = [params.truth.product.discountInfo, params.truth.product.price]
-    .filter(Boolean)
-    .join(" · ");
+  const offer = [params.truth.product.discountInfo, params.truth.product.price].filter(Boolean).join(" · ");
   const productKind = params.truth.confirmedProductImage?.transparent ? "cutout" : "packshot";
   const categoryVariant = selectCategoryVariant(params.truth, params.category.id);
   const evidenceFocused = /(?:detail-focus|ingredient-proof|function-demo|benefit-proof|offer-focus)/.test(categoryVariant);
@@ -374,34 +304,33 @@ export function selectMasterCreativeDirection(params: {
       colorRole: blueprintId === "chat-ugc" ? "background" : "accent",
       fillRole: blueprintId === "chat-ugc" ? "secondary" : undefined,
     }),
-    proofBox: proof && layout.proof
-      ? textBox(blueprintId, "proof", layout.proof, {
-          maxChars: 24,
-          maxLines: 2,
-          fontSize: 34,
-          minFontSize: 30,
-          padding: 18,
-          container: "panel",
-          colorRole: "foreground",
-          fillRole: "background",
-        })
-      : undefined,
-    offerBox: offer && layout.offer
-      ? textBox(blueprintId, "offer", layout.offer, {
-          maxChars: 26,
-          maxLines: 2,
-          fontSize: 36,
-          minFontSize: 30,
-          padding: 18,
-          container: "panel",
-          colorRole: "background",
-          fillRole: "accent",
-        })
-      : undefined,
-    logoBox:
-      blueprintId === "problem-solution-split"
-        ? { x: 430, y: 1030, width: 150, height: 82 }
-        : getCreativeBlueprint(blueprintId).logoBox,
+    proofBox:
+      proof && layout.proof
+        ? textBox(blueprintId, "proof", layout.proof, {
+            maxChars: 24,
+            maxLines: 2,
+            fontSize: 34,
+            minFontSize: 30,
+            padding: 18,
+            container: "panel",
+            colorRole: "foreground",
+            fillRole: "background",
+          })
+        : undefined,
+    offerBox:
+      offer && layout.offer
+        ? textBox(blueprintId, "offer", layout.offer, {
+            maxChars: 26,
+            maxLines: 2,
+            fontSize: 36,
+            minFontSize: 30,
+            padding: 18,
+            container: "panel",
+            colorRole: "background",
+            fillRole: "accent",
+          })
+        : undefined,
+    logoBox: blueprintId === "problem-solution-split" ? { x: 430, y: 1030, width: 150, height: 82 } : getCreativeBlueprint(blueprintId).logoBox,
     ctaBox: textBox(blueprintId, "cta", layout.cta, {
       maxChars: 10,
       maxLines: 1,
@@ -432,12 +361,7 @@ export function selectMasterCreativeDirection(params: {
       promotion: params.truth.product.discountInfo || undefined,
       cta: "상품 보러가기",
     },
-    selectionReasons: [
-      `카테고리 ${params.category.label}의 선호 레이아웃 반영`,
-      `상품 이미지 유형 ${productKind} 반영`,
-      `상품 근거 기반 카테고리 변형 ${categoryVariant} 선택`,
-      proof ? "검증된 수치 근거 슬롯 사용 가능" : "근거 없는 데이터 시각화 제외",
-    ],
+    selectionReasons: [`카테고리 ${params.category.label}의 선호 레이아웃 반영`, `상품 이미지 유형 ${productKind} 반영`, `상품 근거 기반 카테고리 변형 ${categoryVariant} 선택`, proof ? "검증된 수치 근거 슬롯 사용 가능" : "근거 없는 데이터 시각화 제외"],
     locked: true,
   } satisfies MasterCreativeDirection;
   return { ...base, designFingerprint: designFingerprintForMaster(base) };

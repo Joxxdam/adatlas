@@ -1,12 +1,8 @@
 import type { GptImageCandidate, GptImageFeedbackRecord } from "./types";
 import { JsonArrayRepository } from "./jsonRepository";
 
-const feedbackRepository = new JsonArrayRepository<GptImageFeedbackRecord>(
-  "data/gpt-image-feedbacks.json"
-);
-const candidateRepository = new JsonArrayRepository<GptImageCandidate>(
-  "data/gpt-image-candidates.json"
-);
+const feedbackRepository = new JsonArrayRepository<GptImageFeedbackRecord>("data/gpt-image-feedbacks.json");
+const candidateRepository = new JsonArrayRepository<GptImageCandidate>("data/gpt-image-candidates.json");
 
 export async function readGptImageFeedbacks() {
   return feedbackRepository.read();

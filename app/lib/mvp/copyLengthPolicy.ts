@@ -41,20 +41,7 @@ export function normalizeCasualCopyToPolite(input: string): string {
 export function isLikelyInformalKoreanCopy(input: string): boolean {
   const text = input.trim();
 
-  const informalPatterns = [
-    /쟁여둬/,
-    /놓치지 마/,
-    /덤이야/,
-    /먹어봐야 알지/,
-    /즐기기 좋음/,
-    /사야 함/,
-    /추천함/,
-    /좋음$/,
-    /가능$/,
-    /해야 함$/,
-    /임$/,
-    /각$/,
-  ];
+  const informalPatterns = [/쟁여둬/, /놓치지 마/, /덤이야/, /먹어봐야 알지/, /즐기기 좋음/, /사야 함/, /추천함/, /좋음$/, /가능$/, /해야 함$/, /임$/, /각$/];
 
   return informalPatterns.some((pattern) => pattern.test(text));
 }

@@ -1,44 +1,12 @@
 import { matchCategoryProfile } from "./profiles.ts";
 import { validateCopyAgainstTruth } from "./productTruth.ts";
-import {
-  hookMessageCodes,
-  type HookMessageCode,
-  type HookMessageHypothesis,
-  type ProductEvidence,
-  type ProductFact,
-  type ProductTruth,
-} from "./types.ts";
+import { hookMessageCodes, type HookMessageCode, type HookMessageHypothesis, type ProductEvidence, type ProductFact, type ProductTruth } from "./types.ts";
 
-export const CREATIVE_COPY_MODEL =
-  process.env.CREATIVE_COPY_MODEL?.trim() || process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-5.6-sol";
+export const CREATIVE_COPY_MODEL = process.env.CREATIVE_COPY_MODEL?.trim() || process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-5.6-sol";
 
-export const BANNED_HOOK_PHRASES = [
-  "차이를 만드는 기준",
-  "상세페이지에서 확인한 차이",
-  "필요한 순간의 선택",
-  "말보다 확인 가능한 기준",
-  "지금 비교할 구매 조건",
-  "불편을 줄일 선택 기준",
-  "한 번에 기억될 차이",
-  "이유가 있으니까",
-  "답을 확인하세요",
-  "직접 확인해보세요",
-  "무엇이 다를까요",
-  "먼저 볼 한 가지",
-  "구매 조건까지 확인",
-  "필요한 때 바로 떠오르는 상품",
-  "고르기 전, 핵심부터",
-] as const;
+export const BANNED_HOOK_PHRASES = ["차이를 만드는 기준", "상세페이지에서 확인한 차이", "필요한 순간의 선택", "말보다 확인 가능한 기준", "지금 비교할 구매 조건", "불편을 줄일 선택 기준", "한 번에 기억될 차이", "이유가 있으니까", "답을 확인하세요", "직접 확인해보세요", "무엇이 다를까요", "먼저 볼 한 가지", "구매 조건까지 확인", "필요한 때 바로 떠오르는 상품", "고르기 전, 핵심부터"] as const;
 
-export const PENALIZED_HOOK_PATTERNS = [
-  /^(?:이|그|좋은|새로운)?\s*상품/u,
-  /확인해\s*보세요/u,
-  /선택해\s*보세요/u,
-  /어떠세요[?？]?$/u,
-  /궁금하다면/u,
-  /한\s*가지/u,
-  /특별한\s*선택/u,
-] as const;
+export const PENALIZED_HOOK_PATTERNS = [/^(?:이|그|좋은|새로운)?\s*상품/u, /확인해\s*보세요/u, /선택해\s*보세요/u, /어떠세요[?？]?$/u, /궁금하다면/u, /한\s*가지/u, /특별한\s*선택/u] as const;
 
 export const categoryContaminationRules: Record<string, RegExp> = {
   "food-meat": /샤워젤|샤워|피부|쿨링|스킨케어|바디워시|보습|세정|세안|토너/i,
@@ -119,12 +87,8 @@ export function selectCoreEvidence(truth: ProductTruth): ProductEvidence[] {
       summary: `${fact.label}: ${fact.value}`,
       strength: fact.strength ?? 50,
       specificity: fact.specificity ?? 50,
-      evidenceType: fact.evidenceType || "other" as const,
-      rank:
-        (fact.strength ?? 50) +
-        (fact.specificity ?? 50) +
-        evidenceTypeScore(fact) -
-        (fact.evidenceType === "identity" ? 35 : 0),
+      evidenceType: fact.evidenceType || ("other" as const),
+      rank: (fact.strength ?? 50) + (fact.specificity ?? 50) + evidenceTypeScore(fact) - (fact.evidenceType === "identity" ? 35 : 0),
     }))
     .sort((left, right) => right.rank - left.rank)
     .slice(0, 5)
@@ -158,9 +122,14 @@ function evidenceForType(truth: ProductTruth, type: string) {
     "product-hero": [/^product-name/],
     "season-event": [/^main-benefit/, /^verified-benefit/, /^product-name/],
   };
-  return matchers[type]?.map((pattern) => facts.find((fact) => pattern.test(fact.key))).find(Boolean) ||
-    selectCoreEvidence(truth).map((item) => factForEvidence(truth, item)).find(Boolean) ||
-    facts.find((fact) => fact.key === "product-name") || facts[0];
+  return (
+    matchers[type]?.map((pattern) => facts.find((fact) => pattern.test(fact.key))).find(Boolean) ||
+    selectCoreEvidence(truth)
+      .map((item) => factForEvidence(truth, item))
+      .find(Boolean) ||
+    facts.find((fact) => fact.key === "product-name") ||
+    facts[0]
+  );
 }
 
 function compactSubject(fact: ProductFact | undefined, truth: ProductTruth, maxChars = 11) {
@@ -200,28 +169,15 @@ function productLabel(truth: ProductTruth) {
 
 function hookTypesForTruth(truth: ProductTruth) {
   const hasReview = truth.facts.some((fact) => /^review/.test(fact.key) && fact.usableInCopy);
-  const hasOffer = truth.facts.some(
-    (fact) => /^(price|original-price|discount|content-note-promotion)/.test(fact.key) && fact.usableInCopy
-  );
-  const base = [
-    "problem-solution",
-    "feature-usp",
-    "sensory",
-    "empathy-situation",
-    "curiosity",
-    "target",
-    "comparison",
-    "brand-story",
-  ];
+  const hasOffer = truth.facts.some((fact) => /^(price|original-price|discount|content-note-promotion)/.test(fact.key) && fact.usableInCopy);
+  const base = ["problem-solution", "feature-usp", "sensory", "empathy-situation", "curiosity", "target", "comparison", "brand-story"];
   if (!truth.product.targetCustomer) base[5] = "product-hero";
   if (!truth.product.brandName && !truth.product.advertiserName) base[7] = "season-event";
   if (hasReview) base[6] = "review-ugc";
   if (hasOffer) base[7] = "price-benefit";
-  const preferredInstruction = (truth.product.creativeContext?.appliedContentNotes || [])
-    .find((note) => note.type === "PREFERRED_HOOK" && !note.prohibited)
-    ?.content.toLowerCase();
+  const preferredInstruction = (truth.product.creativeContext?.appliedContentNotes || []).find((note) => note.type === "PREFERRED_HOOK" && !note.prohibited)?.content.toLowerCase();
   const preferredType = preferredInstruction
-    ? [
+    ? ([
         ["review-ugc", /review|ugc|후기|리뷰/],
         ["price-benefit", /price|value|가격|혜택|할인/],
         ["problem-solution", /problem|solution|문제|해결/],
@@ -229,19 +185,12 @@ function hookTypesForTruth(truth: ProductTruth) {
         ["curiosity", /curiosity|궁금|호기심/],
         ["empathy-situation", /empathy|situation|상황|공감/],
         ["feature-usp", /usp|feature|기능|성분/],
-      ].find(([, pattern]) => (pattern as RegExp).test(preferredInstruction))?.[0] as string | undefined
+      ].find(([, pattern]) => (pattern as RegExp).test(preferredInstruction))?.[0] as string | undefined)
     : undefined;
-  return preferredType && base.includes(preferredType)
-    ? [preferredType, ...base.filter((type) => type !== preferredType)]
-    : base;
+  return preferredType && base.includes(preferredType) ? [preferredType, ...base.filter((type) => type !== preferredType)] : base;
 }
 
-function fallbackCopy(
-  truth: ProductTruth,
-  hookType: string,
-  fact: ProductFact | undefined,
-  index: number
-) {
+function fallbackCopy(truth: ProductTruth, hookType: string, fact: ProductFact | undefined, index: number) {
   const category = matchCategoryProfile(truth.product).id;
   const subject = compactSubject(fact, truth, index % 2 ? 10 : 12);
   const product = productLabel(truth);
@@ -254,17 +203,8 @@ function fallbackCopy(
     .replace(/(.+?)(?:하|하려)는\s*고객$/u, "$1")
     .replace(/고객$/u, "")
     .trim();
-  const targetAudience = fitWords(
-    /(?:정리|관리|보관)$/u.test(targetNeed)
-      ? `${targetNeed}가 필요한 분께`
-      : `${targetNeed || subject} 찾는 분께`,
-    20
-  );
-  const ingredients = (truth.product.ingredients || [])
-    .map(normalize)
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("·");
+  const targetAudience = fitWords(/(?:정리|관리|보관)$/u.test(targetNeed) ? `${targetNeed}가 필요한 분께` : `${targetNeed || subject} 찾는 분께`, 20);
+  const ingredients = (truth.product.ingredients || []).map(normalize).filter(Boolean).slice(0, 2).join("·");
   const offer = normalize(truth.product.discountInfo);
   const price = normalize(truth.product.price);
   const itemNoun = normalize(product).split(/\s+/).filter(Boolean).at(-1) || product;
@@ -283,9 +223,7 @@ function fallbackCopy(
     "packaged-food": "바쁜 아침, 뭘 챙길지 고민이라면",
     agriculture: "제철 과일, 맛과 가격이 고민이라면",
     fashion: "출근룩과 주말룩이 고민이라면",
-    "personal-care": targetNeed.includes("운동")
-      ? "운동 후 샤워, 개운함이 아쉽다면"
-      : "샤워 뒤 개운함이 아쉽다면",
+    "personal-care": targetNeed.includes("운동") ? "운동 후 샤워, 개운함이 아쉽다면" : "샤워 뒤 개운함이 아쉽다면",
     "household-goods": "좁은 공간, 수납이 늘 고민이라면",
     "generic-commerce": targetNeed ? `${targetNeed}가 고민이라면` : "고르는 기준이 필요하다면",
   };
@@ -335,13 +273,7 @@ function fallbackCopy(
     "generic-commerce": `${itemNoun}, 쓰임새부터 비교`,
   };
   const combinedOffer = offer && price ? `${offer} · ${price}` : "";
-  const priceMain = offer && price
-    ? visibleChars(combinedOffer) <= 15 ? combinedOffer : offer
-    : price
-      ? `${price} · ${fitWords(product, 7)}`
-      : offer
-        ? `${offer} · ${fitWords(product, 7)}`
-        : `${fitWords(product, 10)} 구매 혜택`;
+  const priceMain = offer && price ? (visibleChars(combinedOffer) <= 15 ? combinedOffer : offer) : price ? `${price} · ${fitWords(product, 7)}` : offer ? `${offer} · ${fitWords(product, 7)}` : `${fitWords(product, 10)} 구매 혜택`;
   const priceSub = offer && price && priceMain === offer ? `${price} · ${benefit}` : benefit;
   const brand = fitWords(truth.product.brandName || truth.product.advertiserName || product, 9);
   const map: Record<string, [string, string]> = {
@@ -351,10 +283,7 @@ function fallbackCopy(
     "empathy-situation": [situationMain[category] || situationMain["generic-commerce"], targetNeed || benefit],
     curiosity: [curiosityMain[category] || curiosityMain["generic-commerce"], linkedEvidence],
     target: [targetAudience, benefit],
-    comparison: [
-      comparisonMain[category] || comparisonMain["generic-commerce"],
-      `${compactSubject(fact, truth, 9)} 기준`,
-    ],
+    comparison: [comparisonMain[category] || comparisonMain["generic-commerce"], `${compactSubject(fact, truth, 9)} 기준`],
     "brand-story": [`${brand}가 제안하는 ${product}`, benefit],
     "product-hero": [product, benefit],
     "season-event": [`${context}에 ${product}`, benefit],
@@ -382,8 +311,7 @@ export function buildFallbackHookMessages(truth: ProductTruth) {
     const hookType = types[index];
     const fact = evidenceForType(truth, hookType);
     const productFact = truth.facts.find((item) => item.key === "product-name" && item.usableInCopy);
-    const factIds = [fact?.id, hookType === "empathy-situation" ? productFact?.id : undefined]
-      .filter((id): id is string => Boolean(id));
+    const factIds = [fact?.id, hookType === "empathy-situation" ? productFact?.id : undefined].filter((id): id is string => Boolean(id));
     const copy = fallbackCopy(truth, hookType, fact, index);
     return {
       code,
@@ -391,7 +319,7 @@ export function buildFallbackHookMessages(truth: ProductTruth) {
       hypothesis: `${hookTypeLabels[hookType] || hookType} 메시지 가설`,
       ...copy,
       factIds,
-      confidence: fact ? "medium" as const : "low" as const,
+      confidence: fact ? ("medium" as const) : ("low" as const),
       evidenceSummary: evidenceSummary(truth, factIds),
       specificityScore: fact?.specificity ?? 45,
       naturalnessScore: 72,
@@ -452,56 +380,38 @@ function factSpecificTerms(truth: ProductTruth, ids: string[]) {
   });
 }
 
-export function validateSingleHookMessage(
-  hypothesis: HookMessageHypothesis,
-  truth: ProductTruth,
-  peers: HookMessageHypothesis[] = []
-) {
+export function validateSingleHookMessage(hypothesis: HookMessageHypothesis, truth: ProductTruth, peers: HookMessageHypothesis[] = []) {
   const errors: string[] = [];
   const categoryId = matchCategoryProfile(truth.product).id;
   const usableFactIds = new Set(truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.id));
   const wholeCopy = `${hypothesis.mainHook} ${hypothesis.subCopy}`;
-  if (!hypothesis.mainHook || visibleChars(hypothesis.mainHook) > 18)
-    errors.push("메인 후킹이 비어 있거나 18자를 초과합니다.");
-  if (!hypothesis.subCopy || visibleChars(hypothesis.subCopy) > 28)
-    errors.push("서브 문구가 비어 있거나 28자를 초과합니다.");
+  if (!hypothesis.mainHook || visibleChars(hypothesis.mainHook) > 18) errors.push("메인 후킹이 비어 있거나 18자를 초과합니다.");
+  if (!hypothesis.subCopy || visibleChars(hypothesis.subCopy) > 28) errors.push("서브 문구가 비어 있거나 28자를 초과합니다.");
   if (/[\/|]/.test(hypothesis.mainHook)) errors.push("메인 후킹에 나열형 구분자가 있습니다.");
-  if (BANNED_HOOK_PHRASES.some((phrase) => wholeCopy.includes(phrase)))
-    errors.push("금지된 상투 문구가 있습니다.");
+  if (BANNED_HOOK_PHRASES.some((phrase) => wholeCopy.includes(phrase))) errors.push("금지된 상투 문구가 있습니다.");
   const penaltyCount = PENALIZED_HOOK_PATTERNS.filter((pattern) => pattern.test(wholeCopy)).length;
   const contamination = categoryContamination(categoryId, wholeCopy);
   if (contamination) errors.push(`카테고리 오염 표현: ${contamination}`);
-  if (messageSimilarity(hypothesis.mainHook, hypothesis.subCopy) >= 0.62)
-    errors.push("메인과 서브 문구가 같은 의미나 구조를 반복합니다.");
-  if (!hypothesis.factIds.length || hypothesis.factIds.some((id) => !usableFactIds.has(id)))
-    errors.push("사실 근거 연결이 올바르지 않습니다.");
+  if (messageSimilarity(hypothesis.mainHook, hypothesis.subCopy) >= 0.62) errors.push("메인과 서브 문구가 같은 의미나 구조를 반복합니다.");
+  if (!hypothesis.factIds.length || hypothesis.factIds.some((id) => !usableFactIds.has(id))) errors.push("사실 근거 연결이 올바르지 않습니다.");
   const hasSpecificTerm = factSpecificTerms(truth, hypothesis.factIds).some((term) => wholeCopy.includes(term));
   if (!hasSpecificTerm) errors.push("연결된 상품 근거의 구체적 표현이 문구에 없습니다.");
-  if (hypothesis.hookType === "price-benefit" && !truth.facts.some((fact) => /^(price|original-price|discount|content-note-promotion)/.test(fact.key) && fact.usableInCopy))
-    errors.push("가격·혜택 근거가 없습니다.");
-  if (hypothesis.hookType === "review-ugc" && !truth.facts.some((fact) => /^review/.test(fact.key) && fact.usableInCopy))
-    errors.push("후기 근거가 없습니다.");
+  if (hypothesis.hookType === "price-benefit" && !truth.facts.some((fact) => /^(price|original-price|discount|content-note-promotion)/.test(fact.key) && fact.usableInCopy)) errors.push("가격·혜택 근거가 없습니다.");
+  if (hypothesis.hookType === "review-ugc" && !truth.facts.some((fact) => /^review/.test(fact.key) && fact.usableInCopy)) errors.push("후기 근거가 없습니다.");
   const factual = validateCopyAgainstTruth(wholeCopy, truth);
   if (!factual.valid) errors.push("문구가 ProductTruth 범위를 벗어납니다.");
   if (peers.some((peer) => peer.hookType === hypothesis.hookType)) errors.push("후킹 유형이 중복됩니다.");
   if (peers.some((peer) => normalize(peer.mainHook) === normalize(hypothesis.mainHook))) errors.push("메인 후킹이 중복됩니다.");
-  if (peers.some((peer) => messageSimilarity(`${peer.mainHook} ${peer.subCopy}`, wholeCopy) >= 0.68))
-    errors.push("다른 후킹과 메시지 의미나 문장 구조가 지나치게 유사합니다.");
-  const factScores = hypothesis.factIds
-    .map((id) => truth.facts.find((fact) => fact.id === id))
-    .filter((fact): fact is ProductFact => Boolean(fact));
-  const specificityScore = Math.max(
-    0,
-    Math.min(100, Math.round((factScores.reduce((sum, fact) => sum + (fact.specificity ?? 45), 0) / Math.max(1, factScores.length)) - penaltyCount * 18))
-  );
+  if (peers.some((peer) => messageSimilarity(`${peer.mainHook} ${peer.subCopy}`, wholeCopy) >= 0.68)) errors.push("다른 후킹과 메시지 의미나 문장 구조가 지나치게 유사합니다.");
+  const factScores = hypothesis.factIds.map((id) => truth.facts.find((fact) => fact.id === id)).filter((fact): fact is ProductFact => Boolean(fact));
+  const specificityScore = Math.max(0, Math.min(100, Math.round(factScores.reduce((sum, fact) => sum + (fact.specificity ?? 45), 0) / Math.max(1, factScores.length) - penaltyCount * 18)));
   const naturalnessScore = Math.max(0, 100 - penaltyCount * 22 - errors.length * 12);
   return { valid: errors.length === 0, errors, specificityScore, naturalnessScore };
 }
 
 export function validateHookMessages(hypotheses: HookMessageHypothesis[], truth: ProductTruth) {
   const errors: string[] = [];
-  if (hypotheses.length !== hookMessageCodes.length)
-    errors.push(`후킹은 정확히 ${hookMessageCodes.length}개여야 합니다.`);
+  if (hypotheses.length !== hookMessageCodes.length) errors.push(`후킹은 정확히 ${hookMessageCodes.length}개여야 합니다.`);
   const validPeers: HookMessageHypothesis[] = [];
   hypotheses.forEach((hypothesis, index) => {
     if (hypothesis.code !== hookMessageCodes[index]) errors.push(`${hookMessageCodes[index]} 코드 순서가 올바르지 않습니다.`);
@@ -532,13 +442,7 @@ function llmFacts(truth: ProductTruth) {
     }));
 }
 
-async function generateWithOpenAI(input: {
-  truth: ProductTruth;
-  codes: HookMessageCode[];
-  accepted?: HookMessageHypothesis[];
-  failures?: Record<string, string[]>;
-  attempt: number;
-}) {
+async function generateWithOpenAI(input: { truth: ProductTruth; codes: HookMessageCode[]; accepted?: HookMessageHypothesis[]; failures?: Record<string, string[]>; attempt: number }) {
   const { truth, codes, accepted = [], failures = {}, attempt } = input;
   const categoryId = matchCategoryProfile(truth.product).id;
   const prompt = `당신은 한국 이커머스 퍼포먼스 광고 카피라이터입니다.
@@ -605,13 +509,7 @@ FACTS: ${JSON.stringify({ productName: truth.product.productName, categoryProfil
   return parsed.hooks || [];
 }
 
-function annotateHook(
-  hook: HookMessageHypothesis,
-  truth: ProductTruth,
-  source: "ai" | "repaired-ai" | "fallback",
-  attempt: number,
-  peers: HookMessageHypothesis[]
-) {
+function annotateHook(hook: HookMessageHypothesis, truth: ProductTruth, source: "ai" | "repaired-ai" | "fallback", attempt: number, peers: HookMessageHypothesis[]) {
   const validation = validateSingleHookMessage(hook, truth, peers);
   return {
     ...hook,
@@ -684,7 +582,7 @@ export async function generateHookMessages(truth: ProductTruth) {
   const aiCount = hypotheses.filter((hook) => hook.generationSource !== "fallback").length;
   return {
     hypotheses,
-    provider: aiCount === hookMessageCodes.length ? "openai" as const : aiCount ? "mixed" as const : "fallback" as const,
+    provider: aiCount === hookMessageCodes.length ? ("openai" as const) : aiCount ? ("mixed" as const) : ("fallback" as const),
     model: CREATIVE_COPY_MODEL,
     repairAttempts,
     warnings,

@@ -13,7 +13,7 @@ export async function GET(_request: Request, context: { params: Promise<{ opport
 
 export async function PATCH(request: Request, context: { params: Promise<{ opportunityId: string }> }) {
   const { opportunityId } = await context.params;
-  const body = await request.json().catch(() => ({})) as { status?: "recommended" | "later" | "excluded" };
+  const body = (await request.json().catch(() => ({}))) as { status?: "recommended" | "later" | "excluded" };
   if (!body.status || !["recommended", "later", "excluded"].includes(body.status)) return NextResponse.json({ ok: false, error: "지원하지 않는 상태입니다." }, { status: 400 });
   const opportunity = await cremaMarketRepository.updateOpportunity(opportunityId, { status: body.status });
   if (!opportunity) return NextResponse.json({ ok: false, error: "광고 기회를 찾지 못했습니다." }, { status: 404 });

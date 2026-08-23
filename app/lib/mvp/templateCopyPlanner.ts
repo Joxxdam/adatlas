@@ -1,19 +1,6 @@
 import type { BannerTemplateDefinition } from "../../../lib/bannerTemplates";
-import {
-  fitCopyToTemplate,
-  getCopySlotOverflow,
-  visibleTemplateCopyLength,
-} from "./templateCopyFitter";
-import type {
-  CopySlotKey,
-  CopyVariantKey,
-  GeneratedAdCopy,
-  GeneratedAdCopyVariant,
-  TemplateCopyApplyMode,
-  TemplateCopyLimits,
-  TemplateCopyPreview,
-  TemplateCopyVariantSelection,
-} from "./types";
+import { fitCopyToTemplate, getCopySlotOverflow, visibleTemplateCopyLength } from "./templateCopyFitter";
+import type { CopySlotKey, CopyVariantKey, GeneratedAdCopy, GeneratedAdCopyVariant, TemplateCopyApplyMode, TemplateCopyLimits, TemplateCopyPreview, TemplateCopyVariantSelection } from "./types";
 
 const variantPriority: CopyVariantKey[] = ["long", "medium", "short", "base"];
 
@@ -28,10 +15,7 @@ function baseVariant(copy: GeneratedAdCopy): GeneratedAdCopyVariant {
   };
 }
 
-function copyWithVariant(
-  masterCopy: GeneratedAdCopy,
-  variant: GeneratedAdCopyVariant
-): GeneratedAdCopy {
+function copyWithVariant(masterCopy: GeneratedAdCopy, variant: GeneratedAdCopyVariant): GeneratedAdCopy {
   return {
     ...masterCopy,
     headline: variant.headline || masterCopy.headline,
@@ -43,9 +27,7 @@ function copyWithVariant(
   };
 }
 
-function variantCandidates(
-  masterCopy: GeneratedAdCopy
-): Record<CopyVariantKey, GeneratedAdCopyVariant> {
+function variantCandidates(masterCopy: GeneratedAdCopy): Record<CopyVariantKey, GeneratedAdCopyVariant> {
   const base = baseVariant(masterCopy);
   return {
     short: masterCopy.copyVariants?.short || base,
@@ -56,9 +38,7 @@ function variantCandidates(
 }
 
 function informationLength(copy: GeneratedAdCopyVariant) {
-  return (
-    ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"] as CopySlotKey[]
-  ).reduce((total, slot) => total + visibleTemplateCopyLength(String(copy[slot] || "")), 0);
+  return (["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta", "price"] as CopySlotKey[]).reduce((total, slot) => total + visibleTemplateCopyLength(String(copy[slot] || "")), 0);
 }
 
 function candidatePriorityIndex(key: CopyVariantKey) {
@@ -67,9 +47,7 @@ function candidatePriorityIndex(key: CopyVariantKey) {
 
 function scoreVariant(copy: GeneratedAdCopyVariant, copyLimits?: TemplateCopyLimits) {
   const overflowSlots = getCopySlotOverflow(copy, copyLimits);
-  const missingSlots = (
-    ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy"] as CopySlotKey[]
-  ).filter((slot) => !String(copy[slot] || "").trim());
+  const missingSlots = (["headline", "bodyCopy", "highlightCopy", "bottomBarCopy"] as CopySlotKey[]).filter((slot) => !String(copy[slot] || "").trim());
 
   return {
     overflowSlots,
@@ -78,12 +56,7 @@ function scoreVariant(copy: GeneratedAdCopyVariant, copyLimits?: TemplateCopyLim
   };
 }
 
-export function selectBestCopyVariantForTemplate(params: {
-  masterCopy: GeneratedAdCopy;
-  templateId: string;
-  templateName?: string;
-  copyLimits?: TemplateCopyLimits;
-}): TemplateCopyVariantSelection {
+export function selectBestCopyVariantForTemplate(params: { masterCopy: GeneratedAdCopy; templateId: string; templateName?: string; copyLimits?: TemplateCopyLimits }): TemplateCopyVariantSelection {
   const candidates = variantCandidates(params.masterCopy);
   const ranked = variantPriority
     .map((key) => {
@@ -120,12 +93,8 @@ export function selectBestCopyVariantForTemplate(params: {
     copyLimits: params.copyLimits,
   });
   const overflowSlots = getCopySlotOverflow(selected.copy, params.copyLimits);
-  const hasOverflow =
-    overflowSlots.length > 0 ||
-    fittedCopy.slotFits.some((slot) => slot.status === "trimmed" || slot.status === "too-long");
-  const reason = overflowSlots.length
-    ? `${selected.key} 문구가 가장 적게 넘쳐 최종 자동축약을 적용합니다.`
-    : `${selected.key} 문구가 템플릿 길이에 가장 자연스럽게 맞습니다.`;
+  const hasOverflow = overflowSlots.length > 0 || fittedCopy.slotFits.some((slot) => slot.status === "trimmed" || slot.status === "too-long");
+  const reason = overflowSlots.length ? `${selected.key} 문구가 가장 적게 넘쳐 최종 자동축약을 적용합니다.` : `${selected.key} 문구가 템플릿 길이에 가장 자연스럽게 맞습니다.`;
 
   return {
     templateId: params.templateId,
@@ -140,13 +109,7 @@ export function selectBestCopyVariantForTemplate(params: {
   };
 }
 
-export function resolveCopyForTemplate(params: {
-  masterCopy: GeneratedAdCopy;
-  templateId: string;
-  templateName?: string;
-  copyLimits?: TemplateCopyLimits;
-  mode: TemplateCopyApplyMode;
-}): {
+export function resolveCopyForTemplate(params: { masterCopy: GeneratedAdCopy; templateId: string; templateName?: string; copyLimits?: TemplateCopyLimits; mode: TemplateCopyApplyMode }): {
   activeRenderCopy: GeneratedAdCopy;
   preview: TemplateCopyPreview;
 } {
@@ -182,9 +145,7 @@ export function resolveCopyForTemplate(params: {
       templateId: params.templateId,
       copyLimits: params.copyLimits,
     });
-    const overflowSlots = fittedCopy.slotFits
-      .filter((slot) => slot.status === "trimmed" || slot.status === "too-long")
-      .map((slot) => slot.key);
+    const overflowSlots = fittedCopy.slotFits.filter((slot) => slot.status === "trimmed" || slot.status === "too-long").map((slot) => slot.key);
     return {
       activeRenderCopy: copyWithVariant(params.masterCopy, fittedCopy),
       preview: {
@@ -220,11 +181,7 @@ export function resolveCopyForTemplate(params: {
   };
 }
 
-export function buildTemplateCopyPreviews(params: {
-  masterCopy: GeneratedAdCopy;
-  templates: BannerTemplateDefinition[];
-  mode: TemplateCopyApplyMode;
-}): TemplateCopyPreview[] {
+export function buildTemplateCopyPreviews(params: { masterCopy: GeneratedAdCopy; templates: BannerTemplateDefinition[]; mode: TemplateCopyApplyMode }): TemplateCopyPreview[] {
   return params.templates.map(
     (template) =>
       resolveCopyForTemplate({

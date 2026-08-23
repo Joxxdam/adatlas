@@ -24,10 +24,7 @@ function xml(value: unknown) {
 }
 
 function estimate(text: string, fontSize: number) {
-  return [...text].reduce(
-    (sum, char) => sum + fontSize * (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char) ? 0.96 : 0.6),
-    0
-  );
+  return [...text].reduce((sum, char) => sum + fontSize * (/[가-힣ㄱ-ㅎㅏ-ㅣ]/.test(char) ? 0.96 : 0.6), 0);
 }
 
 function clamp(value: number, minimum: number, maximum: number) {
@@ -110,45 +107,17 @@ function wrapText(text: string, width: number, fontSize: number, maxLines: numbe
   return lines;
 }
 
-function fittedText(params: {
-  text: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fontSize: number;
-  minSize: number;
-  maxLines: number;
-  color: string;
-  align: "left" | "center" | "right";
-  weight: number;
-  family: string;
-  lineHeight?: number;
-}) {
+function fittedText(params: { text: string; x: number; y: number; width: number; height: number; fontSize: number; minSize: number; maxLines: number; color: string; align: "left" | "center" | "right"; weight: number; family: string; lineHeight?: number }) {
   const lineHeight = params.lineHeight || 1.12;
   let size = params.fontSize;
   let lines = wrapText(params.text, params.width, size, params.maxLines);
-  while (
-    size > params.minSize &&
-    (lines.some((line) => estimate(line, size) > params.width) ||
-      lines.length * size * lineHeight > params.height)
-  ) {
+  while (size > params.minSize && (lines.some((line) => estimate(line, size) > params.width) || lines.length * size * lineHeight > params.height)) {
     size -= 2;
     lines = wrapText(params.text, params.width, size, params.maxLines);
   }
   const anchor = params.align === "center" ? "middle" : params.align === "right" ? "end" : "start";
-  const x =
-    params.align === "center"
-      ? params.x + params.width / 2
-      : params.align === "right"
-        ? params.x + params.width
-        : params.x;
-  return lines
-    .map(
-      (line, index) =>
-        `<text x="${x}" y="${params.y + size + index * size * lineHeight}" text-anchor="${anchor}" fill="${xml(params.color)}" font-family="${xml(params.family)}" font-size="${size}" font-weight="${params.weight}" letter-spacing="-1.5">${xml(line)}</text>`
-    )
-    .join("");
+  const x = params.align === "center" ? params.x + params.width / 2 : params.align === "right" ? params.x + params.width : params.x;
+  return lines.map((line, index) => `<text x="${x}" y="${params.y + size + index * size * lineHeight}" text-anchor="${anchor}" fill="${xml(params.color)}" font-family="${xml(params.family)}" font-size="${size}" font-weight="${params.weight}" letter-spacing="-1.5">${xml(line)}</text>`).join("");
 }
 
 function backgroundPanel(plan: AdaptiveCreativePlan) {
@@ -190,9 +159,7 @@ function productFilter(plan: AdaptiveCreativePlan, effect?: Partial<ProductImage
   const opacity = Math.max(0, Math.min(0.8, Number(effect?.shadowOpacity ?? separation)));
   const blur = Math.max(4, Number(effect?.shadowBlur ?? 22) / 3);
   const offsetY = Number(effect?.shadowOffsetY ?? 18);
-  const outline = effect?.outline
-    ? `<feMorphology in="SourceAlpha" operator="dilate" radius="${Math.max(1, Number(effect.outlineWidth ?? 3) / 3)}" result="outlineAlpha"/><feFlood flood-color="${xml(effect.outlineColor || "#ffffff")}" result="outlineColor"/><feComposite in="outlineColor" in2="outlineAlpha" operator="in" result="outline"/>`
-    : "";
+  const outline = effect?.outline ? `<feMorphology in="SourceAlpha" operator="dilate" radius="${Math.max(1, Number(effect.outlineWidth ?? 3) / 3)}" result="outlineAlpha"/><feFlood flood-color="${xml(effect.outlineColor || "#ffffff")}" result="outlineColor"/><feComposite in="outlineColor" in2="outlineAlpha" operator="in" result="outline"/>` : "";
   const outlineNode = effect?.outline ? '<feMergeNode in="outline"/>' : "";
   return `<filter id="adaptiveProduct" x="-45%" y="-45%" width="190%" height="210%">${outline}<feDropShadow dx="${Number(effect?.shadowOffsetX ?? 0)}" dy="${offsetY}" stdDeviation="${blur}" flood-color="${xml(effect?.shadowColor || "#000000")}" flood-opacity="${opacity}" result="shadow"/><feMerge>${outlineNode}<feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
 }
@@ -230,20 +197,11 @@ export function buildAdaptiveCreativeSvg(input: AdaptiveCreativeSvgInput) {
     const supportY = product.y + product.height - supportHeight;
     if (plan.productComposition.mode === "scale-contrast") {
       const supportX = clamp(product.x - horizontalShift * 0.7, 24, 1176 - supportWidth);
-      return [
-        image(supportX, supportY, supportWidth, supportHeight, product.rotation - 7),
-        image(product.x, product.y, product.width, product.height, product.rotation + 2),
-      ].join("");
+      return [image(supportX, supportY, supportWidth, supportHeight, product.rotation - 7), image(product.x, product.y, product.width, product.height, product.rotation + 2)].join("");
     }
     const leftX = clamp(product.x - horizontalShift, 24, 1176 - supportWidth);
     const rightX = clamp(product.x + product.width - supportWidth + horizontalShift * 0.2, 24, 1176 - supportWidth);
-    const repeated = [
-      image(leftX, supportY, supportWidth, supportHeight, product.rotation - 8),
-      instances === 3
-        ? image(rightX, supportY, supportWidth, supportHeight, product.rotation + 8)
-        : "",
-      image(product.x, product.y, product.width, product.height, product.rotation),
-    ];
+    const repeated = [image(leftX, supportY, supportWidth, supportHeight, product.rotation - 8), instances === 3 ? image(rightX, supportY, supportWidth, supportHeight, product.rotation + 8) : "", image(product.x, product.y, product.width, product.height, product.rotation)];
     return repeated.join("");
   })();
   const fontFamily = input.fontFamily || "AdAtlasBody, sans-serif";
@@ -292,18 +250,14 @@ export function buildAdaptiveCreativeSvg(input: AdaptiveCreativeSvgInput) {
       : "";
   const cta =
     plan.ctaPlacement.visible && copy.cta
-      ? `<rect x="${plan.ctaPlacement.x}" y="${plan.ctaPlacement.y}" width="${plan.ctaPlacement.width}" height="${plan.ctaPlacement.height}" rx="${Math.min(28, plan.ctaPlacement.height / 2)}" fill="${xml(plan.colorPalette.ctaBackground)}"/>${fittedText(
-          {
-            text: copy.cta,
-            ...plan.ctaPlacement,
-            y:
-              plan.ctaPlacement.y +
-              Math.max(0, (plan.ctaPlacement.height - plan.ctaPlacement.fontSize * 1.15) / 2),
-            minSize: 18,
-            weight: 850,
-            family: fontFamily,
-          }
-        )}`
+      ? `<rect x="${plan.ctaPlacement.x}" y="${plan.ctaPlacement.y}" width="${plan.ctaPlacement.width}" height="${plan.ctaPlacement.height}" rx="${Math.min(28, plan.ctaPlacement.height / 2)}" fill="${xml(plan.colorPalette.ctaBackground)}"/>${fittedText({
+          text: copy.cta,
+          ...plan.ctaPlacement,
+          y: plan.ctaPlacement.y + Math.max(0, (plan.ctaPlacement.height - plan.ctaPlacement.fontSize * 1.15) / 2),
+          minSize: 18,
+          weight: 850,
+          family: fontFamily,
+        })}`
       : "";
   const bottom = copy.bottomBarCopy
     ? fittedText({
@@ -323,12 +277,8 @@ export function buildAdaptiveCreativeSvg(input: AdaptiveCreativeSvgInput) {
     : "";
   const logoSize = 118;
   const logoX = plan.textPlacement.x < 600 ? 1050 : 32;
-  const logo = input.logoDataUrl
-    ? `<image href="${xml(input.logoDataUrl)}" x="${logoX}" y="32" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet"/>`
-    : "";
-  const aiDisclosure = input.aiDisclosureText?.trim()
-    ? `<text x="600" y="1180" text-anchor="middle" fill="rgba(255,255,255,0.86)" stroke="rgba(0,0,0,0.42)" stroke-width="2" paint-order="stroke fill" font-family="${xml(fontFamily)}" font-size="17" font-weight="500">${xml(input.aiDisclosureText.trim())}</text>`
-    : "";
+  const logo = input.logoDataUrl ? `<image href="${xml(input.logoDataUrl)}" x="${logoX}" y="32" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet"/>` : "";
+  const aiDisclosure = input.aiDisclosureText?.trim() ? `<text x="600" y="1180" text-anchor="middle" fill="rgba(255,255,255,0.86)" stroke="rgba(0,0,0,0.42)" stroke-width="2" paint-order="stroke fill" font-family="${xml(fontFamily)}" font-size="17" font-weight="500">${xml(input.aiDisclosureText.trim())}</text>` : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
   <defs>

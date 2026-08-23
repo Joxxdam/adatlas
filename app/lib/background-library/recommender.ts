@@ -1,16 +1,6 @@
 import type { ProductInfoForPrompt } from "../mvp/types";
 import { selectAutomaticLayout } from "./automaticLayout.ts";
-import {
-  legacyHookToBackgroundHook,
-  type AudienceAgeGroup,
-  type AudienceProfile,
-  type BackgroundAssetType,
-  type BackgroundCategory,
-  type BackgroundHookType,
-  type BackgroundLibraryItem,
-  type BackgroundRecommendation,
-  type BackgroundRecommendationInput,
-} from "./types.ts";
+import { legacyHookToBackgroundHook, type AudienceAgeGroup, type AudienceProfile, type BackgroundAssetType, type BackgroundCategory, type BackgroundHookType, type BackgroundLibraryItem, type BackgroundRecommendation, type BackgroundRecommendationInput } from "./types.ts";
 
 const audienceAgeLabels: Record<AudienceAgeGroup, string> = {
   teens: "10대",
@@ -80,21 +70,18 @@ const hookAssetPriority: Record<BackgroundHookType, BackgroundAssetType[]> = {
 };
 
 function clean(value: unknown) {
-  return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function compactTokens(values: unknown[]) {
-  return new Set(
-    values
-      .flatMap((value) => clean(value).split(/[\s,·/()\[\]_-]+/))
-      .filter((value) => value.length > 1)
-  );
+  return new Set(values.flatMap((value) => clean(value).split(/[\s,·/()\[\]_-]+/)).filter((value) => value.length > 1));
 }
 
 function overlapScore(left: Set<string>, right: string[], points: number, limit = 3) {
-  const matches = Array.from(new Set(right.map(clean))).filter((value) =>
-    Array.from(left).some((token) => value.includes(token) || token.includes(value))
-  );
+  const matches = Array.from(new Set(right.map(clean))).filter((value) => Array.from(left).some((token) => value.includes(token) || token.includes(value)));
   return { score: Math.min(limit, matches.length) * points, matches: matches.slice(0, limit) };
 }
 
@@ -103,33 +90,15 @@ function normalizeBrandToken(value: unknown) {
 }
 
 function advertiserMatch(item: BackgroundLibraryItem, input: BackgroundRecommendationInput) {
-  const productValues = [
-    input.product.brandName,
-    input.product.advertiserName,
-    input.product.productName,
-    input.product.landingUrl,
-  ]
-    .map(normalizeBrandToken)
-    .filter(Boolean);
+  const productValues = [input.product.brandName, input.product.advertiserName, input.product.productName, input.product.landingUrl].map(normalizeBrandToken).filter(Boolean);
   return (item.advertiserAliases || []).some((alias) => {
     const normalizedAlias = normalizeBrandToken(alias);
     return normalizedAlias && productValues.some((value) => value.includes(normalizedAlias));
   });
 }
 
-function productKeywordMatch(
-  item: BackgroundLibraryItem,
-  input: BackgroundRecommendationInput
-) {
-  const haystack = normalizeBrandToken(
-    [
-      input.product.productName,
-      input.product.mainBenefit,
-      input.product.extractedDescription,
-      input.product.landingUrl,
-      ...(input.product.ingredients || []),
-    ].join(" ")
-  );
+function productKeywordMatch(item: BackgroundLibraryItem, input: BackgroundRecommendationInput) {
+  const haystack = normalizeBrandToken([input.product.productName, input.product.mainBenefit, input.product.extractedDescription, input.product.landingUrl, ...(input.product.ingredients || [])].join(" "));
   if (!haystack) return [];
   return (item.productKeywords || []).filter((keyword) => {
     const normalizedKeyword = normalizeBrandToken(keyword);
@@ -146,18 +115,11 @@ function resolveBackgroundHook(input: BackgroundRecommendationInput): Background
 }
 
 export function inferBackgroundCategory(product: Partial<ProductInfoForPrompt>): BackgroundCategory {
-  const pool = [
-    product.category,
-    product.productName,
-    product.mainBenefit,
-    product.extractedDescription,
-  ].join(" ");
+  const pool = [product.category, product.productName, product.mainBenefit, product.extractedDescription].join(" ");
   return categoryMatchers.find(([, pattern]) => pattern.test(pool))?.[0] || "promotion";
 }
 
-export function inferAudienceProfile(
-  product: BackgroundRecommendationInput["product"]
-): AudienceProfile {
+export function inferAudienceProfile(product: BackgroundRecommendationInput["product"]): AudienceProfile {
   const category = inferBackgroundCategory(product);
   const sources = [
     ["추천 대상", product.targetCustomer],
@@ -168,15 +130,9 @@ export function inferAudienceProfile(
   ] as const;
   const pool = sources.map(([, value]) => String(value || "")).join(" ");
   const supplied = (product.targetAgeGroups || []).filter((value) => value !== "no_people");
-  const explicitMatches = explicitAgeMatchers
-    .filter(([, pattern]) => pattern.test(pool))
-    .map(([ageGroup]) => ageGroup);
-  const inferredMatches = inferredAudienceMatchers
-    .filter(([, pattern]) => pattern.test(pool))
-    .flatMap(([ageGroups]) => ageGroups);
-  const ageGroups = Array.from(
-    new Set<AudienceAgeGroup>(supplied.length ? supplied : explicitMatches.length ? explicitMatches : inferredMatches)
-  );
+  const explicitMatches = explicitAgeMatchers.filter(([, pattern]) => pattern.test(pool)).map(([ageGroup]) => ageGroup);
+  const inferredMatches = inferredAudienceMatchers.filter(([, pattern]) => pattern.test(pool)).flatMap(([ageGroups]) => ageGroups);
+  const ageGroups = Array.from(new Set<AudienceAgeGroup>(supplied.length ? supplied : explicitMatches.length ? explicitMatches : inferredMatches));
   if (!ageGroups.length) ageGroups.push("no_people");
   const evidence = sources
     .filter(([, value]) => [...explicitAgeMatchers, ...inferredAudienceMatchers].some(([, pattern]) => pattern.test(String(value || ""))))
@@ -191,30 +147,12 @@ export function inferAudienceProfile(
   };
 }
 
-function scoreBackground(
-  item: BackgroundLibraryItem,
-  input: BackgroundRecommendationInput,
-  category: BackgroundCategory,
-  audienceProfile: AudienceProfile
-): BackgroundRecommendation {
+function scoreBackground(item: BackgroundLibraryItem, input: BackgroundRecommendationInput, category: BackgroundCategory, audienceProfile: AudienceProfile): BackgroundRecommendation {
   let score = 0;
   const reasons: string[] = [];
   const hookType = resolveBackgroundHook(input);
-  const productTokens = compactTokens([
-    input.product.category,
-    input.product.productSubCategory,
-    input.product.detectedProductType,
-    input.product.productName,
-    input.product.mainBenefit,
-    input.product.targetCustomer,
-    input.product.extractedDescription,
-    ...(input.product.ingredients || []),
-  ]);
-  const hookTokens = compactTokens([
-    input.hook.sceneDescription,
-    ...input.hook.mood,
-    ...input.hook.backgroundTags,
-  ]);
+  const productTokens = compactTokens([input.product.category, input.product.productSubCategory, input.product.detectedProductType, input.product.productName, input.product.mainBenefit, input.product.targetCustomer, input.product.extractedDescription, ...(input.product.ingredients || [])]);
+  const hookTokens = compactTokens([input.hook.sceneDescription, ...input.hook.mood, ...input.hook.backgroundTags]);
 
   if (advertiserMatch(item, input)) {
     score += 30;
@@ -224,11 +162,7 @@ function scoreBackground(
   if (matchedProductKeywords.length) {
     score += 110 + Math.min(32, (matchedProductKeywords.length - 1) * 8);
     reasons.push("상품 전용 장면 일치");
-  } else if (
-    (item.advertiserAliases || []).length &&
-    (item.productKeywords || []).length &&
-    advertiserMatch(item, input)
-  ) {
+  } else if ((item.advertiserAliases || []).length && (item.productKeywords || []).length && advertiserMatch(item, input)) {
     score -= 60;
   }
   if (item.category === category) {
@@ -248,20 +182,14 @@ function scoreBackground(
     score += 34;
     reasons.push("후킹 방향 일치");
   }
-  const preferredTypes = input.hook.preferredAssetTypes?.length
-    ? input.hook.preferredAssetTypes
-    : hookAssetPriority[hookType];
+  const preferredTypes = input.hook.preferredAssetTypes?.length ? input.hook.preferredAssetTypes : hookAssetPriority[hookType];
   const assetRank = preferredTypes.indexOf(item.assetType);
   if (assetRank >= 0) {
     score += Math.max(8, 28 - assetRank * 7);
     reasons.push(assetRank === 0 ? "추천 장면 유형 일치" : "장면 유형 적합");
   }
-  const ages = input.hook.targetAgeGroups?.length
-    ? input.hook.targetAgeGroups
-    : audienceProfile.ageGroups;
-  const matchedAges = item.ageGroups.filter(
-    (age) => age !== "no_people" && ages.includes(age)
-  );
+  const ages = input.hook.targetAgeGroups?.length ? input.hook.targetAgeGroups : audienceProfile.ageGroups;
+  const matchedAges = item.ageGroups.filter((age) => age !== "no_people" && ages.includes(age));
   if (matchedAges.length) {
     score += 26 + Math.min(8, (matchedAges.length - 1) * 4);
     reasons.push(`타깃 ${matchedAges.map((age) => audienceAgeLabels[age]).join("·")} 일치`);
@@ -273,28 +201,15 @@ function scoreBackground(
   const scene = overlapScore(hookTokens, [...item.mood, ...item.elements, item.scene], 5, 5);
   score += scene.score;
   if (scene.matches.length) reasons.push("장면·분위기 일치");
-  const preferredColors = [
-    ...(input.hook.preferredColors || []),
-    ...(input.product.brandColors || []),
-    ...(input.product.productColors || []),
-  ];
+  const preferredColors = [...(input.hook.preferredColors || []), ...(input.product.brandColors || []), ...(input.product.productColors || [])];
   const colorHarmony = overlapScore(compactTokens(preferredColors), item.colors, 9, 3);
   score += colorHarmony.score;
   if (colorHarmony.matches.length) reasons.push("브랜드 색상 조화");
   const productColors = compactTokens(input.product.productColors || []);
   const sameColor = overlapScore(productColors, item.colors, 8, 2);
   score += sameColor.score;
-  if (
-    productColors.size &&
-    sameColor.matches.length === 0 &&
-    ["ingredient_scene", "pattern_texture", "product_set", "ai_generated"].includes(item.assetType)
-  ) score -= 7;
-  const ingredientMatch = overlapScore(
-    compactTokens(input.product.ingredients || []),
-    [...item.elements, item.scene],
-    10,
-    3
-  );
+  if (productColors.size && sameColor.matches.length === 0 && ["ingredient_scene", "pattern_texture", "product_set", "ai_generated"].includes(item.assetType)) score -= 7;
+  const ingredientMatch = overlapScore(compactTokens(input.product.ingredients || []), [...item.elements, item.scene], 10, 3);
   score += ingredientMatch.score;
   if (ingredientMatch.matches.length) reasons.push("성분·원료 장면 일치");
   if (item.textSafeArea === input.hook.textSafeArea) score += 12;
@@ -310,9 +225,7 @@ function scoreBackground(
     matchScore: score,
     diversityScore: 0,
     reasons: Array.from(new Set(reasons)).slice(0, 3),
-    connectionLabel: ["lifestyle_photo", "people_photo"].includes(item.assetType)
-      ? "실사형"
-      : "콘텐츠형",
+    connectionLabel: ["lifestyle_photo", "people_photo"].includes(item.assetType) ? "실사형" : "콘텐츠형",
     audienceMatchLabels: matchedAges.map((age) => audienceAgeLabels[age]),
     automaticLayout: selectAutomaticLayout({
       background: item,
@@ -326,9 +239,7 @@ function stringOverlap(left: string[], right: string[]) {
   const a = compactTokens(left);
   const b = compactTokens(right);
   if (!a.size || !b.size) return 0;
-  const matches = [...a].filter((value) =>
-    [...b].some((other) => value.includes(other) || other.includes(value))
-  ).length;
+  const matches = [...a].filter((value) => [...b].some((other) => value.includes(other) || other.includes(value))).length;
   return matches / Math.max(1, Math.min(a.size, b.size));
 }
 
@@ -349,29 +260,15 @@ function perceptualHashDistance(left?: string, right?: string) {
   }
 }
 
-function diversityPenalty(
-  candidate: BackgroundRecommendation,
-  selected: BackgroundRecommendation[]
-) {
+function diversityPenalty(candidate: BackgroundRecommendation, selected: BackgroundRecommendation[]) {
   let penalty = 0;
   for (const previous of selected) {
     const item = candidate.background;
     const other = previous.background;
-    const sameProductCollection =
-      item.advertiserAliases?.includes("originalsource.co.kr") &&
-      other.advertiserAliases?.includes("originalsource.co.kr") &&
-      Boolean(
-        (item.productKeywords || []).some((keyword) =>
-          (other.productKeywords || []).includes(keyword)
-        )
-      );
+    const sameProductCollection = item.advertiserAliases?.includes("originalsource.co.kr") && other.advertiserAliases?.includes("originalsource.co.kr") && Boolean((item.productKeywords || []).some((keyword) => (other.productKeywords || []).includes(keyword)));
     if (item.assetType === other.assetType) penalty += sameProductCollection ? 7 : 18;
     if (item.includesPerson === other.includesPerson) penalty += 5;
-    if (
-      item.includesPerson &&
-      other.includesPerson &&
-      stringOverlap(item.peopleType, other.peopleType) > 0.45
-    ) penalty += 12;
+    if (item.includesPerson && other.includesPerson && stringOverlap(item.peopleType, other.peopleType) > 0.45) penalty += 12;
     if (item.includesPerson && other.includesPerson && stringOverlap(item.ageGroups, other.ageGroups) > 0.5) {
       penalty += 8;
     }
@@ -387,20 +284,14 @@ function diversityPenalty(
   return penalty;
 }
 
-function chooseDiverse(
-  candidates: BackgroundRecommendation[],
-  limit: number
-): BackgroundRecommendation[] {
+function chooseDiverse(candidates: BackgroundRecommendation[], limit: number): BackgroundRecommendation[] {
   const selected: BackgroundRecommendation[] = [];
   const remaining = [...candidates];
   while (selected.length < limit && remaining.length) {
     remaining.sort((left, right) => {
       const leftPenalty = diversityPenalty(left, selected);
       const rightPenalty = diversityPenalty(right, selected);
-      return (
-        right.matchScore - rightPenalty - (left.matchScore - leftPenalty) ||
-        left.background.id.localeCompare(right.background.id)
-      );
+      return right.matchScore - rightPenalty - (left.matchScore - leftPenalty) || left.background.id.localeCompare(right.background.id);
     });
     const next = remaining.shift()!;
     const penalty = diversityPenalty(next, selected);
@@ -413,10 +304,7 @@ function chooseDiverse(
   return selected;
 }
 
-export function recommendBackgrounds(
-  items: BackgroundLibraryItem[],
-  input: BackgroundRecommendationInput
-) {
+export function recommendBackgrounds(items: BackgroundLibraryItem[], input: BackgroundRecommendationInput) {
   const category = inferBackgroundCategory(input.product);
   const audienceProfile = inferAudienceProfile(input.product);
   const limit = Math.max(1, Math.min(12, input.limit || 6));
@@ -426,17 +314,11 @@ export function recommendBackgrounds(
     .map((item) => scoreBackground(item, input, category, audienceProfile))
     .sort((a, b) => b.score - a.score || a.background.id.localeCompare(b.background.id));
   const sameCategory = scored.filter((item) => item.background.category === category);
-  const compatibleIndustry = scored.filter(
-    (item) => item.background.category !== category && item.background.category !== "promotion"
-  );
+  const compatibleIndustry = scored.filter((item) => item.background.category !== category && item.background.category !== "promotion");
   const promotion = scored.filter((item) => item.background.category === "promotion");
-  const categoryAndIndustry =
-    sameCategory.length >= limit ? sameCategory : [...sameCategory, ...compatibleIndustry];
-  const expandedPool =
-    categoryAndIndustry.length >= limit ? categoryAndIndustry : [...categoryAndIndustry, ...promotion];
-  const pool = expandedPool.filter(
-    (item, index, values) => values.findIndex((candidate) => candidate.background.file === item.background.file) === index
-  );
+  const categoryAndIndustry = sameCategory.length >= limit ? sameCategory : [...sameCategory, ...compatibleIndustry];
+  const expandedPool = categoryAndIndustry.length >= limit ? categoryAndIndustry : [...categoryAndIndustry, ...promotion];
+  const pool = expandedPool.filter((item, index, values) => values.findIndex((candidate) => candidate.background.file === item.background.file) === index);
   const recommendations = chooseDiverse(pool, limit);
   return {
     category,
@@ -446,10 +328,7 @@ export function recommendBackgrounds(
   };
 }
 
-export function recommendPersonBackgrounds(
-  items: BackgroundLibraryItem[],
-  input: BackgroundRecommendationInput
-) {
+export function recommendPersonBackgrounds(items: BackgroundLibraryItem[], input: BackgroundRecommendationInput) {
   const category = inferBackgroundCategory(input.product);
   const audienceProfile = inferAudienceProfile(input.product);
   const limit = Math.max(1, Math.min(12, input.limit || 6));

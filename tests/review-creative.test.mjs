@@ -1,15 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildReviewHeadline,
-  dedupeReviewCandidates,
-  detectPrivacyRegions,
-  inferReviewType,
-  recommendReviewCrop,
-  recommendReviewTemplate,
-  reviewCandidateContextScore,
-  selectKeyReviewSentence,
-} from "../app/lib/mvp/reviewCreative.ts";
+import { buildReviewHeadline, dedupeReviewCandidates, detectPrivacyRegions, inferReviewType, recommendReviewCrop, recommendReviewTemplate, reviewCandidateContextScore, selectKeyReviewSentence } from "../app/lib/mvp/reviewCreative.ts";
 
 function candidate(overrides = {}) {
   return {
@@ -42,7 +33,6 @@ function candidate(overrides = {}) {
   };
 }
 
-
 test("후기 문맥을 일반 상품 이미지보다 높게 평가하고 유형을 구분한다", () => {
   const reviewScore = reviewCandidateContextScore({
     url: "https://shop.example/data/reviewimg/1.jpg",
@@ -57,14 +47,8 @@ test("후기 문맥을 일반 상품 이미지보다 높게 평가하고 유형�
     height: 1200,
   });
   assert.ok(reviewScore > productScore + 40);
-  assert.equal(
-    inferReviewType({ sourceContext: "커뮤니티 댓글 반응", ocrText: "댓글 12", textRegionCount: 3 }).type,
-    "community-reaction"
-  );
-  assert.equal(
-    inferReviewType({ sourceContext: "사용 전 before 사용 후 after", textRegionCount: 2 }).type,
-    "before-after"
-  );
+  assert.equal(inferReviewType({ sourceContext: "커뮤니티 댓글 반응", ocrText: "댓글 12", textRegionCount: 3 }).type, "community-reaction");
+  assert.equal(inferReviewType({ sourceContext: "사용 전 before 사용 후 after", textRegionCount: 2 }).type, "before-after");
   assert.equal(
     inferReviewType({
       sourceContext: "ThumbImage 베스트 리뷰",
@@ -99,7 +83,10 @@ test("핵심 문장 주변을 포함해 크롭하고 고해상도 중복 후보�
   assert.ok(result.crop.y + result.crop.height >= 0.58);
   const low = candidate({ id: "low", width: 500, height: 500, contentHash: "same" });
   const high = candidate({ id: "high", width: 1500, height: 1500, contentHash: "same" });
-  assert.deepEqual(dedupeReviewCandidates([low, high]).map((item) => item.id), ["high"]);
+  assert.deepEqual(
+    dedupeReviewCandidates([low, high]).map((item) => item.id),
+    ["high"]
+  );
 });
 
 test("후기 유형과 개수에 맞춰 공통 템플릿을 추천하고 원문 기반 후킹을 만든다", () => {

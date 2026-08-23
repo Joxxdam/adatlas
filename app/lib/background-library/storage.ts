@@ -74,16 +74,16 @@ export class LocalBackgroundStorage implements BackgroundStorageAdapter {
     try {
       const normalized = normalizeStorageKey(key);
       const stats = await fs.stat(normalized.resolved);
-      return stats.isFile()
-        ? { key: normalized.key, size: stats.size, updatedAt: stats.mtime.toISOString() }
-        : null;
+      return stats.isFile() ? { key: normalized.key, size: stats.size, updatedAt: stats.mtime.toISOString() } : null;
     } catch {
       return null;
     }
   }
 
   async list(prefix: string) {
-    const normalizedPrefix = String(prefix || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+    const normalizedPrefix = String(prefix || "")
+      .replace(/\\/g, "/")
+      .replace(/^\/+|\/+$/g, "");
     if (!normalizedPrefix) throw new Error("목록 prefix가 필요합니다.");
     const directory = normalizeStorageKey(`${normalizedPrefix}/.keep`).resolved.replace(/\/\.keep$/, "");
     const output: StorageObjectInfo[] = [];

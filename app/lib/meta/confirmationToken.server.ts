@@ -3,11 +3,7 @@ import { metaPayloadHash } from "./preflight.ts";
 
 type TokenRecord = { payloadHash: string; expiresAt: number; used: boolean };
 
-export function createMetaConfirmationTokenService(options?: {
-  secret?: string;
-  ttlMs?: number;
-  now?: () => number;
-}) {
+export function createMetaConfirmationTokenService(options?: { secret?: string; ttlMs?: number; now?: () => number }) {
   const secret = options?.secret || randomBytes(32).toString("hex");
   const ttlMs = options?.ttlMs || 10 * 60_000;
   const now = options?.now || Date.now;
@@ -36,8 +32,7 @@ export function createMetaConfirmationTokenService(options?: {
       if (expected.length !== received.length || !timingSafeEqual(expected, received)) return false;
       const record = records.get(nonce);
       if (!record || record.used || record.expiresAt < now()) return false;
-      if (record.payloadHash !== metaPayloadHash(payload) || record.payloadHash !== payloadHash)
-        return false;
+      if (record.payloadHash !== metaPayloadHash(payload) || record.payloadHash !== payloadHash) return false;
       record.used = true;
       return true;
     },

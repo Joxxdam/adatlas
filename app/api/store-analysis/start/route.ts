@@ -19,13 +19,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const networkError = error instanceof StoreAnalysisNetworkError ? error : null;
-    const status = networkError
-      ? ["INVALID_URL", "UNSAFE_URL"].includes(networkError.code)
-        ? 400
-        : networkError.code === "ACCESS_BLOCKED"
-          ? 403
-          : 502
-      : 500;
+    const status = networkError ? (["INVALID_URL", "UNSAFE_URL"].includes(networkError.code) ? 400 : networkError.code === "ACCESS_BLOCKED" ? 403 : 502) : 500;
     return NextResponse.json(
       {
         ok: false,

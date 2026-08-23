@@ -1,32 +1,12 @@
 import type { StorePlatform } from "../store-analysis/types";
 
-export type SitePageType =
-  | "homepage"
-  | "category"
-  | "promotion"
-  | "product"
-  | "unsupported";
+export type SitePageType = "homepage" | "category" | "promotion" | "product" | "unsupported";
 
-export type SiteEvidenceState =
-  | "present"
-  | "absent"
-  | "unavailable"
-  | "extraction_failed"
-  | "not_applicable";
+export type SiteEvidenceState = "present" | "absent" | "unavailable" | "extraction_failed" | "not_applicable";
 
 export type SiteEvidenceLevel = "high" | "medium" | "low";
 
-export type SiteRecommendationType =
-  | "review-trust"
-  | "core-usp"
-  | "price-benefit"
-  | "problem-solution"
-  | "situation"
-  | "visual-hook"
-  | "new-product-test"
-  | "seasonal-test"
-  | "bundle-value"
-  | "clear-target";
+export type SiteRecommendationType = "review-trust" | "core-usp" | "price-benefit" | "problem-solution" | "situation" | "visual-hook" | "new-product-test" | "seasonal-test" | "bundle-value" | "clear-target";
 
 export type SiteCandidateTier = "evidence-backed" | "content-potential" | "experiment";
 
@@ -77,13 +57,7 @@ export type SiteProductRecord = {
   evidence: SiteEvidenceField[];
 };
 
-export type SiteAdFitSectionKey =
-  | "messageUsp"
-  | "trust"
-  | "offer"
-  | "creative"
-  | "season"
-  | "landing";
+export type SiteAdFitSectionKey = "messageUsp" | "trust" | "offer" | "creative" | "season" | "landing";
 
 export type SiteAdFitSection = {
   key: SiteAdFitSectionKey;

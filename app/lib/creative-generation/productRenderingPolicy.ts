@@ -4,24 +4,22 @@ export type ProductRenderingPolicy = "natural-meat-reference" | "identity-locked
 
 export function resolveProductRenderingPolicy(job: GenerationJob): ProductRenderingPolicy {
   const profile = job.creativePlan?.categoryCreativeProfile?.category;
-  const productText = [
-    job.productTruth.product.category,
-    job.productTruth.product.productName,
-    job.productTruth.normalized?.cleanProductName,
-  ].filter(Boolean).join(" ");
+  const override = job.referenceCategoryOverride;
+  const productType = String(job.productReferenceProfile?.immutableFacts?.productType || "").toLowerCase();
+  const productText = [job.productTruth.product.category, job.productTruth.product.productName, job.productTruth.normalized?.cleanProductName, productType].filter(Boolean).join(" ");
   if (profile === "food_meat" || /한우|소고기|쇠고기|돼지고기|삼겹살|갈비|등심|안심|스테이크|육류|정육/i.test(productText)) {
     return "natural-meat-reference";
   }
-  const packageText = [
-    productText,
-    job.productTruth.normalized?.packageOrOption,
-    job.productTruth.normalized?.quantity,
-    job.productTruth.normalized?.composition,
-  ].filter(Boolean).join(" ");
-  if (
-    ["beauty_cosmetics", "personal_care", "health"].includes(profile || "") ||
-    /화장품|스킨케어|바디워시|샤워젤|샴푸|클렌저|세럼|앰플|크림|로션|에센스|향수|건강|웰니스|건기식|영양제|비타민|유산균|홍삼|우유|음료|주스|커피|차|소스|병|보틀|캔|파우치|봉지|팩|박스|상자|튜브|단지|bottle|can\b|pouch|box|tube|jar|milk|drink|juice/i.test(packageText)
-  ) {
+  // 사용자가 고른 식품 풀과 ProductTruth의 식품 프로필을 우선한다. 상품명에
+  // '건강간식'처럼 마케팅 단어가 있다는 이유만으로 건강·웰니스 상품으로
+  // 재분류하면 원물/간식을 불필요한 패키지 보호 합성으로 보내게 된다.
+  if (override === "food-produce" || profile === "food_fresh" || /fruit|produce|agriculture|과일|농산물/i.test(productType)) {
+    return "standard-reference";
+  }
+  const packageText = [productText, job.productTruth.normalized?.packageOrOption, job.productTruth.normalized?.quantity, job.productTruth.normalized?.composition].filter(Boolean).join(" ");
+  const beautyOrHealth = override === "beauty" || ["beauty_cosmetics", "personal_care", "health"].includes(profile || "");
+  const unmistakablyPackaged = /화장품|스킨케어|바디워시|샤워젤|샴푸|클렌저|세럼|앰플|크림|로션|에센스|향수|건강기능식품|건기식|영양제|비타민|유산균|홍삼|우유|음료|주스|커피|녹차|홍차|말차|보이차|유자차|생강차|차음료|티백|소스|보틀|캔|파우치|튜브|단지|bottle|can\b|pouch|tube|jar|milk|drink|juice|tea\b/i.test(packageText);
+  if (beautyOrHealth || unmistakablyPackaged) {
     return "identity-locked-packaged-product";
   }
   return "standard-reference";

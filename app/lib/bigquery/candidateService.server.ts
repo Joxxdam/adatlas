@@ -2,21 +2,9 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { readBigQueryCache, writeBigQueryCache } from "./cache.server";
-import {
-  decodeBigQueryAdvertiserId,
-  encodeBigQueryAdvertiserId,
-  queryBigQueryAdvertisers,
-  queryBigQueryProductSignals,
-} from "./repository.server";
+import { decodeBigQueryAdvertiserId, encodeBigQueryAdvertiserId, queryBigQueryAdvertisers, queryBigQueryProductSignals } from "./repository.server";
 import { buildCandidatesFromSignals, buildProductFamilies } from "./scoring";
-import type {
-  BigQueryAdCandidate,
-  BigQueryAdvertiser,
-  BigQueryCandidateCapability,
-  BigQueryCandidatePeriod,
-  BigQueryCandidateResponse,
-  BigQueryRecommendationType,
-} from "./types";
+import type { BigQueryAdCandidate, BigQueryAdvertiser, BigQueryCandidateCapability, BigQueryCandidatePeriod, BigQueryCandidateResponse, BigQueryRecommendationType } from "./types";
 import { bigQueryRecommendationTypes } from "./types";
 
 const ADVERTISER_CACHE_MS = 5 * 60 * 1_000;
@@ -47,9 +35,7 @@ function periodRange(latestDataDate: string, period: BigQueryCandidatePeriod) {
 }
 
 function sourceTable(source: "host24" | "hostmk") {
-  return source === "host24"
-    ? "first-project-394906.FACT_HOST24.PRODUCT"
-    : "first-project-394906.FACT_HOSTMK.PRODUCT";
+  return source === "host24" ? "first-project-394906.FACT_HOST24.PRODUCT" : "first-project-394906.FACT_HOSTMK.PRODUCT";
 }
 
 function capabilities(source: "host24" | "hostmk"): BigQueryCandidateCapability[] {
@@ -83,23 +69,14 @@ function capabilities(source: "host24" | "hostmk"): BigQueryCandidateCapability[
 }
 
 function recommendationTypeCounts(candidates: BigQueryAdCandidate[]) {
-  return Object.fromEntries(
-    bigQueryRecommendationTypes.map((type) => [
-      type,
-      candidates.filter((candidate) => candidate.primaryType === type).length,
-    ])
-  ) as Record<BigQueryRecommendationType, number>;
+  return Object.fromEntries(bigQueryRecommendationTypes.map((type) => [type, candidates.filter((candidate) => candidate.primaryType === type).length])) as Record<BigQueryRecommendationType, number>;
 }
 
 function matchesCandidateType(candidate: BigQueryAdCandidate, type: BigQueryRecommendationType) {
   return candidate.primaryType === type;
 }
 
-function candidateId(input: {
-  advertiser: BigQueryAdvertiser;
-  period: BigQueryCandidatePeriod;
-  productName: string;
-}) {
+function candidateId(input: { advertiser: BigQueryAdvertiser; period: BigQueryCandidatePeriod; productName: string }) {
   const brand = Buffer.from(input.advertiser.name, "utf8").toString("base64url");
   const productHash = createHash("sha256").update(input.productName).digest("hex").slice(0, 18);
   return `bqc.${input.advertiser.source}.${input.period}.${brand}.${productHash}`;
@@ -107,14 +84,7 @@ function candidateId(input: {
 
 function parseCandidateId(value: string) {
   const [prefix, source, period, brand, productHash, extra] = value.split(".");
-  if (
-    prefix !== "bqc" ||
-    extra ||
-    (source !== "host24" && source !== "hostmk") ||
-    (period !== "4w" && period !== "8w" && period !== "12w") ||
-    !brand ||
-    !/^[a-f0-9]{18}$/.test(productHash || "")
-  ) {
+  if (prefix !== "bqc" || extra || (source !== "host24" && source !== "hostmk") || (period !== "4w" && period !== "8w" && period !== "12w") || !brand || !/^[a-f0-9]{18}$/.test(productHash || "")) {
     return null;
   }
   try {
@@ -145,17 +115,11 @@ export async function listBigQueryAdvertisers() {
   return value;
 }
 
-export async function getBigQueryCandidates(input: {
-  advertiserId: string;
-  period: BigQueryCandidatePeriod;
-  type?: BigQueryRecommendationType | "all";
-}) {
+export async function getBigQueryCandidates(input: { advertiserId: string; period: BigQueryCandidatePeriod; type?: BigQueryRecommendationType | "all" }) {
   const decoded = decodeBigQueryAdvertiserId(input.advertiserId);
   if (!decoded) throw new Error("유효한 BigQuery 광고주를 선택해 주세요.");
   const advertiserList = await listBigQueryAdvertisers();
-  const advertiser = advertiserList.advertisers.find(
-    (item) => item.id === input.advertiserId && item.source === decoded.source
-  );
+  const advertiser = advertiserList.advertisers.find((item) => item.id === input.advertiserId && item.source === decoded.source);
   if (!advertiser) throw new Error("선택한 광고주의 최신 집계 데이터를 찾지 못했습니다.");
 
   const cacheKey = `bigquery-candidates:v5:${input.advertiserId}:${input.period}`;

@@ -31,9 +31,6 @@ export async function DELETE(request: Request) {
     const result = await deleteCreativeArchiveEntries(body.entryIds.map(String));
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "선택한 이미지 콘텐츠를 삭제하지 못했습니다." },
-      { status: localAccessError(error) ? 403 : 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "선택한 이미지 콘텐츠를 삭제하지 못했습니다." }, { status: localAccessError(error) ? 403 : 400 });
   }
 }

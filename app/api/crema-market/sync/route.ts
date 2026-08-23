@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({})) as {
+  const body = (await request.json().catch(() => ({}))) as {
     mode?: "crema_api" | "development_fixture";
     advertiserId?: string;
     advertiserName?: string;
@@ -24,9 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "개발용 fixture는 프로덕션에서 사용할 수 없습니다." }, { status: 403 });
   }
   try {
-    const payload = mode === "development_fixture"
-      ? buildDevelopmentFixture()
-      : await new OfficialCremaApiAdapter().collect({ advertiserId, advertiserName, brandName: body.brandName, domain: body.domain, periodDays: body.periodDays });
+    const payload = mode === "development_fixture" ? buildDevelopmentFixture() : await new OfficialCremaApiAdapter().collect({ advertiserId, advertiserName, brandName: body.brandName, domain: body.domain, periodDays: body.periodDays });
     const result = await importAndAnalyzeCremaMarket({ payload, provider: mode, periodDays: body.periodDays || 14 });
     return NextResponse.json({ ok: true, ...result }, { status: 201 });
   } catch (error) {

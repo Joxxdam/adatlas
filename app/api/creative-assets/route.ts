@@ -19,17 +19,12 @@ export async function GET(request: Request) {
       hook: params.get("hook") || undefined,
       dateFrom: params.get("dateFrom") || undefined,
       dateTo: params.get("dateTo") || undefined,
-      status: creativeAssetStatuses.includes(status as CreativeAssetStatus)
-        ? (status as CreativeAssetStatus)
-        : undefined,
+      status: creativeAssetStatuses.includes(status as CreativeAssetStatus) ? (status as CreativeAssetStatus) : undefined,
       limit: Number(params.get("limit") || 100),
     });
     return NextResponse.json({ ok: true, assets });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "소재 기록을 불러오지 못했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "소재 기록을 불러오지 못했습니다." }, { status: 500 });
   }
 }
 
@@ -45,9 +40,6 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ ok: true, ...result }, { status: result.created ? 201 : 200 });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "소재 저장에 실패했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "소재 저장에 실패했습니다." }, { status: 500 });
   }
 }

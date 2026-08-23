@@ -4,35 +4,24 @@ import type { AdvertiserProfile } from "../creative/types";
 import type { ProductInfoForPrompt } from "../mvp/types";
 import type { BrandProfile, CategoryProfile, CreativeBlueprintId } from "./types";
 
-const defaultBlueprints: CreativeBlueprintId[] = [
-  "problem-solution-split",
-  "editorial-story",
-  "chat-ugc",
-  "comparison-versus",
-  "product-hero-lifestyle",
-  "proof-data",
-];
+const defaultBlueprints: CreativeBlueprintId[] = ["problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "proof-data"];
 
 export const categoryProfiles = categoryData as CategoryProfile[];
 
 function normalize(value: unknown) {
-  return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function matchCategoryProfile(product: ProductInfoForPrompt) {
-  const haystack = normalize(
-    [product.category, product.productSubCategory, product.productName, product.mainBenefit].join(" ")
-  );
+  const haystack = normalize([product.category, product.productSubCategory, product.productName, product.mainBenefit].join(" "));
   const scored = categoryProfiles.map((profile) => ({
     profile,
-    score: profile.matchers.reduce(
-      (total, matcher) => total + (haystack.includes(normalize(matcher)) ? 10 : 0),
-      0
-    ),
+    score: profile.matchers.reduce((total, matcher) => total + (haystack.includes(normalize(matcher)) ? 10 : 0), 0),
   }));
-  return scored.sort((left, right) => right.score - left.score)[0]?.score
-    ? scored.sort((left, right) => right.score - left.score)[0].profile
-    : categoryProfiles.find((profile) => profile.id === "generic-commerce")!;
+  return scored.sort((left, right) => right.score - left.score)[0]?.score ? scored.sort((left, right) => right.score - left.score)[0].profile : categoryProfiles.find((profile) => profile.id === "generic-commerce")!;
 }
 
 function adaptAdvertiserProfile(profile: AdvertiserProfile, category: CategoryProfile): BrandProfile {
@@ -60,12 +49,8 @@ function adaptAdvertiserProfile(profile: AdvertiserProfile, category: CategoryPr
 }
 
 function explicitlyMatches(profile: AdvertiserProfile, product: ProductInfoForPrompt) {
-  const haystack = normalize(
-    [product.advertiserName, product.brandName, product.productName, product.landingUrl].join(" ")
-  );
-  return [profile.name, ...(profile.aliases || [])].some(
-    (value) => normalize(value) && haystack.includes(normalize(value))
-  ) || (profile.domains || []).some((domain) => haystack.includes(normalize(domain)));
+  const haystack = normalize([product.advertiserName, product.brandName, product.productName, product.landingUrl].join(" "));
+  return [profile.name, ...(profile.aliases || [])].some((value) => normalize(value) && haystack.includes(normalize(value))) || (profile.domains || []).some((domain) => haystack.includes(normalize(domain)));
 }
 
 function genericBrandProfile(product: ProductInfoForPrompt, category: CategoryProfile): BrandProfile {
@@ -95,18 +80,13 @@ function genericBrandProfile(product: ProductInfoForPrompt, category: CategoryPr
 export function matchBrandProfile(product: ProductInfoForPrompt) {
   const category = matchCategoryProfile(product);
   const matched = matchAdvertiserProfile(product);
-  return explicitlyMatches(matched, product)
-    ? adaptAdvertiserProfile(matched, category)
-    : genericBrandProfile(product, category);
+  return explicitlyMatches(matched, product) ? adaptAdvertiserProfile(matched, category) : genericBrandProfile(product, category);
 }
 
 export function withRequestedLogo(profile: BrandProfile, logoPath?: string) {
   if (!logoPath) return profile;
   return {
     ...profile,
-    logoAssets: [
-      { kind: "logo" as const, path: logoPath, variant: "color" as const, exact: true },
-      ...profile.logoAssets.filter((asset) => asset.path !== logoPath),
-    ],
+    logoAssets: [{ kind: "logo" as const, path: logoPath, variant: "color" as const, exact: true }, ...profile.logoAssets.filter((asset) => asset.path !== logoPath)],
   };
 }

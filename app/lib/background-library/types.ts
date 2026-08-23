@@ -1,114 +1,27 @@
-import type {
-  AdHookType,
-  AdProductPosition,
-  AdTextSafeArea,
-  CreativeStrategy,
-  ProductInfoForPrompt,
-} from "../mvp/types";
+import type { AdHookType, AdProductPosition, AdTextSafeArea, CreativeStrategy, ProductInfoForPrompt } from "../mvp/types";
 
-export const backgroundCategories = [
-  "fashion",
-  "beauty",
-  "health",
-  "agriculture",
-  "meat",
-  "seafood",
-  "processed-food",
-  "food-mall",
-  "living",
-  "kids",
-  "pet",
-  "promotion",
-] as const;
+export const backgroundCategories = ["fashion", "beauty", "health", "agriculture", "meat", "seafood", "processed-food", "food-mall", "living", "kids", "pet", "promotion"] as const;
 
 export type BackgroundCategory = (typeof backgroundCategories)[number];
 
-export const backgroundAssetTypes = [
-  "lifestyle_photo",
-  "people_photo",
-  "product_set",
-  "pattern_texture",
-  "ingredient_scene",
-  "ai_generated",
-  "designed_asset",
-  "user_uploaded",
-] as const;
+export const backgroundAssetTypes = ["lifestyle_photo", "people_photo", "product_set", "pattern_texture", "ingredient_scene", "ai_generated", "designed_asset", "user_uploaded"] as const;
 
 export type BackgroundAssetType = (typeof backgroundAssetTypes)[number];
 
-export const backgroundHookTypes = [
-  "problem_solution",
-  "price_offer",
-  "usp_proof",
-  "sensory",
-  "situation",
-  "review_ugc",
-  "urgency",
-  "premium",
-  "styling",
-  "freshness",
-  "origin_story",
-  "family",
-  "convenience",
-  "gifting",
-] as const;
+export const backgroundHookTypes = ["problem_solution", "price_offer", "usp_proof", "sensory", "situation", "review_ugc", "urgency", "premium", "styling", "freshness", "origin_story", "family", "convenience", "gifting"] as const;
 
 export type BackgroundHookType = (typeof backgroundHookTypes)[number];
-export type BackgroundSourceType =
-  | "stock_photo"
-  | "ai_generated"
-  | "designed_asset"
-  | "user_uploaded";
+export type BackgroundSourceType = "stock_photo" | "ai_generated" | "designed_asset" | "user_uploaded";
 
-export const audienceAgeGroups = [
-  "teens",
-  "twenties",
-  "thirties",
-  "forties",
-  "fifties",
-  "senior",
-  "kids",
-  "family",
-  "couple",
-  "friends",
-  "no_people",
-] as const;
+export const audienceAgeGroups = ["teens", "twenties", "thirties", "forties", "fifties", "senior", "kids", "family", "couple", "friends", "no_people"] as const;
 
 export type AudienceAgeGroup = (typeof audienceAgeGroups)[number];
 
-export const backgroundPeopleTypes = [
-  "woman",
-  "man",
-  "couple",
-  "family",
-  "friends",
-  "parent_child",
-  "office_worker",
-  "athlete",
-  "farmer",
-  "senior",
-  "child",
-  "no_people",
-] as const;
+export const backgroundPeopleTypes = ["woman", "man", "couple", "family", "friends", "parent_child", "office_worker", "athlete", "farmer", "senior", "child", "no_people"] as const;
 
 export type BackgroundPeopleType = (typeof backgroundPeopleTypes)[number];
 
-export const automaticLayoutPresets = [
-  "text-left-product-right",
-  "text-right-product-left",
-  "text-top-product-bottom",
-  "text-bottom-product-top",
-  "centered-product-promotion",
-  "lifestyle-caption",
-  "editorial-overlay",
-  "premium-minimal",
-  "split-panel",
-  "price-focused",
-  "ingredient-story",
-  "people-scene",
-  "product-grounded",
-  "fashion-lookbook",
-] as const;
+export const automaticLayoutPresets = ["text-left-product-right", "text-right-product-left", "text-top-product-bottom", "text-bottom-product-top", "centered-product-promotion", "lifestyle-caption", "editorial-overlay", "premium-minimal", "split-panel", "price-focused", "ingredient-story", "people-scene", "product-grounded", "fashion-lookbook"] as const;
 
 export type AutomaticLayoutPreset = (typeof automaticLayoutPresets)[number];
 
@@ -196,16 +109,7 @@ export type BackgroundRecommendationInput = {
     ingredients?: string[];
     modelIncluded?: boolean;
   };
-  hook: Pick<
-    CreativeStrategy,
-    | "hookType"
-    | "backgroundHookType"
-    | "sceneDescription"
-    | "mood"
-    | "textSafeArea"
-    | "productPosition"
-    | "backgroundTags"
-  > & {
+  hook: Pick<CreativeStrategy, "hookType" | "backgroundHookType" | "sceneDescription" | "mood" | "textSafeArea" | "productPosition" | "backgroundTags"> & {
     targetAgeGroups?: AudienceAgeGroup[];
     preferredAssetTypes?: BackgroundAssetType[];
     preferredColors?: string[];
@@ -216,18 +120,11 @@ export type BackgroundRecommendationInput = {
   recommendationPage?: number;
 };
 
-export const adaptiveLayoutVariants = [
-  "copy-focused",
-  "product-focused",
-  "content-focused",
-] as const;
+export const adaptiveLayoutVariants = ["copy-focused", "product-focused", "content-focused"] as const;
 
 export type AdaptiveLayoutVariant = (typeof adaptiveLayoutVariants)[number];
 export type BackgroundSelectionMode = "recommended" | "library" | "fixed";
-export type CreativeGenerationMode =
-  | "diverse-backgrounds"
-  | "selected-background"
-  | "hook-based";
+export type CreativeGenerationMode = "diverse-backgrounds" | "selected-background" | "hook-based";
 
 export type AdaptivePlacementBox = {
   x: number;

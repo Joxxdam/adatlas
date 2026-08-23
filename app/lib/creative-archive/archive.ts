@@ -2,24 +2,18 @@ import type { CreativeAsset } from "../creative-assets/types";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 import type { CreativeArchiveEntry, CreativeArchiveMetadata } from "./types";
 
-const archivedResultStatuses = new Set([
-  "success",
-  "approved",
-  "korean-review",
-  "product-review",
-  "quality-review",
-  "group-review",
-]);
+const archivedResultStatuses = new Set(["success", "approved", "korean-review", "product-review", "quality-review", "group-review"]);
 
 function publicImagePath(value: string | undefined) {
   const text = String(value || "").trim();
   return /^(?:https?:\/\/|\/)/.test(text) && !/(?:^|\/)\.data\//.test(text) ? text : "";
 }
 
-function metadataFor(
-  id: string,
-  metadata: Record<string, CreativeArchiveMetadata>
-): Pick<CreativeArchiveEntry, "savedAsReference" | "tags" | "note"> {
+function deliveryBrandingSummary(value: GenerationResult["deliveryBranding"] | CreativeArchiveMetadata["deliveryBranding"]) {
+  return value ? { logoId: value.logoId, aiDisclosure: value.aiDisclosure, updatedAt: value.updatedAt } : undefined;
+}
+
+function metadataFor(id: string, metadata: Record<string, CreativeArchiveMetadata>): Pick<CreativeArchiveEntry, "savedAsReference" | "tags" | "note"> {
   return {
     savedAsReference: metadata[id]?.savedAsReference || false,
     tags: metadata[id]?.tags || [],
@@ -53,18 +47,15 @@ function resultUrls(job: GenerationJob, result: GenerationResult) {
   const base = `/api/creative-generation/jobs/${encodeURIComponent(job.id)}/results/${encodeURIComponent(result.id)}`;
   const nativeImage = result.nativeCreative?.finalPath ? `${base}/image` : "";
   const directImage = publicImagePath(result.imagePath);
+  const version = result.deliveryBranding?.updatedAt ? `?branding=${encodeURIComponent(result.deliveryBranding.updatedAt)}` : "";
   return {
-    imageUrl: nativeImage || directImage,
-    downloadUrl: ["success", "approved"].includes(result.status) ? `${base}/download` : nativeImage || directImage,
+    imageUrl: nativeImage ? `${nativeImage}${version}` : directImage,
+    downloadUrl: result.nativeCreative?.finalPath ? `${base}/download${version}` : directImage,
     resultUrl: `/create-product?view=results&jobId=${encodeURIComponent(job.id)}#creative-results`,
   };
 }
 
-export function buildCreativeArchiveEntries(input: {
-  assets: CreativeAsset[];
-  jobs: GenerationJob[];
-  metadata?: Record<string, CreativeArchiveMetadata>;
-}) {
+export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jobs: GenerationJob[]; metadata?: Record<string, CreativeArchiveMetadata> }) {
   const metadata = input.metadata || {};
   const contexts = registeredResultContext(input.jobs);
   const entries: CreativeArchiveEntry[] = [];
@@ -74,25 +65,26 @@ export function buildCreativeArchiveEntries(input: {
 
   for (const asset of input.assets) {
     const id = `asset:${asset.id}`;
-    const context =
-      contexts.byAssetId.get(asset.id) ||
-      contexts.byAssetCode.get(asset.assetCode) ||
-      contexts.byImagePath.get(asset.generatedImageUrl);
+    const context = contexts.byAssetId.get(asset.id) || contexts.byAssetCode.get(asset.assetCode) || contexts.byImagePath.get(asset.generatedImageUrl);
     const product = context?.job.productTruth.product;
     registeredAssetIds.add(asset.id);
     registeredCodes.add(asset.assetCode);
     registeredPaths.add(asset.generatedImageUrl);
     if (deletedFromArchive(id, metadata)) continue;
+    const contextUrls = context ? resultUrls(context.job, context.result) : null;
+    const storedBranding = metadata[id]?.deliveryBranding;
+    const archiveImageBase = `/api/creative-archive/${encodeURIComponent(id)}/image`;
+    const archiveBrandingVersion = storedBranding ? `?branding=${encodeURIComponent(storedBranding.updatedAt)}` : "";
+    const contextHasNativeImage = Boolean(context?.result.nativeCreative?.finalPath);
+    const imageUrl = contextHasNativeImage ? contextUrls?.imageUrl || asset.generatedImageUrl : storedBranding ? `${archiveImageBase}${archiveBrandingVersion}` : contextUrls?.imageUrl || asset.generatedImageUrl;
+    const downloadUrl = contextHasNativeImage ? contextUrls?.downloadUrl || asset.generatedImageUrl : storedBranding ? `${archiveImageBase}${archiveBrandingVersion}&download=1` : contextUrls?.downloadUrl || asset.generatedImageUrl;
+    const activeBranding = contextHasNativeImage ? context?.result.deliveryBranding : storedBranding;
     entries.push({
       id,
       source: "creative-asset",
       assetCode: asset.assetCode,
       advertiserId: asset.advertiserId || context?.job.advertiserId,
-      advertiserName:
-        context?.job.advertiserName ||
-        product?.advertiserName ||
-        asset.brandName ||
-        "광고주 미지정",
+      advertiserName: context?.job.advertiserName || product?.advertiserName || asset.brandName || "광고주 미지정",
       brandName: asset.brandName || product?.brandName || "브랜드 미지정",
       productId: asset.productId || context?.job.productTruth.productId,
       productName: asset.productName,
@@ -103,22 +95,22 @@ export function buildCreativeArchiveEntries(input: {
       subCopy: asset.subCopy || asset.benefitCopy || "",
       mainMessage: asset.mainMessage || "",
       visualDirection: asset.visualDirection || "",
-      imageUrl: asset.generatedImageUrl,
-      downloadUrl: asset.generatedImageUrl,
+      imageUrl,
+      downloadUrl,
       fileName: asset.fileName,
       status: asset.status,
       qaScore: context?.result.qa?.score,
       jobId: context?.job.id,
       resultId: context?.result.id,
-      resultUrl: context
-        ? `/create-product?view=results&jobId=${encodeURIComponent(context.job.id)}#creative-results`
-        : undefined,
+      resultUrl: context ? `/create-product?view=results&jobId=${encodeURIComponent(context.job.id)}#creative-results` : undefined,
       landingUrl: product?.landingUrl,
       utmContent: asset.utmContent,
       recommendedAdName: asset.recommendedAdName,
       templateId: asset.templateId || context?.result.hookPlan.performanceTemplateId,
       createdAt: asset.createdAt,
       updatedAt: asset.updatedAt,
+      brandingEligible: Boolean(context?.result.nativeCreative?.finalPath || publicImagePath(asset.generatedImageUrl)),
+      deliveryBranding: deliveryBrandingSummary(activeBranding),
       ...metadataFor(id, metadata),
     });
   }
@@ -132,21 +124,20 @@ export function buildCreativeArchiveEntries(input: {
       seenResults.add(resultIdentity);
       const urls = resultUrls(job, result);
       if (!urls.imageUrl) continue;
-      if (
-        (result.creativeAsset?.id && registeredAssetIds.has(result.creativeAsset.id)) ||
-        (result.creativeAsset?.assetCode && registeredCodes.has(result.creativeAsset.assetCode)) ||
-        (result.imagePath && registeredPaths.has(result.imagePath))
-      ) continue;
+      if ((result.creativeAsset?.id && registeredAssetIds.has(result.creativeAsset.id)) || (result.creativeAsset?.assetCode && registeredCodes.has(result.creativeAsset.assetCode)) || (result.imagePath && registeredPaths.has(result.imagePath))) continue;
 
       const id = `result:${job.id}:${result.id}`;
       if (deletedFromArchive(id, metadata)) continue;
+      const storedBranding = metadata[id]?.deliveryBranding;
+      const archiveImageBase = `/api/creative-archive/${encodeURIComponent(id)}/image`;
+      const archiveBrandingVersion = storedBranding ? `?branding=${encodeURIComponent(storedBranding.updatedAt)}` : "";
+      const hasNativeImage = Boolean(result.nativeCreative?.finalPath);
       entries.push({
         id,
         source: "generation-result",
         assetCode: result.creativeAsset?.assetCode,
         advertiserId: job.advertiserId || product.creativeContext?.advertiserId,
-        advertiserName:
-          job.advertiserName || product.advertiserName || product.brandName || "광고주 미지정",
+        advertiserName: job.advertiserName || product.advertiserName || product.brandName || "광고주 미지정",
         brandName: product.brandName || product.advertiserName || "브랜드 미지정",
         productId: job.productTruth.productId,
         productName: product.productName,
@@ -157,11 +148,9 @@ export function buildCreativeArchiveEntries(input: {
         subCopy: result.hookPlan.body || result.hookPlan.proof || "",
         mainMessage: result.hookPlan.mainMessage || result.hookPlan.hypothesis || "",
         visualDirection: result.hookPlan.visualDirection || result.hookPlan.sceneIntent || "",
-        imageUrl: urls.imageUrl,
-        downloadUrl: urls.downloadUrl,
-        fileName:
-          result.downloadName ||
-          `${job.productTruth.productId}-${result.hookPlan.hookCode || result.order}.jpg`,
+        imageUrl: !hasNativeImage && storedBranding ? `${archiveImageBase}${archiveBrandingVersion}` : urls.imageUrl,
+        downloadUrl: !hasNativeImage && storedBranding ? `${archiveImageBase}${archiveBrandingVersion}&download=1` : urls.downloadUrl,
+        fileName: result.downloadName || `${job.productTruth.productId}-${result.hookPlan.hookCode || result.order}.jpg`,
         status: result.status,
         qaScore: result.qa?.score,
         jobId: job.id,
@@ -173,6 +162,8 @@ export function buildCreativeArchiveEntries(input: {
         templateId: result.hookPlan.performanceTemplateId,
         createdAt: result.completedAt || result.startedAt || job.createdAt,
         updatedAt: result.completedAt || job.updatedAt,
+        brandingEligible: Boolean(result.nativeCreative?.finalPath || publicImagePath(result.imagePath)),
+        deliveryBranding: deliveryBrandingSummary(hasNativeImage ? result.deliveryBranding : storedBranding),
         ...metadataFor(id, metadata),
       });
     }

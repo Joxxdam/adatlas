@@ -11,6 +11,7 @@ import { optimizeNativeFinalImage, selectNativeReferenceSources } from "../app/l
 import { passesNativeGroupValidation } from "../app/lib/creative-generation/nativeCreativeValidation.ts";
 import { buildExplorationCreativePlan, createGenerationJob, planAiScenes } from "../app/lib/creative-generation/planner.ts";
 import { buildProductTruth } from "../app/lib/creative-generation/productTruth.ts";
+import { buildProductHookExploration } from "../app/lib/creative-generation/hookHypothesisEngine.ts";
 
 const fixtures = JSON.parse(await readFile(new URL("./fixtures/creative-products.json", import.meta.url), "utf8"));
 const fixture = (id) => fixtures.find((item) => item.id === id);
@@ -52,15 +53,37 @@ test("3. 식품과 퍼스널케어는 서로 다른 장면·상품 연출 문법
   assert.match(care.productPresentation.join(" "), /패키지|라벨|제품색/);
 });
 
+test("3-1. 내부 광고 구성 후보가 부족해도 규칙 기반 후보로 채워 6장 제작 계획을 만든다", () => {
+  const truth = truthFor("kookdae-beef-set");
+  const exploration = buildProductHookExploration(truth);
+  const plan = buildExplorationCreativePlan(truth, {
+    exploration: { ...exploration, selected: exploration.selected.slice(0, 1) },
+  });
+  assert.equal(plan.hookPlans.length, 6);
+  assert.deepEqual(
+    plan.hookPlans.map((hook) => hook.hookCode),
+    ["H01", "H02", "H03", "H04", "H05", "H06"]
+  );
+});
+
 test("4. 상세페이지 근거가 없는 효능 수치는 생성 프롬프트에 노출하지 않는다", () => {
   const { job } = nativeJobFor("original-source-mint-shower-gel");
   job.productTruth = {
     ...job.productTruth,
-    facts: [...job.productTruth.facts, {
-      id: "unsafe-claim", key: "unsafe-claim", label: "미확인 효능", value: "체취 감소 -72%",
-      source: "manual", verification: "unverified", usableInCopy: true, evidenceType: "performance",
-      numericTokens: ["-72%"],
-    }],
+    facts: [
+      ...job.productTruth.facts,
+      {
+        id: "unsafe-claim",
+        key: "unsafe-claim",
+        label: "미확인 효능",
+        value: "체취 감소 -72%",
+        source: "manual",
+        verification: "unverified",
+        usableInCopy: true,
+        evidenceType: "performance",
+        numericTokens: ["-72%"],
+      },
+    ],
     unverifiedClaims: [...job.productTruth.unverifiedClaims, "체취 감소 -72%"],
   };
   const prompt = buildNativeFinalCreativePrompt(job, job.results[0], "/tmp/final.png");
@@ -87,7 +110,7 @@ test("6. 이미지 생성 참조는 원본 정면·라벨·구성·사용·질�
     ["extra", "/source/extra.jpg", "ingredient", 70],
   ].map(([id, url, role, importance]) => ({ id, url, role, importance, usableForGeneration: true, description: role }));
   job.productReferenceProfile = { referenceImages };
-  job.productTruth.imageAssets = [{ id:"cutout", path:"/processed-products/cutout.png", role:"product-cutout", source:"product-page", verified:true, reason:"legacy" }];
+  job.productTruth.imageAssets = [{ id: "cutout", path: "/processed-products/cutout.png", role: "product-cutout", source: "product-page", verified: true, reason: "legacy" }];
   job.productTruth.referenceImages = [];
   const selected = selectNativeReferenceSources(job);
   assert.equal(selected.length, 5);
@@ -113,9 +136,16 @@ test("8. 최종 6장은 최소 4개의 visualArchetype을 사용한다", () => {
 
 test("9. 동일 배경·구도에 문구만 바뀐 그룹 검수는 통과하지 않는다", () => {
   const sameBackground = {
-    sceneDiversity: 20, productPlacementDiversity: 25, cameraDiversity: 20, colorMoodDiversity: 30,
-    messageSeparation: 80, hookSceneAlignment: 70, typographyDiversity: 20, visualArchetypeDiversity: 20,
-    categoryFit: 80, duplicatePairs: [{ leftHookCode:"H01", rightHookCode:"H02", reason:"동일 배경과 배치" }],
+    sceneDiversity: 20,
+    productPlacementDiversity: 25,
+    cameraDiversity: 20,
+    colorMoodDiversity: 30,
+    messageSeparation: 80,
+    hookSceneAlignment: 70,
+    typographyDiversity: 20,
+    visualArchetypeDiversity: 20,
+    categoryFit: 80,
+    duplicatePairs: [{ leftHookCode: "H01", rightHookCode: "H02", reason: "동일 배경과 배치" }],
     recommendation: "revise",
   };
   assert.equal(passesNativeGroupValidation(sameBackground), false);
@@ -127,7 +157,12 @@ test("10. 최종 파일은 1200×1200 JPEG이며 800KB 미만이다", async () =
   await mkdir(directory, { recursive: true });
   const input = path.join(directory, "input.png");
   const output = path.join(directory, "AT-TEST-H01.jpg");
-  await writeFile(input, await sharp({ create: { width: 1600, height: 1000, channels: 3, background: "#13a879" } }).png().toBuffer());
+  await writeFile(
+    input,
+    await sharp({ create: { width: 1600, height: 1000, channels: 3, background: "#13a879" } })
+      .png()
+      .toBuffer()
+  );
   const exported = await optimizeNativeFinalImage(input, output);
   const metadata = await sharp(await readFile(output)).metadata();
   assert.deepEqual([metadata.width, metadata.height, metadata.format], [1200, 1200, "jpeg"]);
@@ -137,8 +172,26 @@ test("10. 최종 파일은 1200×1200 JPEG이며 800KB 미만이다", async () =
 test("11. 골든 레퍼런스의 추상 스타일 특성은 다음 생성 프롬프트에 반영된다", () => {
   const { job } = nativeJobFor("original-source-mint-shower-gel");
   const memory = {
-    advertiserId:"originalsource-co-kr", approvedDirections:[], rejectedDirections:[], feedback:[], updatedAt:new Date(0).toISOString(),
-    goldenReferences:[{ id:"g1", advertiserId:"originalsource-co-kr", category:"personal_care", productId:"old", imagePath:"/.data/golden.jpg", mainHook:"이전 광고 문구 그대로 복사", subCopy:"이전 서브 카피", visualArchetype:"sensory-immersion", approvedAt:new Date(0).toISOString(), approvalReason:"제품 비중이 좋음", reusableStyleTraits:["강한 청록 대비", "제품이 화면의 40% 이상"] }],
+    advertiserId: "originalsource-co-kr",
+    approvedDirections: [],
+    rejectedDirections: [],
+    feedback: [],
+    updatedAt: new Date(0).toISOString(),
+    goldenReferences: [
+      {
+        id: "g1",
+        advertiserId: "originalsource-co-kr",
+        category: "personal_care",
+        productId: "old",
+        imagePath: "/.data/golden.jpg",
+        mainHook: "이전 광고 문구 그대로 복사",
+        subCopy: "이전 서브 카피",
+        visualArchetype: "sensory-immersion",
+        approvedAt: new Date(0).toISOString(),
+        approvalReason: "제품 비중이 좋음",
+        reusableStyleTraits: ["강한 청록 대비", "제품이 화면의 40% 이상"],
+      },
+    ],
   };
   const prompt = buildNativeFinalCreativePrompt(job, job.results[0], "/tmp/final.png", undefined, memory);
   assert.match(prompt, /강한 청록 대비/);
@@ -148,8 +201,26 @@ test("11. 골든 레퍼런스의 추상 스타일 특성은 다음 생성 프롬
 test("12. 골든 레퍼런스의 기존 메인·서브 문구는 새 프롬프트에 복사하지 않는다", () => {
   const { job } = nativeJobFor("original-source-mint-shower-gel");
   const memory = {
-    advertiserId:"originalsource-co-kr", approvedDirections:[], rejectedDirections:[], feedback:[], updatedAt:new Date(0).toISOString(),
-    goldenReferences:[{ id:"g1", advertiserId:"originalsource-co-kr", category:"personal_care", productId:"old", imagePath:"/.data/golden.jpg", mainHook:"절대 재사용하면 안 되는 문구", subCopy:"과거 상품 전용 서브", visualArchetype:"product-hero", approvedAt:new Date(0).toISOString(), approvalReason:"상업적 위계", reusableStyleTraits:["제품 중심"] }],
+    advertiserId: "originalsource-co-kr",
+    approvedDirections: [],
+    rejectedDirections: [],
+    feedback: [],
+    updatedAt: new Date(0).toISOString(),
+    goldenReferences: [
+      {
+        id: "g1",
+        advertiserId: "originalsource-co-kr",
+        category: "personal_care",
+        productId: "old",
+        imagePath: "/.data/golden.jpg",
+        mainHook: "절대 재사용하면 안 되는 문구",
+        subCopy: "과거 상품 전용 서브",
+        visualArchetype: "product-hero",
+        approvedAt: new Date(0).toISOString(),
+        approvalReason: "상업적 위계",
+        reusableStyleTraits: ["제품 중심"],
+      },
+    ],
   };
   const prompt = buildNativeFinalCreativePrompt(job, job.results[0], "/tmp/final.png", undefined, memory);
   assert.doesNotMatch(prompt, /절대 재사용하면 안 되는 문구|과거 상품 전용 서브/);
@@ -157,12 +228,8 @@ test("12. 골든 레퍼런스의 기존 메인·서브 문구는 새 프롬프�
 });
 
 test("13. 비공개 프롬프트·골든 레퍼런스·내부 작업은 public 폴더에 저장하지 않는다", async () => {
-  const [storage, registry, publicJob] = await Promise.all([
-    readFile(new URL("../app/lib/creative-generation/nativeCreativeStorage.server.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/lib/creative-generation/codexRegistry.server.ts", import.meta.url), "utf8"),
-    readFile(new URL("../app/lib/creative-generation/publicJob.server.ts", import.meta.url), "utf8"),
-  ]);
-  assert.match(storage, /\.data", "generated/);
+  const [storage, registry, publicJob] = await Promise.all([readFile(new URL("../app/lib/creative-generation/nativeCreativeStorage.server.ts", import.meta.url), "utf8"), readFile(new URL("../app/lib/creative-generation/codexRegistry.server.ts", import.meta.url), "utf8"), readFile(new URL("../app/lib/creative-generation/publicJob.server.ts", import.meta.url), "utf8")]);
+  assert.match(storage, /"\.data",\s*"generated/);
   assert.match(registry, /"\.data", "codex"/);
   assert.doesNotMatch(`${storage}\n${registry}`, /public[^\n]{0,80}golden-references/);
   assert.match(publicJob, /candidateHypotheses: undefined/);

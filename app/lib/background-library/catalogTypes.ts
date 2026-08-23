@@ -4,18 +4,9 @@ import type { BackgroundHookType, BackgroundLibraryItem } from "./types.ts";
 export type CatalogSourceType = "local-import" | "pexels" | "local-generation";
 export type CatalogLicenseStatus = "verified" | "unverified" | "rejected";
 export type CatalogItemStatus = "pending" | "approved" | "review" | "rejected" | "inactive";
-export type CatalogAnalysisStatus =
-  | "heuristic"
-  | "source-derived"
-  | "manually-reviewed"
-  | "local-vision"
-  | "pending";
+export type CatalogAnalysisStatus = "heuristic" | "source-derived" | "manually-reviewed" | "local-vision" | "pending";
 export type RiskAssessment = "low" | "medium" | "high" | "pending";
-export type CatalogPeoplePolicy =
-  | "hands-back-view-wide-scene"
-  | "activity-back-view-silhouette"
-  | "farmer-hands-back-view-wide-scene"
-  | "empty-or-background";
+export type CatalogPeoplePolicy = "hands-back-view-wide-scene" | "activity-back-view-silhouette" | "farmer-hands-back-view-wide-scene" | "empty-or-background";
 
 export type BackgroundLicense = {
   sourceType: CatalogSourceType;

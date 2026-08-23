@@ -5,22 +5,9 @@ import path from "node:path";
 import JSZip from "jszip";
 import sharp from "sharp";
 
-import {
-  analyzeCatalogImage,
-  catalogContentHash,
-  detectCatalogImageSignature,
-  perceptualHashDistance,
-} from "./catalogImageAnalysis.server.ts";
-import {
-  readBackgroundCatalogManifest,
-  readBackgroundCollectionConfigs,
-  writeBackgroundCatalogManifest,
-} from "./catalogStore.server.ts";
-import type {
-  BackgroundCatalogItem,
-  BackgroundLicense,
-  CatalogSourceType,
-} from "./catalogTypes.ts";
+import { analyzeCatalogImage, catalogContentHash, detectCatalogImageSignature, perceptualHashDistance } from "./catalogImageAnalysis.server.ts";
+import { readBackgroundCatalogManifest, readBackgroundCollectionConfigs, writeBackgroundCatalogManifest } from "./catalogStore.server.ts";
+import type { BackgroundCatalogItem, BackgroundLicense, CatalogSourceType } from "./catalogTypes.ts";
 import { backgroundStorage } from "./storage.ts";
 
 const maxImageBytes = 50 * 1024 * 1024;
@@ -63,7 +50,10 @@ function safeArchiveName(name: string) {
 }
 
 function normalizeSourceName(name: string) {
-  return path.basename(String(name || "image")).replace(/[^a-zA-Z0-9가-힣._-]+/g, "-").slice(0, 120);
+  return path
+    .basename(String(name || "image"))
+    .replace(/[^a-zA-Z0-9가-힣._-]+/g, "-")
+    .slice(0, 120);
 }
 
 function parseCsvLine(line: string) {
@@ -72,10 +62,14 @@ function parseCsvLine(line: string) {
   let quoted = false;
   for (let index = 0; index < line.length; index += 1) {
     const value = line[index];
-    if (value === '"' && line[index + 1] === '"') { current += '"'; index += 1; }
-    else if (value === '"') quoted = !quoted;
-    else if (value === "," && !quoted) { values.push(current.trim()); current = ""; }
-    else current += value;
+    if (value === '"' && line[index + 1] === '"') {
+      current += '"';
+      index += 1;
+    } else if (value === '"') quoted = !quoted;
+    else if (value === "," && !quoted) {
+      values.push(current.trim());
+      current = "";
+    } else current += value;
   }
   values.push(current.trim());
   return values;
@@ -100,10 +94,7 @@ function sidecarRows(buffer: Buffer, extension: string) {
   return lines.slice(1).map((line) => Object.fromEntries(headers.map((header, index) => [header, parseCsvLine(line)[index] || ""])));
 }
 
-function normalizeLicense(
-  value: Partial<BackgroundLicense> & { manuallyReviewed?: boolean } | undefined,
-  sourceType: CatalogSourceType
-) {
+function normalizeLicense(value: (Partial<BackgroundLicense> & { manuallyReviewed?: boolean }) | undefined, sourceType: CatalogSourceType) {
   const now = new Date().toISOString();
   const commercial = value?.commercialUseAllowed === true || String(value?.commercialUseAllowed) === "true";
   const evidenceComplete = Boolean(value?.proofPath && value?.licenseType && value?.licenseUrl);
@@ -122,29 +113,23 @@ function normalizeLicense(
     attributionText: String(value?.attributionText || ""),
     acquiredAt: String(value?.acquiredAt || now),
     licenseCheckedAt: explicitlyVerified ? String(value?.licenseCheckedAt || now) : "",
-    licenseStatus: explicitlyVerified ? "verified" as const : "unverified" as const,
+    licenseStatus: explicitlyVerified ? ("verified" as const) : ("unverified" as const),
     manuallyReviewed: value?.manuallyReviewed === true || String(value?.manuallyReviewed) === "true",
   };
 }
 
 function sourceDerivedFlags(category: string) {
   return {
-    foodPresence: /grill|dining|meal|barbecue|cooking|market|produce|orchard|farm|table/.test(category) ? "yes" as const : "unknown" as const,
-    waterPresence: /water|shower|bathroom|spa/.test(category) ? "yes" as const : "unknown" as const,
-    vegetationPresence: /forest|mint|herbs|citrus|farm|orchard|field|greenhouse|floral|outdoor/.test(category) ? "yes" as const : "unknown" as const,
-    firePresence: /fire|smoke|grill|barbecue/.test(category) ? "yes" as const : "unknown" as const,
-    indoorOutdoor: /forest|camping|farm|orchard|field|picnic|street|floral|outdoor/.test(category)
-      ? "outdoor" as const
-      : /restaurant|home|kitchen|bathroom|interior|studio|office|hotel|spa|cafe/.test(category)
-        ? "indoor" as const
-        : "unknown" as const,
+    foodPresence: /grill|dining|meal|barbecue|cooking|market|produce|orchard|farm|table/.test(category) ? ("yes" as const) : ("unknown" as const),
+    waterPresence: /water|shower|bathroom|spa/.test(category) ? ("yes" as const) : ("unknown" as const),
+    vegetationPresence: /forest|mint|herbs|citrus|farm|orchard|field|greenhouse|floral|outdoor/.test(category) ? ("yes" as const) : ("unknown" as const),
+    firePresence: /fire|smoke|grill|barbecue/.test(category) ? ("yes" as const) : ("unknown" as const),
+    indoorOutdoor: /forest|camping|farm|orchard|field|picnic|street|floral|outdoor/.test(category) ? ("outdoor" as const) : /restaurant|home|kitchen|bathroom|interior|studio|office|hotel|spa|cafe/.test(category) ? ("indoor" as const) : ("unknown" as const),
   };
 }
 
 function qualityRank(item: BackgroundCatalogItem) {
-  return item.originalWidth * item.originalHeight / 1_000_000 +
-    (item.licenseStatus === "verified" ? 15 : 0) +
-    item.squareCropScore * 5 + item.productPlacementSpace * 5 + item.adCompositionScore * 8;
+  return (item.originalWidth * item.originalHeight) / 1_000_000 + (item.licenseStatus === "verified" ? 15 : 0) + item.squareCropScore * 5 + item.productPlacementSpace * 5 + item.adCompositionScore * 8;
 }
 
 export async function extractCatalogZip(buffer: Buffer) {
@@ -212,14 +197,7 @@ export async function collectLocalCatalogSources(inputPath: string) {
   return sources;
 }
 
-export async function importBackgroundSources(input: {
-  collectionId: string;
-  categoryId: string;
-  sources: CatalogImportSource[];
-  sourceType?: CatalogSourceType;
-  dryRun?: boolean;
-  generated?: { prompt: string; negativePrompt: string; seed: number; workflowHash: string; upscaled: boolean };
-}) {
+export async function importBackgroundSources(input: { collectionId: string; categoryId: string; sources: CatalogImportSource[]; sourceType?: CatalogSourceType; dryRun?: boolean; generated?: { prompt: string; negativePrompt: string; seed: number; workflowHash: string; upscaled: boolean } }) {
   const configs = await readBackgroundCollectionConfigs();
   const config = configs.find((item) => item.id === input.collectionId);
   if (!config) throw new Error("등록된 컬렉션이 아닙니다.");
@@ -230,10 +208,20 @@ export async function importBackgroundSources(input: {
   const sourceType = input.sourceType || "local-import";
   const jobId = `${sourceType}-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const result: CatalogImportResult = {
-    dryRun: Boolean(input.dryRun), collectionId: input.collectionId, categoryId: input.categoryId,
-    discovered: input.sources.length, approved: 0, review: 0, rejected: 0,
-    exactDuplicates: 0, similarDuplicates: 0, reusedAcrossCollections: 0, writtenBytes: 0,
-    items: [], failures: [], jobId,
+    dryRun: Boolean(input.dryRun),
+    collectionId: input.collectionId,
+    categoryId: input.categoryId,
+    discovered: input.sources.length,
+    approved: 0,
+    review: 0,
+    rejected: 0,
+    exactDuplicates: 0,
+    similarDuplicates: 0,
+    reusedAcrossCollections: 0,
+    writtenBytes: 0,
+    items: [],
+    failures: [],
+    jobId,
   };
   const nextItems = [...manifest.items];
 
@@ -267,39 +255,87 @@ export async function importBackgroundSources(input: {
       const flags = sourceDerivedFlags(input.categoryId);
       const generatedAt = sourceType === "local-generation" ? now : "";
       const item: BackgroundCatalogItem = {
-        id, sourceType, provider: sourceType === "pexels" ? "pexels" : sourceType === "local-generation" ? "comfyui" : "local",
-        providerPhotoId: String(source.providerPhotoId || ""), collectionIds: [input.collectionId], primaryCategory: input.categoryId,
-        secondaryCategories: [], matchedQuery: String(source.matchedQuery || ""), generationPrompt: input.generated?.prompt || "",
-        negativePrompt: input.generated?.negativePrompt || "", generationSeed: input.generated?.seed ?? null,
-        generationWorkflowHash: input.generated?.workflowHash || "", generatedUpscaled: generatedCanUpscale && Boolean(input.generated?.upscaled),
-        originalWidth: analysis.width, originalHeight: analysis.height, localWidth: 0, localHeight: 0,
-        originalUrl: String(source.originalUrl || ""), sourcePageUrl: license.sourcePageUrl, creatorName: license.creatorName,
-        creatorUrl: license.creatorUrl, dominantColor: analysis.dominantColor, secondaryColors: analysis.secondaryColors,
-        downloadedAt: sourceType === "pexels" ? now : "", generatedAt, licenseType: license.licenseType,
-        licenseUrl: license.licenseUrl, licenseCheckedAt: license.licenseCheckedAt, licenseStatus: license.licenseStatus,
-        commercialUseAllowed: license.commercialUseAllowed, attributionRequired: license.attributionRequired,
-        attributionText: license.attributionText, proofPath: license.proofPath, filePath: "", thumbnailPath: "", originalPath: "",
-        contentHash, perceptualHash: analysis.perceptualHash, format: "webp", fileSize: 0,
+        id,
+        sourceType,
+        provider: sourceType === "pexels" ? "pexels" : sourceType === "local-generation" ? "comfyui" : "local",
+        providerPhotoId: String(source.providerPhotoId || ""),
+        collectionIds: [input.collectionId],
+        primaryCategory: input.categoryId,
+        secondaryCategories: [],
+        matchedQuery: String(source.matchedQuery || ""),
+        generationPrompt: input.generated?.prompt || "",
+        negativePrompt: input.generated?.negativePrompt || "",
+        generationSeed: input.generated?.seed ?? null,
+        generationWorkflowHash: input.generated?.workflowHash || "",
+        generatedUpscaled: generatedCanUpscale && Boolean(input.generated?.upscaled),
+        originalWidth: analysis.width,
+        originalHeight: analysis.height,
+        localWidth: 0,
+        localHeight: 0,
+        originalUrl: String(source.originalUrl || ""),
+        sourcePageUrl: license.sourcePageUrl,
+        creatorName: license.creatorName,
+        creatorUrl: license.creatorUrl,
+        dominantColor: analysis.dominantColor,
+        secondaryColors: analysis.secondaryColors,
+        downloadedAt: sourceType === "pexels" ? now : "",
+        generatedAt,
+        licenseType: license.licenseType,
+        licenseUrl: license.licenseUrl,
+        licenseCheckedAt: license.licenseCheckedAt,
+        licenseStatus: license.licenseStatus,
+        commercialUseAllowed: license.commercialUseAllowed,
+        attributionRequired: license.attributionRequired,
+        attributionText: license.attributionText,
+        proofPath: license.proofPath,
+        filePath: "",
+        thumbnailPath: "",
+        originalPath: "",
+        contentHash,
+        perceptualHash: analysis.perceptualHash,
+        format: "webp",
+        fileSize: 0,
         status: rejectionReasons.length ? "rejected" : license.manuallyReviewed && license.licenseStatus === "verified" ? "approved" : "review",
-        rejectionReasons, warnings, analysisStatus: license.manuallyReviewed ? "manually-reviewed" : "heuristic",
+        rejectionReasons,
+        warnings,
+        analysisStatus: license.manuallyReviewed ? "manually-reviewed" : "heuristic",
         analysisConfidence: license.manuallyReviewed ? 0.95 : 0.7,
         analysisEvidence: ["sharp:64x64-local-analysis", `source-derived:${input.collectionId}/${input.categoryId}`],
-        sceneType: input.categoryId, indoorOutdoor: flags.indoorOutdoor, peoplePresence: "unknown", faceVisibility: "unknown",
-        endorsementRisk: "pending", logoRisk: "pending", textRisk: "pending", foodPresence: flags.foodPresence,
-        waterPresence: flags.waterPresence, vegetationPresence: flags.vegetationPresence, firePresence: flags.firePresence,
-        productPlacementSpace: analysis.productPlacementSpace, negativeSpaceDirection: analysis.negativeSpaceDirection,
-        focalPoint: analysis.focalPoint, cropSafety: analysis.cropSafety, clutterLevel: analysis.clutterLevel,
-        backgroundSuitabilityScore: analysis.backgroundSuitabilityScore, adCompositionScore: analysis.adCompositionScore,
-        recommendedProductPosition: analysis.recommendedProductPosition, recommendedCopyPosition: analysis.recommendedCopyPosition,
-        overlayReadability: analysis.overlayReadability, needsDarkOverlay: analysis.needsDarkOverlay,
-        needsLightOverlay: analysis.needsLightOverlay, squareCropScore: analysis.squareCropScore,
-        brightness: analysis.brightness, saturation: analysis.saturation, contrast: analysis.contrast,
-        entropy: analysis.entropy, edgeDensity: analysis.edgeDensity, moodTags: config.preferredMoods.slice(0, 5),
-        favorite: false, createdAt: now, updatedAt: now,
+        sceneType: input.categoryId,
+        indoorOutdoor: flags.indoorOutdoor,
+        peoplePresence: "unknown",
+        faceVisibility: "unknown",
+        endorsementRisk: "pending",
+        logoRisk: "pending",
+        textRisk: "pending",
+        foodPresence: flags.foodPresence,
+        waterPresence: flags.waterPresence,
+        vegetationPresence: flags.vegetationPresence,
+        firePresence: flags.firePresence,
+        productPlacementSpace: analysis.productPlacementSpace,
+        negativeSpaceDirection: analysis.negativeSpaceDirection,
+        focalPoint: analysis.focalPoint,
+        cropSafety: analysis.cropSafety,
+        clutterLevel: analysis.clutterLevel,
+        backgroundSuitabilityScore: analysis.backgroundSuitabilityScore,
+        adCompositionScore: analysis.adCompositionScore,
+        recommendedProductPosition: analysis.recommendedProductPosition,
+        recommendedCopyPosition: analysis.recommendedCopyPosition,
+        overlayReadability: analysis.overlayReadability,
+        needsDarkOverlay: analysis.needsDarkOverlay,
+        needsLightOverlay: analysis.needsLightOverlay,
+        squareCropScore: analysis.squareCropScore,
+        brightness: analysis.brightness,
+        saturation: analysis.saturation,
+        contrast: analysis.contrast,
+        entropy: analysis.entropy,
+        edgeDensity: analysis.edgeDensity,
+        moodTags: config.preferredMoods.slice(0, 5),
+        favorite: false,
+        createdAt: now,
+        updatedAt: now,
       };
-      const similar = nextItems.find((existing) =>
-        existing.status !== "rejected" && perceptualHashDistance(existing.perceptualHash, item.perceptualHash) <= 5
-      );
+      const similar = nextItems.find((existing) => existing.status !== "rejected" && perceptualHashDistance(existing.perceptualHash, item.perceptualHash) <= 5);
       if (similar) {
         result.similarDuplicates += 1;
         if (qualityRank(similar) >= qualityRank(item)) {
@@ -316,8 +352,10 @@ export async function importBackgroundSources(input: {
         item.filePath = `processed/${id}.webp`;
         item.thumbnailPath = `thumbnails/${id}.webp`;
         const processed = await sharp(source.buffer)
-          .rotate().resize(1600, 1600, { fit: "cover", position: "attention", withoutEnlargement: sourceType !== "local-generation" })
-          .webp({ quality: 84, effort: 5 }).toBuffer();
+          .rotate()
+          .resize(1600, 1600, { fit: "cover", position: "attention", withoutEnlargement: sourceType !== "local-generation" })
+          .webp({ quality: 84, effort: 5 })
+          .toBuffer();
         const thumbnail = await sharp(processed).resize(320, 320, { fit: "cover" }).webp({ quality: 78, effort: 4 }).toBuffer();
         const decoded = await sharp(processed, { failOn: "error" }).metadata();
         const thumbDecoded = await sharp(thumbnail, { failOn: "error" }).metadata();
@@ -329,11 +367,7 @@ export async function importBackgroundSources(input: {
         item.fileSize = processed.length;
         result.writtenBytes += processed.length + thumbnail.length + source.buffer.length;
         if (!input.dryRun) {
-          await Promise.all([
-            backgroundStorage.write(item.originalPath, source.buffer),
-            backgroundStorage.write(item.filePath, processed),
-            backgroundStorage.write(item.thumbnailPath, thumbnail),
-          ]);
+          await Promise.all([backgroundStorage.write(item.originalPath, source.buffer), backgroundStorage.write(item.filePath, processed), backgroundStorage.write(item.thumbnailPath, thumbnail)]);
         }
       }
       if (item.status === "approved") result.approved += 1;

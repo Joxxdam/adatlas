@@ -1,16 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type {
-  MetaAccount,
-  MetaAdvertiserAssetMap,
-  MetaBaselineAdSet,
-  MetaCampaign,
-  MetaCreativeDraft,
-  MetaDraftRegistrationInput,
-  MetaPreflightResult,
-  PerformanceTestType,
-} from "../../lib/meta/types";
+import type { MetaAccount, MetaAdvertiserAssetMap, MetaBaselineAdSet, MetaCampaign, MetaCreativeDraft, MetaDraftRegistrationInput, MetaPreflightResult, PerformanceTestType } from "../../lib/meta/types";
 import styles from "./MetaOperations.module.css";
 
 type Props = {
@@ -39,8 +30,7 @@ async function api<T>(url: string, body?: unknown): Promise<T> {
     cache: "no-store",
   });
   const payload = (await response.json()) as T & { ok?: boolean; error?: string };
-  if (!response.ok || payload.ok === false)
-    throw new Error(payload.error || "요청에 실패했습니다.");
+  if (!response.ok || payload.ok === false) throw new Error(payload.error || "요청에 실패했습니다.");
   return payload;
 }
 
@@ -56,22 +46,15 @@ export function MetaDraftRegistrationPanel(props: Props) {
   const [preflight, setPreflight] = useState<MetaPreflightResult | null>(null);
   const [confirmationToken, setConfirmationToken] = useState("");
   const [checked, setChecked] = useState(false);
-  const [status, setStatus] = useState(
-    "Meta API는 명시적인 버튼을 누르기 전까지 호출되지 않습니다."
-  );
+  const [status, setStatus] = useState("Meta API는 명시적인 버튼을 누르기 전까지 호출되지 않습니다.");
   const [busy, setBusy] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
-      api<{ capability: Capability }>("/api/meta/status"),
-      api<{ mappings: MetaAdvertiserAssetMap[] }>("/api/meta/advertisers"),
-    ]).then(([statusPayload, advertiserPayload]) => {
+    void Promise.all([api<{ capability: Capability }>("/api/meta/status"), api<{ mappings: MetaAdvertiserAssetMap[] }>("/api/meta/advertisers")]).then(([statusPayload, advertiserPayload]) => {
       if (cancelled) return;
       setCapability(statusPayload.capability);
-      setMapping(
-        advertiserPayload.mappings.find((item) => item.advertiserId === props.advertiserId) || null
-      );
+      setMapping(advertiserPayload.mappings.find((item) => item.advertiserId === props.advertiserId) || null);
     });
     return () => {
       cancelled = true;
@@ -84,14 +67,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
   const input = useMemo<MetaDraftRegistrationInput | null>(() => {
     if (!mapping || !account || !campaign || !baselineAdSet || !props.landingUrl) return null;
     return {
-      requestKey: [
-        props.advertiserId,
-        props.productId,
-        "T01",
-        props.testType || "creative-combination",
-        props.approvedCreatives.map((creative) => creative.materialCode).join("-"),
-        new Date().toISOString().slice(0, 10),
-      ].join(":"),
+      requestKey: [props.advertiserId, props.productId, "T01", props.testType || "creative-combination", props.approvedCreatives.map((creative) => creative.materialCode).join("-"), new Date().toISOString().slice(0, 10)].join(":"),
       advertiserId: props.advertiserId,
       advertiserName: props.advertiserName,
       productId: props.productId,
@@ -160,16 +136,9 @@ export function MetaDraftRegistrationPanel(props: Props) {
     if (!input) return;
     setBusy("preflight");
     try {
-      const payload = await api<{ preflight: MetaPreflightResult }>(
-        "/api/meta/drafts/preflight",
-        input
-      );
+      const payload = await api<{ preflight: MetaPreflightResult }>("/api/meta/drafts/preflight", input);
       setPreflight(payload.preflight);
-      setStatus(
-        payload.preflight.ok
-          ? "사전 검토를 통과했습니다. 실제 등록 내용을 확인해 주세요."
-          : "차단 항목을 해결한 뒤 다시 검토해 주세요."
-      );
+      setStatus(payload.preflight.ok ? "사전 검토를 통과했습니다. 실제 등록 내용을 확인해 주세요." : "차단 항목을 해결한 뒤 다시 검토해 주세요.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "사전 검토 실패");
     } finally {
@@ -181,10 +150,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
     if (!input || !checked || !preflight?.ok) return;
     setBusy("confirm");
     try {
-      const payload = await api<{ confirmation: { token: string } }>(
-        "/api/meta/drafts/confirm",
-        input
-      );
+      const payload = await api<{ confirmation: { token: string } }>("/api/meta/drafts/confirm", input);
       setConfirmationToken(payload.confirmation.token);
       setStatus("등록 내용에 결합된 일회성 확인 토큰을 발급했습니다.");
     } catch (error) {
@@ -214,47 +180,32 @@ export function MetaDraftRegistrationPanel(props: Props) {
         <div>
           <p className="eyebrow">PERFORMANCE SETUP · META DRAFT</p>
           <h3>선택 소재를 기존 캠페인에 PAUSED로 설정</h3>
-          <p>
-            캠페인과 기준 광고 세트는 읽기 전용이며, 새 광고 세트 1개와 광고 최대 6개만 PAUSED로
-            만듭니다.
-          </p>
+          <p>캠페인과 기준 광고 세트는 읽기 전용이며, 새 광고 세트 1개와 광고 최대 6개만 PAUSED로 만듭니다.</p>
         </div>
         <span className={styles.safety}>ACTIVE 차단</span>
       </header>
 
       <div className={styles.flow} aria-label="Meta 등록 흐름">
-        {["광고주", "광고 계정", "기존 캠페인", "기준 광고 세트", "사전 검토", "PAUSED 등록"].map(
-          (label, index) => (
-            <span key={label}>
-              {index + 1}. {label}
-            </span>
-          )
-        )}
+        {["광고주", "광고 계정", "기존 캠페인", "기준 광고 세트", "사전 검토", "PAUSED 등록"].map((label, index) => (
+          <span key={label}>
+            {index + 1}. {label}
+          </span>
+        ))}
       </div>
 
       <div className={styles.notice}>
         <strong>
           {props.advertiserName || "광고주 미확인"} · {props.productName || "상품 미확인"}
         </strong>
-        <span>
-          승인 결과 {props.approvedCreatives.filter((item) => item.approved).length}/6 · CTA 지금
-          구매하기 / SHOP_NOW
-        </span>
+        <span>승인 결과 {props.approvedCreatives.filter((item) => item.approved).length}/6 · CTA 지금 구매하기 / SHOP_NOW</span>
         <span>{props.testType === "hook-only" ? "후킹만 비교" : "전체 소재 조합 비교"}</span>
       </div>
 
       {!capability?.configured || !capability.readEnabled ? (
         <div className={styles.setup}>
           <strong>Meta 읽기 연결이 꺼져 있습니다.</strong>
-          <p>
-            서버 환경변수에 전용 시스템 사용자 토큰을 설정하고 META_READ_ENABLED=true로 전환한 뒤
-            아래 확인 버튼을 사용하세요. 토큰 입력란은 화면에 제공하지 않습니다.
-          </p>
-          <button
-            disabled={busy === "connection"}
-            onClick={() => runRead("connection")}
-            type="button"
-          >
+          <p>서버 환경변수에 전용 시스템 사용자 토큰을 설정하고 META_READ_ENABLED=true로 전환한 뒤 아래 확인 버튼을 사용하세요. 토큰 입력란은 화면에 제공하지 않습니다.</p>
+          <button disabled={busy === "connection"} onClick={() => runRead("connection")} type="button">
             Meta 연결 확인
           </button>
         </div>
@@ -263,11 +214,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
           <button disabled={Boolean(busy)} onClick={() => runRead("connection")} type="button">
             Meta 연결 확인
           </button>
-          <button
-            disabled={Boolean(busy) || !mapping}
-            onClick={() => runRead("accounts")}
-            type="button"
-          >
+          <button disabled={Boolean(busy) || !mapping} onClick={() => runRead("accounts")} type="button">
             광고 계정 불러오기
           </button>
         </div>
@@ -284,11 +231,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
               </option>
             ))}
           </select>
-          <button
-            disabled={!accountId || Boolean(busy)}
-            onClick={() => runRead("campaigns", { accountId })}
-            type="button"
-          >
+          <button disabled={!accountId || Boolean(busy)} onClick={() => runRead("campaigns", { accountId })} type="button">
             캠페인 불러오기
           </button>
         </label>
@@ -310,11 +253,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
               </option>
             ))}
           </select>
-          <button
-            disabled={!campaignId || Boolean(busy)}
-            onClick={() => runRead("adsets", { accountId, campaignId })}
-            type="button"
-          >
+          <button disabled={!campaignId || Boolean(busy)} onClick={() => runRead("adsets", { accountId, campaignId })} type="button">
             기준 광고 세트 불러오기
           </button>
         </label>
@@ -334,10 +273,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
               </option>
             ))}
           </select>
-          <small>
-            타깃·게재 위치·Purchase 전환 설정만 복사합니다. 예산·일정·상태·기존 광고는 복사하지
-            않습니다.
-          </small>
+          <small>타깃·게재 위치·Purchase 전환 설정만 복사합니다. 예산·일정·상태·기존 광고는 복사하지 않습니다.</small>
         </label>
       </div>
 
@@ -352,12 +288,7 @@ export function MetaDraftRegistrationPanel(props: Props) {
         </ul>
       </details>
 
-      <button
-        className={styles.primary}
-        disabled={!input || Boolean(busy)}
-        onClick={runPreflight}
-        type="button"
-      >
+      <button className={styles.primary} disabled={!input || Boolean(busy)} onClick={runPreflight} type="button">
         안전 검증 및 등록 내용 미리보기
       </button>
 
@@ -393,20 +324,11 @@ export function MetaDraftRegistrationPanel(props: Props) {
             선택한 Meta 광고 계정에 PAUSED 초안이 실제 생성되는 것을 확인했습니다.
           </label>
           {!confirmationToken ? (
-            <button
-              disabled={!checked || !preflight.ok || Boolean(busy)}
-              onClick={confirmPreview}
-              type="button"
-            >
+            <button disabled={!checked || !preflight.ok || Boolean(busy)} onClick={confirmPreview} type="button">
               최종 등록 내용 확인
             </button>
           ) : (
-            <button
-              className={styles.danger}
-              disabled={Boolean(busy)}
-              onClick={register}
-              type="button"
-            >
+            <button className={styles.danger} disabled={Boolean(busy)} onClick={register} type="button">
               PAUSED 상태로 Meta 초안 등록
             </button>
           )}

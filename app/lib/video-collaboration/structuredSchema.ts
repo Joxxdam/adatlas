@@ -1,10 +1,6 @@
 export type VideoPlanningJsonSchema = Record<string, unknown>;
 
-function validateStructuredValue(
-  value: unknown,
-  schema: VideoPlanningJsonSchema,
-  path = "$response"
-): string[] {
+function validateStructuredValue(value: unknown, schema: VideoPlanningJsonSchema, path = "$response"): string[] {
   const errors: string[] = [];
   const type = schema.type;
   if (type === "object") {
@@ -45,10 +41,7 @@ function validateStructuredValue(
   return errors;
 }
 
-export function assertStructuredVideoPlanningResponse(
-  value: unknown,
-  schema: VideoPlanningJsonSchema
-) {
+export function assertStructuredVideoPlanningResponse(value: unknown, schema: VideoPlanningJsonSchema) {
   const errors = validateStructuredValue(value, schema);
   if (errors.length) throw new Error(`Schema validation failed: ${errors.slice(0, 5).join("; ")}`);
 }

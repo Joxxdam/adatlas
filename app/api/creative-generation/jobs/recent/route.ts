@@ -20,9 +20,6 @@ export async function GET(request: Request) {
       jobs: jobs.map((job) => toGenerationJobSummary(job, isGenerationJobRunnerActive(job.id))),
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: toPublicGenerationError(error, "최근 작업 조회 실패") },
-      { status: localAccessError(error) ? 403 : 500 }
-    );
+    return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "최근 작업 조회 실패") }, { status: localAccessError(error) ? 403 : 500 });
   }
 }

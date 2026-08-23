@@ -1,0 +1,123 @@
+.indicator {
+  position: fixed;
+  z-index: 1200;
+  top: 20px;
+  right: 24px;
+  display: grid;
+  width: min(330px, calc(100vw - 32px));
+  gap: 5px;
+  border: 1px solid #bfe6da;
+  border-radius: 16px;
+  padding: 14px 15px;
+  background: rgba(241, 252, 248, 0.97);
+  color: #08705d;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.4;
+  box-shadow: 0 16px 42px rgba(16, 52, 78, 0.22);
+  backdrop-filter: blur(14px);
+}
+
+.indicator > strong {
+  overflow: hidden;
+  color: #153b32;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.indicator > small {
+  color: #50766d;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.completed {
+  border-color: #92c9f6;
+  background: rgba(241, 248, 255, 0.98);
+  color: #1764b2;
+}
+
+.completed > strong {
+  color: #173b64;
+}
+
+.completed > small {
+  color: #55718e;
+}
+
+.stalled {
+  border-color: #f1d49b;
+  background: #fff9ed;
+  color: #8a5709;
+}
+
+.close {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(23, 100, 178, 0.1);
+  color: #1764b2;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+}
+
+.label::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 5px rgba(8, 112, 93, 0.11);
+  content: "";
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.link {
+  width: 100%;
+  margin-top: 4px;
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: #08705d;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+
+.completed .link {
+  background: #1764b2;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 780px) {
+  .indicator {
+    top: 12px;
+    right: 16px;
+  }
+}

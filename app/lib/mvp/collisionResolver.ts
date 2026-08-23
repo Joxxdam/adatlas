@@ -2,18 +2,10 @@ import { intersectionArea, isInsideCanvas, moveBox } from "./geometry";
 import type { CollisionItem, CollisionResult } from "./types";
 
 function isIntentional(first: CollisionItem, second: CollisionItem) {
-  return (
-    first.intentionalOverlapWith?.includes(second.id) ||
-    second.intentionalOverlapWith?.includes(first.id)
-  );
+  return first.intentionalOverlapWith?.includes(second.id) || second.intentionalOverlapWith?.includes(first.id);
 }
 
-export function resolveCollisions(params: {
-  items: CollisionItem[];
-  width?: number;
-  height?: number;
-  safePadding?: number;
-}): CollisionResult {
+export function resolveCollisions(params: { items: CollisionItem[]; width?: number; height?: number; safePadding?: number }): CollisionResult {
   const width = params.width || 1200;
   const height = params.height || 1200;
   const padding = params.safePadding ?? 18;
@@ -27,14 +19,8 @@ export function resolveCollisions(params: {
 
   for (const item of finalItems) {
     if (!isInsideCanvas(item.boundingBox, width, height, padding)) {
-      const targetX = Math.min(
-        Math.max(padding, item.boundingBox.x),
-        width - padding - item.boundingBox.width
-      );
-      const targetY = Math.min(
-        Math.max(padding, item.boundingBox.y),
-        height - padding - item.boundingBox.height
-      );
+      const targetX = Math.min(Math.max(padding, item.boundingBox.x), width - padding - item.boundingBox.width);
+      const targetY = Math.min(Math.max(padding, item.boundingBox.y), height - padding - item.boundingBox.height);
       if (item.allowMove !== false) {
         item.boundingBox.x = targetX;
         item.boundingBox.y = targetY;
@@ -66,10 +52,7 @@ export function resolveCollisions(params: {
       if (target.allowMove) {
         for (const delta of [16, -16, 28, -28, 42, -42]) {
           const moved = moveBox(target.boundingBox, 0, delta);
-          if (
-            isInsideCanvas(moved, width, height, padding) &&
-            intersectionArea(moved, anchor.boundingBox) === 0
-          ) {
+          if (isInsideCanvas(moved, width, height, padding) && intersectionArea(moved, anchor.boundingBox) === 0) {
             target.boundingBox = moved;
             actions.push({
               targetId: target.id,
@@ -97,9 +80,7 @@ export function resolveCollisions(params: {
         actions.push({
           targetId: target.id,
           action: target.allowShrink ? "shrink-text" : "failed",
-          reason: target.allowShrink
-            ? "렌더 단계에서 텍스트 크기 축소가 필요합니다."
-            : "자동으로 해결하지 못한 충돌입니다.",
+          reason: target.allowShrink ? "렌더 단계에서 텍스트 크기 축소가 필요합니다." : "자동으로 해결하지 못한 충돌입니다.",
         });
         if (!target.allowShrink) {
           warnings.push(`${first.id}와 ${second.id}의 충돌을 확인해 주세요.`);

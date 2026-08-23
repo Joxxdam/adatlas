@@ -3,7 +3,9 @@ import { sceneProfiles } from "./sceneProfiles";
 import type { AdvertiserProfile, SceneProfile } from "./types";
 
 function normalize(value: unknown) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function tokens(value: string) {
@@ -26,43 +28,14 @@ function overlapScore(source: Set<string>, values: string[], unit: number) {
   }, 0);
 }
 
-export function rankSceneProfiles(params: {
-  product: ProductInfoForPrompt;
-  brief: AdBrief;
-  advertiserProfile: AdvertiserProfile;
-  strategy?: CreativeStrategy | null;
-  referenceMatches?: ReferenceMatchResult[];
-  limit?: number;
-}): Array<{ profile: SceneProfile; score: number; reasons: string[] }> {
+export function rankSceneProfiles(params: { product: ProductInfoForPrompt; brief: AdBrief; advertiserProfile: AdvertiserProfile; strategy?: CreativeStrategy | null; referenceMatches?: ReferenceMatchResult[]; limit?: number }): Array<{ profile: SceneProfile; score: number; reasons: string[] }> {
   const referenceText = (params.referenceMatches || [])
-    .flatMap((match) => [
-      match.context.visualTone,
-      match.context.layoutPattern,
-      match.context.reusablePattern,
-      ...(match.context.appealPoints || []),
-      ...(match.context.hookTypes || []),
-    ])
+    .flatMap((match) => [match.context.visualTone, match.context.layoutPattern, match.context.reusablePattern, ...(match.context.appealPoints || []), ...(match.context.hookTypes || [])])
     .filter(Boolean)
     .join(" ");
-  const sourceText = [
-    params.product.productName,
-    params.product.category,
-    params.product.mainBenefit,
-    params.product.extractedDescription,
-    params.product.discountInfo,
-    params.brief.additionalEmphasis,
-    params.strategy?.mainHookAngle,
-    params.strategy?.coreAppealPoint,
-    params.strategy?.suggestedVisualEmphasis,
-    referenceText,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const sourceText = [params.product.productName, params.product.category, params.product.mainBenefit, params.product.extractedDescription, params.product.discountInfo, params.brief.additionalEmphasis, params.strategy?.mainHookAngle, params.strategy?.coreAppealPoint, params.strategy?.suggestedVisualEmphasis, referenceText].filter(Boolean).join(" ");
   const sourceTokens = tokens(sourceText);
-  const preferred = new Set([
-    params.advertiserProfile.defaultSceneProfile,
-    ...(params.advertiserProfile.scenePreferences || []),
-  ]);
+  const preferred = new Set([params.advertiserProfile.defaultSceneProfile, ...(params.advertiserProfile.scenePreferences || [])]);
 
   return sceneProfiles
     .map((profile) => {
@@ -82,12 +55,7 @@ export function rankSceneProfiles(params: {
         score += profile.id === params.advertiserProfile.defaultSceneProfile ? 34 : 22;
         reasons.push("광고주 선호 장면");
       }
-      if (
-        params.brief.creativeIntensity === "performance" &&
-        profile.compatibleArchetypes.some((id) =>
-          ["giant-hook", "problem-solution", "numeric-proof", "price-event"].includes(id)
-        )
-      ) {
+      if (params.brief.creativeIntensity === "performance" && profile.compatibleArchetypes.some((id) => ["giant-hook", "problem-solution", "numeric-proof", "price-event"].includes(id))) {
         score += 8;
         reasons.push("강전환형 광고 강도 적합");
       }

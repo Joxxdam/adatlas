@@ -8,23 +8,8 @@ import { labelsForReferenceMatches, matchReferences } from "../../../lib/mvp/ref
 import { normalizeReferenceUsages } from "../../../lib/mvp/referenceUsage";
 import { analyzeProductUsp } from "../../../lib/mvp/productUsp";
 import { adObjectivePrompt, getAdObjectiveProfile } from "../../../lib/mvp/adObjective";
-import {
-  audienceAgeGroups,
-  backgroundAssetTypes,
-  backgroundHookTypes,
-  type AudienceAgeGroup,
-  type BackgroundAssetType,
-  type BackgroundHookType,
-} from "../../../lib/background-library/types";
-import type {
-  AdBrief,
-  AdHookType,
-  AdProductPosition,
-  AdTextSafeArea,
-  AdImageLabel,
-  CreativeStrategy,
-  ProductInfoForPrompt,
-} from "../../../lib/mvp/types";
+import { audienceAgeGroups, backgroundAssetTypes, backgroundHookTypes, type AudienceAgeGroup, type BackgroundAssetType, type BackgroundHookType } from "../../../lib/background-library/types";
+import type { AdBrief, AdHookType, AdProductPosition, AdTextSafeArea, AdImageLabel, CreativeStrategy, ProductInfoForPrompt } from "../../../lib/mvp/types";
 
 type Body = {
   productInfo?: Partial<ProductInfoForPrompt>;
@@ -62,38 +47,9 @@ type HookResponse = {
   strategies?: CompactHook[];
 };
 
-const hookTypes = new Set<AdHookType>([
-  "price-benefit",
-  "feature-usp",
-  "lifestyle",
-  "season-event",
-  "problem-solution",
-  "social-proof",
-  "curiosity",
-  "sensory",
-  "gift",
-  "brand-story",
-]);
-const textSafeAreas = new Set<AdTextSafeArea>([
-  "top-left",
-  "top-center",
-  "top-right",
-  "center-left",
-  "center-right",
-  "bottom-left",
-  "bottom-center",
-  "bottom-right",
-]);
-const productPositions = new Set<AdProductPosition>([
-  "left",
-  "center-left",
-  "center",
-  "center-right",
-  "right",
-  "bottom-left",
-  "bottom-center",
-  "bottom-right",
-]);
+const hookTypes = new Set<AdHookType>(["price-benefit", "feature-usp", "lifestyle", "season-event", "problem-solution", "social-proof", "curiosity", "sensory", "gift", "brand-story"]);
+const textSafeAreas = new Set<AdTextSafeArea>(["top-left", "top-center", "top-right", "center-left", "center-right", "bottom-left", "bottom-center", "bottom-right"]);
+const productPositions = new Set<AdProductPosition>(["left", "center-left", "center", "center-right", "right", "bottom-left", "bottom-center", "bottom-right"]);
 const backgroundHookTypeSet = new Set<BackgroundHookType>(backgroundHookTypes);
 const backgroundAssetTypeSet = new Set<BackgroundAssetType>(backgroundAssetTypes);
 const audienceAgeGroupSet = new Set<AudienceAgeGroup>(audienceAgeGroups);
@@ -126,9 +82,7 @@ function normalizeProduct(value?: Partial<ProductInfoForPrompt>): ProductInfoFor
     extractedDescription: cleanText(value?.extractedDescription, 1200),
     productSubCategory: cleanText(value?.productSubCategory, 100),
     detectedProductType: cleanText(value?.detectedProductType, 100),
-    targetAgeGroups: safeList(value?.targetAgeGroups, [], 6, 20).filter((item) =>
-      audienceAgeGroupSet.has(item as AudienceAgeGroup)
-    ) as AudienceAgeGroup[],
+    targetAgeGroups: safeList(value?.targetAgeGroups, [], 6, 20).filter((item) => audienceAgeGroupSet.has(item as AudienceAgeGroup)) as AudienceAgeGroup[],
     productColors: safeList(value?.productColors, [], 8, 30),
     brandColors: safeList(value?.brandColors, [], 8, 30),
     ingredients: safeList(value?.ingredients, [], 12, 60),
@@ -153,11 +107,7 @@ function responseText(payload: unknown) {
     output_text?: string;
     output?: Array<{ content?: Array<{ text?: string }> }>;
   };
-  return (
-    response.output_text ||
-    response.output?.flatMap((item) => item.content || []).find((item) => item.text)?.text ||
-    ""
-  );
+  return response.output_text || response.output?.flatMap((item) => item.content || []).find((item) => item.text)?.text || "";
 }
 
 function parseJsonObject(text: string): HookResponse {
@@ -205,8 +155,7 @@ function factualNumbers(product: ProductInfoForPrompt) {
 function hasUnsupportedClaim(value: string, product: ProductInfoForPrompt) {
   const facts = factualSource(product);
   const allowedNumbers = factualNumbers(product);
-  const generatedNumbers =
-    value.match(/\d[\d,.]*/g)?.map((item) => item.replace(/[,.]/g, "")) || [];
+  const generatedNumbers = value.match(/\d[\d,.]*/g)?.map((item) => item.replace(/[,.]/g, "")) || [];
   if (generatedNumbers.some((number) => !allowedNumbers.has(number))) return true;
 
   const factualClaims: Array<[RegExp, RegExp]> = [
@@ -215,17 +164,10 @@ function hasUnsupportedClaim(value: string, product: ProductInfoForPrompt) {
     [/오늘까지|이번\s*주까지|기간\s*한정/, /오늘까지|이번\s*주까지|기간\s*한정/],
     [/리뷰|후기\s*\d|평점/, /리뷰|후기|평점/],
   ];
-  return factualClaims.some(
-    ([generatedPattern, factPattern]) => generatedPattern.test(value) && !factPattern.test(facts)
-  );
+  return factualClaims.some(([generatedPattern, factPattern]) => generatedPattern.test(value) && !factPattern.test(facts));
 }
 
-function safeField(
-  value: unknown,
-  fallback: string,
-  maxLength: number,
-  product: ProductInfoForPrompt
-) {
+function safeField(value: unknown, fallback: string, maxLength: number, product: ProductInfoForPrompt) {
   const normalized = cleanText(value, maxLength);
   if (!normalized || hasUnsupportedClaim(normalized, product)) return fallback;
   return normalized;
@@ -233,9 +175,7 @@ function safeField(
 
 function safeList(value: unknown, fallback: string[], maxItems = 5, maxLength = 20) {
   const list = Array.isArray(value) ? value : [];
-  const normalized = Array.from(
-    new Set(list.map((item) => cleanText(item, maxLength)).filter(Boolean))
-  ).slice(0, maxItems);
+  const normalized = Array.from(new Set(list.map((item) => cleanText(item, maxLength)).filter(Boolean))).slice(0, maxItems);
   return normalized.length ? normalized : fallback;
 }
 
@@ -244,17 +184,8 @@ function safeEnum<T extends string>(value: unknown, allowed: Set<T>, fallback: T
   return allowed.has(normalized) ? normalized : fallback;
 }
 
-function normalizeStrategies(params: {
-  value: HookResponse;
-  fallbacks: CreativeStrategy[];
-  product: ProductInfoForPrompt;
-  batch: number;
-}) {
-  const candidates = Array.isArray(params.value.hooks)
-    ? params.value.hooks
-    : Array.isArray(params.value.strategies)
-      ? params.value.strategies
-      : [];
+function normalizeStrategies(params: { value: HookResponse; fallbacks: CreativeStrategy[]; product: ProductInfoForPrompt; batch: number }) {
+  const candidates = Array.isArray(params.value.hooks) ? params.value.hooks : Array.isArray(params.value.strategies) ? params.value.strategies : [];
   const incoming = candidates.slice(0, 6);
   const titles = new Set<string>();
   const appeals = new Set<string>();
@@ -266,46 +197,21 @@ function normalizeStrategies(params: {
     let strategyBase = fallback;
     const candidate = incoming[index] || {};
     let title = safeField(candidate.title, fallback.title, 16, params.product);
-    let appeal = safeField(
-      candidate.keyAppeal || candidate.appeal,
-      fallback.keyAppeal,
-      72,
-      params.product
-    );
-    let mainCopy = safeField(
-      candidate.headline || candidate.mainCopy,
-      fallback.headline,
-      42,
-      params.product
-    );
+    let appeal = safeField(candidate.keyAppeal || candidate.appeal, fallback.keyAppeal, 72, params.product);
+    let mainCopy = safeField(candidate.headline || candidate.mainCopy, fallback.headline, 42, params.product);
     let audience = safeField(candidate.audience, fallback.audience, 54, params.product);
     const normalizedTitle = title.toLowerCase();
     const normalizedAppeal = appeal.toLowerCase();
     const normalizedMainCopy = mainCopy.toLowerCase();
 
-    if (
-      titles.has(normalizedTitle) ||
-      appeals.has(normalizedAppeal) ||
-      mainCopies.has(normalizedMainCopy) ||
-      audiences.has(audience.toLowerCase())
-    ) {
+    if (titles.has(normalizedTitle) || appeals.has(normalizedAppeal) || mainCopies.has(normalizedMainCopy) || audiences.has(audience.toLowerCase())) {
       title = fallback.title;
       appeal = fallback.appeal;
       mainCopy = fallback.mainCopy;
       audience = fallback.audience;
     }
-    if (
-      titles.has(title.toLowerCase()) ||
-      appeals.has(appeal.toLowerCase()) ||
-      mainCopies.has(mainCopy.toLowerCase())
-    ) {
-      strategyBase =
-        params.fallbacks.find(
-          (option) =>
-            !titles.has(option.title.toLowerCase()) &&
-            !appeals.has(option.appeal.toLowerCase()) &&
-            !mainCopies.has(option.mainCopy.toLowerCase())
-        ) || fallback;
+    if (titles.has(title.toLowerCase()) || appeals.has(appeal.toLowerCase()) || mainCopies.has(mainCopy.toLowerCase())) {
+      strategyBase = params.fallbacks.find((option) => !titles.has(option.title.toLowerCase()) && !appeals.has(option.appeal.toLowerCase()) && !mainCopies.has(option.mainCopy.toLowerCase())) || fallback;
       title = strategyBase.title;
       appeal = strategyBase.appeal;
       mainCopy = strategyBase.mainCopy;
@@ -317,9 +223,7 @@ function normalizeStrategies(params: {
     audiences.add(audience.toLowerCase());
     let hookType = safeEnum(candidate.hookType, hookTypes, strategyBase.hookType);
     if (usedHookTypes.has(hookType)) {
-      hookType =
-        params.fallbacks.find((option) => !usedHookTypes.has(option.hookType))?.hookType ||
-        strategyBase.hookType;
+      hookType = params.fallbacks.find((option) => !usedHookTypes.has(option.hookType))?.hookType || strategyBase.hookType;
     }
     usedHookTypes.add(hookType);
 
@@ -331,48 +235,15 @@ function normalizeStrategies(params: {
       headline: mainCopy,
       subCopy: safeField(candidate.subCopy, strategyBase.subCopy, 64, params.product),
       keyAppeal: appeal,
-      sceneDescription: safeField(
-        candidate.sceneDescription,
-        strategyBase.sceneDescription,
-        90,
-        params.product
-      ),
+      sceneDescription: safeField(candidate.sceneDescription, strategyBase.sceneDescription, 90, params.product),
       mood: safeList(candidate.mood, strategyBase.mood, 4, 16),
       textSafeArea: safeEnum(candidate.textSafeArea, textSafeAreas, strategyBase.textSafeArea),
-      productPosition: safeEnum(
-        candidate.productPosition,
-        productPositions,
-        strategyBase.productPosition
-      ),
+      productPosition: safeEnum(candidate.productPosition, productPositions, strategyBase.productPosition),
       backgroundTags: safeList(candidate.backgroundTags, strategyBase.backgroundTags, 6, 18),
-      backgroundHookType: safeEnum(
-        candidate.backgroundHookType,
-        backgroundHookTypeSet,
-        strategyBase.backgroundHookType || "usp_proof"
-      ),
-      targetAgeGroups: safeList(
-        candidate.targetAgeGroups,
-        strategyBase.targetAgeGroups || params.product.targetAgeGroups || [],
-        6,
-        20
-      ).filter((value) => audienceAgeGroupSet.has(value as AudienceAgeGroup)) as AudienceAgeGroup[],
-      preferredAssetTypes: safeList(
-        candidate.preferredAssetTypes,
-        strategyBase.preferredAssetTypes || [],
-        4,
-        30
-      ).filter((value) =>
-        backgroundAssetTypeSet.has(value as BackgroundAssetType)
-      ) as BackgroundAssetType[],
-      preferredColors: safeList(
-        candidate.preferredColors,
-        strategyBase.preferredColors ||
-          params.product.brandColors ||
-          params.product.productColors ||
-          [],
-        6,
-        30
-      ),
+      backgroundHookType: safeEnum(candidate.backgroundHookType, backgroundHookTypeSet, strategyBase.backgroundHookType || "usp_proof"),
+      targetAgeGroups: safeList(candidate.targetAgeGroups, strategyBase.targetAgeGroups || params.product.targetAgeGroups || [], 6, 20).filter((value) => audienceAgeGroupSet.has(value as AudienceAgeGroup)) as AudienceAgeGroup[],
+      preferredAssetTypes: safeList(candidate.preferredAssetTypes, strategyBase.preferredAssetTypes || [], 4, 30).filter((value) => backgroundAssetTypeSet.has(value as BackgroundAssetType)) as BackgroundAssetType[],
+      preferredColors: safeList(candidate.preferredColors, strategyBase.preferredColors || params.product.brandColors || params.product.productColors || [], 6, 30),
       appeal,
       mainCopy,
       audience,
@@ -380,36 +251,15 @@ function normalizeStrategies(params: {
       mainHookAngle: mainCopy,
       coreAppealPoint: appeal,
       audienceFit: audience,
-      expectedCustomerProblem: safeField(
-        candidate.targetTension,
-        strategyBase.expectedCustomerProblem,
-        72,
-        params.product
-      ),
-      purchaseBarrierResponse: safeField(
-        candidate.desiredOutcome,
-        strategyBase.purchaseBarrierResponse,
-        90,
-        params.product
-      ),
+      expectedCustomerProblem: safeField(candidate.targetTension, strategyBase.expectedCustomerProblem, 72, params.product),
+      purchaseBarrierResponse: safeField(candidate.desiredOutcome, strategyBase.purchaseBarrierResponse, 90, params.product),
       inferredEvidence: safeList(candidate.evidenceUsed, strategyBase.inferredEvidence, 6, 80),
-      recommendedTone: safeField(
-        candidate.hookFormula,
-        strategyBase.recommendedTone,
-        72,
-        params.product
-      ),
+      recommendedTone: safeField(candidate.hookFormula, strategyBase.recommendedTone, 72, params.product),
     };
   });
 }
 
-async function generateStrategiesWithOpenAI(params: {
-  product: ProductInfoForPrompt;
-  brief: AdBrief;
-  references: AdImageLabel[];
-  fallbacks: CreativeStrategy[];
-  batch: number;
-}) {
+async function generateStrategiesWithOpenAI(params: { product: ProductInfoForPrompt; brief: AdBrief; references: AdImageLabel[]; fallbacks: CreativeStrategy[]; batch: number }) {
   const productUspAnalysis = analyzeProductUsp(params.product);
   const facts = {
     productName: params.product.productName,
@@ -538,8 +388,7 @@ export async function POST(request: Request) {
         });
         usedAi = true;
       } catch (error) {
-        strategyWarning =
-          error instanceof Error ? error.message : "AI 전략 응답을 해석하지 못했습니다.";
+        strategyWarning = error instanceof Error ? error.message : "AI 전략 응답을 해석하지 못했습니다.";
       }
     }
 

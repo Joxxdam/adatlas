@@ -1,72 +1,20 @@
-export const VIDEO_PROJECT_STATUSES = [
-  "script_pending",
-  "script_review",
-  "concept_selected",
-  "production_requested",
-  "in_production",
-  "marketer_review",
-  "revision_requested",
-  "approved",
-] as const;
+export const VIDEO_PROJECT_STATUSES = ["script_pending", "script_review", "concept_selected", "production_requested", "in_production", "marketer_review", "revision_requested", "approved"] as const;
 
 export type VideoProjectStatus = (typeof VIDEO_PROJECT_STATUSES)[number];
 
-export const VIDEO_HOOK_TYPES = [
-  "problem-solution",
-  "price-benefit",
-  "feature-usp",
-  "sensory-scene",
-  "curiosity",
-  "review-trust",
-  "brand-message",
-  "loss-aversion",
-  "unexpected-comparison",
-  "origin-material",
-  "before-after",
-  "seasonal-situation",
-  "myth-busting",
-  "user-monologue",
-] as const;
+export const VIDEO_HOOK_TYPES = ["problem-solution", "price-benefit", "feature-usp", "sensory-scene", "curiosity", "review-trust", "brand-message", "loss-aversion", "unexpected-comparison", "origin-material", "before-after", "seasonal-situation", "myth-busting", "user-monologue"] as const;
 
 export type VideoHookType = (typeof VIDEO_HOOK_TYPES)[number];
 export type VideoDuration = 15 | 20 | 30 | 45 | 60;
 export type VideoDurationMode = "auto" | "fixed";
 export type VideoFormat = "short-form" | "reels" | "feed" | "other";
-export type VideoObjective =
-  | "purchase"
-  | "new-customer-hook"
-  | "retargeting"
-  | "usp"
-  | "review-ugc"
-  | "interest"
-  | "new-product"
-  | "benefit";
+export type VideoObjective = "purchase" | "new-customer-hook" | "retargeting" | "usp" | "review-ugc" | "interest" | "new-product" | "benefit";
 export type VideoPlatform = "meta" | "instagram" | "tiktok" | "youtube-shorts";
-export type VideoCreativeStyle =
-  | "auto"
-  | "smartphone-ugc"
-  | "ad-real"
-  | "clay-miniature"
-  | "3d"
-  | "live-ai"
-  | "mixed";
-export const VIDEO_CONCEPT_FORMATS = [
-  "drama-movie-parody",
-  "game-quest",
-  "influencer-demo",
-  "home-shopping",
-  "industry-expert",
-  "classic-usp",
-  "clay-animation",
-] as const;
+export type VideoCreativeStyle = "auto" | "smartphone-ugc" | "ad-real" | "clay-miniature" | "3d" | "live-ai" | "mixed";
+export const VIDEO_CONCEPT_FORMATS = ["drama-movie-parody", "game-quest", "influencer-demo", "home-shopping", "industry-expert", "classic-usp", "clay-animation"] as const;
 export type VideoConceptFormat = (typeof VIDEO_CONCEPT_FORMATS)[number];
 
-export const VIDEO_CONCEPT_ARCHETYPES = [
-  "parody",
-  "real-review",
-  "usp-focus",
-  "secret-benefit",
-] as const;
+export const VIDEO_CONCEPT_ARCHETYPES = ["parody", "real-review", "usp-focus", "secret-benefit"] as const;
 export type VideoConceptArchetype = (typeof VIDEO_CONCEPT_ARCHETYPES)[number];
 
 export const VIDEO_CONCEPT_ARCHETYPE_OPTIONS: Array<{
@@ -278,16 +226,7 @@ export type ProductAnalysisSnapshot = {
   evidenceCoverage?: "sufficient" | "limited";
 };
 
-export type VideoGenerationStage =
-  | "product-analysis"
-  | "reference-analysis"
-  | "hook-candidates"
-  | "concept-summaries"
-  | "detailed-script"
-  | "json-parse"
-  | "schema-validation"
-  | "quality-review"
-  | "automatic-revision";
+export type VideoGenerationStage = "product-analysis" | "reference-analysis" | "hook-candidates" | "concept-summaries" | "detailed-script" | "json-parse" | "schema-validation" | "quality-review" | "automatic-revision";
 
 export type VideoGenerationFailure = {
   stage: VideoGenerationStage;
@@ -350,17 +289,7 @@ export type ProductLockedAsset = {
   limitations: string[];
 };
 
-export type PipelineStageName =
-  | "productAnalysis"
-  | "hookCandidates"
-  | "conceptCandidates"
-  | "conceptScoring"
-  | "selectedConcept"
-  | "storyboard"
-  | "visualBible"
-  | "scenePrompts"
-  | "validation"
-  | "finalRevision";
+export type PipelineStageName = "productAnalysis" | "hookCandidates" | "conceptCandidates" | "conceptScoring" | "selectedConcept" | "storyboard" | "visualBible" | "scenePrompts" | "validation" | "finalRevision";
 export type PipelineStageStatus = "pending" | "running" | "complete" | "warning" | "failed";
 export type VideoPipelineProgress = {
   stage: PipelineStageName;
@@ -585,21 +514,7 @@ export type VideoProject = {
   updatedAt: string;
 };
 
-export type VideoProjectSummary = Pick<
-  VideoProject,
-  | "id"
-  | "projectName"
-  | "advertiserName"
-  | "productUrl"
-  | "marketerName"
-  | "designerName"
-  | "duration"
-  | "status"
-  | "selectedConceptId"
-  | "deadline"
-  | "createdAt"
-  | "updatedAt"
-> & {
+export type VideoProjectSummary = Pick<VideoProject, "id" | "projectName" | "advertiserName" | "productUrl" | "marketerName" | "designerName" | "duration" | "status" | "selectedConceptId" | "deadline" | "createdAt" | "updatedAt"> & {
   productName: string;
   hookType?: VideoHookType;
   conceptFormat?: VideoConceptFormat;
@@ -608,31 +523,7 @@ export type VideoProjectSummary = Pick<
   selectedConceptTitle?: string;
 };
 
-export type CreateVideoProjectInput = Pick<
-  VideoProject,
-  | "projectName"
-  | "advertiserName"
-  | "productUrl"
-  | "designerName"
-  | "duration"
-  | "format"
-  | "objective"
-  | "platform"
-  | "aspectRatio"
-  | "creativeStyle"
-  | "conceptFormat"
-  | "planningMode"
-  | "durationMode"
-  | "advancedTarget"
-  | "advancedTone"
-  | "additionalRequests"
-  | "requiredContent"
-  | "excludedContent"
-  | "referenceAssets"
-  | "productOriginalAsset"
-  | "productAnalysis"
-  | "brandGuideline"
-> & {
+export type CreateVideoProjectInput = Pick<VideoProject, "projectName" | "advertiserName" | "productUrl" | "designerName" | "duration" | "format" | "objective" | "platform" | "aspectRatio" | "creativeStyle" | "conceptFormat" | "planningMode" | "durationMode" | "advancedTarget" | "advancedTone" | "additionalRequests" | "requiredContent" | "excludedContent" | "referenceAssets" | "productOriginalAsset" | "productAnalysis" | "brandGuideline"> & {
   marketerName?: string;
   deadline?: string;
 };

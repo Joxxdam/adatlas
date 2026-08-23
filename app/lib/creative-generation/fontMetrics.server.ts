@@ -32,16 +32,7 @@ function cmapGlyphMapper(buffer: Buffer, cmapOffset: number) {
     const encoding = buffer.readUInt16BE(cursor + 2);
     const offset = cmapOffset + buffer.readUInt32BE(cursor + 4);
     const format = buffer.readUInt16BE(offset);
-    const score =
-      format === 12 && platform === 3 && encoding === 10
-        ? 100
-        : format === 12
-          ? 90
-          : format === 4 && platform === 3
-            ? 80
-            : format === 4
-              ? 70
-              : 0;
+    const score = format === 12 && platform === 3 && encoding === 10 ? 100 : format === 12 ? 90 : format === 4 && platform === 3 ? 80 : format === 4 ? 70 : 0;
     if (score) candidates.push({ score, offset, format });
   }
   const selected = candidates.sort((left, right) => right.score - left.score)[0];
@@ -95,9 +86,7 @@ function cmapGlyphMapper(buffer: Buffer, cmapOffset: number) {
 }
 
 async function loadFontMetrics(): Promise<FontMetrics> {
-  const buffer = await fs.readFile(
-    path.join(process.cwd(), "public", "fonts", "NotoSansKR-Variable.ttf")
-  );
+  const buffer = await fs.readFile(path.join(process.cwd(), "public", "fonts", "NotoSansKR-Variable.ttf"));
   const tables = tableDirectory(buffer);
   const head = tables.get("head");
   const hhea = tables.get("hhea");
@@ -128,12 +117,7 @@ export async function getCreativeFontMetrics() {
   return metricsPromise;
 }
 
-export function measureWithFontMetrics(
-  metrics: FontMetrics,
-  text: string,
-  fontSize: number,
-  letterSpacing = 0
-) {
+export function measureWithFontMetrics(metrics: FontMetrics, text: string, fontSize: number, letterSpacing = 0) {
   const codePoints = Array.from(text, (character) => character.codePointAt(0) || 0);
   const units = codePoints.reduce((total, codePoint) => {
     const glyph = metrics.glyphForCodePoint(codePoint);

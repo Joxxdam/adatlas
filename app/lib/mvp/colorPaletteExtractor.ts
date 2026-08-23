@@ -1,16 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import sharp from "sharp";
-import {
-  adjustColor,
-  areColorsTooSimilar,
-  chooseTextColor,
-  colorDistance,
-  hexToRgb,
-  mixColors,
-  rgbToHex,
-  rgbToHsl,
-} from "./colorUtils";
+import { adjustColor, areColorsTooSimilar, chooseTextColor, colorDistance, hexToRgb, mixColors, rgbToHex, rgbToHsl } from "./colorUtils";
 import { getCategoryFallbackPalette } from "./defaultPalettes";
 import type { ExtractedPalette } from "./types";
 import { readCatalogAssetFromUrl } from "../background-library/catalogStore.server";
@@ -26,13 +17,7 @@ function isPrivateHostname(hostname: string) {
   const [, aRaw, bRaw] = match;
   const a = Number(aRaw);
   const b = Number(bRaw);
-  return (
-    a === 10 ||
-    a === 127 ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168)
-  );
+  return a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
 }
 
 async function imageBuffer(source: string) {
@@ -76,12 +61,7 @@ async function imageBuffer(source: string) {
 type Candidate = { color: string; count: number; saturation: number; lightness: number };
 
 async function representativeColors(buffer: Buffer): Promise<Candidate[]> {
-  const { data, info } = await sharp(buffer)
-    .rotate()
-    .resize(72, 72, { fit: "inside", withoutEnlargement: true })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(buffer).rotate().resize(72, 72, { fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const bins = new Map<string, number>();
 
   for (let index = 0; index < data.length; index += info.channels) {
@@ -94,9 +74,7 @@ async function representativeColors(buffer: Buffer): Promise<Candidate[]> {
     const min = Math.min(r, g, b);
     if (max > 246 && min > 236) continue;
     if (max < 18) continue;
-    const quantized = `${Math.round(r / 24) * 24},${Math.round(g / 24) * 24},${
-      Math.round(b / 24) * 24
-    }`;
+    const quantized = `${Math.round(r / 24) * 24},${Math.round(g / 24) * 24},${Math.round(b / 24) * 24}`;
     bins.set(quantized, (bins.get(quantized) || 0) + 1);
   }
 
@@ -108,45 +86,23 @@ async function representativeColors(buffer: Buffer): Promise<Candidate[]> {
       return { color, count, saturation: hsl.s, lightness: hsl.l };
     })
     .sort((a, b) => b.count * (1 + b.saturation / 180) - a.count * (1 + a.saturation / 180))
-    .filter((candidate, index, values) =>
-      values
-        .slice(0, index)
-        .every((previous) => colorDistance(previous.color, candidate.color) > 42)
-    )
+    .filter((candidate, index, values) => values.slice(0, index).every((previous) => colorDistance(previous.color, candidate.color) > 42))
     .slice(0, 8);
 }
 
-function paletteFromCandidates(
-  candidates: Candidate[],
-  fallback: ExtractedPalette,
-  source: string
-): ExtractedPalette {
+function paletteFromCandidates(candidates: Candidate[], fallback: ExtractedPalette, source: string): ExtractedPalette {
   if (candidates.length < 2) return { ...fallback, sourceImagePath: source, confidence: 0.4 };
-  const primaryCandidate = candidates.find(
-    (candidate) =>
-      candidate.saturation >= 22 && candidate.lightness >= 18 && candidate.lightness <= 78
-  );
+  const primaryCandidate = candidates.find((candidate) => candidate.saturation >= 22 && candidate.lightness >= 18 && candidate.lightness <= 78);
   const primary = adjustColor(primaryCandidate?.color || candidates[0].color, {
     s: Math.max(34, primaryCandidate?.saturation || candidates[0].saturation),
     l: Math.min(62, Math.max(28, primaryCandidate?.lightness || candidates[0].lightness)),
   });
-  const secondaryCandidate =
-    candidates.find(
-      (candidate) =>
-        colorDistance(candidate.color, primary) > 90 &&
-        candidate.lightness >= 12 &&
-        candidate.lightness <= 80
-    ) || candidates[1];
+  const secondaryCandidate = candidates.find((candidate) => colorDistance(candidate.color, primary) > 90 && candidate.lightness >= 12 && candidate.lightness <= 80) || candidates[1];
   const secondary = adjustColor(secondaryCandidate.color, {
     s: Math.max(24, secondaryCandidate.saturation),
     l: Math.min(58, Math.max(18, secondaryCandidate.lightness)),
   });
-  const accentCandidate =
-    [...candidates].sort(
-      (a, b) =>
-        b.saturation * (1 - Math.abs(b.lightness - 55) / 100) -
-        a.saturation * (1 - Math.abs(a.lightness - 55) / 100)
-    )[0] || primaryCandidate;
+  const accentCandidate = [...candidates].sort((a, b) => b.saturation * (1 - Math.abs(b.lightness - 55) / 100) - a.saturation * (1 - Math.abs(a.lightness - 55) / 100))[0] || primaryCandidate;
   let accent = adjustColor(accentCandidate?.color || primary, {
     s: Math.max(60, accentCandidate?.saturation || 60),
     l: Math.min(62, Math.max(42, accentCandidate?.lightness || 52)),
@@ -155,10 +111,7 @@ function paletteFromCandidates(
   const background = mixColors(primary, "#ffffff", 0.91);
   const surface = mixColors(primary, "#ffffff", 0.96);
   const accentHue = rgbToHsl(hexToRgb(accent)).h;
-  const highlight =
-    accentHue >= 42 && accentHue <= 70
-      ? adjustColor(accent, { s: 92, l: 68 })
-      : fallback.highlightColor;
+  const highlight = accentHue >= 42 && accentHue <= 70 ? adjustColor(accent, { s: 92, l: 68 }) : fallback.highlightColor;
 
   return {
     primaryColor: primary,
@@ -176,10 +129,7 @@ function paletteFromCandidates(
   };
 }
 
-export async function extractPaletteFromImage(
-  sourceImagePath: string,
-  category?: string
-): Promise<ExtractedPalette> {
+export async function extractPaletteFromImage(sourceImagePath: string, category?: string): Promise<ExtractedPalette> {
   const fallback = getCategoryFallbackPalette(category);
   const source = String(sourceImagePath || "").trim();
   if (!source) return fallback;

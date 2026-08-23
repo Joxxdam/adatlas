@@ -4,44 +4,11 @@ import crypto from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader.ts";
-import {
-  VIDEO_HOOK_TYPES,
-  VIDEO_CONCEPT_FORMAT_OPTIONS,
-  VIDEO_CONCEPT_ARCHETYPE_OPTIONS,
-  type HookScore,
-  type ProductAnalysisSnapshot,
-  type VideoConcept,
-  type VideoCut,
-  type VideoDuration,
-  type VideoHookCandidate,
-  type VideoHookType,
-  type VideoObjective,
-  type BrandGuideline,
-  type VideoCreativeStyle,
-  type VideoReferenceAsset,
-  type ReferenceVideoAnalysis,
-  type VideoConceptFormat,
-  type VideoConceptArchetype,
-} from "./types.ts";
+import { VIDEO_HOOK_TYPES, VIDEO_CONCEPT_FORMAT_OPTIONS, VIDEO_CONCEPT_ARCHETYPE_OPTIONS, type HookScore, type ProductAnalysisSnapshot, type VideoConcept, type VideoCut, type VideoDuration, type VideoHookCandidate, type VideoHookType, type VideoObjective, type BrandGuideline, type VideoCreativeStyle, type VideoReferenceAsset, type ReferenceVideoAnalysis, type VideoConceptFormat, type VideoConceptArchetype } from "./types.ts";
 import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } from "./workflow.ts";
-import {
-  assignPlanningTimeline,
-  hasVerifiedVideoBenefit,
-  repairDetailedPlanningCta,
-  repairDetailedPlanningSceneDescriptions,
-  segmentRange,
-  validateConceptDiversity,
-  validateDetailedPlanning,
-} from "./planningValidation.ts";
-import {
-  getVideoPlanningProvider,
-  runVideoPlanningAi,
-  VideoPlanningGenerationError,
-} from "./videoPlanningAi.server.ts";
-import {
-  requestFourVideoConcepts,
-  REQUIRED_VIDEO_CONCEPT_ARCHETYPES,
-} from "./videoPlanningConceptBatch.ts";
+import { assignPlanningTimeline, hasVerifiedVideoBenefit, repairDetailedPlanningCta, repairDetailedPlanningSceneDescriptions, segmentRange, validateConceptDiversity, validateDetailedPlanning } from "./planningValidation.ts";
+import { getVideoPlanningProvider, runVideoPlanningAi, VideoPlanningGenerationError } from "./videoPlanningAi.server.ts";
+import { requestFourVideoConcepts, REQUIRED_VIDEO_CONCEPT_ARCHETYPES } from "./videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "./videoPlanningCorrection.ts";
 import { analyzeReferenceAssets } from "./planningPipeline.ts";
 
@@ -128,10 +95,7 @@ function stylePrinciples(category: string) {
   return "상품의 실제 사용 장소와 고객 행동을 중심으로 카테고리에 맞는 구체적인 장면을 만든다.";
 }
 
-type AiReferenceAnalysis = Omit<
-  ReferenceVideoAnalysis,
-  "analysisStatus" | "cutCount" | "averageCutLength"
-> & {
+type AiReferenceAnalysis = Omit<ReferenceVideoAnalysis, "analysisStatus" | "cutCount" | "averageCutLength"> & {
   analysisStatus: "analyzed" | "limited";
   cutCount: number;
   averageCutLength: number;
@@ -149,25 +113,7 @@ const referenceAnalysisSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: [
-          "assetId",
-          "assetName",
-          "analysisStatus",
-          "openingHookMethod",
-          "openingTiming",
-          "cutCount",
-          "averageCutLength",
-          "cameraAndGaze",
-          "actions",
-          "informationDensity",
-          "subtitlePosition",
-          "transitions",
-          "timingMap",
-          "compositionRatio",
-          "emotionalTone",
-          "reusablePrinciples",
-          "limitations",
-        ],
+        required: ["assetId", "assetName", "analysisStatus", "openingHookMethod", "openingTiming", "cutCount", "averageCutLength", "cameraAndGaze", "actions", "informationDensity", "subtitlePosition", "transitions", "timingMap", "compositionRatio", "emotionalTone", "reusablePrinciples", "limitations"],
         properties: {
           assetId: { type: "string" },
           assetName: { type: "string" },
@@ -305,9 +251,7 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
     );
     return [...completed, ...nonVideos];
   } catch (error) {
-    console.info(
-      `[video-planning] stage=reference-analysis event=limited code=${error instanceof VideoPlanningGenerationError ? error.failure.code : "REFERENCE_ANALYSIS_LIMITED"}`
-    );
+    console.info(`[video-planning] stage=reference-analysis event=limited code=${error instanceof VideoPlanningGenerationError ? error.failure.code : "REFERENCE_ANALYSIS_LIMITED"}`);
     return [
       ...videoAssets.map((asset): ReferenceVideoAnalysis => ({
         assetId: asset.id,
@@ -331,9 +275,7 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
         compositionRatio: { liveAction: null, animation: null, composite: null },
         emotionalTone: "확인 불가",
         reusablePrinciples: [],
-        limitations: [
-          "참고 영상 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다.",
-        ],
+        limitations: ["참고 영상 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다."],
       })),
       ...nonVideos,
     ];
@@ -341,16 +283,7 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
 }
 
 function scoreTotal(score: Omit<HookScore, "total">) {
-  return Math.round(
-    score.stopPower * 0.16 +
-      score.specificity * 0.14 +
-      score.productRelevance * 0.15 +
-      score.visualPotential * 0.13 +
-      score.evidenceStrength * 0.14 +
-      score.conversionPotential * 0.13 +
-      score.originality * 0.08 +
-      score.policySafety * 0.07
-  );
+  return Math.round(score.stopPower * 0.16 + score.specificity * 0.14 + score.productRelevance * 0.15 + score.visualPotential * 0.13 + score.evidenceStrength * 0.14 + score.conversionPotential * 0.13 + score.originality * 0.08 + score.policySafety * 0.07);
 }
 
 type AiHook = {
@@ -375,15 +308,7 @@ const hookSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: [
-          "hookType",
-          "hook",
-          "customerProblem",
-          "evidenceIds",
-          "visualIdea",
-          "scores",
-          "rejectionReasons",
-        ],
+        required: ["hookType", "hook", "customerProblem", "evidenceIds", "visualIdea", "scores", "rejectionReasons"],
         properties: {
           hookType: hookTypeSchema,
           hook: { type: "string", minLength: 8, maxLength: 70 },
@@ -393,28 +318,8 @@ const hookSchema = {
           scores: {
             type: "object",
             additionalProperties: false,
-            required: [
-              "stopPower",
-              "specificity",
-              "productRelevance",
-              "visualPotential",
-              "evidenceStrength",
-              "conversionPotential",
-              "originality",
-              "policySafety",
-            ],
-            properties: Object.fromEntries(
-              [
-                "stopPower",
-                "specificity",
-                "productRelevance",
-                "visualPotential",
-                "evidenceStrength",
-                "conversionPotential",
-                "originality",
-                "policySafety",
-              ].map((key) => [key, { type: "integer", minimum: 0, maximum: 100 }])
-            ),
+            required: ["stopPower", "specificity", "productRelevance", "visualPotential", "evidenceStrength", "conversionPotential", "originality", "policySafety"],
+            properties: Object.fromEntries(["stopPower", "specificity", "productRelevance", "visualPotential", "evidenceStrength", "conversionPotential", "originality", "policySafety"].map((key) => [key, { type: "integer", minimum: 0, maximum: 100 }])),
           },
           rejectionReasons: { type: "array", maxItems: 4, items: { type: "string" } },
         },
@@ -423,11 +328,7 @@ const hookSchema = {
   },
 } as const;
 
-export async function generateVideoHookCandidatesAi(
-  analysis: ProductAnalysisSnapshot,
-  guideline: BrandGuideline,
-  referenceAnalyses: ReferenceVideoAnalysis[] = []
-) {
+export async function generateVideoHookCandidatesAi(analysis: ProductAnalysisSnapshot, guideline: BrandGuideline, referenceAnalyses: ReferenceVideoAnalysis[] = []) {
   const allowedEvidenceIds = new Set((analysis.verifiedFacts || []).map((fact) => fact.id));
   const payload = await runVideoPlanningAi<{ hooks: AiHook[] }>({
     stage: "hook-candidates",
@@ -523,9 +424,7 @@ type AiConceptSummary = {
 };
 
 function conceptSummarySchema(options: { count: number; archetypes?: VideoConceptArchetype[] }) {
-  const archetypes = options.archetypes?.length
-    ? options.archetypes
-    : [...REQUIRED_VIDEO_CONCEPT_ARCHETYPES];
+  const archetypes = options.archetypes?.length ? options.archetypes : [...REQUIRED_VIDEO_CONCEPT_ARCHETYPES];
   return {
     type: "object",
     additionalProperties: false,
@@ -538,31 +437,7 @@ function conceptSummarySchema(options: { count: number; archetypes?: VideoConcep
         items: {
           type: "object",
           additionalProperties: false,
-          required: [
-            "conceptArchetype",
-            "hookId",
-            "hookType",
-            "title",
-            "openingHook",
-            "coreTarget",
-            "customerProblem",
-            "usp",
-            "speaker",
-            "creativeStyle",
-            "narrativeStructure",
-            "narrativeSummary",
-            "recommendationReason",
-            "evidenceIds",
-            "claimsToVerify",
-            "cta",
-            "centralIncident",
-            "speakerPointOfView",
-            "keyAppeal",
-            "recommendedVisualStyle",
-            "supportingDevices",
-            "differenceFromPrevious",
-            "benefitAvailability",
-          ],
+          required: ["conceptArchetype", "hookId", "hookType", "title", "openingHook", "coreTarget", "customerProblem", "usp", "speaker", "creativeStyle", "narrativeStructure", "narrativeSummary", "recommendationReason", "evidenceIds", "claimsToVerify", "cta", "centralIncident", "speakerPointOfView", "keyAppeal", "recommendedVisualStyle", "supportingDevices", "differenceFromPrevious", "benefitAvailability"],
           properties: {
             conceptArchetype: { type: "string", enum: archetypes },
             hookId: { type: "string" },
@@ -575,15 +450,7 @@ function conceptSummarySchema(options: { count: number; archetypes?: VideoConcep
             speaker: { type: "string", minLength: 2, maxLength: 80 },
             creativeStyle: {
               type: "string",
-              enum: [
-                "auto",
-                "smartphone-ugc",
-                "ad-real",
-                "clay-miniature",
-                "3d",
-                "live-ai",
-                "mixed",
-              ],
+              enum: ["auto", "smartphone-ugc", "ad-real", "clay-miniature", "3d", "live-ai", "mixed"],
             },
             narrativeStructure: { type: "string", minLength: 12, maxLength: 180 },
             narrativeSummary: { type: "string", minLength: 30, maxLength: 400 },
@@ -628,21 +495,7 @@ function conceptScore(hook?: VideoHookCandidate) {
   };
 }
 
-export async function generateVideoConceptSummariesAi(input: {
-  advertiserName: string;
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  duration: VideoDuration;
-  objective: VideoObjective;
-  hooks: VideoHookCandidate[];
-  existingConcepts?: VideoConcept[];
-  referenceAnalyses?: ReferenceVideoAnalysis[];
-  conceptFormat?: VideoConceptFormat;
-  planningMode?: "legacy" | "four-concepts";
-  requiredContent?: string;
-  excludedContent?: string;
-  requestedArchetype?: VideoConceptArchetype;
-}) {
+export async function generateVideoConceptSummariesAi(input: { advertiserName: string; analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; duration: VideoDuration; objective: VideoObjective; hooks: VideoHookCandidate[]; existingConcepts?: VideoConcept[]; referenceAnalyses?: ReferenceVideoAnalysis[]; conceptFormat?: VideoConceptFormat; planningMode?: "legacy" | "four-concepts"; requiredContent?: string; excludedContent?: string; requestedArchetype?: VideoConceptArchetype }) {
   const candidates = [...input.hooks]
     .filter((hook) => !hook.rejectionReasons.length)
     .sort((left, right) => right.score.total - left.score.total)
@@ -655,11 +508,8 @@ export async function generateVideoConceptSummariesAi(input: {
     category: input.analysis.category,
     productName: input.analysis.productName,
   });
-  const selectedFormat = VIDEO_CONCEPT_FORMAT_OPTIONS.find(
-    (item) => item.id === input.conceptFormat
-  );
-  const fourConceptMode =
-    !input.requestedArchetype && (input.planningMode === "four-concepts" || !selectedFormat);
+  const selectedFormat = VIDEO_CONCEPT_FORMAT_OPTIONS.find((item) => item.id === input.conceptFormat);
+  const fourConceptMode = !input.requestedArchetype && (input.planningMode === "four-concepts" || !selectedFormat);
   const hasVerifiedBenefit = hasVerifiedVideoBenefit(input.analysis);
   const request = async (archetypes: VideoConceptArchetype[] | undefined, correction = "") =>
     runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
@@ -669,11 +519,7 @@ export async function generateVideoConceptSummariesAi(input: {
         count: archetypes?.length || 1,
         archetypes,
       }) as unknown as Record<string, unknown>,
-      prompt: `당신은 한국 퍼포먼스 광고 영상 기획자다. 아래 상품 근거와 평가된 후킹을 사용해 ${
-        archetypes?.length
-          ? `${archetypes.map((archetype) => VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label).join(" · ")} 기획안을 각각 1개씩, 총 ${archetypes.length}개`
-          : "사용자가 선택한 형식의 기획안 1개"
-      } 만든다.
+      prompt: `당신은 한국 퍼포먼스 광고 영상 기획자다. 아래 상품 근거와 평가된 후킹을 사용해 ${archetypes?.length ? `${archetypes.map((archetype) => VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === archetype)?.label).join(" · ")} 기획안을 각각 1개씩, 총 ${archetypes.length}개` : "사용자가 선택한 형식의 기획안 1개"} 만든다.
 
 [상품]
 ${JSON.stringify(promptFacts(input.analysis))}
@@ -717,12 +563,8 @@ ${correction} JSON만 반환한다.`,
   const toConcepts = (rows: AiConceptSummary[]) => {
     const occupiedCodes = [...(input.existingConcepts || []).map((item) => item.materialCode)];
     return rows.map((row): VideoConcept => {
-      const hook =
-        input.hooks.find((item) => item.id === row.hookId) ||
-        input.hooks.find((item) => item.hookType === row.hookType);
-      const previous =
-        input.existingConcepts?.find((item) => item.conceptArchetype === row.conceptArchetype) ||
-        input.existingConcepts?.find((item) => item.hookType === row.hookType);
+      const hook = input.hooks.find((item) => item.id === row.hookId) || input.hooks.find((item) => item.hookType === row.hookType);
+      const previous = input.existingConcepts?.find((item) => item.conceptArchetype === row.conceptArchetype) || input.existingConcepts?.find((item) => item.hookType === row.hookType);
       const now = new Date().toISOString();
       return {
         id: previous?.id || crypto.randomUUID(),
@@ -794,30 +636,14 @@ ${correction} JSON만 반환한다.`,
     for (const row of rows) {
       if (!candidates.some((hook) => hook.id === row.hookId)) invalid.add(row.conceptArchetype);
       if (row.evidenceIds.some((id) => !evidenceIds.has(id))) invalid.add(row.conceptArchetype);
-      if (
-        row.conceptArchetype === "secret-benefit" &&
-        !hasVerifiedBenefit &&
-        row.benefitAvailability !== "insufficient"
-      ) {
+      if (row.conceptArchetype === "secret-benefit" && !hasVerifiedBenefit && row.benefitAvailability !== "insufficient") {
         invalid.add(row.conceptArchetype);
       }
     }
-    const fields = rows.map((row) => [
-      row.hookType,
-      row.openingHook,
-      row.centralIncident,
-      row.customerProblem,
-      row.usp,
-      row.speakerPointOfView || row.speaker,
-      row.recommendedVisualStyle,
-      row.narrativeStructure,
-      row.cta,
-    ]);
+    const fields = rows.map((row) => [row.hookType, row.openingHook, row.centralIncident, row.customerProblem, row.usp, row.speakerPointOfView || row.speaker, row.recommendedVisualStyle, row.narrativeStructure, row.cta]);
     for (let left = 0; left < fields.length; left += 1) {
       for (let right = left + 1; right < fields.length; right += 1) {
-        const same = fields[left].filter(
-          (value, index) => value && value === fields[right][index]
-        ).length;
+        const same = fields[left].filter((value, index) => value && value === fields[right][index]).length;
         if (same / fields[left].length >= 0.45) invalid.add(rows[right].conceptArchetype);
       }
     }
@@ -828,8 +654,7 @@ ${correction} JSON만 반환한다.`,
   try {
     rows = await requestFourVideoConcepts({
       requestBatch: async () => (await request([...REQUIRED_VIDEO_CONCEPT_ARCHETYPES])).concepts,
-      requestOne: async (archetype, correction) =>
-        (await request([archetype], correction)).concepts[0],
+      requestOne: async (archetype, correction) => (await request([archetype], correction)).concepts[0],
       findInvalidArchetypes,
     });
   } catch (error) {
@@ -906,7 +731,10 @@ function rowsToCuts(rows: AiScriptRow[], duration: VideoDuration, existing?: Vid
 function removeLiteralForbidden(value: string, forbidden: string[]) {
   let next = value;
   for (const phrase of forbidden.map((item) => clean(item, 180)).filter(Boolean)) {
-    next = next.replaceAll(phrase, "").replace(/\s{2,}/g, " ").trim();
+    next = next
+      .replaceAll(phrase, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
   }
   return next;
 }
@@ -928,15 +756,7 @@ function sanitizeGeneratedConceptCopy(concept: VideoConcept, forbidden: string[]
   };
 }
 
-function detailedPrompt(input: {
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  concept: VideoConcept;
-  duration: VideoDuration;
-  correction?: string;
-  referenceAnalyses?: ReferenceVideoAnalysis[];
-  revisionFeedback?: string;
-}) {
+function detailedPrompt(input: { analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; concept: VideoConcept; duration: VideoDuration; correction?: string; referenceAnalyses?: ReferenceVideoAnalysis[]; revisionFeedback?: string }) {
   const count = segmentRange(input.duration).preferred;
   return `당신은 촬영팀이 추가 질문 없이 실행할 수 있는 한국 퍼포먼스 광고 숏폼 대본을 쓴다.
 
@@ -993,15 +813,7 @@ ${clean(input.revisionFeedback, 1600) || "없음"}
 검증된 사실에 없는 숫자·효능·원산지·후기·성과는 쓰지 않는다. 이미지, 이미지 프롬프트, 이미지 생성, visualBible, productLockedAsset은 만들지 않는다. ${input.correction || ""} JSON만 반환한다.`;
 }
 
-async function requestDetailedRows(input: {
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  concept: VideoConcept;
-  duration: VideoDuration;
-  correction?: string;
-  referenceAnalyses?: ReferenceVideoAnalysis[];
-  revisionFeedback?: string;
-}) {
+async function requestDetailedRows(input: { analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; concept: VideoConcept; duration: VideoDuration; correction?: string; referenceAnalyses?: ReferenceVideoAnalysis[]; revisionFeedback?: string }) {
   return runVideoPlanningAi<{ rows: AiScriptRow[]; fullScript: string }>({
     stage: input.correction ? "automatic-revision" : "detailed-script",
     purpose: input.correction ? "correction" : "script",
@@ -1010,19 +822,8 @@ async function requestDetailedRows(input: {
   });
 }
 
-export async function generateDetailedVideoScriptAi(input: {
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  concept: VideoConcept;
-  duration: VideoDuration;
-  referenceAnalyses?: ReferenceVideoAnalysis[];
-  revisionFeedback?: string;
-}) {
-  const toValidatedConcept = (
-    payload: { rows: AiScriptRow[]; fullScript: string },
-    previous: VideoConcept,
-    revised: boolean
-  ) => {
+export async function generateDetailedVideoScriptAi(input: { analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; concept: VideoConcept; duration: VideoDuration; referenceAnalyses?: ReferenceVideoAnalysis[]; revisionFeedback?: string }) {
+  const toValidatedConcept = (payload: { rows: AiScriptRow[]; fullScript: string }, previous: VideoConcept, revised: boolean) => {
     let concept: VideoConcept = {
       ...previous,
       cuts: rowsToCuts(payload.rows, input.duration, input.concept.cuts),
@@ -1042,13 +843,10 @@ export async function generateDetailedVideoScriptAi(input: {
     return concept;
   };
   const result = await runWithSingleVideoPlanningCorrection({
-    requestInitial: async () =>
-      toValidatedConcept(await requestDetailedRows(input), input.concept, false),
+    requestInitial: async () => toValidatedConcept(await requestDetailedRows(input), input.concept, false),
     isValid: (concept) => concept.validation?.valid === true,
     requestCorrection: async (concept) => {
-      const failures =
-        concept.validation?.checks.filter((check) => !check.passed).map((check) => check.message) ||
-        [];
+      const failures = concept.validation?.checks.filter((check) => !check.passed).map((check) => check.message) || [];
       const payload = await requestDetailedRows({
         ...input,
         concept,
@@ -1076,14 +874,7 @@ export async function generateDetailedVideoScriptAi(input: {
   return concept;
 }
 
-export async function regeneratePlanningSegmentAi(input: {
-  analysis: ProductAnalysisSnapshot;
-  guideline: BrandGuideline;
-  concept: VideoConcept;
-  cutId: string;
-  field: "caption" | "sceneDescription";
-  duration: VideoDuration;
-}) {
+export async function regeneratePlanningSegmentAi(input: { analysis: ProductAnalysisSnapshot; guideline: BrandGuideline; concept: VideoConcept; cutId: string; field: "caption" | "sceneDescription"; duration: VideoDuration }) {
   const index = input.concept.cuts.findIndex((cut) => cut.id === input.cutId);
   if (index < 0) throw new Error("다시 생성할 구간을 찾지 못했습니다.");
   const current = input.concept.cuts[index];
@@ -1127,9 +918,7 @@ export async function regeneratePlanningSegmentAi(input: {
     cut.id === input.cutId
       ? {
           ...cut,
-          ...(input.field === "caption"
-            ? { caption: clean(result.caption, 80) }
-            : { sceneDescription: clean(result.sceneDescription, 1000) }),
+          ...(input.field === "caption" ? { caption: clean(result.caption, 80) } : { sceneDescription: clean(result.sceneDescription, 1000) }),
         }
       : cut
   );

@@ -5,12 +5,7 @@ import { normalizeWorkbookRows } from "./normalizer.ts";
 import { runOpportunityAnalysis } from "./opportunityEngine.ts";
 import { buildDataQualityReport } from "./quality.ts";
 import { importAndAnalyzeCremaMarket } from "./syncService.server.ts";
-import type {
-  CremaMarketImport,
-  ProductDailyMetric,
-  ProductOpportunity,
-  ReviewInsight,
-} from "./types.ts";
+import type { CremaMarketImport, ProductDailyMetric, ProductOpportunity, ReviewInsight } from "./types.ts";
 
 export const CremaMarketDataNormalizer = { normalizeWorkbookRows };
 

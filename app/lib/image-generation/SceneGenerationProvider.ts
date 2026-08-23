@@ -10,15 +10,9 @@ export interface SceneGenerationProvider {
   generateReferenceImage(input: SceneGenerationInput): Promise<SceneGenerationResult>;
 }
 
-export function isPaidImageGenerationEnabled(
-  env: Record<string, string | undefined> = process.env
-) {
-  const serverExplicitlyEnabled =
-    String(env.ADATLAS_PAID_API_EXPLICIT_ENABLED || "false").toLowerCase() === "true";
-  const legacyImageRouteEnabled = [
-    env.ADATLAS_IMAGE_GENERATION_ENABLED,
-    env.PAID_IMAGE_GENERATION_ENABLED,
-  ].some((value) => String(value || "false").toLowerCase() === "true");
+export function isPaidImageGenerationEnabled(env: Record<string, string | undefined> = process.env) {
+  const serverExplicitlyEnabled = String(env.ADATLAS_PAID_API_EXPLICIT_ENABLED || "false").toLowerCase() === "true";
+  const legacyImageRouteEnabled = [env.ADATLAS_IMAGE_GENERATION_ENABLED, env.PAID_IMAGE_GENERATION_ENABLED].some((value) => String(value || "false").toLowerCase() === "true");
 
   // A key or one of the old image flags must never turn paid generation on by itself.
   // These legacy providers are reachable only after the future paid-provider UI records

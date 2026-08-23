@@ -20,20 +20,14 @@ export function StoreAnalysisSummary({ result }: { result: StoreAnalysisResult }
         )}
         <div>
           <p className="eyebrow">ANALYSIS SUMMARY</p>
-          <h2>
-            {result.storeInfo.storeName || result.storeInfo.brandName || result.storeInfo.domain}
-          </h2>
+          <h2>{result.storeInfo.storeName || result.storeInfo.brandName || result.storeInfo.domain}</h2>
           <a href={result.storeInfo.storeUrl} rel="noreferrer" target="_blank">
             {result.storeInfo.domain} ↗
           </a>
         </div>
         <div className={`copy-guide-state ${result.copyGuideMatch.matched ? "matched" : ""}`}>
           <b>{result.copyGuideMatch.matched ? "업체 카피 가이드 매칭" : "업체 전용 가이드 없음"}</b>
-          <span>
-            {result.copyGuideMatch.matched
-              ? `${result.copyGuideMatch.brandName} · ${result.copyGuideMatch.matchedBy}`
-              : "상품 카테고리와 공개 정보 기준으로 제작"}
-          </span>
+          <span>{result.copyGuideMatch.matched ? `${result.copyGuideMatch.brandName} · ${result.copyGuideMatch.matchedBy}` : "상품 카테고리와 공개 정보 기준으로 제작"}</span>
         </div>
       </div>
       <dl className="analysis-stat-grid">

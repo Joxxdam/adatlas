@@ -45,33 +45,14 @@ export async function markCreativeAssetExported(assetCode: string) {
   }).catch(() => undefined);
 }
 
-export function CreativeAssetActions({
-  asset,
-  compact = false,
-  landingUrl,
-  onMessage,
-  downloadUrl,
-}: {
-  asset: DisplayAsset;
-  compact?: boolean;
-  landingUrl?: string;
-  onMessage?: (message: string) => void;
-  downloadUrl?: string;
-}) {
+export function CreativeAssetActions({ asset, compact = false, landingUrl, onMessage, downloadUrl }: { asset: DisplayAsset; compact?: boolean; landingUrl?: string; onMessage?: (message: string) => void; downloadUrl?: string }) {
   const [message, setMessage] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [feedbackScope, setFeedbackScope] = useState<CreativeContentNoteScope>("product");
   const [promotionId, setPromotionId] = useState("");
   const trackedLandingUrl = buildTrackedLandingUrl(landingUrl, asset.utmContent);
   const hookLabel = getHookLabel(asset.hookCode || asset.hookType);
-  const deliveryText = [
-    `후킹: ${asset.hookCode} · ${hookLabel}${asset.mainMessage ? ` · ${asset.mainMessage}` : ""}`,
-    `소재코드: ${asset.assetCode}`,
-    `권장 광고명: ${asset.recommendedAdName}`,
-    `UTM: ${asset.utmContent}`,
-    trackedLandingUrl ? `최종 랜딩 URL: ${trackedLandingUrl}` : "",
-    `파일명: ${asset.fileName}`,
-  ].filter(Boolean).join("\n");
+  const deliveryText = [`후킹: ${asset.hookCode} · ${hookLabel}${asset.mainMessage ? ` · ${asset.mainMessage}` : ""}`, `소재코드: ${asset.assetCode}`, `권장 광고명: ${asset.recommendedAdName}`, `UTM: ${asset.utmContent}`, trackedLandingUrl ? `최종 랜딩 URL: ${trackedLandingUrl}` : "", `파일명: ${asset.fileName}`].filter(Boolean).join("\n");
 
   function announce(next: string) {
     setMessage(next);
@@ -116,7 +97,7 @@ export function CreativeAssetActions({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ feedback: { sentiment, scope: feedbackScope, promotionId: promotionId.trim() } }),
     });
-    const payload = await response.json() as { error?: string };
+    const payload = (await response.json()) as { error?: string };
     announce(response.ok ? (sentiment === "positive" ? "이 후킹을 다음 제작의 선호 참고사항으로 저장했습니다." : "이 후킹을 다음 제작의 제외 참고사항으로 저장했습니다.") : payload.error || "피드백 저장에 실패했습니다.");
   }
 
@@ -124,23 +105,52 @@ export function CreativeAssetActions({
     <div className={`creative-asset-meta ${compact ? "compact" : ""}`}>
       <div className="creative-asset-code-row">
         <span>{getHookLabel(asset.hookCode || asset.hookType)}</span>
-        <code title="이 코드를 Meta 광고 이름에 포함하면 향후 광고 보고서와 소재 성과를 자동으로 연결할 수 있습니다.">
-          {asset.assetCode}
-        </code>
+        <code title="이 코드를 Meta 광고 이름에 포함하면 향후 광고 보고서와 소재 성과를 자동으로 연결할 수 있습니다.">{asset.assetCode}</code>
         {asset.version > 1 ? <b>v{asset.version}</b> : null}
       </div>
       {!compact ? (
         <>
-          <small>
-            이 코드를 Meta 광고 이름에 포함하면 향후 광고 보고서와 소재 성과를 자동으로 연결할 수 있습니다.
-          </small>
+          <small>이 코드를 Meta 광고 이름에 포함하면 향후 광고 보고서와 소재 성과를 자동으로 연결할 수 있습니다.</small>
           <dl className="creative-asset-delivery">
-            <div><dt>후킹</dt><dd>{asset.hookCode} · {hookLabel}{asset.mainMessage ? ` · ${asset.mainMessage}` : ""}</dd></div>
-            <div><dt>소재코드</dt><dd><code>{asset.assetCode}</code></dd></div>
-            <div><dt>권장 광고명</dt><dd><code>{asset.recommendedAdName}</code></dd></div>
-            <div><dt>UTM</dt><dd><code>{asset.utmContent}</code></dd></div>
-            {trackedLandingUrl ? <div><dt>최종 랜딩 URL</dt><dd><code>{trackedLandingUrl}</code></dd></div> : null}
-            <div><dt>파일명</dt><dd><code>{asset.fileName}</code></dd></div>
+            <div>
+              <dt>후킹</dt>
+              <dd>
+                {asset.hookCode} · {hookLabel}
+                {asset.mainMessage ? ` · ${asset.mainMessage}` : ""}
+              </dd>
+            </div>
+            <div>
+              <dt>소재코드</dt>
+              <dd>
+                <code>{asset.assetCode}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>권장 광고명</dt>
+              <dd>
+                <code>{asset.recommendedAdName}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>UTM</dt>
+              <dd>
+                <code>{asset.utmContent}</code>
+              </dd>
+            </div>
+            {trackedLandingUrl ? (
+              <div>
+                <dt>최종 랜딩 URL</dt>
+                <dd>
+                  <code>{trackedLandingUrl}</code>
+                </dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>파일명</dt>
+              <dd>
+                <code>{asset.fileName}</code>
+              </dd>
+            </div>
           </dl>
         </>
       ) : null}
@@ -179,12 +189,20 @@ export function CreativeAssetActions({
               </select>
             </label>
             {feedbackScope === "promotion" ? <input aria-label="프로모션 ID" onChange={(event) => setPromotionId(event.target.value)} placeholder="프로모션 ID" value={promotionId} /> : null}
-            <button onClick={() => void saveHookFeedback("positive")} type="button">이 후킹 유지</button>
-            <button onClick={() => void saveHookFeedback("negative")} type="button">다음엔 제외</button>
+            <button onClick={() => void saveHookFeedback("positive")} type="button">
+              이 후킹 유지
+            </button>
+            <button onClick={() => void saveHookFeedback("negative")} type="button">
+              다음엔 제외
+            </button>
           </>
         ) : null}
       </div>
-      {message ? <p aria-live="polite" className="creative-asset-toast" role="status">{message}</p> : null}
+      {message ? (
+        <p aria-live="polite" className="creative-asset-toast" role="status">
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }

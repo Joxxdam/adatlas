@@ -1,11 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type {
-  MetaAdvertiserAssetMap,
-  MetaInsightSnapshot,
-  MetaRegistrationJob,
-  PerformanceExperiment,
-} from "./types.ts";
+import type { MetaAdvertiserAssetMap, MetaInsightSnapshot, MetaRegistrationJob, PerformanceExperiment } from "./types.ts";
 
 type MetaStore = {
   advertiserMappings: MetaAdvertiserAssetMap[];
@@ -81,9 +76,7 @@ export function createMetaRepository(options?: { dataDirectory?: string }) {
     read,
     async saveAdvertiserMapping(mapping: MetaAdvertiserAssetMap) {
       return mutate((store) => {
-        const index = store.advertiserMappings.findIndex(
-          (item) => item.advertiserId === mapping.advertiserId
-        );
+        const index = store.advertiserMappings.findIndex((item) => item.advertiserId === mapping.advertiserId);
         if (index >= 0) store.advertiserMappings[index] = mapping;
         else store.advertiserMappings.push(mapping);
         return mapping;
@@ -111,12 +104,7 @@ export function createMetaRepository(options?: { dataDirectory?: string }) {
     },
     async upsertPerformance(experiment: PerformanceExperiment) {
       return mutate((store) => {
-        const duplicate = store.performance.find(
-          (item) =>
-            item.id !== experiment.id &&
-            (item.adSetId === experiment.adSetId ||
-              item.rows.some((row) => experiment.rows.some((next) => next.adId === row.adId)))
-        );
+        const duplicate = store.performance.find((item) => item.id !== experiment.id && (item.adSetId === experiment.adSetId || item.rows.some((row) => experiment.rows.some((next) => next.adId === row.adId))));
         if (duplicate) throw new Error("동일 광고 세트 또는 광고가 이미 연결되어 있습니다.");
         const index = store.performance.findIndex((item) => item.id === experiment.id);
         if (index >= 0) store.performance[index] = experiment;
@@ -127,12 +115,7 @@ export function createMetaRepository(options?: { dataDirectory?: string }) {
     async upsertSnapshots(snapshots: MetaInsightSnapshot[]) {
       return mutate((store) => {
         for (const snapshot of snapshots) {
-          const index = store.snapshots.findIndex(
-            (item) =>
-              item.adId === snapshot.adId &&
-              item.dateStart === snapshot.dateStart &&
-              item.dateStop === snapshot.dateStop
-          );
+          const index = store.snapshots.findIndex((item) => item.adId === snapshot.adId && item.dateStart === snapshot.dateStart && item.dateStop === snapshot.dateStop);
           if (index >= 0) store.snapshots[index] = snapshot;
           else store.snapshots.push(snapshot);
         }

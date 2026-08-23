@@ -12,9 +12,7 @@ export type ProcessedProductImageRecord = {
   createdAt: string;
 };
 
-const processedProductRepository = new JsonArrayRepository<ProcessedProductImageRecord>(
-  "data/processed-product-images.json"
-);
+const processedProductRepository = new JsonArrayRepository<ProcessedProductImageRecord>("data/processed-product-images.json");
 
 export async function readProcessedProducts() {
   return processedProductRepository.read();

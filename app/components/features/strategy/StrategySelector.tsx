@@ -3,14 +3,7 @@
 import type { CreativeStrategy, GeneratedAdCopy } from "../../../lib/mvp/types";
 import styles from "../creative-workflow/CreativeWorkflow.module.css";
 
-export function StrategySelector(props: {
-  strategies: CreativeStrategy[];
-  copies?: GeneratedAdCopy[];
-  selectedStrategyId: string;
-  onGenerate: () => void;
-  onGenerateMore: () => void;
-  isGenerating?: boolean;
-}) {
+export function StrategySelector(props: { strategies: CreativeStrategy[]; copies?: GeneratedAdCopy[]; selectedStrategyId: string; onGenerate: () => void; onGenerateMore: () => void; isGenerating?: boolean }) {
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -24,10 +17,7 @@ export function StrategySelector(props: {
           {props.strategies.slice(0, 6).map((strategy, index) => {
             const copy = props.copies?.[index];
             return (
-              <article
-                className={`${styles.strategyCard} ${props.selectedStrategyId === strategy.id ? styles.strategyCardSelected : ""}`}
-                key={strategy.id}
-              >
+              <article className={`${styles.strategyCard} ${props.selectedStrategyId === strategy.id ? styles.strategyCardSelected : ""}`} key={strategy.id}>
                 <span className={styles.strategyIndex}>문구 {index + 1}</span>
                 <h5>{strategy.title}</h5>
                 <dl className={styles.strategyMeta}>
@@ -48,11 +38,7 @@ export function StrategySelector(props: {
                     <dd>{strategy.audience || strategy.audienceFit}</dd>
                   </div>
                 </dl>
-                <span className={styles.strategySelectLabel}>
-                  {props.selectedStrategyId === strategy.id
-                    ? "대표 소재에 자동 적용"
-                    : "추가 소재에 자동 반영"}
-                </span>
+                <span className={styles.strategySelectLabel}>{props.selectedStrategyId === strategy.id ? "대표 소재에 자동 적용" : "추가 소재에 자동 반영"}</span>
               </article>
             );
           })}
@@ -65,12 +51,7 @@ export function StrategySelector(props: {
           {props.isGenerating ? "광고문구 분석 중" : "광고문구 6개 자동 생성·적용"}
         </button>
         {props.strategies.length ? (
-          <button
-            className={styles.secondaryButton}
-            disabled={props.isGenerating}
-            onClick={props.onGenerateMore}
-            type="button"
-          >
+          <button className={styles.secondaryButton} disabled={props.isGenerating} onClick={props.onGenerateMore} type="button">
             새로운 문구 6개 다시 생성
           </button>
         ) : null}

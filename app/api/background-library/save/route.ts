@@ -5,15 +5,8 @@ import path from "node:path";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-import {
-  inferAudienceProfile,
-  inferBackgroundCategory,
-  toBackgroundHookType,
-} from "../../../lib/background-library/recommender";
-import {
-  appendBackgroundLibraryItem,
-  resolvePublicBackgroundFile,
-} from "../../../lib/background-library/store";
+import { inferAudienceProfile, inferBackgroundCategory, toBackgroundHookType } from "../../../lib/background-library/recommender";
+import { appendBackgroundLibraryItem, resolvePublicBackgroundFile } from "../../../lib/background-library/store";
 import type { BackgroundLibraryItem } from "../../../lib/background-library/types";
 import type { CreativeStrategy, ProductInfoForPrompt } from "../../../lib/mvp/types";
 
@@ -29,7 +22,15 @@ type Body = {
 function safeList(value: unknown, fallback: string[], limit = 6) {
   const list = Array.isArray(value) ? value : [];
   const normalized = Array.from(
-    new Set(list.map((item) => String(item || "").replace(/\s+/g, " ").trim()).filter(Boolean))
+    new Set(
+      list
+        .map((item) =>
+          String(item || "")
+            .replace(/\s+/g, " ")
+            .trim()
+        )
+        .filter(Boolean)
+    )
   ).slice(0, limit);
   return normalized.length ? normalized : fallback;
 }
@@ -43,10 +44,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as Body;
     const imagePath = String(body.imagePath || "").trim();
     if (!isGeneratedScenePath(imagePath)) {
-      return NextResponse.json(
-        { ok: false, error: "AdAtlas에서 생성한 배경만 라이브러리에 저장할 수 있습니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "AdAtlas에서 생성한 배경만 라이브러리에 저장할 수 있습니다." }, { status: 400 });
     }
     const sourceFile = resolvePublicBackgroundFile(imagePath);
     if (!sourceFile) {
@@ -61,11 +59,7 @@ export async function POST(request: Request) {
     const outputFile = resolvePublicBackgroundFile(file);
     if (!outputFile) throw new Error("저장 경로를 만들 수 없습니다.");
     await fs.mkdir(path.dirname(outputFile), { recursive: true });
-    const optimized = await sharp(sourceFile)
-      .rotate()
-      .resize(1600, 1600, { fit: "cover", position: "centre" })
-      .webp({ quality: 84, effort: 5 })
-      .toBuffer();
+    const optimized = await sharp(sourceFile).rotate().resize(1600, 1600, { fit: "cover", position: "centre" }).webp({ quality: 84, effort: 5 }).toBuffer();
     await fs.writeFile(outputFile, optimized);
 
     const hook = body.hook || {};
@@ -77,11 +71,7 @@ export async function POST(request: Request) {
       file,
       enabled: true,
       category,
-      subcategories: safeList(
-        [body.product?.productSubCategory, body.product?.category],
-        [category],
-        5
-      ),
+      subcategories: safeList([body.product?.productSubCategory, body.product?.category], [category], 5),
       industries: safeList([body.product?.category, body.product?.productName], [category], 5),
       assetType: "ai_generated",
       hookTypes: [hookType],
@@ -121,9 +111,6 @@ export async function POST(request: Request) {
     await appendBackgroundLibraryItem(item);
     return NextResponse.json({ ok: true, item });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "AI 배경 저장에 실패했습니다." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "AI 배경 저장에 실패했습니다." }, { status: 500 });
   }
 }

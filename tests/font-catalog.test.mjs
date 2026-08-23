@@ -3,16 +3,8 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
-import {
-  bundledFontOptions,
-  resolveTemplateFontAssignment,
-  templateFontAssignments,
-} from "../app/lib/mvp/fontCatalog.ts";
-import {
-  foodCategoryTemplates,
-  foodImpactHeroTemplate,
-  optimizedCategoryTemplates,
-} from "../lib/bannerTemplates.ts";
+import { bundledFontOptions, resolveTemplateFontAssignment, templateFontAssignments } from "../app/lib/mvp/fontCatalog.ts";
+import { foodCategoryTemplates, foodImpactHeroTemplate, optimizedCategoryTemplates } from "../lib/bannerTemplates.ts";
 
 const repoRoot = process.cwd();
 const licenseFiles = {
@@ -40,20 +32,13 @@ test("bundled Korean fonts and their OFL licenses are stored in the project", as
 
     const licenseName = licenseFiles[font.id];
     assert.ok(licenseName, `${font.id} license mapping`);
-    const licenseText = await readFile(
-      path.join(repoRoot, "public", "fonts", "licenses", licenseName),
-      "utf8"
-    );
+    const licenseText = await readFile(path.join(repoRoot, "public", "fonts", "licenses", licenseName), "utf8");
     assert.match(licenseText, /SIL OPEN FONT LICENSE Version 1\.1/i, font.id);
   }
 });
 
 test("every selectable template resolves to bundled headline and body fonts", () => {
-  const templates = [
-    ...foodCategoryTemplates,
-    ...optimizedCategoryTemplates,
-    foodImpactHeroTemplate,
-  ];
+  const templates = [...foodCategoryTemplates, ...optimizedCategoryTemplates, foodImpactHeroTemplate];
 
   for (const template of templates) {
     const selection = resolveTemplateFontAssignment(template.id);
@@ -66,10 +51,7 @@ test("every selectable template resolves to bundled headline and body fonts", ()
 
 test("template moods use distinct display fonts", () => {
   assert.equal(templateFontAssignments["auto-meat-impact-001"].headlineFontId, "black-han-sans");
-  assert.equal(
-    templateFontAssignments["auto-beauty-editorial-001"].headlineFontId,
-    "gowun-batang-bold"
-  );
+  assert.equal(templateFontAssignments["auto-beauty-editorial-001"].headlineFontId, "gowun-batang-bold");
   assert.equal(templateFontAssignments["auto-beauty-proof-002"].headlineFontId, "do-hyeon");
   assert.equal(templateFontAssignments["ugc-meme-005"].headlineFontId, "nanum-pen-script");
 });

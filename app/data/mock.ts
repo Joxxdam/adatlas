@@ -100,12 +100,7 @@ export const references: Reference[] = [
   },
 ];
 
-export const trendNotes = [
-  "사용 전후 비교형 광고 증가",
-  "숫자 기반 훅 문구 증가",
-  "여름과 쿨링 소재 증가",
-  "3초 안에 문제를 제기하는 영상 증가",
-];
+export const trendNotes = ["사용 전후 비교형 광고 증가", "숫자 기반 훅 문구 증가", "여름과 쿨링 소재 증가", "3초 안에 문제를 제기하는 영상 증가"];
 
 export const crawlSources = [
   {
@@ -125,9 +120,5 @@ export const crawlSources = [
 export const dailyBrief = {
   newReferences: ["Meta: 15개", "TikTok: 8개", "Pinterest: 12개", "수동 업로드: 7개"],
   trends: ["UGC 증가", "숫자 훅 증가", "여름 시즌 USP 증가", "비교 프레임 증가"],
-  actions: [
-    "Original Source 쿨링 릴스 3종 제작",
-    "Storynine 장마룩 문자 소재 작성",
-    "Kookdae Hanwoo 주말 특가 배너 제작",
-  ],
+  actions: ["Original Source 쿨링 릴스 3종 제작", "Storynine 장마룩 문자 소재 작성", "Kookdae Hanwoo 주말 특가 배너 제작"],
 };

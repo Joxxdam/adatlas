@@ -4,18 +4,8 @@ import crypto from "crypto";
 import { pathToFileURL } from "url";
 import sharp from "sharp";
 import { NextResponse } from "next/server";
-import {
-  foodCategoryTemplateIds,
-  foodImpactHeroTemplate,
-  headlineFontPresets,
-  templateHeadlinePresetMap,
-  templatesById,
-  type BannerTemplateDefinition,
-} from "@/lib/bannerTemplates";
-import {
-  prepareBannerRender,
-  type PreparedBannerRender,
-} from "../../../lib/mvp/bannerRenderPipeline";
+import { foodCategoryTemplateIds, foodImpactHeroTemplate, headlineFontPresets, templateHeadlinePresetMap, templatesById, type BannerTemplateDefinition } from "@/lib/bannerTemplates";
+import { prepareBannerRender, type PreparedBannerRender } from "../../../lib/mvp/bannerRenderPipeline";
 import { getCreativeTextStylePreset } from "../../../lib/creative/textStylePresets";
 import { buildOptimizedTemplateSvg } from "../../../lib/mvp/optimizedTemplateSvg";
 import { buildAdaptiveCreativeSvg } from "../../../lib/mvp/adaptiveCreativeSvg";
@@ -24,23 +14,9 @@ import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
 import { buildUspFirstFallbackCopy } from "../../../lib/mvp/productUsp";
 import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
-import type {
-  AdaptiveCreativePlan,
-  AutomaticLayoutPreset,
-} from "../../../lib/background-library/types";
+import type { AdaptiveCreativePlan, AutomaticLayoutPreset } from "../../../lib/background-library/types";
 import { readCatalogAssetFromUrl } from "../../../lib/background-library/catalogStore.server";
-import type {
-  AdHookType,
-  AdProductPosition,
-  AdTextSafeArea,
-  GeneratedAdCopy,
-  GeneratedAdCopyVariant,
-  CopyVariantKey,
-  ProductInfoForPrompt,
-  ProductImageRenderEffect,
-  ProductImageState,
-  TemplateCopyLimits,
-} from "../../../lib/mvp/types";
+import type { AdHookType, AdProductPosition, AdTextSafeArea, GeneratedAdCopy, GeneratedAdCopyVariant, CopyVariantKey, ProductInfoForPrompt, ProductImageRenderEffect, ProductImageState, TemplateCopyLimits } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
@@ -104,32 +80,16 @@ type RenderBody = {
 };
 
 function compactRequestedProductImagePaths(body: RenderBody): string[] {
-  const selectedProcessedProductPath =
-    body.productImageState?.selectedImageMode === "styled-cutout"
-      ? body.productImageState.styledCutoutImagePath
-      : body.productImageState?.selectedImageMode === "cutout"
-        ? body.productImageState.cutoutImagePath
-        : "";
+  const selectedProcessedProductPath = body.productImageState?.selectedImageMode === "styled-cutout" ? body.productImageState.styledCutoutImagePath : body.productImageState?.selectedImageMode === "cutout" ? body.productImageState.cutoutImagePath : "";
   const originalProductImagePath = body.productImageState?.originalImagePath?.trim() || "";
-  const values = [
-    selectedProcessedProductPath,
-    ...(body.productImagePaths || []),
-    body.productImagePath,
-    body.secondaryProductImagePath,
-    body.selectedProductImagePath,
-    body.productImageState?.originalImagePath,
-  ];
+  const values = [selectedProcessedProductPath, ...(body.productImagePaths || []), body.productImagePath, body.secondaryProductImagePath, body.selectedProductImagePath, body.productImageState?.originalImagePath];
   const seen = new Set<string>();
   const paths: string[] = [];
 
   for (const value of values) {
     const imagePath = value?.trim();
     if (!imagePath || seen.has(imagePath)) continue;
-    if (
-      selectedProcessedProductPath &&
-      originalProductImagePath &&
-      imagePath === originalProductImagePath
-    ) {
+    if (selectedProcessedProductPath && originalProductImagePath && imagePath === originalProductImagePath) {
       continue;
     }
     seen.add(imagePath);
@@ -174,16 +134,7 @@ function currentRenderFitting() {
 }
 
 const outputDir = path.join(process.cwd(), "public", "generated-ads");
-const supportedTemplateIds = new Set([
-  "food-impact-hero-001",
-  ...foodCategoryTemplateIds,
-  "bold-commerce-001",
-  "shock-headline-001",
-  "price-proof-002",
-  "home-shopping-max-010",
-  "premium-gift-006",
-  "ugc-meme-005",
-]);
+const supportedTemplateIds = new Set(["food-impact-hero-001", ...foodCategoryTemplateIds, "bold-commerce-001", "shock-headline-001", "price-proof-002", "home-shopping-max-010", "premium-gift-006", "ugc-meme-005"]);
 
 const defaultCutoutProductEffect: ProductImageRenderEffect = {
   outline: true,
@@ -204,26 +155,17 @@ const defaultCutoutProductEffect: ProductImageRenderEffect = {
 };
 
 function escapeXml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function isProcessedProductPath(value: string) {
   return value.startsWith("/processed-products/");
 }
 
-function resolveProductEffect(
-  imagePath: string,
-  requestEffect?: Partial<ProductImageRenderEffect>,
-  templateEffect?: Partial<ProductImageRenderEffect>
-) {
+function resolveProductEffect(imagePath: string, requestEffect?: Partial<ProductImageRenderEffect>, templateEffect?: Partial<ProductImageRenderEffect>) {
   const hasRequestEffect = Boolean(requestEffect && Object.keys(requestEffect).length);
   const hasTemplateEffect = Boolean(templateEffect && Object.keys(templateEffect).length);
-  if (!hasRequestEffect && !hasTemplateEffect && !isProcessedProductPath(imagePath))
-    return undefined;
+  if (!hasRequestEffect && !hasTemplateEffect && !isProcessedProductPath(imagePath)) return undefined;
 
   return {
     ...defaultCutoutProductEffect,
@@ -277,24 +219,14 @@ function productEffectFilterDef(effect?: ProductImageRenderEffect) {
   </filter>`;
 }
 
-function productImageSvg(
-  dataUrl: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  mode: "meet" | "cover" = "meet",
-  effect?: ProductImageRenderEffect
-) {
+function productImageSvg(dataUrl: string, x: number, y: number, width: number, height: number, mode: "meet" | "cover" = "meet", effect?: ProductImageRenderEffect) {
   if (!dataUrl) {
     return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="22" fill="#ffffff" opacity="0.7" />`;
   }
 
   const cx = x + width / 2;
   const cy = y + height / 2;
-  const transform = effect
-    ? ` transform="translate(${effect.productOffsetX} ${effect.productOffsetY}) rotate(${effect.productRotation} ${cx} ${cy}) translate(${cx} ${cy}) scale(${effect.productScale}) translate(${-cx} ${-cy})"`
-    : "";
+  const transform = effect ? ` transform="translate(${effect.productOffsetX} ${effect.productOffsetY}) rotate(${effect.productRotation} ${cx} ${cy}) translate(${cx} ${cy}) scale(${effect.productScale}) translate(${-cx} ${-cy})"` : "";
   const preserveMode = mode === "cover" ? "slice" : "meet";
   return `<g${transform}><image href="${dataUrl}" x="${x}" y="${y}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid ${preserveMode}" filter="url(#productShadow)" /></g>`;
 }
@@ -343,19 +275,12 @@ function fontFileToFileUrl(filePath: string) {
   return safeFilePath ? pathToFileURL(safeFilePath).href : "";
 }
 
-function buildFontFaceCss(
-  family: string,
-  fileUrl: string,
-  format: string,
-  weight: number | string
-) {
+function buildFontFaceCss(family: string, fileUrl: string, format: string, weight: number | string) {
   if (!fileUrl) return "";
   return `@font-face { font-family: '${family}'; src: url('${fileUrl}') format('${format}'); font-weight: ${weight}; font-style: normal; }`;
 }
 
-function getFoodTemplate001ImageFrames(
-  count: number
-): Array<{ x: number; y: number; width: number; height: number; mode: "cover" | "meet" }> {
+function getFoodTemplate001ImageFrames(count: number): Array<{ x: number; y: number; width: number; height: number; mode: "cover" | "meet" }> {
   const normalizedCount = Math.max(1, Math.min(4, count || 1));
   const gap = 0;
 
@@ -456,10 +381,7 @@ function compositionProductPosition(body: RenderBody): AdProductPosition {
   return body.backgroundComposition?.productPosition || "center-right";
 }
 
-function compositionProductFrame(
-  body: RenderBody,
-  options: { width: number; height: number; top: number; bottomTop?: number }
-) {
+function compositionProductFrame(body: RenderBody, options: { width: number; height: number; top: number; bottomTop?: number }) {
   const position = compositionProductPosition(body);
   const xRatio: Record<AdProductPosition, number> = {
     left: 0.04,
@@ -473,27 +395,15 @@ function compositionProductFrame(
   };
   const centerX = xRatio[position] * 1200;
   const x = Math.max(28, Math.min(1200 - options.width - 28, centerX - options.width / 2));
-  const y = position.startsWith("bottom-")
-    ? (options.bottomTop ?? Math.max(options.top, 500))
-    : options.top;
+  const y = position.startsWith("bottom-") ? (options.bottomTop ?? Math.max(options.top, 500)) : options.top;
   return { x, y, width: options.width, height: options.height };
 }
 
-function optimizedProductEffect(
-  body: RenderBody,
-  template: BannerTemplateDefinition
-): Partial<ProductImageRenderEffect> | undefined {
+function optimizedProductEffect(body: RenderBody, template: BannerTemplateDefinition): Partial<ProductImageRenderEffect> | undefined {
   if (!body.selectedBackgroundSource || !body.backgroundComposition?.productPosition) {
     return body.productEffect;
   }
-  const productSlot = (template.slots || []).find(
-    (slot) =>
-      slot.type === "image" &&
-      slot.id !== "background" &&
-      slot.id !== "scene" &&
-      slot.role !== "background" &&
-      slot.role !== "scene"
-  );
+  const productSlot = (template.slots || []).find((slot) => slot.type === "image" && slot.id !== "background" && slot.id !== "scene" && slot.role !== "background" && slot.role !== "scene");
   if (!productSlot) return body.productEffect;
 
   const position = compositionProductPosition(body);
@@ -513,17 +423,8 @@ function optimizedProductEffect(
   const requested = body.productEffect || {};
   return {
     ...requested,
-    productOffsetX: Math.max(
-      -220,
-      Math.min(
-        220,
-        Number(requested.productOffsetX || 0) + horizontalTarget[position] - slotCenterX
-      )
-    ),
-    productOffsetY: Math.max(
-      -220,
-      Math.min(220, Number(requested.productOffsetY || 0) + verticalTarget - slotCenterY)
-    ),
+    productOffsetX: Math.max(-220, Math.min(220, Number(requested.productOffsetX || 0) + horizontalTarget[position] - slotCenterX)),
+    productOffsetY: Math.max(-220, Math.min(220, Number(requested.productOffsetY || 0) + verticalTarget - slotCenterY)),
   };
 }
 
@@ -541,14 +442,7 @@ function estimateWidth(text: string, fontSize: number, letterSpacing = 0) {
   return width + Math.max(0, text.length - 1) * letterSpacing;
 }
 
-function pushLongToken(
-  lines: string[],
-  token: string,
-  maxWidth: number,
-  fontSize: number,
-  letterSpacing: number,
-  maxLines: number
-) {
+function pushLongToken(lines: string[], token: string, maxWidth: number, fontSize: number, letterSpacing: number, maxLines: number) {
   let current = "";
   for (const char of token) {
     const candidate = `${current}${char}`;
@@ -563,13 +457,7 @@ function pushLongToken(
   return current;
 }
 
-function wrapText(
-  text: string,
-  maxWidth: number,
-  fontSize: number,
-  maxLines: number,
-  letterSpacing = 0
-) {
+function wrapText(text: string, maxWidth: number, fontSize: number, maxLines: number, letterSpacing = 0) {
   const tokens = text.trim().split(/\s+/).filter(Boolean);
   if (!tokens.length) return [""];
 
@@ -616,8 +504,7 @@ function fitLines(
   }
 ) {
   const maxFontSize = Math.max(options.minSize, options.initialSize);
-  const minFontSize =
-    options.allowBelowMin === false ? options.minSize : Math.min(options.minSize, 8);
+  const minFontSize = options.allowBelowMin === false ? options.minSize : Math.min(options.minSize, 8);
   const result = fitTextToBox({
     text,
     boxWidth: options.maxWidth,
@@ -647,21 +534,14 @@ function fitLines(
 function textSvg(lines: TextLine[], fontFamily: string) {
   return lines
     .map((line) => {
-      const strokeAttrs = line.stroke
-        ? ` stroke="${escapeXml(line.strokeColor || "#111111")}" stroke-width="${line.strokeWidth || 0}" paint-order="stroke fill" stroke-linejoin="round"`
-        : "";
+      const strokeAttrs = line.stroke ? ` stroke="${escapeXml(line.strokeColor || "#111111")}" stroke-width="${line.strokeWidth || 0}" paint-order="stroke fill" stroke-linejoin="round"` : "";
       const filterAttr = line.filter ? ` filter="url(#${line.filter})"` : "";
       return `<text x="${line.x}" y="${line.y}" text-anchor="${line.anchor || "middle"}" dominant-baseline="${line.dominantBaseline || "auto"}" font-family="${escapeXml(line.fontFamily || fontFamily)}" font-size="${line.fontSize}" font-weight="${line.weight || 800}" letter-spacing="${line.letterSpacing ?? 0}" fill="${line.fill}"${strokeAttrs}${filterAttr}>${escapeXml(line.text)}</text>`;
     })
     .join("");
 }
 
-function aiDisclosureSvg(
-  disclosure: RenderBody["aiDisclosure"],
-  fontFamily: string,
-  width: number,
-  height: number
-) {
+function aiDisclosureSvg(disclosure: RenderBody["aiDisclosure"], fontFamily: string, width: number, height: number) {
   if (!disclosure?.enabled) return "";
   const text = (disclosure.text || "AI 활용 콘텐츠입니다.").trim();
   if (!text) return "";
@@ -669,10 +549,7 @@ function aiDisclosureSvg(
   return `<text x="${width / 2}" y="${height - 28}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(fontFamily)}" font-size="18" font-weight="500" letter-spacing="0" fill="rgba(255,255,255,0.82)" stroke="rgba(0,0,0,0.36)" stroke-width="2" paint-order="stroke fill">${escapeXml(text)}</text>`;
 }
 
-function logoOverlaySvg(
-  logoImageDataUrl: string,
-  options: { x?: number; y?: number; size?: number; opacity?: number } = {}
-) {
+function logoOverlaySvg(logoImageDataUrl: string, options: { x?: number; y?: number; size?: number; opacity?: number } = {}) {
   if (!logoImageDataUrl) return "";
   const x = options.x ?? 1012;
   const y = options.y ?? 38;
@@ -681,14 +558,7 @@ function logoOverlaySvg(
   return `<image href="${logoImageDataUrl}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet" opacity="${opacity}" />`;
 }
 
-async function adaptiveLogoDataUrl(params: {
-  logoImageDataUrl: string;
-  surfaceDataUrl?: string;
-  x?: number;
-  y?: number;
-  size?: number;
-  fallbackTone?: "light" | "dark";
-}) {
+async function adaptiveLogoDataUrl(params: { logoImageDataUrl: string; surfaceDataUrl?: string; x?: number; y?: number; size?: number; fallbackTone?: "light" | "dark" }) {
   if (!params.logoImageDataUrl) return "";
   const size = params.size ?? 136;
   return prepareLogoDataUrlForSurface({
@@ -704,12 +574,7 @@ async function adaptiveLogoDataUrl(params: {
   });
 }
 
-function splitAccentSegments(
-  text: string,
-  accentPhrase: string | undefined,
-  defaultFill: string,
-  accentFill: string
-) {
+function splitAccentSegments(text: string, accentPhrase: string | undefined, defaultFill: string, accentFill: string) {
   const explicitSegments: { text: string; fill: string }[] = [];
   const markerPattern = /\[\[([\s\S]+?)\]\]/g;
   let lastIndex = 0;
@@ -724,8 +589,7 @@ function splitAccentSegments(
   }
 
   if (explicitSegments.length) {
-    if (lastIndex < text.length)
-      explicitSegments.push({ text: text.slice(lastIndex), fill: defaultFill });
+    if (lastIndex < text.length) explicitSegments.push({ text: text.slice(lastIndex), fill: defaultFill });
     return explicitSegments.filter((segment) => segment.text);
   }
 
@@ -759,25 +623,13 @@ function splitAccentSegments(
 }
 
 function inferAccentPhraseFromCopy(copy: Partial<GeneratedAdCopy>) {
-  const source = [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy]
-    .filter(Boolean)
-    .join(" ");
+  const source = [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].filter(Boolean).join(" ");
   const explicit = Array.from(source.matchAll(/\[\[([\s\S]+?)\]\]/g))
     .map((match) => match[1].trim())
     .filter(Boolean);
   if (explicit.length) return explicit.slice(0, 4).join(",");
 
-  const candidates = [
-    ...Array.from(source.matchAll(/[0-9][0-9,]*(?:원|만원|kg|KG|g|%)/g)).map((match) => match[0]),
-    ...Array.from(
-      source.matchAll(
-        /[가-힣A-Za-z0-9]{2,}(?:등심|갈비|한우|설록우|특가|무료배송|폭락가|육즙|선물|구성|할인|반칙)/g
-      )
-    ).map((match) => match[0]),
-    ...Array.from(
-      source.matchAll(/(?:국내산|역대급|파격|특별|무료|첫출시|고급|대용량)\s*[가-힣A-Za-z0-9]{2,}/g)
-    ).map((match) => match[0].trim()),
-  ];
+  const candidates = [...Array.from(source.matchAll(/[0-9][0-9,]*(?:원|만원|kg|KG|g|%)/g)).map((match) => match[0]), ...Array.from(source.matchAll(/[가-힣A-Za-z0-9]{2,}(?:등심|갈비|한우|설록우|특가|무료배송|폭락가|육즙|선물|구성|할인|반칙)/g)).map((match) => match[0]), ...Array.from(source.matchAll(/(?:국내산|역대급|파격|특별|무료|첫출시|고급|대용량)\s*[가-힣A-Za-z0-9]{2,}/g)).map((match) => match[0].trim())];
 
   return Array.from(new Set(candidates))
     .filter((phrase) => phrase.length >= 2 && phrase.length <= 16)
@@ -788,12 +640,7 @@ function inferAccentPhraseFromCopy(copy: Partial<GeneratedAdCopy>) {
 function inferSplitMeatDealHeadlineAccents(headline: string, explicitAccent?: string) {
   if (explicitAccent?.trim()) return explicitAccent;
 
-  const candidates = [
-    ...Array.from(headline.matchAll(/[0-9][0-9,]*(?:원|만원|만\s*원|%)/g)).map((match) => match[0]),
-    ...Array.from(
-      headline.matchAll(/(?:선물|생색|특가|구성|가격|가성비|등심|갈비|한우|설록우)/g)
-    ).map((match) => match[0]),
-  ];
+  const candidates = [...Array.from(headline.matchAll(/[0-9][0-9,]*(?:원|만원|만\s*원|%)/g)).map((match) => match[0]), ...Array.from(headline.matchAll(/(?:선물|생색|특가|구성|가격|가성비|등심|갈비|한우|설록우)/g)).map((match) => match[0])];
 
   return Array.from(new Set(candidates))
     .filter((phrase) => phrase.length >= 2 && phrase.length <= 12)
@@ -801,34 +648,10 @@ function inferSplitMeatDealHeadlineAccents(headline: string, explicitAccent?: st
     .join(",");
 }
 
-function mixedTextSvg(options: {
-  text: string;
-  x: number;
-  y: number;
-  anchor?: "start" | "middle";
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: number;
-  defaultFill: string;
-  accentFill: string;
-  accentPhrase?: string;
-  letterSpacing?: number;
-  dominantBaseline?: "middle" | "auto";
-  strokeColor?: string;
-  strokeWidth?: number;
-}) {
-  const strokeAttrs = options.strokeWidth
-    ? ` stroke="${escapeXml(options.strokeColor || "#111111")}" stroke-width="${options.strokeWidth}" paint-order="stroke fill" stroke-linejoin="round"`
-    : "";
-  const segments = splitAccentSegments(
-    options.text,
-    options.accentPhrase,
-    options.defaultFill,
-    options.accentFill
-  );
-  return `<text x="${options.x}" y="${options.y}" text-anchor="${options.anchor || "middle"}" dominant-baseline="${options.dominantBaseline || "auto"}" font-family="${escapeXml(options.fontFamily)}" font-size="${options.fontSize}" font-weight="${options.fontWeight}" letter-spacing="${options.letterSpacing ?? 0}"${strokeAttrs}>${segments
-    .map((segment) => `<tspan fill="${escapeXml(segment.fill)}">${escapeXml(segment.text)}</tspan>`)
-    .join("")}</text>`;
+function mixedTextSvg(options: { text: string; x: number; y: number; anchor?: "start" | "middle"; fontFamily: string; fontSize: number; fontWeight: number; defaultFill: string; accentFill: string; accentPhrase?: string; letterSpacing?: number; dominantBaseline?: "middle" | "auto"; strokeColor?: string; strokeWidth?: number }) {
+  const strokeAttrs = options.strokeWidth ? ` stroke="${escapeXml(options.strokeColor || "#111111")}" stroke-width="${options.strokeWidth}" paint-order="stroke fill" stroke-linejoin="round"` : "";
+  const segments = splitAccentSegments(options.text, options.accentPhrase, options.defaultFill, options.accentFill);
+  return `<text x="${options.x}" y="${options.y}" text-anchor="${options.anchor || "middle"}" dominant-baseline="${options.dominantBaseline || "auto"}" font-family="${escapeXml(options.fontFamily)}" font-size="${options.fontSize}" font-weight="${options.fontWeight}" letter-spacing="${options.letterSpacing ?? 0}"${strokeAttrs}>${segments.map((segment) => `<tspan fill="${escapeXml(segment.fill)}">${escapeXml(segment.text)}</tspan>`).join("")}</text>`;
 }
 
 function lineText(
@@ -881,15 +704,10 @@ function centeredLineText(
 }
 
 function resolveHeadlineStyle(templateId: string, style: NonNullable<RenderBody["style"]>) {
-  const presetId =
-    style.headlineFontPreset ||
-    templateHeadlinePresetMap[templateId] ||
-    foodImpactHeroTemplate.style.headlineFontPreset;
+  const presetId = style.headlineFontPreset || templateHeadlinePresetMap[templateId] || foodImpactHeroTemplate.style.headlineFontPreset;
   const preset = headlineFontPresets[presetId] || headlineFontPresets["impact-korean-red"];
   const textStroke = Boolean(style.headlineTextStroke ?? preset.textStroke);
-  const textStrokeWidth = Number(
-    style.headlineTextStrokeWidth ?? preset.textStrokeWidth ?? (textStroke ? 4 : 0)
-  );
+  const textStrokeWidth = Number(style.headlineTextStrokeWidth ?? preset.textStrokeWidth ?? (textStroke ? 4 : 0));
   const textShadow = Boolean(style.headlineShadow ?? preset.textShadow);
 
   return {
@@ -905,12 +723,8 @@ function resolveHeadlineStyle(templateId: string, style: NonNullable<RenderBody[
     textShadow,
     shadowColor: style.headlineShadowColor || preset.shadowColor || "rgba(0,0,0,0.2)",
     shadowBlur: Number(style.headlineShadowBlur ?? preset.shadowBlur ?? (textShadow ? 2 : 0)),
-    shadowOffsetX: Number(
-      style.headlineShadowOffsetX ?? preset.shadowOffsetX ?? (textShadow ? 2 : 0)
-    ),
-    shadowOffsetY: Number(
-      style.headlineShadowOffsetY ?? preset.shadowOffsetY ?? (textShadow ? 3 : 0)
-    ),
+    shadowOffsetX: Number(style.headlineShadowOffsetX ?? preset.shadowOffsetX ?? (textShadow ? 2 : 0)),
+    shadowOffsetY: Number(style.headlineShadowOffsetY ?? preset.shadowOffsetY ?? (textShadow ? 3 : 0)),
   };
 }
 
@@ -925,8 +739,7 @@ function foodImpactFallbackCopy(productInfo?: ProductInfoForPrompt) {
   };
 }
 
-const genericFoodImpactCopyPattern =
-  /(?:정말\s*저렴|특별한\s*가격|만나는\s*기회|만나보세요|합리적인\s*가격|고품질\s*상품|한정가에|제공합니다|뛰어난\s*한우)/;
+const genericFoodImpactCopyPattern = /(?:정말\s*저렴|특별한\s*가격|만나는\s*기회|만나보세요|합리적인\s*가격|고품질\s*상품|한정가에|제공합니다|뛰어난\s*한우)/;
 
 function foodImpactCopyValue(value: string | undefined, fallback: string) {
   const trimmed = value?.trim() || "";
@@ -960,37 +773,13 @@ async function renderFoodImpactHero(body: RenderBody) {
   const hasManualBodyFontSize = styleOverrides.bodyFontSize !== undefined;
   const bodyFontSize = Number(styleOverrides.bodyFontSize ?? type.bodyFontSize);
   const requestedProductImagePaths = compactRequestedProductImagePaths(body);
-  const productStateSelectedPath =
-    body.productImageState?.selectedImageMode &&
-    body.productImageState.selectedImageMode !== "original"
-      ? getSelectedProductImagePath(body.productImageState)
-      : "";
-  const selectedProductImagePath =
-    requestedProductImagePaths[0] ||
-    productStateSelectedPath ||
-    body.productImagePath ||
-    body.productImageState?.originalImagePath ||
-    "";
-  const productEffect = resolveProductEffect(
-    selectedProductImagePath,
-    body.productEffect,
-    (preset as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect
-  );
-  const imageLayoutPaths = requestedProductImagePaths.length
-    ? requestedProductImagePaths
-    : selectedProductImagePath
-      ? [selectedProductImagePath]
-      : [];
-  const productImageDataUrls = await Promise.all(
-    imageLayoutPaths.slice(0, 2).map((imagePath) => imageToDataUrl(imagePath).catch(() => ""))
-  );
-  const heroImageUrls =
-    productImageDataUrls.length === 1
-      ? [productImageDataUrls[0], productImageDataUrls[0]]
-      : productImageDataUrls.slice(0, 2);
-  const rawLogoImageDataUrl = body.logoImagePath
-    ? await imageToDataUrl(body.logoImagePath).catch(() => "")
-    : "";
+  const productStateSelectedPath = body.productImageState?.selectedImageMode && body.productImageState.selectedImageMode !== "original" ? getSelectedProductImagePath(body.productImageState) : "";
+  const selectedProductImagePath = requestedProductImagePaths[0] || productStateSelectedPath || body.productImagePath || body.productImageState?.originalImagePath || "";
+  const productEffect = resolveProductEffect(selectedProductImagePath, body.productEffect, (preset as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect);
+  const imageLayoutPaths = requestedProductImagePaths.length ? requestedProductImagePaths : selectedProductImagePath ? [selectedProductImagePath] : [];
+  const productImageDataUrls = await Promise.all(imageLayoutPaths.slice(0, 2).map((imagePath) => imageToDataUrl(imagePath).catch(() => "")));
+  const heroImageUrls = productImageDataUrls.length === 1 ? [productImageDataUrls[0], productImageDataUrls[0]] : productImageDataUrls.slice(0, 2);
+  const rawLogoImageDataUrl = body.logoImagePath ? await imageToDataUrl(body.logoImagePath).catch(() => "") : "";
   const logoImageDataUrl = await adaptiveLogoDataUrl({
     logoImageDataUrl: rawLogoImageDataUrl,
     surfaceDataUrl: heroImageUrls[1] || heroImageUrls[0],
@@ -1001,19 +790,13 @@ async function renderFoodImpactHero(body: RenderBody) {
   });
   const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
-  const headlineFontFile = resolveOptionalFontFile(
-    styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
-  );
+  const headlineFontFile = resolveOptionalFontFile(styleOverrides.headlineFontFile || styleOverrides.selectedFontFile);
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
   const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
-  const selectedFontWeight = Number(
-    styleOverrides.selectedFontWeight ?? styleOverrides.bodyFontWeight ?? 800
-  );
+  const selectedFontWeight = Number(styleOverrides.selectedFontWeight ?? styleOverrides.bodyFontWeight ?? 800);
   const bodyFontWeight = Number(styleOverrides.bodyFontWeight ?? 800);
-  const headlineFontFaceWeight = Number(
-    styleOverrides.headlineFontWeight ?? headlineStyle.fontWeight ?? 900
-  );
+  const headlineFontFaceWeight = Number(styleOverrides.headlineFontWeight ?? headlineStyle.fontWeight ?? 900);
   const selectedFontFamily = `AdAtlasSelectedFont, ${String(style.fontFamily)}`;
   const headlineFontFamily = `AdAtlasHeadlineFont, ${headlineStyle.fontFamily}`;
   const hasCta = Boolean(foodCopy.cta?.trim());
@@ -1030,10 +813,7 @@ async function renderFoodImpactHero(body: RenderBody) {
     slot: "headline",
   });
   const headlineStartY = headline.lines.length > 1 ? 68 : 96;
-  const headlineBottom =
-    headlineStartY +
-    (headline.lines.length - 1) * headline.fontSize * headlineStyle.lineHeight +
-    headline.fontSize * 0.9;
+  const headlineBottom = headlineStartY + (headline.lines.length - 1) * headline.fontSize * headlineStyle.lineHeight + headline.fontSize * 0.9;
 
   const bodyCopy = fitLines(foodCopy.bodyCopy || "", {
     maxWidth: 980,
@@ -1046,8 +826,7 @@ async function renderFoodImpactHero(body: RenderBody) {
     slot: "bodyCopy",
   });
   const bodyStartY = Math.max(178, headlineBottom + 24);
-  const bodyBottom =
-    bodyStartY + (bodyCopy.lines.length - 1) * bodyCopy.fontSize * type.bodyLineHeight;
+  const bodyBottom = bodyStartY + (bodyCopy.lines.length - 1) * bodyCopy.fontSize * type.bodyLineHeight;
 
   const highlight = fitLines(foodCopy.highlightCopy || "", {
     maxWidth: 1100,
@@ -1061,17 +840,9 @@ async function renderFoodImpactHero(body: RenderBody) {
   const highlightPaddingX = 12;
   const highlightPaddingY = 4;
   const highlightLineStep = highlight.fontSize * type.highlightLineHeight;
-  const highlightTextWidth = Math.max(
-    ...highlight.lines.map((line) => estimateWidth(line, highlight.fontSize))
-  );
-  const highlightBoxWidth = Math.min(
-    1120,
-    Math.max(760, highlightTextWidth + highlightPaddingX * 2)
-  );
-  const highlightBoxHeight = Math.max(
-    42,
-    highlight.lines.length * highlightLineStep + highlightPaddingY * 2
-  );
+  const highlightTextWidth = Math.max(...highlight.lines.map((line) => estimateWidth(line, highlight.fontSize)));
+  const highlightBoxWidth = Math.min(1120, Math.max(760, highlightTextWidth + highlightPaddingX * 2));
+  const highlightBoxHeight = Math.max(42, highlight.lines.length * highlightLineStep + highlightPaddingY * 2);
   const highlightBoxX = (width - highlightBoxWidth) / 2;
   const highlightBoxY = Math.min(332, Math.max(296, bodyBottom + 18));
   const highlightCenterY = highlightBoxY + highlightBoxHeight / 2;
@@ -1205,19 +976,7 @@ async function renderFoodImpactHero(body: RenderBody) {
   <rect x="${highlightBoxX}" y="${highlightBoxY}" width="${highlightBoxWidth}" height="${highlightBoxHeight}" rx="0" fill="${style.highlightBackground}" />
   ${
     heroImageUrls.length
-      ? heroImageUrls
-          .map((dataUrl, index) =>
-            productImageSvg(
-              dataUrl,
-              index === 0 ? 42 : 596,
-              imageTop + 18,
-              562,
-              imageHeight - 24,
-              "cover",
-              productEffect
-            )
-          )
-          .join("\n  ")
+      ? heroImageUrls.map((dataUrl, index) => productImageSvg(dataUrl, index === 0 ? 42 : 596, imageTop + 18, 562, imageHeight - 24, "cover", productEffect)).join("\n  ")
       : `<rect x="0" y="${imageTop}" width="${width}" height="${imageHeight}" fill="#f4f4f4" />
   <text x="600" y="${imageTop + imageHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(selectedFontFamily)}" font-size="34" font-weight="800" fill="#777777">PRODUCT IMAGE</text>`
   }
@@ -1261,78 +1020,30 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const type = { ...foodImpactHeroTemplate.typography, ...template.typography };
   const headlineStyle = resolveHeadlineStyle(templateId, style as RenderStyle);
   const requestedProductImagePaths = compactRequestedProductImagePaths(body);
-  const productStateSelectedPath =
-    body.productImageState?.selectedImageMode &&
-    body.productImageState.selectedImageMode !== "original"
-      ? getSelectedProductImagePath(body.productImageState)
-      : "";
-  const selectedProductImagePath =
-    requestedProductImagePaths[0] ||
-    productStateSelectedPath ||
-    body.productImagePath ||
-    body.productImageState?.originalImagePath ||
-    "";
-  const originalProductImagePath =
-    body.productImageState?.originalImagePath || body.productImagePath || selectedProductImagePath;
-  const isCutoutProductSelected = Boolean(
-    body.productImageState &&
-    body.productImageState.selectedImageMode !== "original" &&
-    selectedProductImagePath
-  );
-  const productEffect = resolveProductEffect(
-    selectedProductImagePath,
-    body.productEffect,
-    (template as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect
-  );
-  const productImageDataUrls = await Promise.all(
-    requestedProductImagePaths.map((imagePath) => imageToDataUrl(imagePath).catch(() => ""))
-  );
-  const productImageDataUrl =
-    productImageDataUrls[0] ||
-    (await imageToDataUrl(selectedProductImagePath || "").catch(() => ""));
-  const secondaryProductImageDataUrl =
-    productImageDataUrls[1] ||
-    (await imageToDataUrl(body.secondaryProductImagePath || selectedProductImagePath || "").catch(
-      () => productImageDataUrl
-    ));
-  const templateProductImages = (
-    productImageDataUrls.length ? productImageDataUrls : [productImageDataUrl]
-  ).filter(Boolean);
-  const backgroundMode =
-    templateId === "food-template-005"
-      ? body.backgroundMode === "none"
-        ? "auto-detail-blur-dark"
-        : body.backgroundMode || "auto-detail-blur-dark"
-      : body.backgroundMode || "none";
-  const backgroundSource =
-    backgroundMode === "selected-detail-blur-dark"
-      ? body.selectedBackgroundSource || selectedProductImagePath || ""
-      : backgroundMode === "auto-detail-blur-dark"
-        ? body.selectedBackgroundSource || selectedProductImagePath || ""
-        : "";
-  const backgroundImageDataUrl = backgroundSource
-    ? await imageToDataUrl(backgroundSource).catch(() => "")
-    : "";
-  const rawLogoImageDataUrl = body.logoImagePath
-    ? await imageToDataUrl(body.logoImagePath).catch(() => "")
-    : "";
+  const productStateSelectedPath = body.productImageState?.selectedImageMode && body.productImageState.selectedImageMode !== "original" ? getSelectedProductImagePath(body.productImageState) : "";
+  const selectedProductImagePath = requestedProductImagePaths[0] || productStateSelectedPath || body.productImagePath || body.productImageState?.originalImagePath || "";
+  const originalProductImagePath = body.productImageState?.originalImagePath || body.productImagePath || selectedProductImagePath;
+  const isCutoutProductSelected = Boolean(body.productImageState && body.productImageState.selectedImageMode !== "original" && selectedProductImagePath);
+  const productEffect = resolveProductEffect(selectedProductImagePath, body.productEffect, (template as { productEffect?: Partial<ProductImageRenderEffect> }).productEffect);
+  const productImageDataUrls = await Promise.all(requestedProductImagePaths.map((imagePath) => imageToDataUrl(imagePath).catch(() => "")));
+  const productImageDataUrl = productImageDataUrls[0] || (await imageToDataUrl(selectedProductImagePath || "").catch(() => ""));
+  const secondaryProductImageDataUrl = productImageDataUrls[1] || (await imageToDataUrl(body.secondaryProductImagePath || selectedProductImagePath || "").catch(() => productImageDataUrl));
+  const templateProductImages = (productImageDataUrls.length ? productImageDataUrls : [productImageDataUrl]).filter(Boolean);
+  const backgroundMode = templateId === "food-template-005" ? (body.backgroundMode === "none" ? "auto-detail-blur-dark" : body.backgroundMode || "auto-detail-blur-dark") : body.backgroundMode || "none";
+  const backgroundSource = backgroundMode === "selected-detail-blur-dark" ? body.selectedBackgroundSource || selectedProductImagePath || "" : backgroundMode === "auto-detail-blur-dark" ? body.selectedBackgroundSource || selectedProductImagePath || "" : "";
+  const backgroundImageDataUrl = backgroundSource ? await imageToDataUrl(backgroundSource).catch(() => "") : "";
+  const rawLogoImageDataUrl = body.logoImagePath ? await imageToDataUrl(body.logoImagePath).catch(() => "") : "";
   const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
-  const headlineFontFile = resolveOptionalFontFile(
-    styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
-  );
+  const headlineFontFile = resolveOptionalFontFile(styleOverrides.headlineFontFile || styleOverrides.selectedFontFile);
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
   const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
   const selectedFontWeight = Number(style.selectedFontWeight ?? style.bodyFontWeight ?? 800);
   const bodyFontWeight = Number(style.bodyFontWeight ?? 800);
-  const headlineFontFaceWeight = Number(
-    style.headlineFontWeight ?? headlineStyle.fontWeight ?? 900
-  );
+  const headlineFontFaceWeight = Number(style.headlineFontWeight ?? headlineStyle.fontWeight ?? 900);
   const fontFamily = `AdAtlasSelectedFont, ${String(style.fontFamily || foodImpactHeroTemplate.style.fontFamily)}`;
-  const headlineFontFamily = `AdAtlasHeadlineFont, ${String(
-    style.headlineFontFamily || headlineStyle.fontFamily
-  )
+  const headlineFontFamily = `AdAtlasHeadlineFont, ${String(style.headlineFontFamily || headlineStyle.fontFamily)
     .replaceAll("AdAtlasSelectedFont", "")
     .replaceAll("AdAtlasHeadlineFont", "")}`;
   const hasCta = Boolean(copy.cta?.trim());
@@ -1394,42 +1105,17 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   });
   const textLines: TextLine[] = [];
 
-  const image = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") =>
-    productImageDataUrl
-      ? productImageSvg(productImageDataUrl, x, y, w, h, mode, productEffect)
-      : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`;
+  const image = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") => (productImageDataUrl ? productImageSvg(productImageDataUrl, x, y, w, h, mode, productEffect) : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`);
 
-  const secondaryImage = (
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    mode: "meet" | "cover" = "meet"
-  ) =>
-    secondaryProductImageDataUrl
-      ? productImageSvg(secondaryProductImageDataUrl, x, y, w, h, mode, productEffect)
-      : image(x, y, w, h, mode);
+  const secondaryImage = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") => (secondaryProductImageDataUrl ? productImageSvg(secondaryProductImageDataUrl, x, y, w, h, mode, productEffect) : image(x, y, w, h, mode));
 
-  const imageFromDataUrl = (
-    dataUrl: string,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    mode: "meet" | "cover" = "meet"
-  ) =>
-    dataUrl
-      ? productImageSvg(dataUrl, x, y, w, h, mode, productEffect)
-      : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`;
+  const imageFromDataUrl = (dataUrl: string, x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") => (dataUrl ? productImageSvg(dataUrl, x, y, w, h, mode, productEffect) : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`);
 
   let shapes = "";
   let backgroundLayer = `<rect width="${width}" height="${height}" fill="${style.backgroundColor}" />`;
   let backgroundBlurDef = `<filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%"><feGaussianBlur stdDeviation="9" edgeMode="duplicate"/></filter>`;
   if (backgroundImageDataUrl) {
-    const forceLegacyFoodBackdrop =
-      templateId === "food-template-005" &&
-      body.backgroundComposition?.sourceType !== "library" &&
-      body.backgroundComposition?.sourceType !== "site";
+    const forceLegacyFoodBackdrop = templateId === "food-template-005" && body.backgroundComposition?.sourceType !== "library" && body.backgroundComposition?.sourceType !== "site";
     const blur = forceLegacyFoodBackdrop ? 12 : selectedBackgroundBlur(body);
     const dim = forceLegacyFoodBackdrop ? 0.58 : selectedBackgroundOverlay(body);
     backgroundBlurDef = `<filter id="backgroundBlur" x="-12%" y="-12%" width="124%" height="124%"><feGaussianBlur stdDeviation="${blur}" edgeMode="duplicate"/></filter>`;
@@ -1440,9 +1126,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const hasSelectedBackgroundLayer = Boolean(backgroundImageDataUrl);
 
   if (templateId === "food-template-001") {
-    const selectedImages = templateProductImages.length
-      ? templateProductImages.slice(0, 4)
-      : [productImageDataUrl].filter(Boolean);
+    const selectedImages = templateProductImages.length ? templateProductImages.slice(0, 4) : [productImageDataUrl].filter(Boolean);
     const frames = getFoodTemplate001ImageFrames(selectedImages.length || 1);
     const compositionFrame = compositionProductFrame(body, {
       width: 570,
@@ -1450,10 +1134,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       top: 238,
       bottomTop: 350,
     });
-    const headlineAccentPhrase = inferSplitMeatDealHeadlineAccents(
-      copy.headline || "",
-      String(styleRecord.accentPhrase || "")
-    );
+    const headlineAccentPhrase = inferSplitMeatDealHeadlineAccents(copy.headline || "", String(styleRecord.accentPhrase || ""));
     const headline = fitLines(copy.headline || "이 가격에 이런 구성이라니!", {
       maxWidth: 1160,
       maxLines: 2,
@@ -1502,40 +1183,19 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     const headlineStep = headline.fontSize * 0.92;
     const headlineFirstY = 84 + (2 - headline.lines.length) * 12;
 
-    backgroundLayer = hasSelectedBackgroundLayer
-      ? selectedBackgroundLayer
-      : `<rect width="1200" height="1200" fill="#100c09" />`;
+    backgroundLayer = hasSelectedBackgroundLayer ? selectedBackgroundLayer : `<rect width="1200" height="1200" fill="#100c09" />`;
 
     shapes += hasSelectedBackgroundLayer
-      ? imageFromDataUrl(
-          selectedImages[0] || productImageDataUrl,
-          compositionFrame.x,
-          compositionFrame.y,
-          compositionFrame.width,
-          compositionFrame.height,
-          "meet"
-        )
+      ? imageFromDataUrl(selectedImages[0] || productImageDataUrl, compositionFrame.x, compositionFrame.y, compositionFrame.width, compositionFrame.height, "meet")
       : frames
           .map((frame, index) => {
             const imageDataUrl = selectedImages[index] || selectedImages[0] || productImageDataUrl;
-            return imageFromDataUrl(
-              imageDataUrl,
-              frame.x,
-              frame.y,
-              frame.width,
-              frame.height,
-              frame.mode
-            );
+            return imageFromDataUrl(imageDataUrl, frame.x, frame.y, frame.width, frame.height, frame.mode);
           })
           .join("");
 
-    const productNameBoxWidth = Math.min(
-      560,
-      Math.max(330, estimateWidth(productName.lines[0] || "", productName.fontSize) + 34)
-    );
-    const oldPriceWidth = oldPrice?.lines[0]
-      ? estimateWidth(oldPrice.lines[0], oldPrice.fontSize)
-      : 0;
+    const productNameBoxWidth = Math.min(560, Math.max(330, estimateWidth(productName.lines[0] || "", productName.fontSize) + 34));
+    const oldPriceWidth = oldPrice?.lines[0] ? estimateWidth(oldPrice.lines[0], oldPrice.fontSize) : 0;
 
     shapes += `<rect width="1200" height="1200" fill="url(#foodTemplate1Shade)" />
       ${!hasSelectedBackgroundLayer && frames.length === 2 ? `<line x1="600" y1="0" x2="600" y2="1200" stroke="#050505" stroke-width="8" opacity="0.55" />` : ""}
@@ -1609,32 +1269,16 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       shapes += `<line x1="110" y1="868" x2="${Math.min(390, 110 + oldPriceWidth)}" y2="868" stroke="rgba(255,255,255,0.9)" stroke-width="4" />`;
     }
   } else if (templateId === "food-template-002") {
-    const accentPhrase =
-      String(styleRecord.accentPhrase || "").trim() || inferAccentPhraseFromCopy(copy);
+    const accentPhrase = String(styleRecord.accentPhrase || "").trim() || inferAccentPhraseFromCopy(copy);
     const accentColor = String(styleRecord.accentColor || "#fff200");
-    const template2BackgroundSource =
-      body.selectedBackgroundSource ||
-      (body.backgroundMode === "selected-detail-blur-dark" ? body.selectedBackgroundSource : "") ||
-      originalProductImagePath ||
-      selectedProductImagePath ||
-      "";
-    const template2BackgroundDataUrl =
-      backgroundImageDataUrl ||
-      (template2BackgroundSource
-        ? await imageToDataUrl(template2BackgroundSource).catch(() => "")
-        : "");
+    const template2BackgroundSource = body.selectedBackgroundSource || (body.backgroundMode === "selected-detail-blur-dark" ? body.selectedBackgroundSource : "") || originalProductImagePath || selectedProductImagePath || "";
+    const template2BackgroundDataUrl = backgroundImageDataUrl || (template2BackgroundSource ? await imageToDataUrl(template2BackgroundSource).catch(() => "") : "");
     const backgroundDataUrl = template2BackgroundDataUrl || productImageDataUrl;
     const backgroundScale = Math.min(1.25, Math.max(1, Number(body.backgroundStyle?.scale ?? 1)));
     const backgroundRenderSize = 1200 * backgroundScale;
-    const backgroundOffsetX =
-      (backgroundRenderSize - 1200) / -2 +
-      Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetX || 0)));
-    const backgroundOffsetY =
-      (backgroundRenderSize - 1200) / -2 +
-      Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetY || 0)));
-    const backgroundTransform = body.backgroundStyle?.flipHorizontal
-      ? 'transform="translate(1200 0) scale(-1 1)"'
-      : "";
+    const backgroundOffsetX = (backgroundRenderSize - 1200) / -2 + Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetX || 0)));
+    const backgroundOffsetY = (backgroundRenderSize - 1200) / -2 + Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetY || 0)));
+    const backgroundTransform = body.backgroundStyle?.flipHorizontal ? 'transform="translate(1200 0) scale(-1 1)"' : "";
     const backgroundBlur = selectedBackgroundBlur(body);
     const backgroundDim = selectedBackgroundOverlay(body);
     const hasBackgroundBlur = backgroundBlur > 0;
@@ -1664,39 +1308,22 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       boxHeight: 230,
       slot: "highlightCopy",
     });
-    const oldPriceSource = [
-      (copy as Record<string, unknown>).oldPrice,
-      (copy as Record<string, unknown>).originalPrice,
-      (copy as Record<string, unknown>).compareAtPrice,
-      copy.bottomBarCopy?.match(/[\d,]+\s*원/)?.[0],
-    ].find((value) => typeof value === "string" && value.trim()) as string | undefined;
-    const oldPrice =
-      oldPriceSource && oldPriceSource !== copy.price
-        ? fitLines(oldPriceSource, { maxWidth: 280, maxLines: 1, initialSize: 48, minSize: 28 })
-        : null;
+    const oldPriceSource = [(copy as Record<string, unknown>).oldPrice, (copy as Record<string, unknown>).originalPrice, (copy as Record<string, unknown>).compareAtPrice, copy.bottomBarCopy?.match(/[\d,]+\s*원/)?.[0]].find((value) => typeof value === "string" && value.trim()) as string | undefined;
+    const oldPrice = oldPriceSource && oldPriceSource !== copy.price ? fitLines(oldPriceSource, { maxWidth: 280, maxLines: 1, initialSize: 48, minSize: 28 }) : null;
     const priceText = price.lines[0] || "";
-    const weightText =
-      /\b\d+(?:\.\d+)?\s*(?:kg|KG|Kg|g)\b/.exec(
-        [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].join(" ")
-      )?.[0] || "";
+    const weightText = /\b\d+(?:\.\d+)?\s*(?:kg|KG|Kg|g)\b/.exec([copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].join(" "))?.[0] || "";
     const priceGroupWidth = oldPrice ? 720 : 520;
     const priceStartX = 600 - priceGroupWidth / 2;
     const reviewTopBox = {
       x: 62,
       y: 108,
-      width: Math.min(
-        860,
-        Math.max(520, (reviewTop.lines[0] || "").length * reviewTop.fontSize * 0.82 + 48)
-      ),
+      width: Math.min(860, Math.max(520, (reviewTop.lines[0] || "").length * reviewTop.fontSize * 0.82 + 48)),
       height: 62,
     };
     const reviewBottomBox = {
       x: 116,
       y: 168,
-      width: Math.min(
-        900,
-        Math.max(560, (reviewBottom.lines[0] || "").length * reviewBottom.fontSize * 0.82 + 48)
-      ),
+      width: Math.min(900, Math.max(560, (reviewBottom.lines[0] || "").length * reviewBottom.fontSize * 0.82 + 48)),
       height: 62,
     };
 
@@ -1855,10 +1482,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
     });
     const priceBadgeText = priceBadge.lines[0] || "";
     const priceBadgeFontSize = priceBadge.fontSize;
-    const priceBadgeWidth = Math.min(
-      360,
-      Math.max(190, estimateWidth(priceBadgeText, priceBadgeFontSize) + 54)
-    );
+    const priceBadgeWidth = Math.min(360, Math.max(190, estimateWidth(priceBadgeText, priceBadgeFontSize) + 54));
     const priceBadgeHeight = Math.max(62, priceBadgeFontSize + 28);
     const priceBadgeX = 1130 - priceBadgeWidth;
     const priceBadgeY = 758;
@@ -2063,18 +1687,13 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       boxHeight: 180,
       slot: "headline",
     });
-    const productNameLine = fitLines(
-      body.productOriginalPrice
-        ? copy.bodyCopy || ""
-        : copy.bodyCopy || body.productOriginalPrice || copy.bottomBarCopy || "",
-      {
-        maxWidth: 560,
-        maxLines: 1,
-        initialSize: 48,
-        minSize: 26,
-        slot: "bodyCopy",
-      }
-    );
+    const productNameLine = fitLines(body.productOriginalPrice ? copy.bodyCopy || "" : copy.bodyCopy || body.productOriginalPrice || copy.bottomBarCopy || "", {
+      maxWidth: 560,
+      maxLines: 1,
+      initialSize: 48,
+      minSize: 26,
+      slot: "bodyCopy",
+    });
     const oldPrice = fitLines(body.productOriginalPrice || body.productOldPrice || "", {
       maxWidth: 250,
       maxLines: 1,
@@ -2107,11 +1726,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       <line x1="672" y1="362" x2="880" y2="362" stroke="rgba(255,255,255,0.82)" stroke-width="5" />`
           : ""
       }
-      ${
-        salePrice.lines[0]
-          ? `<text x="920" y="362" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff200">${escapeXml(salePrice.lines[0])}</text>`
-          : ""
-      }`;
+      ${salePrice.lines[0] ? `<text x="920" y="362" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${salePrice.fontSize}" font-weight="900" fill="#fff200">${escapeXml(salePrice.lines[0])}</text>` : ""}`;
     textLines.push(
       ...centeredLineText(topCopy.lines, {
         x: 600,
@@ -2222,24 +1837,16 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       boxHeight: 220,
       slot: "headline",
     });
-    const infoBar = fitLines(
-      [copy.highlightCopy, copy.price, copy.bottomBarCopy].filter(Boolean).join(" · "),
-      {
-        maxWidth: 980,
-        maxLines: 2,
-        initialSize: 40,
-        minSize: 26,
-        lineHeight: 1.1,
-        boxHeight: 86,
-        slot: "highlightCopy",
-      }
-    );
-    const repeatImages = [0, 1, 2, 3].map(
-      (index) =>
-        templateProductImages[index] ||
-        templateProductImages[index % templateProductImages.length] ||
-        productImageDataUrl
-    );
+    const infoBar = fitLines([copy.highlightCopy, copy.price, copy.bottomBarCopy].filter(Boolean).join(" · "), {
+      maxWidth: 980,
+      maxLines: 2,
+      initialSize: 40,
+      minSize: 26,
+      lineHeight: 1.1,
+      boxHeight: 86,
+      slot: "highlightCopy",
+    });
+    const repeatImages = [0, 1, 2, 3].map((index) => templateProductImages[index] || templateProductImages[index % templateProductImages.length] || productImageDataUrl);
     shapes += `<rect width="1200" height="1200" fill="#050505" opacity="${hasSelectedBackgroundLayer ? "0.5" : "1"}" />
       <rect x="0" y="0" width="1200" height="1200" fill="url(#foodTemplate1Shade)" opacity="0.35" />
       ${repeatImages
@@ -2302,11 +1909,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       boxHeight: 430,
       slot: "headline",
     });
-    const chipTexts = [
-      copy.highlightCopy || "핵심 성분",
-      copy.bodyCopy || "체감 포인트",
-      copy.bottomBarCopy || "데일리 케어",
-    ];
+    const chipTexts = [copy.highlightCopy || "핵심 성분", copy.bodyCopy || "체감 포인트", copy.bottomBarCopy || "데일리 케어"];
     const ctaSmall = fitLines([copy.cta, copy.price].filter(Boolean).join(" "), {
       maxWidth: 780,
       maxLines: 1,
@@ -2371,9 +1974,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       minSize: 22,
       slot: "bodyCopy",
     });
-    const sideNotes = [copy.highlightCopy, copy.bottomBarCopy, copy.cta].filter(
-      (note): note is string => Boolean(note)
-    );
+    const sideNotes = [copy.highlightCopy, copy.bottomBarCopy, copy.cta].filter((note): note is string => Boolean(note));
     const smallPrice = fitLines(copy.price || "", {
       maxWidth: 360,
       maxLines: 1,
@@ -2386,11 +1987,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       <rect x="0" y="780" width="600" height="420" fill="url(#foodTemplate1Shade)" opacity="0.65" />
       <rect x="600" y="0" width="600" height="1200" fill="#ffffff" />
       ${image(790, 620, 310, 450, "meet")}
-      ${
-        smallPrice.lines[0]
-          ? `<text x="900" y="1110" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${smallPrice.fontSize}" font-weight="900" fill="#00afa5">${escapeXml(smallPrice.lines[0])}</text>`
-          : ""
-      }`;
+      ${smallPrice.lines[0] ? `<text x="900" y="1110" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(headlineFontFamily)}" font-size="${smallPrice.fontSize}" font-weight="900" fill="#00afa5">${escapeXml(smallPrice.lines[0])}</text>` : ""}`;
     textLines.push(
       ...lineText(topNote.lines, {
         x: 660,
@@ -2423,10 +2020,7 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
       shapes += `<text x="${x}" y="${y}" text-anchor="${index === 1 ? "end" : "start"}" transform="rotate(${rotation} ${x} ${y})" font-family="${escapeXml(fontFamily)}" font-size="32" font-weight="800" fill="#111111">${escapeXml(note.slice(0, 18))}</text>`;
     });
   } else {
-    const selectedImages =
-      templateProductImages.length === 1
-        ? [templateProductImages[0], templateProductImages[0]]
-        : templateProductImages.slice(0, 4);
+    const selectedImages = templateProductImages.length === 1 ? [templateProductImages[0], templateProductImages[0]] : templateProductImages.slice(0, 4);
     const productGrid =
       selectedImages.length <= 2
         ? `${imageFromDataUrl(selectedImages[0] || productImageDataUrl, 0, 260, 600, 600, "cover")}
@@ -2543,29 +2137,18 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   return `/generated-ads/${fileName}`;
 }
 
-async function renderOptimizedTemplate(
-  body: RenderBody,
-  template: BannerTemplateDefinition,
-  plan: PreparedBannerRender
-) {
+async function renderOptimizedTemplate(body: RenderBody, template: BannerTemplateDefinition, plan: PreparedBannerRender) {
   const styleOverrides = body.style || {};
   const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
   const selectedFontFormat = fontFormatFromFile(selectedFontFile);
-  const headlineFontFile = resolveOptionalFontFile(
-    styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
-  );
+  const headlineFontFile = resolveOptionalFontFile(styleOverrides.headlineFontFile || styleOverrides.selectedFontFile);
   const headlineFontFormat = fontFormatFromFile(headlineFontFile);
   const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
   const selectedFontWeight = Number(styleOverrides.selectedFontWeight || 800);
   const headlineFontWeight = Number(styleOverrides.headlineFontWeight || 900);
-  const creativeTextStylePresetId =
-    typeof styleOverrides.creativeTextStylePresetId === "string"
-      ? styleOverrides.creativeTextStylePresetId.trim()
-      : "";
-  const creativeTextStylePreset = creativeTextStylePresetId
-    ? getCreativeTextStylePreset(creativeTextStylePresetId)
-    : undefined;
+  const creativeTextStylePresetId = typeof styleOverrides.creativeTextStylePresetId === "string" ? styleOverrides.creativeTextStylePresetId.trim() : "";
+  const creativeTextStylePreset = creativeTextStylePresetId ? getCreativeTextStylePreset(creativeTextStylePresetId) : undefined;
   const frameData = await Promise.all(
     plan.imageFrames.map(async (frame) => {
       try {
@@ -2575,9 +2158,7 @@ async function renderOptimizedTemplate(
       }
     })
   );
-  const rawLogoDataUrl = body.logoImagePath
-    ? await imageToDataUrl(body.logoImagePath).catch(() => "")
-    : "";
+  const rawLogoDataUrl = body.logoImagePath ? await imageToDataUrl(body.logoImagePath).catch(() => "") : "";
   const logoDataUrl = await adaptiveLogoDataUrl({
     logoImageDataUrl: rawLogoDataUrl,
     surfaceDataUrl: frameData[0]?.dataUrl,
@@ -2586,19 +2167,7 @@ async function renderOptimizedTemplate(
     size: 126,
     fallbackTone: "light",
   });
-  const fontFaceCss =
-    buildFontFaceCss(
-      "AdAtlasSelectedFont",
-      selectedFontFileUrl,
-      selectedFontFormat,
-      selectedFontWeight
-    ) +
-    buildFontFaceCss(
-      "AdAtlasHeadlineFont",
-      headlineFontFileUrl,
-      headlineFontFormat,
-      headlineFontWeight
-    );
+  const fontFaceCss = buildFontFaceCss("AdAtlasSelectedFont", selectedFontFileUrl, selectedFontFormat, selectedFontWeight) + buildFontFaceCss("AdAtlasHeadlineFont", headlineFontFileUrl, headlineFontFormat, headlineFontWeight);
   const svg = buildOptimizedTemplateSvg({
     template,
     plan,
@@ -2607,74 +2176,31 @@ async function renderOptimizedTemplate(
     productOldPrice: body.productOldPrice,
     frameData,
     logoDataUrl,
-    aiDisclosureText: body.aiDisclosure?.enabled
-      ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다."
-      : "",
+    aiDisclosureText: body.aiDisclosure?.enabled ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다." : "",
     fontFaceCss,
     productEffect: optimizedProductEffect(body, template),
     textOverrides: {
       creativePreset: creativeTextStylePreset,
-      fontFamily:
-        typeof styleOverrides.fontFamily === "string" ? styleOverrides.fontFamily : undefined,
-      headlineFontFamily:
-        typeof styleOverrides.headlineFontFamily === "string"
-          ? styleOverrides.headlineFontFamily
-          : undefined,
-      headlineFontSize:
-        typeof styleOverrides.headlineFontSize === "number"
-          ? styleOverrides.headlineFontSize
-          : undefined,
-      headlineColor:
-        styleOverrides.manualTextColors && typeof styleOverrides.headlineColor === "string"
-          ? styleOverrides.headlineColor
-          : undefined,
-      headlineFontWeight:
-        typeof styleOverrides.headlineFontWeight === "number"
-          ? styleOverrides.headlineFontWeight
-          : undefined,
-      headlineLetterSpacing:
-        typeof styleOverrides.headlineLetterSpacing === "number"
-          ? styleOverrides.headlineLetterSpacing
-          : undefined,
-      headlineLineHeight:
-        typeof styleOverrides.headlineLineHeight === "number"
-          ? styleOverrides.headlineLineHeight
-          : undefined,
-      headlineTextStroke:
-        typeof styleOverrides.headlineTextStroke === "boolean"
-          ? styleOverrides.headlineTextStroke
-          : undefined,
-      headlineTextStrokeColor:
-        typeof styleOverrides.headlineTextStrokeColor === "string"
-          ? styleOverrides.headlineTextStrokeColor
-          : undefined,
-      headlineTextStrokeWidth:
-        typeof styleOverrides.headlineTextStrokeWidth === "number"
-          ? styleOverrides.headlineTextStrokeWidth
-          : undefined,
-      headlineShadow:
-        typeof styleOverrides.headlineShadow === "boolean"
-          ? styleOverrides.headlineShadow
-          : undefined,
-      bodyColor:
-        styleOverrides.manualTextColors && typeof styleOverrides.bodyColor === "string"
-          ? styleOverrides.bodyColor
-          : undefined,
-      bodyFontSize:
-        typeof styleOverrides.bodyFontSize === "number" ? styleOverrides.bodyFontSize : undefined,
-      bodyFontWeight:
-        typeof styleOverrides.bodyFontWeight === "number"
-          ? styleOverrides.bodyFontWeight
-          : undefined,
+      fontFamily: typeof styleOverrides.fontFamily === "string" ? styleOverrides.fontFamily : undefined,
+      headlineFontFamily: typeof styleOverrides.headlineFontFamily === "string" ? styleOverrides.headlineFontFamily : undefined,
+      headlineFontSize: typeof styleOverrides.headlineFontSize === "number" ? styleOverrides.headlineFontSize : undefined,
+      headlineColor: styleOverrides.manualTextColors && typeof styleOverrides.headlineColor === "string" ? styleOverrides.headlineColor : undefined,
+      headlineFontWeight: typeof styleOverrides.headlineFontWeight === "number" ? styleOverrides.headlineFontWeight : undefined,
+      headlineLetterSpacing: typeof styleOverrides.headlineLetterSpacing === "number" ? styleOverrides.headlineLetterSpacing : undefined,
+      headlineLineHeight: typeof styleOverrides.headlineLineHeight === "number" ? styleOverrides.headlineLineHeight : undefined,
+      headlineTextStroke: typeof styleOverrides.headlineTextStroke === "boolean" ? styleOverrides.headlineTextStroke : undefined,
+      headlineTextStrokeColor: typeof styleOverrides.headlineTextStrokeColor === "string" ? styleOverrides.headlineTextStrokeColor : undefined,
+      headlineTextStrokeWidth: typeof styleOverrides.headlineTextStrokeWidth === "number" ? styleOverrides.headlineTextStrokeWidth : undefined,
+      headlineShadow: typeof styleOverrides.headlineShadow === "boolean" ? styleOverrides.headlineShadow : undefined,
+      bodyColor: styleOverrides.manualTextColors && typeof styleOverrides.bodyColor === "string" ? styleOverrides.bodyColor : undefined,
+      bodyFontSize: typeof styleOverrides.bodyFontSize === "number" ? styleOverrides.bodyFontSize : undefined,
+      bodyFontWeight: typeof styleOverrides.bodyFontWeight === "number" ? styleOverrides.bodyFontWeight : undefined,
     },
     backgroundTreatment: {
       blur: body.selectedBackgroundSource ? selectedBackgroundBlur(body) : 0,
       brightness: Math.max(0.55, Math.min(1.35, Number(body.backgroundStyle?.brightness ?? 1))),
       overlayColor: body.backgroundStyle?.overlayColor || "#000000",
-      overlayOpacity: Math.max(
-        0,
-        Math.min(0.72, Number(body.selectedBackgroundSource ? selectedBackgroundOverlay(body) : 0))
-      ),
+      overlayOpacity: Math.max(0, Math.min(0.72, Number(body.selectedBackgroundSource ? selectedBackgroundOverlay(body) : 0))),
       scale: Math.max(1, Math.min(1.45, Number(body.backgroundStyle?.scale ?? 1))),
       offsetX: Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetX ?? 0))),
       offsetY: Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetY ?? 0))),
@@ -2682,14 +2208,7 @@ async function renderOptimizedTemplate(
     },
   });
   await fs.mkdir(outputDir, { recursive: true });
-  const fileName =
-    "generated-" +
-    Date.now() +
-    "-" +
-    crypto.randomBytes(4).toString("hex") +
-    "-" +
-    template.id +
-    ".png";
+  const fileName = "generated-" + Date.now() + "-" + crypto.randomBytes(4).toString("hex") + "-" + template.id + ".png";
   const outputPath = path.join(outputDir, fileName);
   await sharp(Buffer.from(svg)).png().toFile(outputPath);
   return "/generated-ads/" + fileName;
@@ -2698,30 +2217,14 @@ async function renderOptimizedTemplate(
 async function renderAdaptiveCreative(body: RenderBody, plan: AdaptiveCreativePlan) {
   const styleOverrides = body.style || {};
   const selectedFontFile = resolveOptionalFontFile(styleOverrides.selectedFontFile);
-  const headlineFontFile = resolveOptionalFontFile(
-    styleOverrides.headlineFontFile || styleOverrides.selectedFontFile
-  );
+  const headlineFontFile = resolveOptionalFontFile(styleOverrides.headlineFontFile || styleOverrides.selectedFontFile);
   const selectedFontFileUrl = fontFileToFileUrl(selectedFontFile);
   const headlineFontFileUrl = fontFileToFileUrl(headlineFontFile);
-  const fontFaceCss =
-    buildFontFaceCss(
-      "AdAtlasBody",
-      selectedFontFileUrl,
-      fontFormatFromFile(selectedFontFile),
-      Number(styleOverrides.selectedFontWeight || styleOverrides.bodyFontWeight || 800)
-    ) +
-    buildFontFaceCss(
-      "AdAtlasHeadline",
-      headlineFontFileUrl,
-      fontFormatFromFile(headlineFontFile),
-      Number(styleOverrides.headlineFontWeight || 900)
-    );
+  const fontFaceCss = buildFontFaceCss("AdAtlasBody", selectedFontFileUrl, fontFormatFromFile(selectedFontFile), Number(styleOverrides.selectedFontWeight || styleOverrides.bodyFontWeight || 800)) + buildFontFaceCss("AdAtlasHeadline", headlineFontFileUrl, fontFormatFromFile(headlineFontFile), Number(styleOverrides.headlineFontWeight || 900));
   const backgroundDataUrl = await imageToDataUrl(body.selectedBackgroundSource || "");
   const productPath = compactRequestedProductImagePaths(body)[0] || "";
   const productDataUrl = productPath ? await imageToDataUrl(productPath).catch(() => "") : "";
-  const rawLogoDataUrl = body.logoImagePath
-    ? await imageToDataUrl(body.logoImagePath).catch(() => "")
-    : "";
+  const rawLogoDataUrl = body.logoImagePath ? await imageToDataUrl(body.logoImagePath).catch(() => "") : "";
   const adaptiveLogoSize = 118;
   const adaptiveLogoX = plan.textPlacement.x < 600 ? 1050 : 32;
   const logoDataUrl = await adaptiveLogoDataUrl({
@@ -2745,50 +2248,21 @@ async function renderAdaptiveCreative(body: RenderBody, plan: AdaptiveCreativePl
       ...plan,
       backgroundAdjustments: {
         ...plan.backgroundAdjustments,
-        scale: Math.max(
-          1,
-          Math.min(1.45, Number(body.backgroundStyle?.scale ?? plan.backgroundAdjustments.scale))
-        ),
-        offsetX: Math.max(
-          -220,
-          Math.min(220, Number(body.backgroundStyle?.offsetX ?? plan.backgroundAdjustments.offsetX))
-        ),
-        offsetY: Math.max(
-          -220,
-          Math.min(220, Number(body.backgroundStyle?.offsetY ?? plan.backgroundAdjustments.offsetY))
-        ),
-        blur: Math.max(
-          0,
-          Math.min(
-            18,
-            body.selectedBackgroundSource
-              ? selectedBackgroundBlur(body)
-              : plan.backgroundAdjustments.blur
-          )
-        ),
-        brightness: Math.max(
-          0.55,
-          Math.min(
-            1.35,
-            Number(body.backgroundStyle?.brightness ?? plan.backgroundAdjustments.brightness)
-          )
-        ),
+        scale: Math.max(1, Math.min(1.45, Number(body.backgroundStyle?.scale ?? plan.backgroundAdjustments.scale))),
+        offsetX: Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetX ?? plan.backgroundAdjustments.offsetX))),
+        offsetY: Math.max(-220, Math.min(220, Number(body.backgroundStyle?.offsetY ?? plan.backgroundAdjustments.offsetY))),
+        blur: Math.max(0, Math.min(18, body.selectedBackgroundSource ? selectedBackgroundBlur(body) : plan.backgroundAdjustments.blur)),
+        brightness: Math.max(0.55, Math.min(1.35, Number(body.backgroundStyle?.brightness ?? plan.backgroundAdjustments.brightness))),
       },
     },
     copy: activeCopy,
     backgroundDataUrl,
     productDataUrl,
     logoDataUrl,
-    aiDisclosureText: body.aiDisclosure?.enabled
-      ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다."
-      : "",
+    aiDisclosureText: body.aiDisclosure?.enabled ? body.aiDisclosure.text || "AI 활용 콘텐츠입니다." : "",
     fontFaceCss,
-    fontFamily:
-      typeof styleOverrides.fontFamily === "string" ? styleOverrides.fontFamily : undefined,
-    headlineFontFamily:
-      typeof styleOverrides.headlineFontFamily === "string"
-        ? styleOverrides.headlineFontFamily
-        : undefined,
+    fontFamily: typeof styleOverrides.fontFamily === "string" ? styleOverrides.fontFamily : undefined,
+    headlineFontFamily: typeof styleOverrides.headlineFontFamily === "string" ? styleOverrides.headlineFontFamily : undefined,
     productEffect: body.productEffect,
     backgroundFlipHorizontal: body.backgroundStyle?.flipHorizontal,
   });
@@ -2855,13 +2329,9 @@ export async function POST(request: Request) {
       });
     }
     const requestedTemplateId = body.templateId || "food-template-001";
-    const templateId = supportedTemplateIds.has(requestedTemplateId)
-      ? requestedTemplateId
-      : "food-template-001";
+    const templateId = supportedTemplateIds.has(requestedTemplateId) ? requestedTemplateId : "food-template-001";
     const registeredTemplate = templatesById.get(templateId);
-    const template =
-      registeredTemplate ??
-      (templateId === foodImpactHeroTemplate.id ? foodImpactHeroTemplate : undefined);
+    const template = registeredTemplate ?? (templateId === foodImpactHeroTemplate.id ? foodImpactHeroTemplate : undefined);
     if (registeredTemplate?.renderMode === "slot-engine") {
       const activeCopy: GeneratedAdCopyVariant = {
         headline: String(body.copy?.headline || ""),
@@ -2878,13 +2348,8 @@ export async function POST(request: Request) {
         copyVariants: body.copyVariants,
         productInfo: body.productInfo,
         imagePaths: compactRequestedProductImagePaths(body),
-        backgroundImagePath:
-          body.backgroundMode === "none" ? undefined : body.selectedBackgroundSource,
-        originalPrice:
-          body.productOriginalPrice ||
-          body.productOldPrice ||
-          body.productInfo?.originalPrice ||
-          body.productInfo?.oldPrice,
+        backgroundImagePath: body.backgroundMode === "none" ? undefined : body.selectedBackgroundSource,
+        originalPrice: body.productOriginalPrice || body.productOldPrice || body.productInfo?.originalPrice || body.productInfo?.oldPrice,
       });
       const imagePath = await renderOptimizedTemplate(body, registeredTemplate, plan);
       return NextResponse.json({
@@ -2918,9 +2383,7 @@ export async function POST(request: Request) {
               price: fittedCopy.price || body.copy?.price,
             },
     };
-    const imagePath = foodCategoryTemplateIds.includes(templateId)
-      ? await renderFoodCategoryTemplate(bodyWithFittedCopy, templateId)
-      : await renderFoodImpactHero(bodyWithFittedCopy);
+    const imagePath = foodCategoryTemplateIds.includes(templateId) ? await renderFoodCategoryTemplate(bodyWithFittedCopy, templateId) : await renderFoodImpactHero(bodyWithFittedCopy);
     return NextResponse.json({ success: true, imagePath, templateId });
   } catch (error) {
     return NextResponse.json(

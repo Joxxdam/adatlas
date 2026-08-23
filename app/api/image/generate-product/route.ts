@@ -7,26 +7,10 @@ import { appendGptImageCandidates } from "../../../lib/mvp/gptImageFeedbackStore
 import { buildImagePreservationLockPrompt } from "../../../lib/mvp/gptImagePromptLocks";
 import { buildImageGenerationPrompt } from "../../../lib/mvp/imagePromptBuilder";
 import { getSelectedProductImagePath } from "../../../lib/mvp/imageEffects";
-import {
-  editGeminiImageFromSource,
-  generateGeminiImageFromText,
-} from "../../../lib/mvp/geminiImageClient";
+import { editGeminiImageFromSource, generateGeminiImageFromText } from "../../../lib/mvp/geminiImageClient";
 import { editImageFromSource, generateImageFromText } from "../../../lib/mvp/openaiImageClient";
 import { isPaidImageGenerationEnabled } from "../../../lib/image-generation/SceneGenerationProvider";
-import type {
-  AdImageLabel,
-  GeneratedAdCopy,
-  GptImageCandidate,
-  GptImageFailureReason,
-  GptImageGenerationMode,
-  GptImagePreservationMode,
-  GptImageSourceMode,
-  GptOutputCanvasPreset,
-  GptPromptTemplateMode,
-  ImageGenerationProvider,
-  ProductImageState,
-  ProductInfoForPrompt,
-} from "../../../lib/mvp/types";
+import type { AdImageLabel, GeneratedAdCopy, GptImageCandidate, GptImageFailureReason, GptImageGenerationMode, GptImagePreservationMode, GptImageSourceMode, GptOutputCanvasPreset, GptPromptTemplateMode, ImageGenerationProvider, ProductImageState, ProductInfoForPrompt } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
@@ -79,11 +63,7 @@ function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function productPrompt(
-  productInfo?: Partial<ProductInfoForPrompt>,
-  prompt?: string,
-  styleHint?: string
-) {
+function productPrompt(productInfo?: Partial<ProductInfoForPrompt>, prompt?: string, styleHint?: string) {
   const productName = cleanText(productInfo?.productName) || "상품";
   const category = cleanText(productInfo?.category) || "이커머스 상품";
   const price = cleanText(productInfo?.price);
@@ -91,48 +71,26 @@ function productPrompt(
   const mainBenefit = cleanText(productInfo?.mainBenefit || productInfo?.extractedDescription);
   const targetCustomer = cleanText(productInfo?.targetCustomer);
 
-  return [
-    "Create a 1200x1200 square SNS ecommerce advertising image.",
-    "The output must be useful as a Korean performance marketing banner asset.",
-    `Product: ${productName}.`,
-    `Category: ${category}.`,
-    price ? `Price: ${price}.` : "",
-    discountInfo ? `Discount/benefit: ${discountInfo}.` : "",
-    mainBenefit ? `Main selling point: ${mainBenefit}.` : "",
-    targetCustomer ? `Target customer: ${targetCustomer}.` : "",
-    styleHint ? `Style hint: ${styleHint}.` : "",
-    prompt ? `User prompt: ${prompt}.` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return ["Create a 1200x1200 square SNS ecommerce advertising image.", "The output must be useful as a Korean performance marketing banner asset.", `Product: ${productName}.`, `Category: ${category}.`, price ? `Price: ${price}.` : "", discountInfo ? `Discount/benefit: ${discountInfo}.` : "", mainBenefit ? `Main selling point: ${mainBenefit}.` : "", targetCustomer ? `Target customer: ${targetCustomer}.` : "", styleHint ? `Style hint: ${styleHint}.` : "", prompt ? `User prompt: ${prompt}.` : ""].filter(Boolean).join("\n");
 }
 
 function normalizeMode(value?: string): GptImageGenerationMode {
   return value === "text-in-image" ? "text-in-image" : "visual-only";
 }
 
-function normalizeSourceMode(
-  value: string | undefined,
-  selectedSourceImagePath: string
-): GptImageSourceMode {
+function normalizeSourceMode(value: string | undefined, selectedSourceImagePath: string): GptImageSourceMode {
   if (value === "text-to-image") return "text-to-image";
   if (value === "image-edit") return "image-edit";
   return selectedSourceImagePath ? "image-edit" : "text-to-image";
 }
 
-function normalizePreservationMode(
-  value: string | undefined,
-  selectedSourceImagePath: string
-): GptImagePreservationMode {
+function normalizePreservationMode(value: string | undefined, selectedSourceImagePath: string): GptImagePreservationMode {
   if (value === "free-generate") return "free-generate";
   if (value === "preserve-product") return "preserve-product";
   return selectedSourceImagePath ? "preserve-product" : "free-generate";
 }
 
-function outputPrefix(
-  imageSourceMode: GptImageSourceMode,
-  imageGenerationMode: GptImageGenerationMode
-) {
+function outputPrefix(imageSourceMode: GptImageSourceMode, imageGenerationMode: GptImageGenerationMode) {
   if (imageSourceMode === "image-edit") {
     return imageGenerationMode === "text-in-image" ? "gpt-edit-ad" : "gpt-edit-visual";
   }
@@ -148,10 +106,7 @@ function normalizeCandidateCount(value?: number) {
   return Math.max(1, Math.min(4, Math.floor(count)));
 }
 
-function normalizePromptTemplateMode(
-  value?: string,
-  imageGenerationMode?: GptImageGenerationMode
-): GptPromptTemplateMode {
+function normalizePromptTemplateMode(value?: string, imageGenerationMode?: GptImageGenerationMode): GptPromptTemplateMode {
   if (value === "ad-image-with-copy") return "ad-image-with-copy";
   if (value === "visual-only") return "visual-only";
   return imageGenerationMode === "text-in-image" ? "ad-image-with-copy" : "visual-only";
@@ -162,73 +117,33 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as Body;
     const imageProvider = normalizeImageProvider(body.imageProvider);
     const explicitPaidSelection = body.paidApiExplicitlySelected === true;
-    const promptTemplateMode = normalizePromptTemplateMode(
-      body.promptTemplateMode,
-      normalizeMode(body.imageGenerationMode)
-    );
+    const promptTemplateMode = normalizePromptTemplateMode(body.promptTemplateMode, normalizeMode(body.imageGenerationMode));
     const canvasPreset: GptOutputCanvasPreset = "sns-square-1200";
-    const imageGenerationMode = normalizeMode(
-      body.imageGenerationMode ||
-        (promptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only")
-    );
-    const selectedReferenceLabels = Array.isArray(body.selectedReferenceLabels)
-      ? body.selectedReferenceLabels.slice(0, 5)
-      : Array.isArray(body.referenceLabels)
-        ? body.referenceLabels.slice(0, 5)
-        : [];
-    const selectedProductImagePath = body.productImageState
-      ? getSelectedProductImagePath(body.productImageState)
-      : "";
-    const fallbackSourceImagePath =
-      body.selectedSourceImagePath ||
-      body.productInfo?.selectedSourceImagePath ||
-      selectedProductImagePath ||
-      body.productImagePath ||
-      body.productInfo?.productImagePath ||
-      body.productImagePaths?.[0] ||
-      body.productInfo?.productImagePaths?.[0] ||
-      "";
+    const imageGenerationMode = normalizeMode(body.imageGenerationMode || (promptTemplateMode === "ad-image-with-copy" ? "text-in-image" : "visual-only"));
+    const selectedReferenceLabels = Array.isArray(body.selectedReferenceLabels) ? body.selectedReferenceLabels.slice(0, 5) : Array.isArray(body.referenceLabels) ? body.referenceLabels.slice(0, 5) : [];
+    const selectedProductImagePath = body.productImageState ? getSelectedProductImagePath(body.productImageState) : "";
+    const fallbackSourceImagePath = body.selectedSourceImagePath || body.productInfo?.selectedSourceImagePath || selectedProductImagePath || body.productImagePath || body.productInfo?.productImagePath || body.productImagePaths?.[0] || body.productInfo?.productImagePaths?.[0] || "";
     const imageSourceMode = normalizeSourceMode(body.imageSourceMode, fallbackSourceImagePath);
-    const preservationMode = normalizePreservationMode(
-      body.preservationMode,
-      fallbackSourceImagePath
-    );
+    const preservationMode = normalizePreservationMode(body.preservationMode, fallbackSourceImagePath);
 
     if (imageSourceMode === "image-edit" && !fallbackSourceImagePath) {
-      return NextResponse.json(
-        { success: false, error: "선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "선택 이미지 기준 생성에는 원본 기준 이미지가 필요합니다." }, { status: 400 });
     }
     if (!explicitPaidSelection || !isPaidImageGenerationEnabled()) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            "유료 이미지 API는 별도 공급자 선택과 작업별 동의 전에는 사용할 수 없습니다. 기본 광고 제작의 Codex·ChatGPT 로그인 생성을 이용해 주세요.",
+          error: "유료 이미지 API는 별도 공급자 선택과 작업별 동의 전에는 사용할 수 없습니다. 기본 광고 제작의 Codex·ChatGPT 로그인 생성을 이용해 주세요.",
         },
         { status: 403 }
       );
     }
     if (imageProvider === "openai" && !process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { success: false, error: "OpenAI API 키를 확인해주세요." },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: false, error: "OpenAI API 키를 확인해주세요." }, { status: 500 });
     }
 
-    if (
-      imageProvider === "gemini" &&
-      !(
-        process.env.GEMINI_API_KEY ||
-        process.env.GOOGLE_API_KEY ||
-        process.env.GOOGLE_GENERATIVE_AI_API_KEY
-      )
-    ) {
-      return NextResponse.json(
-        { success: false, error: "GEMINI_API_KEY를 확인해주세요." },
-        { status: 500 }
-      );
+    if (imageProvider === "gemini" && !(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY)) {
+      return NextResponse.json({ success: false, error: "GEMINI_API_KEY를 확인해주세요." }, { status: 500 });
     }
 
     const { prompt: fallbackAutoPrompt, creativeDirection } = buildImageGenerationPrompt({
@@ -253,18 +168,12 @@ export async function POST(request: Request) {
       preservationMode,
     });
     const fallbackProductPrompt = productPrompt(body.productInfo, body.prompt, body.styleHint);
-    const autoPrompt =
-      typeof body.autoPrompt === "string" && body.autoPrompt.trim()
-        ? body.autoPrompt.trim()
-        : fallbackAutoPrompt || fallbackProductPrompt;
+    const autoPrompt = typeof body.autoPrompt === "string" && body.autoPrompt.trim() ? body.autoPrompt.trim() : fallbackAutoPrompt || fallbackProductPrompt;
     const customPromptNote = cleanText(body.customPromptNote);
-    const rawFinalPrompt =
-      cleanText(body.finalPrompt) ||
-      (body.promptMode === "custom" ? cleanText(body.customPrompt) : "");
+    const rawFinalPrompt = cleanText(body.finalPrompt) || (body.promptMode === "custom" ? cleanText(body.customPrompt) : "");
     const rawBasePrompt = cleanText(body.basePrompt);
     const rawPrompt = cleanText(body.prompt);
-    const basePrompt =
-      rawFinalPrompt || rawBasePrompt || autoPrompt || rawPrompt || fallbackProductPrompt;
+    const basePrompt = rawFinalPrompt || rawBasePrompt || autoPrompt || rawPrompt || fallbackProductPrompt;
     const failureReasons = Array.isArray(body.failureReasons) ? body.failureReasons : [];
     const revisionPrompt =
       typeof body.revisionPrompt === "string" && body.revisionPrompt.trim()
@@ -282,14 +191,9 @@ export async function POST(request: Request) {
       preservationMode,
       category: body.category || body.productInfo?.category,
     });
-    const additionalDirection =
-      customPromptNote && !basePrompt.includes(customPromptNote)
-        ? `[Additional user direction]\n${customPromptNote}`
-        : "";
+    const additionalDirection = customPromptNote && !basePrompt.includes(customPromptNote) ? `[Additional user direction]\n${customPromptNote}` : "";
     const revisionDirection = revisionPrompt ? `[Revision direction]\n${revisionPrompt}` : "";
-    const promptUsed = [basePrompt, additionalDirection, lockPrompt, revisionDirection]
-      .filter(Boolean)
-      .join("\n\n");
+    const promptUsed = [basePrompt, additionalDirection, lockPrompt, revisionDirection].filter(Boolean).join("\n\n");
 
     await fs.mkdir(outputDir, { recursive: true });
     const prefix = `${imageProvider}-${outputPrefix(imageSourceMode, imageGenerationMode)}`;
@@ -380,10 +284,7 @@ export async function POST(request: Request) {
       selectedSourceImagePath: fallbackSourceImagePath,
       parentCandidateId: body.parentCandidateId,
       attempt: Math.max(1, Math.floor(body.attempt || 1)),
-      model:
-        imageProvider === "gemini"
-          ? process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview"
-          : process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
+      model: imageProvider === "gemini" ? process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview" : process.env.OPENAI_IMAGE_MODEL || "gpt-image-1",
       savedTo: {
         candidates: "data/gpt-image-candidates.json",
       },

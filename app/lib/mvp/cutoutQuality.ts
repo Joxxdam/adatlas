@@ -1,9 +1,5 @@
 import sharp from "sharp";
-import type {
-  ProductCutoutQuality,
-  ProductExtractionScope,
-  ProductRepresentationType,
-} from "./types";
+import type { ProductCutoutQuality, ProductExtractionScope, ProductRepresentationType } from "./types";
 
 export type CutoutQuality = ProductCutoutQuality;
 
@@ -13,16 +9,8 @@ type QualityOptions = {
   expectedUnitCount?: number;
 };
 
-export async function inspectCutoutQuality(
-  buffer: Buffer,
-  options: QualityOptions = {}
-): Promise<CutoutQuality> {
-  const { data, info } = await sharp(buffer)
-    .rotate()
-    .resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: true })
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+export async function inspectCutoutQuality(buffer: Buffer, options: QualityOptions = {}): Promise<CutoutQuality> {
+  const { data, info } = await sharp(buffer).rotate().resize({ width: 512, height: 512, fit: "inside", withoutEnlargement: true }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const pixelCount = Math.max(1, info.width * info.height);
   let transparentPixels = 0;
   let foregroundPixels = 0;
@@ -46,12 +34,7 @@ export async function inspectCutoutQuality(
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x);
       maxY = Math.max(maxY, y);
-      if (
-        alpha < 245 &&
-        data[index] > 220 &&
-        data[index + 1] > 220 &&
-        data[index + 2] > 220
-      ) {
+      if (alpha < 245 && data[index] > 220 && data[index + 1] > 220 && data[index + 2] > 220) {
         haloPixels += 1;
       }
     }
@@ -89,14 +72,7 @@ export async function inspectCutoutQuality(
       area += 1;
       const neighbors = [position - 1, position + 1, position - info.width, position + info.width];
       for (const neighbor of neighbors) {
-        if (
-          neighbor < 0 ||
-          neighbor >= pixelCount ||
-          visited[neighbor] ||
-          !foreground[neighbor] ||
-          Math.abs((neighbor % info.width) - x) > 1
-        )
-          continue;
+        if (neighbor < 0 || neighbor >= pixelCount || visited[neighbor] || !foreground[neighbor] || Math.abs((neighbor % info.width) - x) > 1) continue;
         visited[neighbor] = 1;
         queue.push(neighbor);
       }
@@ -140,19 +116,12 @@ export async function inspectCutoutQuality(
     warnings.push("밝은색 halo가 가장자리에 남았을 수 있습니다.");
     score -= Math.min(0.2, haloRatio);
   }
-  const multiUnit = ["multi-unit-set", "bundle-components", "irregular-product"].includes(
-    options.representationType || ""
-  );
+  const multiUnit = ["multi-unit-set", "bundle-components", "irregular-product"].includes(options.representationType || "");
   if (!multiUnit && componentCount > 8) {
     warnings.push("단일 상품 주변에 관련 없는 작은 조각이 남았을 수 있습니다.");
     score -= 0.15;
   }
-  if (
-    multiUnit &&
-    options.expectedUnitCount &&
-    componentCount > 0 &&
-    componentCount < Math.min(2, options.expectedUnitCount)
-  ) {
+  if (multiUnit && options.expectedUnitCount && componentCount > 0 && componentCount < Math.min(2, options.expectedUnitCount)) {
     warnings.push("판매 세트의 일부 구성품이 누락됐을 수 있습니다.");
     score -= 0.18;
   }
@@ -162,24 +131,13 @@ export async function inspectCutoutQuality(
   }
 
   const normalizedScore = Math.max(0, Math.min(1, score));
-  const likelyUnremovedSurface =
-    clippedEdgeCount >= 3 &&
-    foregroundRatio > 0.75 &&
-    !["product-and-package", "food-and-plate", "original"].includes(
-      options.extractionScope || ""
-    );
+  const likelyUnremovedSurface = clippedEdgeCount >= 3 && foregroundRatio > 0.75 && !["product-and-package", "food-and-plate", "original"].includes(options.extractionScope || "");
   const likelyUnrelatedFragments = !multiUnit && componentCount > 8;
   if (likelyUnremovedSurface) {
     warnings.push("도마·바닥·배경 면이 상품과 함께 남았을 가능성이 높습니다.");
   }
   return {
-    usable:
-      options.extractionScope === "original" ||
-      (normalizedScore >= 0.55 &&
-        transparencyRatio >= 0.02 &&
-        foregroundRatio >= 0.015 &&
-        !likelyUnremovedSurface &&
-        !likelyUnrelatedFragments),
+    usable: options.extractionScope === "original" || (normalizedScore >= 0.55 && transparencyRatio >= 0.02 && foregroundRatio >= 0.015 && !likelyUnremovedSurface && !likelyUnrelatedFragments),
     score: normalizedScore,
     transparencyRatio,
     opaqueEdgeRatio,

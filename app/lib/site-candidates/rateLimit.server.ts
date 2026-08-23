@@ -4,19 +4,14 @@ declare global {
   var __adatlasSiteAnalysisRateLimits: Map<string, Bucket> | undefined;
 }
 
-const buckets =
-  globalThis.__adatlasSiteAnalysisRateLimits ||
-  (globalThis.__adatlasSiteAnalysisRateLimits = new Map<string, Bucket>());
+const buckets = globalThis.__adatlasSiteAnalysisRateLimits || (globalThis.__adatlasSiteAnalysisRateLimits = new Map<string, Bucket>());
 
 function clientKey(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || request.headers.get("x-real-ip") || "local";
 }
 
-export function assertSiteAnalysisRateLimit(
-  request: Request,
-  scope: "discover" | "analyze" | "select"
-) {
+export function assertSiteAnalysisRateLimit(request: Request, scope: "discover" | "analyze" | "select") {
   const now = Date.now();
   const windowMs = 60_000;
   const limit = scope === "discover" ? 10 : scope === "analyze" ? 20 : 40;

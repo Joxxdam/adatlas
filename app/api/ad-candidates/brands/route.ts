@@ -10,10 +10,7 @@ export async function GET(request: Request) {
   try {
     assertInternalApiAccess(request);
     const result = await listBigQueryAdvertisers();
-    return NextResponse.json(
-      { ok: true, ...result },
-      { headers: { "Cache-Control": "private, no-store" } }
-    );
+    return NextResponse.json({ ok: true, ...result }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof InternalApiAccessError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: error.status });

@@ -26,8 +26,15 @@ const root = () => path.join(process.cwd(), ".data", "codex");
 const registryPath = () => path.join(root(), "advertisers.json");
 
 export function codexProductThreadKey(advertiserId: string, productId: string) {
-  const advertiser = advertiserId.trim().replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 80) || "unknown-advertiser";
-  const productHash = createHash("sha256").update(productId.trim() || "unknown-product").digest("hex").slice(0, 16);
+  const advertiser =
+    advertiserId
+      .trim()
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .slice(0, 80) || "unknown-advertiser";
+  const productHash = createHash("sha256")
+    .update(productId.trim() || "unknown-product")
+    .digest("hex")
+    .slice(0, 16);
   return `${advertiser}--product-${productHash}`;
 }
 
@@ -39,10 +46,13 @@ async function atomicJson(file: string, value: unknown) {
 }
 
 async function safeJson<T>(file: string, fallback: T): Promise<T> {
-  try { return JSON.parse(await readFile(file, "utf8")) as T; }
-  catch (error) {
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as T;
+  } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      try { await rename(file, `${file}.corrupt-${Date.now()}`); } catch {}
+      try {
+        await rename(file, `${file}.corrupt-${Date.now()}`);
+      } catch {}
     }
     return fallback;
   }
@@ -51,11 +61,18 @@ async function safeJson<T>(file: string, fallback: T): Promise<T> {
 async function serial<T>(key: string, task: () => Promise<T>): Promise<T> {
   const previous = locks.get(key) || Promise.resolve();
   let release!: () => void;
-  const current = new Promise<void>((resolve) => { release = resolve; });
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   const queued = previous.then(() => current);
   locks.set(key, queued);
   await previous;
-  try { return await task(); } finally { release(); if (locks.get(key) === queued) locks.delete(key); }
+  try {
+    return await task();
+  } finally {
+    release();
+    if (locks.get(key) === queued) locks.delete(key);
+  }
 }
 
 export async function getAdvertiserThread(advertiserId: string) {
@@ -79,7 +96,9 @@ export async function resetAdvertiserThread(advertiserId: string) {
   return saveAdvertiserThread({ ...current, threadId: undefined });
 }
 
-function memoryPath(id: string) { return path.join(root(), "brands", `${id}.json`); }
+function memoryPath(id: string) {
+  return path.join(root(), "brands", `${id}.json`);
+}
 export async function readBrandMemory(advertiserId: string) {
   const memory = await safeJson<Partial<AdvertiserBrandMemory>>(memoryPath(advertiserId), {});
   return {
@@ -170,14 +189,14 @@ export function selectGoldenReferences(memory: AdvertiserBrandMemory, input: { c
     const performance = reference.performanceData ? Math.max(...Object.values(reference.performanceData), 0) : 0;
     return (reference.category === input.category ? 1000 : 0) + (reference.productId === input.productId ? 200 : 0) + Math.min(150, performance);
   };
-  return [...memory.goldenReferences]
-    .sort((left, right) => score(right) - score(left) || new Date(right.approvedAt).getTime() - new Date(left.approvedAt).getTime())
-    .slice(0, Math.max(0, Math.min(3, input.limit || 2)));
+  return [...memory.goldenReferences].sort((left, right) => score(right) - score(left) || new Date(right.approvedAt).getTime() - new Date(left.approvedAt).getTime()).slice(0, Math.max(0, Math.min(3, input.limit || 2)));
 }
 
 export async function deleteBrandMemory(advertiserId: string) {
   return serial(memoryPath(advertiserId), async () => {
-    try { await unlink(memoryPath(advertiserId)); } catch (error) {
+    try {
+      await unlink(memoryPath(advertiserId));
+    } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
   });

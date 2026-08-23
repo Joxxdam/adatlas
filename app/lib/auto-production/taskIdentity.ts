@@ -2,10 +2,7 @@ import { createHash } from "node:crypto";
 import type { AutoProductionRun } from "./types";
 
 export function createAutoProductionTaskId(runId: string, productId: string, occurrence = 0) {
-  const digest = createHash("sha256")
-    .update(`${runId}\u0000${productId}\u0000${occurrence}`)
-    .digest("base64url")
-    .slice(0, 32);
+  const digest = createHash("sha256").update(`${runId}\u0000${productId}\u0000${occurrence}`).digest("base64url").slice(0, 32);
   return `auto-task-${digest}`;
 }
 

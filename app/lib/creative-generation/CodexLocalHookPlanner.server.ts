@@ -1,13 +1,7 @@
 import "server-only";
 
 import { Codex } from "@openai/codex-sdk";
-import {
-  buildHookCreativeBrief,
-  buildProductHookExploration,
-  buildProductInsightProfile,
-  selectDiverseHookHypotheses,
-  type CategoryHookPrior,
-} from "./hookHypothesisEngine";
+import { buildHookCreativeBrief, buildProductHookExploration, buildProductInsightProfile, selectDiverseHookHypotheses, type CategoryHookPrior } from "./hookHypothesisEngine";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
 import { hookTaxonomyTags, type CreativePlan, type HookHypothesisCandidate, type HookTaxonomyTag, type ProductTruth } from "./types";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
@@ -35,7 +29,7 @@ const outputSchema = {
           mainHook: { type: "string" },
           subCopy: { type: "string" },
           coreClaim: { type: "string" },
-          sentenceStyle: { type: "string", enum:["question","declaration","dialogue","contrast","sensory","urgency","proof"] },
+          sentenceStyle: { type: "string", enum: ["question", "declaration", "dialogue", "contrast", "sensory", "urgency", "proof"] },
           customerTension: { type: "string" },
           verifiedFactIds: { type: "array", items: { type: "string" } },
           intendedReaction: { type: "string" },
@@ -69,7 +63,7 @@ type PlannerResponse = {
     mainHook: string;
     subCopy: string;
     coreClaim: string;
-    sentenceStyle: "question"|"declaration"|"dialogue"|"contrast"|"sensory"|"urgency"|"proof";
+    sentenceStyle: "question" | "declaration" | "dialogue" | "contrast" | "sensory" | "urgency" | "proof";
     customerTension: string;
     verifiedFactIds: string[];
     intendedReaction: string;
@@ -96,16 +90,8 @@ function visibleLength(value: string) {
   return Array.from(value.replace(/\s/g, "")).length;
 }
 
-function safeError(error: unknown) {
-  return (error instanceof Error ? error.message : String(error))
-    .replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일")
-    .slice(0, 300);
-}
-
 function plannerPrompt(truth: ProductTruth) {
-  const facts = truth.facts
-    .filter((fact) => fact.usableInCopy && fact.verification !== "unverified")
-    .map((fact) => ({ id: fact.id, label: fact.label, value: fact.value, evidenceType: fact.evidenceType, source: fact.sourceUrl || fact.source }));
+  const facts = truth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").map((fact) => ({ id: fact.id, label: fact.label, value: fact.value, evidenceType: fact.evidenceType, source: fact.sourceUrl || fact.source }));
   return `당신은 한국 퍼포먼스 광고의 수석 크리에이티브 전략가다.
 상품마다 완전히 고유한 후킹 가설 후보 12~15개를 만든다. 고정된 분류별로 하나씩 채우지 말고, 실제 상품 근거와 고객 긴장을 기준으로 좋은 방향이 겹치면 같은 태그를 여러 번 사용해도 된다.
 
@@ -169,14 +155,14 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
     const claimSafety = factIds.length ? 96 : 60;
     const categoryPrior = clamp(prior[candidate.primaryTag] ?? 50);
     const novelty = distinctiveness;
-    const total = recomputeHookTotal({ evidenceStrength,specificity,purchaseReasonStrength,distinctiveness,attentionPotential,visualizability,advertisingFit,claimSafety,categoryPrior,novelty });
+    const total = recomputeHookTotal({ evidenceStrength, specificity, purchaseReasonStrength, distinctiveness, attentionPotential, visualizability, advertisingFit, claimSafety, categoryPrior, novelty });
     const id = `codex-hypothesis-${String(index + 1).padStart(2, "0")}`;
     const verifiedEvidence = evidence.map((item) => item.fact);
     const originalMainHook = candidate.mainHook.trim().slice(0, 80);
     const originalSubCopy = candidate.subCopy.trim().slice(0, 120);
     const mainHook = repairBannedCreativeSentence(originalMainHook);
     const subCopy = repairBannedCreativeSentence(originalSubCopy);
-    if (!mainHook || !subCopy || looksLikeGenericOrRepetitiveCopy(mainHook,subCopy)) {
+    if (!mainHook || !subCopy || looksLikeGenericOrRepetitiveCopy(mainHook, subCopy)) {
       throw new Error(`후킹 후보 ${index + 1}가 일반적이거나 메인·서브 문구가 반복됩니다.`);
     }
     assertCreativeCopyAllowed(`${mainHook} ${subCopy}`);
@@ -189,8 +175,8 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
       hypothesis: candidate.hypothesis.trim(),
       mainHook,
       subCopy,
-      coreClaim:candidate.coreClaim.trim() || verifiedEvidence[0] || candidate.customerTension.trim(),
-      sentenceStyle:candidate.sentenceStyle,
+      coreClaim: candidate.coreClaim.trim() || verifiedEvidence[0] || candidate.customerTension.trim(),
+      sentenceStyle: candidate.sentenceStyle,
       customerReason: candidate.customerTension.trim(),
       customerTension: candidate.customerTension.trim(),
       verifiedEvidence,
@@ -221,12 +207,7 @@ function toCandidates(truth: ProductTruth, response: PlannerResponse, prior: Cat
   });
 }
 
-export async function planHooksWithCodexLocal(input: {
-  truth: ProductTruth;
-  advertiserId: string;
-  advertiserName: string;
-  prior?: CategoryHookPrior;
-}): Promise<{ exploration: ReturnType<typeof buildProductHookExploration>; copyGeneration: CreativePlan["copyGeneration"] }> {
+export async function planHooksWithCodexLocal(input: { truth: ProductTruth; advertiserId: string; advertiserName: string; prior?: CategoryHookPrior }): Promise<{ exploration: ReturnType<typeof buildProductHookExploration>; copyGeneration: CreativePlan["copyGeneration"] }> {
   const prior = input.prior || {};
   try {
     const response = await runPlanner(input.truth);
@@ -238,13 +219,13 @@ export async function planHooksWithCodexLocal(input: {
       exploration: { profile: buildProductInsightProfile(input.truth), candidates, selected },
       copyGeneration: { provider: "codex-local", model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", warnings: [] },
     };
-  } catch (error) {
+  } catch {
     return {
       exploration: buildProductHookExploration(input.truth, prior),
       copyGeneration: {
         provider: "fallback",
         model: PLANNER_VERSION,
-        warnings: [`로컬 Codex 후킹 기획을 사용할 수 없어 근거 기반 규칙 엔진을 사용했습니다: ${safeError(error)}`],
+        warnings: ["자동 광고 구성을 근거 기반 규칙 엔진으로 보완했으며 제작은 계속 진행합니다."],
       },
     };
   }

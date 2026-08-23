@@ -1,15 +1,7 @@
 import { copyLimitCharSummary } from "./templateCopyFitter";
 import { analyzeProductUsp } from "./productUsp";
 import { adObjectivePrompt } from "./adObjective";
-import type {
-  AdBrief,
-  AdImageLabel,
-  CopyGuideContext,
-  CreativeStrategy,
-  ProductInfoForPrompt,
-  ReferenceUsageSelection,
-  TemplateCopyLimits,
-} from "./types";
+import type { AdBrief, AdImageLabel, CopyGuideContext, CreativeStrategy, ProductInfoForPrompt, ReferenceUsageSelection, TemplateCopyLimits } from "./types";
 
 type TemplateInfo = {
   templateId?: string;
@@ -17,20 +9,7 @@ type TemplateInfo = {
   copyLimits?: TemplateCopyLimits;
 };
 
-const referenceFieldPriority = [
-  "reusableCopyPattern",
-  "firstLineHook",
-  "copyStructure",
-  "consumerInsight",
-  "purchaseTrigger",
-  "toneOfVoice",
-  "trendElements",
-  "visualCopyRelation",
-  "hookType",
-  "appealPoint",
-  "copyNuance",
-  "whyItWorks",
-] as const;
+const referenceFieldPriority = ["reusableCopyPattern", "firstLineHook", "copyStructure", "consumerInsight", "purchaseTrigger", "toneOfVoice", "trendElements", "visualCopyRelation", "hookType", "appealPoint", "copyNuance", "whyItWorks"] as const;
 
 function referencePayload(reference?: AdImageLabel) {
   if (!reference?.finalLabel) return null;
@@ -106,9 +85,7 @@ function templateStrategy(templateId?: string) {
     return "다크 임팩트형: headline은 강한 질문/감탄형, bodyCopy는 짧은 신뢰 보강, highlightCopy는 품질/가격 명분으로 쓴다.";
   }
 
-  if (
-    /food-impact-hero-001|bold-commerce-001|price-proof-002|home-shopping-max-010/.test(templateId)
-  ) {
+  if (/food-impact-hero-001|bold-commerce-001|price-proof-002|home-shopping-max-010/.test(templateId)) {
     return "식품/특가 히어로형: headline은 강하고 짧게, bodyCopy는 존댓말 1문장, highlightCopy는 가격/구성 혜택, bottomBarCopy는 빨간 정보 바용 짧은 소구, price는 판매가만 쓴다.";
   }
 
@@ -192,26 +169,8 @@ function intensityInstruction(intensity: AdBrief["creativeIntensity"] | undefine
   return "균형 있게: 상품의 USP와 상세페이지에서 확인된 구매 혜택을 균형 있게 전달한다.";
 }
 
-export function buildGenerateCopyPrompt(params: {
-  product: ProductInfoForPrompt;
-  reference?: AdImageLabel;
-  referenceContext?: AdImageLabel[];
-  referenceUsages?: ReferenceUsageSelection[];
-  template?: TemplateInfo;
-  copyGuide?: CopyGuideContext | null;
-  adBrief?: AdBrief;
-  creativeStrategy?: CreativeStrategy | null;
-}) {
-  const {
-    product,
-    reference,
-    referenceContext = reference ? [reference] : [],
-    referenceUsages = [],
-    template,
-    copyGuide,
-    adBrief,
-    creativeStrategy,
-  } = params;
+export function buildGenerateCopyPrompt(params: { product: ProductInfoForPrompt; reference?: AdImageLabel; referenceContext?: AdImageLabel[]; referenceUsages?: ReferenceUsageSelection[]; template?: TemplateInfo; copyGuide?: CopyGuideContext | null; adBrief?: AdBrief; creativeStrategy?: CreativeStrategy | null }) {
+  const { product, reference, referenceContext = reference ? [reference] : [], referenceUsages = [], template, copyGuide, adBrief, creativeStrategy } = params;
   const copyLimitSummary = copyLimitCharSummary(template?.copyLimits);
   const referenceJson = referencePayload(reference);
   const isKookdae = copyGuide?.guideId === "kookdae-hanwoo";
@@ -330,8 +289,7 @@ ${JSON.stringify(
     referenceId: item.imageId,
     category: item.finalLabel?.category || item.category,
     hookTypes: item.structuredLabels?.hookTypes || [item.finalLabel?.hookType].filter(Boolean),
-    appealPoints:
-      item.structuredLabels?.appealPoints || [item.finalLabel?.appealPoint].filter(Boolean),
+    appealPoints: item.structuredLabels?.appealPoints || [item.finalLabel?.appealPoint].filter(Boolean),
     ocrText: isKookdae ? undefined : item.finalLabel?.ocrText,
     firstLineHook: isKookdae ? undefined : item.finalLabel?.firstLineHook,
     copyStructure: item.finalLabel?.copyStructure,

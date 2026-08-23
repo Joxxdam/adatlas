@@ -9,11 +9,7 @@ type Props = {
   analyses: ContentAnalysis[];
 };
 
-type CrawlState =
-  | { status: "idle"; message: string }
-  | { status: "loading"; message: string }
-  | { status: "success"; message: string }
-  | { status: "error"; message: string };
+type CrawlState = { status: "idle"; message: string } | { status: "loading"; message: string } | { status: "success"; message: string } | { status: "error"; message: string };
 
 const sourceLabel: Record<string, string> = {
   watchlist: "워치리스트 메모",
@@ -36,9 +32,7 @@ export function WatchlistExplorer({ brands, analyses }: Props) {
     const analyzedBrandIds = new Set(analyses.map((item) => item.brandId));
     return brands.filter((brand) => analyzedBrandIds.has(brand.id));
   }, [brands, analyses]);
-  const [selectedBrandId, setSelectedBrandId] = useState(
-    brandsWithAnalysis[0]?.id ?? brands[0]?.id ?? ""
-  );
+  const [selectedBrandId, setSelectedBrandId] = useState(brandsWithAnalysis[0]?.id ?? brands[0]?.id ?? "");
   const [source, setSource] = useState("all");
   const [limit, setLimit] = useState(20);
   const [crawlState, setCrawlState] = useState<CrawlState>({
@@ -102,8 +96,7 @@ export function WatchlistExplorer({ brands, analyses }: Props) {
     } catch (error) {
       setCrawlState({
         status: "error",
-        message:
-          error instanceof Error ? error.message : "Meta 크롤링 중 알 수 없는 오류가 발생했습니다.",
+        message: error instanceof Error ? error.message : "Meta 크롤링 중 알 수 없는 오류가 발생했습니다.",
       });
     }
   }
@@ -189,25 +182,14 @@ export function WatchlistExplorer({ brands, analyses }: Props) {
               <span>{new Date(metaResult.crawledAt).toLocaleString("ko-KR")}</span>
             </div>
 
-            {metaResult.warnings.length ? (
-              <div className="crawler-warning">{metaResult.warnings.slice(0, 3).join(" / ")}</div>
-            ) : null}
+            {metaResult.warnings.length ? <div className="crawler-warning">{metaResult.warnings.slice(0, 3).join(" / ")}</div> : null}
 
             <div className="meta-ad-grid">
               {metaResult.ads.map((ad, index) => {
                 const media = adMediaUrl(ad);
                 return (
-                  <article
-                    className="meta-ad-card"
-                    key={ad.adSnapshotUrl ?? `${ad.adText}-${index}`}
-                  >
-                    <div className={media ? "meta-ad-media" : "meta-ad-media empty"}>
-                      {media ? (
-                        <img alt={`${ad.brandName} Meta 광고 ${index + 1}`} src={media} />
-                      ) : (
-                        <span>소재 이미지 미수집</span>
-                      )}
-                    </div>
+                  <article className="meta-ad-card" key={ad.adSnapshotUrl ?? `${ad.adText}-${index}`}>
+                    <div className={media ? "meta-ad-media" : "meta-ad-media empty"}>{media ? <img alt={`${ad.brandName} Meta 광고 ${index + 1}`} src={media} /> : <span>소재 이미지 미수집</span>}</div>
                     <div className="meta-ad-body">
                       <div>
                         <span>{ad.startedAt ?? "시작일 미확인"}</span>
@@ -240,20 +222,11 @@ export function WatchlistExplorer({ brands, analyses }: Props) {
         ) : null}
 
         <div className="source-tabs">
-          <button
-            className={source === "all" ? "active" : ""}
-            type="button"
-            onClick={() => setSource("all")}
-          >
+          <button className={source === "all" ? "active" : ""} type="button" onClick={() => setSource("all")}>
             기존 분석 전체
           </button>
           {Object.entries(sourceCounts).map(([key, count]) => (
-            <button
-              className={source === key ? "active" : ""}
-              key={key}
-              type="button"
-              onClick={() => setSource(key)}
-            >
+            <button className={source === key ? "active" : ""} key={key} type="button" onClick={() => setSource(key)}>
               {sourceLabel[key] ?? key} {count}
             </button>
           ))}

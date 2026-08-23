@@ -4,5 +4,9 @@ import { VideoPlanningList } from "../components/video-planning/VideoPlanningLis
 export const dynamic = "force-dynamic";
 
 export default function VideoPlanningPage() {
-  return <FeaturePageShell activeFeature="video-planning"><VideoPlanningList /></FeaturePageShell>;
+  return (
+    <FeaturePageShell activeFeature="video-planning">
+      <VideoPlanningList />
+    </FeaturePageShell>
+  );
 }

@@ -1,25 +1,15 @@
-import type {
-  CategoryCreativeProfile,
-  CategoryCreativeProfileId,
-  HookHypothesisCandidate,
-  ProductTruth,
-} from "./types.ts";
+import type { CategoryCreativeProfile, CategoryCreativeProfileId, HookHypothesisCandidate, ProductTruth } from "./types.ts";
 
 type ProfileDefinition = Omit<CategoryCreativeProfile, "reason" | "matchedSignals"> & {
   terms: string[];
 };
 
-const commonAvoid = [
-  "고정 템플릿이나 이전 광고의 1:1 복제",
-  "상품이 거의 보이지 않는 장면",
-  "검증되지 않은 가격·효능·후기·인증·수치",
-  "문구만 바꾼 동일 구도 반복",
-  "상품 원본과 다른 패키지·색상·수량",
-];
+const commonAvoid = ["고정 템플릿이나 이전 광고의 1:1 복제", "상품이 거의 보이지 않는 장면", "검증되지 않은 가격·효능·후기·인증·수치", "문구만 바꾼 동일 구도 반복", "상품 원본과 다른 패키지·색상·수량"];
 
 const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
   food_meat: {
-    category: "food_meat", label: "육류·축산 식품",
+    category: "food_meat",
+    label: "육류·축산 식품",
     terms: ["한우", "소고기", "돼지고기", "삼겹살", "등심", "갈비", "육류", "축산", "불고기", "샤브"],
     visualObjectives: ["육즙·마블링·불향을 사실적으로 전달", "조리 행동과 구매 구성을 동시에 이해"],
     recommendedScenes: ["팬이나 그릴에서 지글거리는 조리 장면", "집게·젓가락으로 고기를 드는 초근접", "가족 식탁·캠핑·홈파티", "판매 패키지와 중량·가격 중심 커머스 히어로"],
@@ -32,8 +22,9 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "플라스틱처럼 보이는 고기", "손가락·집게·젓가락 오류", "고기 부위나 생·조리 상태 변경"],
   },
   food_fresh: {
-    category: "food_fresh", label: "신선식품·농산물",
-    terms: ["농산", "과일", "채소", "사과", "복숭아", "자두", "포도", "수박", "배 ", "산지", "수확", "제철", "생과"],
+    category: "food_fresh",
+    label: "신선식품·농산물",
+    terms: ["농산", "청과", "과채", "과일", "채소", "사과", "복숭아", "자두", "포도", "수박", "배 ", "감귤", "귤", "오렌지", "레몬", "라임", "딸기", "멜론", "참외", "토마토", "고구마", "감자", "양파", "마늘", "버섯", "옥수수", "산지", "수확", "제철", "생과"],
     visualObjectives: ["신선함·질감·산지감을 사실적으로 전달", "크기·구성·먹는 순간을 명확하게 표현"],
     recommendedScenes: ["햇빛 아래 원물 초근접", "수확·세척·썰기·한입 장면", "박스 구성과 실제 수량", "가족 간식과 제철 식탁"],
     recommendedHumanUsage: ["수확하는 손", "과일을 자르거나 먹는 손", "가족 간식 장면"],
@@ -45,7 +36,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "표면이 플라스틱처럼 매끈한 원물", "실제 품종·수량·크기 왜곡"],
   },
   food_processed: {
-    category: "food_processed", label: "가공식품·간편식",
+    category: "food_processed",
+    label: "가공식품·간편식",
     terms: ["간편식", "밀키트", "즉석", "냉동", "냉장", "소스", "음료", "주스", "과즙", "반찬", "시리얼", "가공식품", "식품"],
     visualObjectives: ["패키지와 완성 음식의 연결", "조리 편의·활용 메뉴·구매 혜택을 장면으로 설명"],
     recommendedScenes: ["포장을 열고 바로 조리하는 행동", "완성 메뉴 여러 가지", "퇴근 후 빠른 한 끼", "패키지 중심 가격·구성 히어로"],
@@ -58,7 +50,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "패키지와 전혀 다른 완성 음식", "먹을 수 없어 보이는 인공 질감"],
   },
   beauty_cosmetics: {
-    category: "beauty_cosmetics", label: "화장품·스킨케어",
+    category: "beauty_cosmetics",
+    label: "화장품·스킨케어",
     terms: ["화장품", "스킨", "세럼", "앰플", "크림", "로션", "토너", "에센스", "쿠션", "립", "선크림", "메이크업"],
     visualObjectives: ["제품을 강한 히어로로 식별", "효능·질감·사용 결과를 감각적으로 시각화"],
     recommendedScenes: ["제품과 제형의 감각적 히어로", "손·얼굴·화장대 사용 장면", "성분·근거 인포그래픽", "문제와 사용 후 감정이 연결되는 장면"],
@@ -71,7 +64,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "근거 없는 임상 수치나 효능", "피부·손·얼굴의 해부학적 오류"],
   },
   personal_care: {
-    category: "personal_care", label: "퍼스널케어",
+    category: "personal_care",
+    label: "퍼스널케어",
     terms: ["샤워젤", "바디워시", "샴푸", "트리트먼트", "데오드란트", "치약", "세정", "비누", "핸드워시", "퍼스널케어", "민트 티트리"],
     visualObjectives: ["향·쿨링·거품·상쾌함을 눈으로 체감", "제품과 실제 사용 상황을 직접 연결"],
     recommendedScenes: ["물보라·얼음·거품·수증기 속 제품 히어로", "운동 후·샤워 전후 사람 행동", "손에 제품을 쥔 사용 장면", "검증된 성분·후기 증거"],
@@ -84,7 +78,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "근거 없는 체감온도·체취감소 수치", "제품을 가리는 과도한 효과", "샤워 장면의 손·신체 오류"],
   },
   fashion: {
-    category: "fashion", label: "패션",
+    category: "fashion",
+    label: "패션",
     terms: ["패션", "의류", "원피스", "셔츠", "바지", "재킷", "코트", "신발", "가방", "주얼리", "착용"],
     visualObjectives: ["실루엣·핏·소재를 정확히 전달", "착용 상황과 스타일 정체성을 후킹에 연결"],
     recommendedScenes: ["전신 착장", "소재·봉제 디테일", "출근·여행·데이트 상황", "스타일링 전후"],
@@ -97,7 +92,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "팔다리·손가락 오류", "원단 패턴·상품 길이·색상 변경"],
   },
   health: {
-    category: "health", label: "건강·웰니스",
+    category: "health",
+    label: "건강·웰니스",
     terms: ["건강", "영양제", "비타민", "유산균", "보충제", "프로틴", "단백질", "건기식", "헬스"],
     visualObjectives: ["복용·운동·일상 루틴을 신뢰감 있게 표현", "허용된 성분·함량·인증만 증거화"],
     recommendedScenes: ["아침 건강 루틴", "운동 전후 사용", "성분·함량 증거", "패키지 중심 신뢰 히어로"],
@@ -110,7 +106,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "질병 치료·예방 암시", "근거 없는 전후 변화나 의료 수치"],
   },
   household: {
-    category: "household", label: "생활용품",
+    category: "household",
+    label: "생활용품",
     terms: ["생활용품", "세제", "청소", "수납", "주방용품", "욕실용품", "휴지", "탈취", "살균", "가전"],
     visualObjectives: ["사용 전 불편과 사용 행동을 명확히 설명", "크기·구성·기능을 실제 생활 공간에서 전달"],
     recommendedScenes: ["집 안 문제 상황", "손으로 사용하는 순간", "정리·청소 전후", "구성품과 기능 증거"],
@@ -123,7 +120,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "불가능한 사용 장면", "근거 없는 살균·탈취 수치"],
   },
   kids: {
-    category: "kids", label: "키즈·육아",
+    category: "kids",
+    label: "키즈·육아",
     terms: ["키즈", "유아", "아동", "어린이", "베이비", "육아", "장난감", "기저귀", "분유"],
     visualObjectives: ["보호자 관점의 사용 이유와 안전한 사용 상황", "연령·구성·재질을 정확하게 표현"],
     recommendedScenes: ["보호자와 아이의 생활 장면", "놀이·외출·수면 루틴", "제품 기능 시연", "구성품 히어로"],
@@ -136,7 +134,8 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
     avoidList: [...commonAvoid, "연령에 맞지 않는 사용", "위험한 자세·행동", "가짜 안전 인증"],
   },
   general: {
-    category: "general", label: "일반 상품",
+    category: "general",
+    label: "일반 상품",
     terms: [],
     visualObjectives: ["상품의 구매 이유와 사용 상황을 한눈에 전달", "상품 식별성과 한국어 가독성 확보"],
     recommendedScenes: ["상품 히어로", "실제 사용 행동", "문제 해결 장면", "검증 근거·혜택 장면"],
@@ -151,7 +150,11 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
 };
 
 function normalized(value: unknown) {
-  return String(value || "").toLowerCase().replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .toLowerCase()
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function resolveCategoryCreativeProfile(truth: ProductTruth): CategoryCreativeProfile {
@@ -159,7 +162,11 @@ export function resolveCategoryCreativeProfile(truth: ProductTruth): CategoryCre
   const sources = [
     { value: `${product.category} ${product.productSubCategory || ""} ${product.detectedProductType || ""}`, weight: 8, label: "카테고리" },
     { value: `${product.productName} ${product.extractedDescription || ""}`, weight: 5, label: "상품명·상세설명" },
-    { value: `${product.mainBenefit || ""} ${product.targetCustomer || ""} ${(product.verifiedBenefits || []).join(" ")} ${(product.ingredients || []).join(" ")} ${(product.creativeContext?.recommendationReasons || []).join(" ")} ${(product.creativeContext?.reviewInsightSummaries || []).join(" ")}`, weight: 3, label: "USP·사용상황·고객문제" },
+    {
+      value: `${product.mainBenefit || ""} ${product.targetCustomer || ""} ${(product.verifiedBenefits || []).join(" ")} ${(product.ingredients || []).join(" ")} ${(product.creativeContext?.recommendationReasons || []).join(" ")} ${(product.creativeContext?.reviewInsightSummaries || []).join(" ")}`,
+      weight: 3,
+      label: "USP·사용상황·고객문제",
+    },
     { value: truth.facts.map((fact) => `${fact.label} ${fact.value}`).join(" "), weight: 2, label: "상세페이지 근거" },
     { value: truth.imageAssets.flatMap((asset) => asset.classificationSignals || []).join(" "), weight: 2, label: "이미지 특징" },
     { value: `${product.brandName || product.advertiserName || ""} ${(product.brandColors || []).join(" ")} ${(product.creativeContext?.appliedContentNotes || []).map((note) => note.content).join(" ")}`, weight: 1, label: "브랜드 분위기" },
@@ -179,15 +186,11 @@ export function resolveCategoryCreativeProfile(truth: ProductTruth): CategoryCre
     })
     .sort((left, right) => right.score - left.score);
   const selected = scored[0]?.score ? scored[0] : { profile: definitions.general, score: 0, matches: ["분류 근거 부족"] };
-  const profile = Object.fromEntries(
-    Object.entries(selected.profile).filter(([key]) => key !== "terms"),
-  ) as Omit<ProfileDefinition, "terms">;
+  const profile = Object.fromEntries(Object.entries(selected.profile).filter(([key]) => key !== "terms")) as Omit<ProfileDefinition, "terms">;
   return {
     ...profile,
     matchedSignals: selected.matches,
-    reason: selected.score
-      ? `${selected.matches.join(" / ")}를 함께 분석해 ${profile.label} 광고 문법을 선택했습니다.`
-      : "상품명뿐 아니라 카테고리·USP·상세 근거·이미지 특징을 확인했으나 특화 분류 근거가 부족해 일반 광고 문법을 사용합니다.",
+    reason: selected.score ? `${selected.matches.join(" / ")}를 함께 분석해 ${profile.label} 광고 문법을 선택했습니다.` : "상품명뿐 아니라 카테고리·USP·상세 근거·이미지 특징을 확인했으나 특화 분류 근거가 부족해 일반 광고 문법을 사용합니다.",
   };
 }
 
@@ -226,11 +229,7 @@ function archetypeAllowed(archetype: string, truth: ProductTruth, candidate: Hoo
   return true;
 }
 
-export function applyCategoryCreativeDirection(
-  truth: ProductTruth,
-  candidates: HookHypothesisCandidate[],
-  profile = resolveCategoryCreativeProfile(truth)
-) {
+export function applyCategoryCreativeDirection(truth: ProductTruth, candidates: HookHypothesisCandidate[], profile = resolveCategoryCreativeProfile(truth)) {
   const used = new Set<string>();
   return candidates.map((candidate, index) => {
     let archetype = preferredArchetype(candidate, profile);
@@ -242,14 +241,12 @@ export function applyCategoryCreativeDirection(
       if (alternative) archetype = alternative;
     }
     used.add(archetype);
-    const humanRole = needsHuman(archetype, candidate)
-      ? profile.recommendedHumanUsage[index % Math.max(1, profile.recommendedHumanUsage.length)] || "상품 사용 행동을 설명하는 자연스러운 사람 또는 손"
-      : "사람 없이 상품과 감각·근거가 주인공";
+    const humanRole = needsHuman(archetype, candidate) ? profile.recommendedHumanUsage[index % Math.max(1, profile.recommendedHumanUsage.length)] || "상품 사용 행동을 설명하는 자연스러운 사람 또는 손" : "사람 없이 상품과 감각·근거가 주인공";
     const scene = candidate.visualConcept || profile.recommendedScenes[index % profile.recommendedScenes.length];
     const referenceImageIds = [...truth.imageAssets, ...truth.referenceImages]
       .filter((asset) => asset.verified && asset.validationStatus !== "excluded" && asset.role !== "product-cutout")
       .sort((left, right) => {
-        const score = (role: string) => role === "product-packshot" ? 5 : role === "product-lifestyle" ? 4 : role === "detail-image" ? 3 : 1;
+        const score = (role: string) => (role === "product-packshot" ? 5 : role === "product-lifestyle" ? 4 : role === "detail-image" ? 3 : 1);
         return score(right.role) - score(left.role);
       })
       .slice(0, 5)

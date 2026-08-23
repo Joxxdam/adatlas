@@ -63,22 +63,12 @@ export async function POST(request: Request) {
       .map(normalizedStroke)
       .filter((stroke): stroke is MaskStroke => Boolean(stroke));
     if (!cutoutImagePath || !originalImagePath || !strokes.length) {
-      return NextResponse.json(
-        { success: false, error: "누끼 이미지, 원본 이미지, 수정 브러시가 필요합니다." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "누끼 이미지, 원본 이미지, 수정 브러시가 필요합니다." }, { status: 400 });
     }
     const cutoutBuffer = await fs.readFile(processedFilePath(cutoutImagePath));
     const cutout = await sharp(cutoutBuffer).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const preparedOriginal = await prepareProductSourceBuffer(
-      await loadSafeProductImageBuffer(originalImagePath),
-      body.cropBox
-    );
-    const original = await sharp(preparedOriginal)
-      .resize(cutout.info.width, cutout.info.height, { fit: "fill" })
-      .ensureAlpha()
-      .raw()
-      .toBuffer();
+    const preparedOriginal = await prepareProductSourceBuffer(await loadSafeProductImageBuffer(originalImagePath), body.cropBox);
+    const original = await sharp(preparedOriginal).resize(cutout.info.width, cutout.info.height, { fit: "fill" }).ensureAlpha().raw().toBuffer();
     const width = cutout.info.width;
     const height = cutout.info.height;
 
@@ -100,17 +90,10 @@ export async function POST(request: Request) {
             cutout.data[index + 3] = Math.round(cutout.data[index + 3] * (1 - strength));
           } else {
             cutout.data[index] = Math.round(cutout.data[index] * (1 - strength) + original[index] * strength);
-            cutout.data[index + 1] = Math.round(
-              cutout.data[index + 1] * (1 - strength) + original[index + 1] * strength
-            );
-            cutout.data[index + 2] = Math.round(
-              cutout.data[index + 2] * (1 - strength) + original[index + 2] * strength
-            );
+            cutout.data[index + 1] = Math.round(cutout.data[index + 1] * (1 - strength) + original[index + 1] * strength);
+            cutout.data[index + 2] = Math.round(cutout.data[index + 2] * (1 - strength) + original[index + 2] * strength);
             const restoreAlpha = original[index + 3] || 255;
-            cutout.data[index + 3] = Math.max(
-              cutout.data[index + 3],
-              Math.round(restoreAlpha * strength)
-            );
+            cutout.data[index + 3] = Math.max(cutout.data[index + 3], Math.round(restoreAlpha * strength));
           }
           if (cutout.data[index + 3] <= 3) {
             cutout.data[index] = 0;
@@ -130,10 +113,7 @@ export async function POST(request: Request) {
       representationType: body.representationType,
       extractionScope: body.extractionScope,
     });
-    const resultImagePath = await saveProcessedProductImage(
-      output,
-      `mask-edit-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`
-    );
+    const resultImagePath = await saveProcessedProductImage(output, `mask-edit-${Date.now()}-${crypto.randomBytes(4).toString("hex")}.png`);
     return NextResponse.json({
       success: true,
       resultImagePath,

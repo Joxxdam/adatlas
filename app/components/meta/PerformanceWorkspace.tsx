@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { CreativeArchiveEntry } from "../../lib/creative-archive/types";
-import type {
-  MetaAccount,
-  MetaBaselineAdSet,
-  MetaCampaign,
-  PerformanceExperiment,
-  PerformanceTestType,
-} from "../../lib/meta/types";
+import type { MetaAccount, MetaBaselineAdSet, MetaCampaign, PerformanceExperiment, PerformanceTestType } from "../../lib/meta/types";
 import { spendImbalanceWarning } from "../../lib/meta/performance";
 import { ArchivePerformanceSetup } from "./ArchivePerformanceSetup";
 import styles from "./MetaOperations.module.css";
@@ -55,11 +49,7 @@ function PerformanceTable({ experiment }: { experiment: PerformanceExperiment })
   const hookOnly = experiment.testType === "hook-only";
   return (
     <>
-      <p className={styles.interpretation}>
-        {hookOnly
-          ? "동일한 디자인 조건에서 후킹 문구 성과를 비교합니다."
-          : "후킹·장면·레이아웃이 함께 다른 완성 소재의 성과입니다. 후킹 단독 효과로 해석하지 않습니다."}
-      </p>
+      <p className={styles.interpretation}>{hookOnly ? "동일한 디자인 조건에서 후킹 문구 성과를 비교합니다." : "후킹·장면·레이아웃이 함께 다른 완성 소재의 성과입니다. 후킹 단독 효과로 해석하지 않습니다."}</p>
       {warning ? <p className={styles.warning}>{warning}</p> : null}
       <div className={styles.tableWrap}>
         <table className={styles.table}>
@@ -96,15 +86,7 @@ function PerformanceTable({ experiment }: { experiment: PerformanceExperiment })
   );
 }
 
-export function PerformanceWorkspace({
-  initialExperiments,
-  legacyExperiments,
-  selectedArchiveEntries,
-}: {
-  initialExperiments: PerformanceExperiment[];
-  legacyExperiments: LegacyExperimentSummary[];
-  selectedArchiveEntries: CreativeArchiveEntry[];
-}) {
+export function PerformanceWorkspace({ initialExperiments, legacyExperiments, selectedArchiveEntries }: { initialExperiments: PerformanceExperiment[]; legacyExperiments: LegacyExperimentSummary[]; selectedArchiveEntries: CreativeArchiveEntry[] }) {
   const [experiments, setExperiments] = useState(initialExperiments);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("성과 데이터는 버튼을 누를 때만 Meta에서 읽습니다.");
@@ -121,15 +103,7 @@ export function PerformanceWorkspace({
   const [campaignId, setCampaignId] = useState("");
   const [adSetId, setAdSetId] = useState("");
   const [ads, setAds] = useState<Array<Record<string, unknown>>>([]);
-  const visible = useMemo(
-    () =>
-      experiments.filter((item) =>
-        `${item.advertiserName} ${item.productName} ${item.campaignName}`
-          .toLowerCase()
-          .includes(query.toLowerCase())
-      ),
-    [experiments, query]
-  );
+  const visible = useMemo(() => experiments.filter((item) => `${item.advertiserName} ${item.productName} ${item.campaignName}`.toLowerCase().includes(query.toLowerCase())), [experiments, query]);
 
   async function refreshLocal() {
     const response = await fetch("/api/meta/performance", { cache: "no-store" });
@@ -142,11 +116,7 @@ export function PerformanceWorkspace({
     try {
       await api({ action, experimentId });
       await refreshLocal();
-      setStatus(
-        action === "refresh"
-          ? "최근 3일 성과를 새로 반영했습니다."
-          : "성과 추적 설정을 저장했습니다."
-      );
+      setStatus(action === "refresh" ? "최근 3일 성과를 새로 반영했습니다." : "성과 추적 설정을 저장했습니다.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "성과 작업 실패");
     } finally {
@@ -265,20 +235,12 @@ export function PerformanceWorkspace({
       <ArchivePerformanceSetup entries={selectedArchiveEntries} />
       <p className={styles.notice}>{status}</p>
       <div className={styles.toolbar}>
-        <input
-          aria-label="성과 검색"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="광고주·상품·캠페인 검색"
-          value={query}
-        />
+        <input aria-label="성과 검색" onChange={(event) => setQuery(event.target.value)} placeholder="광고주·상품·캠페인 검색" value={query} />
       </div>
 
       <details className={styles.panel}>
         <summary>기존 Meta 광고 세트 연결</summary>
-        <p>
-          페이지를 여는 것만으로 Meta를 호출하지 않습니다. 아래 버튼을 순서대로 눌러 읽기 전용
-          후보를 확인하세요.
-        </p>
+        <p>페이지를 여는 것만으로 Meta를 호출하지 않습니다. 아래 버튼을 순서대로 눌러 읽기 전용 후보를 확인하세요.</p>
         <div className={styles.formGrid}>
           <label>
             광고주 ID
@@ -295,10 +257,7 @@ export function PerformanceWorkspace({
           </label>
           <label>
             광고주명
-            <input
-              onChange={(event) => setAdvertiserName(event.target.value)}
-              value={advertiserName}
-            />
+            <input onChange={(event) => setAdvertiserName(event.target.value)} value={advertiserName} />
           </label>
           <label>
             상품명
@@ -306,11 +265,7 @@ export function PerformanceWorkspace({
           </label>
           <label>
             상품 랜딩 URL(선택)
-            <input
-              inputMode="url"
-              onChange={(event) => setLandingUrl(event.target.value)}
-              value={landingUrl}
-            />
+            <input inputMode="url" onChange={(event) => setLandingUrl(event.target.value)} value={landingUrl} />
           </label>
           <label>
             성과 해석 단위
@@ -319,18 +274,10 @@ export function PerformanceWorkspace({
               <option value="hook-only">후킹만 비교(동일 디자인 확인 시)</option>
             </select>
           </label>
-          <button
-            disabled={!advertiserId || Boolean(busy)}
-            onClick={() => void read("connection")}
-            type="button"
-          >
+          <button disabled={!advertiserId || Boolean(busy)} onClick={() => void read("connection")} type="button">
             연결 확인
           </button>
-          <button
-            disabled={!advertiserId || Boolean(busy)}
-            onClick={() => void read("accounts")}
-            type="button"
-          >
+          <button disabled={!advertiserId || Boolean(busy)} onClick={() => void read("accounts")} type="button">
             광고 계정 불러오기
           </button>
           <label>
@@ -354,11 +301,7 @@ export function PerformanceWorkspace({
               ))}
             </select>
           </label>
-          <button
-            disabled={!accountId || Boolean(busy)}
-            onClick={() => void read("campaigns", { accountId })}
-            type="button"
-          >
+          <button disabled={!accountId || Boolean(busy)} onClick={() => void read("campaigns", { accountId })} type="button">
             기존 캠페인 불러오기
           </button>
           <label>
@@ -380,11 +323,7 @@ export function PerformanceWorkspace({
               ))}
             </select>
           </label>
-          <button
-            disabled={!campaignId || Boolean(busy)}
-            onClick={() => void read("adsets", { accountId, campaignId })}
-            type="button"
-          >
+          <button disabled={!campaignId || Boolean(busy)} onClick={() => void read("adsets", { accountId, campaignId })} type="button">
             광고 세트 불러오기
           </button>
           <label>
@@ -404,24 +343,14 @@ export function PerformanceWorkspace({
               ))}
             </select>
           </label>
-          <button
-            disabled={!adSetId || Boolean(busy)}
-            onClick={() => void read("ads", { adSetId })}
-            type="button"
-          >
+          <button disabled={!adSetId || Boolean(busy)} onClick={() => void read("ads", { adSetId })} type="button">
             광고 확인
           </button>
         </div>
         {ads.length ? (
           <div className={styles.notice}>
-            <span>
-              확인된 광고 {ads.length}개. 소재코드와 ad_id를 검토한 뒤 명시적으로 연결합니다.
-            </span>
-            <button
-              disabled={!advertiserName.trim() || !productName.trim() || Boolean(busy)}
-              onClick={() => void connectExistingAdSet()}
-              type="button"
-            >
+            <span>확인된 광고 {ads.length}개. 소재코드와 ad_id를 검토한 뒤 명시적으로 연결합니다.</span>
+            <button disabled={!advertiserName.trim() || !productName.trim() || Boolean(busy)} onClick={() => void connectExistingAdSet()} type="button">
               이 광고 세트 성과 연결
             </button>
           </div>
@@ -438,45 +367,24 @@ export function PerformanceWorkspace({
                 <p>
                   {experiment.campaignName} · {experiment.adSetName}
                 </p>
-                <small>
-                  {experiment.testType === "hook-only" ? "후킹만 비교" : "전체 소재 조합 비교"}
-                </small>
+                <small>{experiment.testType === "hook-only" ? "후킹만 비교" : "전체 소재 조합 비교"}</small>
               </div>
               <span>{experiment.trackingStatus}</span>
             </header>
             <PerformanceTable experiment={experiment} />
             <footer className={styles.actions}>
-              <button
-                disabled={Boolean(busy)}
-                onClick={() =>
-                  void act(experiment.trackingEnabled ? "stop" : "start", experiment.id)
-                }
-                type="button"
-              >
+              <button disabled={Boolean(busy)} onClick={() => void act(experiment.trackingEnabled ? "stop" : "start", experiment.id)} type="button">
                 {experiment.trackingEnabled ? "추적 중지" : "추적 시작"}
               </button>
-              <button
-                disabled={!experiment.trackingEnabled || Boolean(busy)}
-                onClick={() => void act("refresh", experiment.id)}
-                type="button"
-              >
+              <button disabled={!experiment.trackingEnabled || Boolean(busy)} onClick={() => void act("refresh", experiment.id)} type="button">
                 성과 새로고침
               </button>
               <Link href={`/performance/${encodeURIComponent(experiment.id)}`}>상세 보기</Link>
-              <Link
-                href={`/create-product?step=hooks${experiment.landingUrl ? `&productUrl=${encodeURIComponent(experiment.landingUrl)}` : ""}`}
-              >
-                우승 후킹으로 다음 콘텐츠 만들기
-              </Link>
+              <Link href={`/create-product?step=hooks${experiment.landingUrl ? `&productUrl=${encodeURIComponent(experiment.landingUrl)}` : ""}`}>우승 후킹으로 다음 콘텐츠 만들기</Link>
             </footer>
           </article>
         ))}
-        {!visible.length ? (
-          <div className={styles.empty}>
-            연결된 Meta 성과 실험이 없습니다. 기존 후킹 실험 기록은 아래에서 이어서 확인할 수
-            있습니다.
-          </div>
-        ) : null}
+        {!visible.length ? <div className={styles.empty}>연결된 Meta 성과 실험이 없습니다. 기존 후킹 실험 기록은 아래에서 이어서 확인할 수 있습니다.</div> : null}
       </section>
 
       <details className={styles.panel}>
@@ -488,9 +396,7 @@ export function PerformanceWorkspace({
               <span>
                 {item.code} · {item.objective} · 후킹 {item.hookCount}개 · {item.status}
               </span>
-              <Link href={`/performance?legacy=${encodeURIComponent(item.id)}`}>
-                성과 확인 흐름에서 보기
-              </Link>
+              <Link href={`/performance?legacy=${encodeURIComponent(item.id)}`}>성과 확인 흐름에서 보기</Link>
             </article>
           ))}
         </div>
@@ -515,10 +421,7 @@ export function PerformanceDetail({ experiment }: { experiment: PerformanceExper
       <PerformanceTable experiment={experiment} />
       <section className={styles.panel}>
         <h2>판단 원칙</h2>
-        <p>
-          판매 캠페인의 최종 우승은 CTR만으로 결정하지 않습니다. 최소 노출·아웃바운드
-          클릭·구매·광고비와 불균등 집행 여부를 함께 확인합니다.
-        </p>
+        <p>판매 캠페인의 최종 우승은 CTR만으로 결정하지 않습니다. 최소 노출·아웃바운드 클릭·구매·광고비와 불균등 집행 여부를 함께 확인합니다.</p>
       </section>
     </main>
   );

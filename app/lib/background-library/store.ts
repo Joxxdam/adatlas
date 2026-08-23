@@ -1,16 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-import {
-  audienceAgeGroups,
-  backgroundAssetTypes,
-  backgroundCategories,
-  type AudienceAgeGroup,
-  type BackgroundAssetType,
-  type BackgroundCategory,
-  type BackgroundLibraryItem,
-  type BackgroundLibrarySummary,
-} from "./types.ts";
+import { audienceAgeGroups, backgroundAssetTypes, backgroundCategories, type AudienceAgeGroup, type BackgroundAssetType, type BackgroundCategory, type BackgroundLibraryItem, type BackgroundLibrarySummary } from "./types.ts";
 
 const metadataPath = path.join(process.cwd(), "data", "background-library.json");
 const publicRoot = path.join(process.cwd(), "public");
@@ -43,15 +34,7 @@ export async function readBackgroundLibrary(options: { includeDisabled?: boolean
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
 
-  const candidates = parsed.filter(
-    (item) =>
-      item &&
-      typeof item.id === "string" &&
-      typeof item.file === "string" &&
-      typeof item.category === "string" &&
-      /^[a-z0-9-]+$/.test(item.category) &&
-      (options.includeDisabled || item.enabled !== false)
-  );
+  const candidates = parsed.filter((item) => item && typeof item.id === "string" && typeof item.file === "string" && typeof item.category === "string" && /^[a-z0-9-]+$/.test(item.category) && (options.includeDisabled || item.enabled !== false));
   const existence = await Promise.all(candidates.map((item) => fileExists(item.file)));
   return candidates.filter((_, index) => existence[index]);
 }
@@ -71,10 +54,7 @@ export async function appendBackgroundLibraryItem(item: BackgroundLibraryItem) {
   return item;
 }
 
-export async function updateBackgroundLibraryItem(
-  id: string,
-  changes: Partial<BackgroundLibraryItem>
-) {
+export async function updateBackgroundLibraryItem(id: string, changes: Partial<BackgroundLibraryItem>) {
   const current = await readBackgroundLibrary({ includeDisabled: true });
   const index = current.findIndex((item) => item.id === id);
   if (index < 0) return null;
@@ -103,21 +83,13 @@ export async function writeBackgroundLibrary(items: BackgroundLibraryItem[]) {
   await fs.rename(temporaryPath, metadataPath);
 }
 
-export function summarizeBackgroundLibrary(
-  items: BackgroundLibraryItem[]
-): BackgroundLibrarySummary {
-  const counts = Object.fromEntries(
-    backgroundCategories.map((category) => [category, 0])
-  ) as Record<BackgroundCategory, number>;
+export function summarizeBackgroundLibrary(items: BackgroundLibraryItem[]): BackgroundLibrarySummary {
+  const counts = Object.fromEntries(backgroundCategories.map((category) => [category, 0])) as Record<BackgroundCategory, number>;
   items.forEach((item) => {
     if (backgroundCategories.includes(item.category)) counts[item.category] += 1;
   });
-  const ageCounts = Object.fromEntries(
-    audienceAgeGroups.map((ageGroup) => [ageGroup, 0])
-  ) as Record<AudienceAgeGroup, number>;
-  const assetTypeCounts = Object.fromEntries(
-    backgroundAssetTypes.map((assetType) => [assetType, 0])
-  ) as Record<BackgroundAssetType, number>;
+  const ageCounts = Object.fromEntries(audienceAgeGroups.map((ageGroup) => [ageGroup, 0])) as Record<AudienceAgeGroup, number>;
+  const assetTypeCounts = Object.fromEntries(backgroundAssetTypes.map((assetType) => [assetType, 0])) as Record<BackgroundAssetType, number>;
   const people = items.filter((item) => item.includesPerson);
   items.forEach((item) => {
     assetTypeCounts[item.assetType] += 1;

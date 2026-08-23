@@ -1,19 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type {
-  AutoProductionAdvertiserConfig,
-  AutoProductionDashboardStatus,
-  AutoProductionPreview,
-  AutoProductionProductTask,
-  AutoProductionRun,
-} from "../../lib/auto-production/types";
-import {
-  AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
-  AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
-  AUTO_PRODUCTION_IMAGES_PER_MALL,
-  AUTO_PRODUCTION_PRODUCTS_PER_MALL,
-} from "../../lib/auto-production/policy";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { AutoProductionAdvertiserConfig, AutoProductionDashboardStatus, AutoProductionPreview, AutoProductionProductTask, AutoProductionRun } from "../../lib/auto-production/types";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "../../lib/auto-production/policy";
 import styles from "./AutoProductionWorkspace.module.css";
 
 type GlobalSettings = {
@@ -73,7 +62,7 @@ const runStatusLabels: Record<AutoProductionRun["status"], string> = {
   scheduled: "예약됨",
   "selecting-products": "상품 선정 중",
   "analyzing-products": "상품 분석 중",
-  "generating-hooks": "후킹 생성 중",
+  "generating-hooks": "광고 문구 준비 중",
   queued: "제작 대기",
   "generating-creatives": "콘텐츠 제작 중",
   completed: "완료",
@@ -83,18 +72,12 @@ const runStatusLabels: Record<AutoProductionRun["status"], string> = {
   skipped: "건너뜀",
 };
 
-const terminalRunStatuses = new Set<AutoProductionRun["status"]>([
-  "completed",
-  "partial",
-  "failed",
-  "cancelled",
-  "skipped",
-]);
+const terminalRunStatuses = new Set<AutoProductionRun["status"]>(["completed", "partial", "failed", "cancelled", "skipped"]);
 
 const productStatusLabels: Record<AutoProductionProductTask["status"], string> = {
   selected: "상품 선정",
   analyzing: "상품 분석 중",
-  "hooks-ready": "문구 준비 완료",
+  "hooks-ready": "광고 문구 준비 완료",
   queued: "이미지 제작 대기",
   generating: "이미지 제작 중",
   completed: "완료",
@@ -113,7 +96,7 @@ const sourceLabels: Record<AutoProductionProductTask["candidate"]["source"], str
 
 function resultStatusLabel(status: AutoProductionProductTask["results"][number]["status"]) {
   if (["success", "approved"].includes(status)) return "완료";
-  if (["quality-review", "korean-review", "product-review", "group-review"].includes(status)) return "확인 필요";
+  if (["quality-review", "korean-review", "product-review", "group-review"].includes(status)) return "생성 완료 · 직접 확인";
   if (status === "failed") return "실패";
   if (status === "running") return "제작 중";
   if (status === "cancelled") return "취소";
@@ -135,6 +118,15 @@ function list(value: string) {
     .split(/[\n,]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function validProductUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
 }
 
 function toForm(config: AutoProductionAdvertiserConfig): FormState {
@@ -192,6 +184,7 @@ function localDateTime(value?: string) {
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       }).format(date);
 }
 
@@ -224,8 +217,12 @@ export function AutoProductionWorkspace() {
   const [runPeriod, setRunPeriod] = useState<RunPeriod>("today");
   const [customFrom, setCustomFrom] = useState(() => seoulBusinessDate(-6));
   const [customTo, setCustomTo] = useState(() => seoulBusinessDate());
+  const [expandedRunIds, setExpandedRunIds] = useState<Set<string> | null>(null);
+  const [plannedUrlDrafts, setPlannedUrlDrafts] = useState<Record<string, string[]>>({});
+  const plannedPreviewRequested = useRef(false);
+  const [savedPlanId, setSavedPlanId] = useState("");
 
-  const runDateRange = useMemo(() => {
+  const runDateRange = useMemo<{ dateFrom?: string; dateTo?: string }>(() => {
     if (runPeriod === "all") return {};
     if (runPeriod === "today") {
       const today = seoulBusinessDate();
@@ -238,9 +235,7 @@ export function AutoProductionWorkspace() {
     if (runPeriod === "seven-days") {
       return { dateFrom: seoulBusinessDate(-6), dateTo: seoulBusinessDate() };
     }
-    return customFrom <= customTo
-      ? { dateFrom: customFrom, dateTo: customTo }
-      : { dateFrom: customTo, dateTo: customFrom };
+    return customFrom <= customTo ? { dateFrom: customFrom, dateTo: customTo } : { dateFrom: customTo, dateTo: customFrom };
   }, [customFrom, customTo, runPeriod]);
 
   const runQuery = useMemo(() => {
@@ -250,45 +245,24 @@ export function AutoProductionWorkspace() {
     return params.toString();
   }, [runDateRange]);
 
-  const hasActiveRun = useMemo(
-    () => runs.some((run) => !terminalRunStatuses.has(run.status)),
-    [runs]
-  );
-  const latestRunByAdvertiser = useMemo(
-    () =>
-      new Map(
-        advertisers.map((advertiser) => [
-          advertiser.advertiserId,
-          runs.find((run) => run.advertiserId === advertiser.advertiserId),
-        ])
-      ),
-    [advertisers, runs]
-  );
-  const previewTotal = useMemo(
-    () => previews.reduce((sum, previewItem) => sum + previewItem.expectedImages, 0),
-    [previews]
-  );
+  const hasActiveRun = useMemo(() => runs.some((run) => !terminalRunStatuses.has(run.status)), [runs]);
+  const allEnabledPlansConfirmed = useMemo(() => {
+    const enabledAdvertisers = advertisers.filter((advertiser) => advertiser.enabled);
+    return enabledAdvertisers.length > 0 && enabledAdvertisers.every((advertiser) => advertiser.adminProductUrls.length === AUTO_PRODUCTION_PRODUCTS_PER_MALL);
+  }, [advertisers]);
+  const latestRunByAdvertiser = useMemo(() => new Map(advertisers.map((advertiser) => [advertiser.advertiserId, runs.find((run) => run.advertiserId === advertiser.advertiserId)])), [advertisers, runs]);
 
   const refresh = useCallback(async () => {
     try {
-      const [configPayload, statusPayload, runPayload] = await Promise.all([
-        api<{ advertisers: AutoProductionAdvertiserConfig[]; settings: GlobalSettings }>(
-          "/api/auto-production/advertisers"
-        ),
-        api<{ status: AutoProductionDashboardStatus }>("/api/auto-production/status"),
-        api<{ runs: AutoProductionRun[] }>(`/api/auto-production/runs?${runQuery}`),
-      ]);
+      const [configPayload, statusPayload, runPayload] = await Promise.all([api<{ advertisers: AutoProductionAdvertiserConfig[]; settings: GlobalSettings }>("/api/auto-production/advertisers"), api<{ status: AutoProductionDashboardStatus }>("/api/auto-production/status"), api<{ runs: AutoProductionRun[] }>(`/api/auto-production/runs?${runQuery}`)]);
       setAdvertisers(configPayload.advertisers);
       setSettings(configPayload.settings);
       setStatus(statusPayload.status);
       setRuns(runPayload.runs);
+      setExpandedRunIds((current) => (current === null ? new Set(runPayload.runs[0]?.id ? [runPayload.runs[0].id] : []) : current));
       setError("");
     } catch (refreshError) {
-      setError(
-        refreshError instanceof Error
-          ? refreshError.message
-          : "자동 제작 정보를 불러오지 못했습니다."
-      );
+      setError(refreshError instanceof Error ? refreshError.message : "자동 제작 정보를 불러오지 못했습니다.");
     }
   }, [runQuery]);
 
@@ -300,6 +274,21 @@ export function AutoProductionWorkspace() {
       window.clearInterval(interval);
     };
   }, [hasActiveRun, refresh]);
+
+  useEffect(() => {
+    if (!advertisers.length || plannedPreviewRequested.current) return;
+    plannedPreviewRequested.current = true;
+    setPlannedUrlDrafts((current) => {
+      const next = { ...current };
+      for (const advertiser of advertisers) {
+        if (!next[advertiser.advertiserId]) {
+          next[advertiser.advertiserId] = Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => advertiser.adminProductUrls[index] || "");
+        }
+      }
+      return next;
+    });
+    void preview();
+  }, [advertisers]);
 
   async function runAction(key: string, work: () => Promise<void>) {
     setWorking(key);
@@ -316,14 +305,20 @@ export function AutoProductionWorkspace() {
 
   async function preview(advertiserId?: string) {
     await runAction(`preview:${advertiserId || "all"}`, async () => {
-      const payload = await api<{ previews: AutoProductionPreview[] }>(
-        "/api/auto-production/preview",
-        {
-          method: "POST",
-          body: JSON.stringify({ advertiserId }),
+      const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
+        method: "POST",
+        body: JSON.stringify({ advertiserId }),
+      });
+      setPreviews((current) => (advertiserId ? [...current.filter((item) => item.advertiserId !== advertiserId), ...payload.previews] : payload.previews));
+      setPlannedUrlDrafts((current) => {
+        const next = { ...current };
+        for (const previewItem of payload.previews) {
+          const config = advertisers.find((item) => item.advertiserId === previewItem.advertiserId);
+          const existing = next[previewItem.advertiserId] || [];
+          next[previewItem.advertiserId] = Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => config?.adminProductUrls[index] || existing[index] || previewItem.candidates[index]?.productUrl || "");
         }
-      );
-      setPreviews(payload.previews);
+        return next;
+      });
     });
   }
 
@@ -336,14 +331,64 @@ export function AutoProductionWorkspace() {
     });
   }
 
+  function updatePlannedUrl(advertiserId: string, index: number, value: string) {
+    setSavedPlanId("");
+    setPlannedUrlDrafts((current) => {
+      const urls = Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, itemIndex) => current[advertiserId]?.[itemIndex] || "");
+      urls[index] = value;
+      return { ...current, [advertiserId]: urls };
+    });
+  }
+
+  async function savePlannedProducts(advertiserId: string, runAfterSave = false) {
+    const urls = (plannedUrlDrafts[advertiserId] || []).map((value) => value.trim());
+    if (urls.length !== AUTO_PRODUCTION_PRODUCTS_PER_MALL || urls.some((value) => !validProductUrl(value)) || new Set(urls).size !== AUTO_PRODUCTION_PRODUCTS_PER_MALL) {
+      setError(`서로 다른 상품 상세페이지 URL ${AUTO_PRODUCTION_PRODUCTS_PER_MALL}개를 모두 올바르게 입력해주세요.`);
+      return;
+    }
+    await runAction(`plan:${advertiserId}`, async () => {
+      await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiserId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ adminProductUrls: urls }),
+      });
+      setSavedPlanId(advertiserId);
+      if (runAfterSave) {
+        await api("/api/auto-production/run", {
+          method: "POST",
+          body: JSON.stringify({ advertiserId, trigger: "manual" }),
+        });
+        setRunPeriod("today");
+        window.setTimeout(() => document.getElementById("auto-production-results")?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+      }
+    });
+  }
+
+  async function resetPlannedProducts(advertiserId: string) {
+    await runAction(`reset-plan:${advertiserId}`, async () => {
+      await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiserId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ adminProductUrls: [] }),
+      });
+      const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
+        method: "POST",
+        body: JSON.stringify({ advertiserId }),
+      });
+      const nextPreview = payload.previews.find((item) => item.advertiserId === advertiserId);
+      setPreviews((current) => [...current.filter((item) => item.advertiserId !== advertiserId), ...payload.previews]);
+      setPlannedUrlDrafts((current) => ({
+        ...current,
+        [advertiserId]: Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => nextPreview?.candidates[index]?.productUrl || ""),
+      }));
+      setSavedPlanId("");
+    });
+  }
+
   async function saveAdvertiser() {
     await runAction("save", async () => {
-      const url = editingId
-        ? `/api/auto-production/advertisers/${encodeURIComponent(editingId)}`
-        : "/api/auto-production/advertisers";
+      const url = editingId ? `/api/auto-production/advertisers/${encodeURIComponent(editingId)}` : "/api/auto-production/advertisers";
       await api(url, {
         method: editingId ? "PATCH" : "POST",
-        body: JSON.stringify(formPayload(form)),
+        body: JSON.stringify(formPayload(editingId ? form : { ...form, enabled: false })),
       });
       setForm(emptyForm);
       setEditingId(null);
@@ -357,24 +402,20 @@ export function AutoProductionWorkspace() {
         <div>
           <p className={styles.eyebrow}>DAILY CREATIVE OPERATIONS</p>
           <h1>자동 콘텐츠 제작</h1>
-          <p>매일 오전 7시, 몰별 상품 4개와 레퍼런스 기반 완성 광고 24장을 출근 전에 준비합니다.</p>
+          <p>매일 자정부터 몰별 상품 4개와 레퍼런스 기반 완성 광고 24장을 순차 제작합니다.</p>
         </div>
         <div className={styles.actions}>
-          <button
-            className={styles.buttonSecondary}
-            disabled={Boolean(working)}
-            onClick={() => void preview()}
-            type="button"
-          >
-            오늘 후보 미리보기
+          <button className={styles.buttonSecondary} disabled={Boolean(working)} onClick={() => void preview()} type="button">
+            예정 상품 새로 찾기
           </button>
           <button
             className={styles.button}
-            disabled={Boolean(working) || settings.paused}
+            disabled={Boolean(working) || settings.paused || !allEnabledPlansConfirmed}
             onClick={() => void run()}
+            title={allEnabledPlansConfirmed ? undefined : "사용 중인 모든 몰의 예정상품 4개를 먼저 확정해주세요."}
             type="button"
           >
-            지금 실행
+            확정 목록 전체 실행
           </button>
         </div>
       </header>
@@ -384,12 +425,91 @@ export function AutoProductionWorkspace() {
           {error}
         </p>
       ) : null}
-      <p className={styles.notice}>
-        서버가 켜져 있을 때 백그라운드에서 계속 실행됩니다. 로컬 PC와 서버가 모두 꺼져 있으면
-        실행되지 않으며, 같은 날 다시 켜면 누락된 예약을 한 번만 보충합니다. 수기 제작과 동일한
-        카테고리별 ZIP 레퍼런스 6장을 사용하는 수동 제작과 동일한 생성 워크플로우만 사용하며,
-        유료 API로 자동 전환하거나 Meta에 자동 게시하지 않습니다.
-      </p>
+      <p className={styles.notice}>서버가 켜져 있는 상태에서 매일 00:00~00:09에만 예약 제작을 시작합니다. 아래에서 몰별 예정 상품 4개를 확인하고 URL을 바꾸면 다음 실행에는 저장한 목록을 그대로 사용합니다.</p>
+
+      <section className={styles.plannedProducts} aria-labelledby="planned-products-title">
+        <div className={styles.plannedProductsHeader}>
+          <div>
+            <p className={styles.eyebrow}>NEXT PRODUCTION</p>
+            <h2 id="planned-products-title">몰별 다음 제작 예정 상품</h2>
+            <p>자동 추천된 상품을 먼저 보여드립니다. 다른 상품을 제작하려면 해당 행의 상세페이지 URL만 바꾸고 4개 상품을 확정해주세요.</p>
+          </div>
+          <span>상품 1개당 광고 {AUTO_PRODUCTION_CREATIVES_PER_PRODUCT}장</span>
+        </div>
+        <div className={styles.plannedMallList}>
+          {advertisers.map((advertiser) => {
+            const previewItem = previews.find((item) => item.advertiserId === advertiser.advertiserId);
+            const urls = plannedUrlDrafts[advertiser.advertiserId] || Array(AUTO_PRODUCTION_PRODUCTS_PER_MALL).fill("");
+            const validCount = urls.filter((url) => validProductUrl(url.trim())).length;
+            const planReady = validCount === AUTO_PRODUCTION_PRODUCTS_PER_MALL && new Set(urls.map((url) => url.trim())).size === AUTO_PRODUCTION_PRODUCTS_PER_MALL;
+            const isSaved = savedPlanId === advertiser.advertiserId;
+            return (
+              <article className={styles.plannedMall} key={advertiser.advertiserId}>
+                <header className={styles.plannedMallHeader}>
+                  <div>
+                    <h3>{advertiser.advertiserName}</h3>
+                    <p>
+                      {advertiser.enabled ? `매일 ${advertiser.scheduleTime} 자동제작` : "자동제작 일시정지"} · {validCount}/{AUTO_PRODUCTION_PRODUCTS_PER_MALL}개 URL 준비
+                    </p>
+                  </div>
+                  <button
+                    className={styles.smallButton}
+                    disabled={Boolean(working)}
+                    onClick={() => void (advertiser.adminProductUrls.length ? resetPlannedProducts(advertiser.advertiserId) : preview(advertiser.advertiserId))}
+                    type="button"
+                  >
+                    {working === `reset-plan:${advertiser.advertiserId}` ? "다시 선정 중…" : advertiser.adminProductUrls.length ? "자동 후보로 되돌리기" : "후보 다시 찾기"}
+                  </button>
+                </header>
+                <div className={styles.plannedRows}>
+                  {Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => {
+                    const candidate = previewItem?.candidates[index];
+                    const changed = Boolean(candidate?.productUrl && urls[index] && candidate.productUrl !== urls[index]);
+                    return (
+                      <div className={styles.plannedRow} key={`${advertiser.advertiserId}:${index}`}>
+                        <span className={styles.planNumber}>{index + 1}</span>
+                        {candidate?.imageUrl ? <img alt="" src={candidate.imageUrl} /> : <span className={styles.planImagePlaceholder}>상품</span>}
+                        <div className={styles.planProductInfo}>
+                          <strong>{candidate?.productName || `예정 상품 ${index + 1}`}</strong>
+                          <small>{changed ? "URL 수정됨 · 저장 후 변경 상품으로 제작" : candidate ? roleLabels[candidate.recommendationRole] : "상품 URL을 입력해주세요"}</small>
+                        </div>
+                        <label>
+                          <span>상품 상세페이지 URL</span>
+                          <input
+                            aria-label={`${advertiser.advertiserName} ${index + 1}번 예정 상품 URL`}
+                            inputMode="url"
+                            onChange={(event) => updatePlannedUrl(advertiser.advertiserId, index, event.target.value)}
+                            placeholder="https://..."
+                            type="url"
+                            value={urls[index] || ""}
+                          />
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+                {previewItem?.fallbackReason ? <p className={styles.planWarning}>{previewItem.fallbackReason}</p> : null}
+                {previewItem?.warnings.slice(0, 2).map((warning, index) => (
+                  <p className={styles.planWarning} key={`${advertiser.advertiserId}:warning:${index}`}>
+                    {warning}
+                  </p>
+                ))}
+                <footer className={styles.plannedMallFooter}>
+                  <span>{isSaved ? "다음 예약 상품으로 저장했습니다." : advertiser.adminProductUrls.length === AUTO_PRODUCTION_PRODUCTS_PER_MALL ? "저장된 확정 목록입니다." : "자동 추천 상태 · 확정하면 다음 예약에 고정됩니다."}</span>
+                  <div className={styles.actions}>
+                    <button className={styles.buttonSecondary} disabled={Boolean(working) || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId)} type="button">
+                      {working === `plan:${advertiser.advertiserId}` ? "저장 중…" : "이 4개로 예정상품 확정"}
+                    </button>
+                    <button className={styles.button} disabled={Boolean(working) || settings.paused || !advertiser.enabled || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId, true)} type="button">
+                      저장하고 지금 제작
+                    </button>
+                  </div>
+                </footer>
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
       <section className={styles.stats} aria-label="자동 제작 현황">
         <div className={styles.stat}>
@@ -427,19 +547,11 @@ export function AutoProductionWorkspace() {
             const total = latest?.expectedImages || 0;
             const completed = latest?.completedImages || 0;
             const failed = latest?.failedImages || 0;
-            const progress = total
-              ? Math.min(100, Math.round(((completed + failed) / total) * 100))
-              : 0;
+            const progress = total ? Math.min(100, Math.round(((completed + failed) / total) * 100)) : 0;
             return (
               <article className={styles.progressCard} key={advertiser.advertiserId}>
                 <strong>{advertiser.advertiserName}</strong>
-                <span>
-                  {latest
-                    ? runStatusLabels[latest.status]
-                    : advertiser.enabled
-                      ? "실행 대기"
-                      : "일시정지"}
-                </span>
+                <span>{latest ? runStatusLabels[latest.status] : advertiser.enabled ? "실행 대기" : "일시정지"}</span>
                 <span>
                   상품 {latest?.tasks.length || 0}개 · 완성 {completed}장 · 실패 {failed}장
                 </span>
@@ -471,10 +583,7 @@ export function AutoProductionWorkspace() {
                   onChange={(event) =>
                     setSettings((current) => ({
                       ...current,
-                        maxImagesPerDay: Math.max(
-                          Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedImageCount || status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL),
-                          Math.min(120, Number(event.target.value) || AUTO_PRODUCTION_IMAGES_PER_MALL * 3)
-                        ),
+                      maxImagesPerDay: Math.max(Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedImageCount || status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL), Math.min(120, Number(event.target.value) || AUTO_PRODUCTION_IMAGES_PER_MALL * 3)),
                     }))
                   }
                   type="number"
@@ -483,13 +592,23 @@ export function AutoProductionWorkspace() {
                 장
               </label>
               <label className={styles.limitControl}>
-                <input
-                  checked={settings.paused}
+                동시 광고주
+                <select
+                  aria-label="동시에 실행할 광고주 수"
                   onChange={(event) =>
-                    setSettings((current) => ({ ...current, paused: event.target.checked }))
+                    setSettings((current) => ({
+                      ...current,
+                      globalConcurrency: Number(event.target.value) || 1,
+                    }))
                   }
-                  type="checkbox"
-                />
+                  value={settings.globalConcurrency}
+                >
+                  <option value="1">1곳</option>
+                  <option value="2">2곳</option>
+                </select>
+              </label>
+              <label className={styles.limitControl}>
+                <input checked={settings.paused} onChange={(event) => setSettings((current) => ({ ...current, paused: event.target.checked }))} type="checkbox" />
                 전체 일시정지
               </label>
               <button
@@ -502,6 +621,7 @@ export function AutoProductionWorkspace() {
                       body: JSON.stringify({
                         maxImagesPerDay: settings.maxImagesPerDay,
                         paused: settings.paused,
+                        globalConcurrency: settings.globalConcurrency,
                       }),
                     });
                   })
@@ -529,36 +649,19 @@ export function AutoProductionWorkspace() {
               <div className={styles.formGrid}>
                 <label>
                   광고주명
-                  <input
-                    required
-                    value={form.advertiserName}
-                    onChange={(event) => setForm({ ...form, advertiserName: event.target.value })}
-                  />
+                  <input required value={form.advertiserName} onChange={(event) => setForm({ ...form, advertiserName: event.target.value })} />
                 </label>
                 <label>
                   BigQuery 브랜드 매칭
-                  <input
-                    value={form.bigQueryBrandMatch}
-                    onChange={(event) =>
-                      setForm({ ...form, bigQueryBrandMatch: event.target.value })
-                    }
-                  />
+                  <input value={form.bigQueryBrandMatch} onChange={(event) => setForm({ ...form, bigQueryBrandMatch: event.target.value })} />
                 </label>
                 <label>
                   사이트 URL
-                  <input
-                    inputMode="url"
-                    value={form.siteUrl}
-                    onChange={(event) => setForm({ ...form, siteUrl: event.target.value })}
-                  />
+                  <input inputMode="url" value={form.siteUrl} onChange={(event) => setForm({ ...form, siteUrl: event.target.value })} />
                 </label>
                 <label>
                   실행 시각
-                  <input
-                    type="time"
-                    value={form.scheduleTime}
-                    onChange={(event) => setForm({ ...form, scheduleTime: event.target.value })}
-                  />
+                  <input type="time" value={form.scheduleTime} onChange={(event) => setForm({ ...form, scheduleTime: event.target.value })} />
                 </label>
                 <fieldset className={styles.weekdays}>
                   <legend>실행 요일</legend>
@@ -569,9 +672,7 @@ export function AutoProductionWorkspace() {
                         onChange={(event) =>
                           setForm({
                             ...form,
-                            scheduleDays: event.target.checked
-                              ? [...form.scheduleDays, day].sort((left, right) => left - right)
-                              : form.scheduleDays.filter((item) => item !== day),
+                            scheduleDays: event.target.checked ? [...form.scheduleDays, day].sort((left, right) => left - right) : form.scheduleDays.filter((item) => item !== day),
                           })
                         }
                         type="checkbox"
@@ -587,25 +688,11 @@ export function AutoProductionWorkspace() {
                 </div>
                 <label>
                   상품 재선정 제한(일)
-                  <input
-                    min="0"
-                    type="number"
-                    value={form.productCooldownDays}
-                    onChange={(event) =>
-                      setForm({ ...form, productCooldownDays: event.target.value })
-                    }
-                  />
+                  <input min="0" type="number" value={form.productCooldownDays} onChange={(event) => setForm({ ...form, productCooldownDays: event.target.value })} />
                 </label>
                 <label>
                   상품군 중복 방지(일)
-                  <input
-                    min="0"
-                    type="number"
-                    value={form.productFamilyCooldownDays}
-                    onChange={(event) =>
-                      setForm({ ...form, productFamilyCooldownDays: event.target.value })
-                    }
-                  />
+                  <input min="0" type="number" value={form.productFamilyCooldownDays} onChange={(event) => setForm({ ...form, productFamilyCooldownDays: event.target.value })} />
                 </label>
                 <label>
                   광고 목표
@@ -626,37 +713,15 @@ export function AutoProductionWorkspace() {
                 </label>
                 <label>
                   제외 상품 ID
-                  <input
-                    value={form.excludedProductIds}
-                    onChange={(event) =>
-                      setForm({ ...form, excludedProductIds: event.target.value })
-                    }
-                  />
+                  <input value={form.excludedProductIds} onChange={(event) => setForm({ ...form, excludedProductIds: event.target.value })} />
                 </label>
                 <label>
                   제외 카테고리
-                  <input
-                    value={form.excludedCategories}
-                    onChange={(event) =>
-                      setForm({ ...form, excludedCategories: event.target.value })
-                    }
-                  />
+                  <input value={form.excludedCategories} onChange={(event) => setForm({ ...form, excludedCategories: event.target.value })} />
                 </label>
                 <label>
                   필수 상품 ID
-                  <input
-                    value={form.requiredProductIds}
-                    onChange={(event) =>
-                      setForm({ ...form, requiredProductIds: event.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  관리자 상품 URL
-                  <input
-                    value={form.adminProductUrls}
-                    onChange={(event) => setForm({ ...form, adminProductUrls: event.target.value })}
-                  />
+                  <input value={form.requiredProductIds} onChange={(event) => setForm({ ...form, requiredProductIds: event.target.value })} />
                 </label>
               </div>
               <details className={styles.advanced}>
@@ -669,8 +734,7 @@ export function AutoProductionWorkspace() {
                       onChange={(event) =>
                         setForm({
                           ...form,
-                          productVisibilityMode: event.target
-                            .value as FormState["productVisibilityMode"],
+                          productVisibilityMode: event.target.value as FormState["productVisibilityMode"],
                         })
                       }
                     >
@@ -679,34 +743,21 @@ export function AutoProductionWorkspace() {
                       <option value="admin-only">관리자 지정 상품만</option>
                     </select>
                   </label>
-                  <label className={styles.checkControl}>
-                    <input
-                      checked={form.enabled}
-                      onChange={(event) => setForm({ ...form, enabled: event.target.checked })}
-                      type="checkbox"
-                    />
-                    저장 후 자동 제작 활성화
-                  </label>
+                  {editingId ? (
+                    <label className={styles.checkControl}>
+                      <input checked={form.enabled} onChange={(event) => setForm({ ...form, enabled: event.target.checked })} type="checkbox" />
+                      자동 제작 활성화
+                    </label>
+                  ) : (
+                    <p className={styles.newAdvertiserNotice}>새 광고주는 일시정지 상태로 저장됩니다. 설정 확인 후 광고주 카드에서 활성화하세요.</p>
+                  )}
                 </div>
               </details>
               <footer>
-                <button
-                  className={styles.buttonSecondary}
-                  onClick={() => setShowForm(false)}
-                  type="button"
-                >
+                <button className={styles.buttonSecondary} onClick={() => setShowForm(false)} type="button">
                   취소
                 </button>
-                <button
-                  className={styles.button}
-                  disabled={
-                    working === "save" ||
-                    !form.advertiserName.trim() ||
-                    form.scheduleDays.length === 0
-                  }
-                  onClick={() => void saveAdvertiser()}
-                  type="button"
-                >
+                <button className={styles.button} disabled={working === "save" || !form.advertiserName.trim() || form.scheduleDays.length === 0} onClick={() => void saveAdvertiser()} type="button">
                   설정 저장
                 </button>
               </footer>
@@ -718,43 +769,23 @@ export function AutoProductionWorkspace() {
               <article className={styles.advertiser} key={advertiser.advertiserId}>
                 <div className={styles.advertiserTop}>
                   <h3>{advertiser.advertiserName}</h3>
-                  <span className={advertiser.enabled ? styles.badge : styles.badgeOff}>
-                    {advertiser.enabled ? "자동 제작 켜짐" : "일시정지"}
-                  </span>
+                  <span className={advertiser.enabled ? styles.badge : styles.badgeOff}>{advertiser.enabled ? "자동 제작 켜짐" : "일시정지"}</span>
                 </div>
                 <div className={styles.meta}>
                   <span>
-                    {advertiser.scheduleDays.length === 7
-                      ? "매일"
-                      : advertiser.scheduleDays.map((day) => weekdayLabels[day]).join("·")}{" "}
-                    {advertiser.scheduleTime} · 상품 {advertiser.productsPerRun}개 ×{" "}
-                    {advertiser.creativesPerProduct}장
+                    {advertiser.scheduleDays.length === 7 ? "매일" : advertiser.scheduleDays.map((day) => weekdayLabels[day]).join("·")} {advertiser.scheduleTime} · 상품 {advertiser.productsPerRun}개 × {advertiser.creativesPerProduct}장
                   </span>
                   <span>
-                    상품 {advertiser.productCooldownDays}일 · 상품군{" "}
-                    {advertiser.productFamilyCooldownDays}일 중복 방지
+                    상품 {advertiser.productCooldownDays}일 · 상품군 {advertiser.productFamilyCooldownDays}일 중복 방지
                   </span>
                   <span>다음 실행 {localDateTime(advertiser.nextRunAt)}</span>
-                  <span>
-                    최근 실행{" "}
-                    {latestRunByAdvertiser.get(advertiser.advertiserId)
-                      ? `${localDateTime(latestRunByAdvertiser.get(advertiser.advertiserId)?.startedAt)} · ${runStatusLabels[latestRunByAdvertiser.get(advertiser.advertiserId)!.status]}`
-                      : "없음"}
-                  </span>
+                  <span>최근 실행 {latestRunByAdvertiser.get(advertiser.advertiserId) ? `${localDateTime(latestRunByAdvertiser.get(advertiser.advertiserId)?.startedAt)} · ${runStatusLabels[latestRunByAdvertiser.get(advertiser.advertiserId)!.status]}` : "없음"}</span>
                 </div>
                 <div className={styles.cardActions}>
-                  <button
-                    disabled={Boolean(working)}
-                    onClick={() => void preview(advertiser.advertiserId)}
-                    type="button"
-                  >
+                  <button disabled={Boolean(working)} onClick={() => void preview(advertiser.advertiserId)} type="button">
                     후보 보기
                   </button>
-                  <button
-                    disabled={Boolean(working) || settings.paused || !advertiser.enabled}
-                    onClick={() => void run(advertiser.advertiserId)}
-                    type="button"
-                  >
+                  <button disabled={Boolean(working) || settings.paused || !advertiser.enabled} onClick={() => void run(advertiser.advertiserId)} type="button">
                     지금 실행
                   </button>
                   <button
@@ -771,13 +802,10 @@ export function AutoProductionWorkspace() {
                     disabled={Boolean(working)}
                     onClick={() =>
                       void runAction(`toggle:${advertiser.advertiserId}`, async () => {
-                        await api(
-                          `/api/auto-production/advertisers/${encodeURIComponent(advertiser.advertiserId)}`,
-                          {
-                            method: "PATCH",
-                            body: JSON.stringify({ enabled: !advertiser.enabled }),
-                          }
-                        );
+                        await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiser.advertiserId)}`, {
+                          method: "PATCH",
+                          body: JSON.stringify({ enabled: !advertiser.enabled }),
+                        });
                       })
                     }
                     type="button"
@@ -791,49 +819,6 @@ export function AutoProductionWorkspace() {
         </section>
       </details>
 
-      {previews.length ? (
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h2>오늘 후보 미리보기</h2>
-              <p>확인된 근거만 사용하며 판매성과를 임의로 예측하지 않습니다.</p>
-            </div>
-          </div>
-          {previewTotal > settings.maxImagesPerDay ? (
-            <p className={styles.error} role="alert">
-              예상 {previewTotal}장으로 하루 자동 제작 한도 {settings.maxImagesPerDay}장을
-              초과합니다. 실행 시 한도 내 상품만 안전하게 선정됩니다.
-            </p>
-          ) : null}
-          <div className={styles.preview}>
-            {previews.map((preview) => (
-              <div className={styles.previewGroup} key={preview.advertiserId}>
-                <strong>
-                  {preview.advertiserName} · {preview.source} · 예상 {preview.expectedImages}장
-                </strong>
-                {preview.fallbackReason ? <p>{preview.fallbackReason}</p> : null}
-                <ul className={styles.previewList}>
-                  {preview.candidates.map((candidate) => (
-                    <li key={candidate.id}>
-                      <span>{candidate.productName}</span>
-                      <small>
-                        {roleLabels[candidate.recommendationRole]} ·{" "}
-                        {candidate.recommendationReason}
-                      </small>
-                    </li>
-                  ))}
-                </ul>
-                {preview.warnings.map((warning) => (
-                  <p className={styles.error} key={warning}>
-                    {warning}
-                  </p>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section className={styles.section} id="auto-production-results">
         <div className={styles.sectionHeader}>
           <div>
@@ -843,20 +828,16 @@ export function AutoProductionWorkspace() {
         </div>
         <div className={styles.historyToolbar}>
           <div className={styles.periodButtons} aria-label="실행 날짜 범위" role="group">
-            {([
-              ["today", "오늘"],
-              ["yesterday", "어제"],
-              ["seven-days", "최근 7일"],
-              ["custom", "기간 선택"],
-              ["all", "전체"],
-            ] as Array<[RunPeriod, string]>).map(([value, label]) => (
-              <button
-                aria-pressed={runPeriod === value}
-                className={runPeriod === value ? styles.periodActive : undefined}
-                key={value}
-                onClick={() => setRunPeriod(value)}
-                type="button"
-              >
+            {(
+              [
+                ["today", "오늘"],
+                ["yesterday", "어제"],
+                ["seven-days", "최근 7일"],
+                ["custom", "기간 선택"],
+                ["all", "전체"],
+              ] as Array<[RunPeriod, string]>
+            ).map(([value, label]) => (
+              <button aria-pressed={runPeriod === value} className={runPeriod === value ? styles.periodActive : undefined} key={value} onClick={() => setRunPeriod(value)} type="button">
                 {label}
               </button>
             ))}
@@ -865,47 +846,46 @@ export function AutoProductionWorkspace() {
             <div className={styles.customDates}>
               <label>
                 시작일
-                <input
-                  max={customTo}
-                  onChange={(event) => setCustomFrom(event.target.value)}
-                  type="date"
-                  value={customFrom}
-                />
+                <input max={customTo} onChange={(event) => setCustomFrom(event.target.value)} type="date" value={customFrom} />
               </label>
               <span>~</span>
               <label>
                 종료일
-                <input
-                  min={customFrom}
-                  onChange={(event) => setCustomTo(event.target.value)}
-                  type="date"
-                  value={customTo}
-                />
+                <input min={customFrom} onChange={(event) => setCustomTo(event.target.value)} type="date" value={customTo} />
               </label>
             </div>
           ) : null}
           <strong className={styles.historyCount}>실행 {runs.length}건</strong>
         </div>
-        {!runs.length ? (
-          <div className={styles.empty}>
-            선택한 날짜에 자동 제작 기록이 없습니다.
-          </div>
-        ) : null}
-        {runs.map((productionRun, runIndex) => {
-          const reviewCount = productionRun.tasks
-            .flatMap((task) => task.results)
-            .filter((result) => ["quality-review", "korean-review", "product-review", "group-review"].includes(result.status)).length;
+        {!runs.length ? <div className={styles.empty}>선택한 날짜에 자동 제작 기록이 없습니다.</div> : null}
+        {runs.map((productionRun) => {
+          const reviewCount = productionRun.tasks.flatMap((task) => task.results).filter((result) => result.imageUrl && ["quality-review", "korean-review", "product-review", "group-review"].includes(result.status)).length;
+          const hardFailureCount = productionRun.tasks.flatMap((task) => task.results).filter((result) => result.status === "failed").length;
           const productCount = productionRun.tasks.length;
           return (
-            <details className={styles.run} defaultOpen={runIndex === 0} key={productionRun.id}>
+            <details
+              className={styles.run}
+              key={productionRun.id}
+              onToggle={(event) => {
+                const open = event.currentTarget.open;
+                setExpandedRunIds((current) => {
+                  const next = new Set(current || []);
+                  if (open) next.add(productionRun.id);
+                  else next.delete(productionRun.id);
+                  return next;
+                });
+              }}
+              open={expandedRunIds?.has(productionRun.id) || false}
+            >
               <summary className={styles.runHeader}>
                 <div>
-                  <p className={styles.runDate}>{productionRun.businessDate} · {localDateTime(productionRun.startedAt)}</p>
+                  <p className={styles.runDate}>
+                    {productionRun.businessDate} · {localDateTime(productionRun.startedAt)}
+                  </p>
                   <h3>{productionRun.advertiserName} 자동제작</h3>
                   <p>
-                    상품 {productCount}개 · 완료 {productionRun.completedImages}/{productionRun.expectedImages}장
-                    {reviewCount ? ` · 확인 필요 ${reviewCount}장` : ""}
-                    {productionRun.failedImages ? ` · 실패 ${productionRun.failedImages}장` : ""}
+                    상품 {productCount}개 · 생성 {productionRun.completedImages}/{productionRun.expectedImages}장{reviewCount ? ` · 직접 확인 권장 ${reviewCount}장` : ""}
+                    {hardFailureCount ? ` · 실패 ${hardFailureCount}장` : ""}
                   </p>
                 </div>
                 <div className={styles.runSummaryRight}>
@@ -916,21 +896,14 @@ export function AutoProductionWorkspace() {
               <div className={styles.runBody}>
                 <div className={styles.runActions}>
                   {productionRun.completedImages ? (
-                    <a
-                      className={styles.button}
-                      href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/download`}
-                    >
+                    <a className={styles.button} href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/download`}>
                       전체 {productionRun.completedImages}장 ZIP 다운로드
                     </a>
                   ) : null}
                   <a className={styles.buttonSecondary} href="/archive">
                     아카이브 보기
                   </a>
-                  {productionRun.packageStatus === "building" || productionRun.packageStatus === "pending" ? (
-                    <span className={styles.packagePending}>ZIP 준비 중</span>
-                  ) : productionRun.packageStatus === "failed" ? (
-                    <span className={styles.packagePending}>클릭 시 ZIP 다시 준비</span>
-                  ) : null}
+                  {productionRun.packageStatus === "building" || productionRun.packageStatus === "pending" ? <span className={styles.packagePending}>ZIP 준비 중</span> : productionRun.packageStatus === "failed" ? <span className={styles.packagePending}>클릭 시 ZIP 다시 준비</span> : null}
                   {!terminalRunStatuses.has(productionRun.status) ? (
                     <button
                       className={styles.buttonDanger}
@@ -952,44 +925,38 @@ export function AutoProductionWorkspace() {
 
                 <div className={styles.taskResults}>
                   {productionRun.tasks.map((task, taskIndex) => {
-                    const downloadableCount = task.results.filter((result) => ["success", "approved"].includes(result.status)).length;
+                    const downloadableCount = task.results.filter((result) => Boolean(result.imageUrl)).length;
                     return (
                       <section className={styles.task} key={task.id}>
                         <header className={styles.taskOverview}>
-                          {task.candidate.imageUrl ? (
-                            <img alt="" src={task.candidate.imageUrl} />
-                          ) : (
-                            <div className={styles.placeholder}>상품</div>
-                          )}
+                          {task.candidate.imageUrl ? <img alt="" src={task.candidate.imageUrl} /> : <div className={styles.placeholder}>상품</div>}
                           <div>
                             <p className={styles.taskNumber}>상품 {taskIndex + 1}</p>
                             <h4>{task.candidate.productName}</h4>
                             <div className={styles.taskChips}>
                               <span>{roleLabels[task.selectedRole]}</span>
+                              <span>선정 점수 {Math.round(task.candidate.selectionScore)}점</span>
                               <span>{sourceLabels[task.candidate.source]}</span>
                               <span>{productStatusLabels[task.status]}</span>
                             </div>
                           </div>
                           <div className={styles.taskActions}>
                             {downloadableCount ? (
-                              <a
-                                className={styles.buttonSecondary}
-                                href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/products/${encodeURIComponent(task.id)}/download`}
-                              >
+                              <a className={styles.buttonSecondary} href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/products/${encodeURIComponent(task.id)}/download`}>
                                 상품 {downloadableCount}장 ZIP
                               </a>
                             ) : null}
-                            <a
-                              className={styles.productLink}
-                              href={`/create-product?view=results&productUrl=${encodeURIComponent(task.candidate.productUrl)}${task.generationJobId ? `&jobId=${encodeURIComponent(task.generationJobId)}` : ""}`}
-                            >
+                            <a className={styles.productLink} href={`/create-product?view=results&productUrl=${encodeURIComponent(task.candidate.productUrl)}${task.generationJobId ? `&jobId=${encodeURIComponent(task.generationJobId)}` : ""}`}>
                               상세 제작 화면
                             </a>
                           </div>
                         </header>
                         <div className={styles.selectionReason}>
                           <strong>선정 이유</strong>
-                          <span>{task.selectedReason}</span>
+                          <div>
+                            <span>{task.selectedReason}</span>
+                            {task.candidate.verifiedEvidence.length ? <small>확인 근거 · {task.candidate.verifiedEvidence.slice(0, 3).join(" · ")}</small> : null}
+                          </div>
                         </div>
                         {task.results.length ? (
                           <div className={styles.imageResults} aria-label={`${task.candidate.productName} 자동제작 이미지`}>
@@ -997,11 +964,7 @@ export function AutoProductionWorkspace() {
                               <article className={styles.imageResult} key={result.generationResultId}>
                                 {result.imageUrl ? (
                                   <a href={result.downloadUrl || result.imageUrl}>
-                                    <img
-                                      alt={`${task.candidate.productName} 광고 ${resultIndex + 1}`}
-                                      loading="lazy"
-                                      src={result.imageUrl}
-                                    />
+                                    <img alt={`${task.candidate.productName} 광고 ${resultIndex + 1}`} loading="lazy" src={result.imageUrl} />
                                   </a>
                                 ) : (
                                   <div className={styles.imagePending}>
@@ -1028,7 +991,9 @@ export function AutoProductionWorkspace() {
                 {productionRun.warnings.length ? (
                   <details className={styles.runMessages}>
                     <summary>안내 및 제외 사유 {productionRun.warnings.length}건</summary>
-                    {productionRun.warnings.map((warning) => <p key={warning}>{warning}</p>)}
+                    {productionRun.warnings.map((warning) => (
+                      <p key={warning}>{warning}</p>
+                    ))}
                   </details>
                 ) : null}
               </div>

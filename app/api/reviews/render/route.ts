@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
 import { clampReviewBox } from "../../../lib/mvp/reviewCreative";
 import { renderReviewCreative } from "../../../lib/mvp/reviewCreativeRender.server";
-import type {
-  ReviewCreativeTemplate,
-  ReviewPrivacyMaskStyle,
-  ReviewPrivacyRegion,
-} from "../../../lib/mvp/types";
+import type { ReviewCreativeTemplate, ReviewPrivacyMaskStyle, ReviewPrivacyRegion } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
-const templates = new Set<ReviewCreativeTemplate>([
-  "reaction-comment",
-  "real-review-focus",
-  "review-collection",
-  "before-after-usage",
-]);
+const templates = new Set<ReviewCreativeTemplate>(["reaction-comment", "real-review-focus", "review-collection", "before-after-usage"]);
 const maskStyles = new Set<ReviewPrivacyMaskStyle>(["blur", "mosaic", "solid"]);
 
 export async function POST(request: Request) {
@@ -43,17 +34,12 @@ export async function POST(request: Request) {
             imagePath: String(review.imagePath || "").trim(),
             crop: clampReviewBox((review.crop || {}) as ReviewPrivacyRegion["box"]),
             privacyMasks: masks,
-            highlightBox: review.highlightBox
-              ? clampReviewBox(review.highlightBox as ReviewPrivacyRegion["box"])
-              : undefined,
+            highlightBox: review.highlightBox ? clampReviewBox(review.highlightBox as ReviewPrivacyRegion["box"]) : undefined,
           };
         })
       : [];
     if (!reviews.length || reviews.some((review: { imagePath: string }) => !review.imagePath)) {
-      return NextResponse.json(
-        { success: false, error: "렌더링할 후기 이미지를 선택해주세요." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "렌더링할 후기 이미지를 선택해주세요." }, { status: 400 });
     }
     const result = await renderReviewCreative({
       template,
@@ -61,9 +47,7 @@ export async function POST(request: Request) {
       reviews,
       productImagePath: String(body.productImagePath || "").trim() || undefined,
       backgroundImagePath: String(body.backgroundImagePath || "").trim() || undefined,
-      accentColor: /^#[0-9a-f]{6}$/i.test(String(body.accentColor || ""))
-        ? String(body.accentColor)
-        : undefined,
+      accentColor: /^#[0-9a-f]{6}$/i.test(String(body.accentColor || "")) ? String(body.accentColor) : undefined,
     });
     return NextResponse.json({ success: true, ...result });
   } catch (error) {

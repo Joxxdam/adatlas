@@ -16,12 +16,7 @@ export class MetaProviderError extends Error {
   readonly status?: number;
   readonly graphCode?: number;
   readonly transient: boolean;
-  constructor(
-    message: string,
-    status?: number,
-    graphCode?: number,
-    transient = false
-  ) {
+  constructor(message: string, status?: number, graphCode?: number, transient = false) {
     super(message);
     this.name = "MetaProviderError";
     this.status = status;
@@ -34,10 +29,7 @@ export class MockMetaProvider implements MetaProvider {
   calls: MetaProviderRequest[] = [];
   private responses: Partial<Record<MetaOperation, unknown>>;
   private failures: Partial<Record<MetaOperation, Error>>;
-  constructor(
-    responses: Partial<Record<MetaOperation, unknown>> = {},
-    failures: Partial<Record<MetaOperation, Error>> = {}
-  ) {
+  constructor(responses: Partial<Record<MetaOperation, unknown>> = {}, failures: Partial<Record<MetaOperation, Error>> = {}) {
     this.responses = responses;
     this.failures = failures;
   }
@@ -56,36 +48,20 @@ export class GraphMetaProvider implements MetaProvider {
     appSecret?: string;
     timeoutMs: number;
   };
-  constructor(
-    config: {
-      graphApiVersion: string;
-      systemUserAccessToken: string;
-      appSecret?: string;
-      timeoutMs: number;
-    }
-  ) {
+  constructor(config: { graphApiVersion: string; systemUserAccessToken: string; appSecret?: string; timeoutMs: number }) {
     this.config = config;
   }
 
   private async requestOnce<T>({ method, path, params = {} }: MetaProviderRequest): Promise<T> {
-    if (!this.config.graphApiVersion || !this.config.systemUserAccessToken)
-      throw new Error("Meta Graph API 버전과 시스템 사용자 토큰이 필요합니다.");
-    const url = new URL(
-      `https://graph.facebook.com/${this.config.graphApiVersion}/${path.replace(/^\//, "")}`
-    );
+    if (!this.config.graphApiVersion || !this.config.systemUserAccessToken) throw new Error("Meta Graph API 버전과 시스템 사용자 토큰이 필요합니다.");
+    const url = new URL(`https://graph.facebook.com/${this.config.graphApiVersion}/${path.replace(/^\//, "")}`);
     const bodyParams = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
-      if (value !== undefined)
-        bodyParams.set(key, typeof value === "string" ? value : JSON.stringify(value));
+      if (value !== undefined) bodyParams.set(key, typeof value === "string" ? value : JSON.stringify(value));
     }
     bodyParams.set("access_token", this.config.systemUserAccessToken);
     if (this.config.appSecret) {
-      bodyParams.set(
-        "appsecret_proof",
-        createHmac("sha256", this.config.appSecret)
-          .update(this.config.systemUserAccessToken)
-          .digest("hex")
-      );
+      bodyParams.set("appsecret_proof", createHmac("sha256", this.config.appSecret).update(this.config.systemUserAccessToken).digest("hex"));
     }
     if (method === "GET") for (const [key, value] of bodyParams) url.searchParams.set(key, value);
     try {
@@ -98,22 +74,12 @@ export class GraphMetaProvider implements MetaProvider {
         error?: { message?: string; code?: number; is_transient?: boolean };
       };
       if (!response.ok || payload.error) {
-        throw new MetaProviderError(
-          `Meta 요청 실패 (${response.status}): ${payload.error?.message || "요청 오류"}`,
-          response.status,
-          payload.error?.code,
-          response.status >= 500 && Boolean(payload.error?.is_transient ?? true)
-        );
+        throw new MetaProviderError(`Meta 요청 실패 (${response.status}): ${payload.error?.message || "요청 오류"}`, response.status, payload.error?.code, response.status >= 500 && Boolean(payload.error?.is_transient ?? true));
       }
       return payload;
     } catch (error) {
       if (error instanceof MetaProviderError) throw error;
-      throw new MetaProviderError(
-        error instanceof Error ? error.message : "Meta 네트워크 요청 실패",
-        undefined,
-        undefined,
-        true
-      );
+      throw new MetaProviderError(error instanceof Error ? error.message : "Meta 네트워크 요청 실패", undefined, undefined, true);
     }
   }
 

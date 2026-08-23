@@ -4,16 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import {
-  createBrandCode,
-  createHookVariantAssetCode,
-  createExplorationAssetCode,
-  createProductCode,
-  extractCreativeAssetCode,
-  generateCreativeAssetCode,
-  getHookCode,
-  validateCreativeAssetCode,
-} from "../app/lib/creative-assets/code.ts";
+import { createBrandCode, createHookVariantAssetCode, createExplorationAssetCode, createProductCode, extractCreativeAssetCode, generateCreativeAssetCode, getHookCode, validateCreativeAssetCode } from "../app/lib/creative-assets/code.ts";
 import { createCreativeAssetRepository } from "../app/lib/creative-assets/repository.server.ts";
 
 const fixedDate = new Date(2026, 7, 12, 12, 0, 0);
@@ -68,12 +59,8 @@ test("후킹 실험 소재코드는 브랜드·상품·T01·H01을 동일하게 
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-hook-assets-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const repository = createCreativeAssetRepository({ dataDirectory: directory });
-  const first = await repository.create(
-    baseAsset({ testCode: "T01", hookVariantCode: "H01", generationRequestKey: "hook-1" })
-  );
-  const revision = await repository.create(
-    baseAsset({ testCode: "T01", hookVariantCode: "H01", generationRequestKey: "hook-2" })
-  );
+  const first = await repository.create(baseAsset({ testCode: "T01", hookVariantCode: "H01", generationRequestKey: "hook-1" }));
+  const revision = await repository.create(baseAsset({ testCode: "T01", hookVariantCode: "H01", generationRequestKey: "hook-2" }));
   assert.match(first.asset.assetCode, /^AT-[A-Z0-9]{3,5}-[A-Z0-9]{3,5}-T01-H01$/);
   assert.equal(revision.asset.assetCode, `${first.asset.assetCode}-V02`);
 });
@@ -93,15 +80,17 @@ test("상품별 광고 콘셉트 탐색 소재코드는 E01·H01·C01을 동일�
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-exploration-assets-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const repository = createCreativeAssetRepository({ dataDirectory: directory });
-  const first = await repository.create(baseAsset({
-    explorationCode: "E01",
-    hookVariantCode: "H01",
-    conceptCode: "C01",
-    primaryHookTag: "sensory-experience",
-    secondaryHookTags: ["usage-occasion"],
-    customerReason: "민트와 티트리의 상쾌한 사용감",
-    generationRequestKey: "exploration-1",
-  }));
+  const first = await repository.create(
+    baseAsset({
+      explorationCode: "E01",
+      hookVariantCode: "H01",
+      conceptCode: "C01",
+      primaryHookTag: "sensory-experience",
+      secondaryHookTags: ["usage-occasion"],
+      customerReason: "민트와 티트리의 상쾌한 사용감",
+      generationRequestKey: "exploration-1",
+    })
+  );
   assert.equal(first.asset.assetCode, code);
   assert.equal(first.asset.primaryHookTag, "sensory-experience");
   assert.deepEqual(first.asset.secondaryHookTags, ["usage-occasion"]);
@@ -180,11 +169,13 @@ test("repository가 멱등 저장·재조회·수정본·파일명·UTM을 보�
 
   const reloaded = createCreativeAssetRepository({ dataDirectory: directory });
   assert.equal((await reloaded.getByCode(first.asset.assetCode))?.assetCode, first.asset.assetCode);
-  const revision = await reloaded.create(baseAsset({
-    headline: "수정한 헤드라인",
-    parentAssetCode: first.asset.assetCode,
-    generationRequestKey: "request-2",
-  }));
+  const revision = await reloaded.create(
+    baseAsset({
+      headline: "수정한 헤드라인",
+      parentAssetCode: first.asset.assetCode,
+      generationRequestKey: "request-2",
+    })
+  );
   assert.notEqual(revision.asset.assetCode, first.asset.assetCode);
   assert.equal(revision.asset.parentAssetCode, first.asset.assetCode);
   assert.equal(revision.asset.version, 2);
@@ -194,11 +185,17 @@ test("기회 분석·참고사항·후기 인사이트 메타데이터를 소재
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-assets-context-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const repository = createCreativeAssetRepository({ dataDirectory: directory });
-  const { asset } = await repository.create(baseAsset({
-    advertiserId: "adv-1", opportunityId: "opp-1", analysisRunId: "run-1",
-    opportunityType: "HIDDEN_WINNER", recommendedHookType: "price-value",
-    appliedContentNoteIds: ["note-1", "note-1", "note-2"], reviewInsightIds: ["review-1"],
-  }));
+  const { asset } = await repository.create(
+    baseAsset({
+      advertiserId: "adv-1",
+      opportunityId: "opp-1",
+      analysisRunId: "run-1",
+      opportunityType: "HIDDEN_WINNER",
+      recommendedHookType: "price-value",
+      appliedContentNoteIds: ["note-1", "note-1", "note-2"],
+      reviewInsightIds: ["review-1"],
+    })
+  );
   const stored = await repository.getByCode(asset.assetCode);
   assert.equal(stored.advertiserId, "adv-1");
   assert.equal(stored.opportunityId, "opp-1");
@@ -211,9 +208,7 @@ test("동시에 생성된 서로 다른 소재 레코드의 코드가 충돌하�
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-assets-concurrent-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
   const repository = createCreativeAssetRepository({ dataDirectory: directory });
-  const results = await Promise.all(
-    Array.from({ length: 60 }, (_, index) => repository.create(baseAsset({ generationRequestKey: `concurrent-${index}` })))
-  );
+  const results = await Promise.all(Array.from({ length: 60 }, (_, index) => repository.create(baseAsset({ generationRequestKey: `concurrent-${index}` }))));
   assert.equal(new Set(results.map((result) => result.asset.assetCode)).size, 60);
 });
 
@@ -222,11 +217,13 @@ test("브랜드·상품 이름이 바뀌어도 저장된 엔티티 코드를 재
   context.after(() => rm(directory, { recursive: true, force: true }));
   const repository = createCreativeAssetRepository({ dataDirectory: directory });
   const before = await repository.create(baseAsset({ generationRequestKey: "name-before" }));
-  const after = await repository.create(baseAsset({
-    brandName: "Original Source Korea",
-    productName: "Mint Tea Tree Shower Gel Renewed",
-    generationRequestKey: "name-after",
-  }));
+  const after = await repository.create(
+    baseAsset({
+      brandName: "Original Source Korea",
+      productName: "Mint Tea Tree Shower Gel Renewed",
+      generationRequestKey: "name-after",
+    })
+  );
   assert.equal(after.asset.brandCode, before.asset.brandCode);
   assert.equal(after.asset.productCode, before.asset.productCode);
 });

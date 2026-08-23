@@ -39,16 +39,7 @@ export function VideoProjectList() {
     return projects.filter((project) => {
       if (status !== "all" && project.status !== status) return false;
       if (!keyword) return true;
-      return [
-        project.projectName,
-        project.advertiserName,
-        project.productName,
-        project.designerName,
-        project.materialCode,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(keyword);
+      return [project.projectName, project.advertiserName, project.productName, project.designerName, project.materialCode].join(" ").toLowerCase().includes(keyword);
     });
   }, [projects, query, status]);
 
@@ -58,11 +49,7 @@ export function VideoProjectList() {
         key: "in-progress",
         title: "진행 중",
         description: "대본 검토부터 영상 제작 중인 프로젝트",
-        projects: filtered.filter((project) =>
-          ["script_pending", "script_review", "production_requested", "in_production"].includes(
-            project.status
-          )
-        ),
+        projects: filtered.filter((project) => ["script_pending", "script_review", "production_requested", "in_production"].includes(project.status)),
       },
       {
         key: "marketer-review",
@@ -87,12 +74,7 @@ export function VideoProjectList() {
   );
 
   async function deleteProject(project: VideoProjectSummary) {
-    if (
-      !window.confirm(
-        `“${project.projectName}” 프로젝트와 저장된 대본 기록을 목록에서 삭제할까요? 업로드 파일은 안전을 위해 서버에 남습니다.`
-      )
-    )
-      return;
+    if (!window.confirm(`“${project.projectName}” 프로젝트와 저장된 대본 기록을 목록에서 삭제할까요? 업로드 파일은 안전을 위해 서버에 남습니다.`)) return;
     try {
       const response = await fetch(`/api/video-projects/${project.id}`, { method: "DELETE" });
       const payload = await response.json();
@@ -109,9 +91,7 @@ export function VideoProjectList() {
         <div>
           <p className={styles.eyebrow}>VIDEO PRODUCTION WORKSPACE</p>
           <h1>영상 제작 협업</h1>
-          <p>
-            상품 분석과 후킹 대본부터 디자이너 제작, 마케터 검수, 최종 승인까지 한곳에서 연결합니다.
-          </p>
+          <p>상품 분석과 후킹 대본부터 디자이너 제작, 마케터 검수, 최종 승인까지 한곳에서 연결합니다.</p>
         </div>
         <Link className={styles.primaryButton} href="/video-collaboration/new">
           새 영상 기획 만들기
@@ -144,11 +124,7 @@ export function VideoProjectList() {
             <p>최근 수정일이 빠른 프로젝트부터 표시됩니다.</p>
           </div>
           <div className={styles.filters}>
-            <select
-              aria-label="상태 필터"
-              onChange={(event) => setStatus(event.target.value as VideoProjectStatus | "all")}
-              value={status}
-            >
+            <select aria-label="상태 필터" onChange={(event) => setStatus(event.target.value as VideoProjectStatus | "all")} value={status}>
               <option value="all">전체 상태</option>
               {Object.entries(VIDEO_STATUS_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -156,12 +132,7 @@ export function VideoProjectList() {
                 </option>
               ))}
             </select>
-            <input
-              aria-label="프로젝트 검색"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="업체명 또는 상품명 검색"
-              value={query}
-            />
+            <input aria-label="프로젝트 검색" onChange={(event) => setQuery(event.target.value)} placeholder="업체명 또는 상품명 검색" value={query} />
           </div>
         </div>
         {loading ? <div className={styles.empty}>프로젝트를 불러오는 중입니다.</div> : null}
@@ -189,10 +160,7 @@ export function VideoProjectList() {
                 <div className={styles.projectGrid}>
                   {group.projects.map((project) => (
                     <article className={styles.projectCard} key={project.id}>
-                      <Link
-                        className={styles.projectCardLink}
-                        href={`/video-collaboration/${project.id}`}
-                      >
+                      <Link className={styles.projectCardLink} href={`/video-collaboration/${project.id}`}>
                         <div className={styles.cardTop}>
                           <span className={styles.status} data-status={project.status}>
                             {VIDEO_STATUS_LABELS[project.status]}
@@ -212,11 +180,7 @@ export function VideoProjectList() {
                           </div>
                           <div>
                             <dt>후킹</dt>
-                            <dd>
-                              {project.hookType
-                                ? VIDEO_HOOK_LABELS[project.hookType]
-                                : "대본 생성 전"}
-                            </dd>
+                            <dd>{project.hookType ? VIDEO_HOOK_LABELS[project.hookType] : "대본 생성 전"}</dd>
                           </div>
                           <div>
                             <dt>마감</dt>
@@ -228,10 +192,7 @@ export function VideoProjectList() {
                       <div className={styles.projectActions}>
                         <Link href={`/video-collaboration/${project.id}`}>프로젝트 상세</Link>
                         {project.materialCode ? (
-                          <Link
-                            className={styles.scriptLink}
-                            href={`/video-collaboration/${project.id}/script`}
-                          >
+                          <Link className={styles.scriptLink} href={`/video-collaboration/${project.id}/script`}>
                             제작 대본 보기
                           </Link>
                         ) : null}
@@ -245,10 +206,7 @@ export function VideoProjectList() {
           )}
         </div>
       </section>
-      <aside className={styles.localNotice}>
-        현재는 개발용 로컬 저장 모드입니다. JSON과 업로드 파일은 이 실행 환경에 저장되며, 서버리스
-        운영 환경의 영구 저장을 보장하지 않습니다.
-      </aside>
+      <aside className={styles.localNotice}>현재는 개발용 로컬 저장 모드입니다. JSON과 업로드 파일은 이 실행 환경에 저장되며, 서버리스 운영 환경의 영구 저장을 보장하지 않습니다.</aside>
     </main>
   );
 }

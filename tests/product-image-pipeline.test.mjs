@@ -4,12 +4,7 @@ import sharp from "sharp";
 
 import { inspectCutoutQuality } from "../app/lib/mvp/cutoutQuality.ts";
 import { removeBackgroundToPng } from "../app/lib/mvp/imageEffects.ts";
-import {
-  inferExpectedUnitCount,
-  inferProductRepresentation,
-  normalizeProductImageUrl,
-  productCutoutCacheDescriptor,
-} from "../app/lib/mvp/productImagePipeline.ts";
+import { inferExpectedUnitCount, inferProductRepresentation, normalizeProductImageUrl, productCutoutCacheDescriptor } from "../app/lib/mvp/productImagePipeline.ts";
 import { refineProductCutoutAlpha } from "../app/lib/mvp/productMaskPostprocess.ts";
 
 async function pixel(buffer, x, y) {
@@ -19,41 +14,18 @@ async function pixel(buffer, x, y) {
 }
 
 test("상품 문맥에서 단일·세트·비정형·포장·플레이팅·투명 유형을 구분한다", () => {
-  assert.equal(
-    inferProductRepresentation({ productName: "민트 티트리 샤워젤 250ml" }).type,
-    "single-product"
-  );
-  assert.equal(
-    inferProductRepresentation({ productName: "샤워젤 5종 세트" }).type,
-    "multi-unit-set"
-  );
-  assert.equal(
-    inferProductRepresentation({ productName: "한우 등심 1kg 생고기" }).type,
-    "irregular-product"
-  );
-  assert.equal(
-    inferProductRepresentation({ productName: "여름 한정 봉황 청사과 5kg" }).type,
-    "irregular-product"
-  );
-  assert.equal(
-    inferProductRepresentation({ productName: "진공 포장 트레이 한우" }).type,
-    "packaged-product"
-  );
-  assert.equal(
-    inferProductRepresentation({ productName: "접시에 플레이팅한 스테이크" }).type,
-    "plated-product"
-  );
-  assert.equal(
-    inferProductRepresentation({ productName: "투명 유리 디스펜서" }).type,
-    "transparent-or-reflective-product"
-  );
+  assert.equal(inferProductRepresentation({ productName: "민트 티트리 샤워젤 250ml" }).type, "single-product");
+  assert.equal(inferProductRepresentation({ productName: "샤워젤 5종 세트" }).type, "multi-unit-set");
+  assert.equal(inferProductRepresentation({ productName: "한우 등심 1kg 생고기" }).type, "irregular-product");
+  assert.equal(inferProductRepresentation({ productName: "여름 한정 봉황 청사과 5kg" }).type, "irregular-product");
+  assert.equal(inferProductRepresentation({ productName: "진공 포장 트레이 한우" }).type, "packaged-product");
+  assert.equal(inferProductRepresentation({ productName: "접시에 플레이팅한 스테이크" }).type, "plated-product");
+  assert.equal(inferProductRepresentation({ productName: "투명 유리 디스펜서" }).type, "transparent-or-reflective-product");
   assert.equal(inferExpectedUnitCount("250ml 2개 + 50ml 1개"), 3);
 });
 
 test("이미지 URL의 추적·리사이즈 변형은 동일 원본 키로 정규화한다", () => {
-  const left = normalizeProductImageUrl(
-    "https://cdn.example.com/product/a.jpg?w=400&utm_source=meta&q=70"
-  );
+  const left = normalizeProductImageUrl("https://cdn.example.com/product/a.jpg?w=400&utm_source=meta&q=70");
   const right = normalizeProductImageUrl("https://cdn.example.com/product/a.jpg");
   assert.equal(left, right);
 });
@@ -66,10 +38,7 @@ test("누끼 캐시는 상품 유형·추출 범위·객체 그룹·크롭을 �
     extractionScope: "single-item",
   };
   const first = productCutoutCacheDescriptor(base);
-  assert.notEqual(
-    first,
-    productCutoutCacheDescriptor({ ...base, representationType: "multi-unit-set" })
-  );
+  assert.notEqual(first, productCutoutCacheDescriptor({ ...base, representationType: "multi-unit-set" }));
   assert.notEqual(first, productCutoutCacheDescriptor({ ...base, extractionScope: "sales-unit" }));
   assert.notEqual(first, productCutoutCacheDescriptor({ ...base, selectedObjectIds: ["object-2"] }));
   assert.notEqual(
@@ -87,9 +56,7 @@ test("흰 배경 단일 용기에서 흰 라벨을 지우지 않고 바깥 배�
   })
     .composite([
       {
-        input: Buffer.from(
-          '<svg width="130" height="230"><rect width="130" height="230" rx="18" fill="#05a878"/><rect x="22" y="78" width="86" height="58" fill="white"/></svg>'
-        ),
+        input: Buffer.from('<svg width="130" height="230"><rect width="130" height="230" rx="18" fill="#05a878"/><rect x="22" y="78" width="86" height="58" fill="white"/></svg>'),
         left: 85,
         top: 35,
       },
@@ -140,9 +107,7 @@ test("이미 투명한 PNG는 정상 알파 품질을 유지한다", async () =>
   const transparent = await sharp({
     create: { width: 240, height: 240, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
   })
-    .composite([
-      { input: Buffer.from('<svg width="120" height="120"><circle cx="60" cy="60" r="54" fill="#f2831b"/></svg>'), left: 60, top: 60 },
-    ])
+    .composite([{ input: Buffer.from('<svg width="120" height="120"><circle cx="60" cy="60" r="54" fill="#f2831b"/></svg>'), left: 60, top: 60 }])
     .png()
     .toBuffer();
   const quality = await inspectCutoutQuality(transparent, {

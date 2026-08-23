@@ -42,10 +42,7 @@ export class FileStoreAnalysisRepository implements StoreAnalysisRepository {
           productCount: result.products.length,
           platform: result.storeInfo.platform,
         };
-        const next = [
-          summary,
-          ...existing.filter((item) => item.analysisId !== result.analysisId),
-        ].slice(0, 100);
+        const next = [summary, ...existing.filter((item) => item.analysisId !== result.analysisId)].slice(0, 100);
         await atomicWriteJson(INDEX_PATH, next);
       });
     await writeQueue;
@@ -56,11 +53,7 @@ export class FileStoreAnalysisRepository implements StoreAnalysisRepository {
       const raw = await fs.readFile(resultPath(analysisId), "utf8");
       return JSON.parse(raw.replace(/^\uFEFF/, "")) as StoreAnalysisResult;
     } catch (error) {
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        (error as NodeJS.ErrnoException).code === "ENOENT"
-      ) {
+      if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
         return null;
       }
       throw error;
@@ -73,11 +66,7 @@ export class FileStoreAnalysisRepository implements StoreAnalysisRepository {
       const parsed = JSON.parse(raw.replace(/^\uFEFF/, ""));
       return Array.isArray(parsed) ? (parsed as StoreAnalysisSummary[]) : [];
     } catch (error) {
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        (error as NodeJS.ErrnoException).code === "ENOENT"
-      ) {
+      if (error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT") {
         return [];
       }
       throw error;

@@ -4,12 +4,7 @@ import { creativeAssetRepository } from "../creative-assets/repository.server.ts
 import { readCreativeRasterAsset } from "../creative-generation/assets.server.ts";
 import type { CreativeExperiment, ExperimentAsset, HookGroup } from "./types.ts";
 
-function registrationRow(
-  experiment: CreativeExperiment,
-  group: HookGroup,
-  relation: ExperimentAsset,
-  asset: NonNullable<Awaited<ReturnType<typeof creativeAssetRepository.getById>>>
-) {
+function registrationRow(experiment: CreativeExperiment, group: HookGroup, relation: ExperimentAsset, asset: NonNullable<Awaited<ReturnType<typeof creativeAssetRepository.getById>>>) {
   const landing = experiment.product.landingUrl || "";
   const separator = landing.includes("?") ? "&" : "?";
   return {
@@ -32,9 +27,7 @@ function registrationRow(
     "권장 자체상품코드": asset.assetCode,
     "권장 비노출 카테고리": group.categoryCode,
     "랜딩 URL": landing,
-    UTM: landing
-      ? `${landing}${separator}utm_content=${encodeURIComponent(asset.assetCode)}`
-      : asset.utmContent,
+    UTM: landing ? `${landing}${separator}utm_content=${encodeURIComponent(asset.assetCode)}` : asset.utmContent,
     "권장 광고명": asset.recommendedAdName,
     "등록된 호스팅사 상품번호": relation.registeredHostProductNo || "",
     "크리마 애드 수집 상태": relation.cremaCollectionStatus,
@@ -56,16 +49,9 @@ function csvBuffer(rows: Record<string, unknown>[]) {
   return Buffer.from(`\ufeff${XLSX.utils.sheet_to_csv(sheet)}`, "utf8");
 }
 
-export function createHostingRegistrationPackageService(dependencies: {
-  assetRepository: Pick<typeof creativeAssetRepository, "getById">;
-  readRasterAsset: typeof readCreativeRasterAsset;
-}) {
+export function createHostingRegistrationPackageService(dependencies: { assetRepository: Pick<typeof creativeAssetRepository, "getById">; readRasterAsset: typeof readCreativeRasterAsset }) {
   return {
-    async build(input: {
-      experiment: CreativeExperiment;
-      hookGroups: HookGroup[];
-      experimentAssets: ExperimentAsset[];
-    }) {
+    async build(input: { experiment: CreativeExperiment; hookGroups: HookGroup[]; experimentAssets: ExperimentAsset[] }) {
       const zip = new JSZip();
       const allRows: Record<string, unknown>[] = [];
       const groupSummaries: Array<Record<string, unknown>> = [];
@@ -79,15 +65,9 @@ export function createHostingRegistrationPackageService(dependencies: {
           if (!asset) continue;
           rows.push(registrationRow(input.experiment, group, relation, asset));
           try {
-            folder.file(
-              asset.fileName,
-              await dependencies.readRasterAsset(asset.generatedImageUrl)
-            );
+            folder.file(asset.fileName, await dependencies.readRasterAsset(asset.generatedImageUrl));
           } catch {
-            folder.file(
-              `${asset.assetCode}-IMAGE-MISSING.txt`,
-              "원본 이미지 파일을 찾지 못했습니다. AdAtlas 생성 기록에서 다시 다운로드해 주세요."
-            );
+            folder.file(`${asset.assetCode}-IMAGE-MISSING.txt`, "원본 이미지 파일을 찾지 못했습니다. AdAtlas 생성 기록에서 다시 다운로드해 주세요.");
           }
         }
         allRows.push(...rows);
@@ -120,20 +100,7 @@ export function createHostingRegistrationPackageService(dependencies: {
       ];
       const meta = zip.folder("00_experiment")!;
       meta.file("experiment-plan.xlsx", workbookBuffer(planRows));
-      meta.file(
-        "experiment-guide.txt",
-        [
-          `${input.experiment.experimentCode} 후킹 실험 등록 안내`,
-          "",
-          "1. 각 후킹 폴더의 registration 파일과 이미지를 확인합니다.",
-          "2. 권장 자체상품코드와 이미지 파일명의 소재코드를 변경하지 않습니다.",
-          "3. 권장 비노출 카테고리를 호스팅사에 수동으로 등록합니다.",
-          "4. 크리마 애드 수집 상태와 실제 호스팅사 상품번호를 AdAtlas에 기록합니다.",
-          "5. Meta 광고 이름에 소재코드를 포함한 뒤 보고서를 업로드합니다.",
-          "",
-          "AdAtlas는 호스팅사·크리마 애드·Meta에 자동 등록하지 않습니다.",
-        ].join("\n")
-      );
+      meta.file("experiment-guide.txt", [`${input.experiment.experimentCode} 후킹 실험 등록 안내`, "", "1. 각 후킹 폴더의 registration 파일과 이미지를 확인합니다.", "2. 권장 자체상품코드와 이미지 파일명의 소재코드를 변경하지 않습니다.", "3. 권장 비노출 카테고리를 호스팅사에 수동으로 등록합니다.", "4. 크리마 애드 수집 상태와 실제 호스팅사 상품번호를 AdAtlas에 기록합니다.", "5. Meta 광고 이름에 소재코드를 포함한 뒤 보고서를 업로드합니다.", "", "AdAtlas는 호스팅사·크리마 애드·Meta에 자동 등록하지 않습니다."].join("\n"));
       meta.file("all-registration.xlsx", workbookBuffer(allRows));
       return {
         fileName: `${input.experiment.experimentCode}.zip`,

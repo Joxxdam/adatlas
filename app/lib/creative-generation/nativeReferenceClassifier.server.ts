@@ -1,16 +1,8 @@
 import "server-only";
 
 import { Codex } from "@openai/codex-sdk";
-import {
-  codexLocalAuthenticated,
-  codexLocalEnvironment,
-  resolveCodexLocalExecutable,
-} from "./codexLocalRuntime.server";
-import {
-  inferNativeReferenceCategoryFromText,
-  type NativeReferenceCompatibility,
-  type NativeReferenceCategoryGroup,
-} from "./referenceLibraryManagement";
+import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
+import { inferNativeReferenceCategoryFromText, type NativeReferenceCompatibility, type NativeReferenceCategoryGroup } from "./referenceLibraryManagement";
 
 const classificationSchema = {
   type: "object",
@@ -32,10 +24,7 @@ const classificationSchema = {
   },
 } as const;
 
-export async function classifyNativeReferenceImage(input: {
-  imagePath: string;
-  sourceFile: string;
-}): Promise<{
+export async function classifyNativeReferenceImage(input: { imagePath: string; sourceFile: string }): Promise<{
   categoryGroup: NativeReferenceCategoryGroup;
   classificationMethod: "codex-local" | "filename-rule";
   compatibility?: Partial<NativeReferenceCompatibility>;
@@ -57,24 +46,25 @@ export async function classifyNativeReferenceImage(input: {
       model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
       modelReasoningEffort: "low",
     });
-    const response = await thread.run([
-      {
-        type: "text" as const,
-        text: `이 광고 레퍼런스에서 실제로 판매하는 상품과 교체 가능한 레이아웃을 보고 제작 호환 태그를 분류한다.
+    const response = await thread.run(
+      [
+        {
+          type: "text" as const,
+          text: `이 광고 레퍼런스에서 실제로 판매하는 상품과 교체 가능한 레이아웃을 보고 제작 호환 태그를 분류한다.
 - fashion: 의류, 신발, 가방, 패션 잡화
 - food: 일반 식품, 음료, 농수축산물, 간식
 - beauty: 화장품, 스킨케어, 헤어·바디·퍼스널케어, 건강·웰니스·건강기능식품
 애매한 생활 상품은 beauty로 분류한다. productSlotCount는 실제 교체 대상 상품 자리 수다. 포장 상품, 자연 식품, 사람 모델, 복수 상품 지원 여부를 보수적으로 판단하고 신뢰도가 낮으면 compatibilityConfidence=low로 둔다. JSON만 반환한다.`,
-      },
-      { type: "local_image" as const, path: input.imagePath },
-    ], {
-      outputSchema: classificationSchema,
-      signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_REFERENCE_CLASSIFY_TIMEOUT_MS || 90_000)),
-    });
+        },
+        { type: "local_image" as const, path: input.imagePath },
+      ],
+      {
+        outputSchema: classificationSchema,
+        signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_REFERENCE_CLASSIFY_TIMEOUT_MS || 90_000)),
+      }
+    );
     const parsed = JSON.parse(response.finalResponse) as { categoryGroup?: string } & Partial<NativeReferenceCompatibility>;
-    const categoryGroup = ["fashion", "food", "beauty"].includes(parsed.categoryGroup || "")
-      ? parsed.categoryGroup as NativeReferenceCategoryGroup
-      : fallback;
+    const categoryGroup = ["fashion", "food", "beauty"].includes(parsed.categoryGroup || "") ? (parsed.categoryGroup as NativeReferenceCategoryGroup) : fallback;
     const compatibility = { ...parsed };
     delete compatibility.categoryGroup;
     return { categoryGroup, classificationMethod: "codex-local", compatibility };

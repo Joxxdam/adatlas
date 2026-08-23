@@ -5,11 +5,7 @@ import { pathToFileURL } from "url";
 import sharp from "sharp";
 import { loadSafeProductImageBuffer } from "./backgroundRemoval";
 import { clampReviewBox, REVIEW_RENDER_VERSION } from "./reviewCreative";
-import type {
-  NormalizedImageBox,
-  ReviewCreativeTemplate,
-  ReviewPrivacyRegion,
-} from "./types";
+import type { NormalizedImageBox, ReviewCreativeTemplate, ReviewPrivacyRegion } from "./types";
 
 export type ReviewRenderSource = {
   id: string;
@@ -33,12 +29,7 @@ type Placement = { x: number; y: number; width: number; height: number };
 const outputDir = path.join(process.cwd(), "public", "generated-ads");
 
 function escapeXml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
 function fontFileUrl() {
@@ -64,23 +55,15 @@ function wrapHeadline(value: string, maxChars = 20) {
 }
 
 function templatePalette(template: ReviewCreativeTemplate, accent?: string) {
-  if (template === "real-review-focus")
-    return { background: "#f7f2e8", surface: "#ffffff", text: "#171717", accent: "#ef3b35" };
-  if (template === "review-collection")
-    return { background: "#17121f", surface: "#ffffff", text: "#ffffff", accent: accent || "#ffcc42" };
-  if (template === "before-after-usage")
-    return { background: "#111827", surface: "#ffffff", text: "#ffffff", accent: accent || "#60a5fa" };
+  if (template === "real-review-focus") return { background: "#f7f2e8", surface: "#ffffff", text: "#171717", accent: "#ef3b35" };
+  if (template === "review-collection") return { background: "#17121f", surface: "#ffffff", text: "#ffffff", accent: accent || "#ffcc42" };
+  if (template === "before-after-usage") return { background: "#111827", surface: "#ffffff", text: "#ffffff", accent: accent || "#60a5fa" };
   return { background: "#050607", surface: "#ffffff", text: "#35f2c7", accent: accent || "#ef4444" };
 }
 
 function baseSvg(template: ReviewCreativeTemplate, accent?: string) {
   const palette = templatePalette(template, accent);
-  const extra =
-    template === "reaction-comment"
-      ? `<rect x="80" y="54" width="1040" height="88" rx="4" fill="${palette.accent}" opacity="0.94"/>`
-      : template === "review-collection"
-        ? `<circle cx="1070" cy="95" r="170" fill="${palette.accent}" opacity="0.16"/><circle cx="110" cy="1120" r="230" fill="${palette.accent}" opacity="0.1"/>`
-        : `<rect x="0" y="0" width="1200" height="18" fill="${palette.accent}"/>`;
+  const extra = template === "reaction-comment" ? `<rect x="80" y="54" width="1040" height="88" rx="4" fill="${palette.accent}" opacity="0.94"/>` : template === "review-collection" ? `<circle cx="1070" cy="95" r="170" fill="${palette.accent}" opacity="0.16"/><circle cx="110" cy="1120" r="230" fill="${palette.accent}" opacity="0.1"/>` : `<rect x="0" y="0" width="1200" height="18" fill="${palette.accent}"/>`;
   return Buffer.from(`<svg width="1200" height="1200" xmlns="http://www.w3.org/2000/svg">
     <rect width="1200" height="1200" fill="${palette.background}"/>
     ${extra}
@@ -93,14 +76,7 @@ function headlineSvg(template: ReviewCreativeTemplate, headline: string, accent?
   const top = template === "reaction-comment" ? 72 : 60;
   const fontSize = lines.length >= 3 ? 52 : lines.length === 2 ? 62 : 72;
   const lineHeight = Math.round(fontSize * 1.16);
-  const texts = lines
-    .map(
-      (line, index) =>
-        `<text x="600" y="${top + fontSize + index * lineHeight}" text-anchor="middle" fill="${
-          template === "reaction-comment" && index === 0 ? "#35f2c7" : palette.text
-        }" font-family="AdAtlasReview" font-size="${fontSize}" font-weight="700">${escapeXml(line)}</text>`
-    )
-    .join("");
+  const texts = lines.map((line, index) => `<text x="600" y="${top + fontSize + index * lineHeight}" text-anchor="middle" fill="${template === "reaction-comment" && index === 0 ? "#35f2c7" : palette.text}" font-family="AdAtlasReview" font-size="${fontSize}" font-weight="700">${escapeXml(line)}</text>`).join("");
   return Buffer.from(`<svg width="1200" height="1200" xmlns="http://www.w3.org/2000/svg">
     <style>@font-face { font-family: 'AdAtlasReview'; src: url('${fontFileUrl()}'); }</style>
     ${texts}
@@ -116,12 +92,7 @@ function cropPixels(box: NormalizedImageBox, width: number, height: number) {
   return { left, top, width: cropWidth, height: cropHeight };
 }
 
-async function maskOverlay(
-  source: Buffer,
-  mask: ReviewPrivacyRegion,
-  width: number,
-  height: number
-) {
+async function maskOverlay(source: Buffer, mask: ReviewPrivacyRegion, width: number, height: number) {
   const rect = cropPixels(mask.box, width, height);
   if (mask.maskStyle === "solid") {
     return {
@@ -142,7 +113,10 @@ async function maskOverlay(
           .resize(rect.width, rect.height, { kernel: sharp.kernel.nearest })
           .png()
           .toBuffer()
-      : await region.blur(Math.max(3, Math.min(18, Math.round(rect.height / 4)))).png().toBuffer();
+      : await region
+          .blur(Math.max(3, Math.min(18, Math.round(rect.height / 4))))
+          .png()
+          .toBuffer();
   return { input: processed, left: rect.left, top: rect.top };
 }
 
@@ -250,13 +224,7 @@ async function backgroundCanvas(template: ReviewCreativeTemplate, backgroundPath
   if (!backgroundPath) return sharp(baseSvg(template, accent)).png().toBuffer();
   try {
     const source = await loadSafeProductImageBuffer(backgroundPath);
-    const covered = await sharp(source)
-      .rotate()
-      .resize(1200, 1200, { fit: "cover" })
-      .blur(8)
-      .modulate({ brightness: 0.58, saturation: 0.75 })
-      .png()
-      .toBuffer();
+    const covered = await sharp(source).rotate().resize(1200, 1200, { fit: "cover" }).blur(8).modulate({ brightness: 0.58, saturation: 0.75 }).png().toBuffer();
     const palette = templatePalette(template, accent);
     const dim = Buffer.from(`<svg width="1200" height="1200" xmlns="http://www.w3.org/2000/svg">
       <rect width="1200" height="1200" fill="#050607" opacity="0.62"/>
@@ -298,7 +266,10 @@ export async function renderReviewCreative(input: ReviewCreativeRenderInput) {
   if (!input.reviews.length) throw new Error("후기 이미지를 한 개 이상 선택해주세요.");
   const reviewLimit = input.template === "review-collection" ? 3 : input.template === "reaction-comment" ? 2 : 2;
   const reviews = input.reviews.slice(0, reviewLimit);
-  const key = crypto.createHash("sha256").update(cacheDescriptor({ ...input, reviews })).digest("hex");
+  const key = crypto
+    .createHash("sha256")
+    .update(cacheDescriptor({ ...input, reviews }))
+    .digest("hex");
   const fileName = `review-${input.template}-${key.slice(0, 18)}.png`;
   const outputPath = path.join(outputDir, fileName);
   const publicPath = `/generated-ads/${fileName}`;
@@ -311,9 +282,7 @@ export async function renderReviewCreative(input: ReviewCreativeRenderInput) {
   }
 
   const placements = reviewPlacements(input.template, reviews.length);
-  const cards = await Promise.all(
-    reviews.map((review, index) => prepareReviewCard(review, placements[index]))
-  );
+  const cards = await Promise.all(reviews.map((review, index) => prepareReviewCard(review, placements[index])));
   const canvas = await backgroundCanvas(input.template, input.backgroundImagePath, input.accentColor);
   const composites: Array<{ input: Buffer; left: number; top: number }> = cards.map((card, index) => ({
     input: card,

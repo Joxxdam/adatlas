@@ -1,29 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  createOpenAiVideoPlanningRunner,
-  resolveVideoPlanningProvider,
-  resolveVideoPlanningStageConfig,
-  sanitizeVideoPlanningErrorMessage,
-  VideoPlanningGenerationError,
-} from "../app/lib/video-collaboration/videoPlanningAiCore.ts";
-import {
-  hasExactVideoConceptArchetypes,
-  requestFourVideoConcepts,
-} from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
+import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, VideoPlanningGenerationError } from "../app/lib/video-collaboration/videoPlanningAiCore.ts";
+import { hasExactVideoConceptArchetypes, requestFourVideoConcepts } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "../app/lib/video-collaboration/videoPlanningCorrection.ts";
-import {
-  compactPlanningCta,
-  hasFinalPlanningCta,
-  missingSceneSignals,
-  repairDetailedPlanningCta,
-  repairDetailedPlanningSceneDescriptions,
-} from "../app/lib/video-collaboration/planningValidation.ts";
-import {
-  hasReusableDetailedVideoPlan,
-  withVideoPlanningGenerationLock,
-} from "../app/lib/video-collaboration/videoPlanningRequestGuards.ts";
+import { compactPlanningCta, hasFinalPlanningCta, missingSceneSignals, repairDetailedPlanningCta, repairDetailedPlanningSceneDescriptions } from "../app/lib/video-collaboration/planningValidation.ts";
+import { hasReusableDetailedVideoPlan, withVideoPlanningGenerationLock } from "../app/lib/video-collaboration/videoPlanningRequestGuards.ts";
 
 const simpleSchema = {
   type: "object",
@@ -49,10 +31,7 @@ function successfulClient(calls) {
 
 test("영상기획 provider 기본값은 로그인된 로컬 Codex다", () => {
   assert.equal(resolveVideoPlanningProvider({}), "codex-local");
-  assert.equal(
-    resolveVideoPlanningProvider({ VIDEO_PLANNING_PROVIDER: "codex-local" }),
-    "codex-local"
-  );
+  assert.equal(resolveVideoPlanningProvider({ VIDEO_PLANNING_PROVIDER: "codex-local" }), "codex-local");
   assert.equal(
     resolveVideoPlanningProvider({
       VIDEO_PLANNING_PROVIDER: "openai-api",
@@ -65,9 +44,7 @@ test("영상기획 provider 기본값은 로그인된 로컬 Codex다", () => {
 test("유료 API provider는 서버에서 명시적으로 활성화해야 한다", () => {
   assert.throws(
     () => resolveVideoPlanningProvider({ VIDEO_PLANNING_PROVIDER: "openai-api" }),
-    (error) =>
-      error instanceof VideoPlanningGenerationError &&
-      error.failure.code === "VIDEO_PLANNING_PAID_API_DISABLED"
+    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_PAID_API_DISABLED"
   );
 });
 
@@ -77,12 +54,7 @@ test("인증 오류는 키 앞뒤 조각과 플랫폼 안내 URL을 공개하지
     client: {
       responses: {
         async create() {
-          throw Object.assign(
-            new Error(
-              "401 Incorrect API key provided: sk-proj-secretsecretXDoA. You can find your API key at https://platform.openai.com/account/api-keys."
-            ),
-            { status: 401 }
-          );
+          throw Object.assign(new Error("401 Incorrect API key provided: sk-proj-secretsecretXDoA. You can find your API key at https://platform.openai.com/account/api-keys."), { status: 401 });
         },
       },
     },
@@ -97,12 +69,7 @@ test("인증 오류는 키 앞뒤 조각과 플랫폼 안내 URL을 공개하지
       return true;
     }
   );
-  assert.equal(
-    sanitizeVideoPlanningErrorMessage(
-      "Incorrect API key provided: [비공개]****************XDoA. You can find your API key at https://platform.openai.com/account/api-keys."
-    ),
-    "OpenAI API 인증에 실패했습니다."
-  );
+  assert.equal(sanitizeVideoPlanningErrorMessage("Incorrect API key provided: [비공개]****************XDoA. You can find your API key at https://platform.openai.com/account/api-keys."), "OpenAI API 인증에 실패했습니다.");
 });
 
 test("OPENAI_API_KEY가 없으면 API 호출이나 로컬 fallback 없이 명확히 실패한다", async () => {
@@ -121,10 +88,7 @@ test("OPENAI_API_KEY가 없으면 API 호출이나 로컬 fallback 없이 명확
   });
   await assert.rejects(
     () => run({ stage: "product-analysis", prompt: "test", outputSchema: simpleSchema }),
-    (error) =>
-      error instanceof VideoPlanningGenerationError &&
-      error.failure.code === "VIDEO_PLANNING_API_KEY_MISSING" &&
-      error.failure.attempts === 0
+    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_API_KEY_MISSING" && error.failure.attempts === 0
   );
   assert.equal(calls, 0);
 });
@@ -151,9 +115,7 @@ test("OpenAI API 실패는 로컬 Codex로 fallback하지 않는다", async () =
         prompt: "test",
         outputSchema: simpleSchema,
       }),
-    (error) =>
-      error instanceof VideoPlanningGenerationError &&
-      error.failure.code === "VIDEO_PLANNING_MODEL_ERROR"
+    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_MODEL_ERROR"
   );
   assert.equal(apiCalls, 1);
 });
@@ -165,34 +127,10 @@ test("단계별 모델·reasoning·timeout과 Responses API 보안 옵션을 적
     VIDEO_PLANNING_CONCEPT_MODEL: "concept-model",
     VIDEO_PLANNING_SCRIPT_MODEL: "script-model",
   };
-  assert.deepEqual(
-    resolveVideoPlanningStageConfig(
-      { stage: "product-analysis", prompt: "", outputSchema: {} },
-      env
-    ),
-    { purpose: "analysis", model: "analysis-model", effort: "low", timeoutMs: 45_000 }
-  );
-  assert.deepEqual(
-    resolveVideoPlanningStageConfig(
-      { stage: "concept-summaries", purpose: "concept", prompt: "", outputSchema: {} },
-      env
-    ),
-    { purpose: "concept", model: "concept-model", effort: "low", timeoutMs: 60_000 }
-  );
-  assert.deepEqual(
-    resolveVideoPlanningStageConfig(
-      { stage: "detailed-script", purpose: "script", prompt: "", outputSchema: {} },
-      env
-    ),
-    { purpose: "script", model: "script-model", effort: "medium", timeoutMs: 90_000 }
-  );
-  assert.deepEqual(
-    resolveVideoPlanningStageConfig(
-      { stage: "automatic-revision", purpose: "correction", prompt: "", outputSchema: {} },
-      env
-    ),
-    { purpose: "correction", model: "script-model", effort: "low", timeoutMs: 90_000 }
-  );
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "product-analysis", prompt: "", outputSchema: {} }, env), { purpose: "analysis", model: "analysis-model", effort: "low", timeoutMs: 45_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "concept-summaries", purpose: "concept", prompt: "", outputSchema: {} }, env), { purpose: "concept", model: "concept-model", effort: "low", timeoutMs: 60_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "detailed-script", purpose: "script", prompt: "", outputSchema: {} }, env), { purpose: "script", model: "script-model", effort: "medium", timeoutMs: 90_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "automatic-revision", purpose: "correction", prompt: "", outputSchema: {} }, env), { purpose: "correction", model: "script-model", effort: "low", timeoutMs: 90_000 });
 
   const calls = [];
   const run = createOpenAiVideoPlanningRunner({
@@ -238,10 +176,7 @@ test("일시 오류 전송 재시도는 최초 포함 최대 2회다", async () 
         prompt: "test",
         outputSchema: simpleSchema,
       }),
-    (error) =>
-      error instanceof VideoPlanningGenerationError &&
-      error.failure.code === "VIDEO_PLANNING_TIMEOUT" &&
-      error.failure.attempts === 2
+    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_TIMEOUT" && error.failure.attempts === 2
   );
   assert.equal(calls, 2);
 });
@@ -287,8 +222,7 @@ test("특정 콘셉트 하나만 부적합하면 그 유형만 한 번 재생성
       regenerated.push(conceptArchetype);
       return { conceptArchetype, valid: true };
     },
-    findInvalidArchetypes: (rows) =>
-      rows.filter((item) => !item.valid).map((item) => item.conceptArchetype),
+    findInvalidArchetypes: (rows) => rows.filter((item) => !item.valid).map((item) => item.conceptArchetype),
   });
   assert.equal(batchCalls, 1);
   assert.deepEqual(regenerated, ["usp-focus"]);
@@ -338,8 +272,7 @@ test("장면별 누락 신호는 전체 AI 재생성 없이 제품 맥락에 맞
     source: "manual",
     analyzedAt: "2026-08-22T00:00:00.000Z",
   };
-  const scene =
-    "첫 화면은 밝은 주방 조리대 중앙의 고기와 제품 패키지 클로즈업으로 시작한다. 손이 고기를 들어 팬 위에 놓고 카메라는 라벨과 원물을 번갈아 비춘 뒤 다음 구간의 식탁 화면으로 매치컷 전환한다.";
+  const scene = "첫 화면은 밝은 주방 조리대 중앙의 고기와 제품 패키지 클로즈업으로 시작한다. 손이 고기를 들어 팬 위에 놓고 카메라는 라벨과 원물을 번갈아 비춘 뒤 다음 구간의 식탁 화면으로 매치컷 전환한다.";
   const concept = {
     cuts: [
       {
@@ -374,8 +307,7 @@ test("이미 구체적인 장면은 자동 보완기가 변경하지 않는다",
     id: "cut-1",
     cutNumber: 1,
     caption: "씻자마자 개운해",
-    sceneDescription:
-      "첫 화면은 욕실 세면대 중앙의 샤워젤 제품 클로즈업으로 시작한다. 인물이 손으로 용기를 들어 거품을 내고 상쾌한 표정으로 고개를 끄덕인다. 카메라는 물방울이 맺힌 라벨을 비춘 뒤 다음 샤워부스 화면으로 매치컷 전환한다.",
+    sceneDescription: "첫 화면은 욕실 세면대 중앙의 샤워젤 제품 클로즈업으로 시작한다. 인물이 손으로 용기를 들어 거품을 내고 상쾌한 표정으로 고개를 끄덕인다. 카메라는 물방울이 맺힌 라벨을 비춘 뒤 다음 샤워부스 화면으로 매치컷 전환한다.",
   };
   const concept = { cuts: [cut] };
   assert.deepEqual(missingSceneSignals(cut), []);
@@ -413,10 +345,7 @@ test("CTA가 앞 구간에만 있으면 마지막 CTA로 오인하지 않는다"
 });
 
 test("긴 CTA는 단어를 자르지 않고 자막 길이에 맞춘다", () => {
-  const cta = compactPlanningCta(
-    "지금 상세페이지에서 추석 선물 가격과 배송 조건을 빠짐없이 직접 확인해 보세요",
-    "구매 조건을 확인하세요"
-  );
+  const cta = compactPlanningCta("지금 상세페이지에서 추석 선물 가격과 배송 조건을 빠짐없이 직접 확인해 보세요", "구매 조건을 확인하세요");
   assert.ok(cta.length <= 34);
   assert.doesNotMatch(cta, /빠짐없$/);
 });
@@ -443,9 +372,7 @@ test("동일 상세 생성 요청은 서버 in-flight lock에서 한 번만 실�
         stage: "detailed-script",
         run: async () => "duplicate",
       }),
-    (error) =>
-      error instanceof VideoPlanningGenerationError &&
-      error.failure.code === "GENERATION_ALREADY_RUNNING"
+    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "GENERATION_ALREADY_RUNNING"
   );
   release();
   assert.equal(await first, "done");
@@ -459,8 +386,5 @@ test("유효한 저장 상세안은 자동 재생성 대상이 아니다", () =>
     validation: { valid: true },
   };
   assert.equal(hasReusableDetailedVideoPlan(concept, 15), true);
-  assert.equal(
-    hasReusableDetailedVideoPlan({ ...concept, validation: { valid: false } }, 15),
-    false
-  );
+  assert.equal(hasReusableDetailedVideoPlan({ ...concept, validation: { valid: false } }, 15), false);
 });

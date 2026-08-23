@@ -4,23 +4,9 @@ import { ensureContrast, normalizeHex } from "./colorUtils";
 import { resolveCollisions } from "./collisionResolver";
 import { getCategoryFallbackPalette } from "./defaultPalettes";
 import { resolveImageLayout, type ImageFrame } from "./imageLayout";
-import {
-  resolveTemplateTextStyles,
-  type TemplateTextStyleSet,
-  type TextStylePreset,
-} from "./templateTextStyles";
+import { resolveTemplateTextStyles, type TemplateTextStyleSet, type TextStylePreset } from "./templateTextStyles";
 import { fitTextToSlot } from "./textMeasurement";
-import type {
-  BannerFitResult,
-  CollisionItem,
-  CopyVariantKey,
-  ExtractedPalette,
-  GeneratedAdCopyVariant,
-  PalettePolicy,
-  ProductInfoForPrompt,
-  RenderDiagnostics,
-  TemplateSlot,
-} from "./types";
+import type { BannerFitResult, CollisionItem, CopyVariantKey, ExtractedPalette, GeneratedAdCopyVariant, PalettePolicy, ProductInfoForPrompt, RenderDiagnostics, TemplateSlot } from "./types";
 
 export type PreparedBannerRender = {
   copy: GeneratedAdCopyVariant;
@@ -42,16 +28,9 @@ function stringStyle(template: BannerTemplateDefinition, key: string, fallback: 
   return typeof value === "string" && value.trim() ? value : fallback;
 }
 
-function applyPalettePolicy(
-  extracted: ExtractedPalette,
-  template: BannerTemplateDefinition,
-  policy: PalettePolicy,
-  category?: string
-): ExtractedPalette {
+function applyPalettePolicy(extracted: ExtractedPalette, template: BannerTemplateDefinition, policy: PalettePolicy, category?: string): ExtractedPalette {
   const fallback = getCategoryFallbackPalette(category);
-  const background = normalizeHex(
-    stringStyle(template, "backgroundColor", fallback.backgroundColor)
-  );
+  const background = normalizeHex(stringStyle(template, "backgroundColor", fallback.backgroundColor));
   const accent = normalizeHex(stringStyle(template, "accentColor", fallback.accentColor));
   const danger = normalizeHex(stringStyle(template, "priceColor", fallback.dangerColor));
 
@@ -89,10 +68,7 @@ function applyPalettePolicy(
   };
 }
 
-function asVariant(
-  value: Partial<GeneratedAdCopyVariant> | undefined,
-  fallback: GeneratedAdCopyVariant
-): GeneratedAdCopyVariant {
+function asVariant(value: Partial<GeneratedAdCopyVariant> | undefined, fallback: GeneratedAdCopyVariant): GeneratedAdCopyVariant {
   return {
     headline: String(value?.headline || fallback.headline || ""),
     bodyCopy: String(value?.bodyCopy || fallback.bodyCopy || ""),
@@ -103,24 +79,13 @@ function asVariant(
   };
 }
 
-function copyTextForSlot(
-  slot: TemplateSlot,
-  copy: GeneratedAdCopyVariant,
-  productInfo?: ProductInfoForPrompt,
-  originalPrice?: string
-) {
+function copyTextForSlot(slot: TemplateSlot, copy: GeneratedAdCopyVariant, productInfo?: ProductInfoForPrompt, originalPrice?: string) {
   const role = slot.role || slot.id;
   if (role === "headline") return copy.headline;
   if (role === "bodyCopy" || role === "subheadline" || role === "reviewQuote") {
     return copy.bodyCopy;
   }
-  if (
-    role === "highlight" ||
-    role === "highlightCopy" ||
-    role === "benefitChip" ||
-    role === "socialProof" ||
-    role === "urgency"
-  ) {
+  if (role === "highlight" || role === "highlightCopy" || role === "benefitChip" || role === "socialProof" || role === "urgency") {
     return copy.highlightCopy;
   }
   if (role === "bottomBar" || role === "bottomBarCopy") return copy.bottomBarCopy;
@@ -134,10 +99,7 @@ function copyTextForSlot(
   return "";
 }
 
-function textStyleForSlot(
-  styles: TemplateTextStyleSet,
-  slot: TemplateSlot
-): TextStylePreset | undefined {
+function textStyleForSlot(styles: TemplateTextStyleSet, slot: TemplateSlot): TextStylePreset | undefined {
   const role = slot.role || slot.id;
   if (role === "headline") return styles.headline;
   if (role === "price") return styles.price;
@@ -155,24 +117,13 @@ function textStyleForSlot(
   return styles.bodyCopy;
 }
 
-function fitCandidate(params: {
-  template: BannerTemplateDefinition;
-  candidate: CopyCandidate;
-  styles: TemplateTextStyleSet;
-  productInfo?: ProductInfoForPrompt;
-  originalPrice?: string;
-}) {
+function fitCandidate(params: { template: BannerTemplateDefinition; candidate: CopyCandidate; styles: TemplateTextStyleSet; productInfo?: ProductInfoForPrompt; originalPrice?: string }) {
   const results = (params.template.slots || [])
     .filter((slot) => ["text", "price", "cta", "badge", "chip"].includes(slot.type))
     .map((slot) => {
       const style = textStyleForSlot(params.styles, slot);
       if (!style) return null;
-      const text = copyTextForSlot(
-        slot,
-        params.candidate.copy,
-        params.productInfo,
-        params.originalPrice
-      );
+      const text = copyTextForSlot(slot, params.candidate.copy, params.productInfo, params.originalPrice);
       if (!text) return null;
       return fitTextToSlot({
         slot,
@@ -192,18 +143,11 @@ function fitCandidate(params: {
   return { results, score };
 }
 
-function candidatesFor(params: {
-  activeCopy: GeneratedAdCopyVariant;
-  selectedVariant?: CopyVariantKey;
-  variants?: Partial<Record<"short" | "medium" | "long", GeneratedAdCopyVariant>>;
-  template: BannerTemplateDefinition;
-}) {
+function candidatesFor(params: { activeCopy: GeneratedAdCopyVariant; selectedVariant?: CopyVariantKey; variants?: Partial<Record<"short" | "medium" | "long", GeneratedAdCopyVariant>>; template: BannerTemplateDefinition }) {
   const activeKey = params.selectedVariant || "base";
   const result: CopyCandidate[] = [{ key: activeKey, copy: params.activeCopy }];
   const preference = params.template.variantPreference;
-  const order: Array<"short" | "medium" | "long"> = preference
-    ? [preference.preferred, ...preference.fallbackOrder]
-    : ["medium", "short", "long"];
+  const order: Array<"short" | "medium" | "long"> = preference ? [preference.preferred, ...preference.fallbackOrder] : ["medium", "short", "long"];
   for (const key of order) {
     const value = params.variants?.[key];
     if (!value || result.some((candidate) => candidate.key === key)) continue;
@@ -212,32 +156,11 @@ function candidatesFor(params: {
   return result;
 }
 
-export async function prepareBannerRender(params: {
-  template: BannerTemplateDefinition;
-  activeCopy: GeneratedAdCopyVariant;
-  selectedVariant?: CopyVariantKey;
-  copyVariants?: Partial<Record<"short" | "medium" | "long", GeneratedAdCopyVariant>>;
-  productInfo?: ProductInfoForPrompt;
-  imagePaths: string[];
-  backgroundImagePath?: string;
-  originalPrice?: string;
-}): Promise<PreparedBannerRender> {
-  const firstImage =
-    params.productInfo?.extractedMainImage ||
-    params.productInfo?.productImagePath ||
-    params.imagePaths.find(Boolean) ||
-    "";
-  const extracted = await extractPaletteFromImage(
-    firstImage,
-    params.productInfo?.category || params.template.category
-  );
+export async function prepareBannerRender(params: { template: BannerTemplateDefinition; activeCopy: GeneratedAdCopyVariant; selectedVariant?: CopyVariantKey; copyVariants?: Partial<Record<"short" | "medium" | "long", GeneratedAdCopyVariant>>; productInfo?: ProductInfoForPrompt; imagePaths: string[]; backgroundImagePath?: string; originalPrice?: string }): Promise<PreparedBannerRender> {
+  const firstImage = params.productInfo?.extractedMainImage || params.productInfo?.productImagePath || params.imagePaths.find(Boolean) || "";
+  const extracted = await extractPaletteFromImage(firstImage, params.productInfo?.category || params.template.category);
   const palettePolicy = params.template.palettePolicy || "fixed";
-  const palette = applyPalettePolicy(
-    extracted,
-    params.template,
-    palettePolicy,
-    params.productInfo?.category
-  );
+  const palette = applyPalettePolicy(extracted, params.template, palettePolicy, params.productInfo?.category);
   const textStyles = resolveTemplateTextStyles(params.template.textStylePresetKey, palette);
   const candidates = candidatesFor({
     activeCopy: params.activeCopy,
@@ -302,26 +225,17 @@ export async function prepareBannerRender(params: {
     safePadding: 16,
   });
   const fitWarnings = best.results.flatMap((result) => result.warnings);
-  const unresolvedCollisions = collisionResult.actions.filter(
-    (action) => action.action === "failed"
-  ).length;
+  const unresolvedCollisions = collisionResult.actions.filter((action) => action.action === "failed").length;
   const failedFits = best.results.filter((result) => result.status === "failed").length;
   const ellipsisFits = best.results.filter((result) => result.status === "ellipsis").length;
-  const qualityScore = Math.max(
-    0,
-    Math.round(
-      100 - failedFits * 24 - ellipsisFits * 9 - unresolvedCollisions * 18 - fitWarnings.length * 2
-    )
-  );
+  const qualityScore = Math.max(0, Math.round(100 - failedFits * 24 - ellipsisFits * 9 - unresolvedCollisions * 18 - fitWarnings.length * 2));
   const warnings = [...fitWarnings, ...collisionResult.warnings];
   if (!params.imagePaths.length) warnings.push("No product image was supplied to the renderer.");
   if (params.backgroundImagePath && !imageFrames.some((frame) => frame.imagePath === params.backgroundImagePath)) {
     warnings.push("The selected scene could not be mapped to a background or scene slot in this template.");
   }
   if (best.candidate.key !== candidates[0]?.key) {
-    warnings.push(
-      `Copy variant changed from ${candidates[0]?.key || "base"} to ${best.candidate.key}.`
-    );
+    warnings.push(`Copy variant changed from ${candidates[0]?.key || "base"} to ${best.candidate.key}.`);
   }
 
   const diagnostics: RenderDiagnostics = {
@@ -331,23 +245,16 @@ export async function prepareBannerRender(params: {
     palette,
     preferredVariant: params.template.variantPreference?.preferred,
     selectedVariant: best.candidate.key,
-    variantReason:
-      best.candidate.key === candidates[0]?.key
-        ? "The active render copy fit the declared slots."
-        : "A pre-generated copy variant produced a safer slot fit.",
+    variantReason: best.candidate.key === candidates[0]?.key ? "The active render copy fit the declared slots." : "A pre-generated copy variant produced a safer slot fit.",
     fitResults: best.results,
     collisionResult,
     imagePathsUsed: imageFrames.map((frame) => frame.imagePath),
-    hiddenElements: collisionResult.actions
-      .filter((action) => action.action === "hide-low-priority")
-      .map((action) => action.targetId),
+    hiddenElements: collisionResult.actions.filter((action) => action.action === "hide-low-priority").map((action) => action.targetId),
     optimizationFlags: {
       autoPaletteApplied: palettePolicy !== "fixed",
       textFittingApplied: best.results.some((result) => result.status !== "exact"),
       collisionResolved: collisionResult.actions.some((action) => action.action !== "failed"),
-      lowPriorityElementsHidden: collisionResult.actions.some(
-        (action) => action.action === "hide-low-priority"
-      ),
+      lowPriorityElementsHidden: collisionResult.actions.some((action) => action.action === "hide-low-priority"),
     },
     warnings,
     qualityScore,

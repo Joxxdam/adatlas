@@ -1,11 +1,4 @@
-import type {
-  CremaInputProvider,
-  CremaMarketImport,
-  Product,
-  ProductDailyMetric,
-  ProductReviewMetric,
-  ReviewInsight,
-} from "./types.ts";
+import type { CremaInputProvider, CremaMarketImport, Product, ProductDailyMetric, ProductReviewMetric, ReviewInsight } from "./types.ts";
 
 export function stableKey(value: string) {
   let hash = 2166136261;
@@ -61,7 +54,10 @@ const fieldAliases: Record<string, string[]> = {
 };
 
 function normalizeHeader(value: string) {
-  return value.trim().toLowerCase().replace(/[\s.-]/g, "");
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s.-]/g, "");
 }
 
 function pick(row: Record<string, unknown>, field: keyof typeof fieldAliases) {
@@ -72,12 +68,18 @@ function pick(row: Record<string, unknown>, field: keyof typeof fieldAliases) {
 
 export function nullableNumber(value: unknown) {
   if (value === null || value === undefined || String(value).trim() === "") return null;
-  const parsed = Number(String(value).replace(/[,₩원%]/g, "").trim());
+  const parsed = Number(
+    String(value)
+      .replace(/[,₩원%]/g, "")
+      .trim()
+  );
   return Number.isFinite(parsed) ? parsed : null;
 }
 
 function nullableText(value: unknown) {
-  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  const text = String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
   return text || null;
 }
 
@@ -102,12 +104,7 @@ export function normalizeDate(value: unknown) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
 }
 
-export function normalizeProductRows(params: {
-  advertiserId: string;
-  rows: Record<string, unknown>[];
-  provider: CremaInputProvider;
-  now?: string;
-}) {
+export function normalizeProductRows(params: { advertiserId: string; rows: Record<string, unknown>[]; provider: CremaInputProvider; now?: string }) {
   const warnings: string[] = [];
   const now = params.now || new Date().toISOString();
   const products: Product[] = [];
@@ -163,12 +160,7 @@ function productForRow(row: Record<string, unknown>, products: Product[]) {
   return products.find((product) => [product.externalId, product.code, product.name, product.id].filter(Boolean).some((value) => String(value).toLowerCase() === String(raw).toLowerCase()));
 }
 
-export function normalizeMetricRows(params: {
-  advertiserId: string;
-  rows: Record<string, unknown>[];
-  products: Product[];
-  provider: CremaInputProvider;
-}) {
+export function normalizeMetricRows(params: { advertiserId: string; rows: Record<string, unknown>[]; products: Product[]; provider: CremaInputProvider }) {
   const warnings: string[] = [];
   const metrics: ProductDailyMetric[] = [];
   params.rows.forEach((row, index) => {
@@ -190,8 +182,7 @@ export function normalizeMetricRows(params: {
     const refundedOrders = nullableNumber(pick(row, "refunds"));
     const refundedQuantity = nullableNumber(pick(row, "refundedQuantity"));
     const refundedRevenue = nullableNumber(pick(row, "refundAmount"));
-    const net = (gross: number | null, ...deductions: Array<number | null>) =>
-      gross === null ? null : gross - deductions.filter((value): value is number => value !== null).reduce((sum, value) => sum + value, 0);
+    const net = (gross: number | null, ...deductions: Array<number | null>) => (gross === null ? null : gross - deductions.filter((value): value is number => value !== null).reduce((sum, value) => sum + value, 0));
     const fieldProvenance = Object.fromEntries(Object.keys(fieldAliases).map((field) => [field, params.provider]));
     metrics.push({
       advertiserId: params.advertiserId,
@@ -238,12 +229,7 @@ export function normalizeMetricRows(params: {
   return { metrics, warnings };
 }
 
-export function normalizeReviewRows(params: {
-  advertiserId: string;
-  rows: Record<string, unknown>[];
-  products: Product[];
-  provider: CremaInputProvider;
-}) {
+export function normalizeReviewRows(params: { advertiserId: string; rows: Record<string, unknown>[]; products: Product[]; provider: CremaInputProvider }) {
   const warnings: string[] = [];
   const reviewMetrics: ProductReviewMetric[] = [];
   const reviewInsights: ReviewInsight[] = [];
@@ -287,17 +273,7 @@ export function normalizeReviewRows(params: {
   return { reviewMetrics, reviewInsights, warnings };
 }
 
-export function normalizeWorkbookRows(params: {
-  advertiserId: string;
-  advertiserName: string;
-  brandName?: string;
-  domain?: string;
-  productRows: Record<string, unknown>[];
-  metricRows: Record<string, unknown>[];
-  reviewRows?: Record<string, unknown>[];
-  provider?: CremaInputProvider;
-  now?: string;
-}): CremaMarketImport {
+export function normalizeWorkbookRows(params: { advertiserId: string; advertiserName: string; brandName?: string; domain?: string; productRows: Record<string, unknown>[]; metricRows: Record<string, unknown>[]; reviewRows?: Record<string, unknown>[]; provider?: CremaInputProvider; now?: string }): CremaMarketImport {
   const provider = params.provider || "file_upload";
   const normalizedProducts = normalizeProductRows({ advertiserId: params.advertiserId, rows: params.productRows, provider, now: params.now });
   const normalizedMetrics = normalizeMetricRows({ advertiserId: params.advertiserId, rows: params.metricRows, products: normalizedProducts.products, provider });

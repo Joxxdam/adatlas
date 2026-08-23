@@ -12,7 +12,7 @@ export function AutoProductionStatusIndicator() {
     async function refresh() {
       try {
         const response = await fetch("/api/auto-production/status", { cache: "no-store" });
-        const payload = await response.json() as { status?: AutoProductionDashboardStatus };
+        const payload = (await response.json()) as { status?: AutoProductionDashboardStatus };
         if (mounted && response.ok) setStatus(payload.status || null);
       } catch {
         // 자동 제작 서버가 꺼진 경우 기존 화면 사용을 막지 않는다.

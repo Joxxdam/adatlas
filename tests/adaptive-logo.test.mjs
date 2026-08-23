@@ -4,25 +4,13 @@ import path from "node:path";
 import test from "node:test";
 import sharp from "sharp";
 
-import {
-  detectLogoSurfaceTone,
-  makeLightLogoVariant,
-  normalizeTransparentLogo,
-  prepareLogoForSurface,
-} from "../app/lib/mvp/adaptiveLogo.server.ts";
+import { detectLogoSurfaceTone, makeLightLogoVariant, normalizeTransparentLogo, prepareLogoForSurface } from "../app/lib/mvp/adaptiveLogo.server.ts";
 
 const root = process.cwd();
-const logoPaths = [
-  "public/brand-logos/gukdae-hanwoo-logo-exact.png",
-  "public/brand-logos/original-source-logo.png",
-  "public/brand-logos/ririnco-logo.png",
-];
+const logoPaths = ["public/brand-logos/gukdae-hanwoo-logo-exact.png", "public/brand-logos/original-source-logo.png", "public/brand-logos/ririnco-logo.png"];
 
 async function pixelStats(buffer) {
-  const { data, info } = await sharp(buffer)
-    .ensureAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   let visible = 0;
   let transparent = 0;
   let luminance = 0;
@@ -58,10 +46,7 @@ test("dark surfaces receive readable light logo variants without adding a tile",
     const variant = await makeLightLogoVariant(source);
     const stats = await pixelStats(variant);
     assert.ok(stats.transparent > 1_000, `${relativePath}: light variant lost transparency`);
-    assert.ok(
-      stats.meanVisibleLuminance > 210,
-      `${relativePath}: light variant is too dark (${stats.meanVisibleLuminance})`
-    );
+    assert.ok(stats.meanVisibleLuminance > 210, `${relativePath}: light variant is too dark (${stats.meanVisibleLuminance})`);
   }
 });
 
@@ -90,8 +75,5 @@ test("surface luminance selects a contrasting logo variant", async () => {
   });
   assert.equal(darkPrepared.surfaceTone, "dark");
   assert.equal(lightPrepared.surfaceTone, "light");
-  assert.ok(
-    (await pixelStats(darkPrepared.buffer)).meanVisibleLuminance >
-      (await pixelStats(lightPrepared.buffer)).meanVisibleLuminance
-  );
+  assert.ok((await pixelStats(darkPrepared.buffer)).meanVisibleLuminance > (await pixelStats(lightPrepared.buffer)).meanVisibleLuminance);
 });

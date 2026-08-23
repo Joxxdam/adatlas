@@ -5,23 +5,14 @@ import test from "node:test";
 
 import sharp from "sharp";
 
-import {
-  inferAudienceProfile,
-  inferBackgroundCategory,
-  recommendBackgrounds,
-} from "../app/lib/background-library/recommender.ts";
+import { inferAudienceProfile, inferBackgroundCategory, recommendBackgrounds } from "../app/lib/background-library/recommender.ts";
 import { generateAdaptiveCreativePlans } from "../app/lib/background-library/adaptiveCreative.ts";
 import { buildAdaptiveCreativeSvg } from "../app/lib/mvp/adaptiveCreativeSvg.ts";
 import { contrastRatio } from "../app/lib/mvp/colorUtils.ts";
-import {
-  applyKnownProductAssets,
-  matchKnownProductAsset,
-} from "../app/lib/creative/knownProductAssets.ts";
+import { applyKnownProductAssets, matchKnownProductAsset } from "../app/lib/creative/knownProductAssets.ts";
 
 const projectRoot = process.cwd();
-const library = JSON.parse(
-  await readFile(path.join(projectRoot, "data", "background-library.json"), "utf8")
-);
+const library = JSON.parse(await readFile(path.join(projectRoot, "data", "background-library.json"), "utf8"));
 const minimumCounts = {
   fashion: 12,
   beauty: 12,
@@ -53,38 +44,28 @@ test("library preserves the baseline categories and unique assets as it grows", 
   assert.equal(new Set(library.map((item) => item.id)).size, library.length);
   assert.equal(new Set(library.map((item) => item.file)).size, library.length);
   for (const [category, minimum] of Object.entries(minimumCounts)) {
-    assert.ok(
-      library.filter((item) => item.category === category).length >= minimum,
-      `${category} requires at least ${minimum} backgrounds`
-    );
+    assert.ok(library.filter((item) => item.category === category).length >= minimum, `${category} requires at least ${minimum} backgrounds`);
   }
 });
 
 test("Original Source has twenty registered backgrounds and one cutout per 250ml product", async () => {
-  const catalog = JSON.parse(
-    await readFile(
-      path.join(projectRoot, "data", "original-source-product-assets.json"),
-      "utf8"
-    )
-  );
+  const catalog = JSON.parse(await readFile(path.join(projectRoot, "data", "original-source-product-assets.json"), "utf8"));
   assert.equal(catalog.products.length, 5);
   for (const product of catalog.products) {
     assert.equal(product.backgrounds.length, 20, product.id);
     assert.equal(new Set(product.backgrounds.map((item) => item.id)).size, 20, product.id);
     await stat(path.join(projectRoot, "public", product.cutout.replace(/^\//, "")));
     for (const background of product.backgrounds) {
-      assert.ok(library.some((item) => item.id === background.id), background.id);
+      assert.ok(
+        library.some((item) => item.id === background.id),
+        background.id
+      );
     }
   }
 });
 
 test("Original Source product handoff mapping and recommendations use matching assets", async () => {
-  const catalog = JSON.parse(
-    await readFile(
-      path.join(projectRoot, "data", "original-source-product-assets.json"),
-      "utf8"
-    )
-  );
+  const catalog = JSON.parse(await readFile(path.join(projectRoot, "data", "original-source-product-assets.json"), "utf8"));
   for (const product of catalog.products) {
     const rawProduct = {
       productName: product.name,
@@ -121,17 +102,10 @@ test("Original Source product handoff mapping and recommendations use matching a
       limit: 8,
     });
     assert.ok(
-      recommendation.recommendations
-        .slice(0, 3)
-        .some((item) => item.background.id.startsWith(`original-source-${product.id}-`)),
+      recommendation.recommendations.slice(0, 3).some((item) => item.background.id.startsWith(`original-source-${product.id}-`)),
       `${product.id} should surface a dedicated scene in the first three recommendations`
     );
-    assert.ok(
-      recommendation.recommendations.filter((item) =>
-        item.background.id.startsWith(`original-source-${product.id}-`)
-      ).length >= 5,
-      product.id
-    );
+    assert.ok(recommendation.recommendations.filter((item) => item.background.id.startsWith(`original-source-${product.id}-`)).length >= 5, product.id);
   }
 });
 
@@ -227,10 +201,7 @@ test("hook and target age change background ranking and attach an automatic layo
   assert.equal(problem.recommendations[0].background.category, "health");
   assert.ok(problem.recommendations.some((item) => item.background.includesPerson));
   assert.ok(problem.recommendations.every((item) => item.automaticLayout));
-  assert.notEqual(
-    problem.recommendations[0].background.id,
-    premium.recommendations[0].background.id
-  );
+  assert.notEqual(problem.recommendations[0].background.id, premium.recommendations[0].background.id);
 });
 
 test("six recommendations preserve fit while diversifying scene, people, color and asset type", () => {
@@ -251,13 +222,7 @@ test("six recommendations preserve fit while diversifying scene, people, color a
       mood: ["청량함", "깨끗함"],
       backgroundTags: ["mint", "water", "ice", "bathroom"],
       preferredColors: ["mint", "white"],
-      preferredAssetTypes: [
-        "ingredient_scene",
-        "product_set",
-        "ai_generated",
-        "lifestyle_photo",
-        "people_photo",
-      ],
+      preferredAssetTypes: ["ingredient_scene", "product_set", "ai_generated", "lifestyle_photo", "people_photo"],
     }),
     limit: 6,
   });
@@ -270,9 +235,7 @@ test("six recommendations preserve fit while diversifying scene, people, color a
   assert.ok(backgrounds.some((item) => !item.includesPerson));
   assert.ok(result.recommendations.every((item) => item.matchScore > 0));
   assert.ok(result.recommendations.some((item) => item.diversityScore < 0));
-  assert.ok(
-    backgrounds.slice(0, 3).some((item) => item.colors.some((color) => /mint|ice/i.test(color)))
-  );
+  assert.ok(backgrounds.slice(0, 3).some((item) => item.colors.some((color) => /mint|ice/i.test(color))));
 });
 
 test("adaptive layouts produce three different visual hierarchies with readable colors", () => {
@@ -320,24 +283,8 @@ test("adaptive layouts produce three different visual hierarchies with readable 
   assert.ok(plans.every((plan) => plan.productPlacement.groundY <= 1120));
   assert.ok(plans.every((plan) => plan.textPlacement.maxLines === 2));
   assert.ok(plans.every((plan) => plan.bodyPlacement.maxLines === 3));
-  assert.ok(
-    plans.every(
-      (plan) =>
-        contrastRatio(
-          plan.colorPalette.headline,
-          background.brightness === "dark" ? "#183331" : "#dcebe8"
-        ) >= 4.5
-    )
-  );
-  assert.ok(
-    plans.every(
-      (plan) =>
-        contrastRatio(
-          plan.colorPalette.accent,
-          background.brightness === "dark" ? "#181818" : "#dcebe8"
-        ) >= 3.2
-    )
-  );
+  assert.ok(plans.every((plan) => contrastRatio(plan.colorPalette.headline, background.brightness === "dark" ? "#183331" : "#dcebe8") >= 4.5));
+  assert.ok(plans.every((plan) => contrastRatio(plan.colorPalette.accent, background.brightness === "dark" ? "#181818" : "#dcebe8") >= 3.2));
 });
 
 test("adaptive template keeps product, brand logo and AI disclosure overlays", () => {
@@ -445,13 +392,7 @@ test("dark backgrounds force readable copy and keep all adaptive boxes inside th
     assert.ok(contrastRatio(plan.colorPalette.body, "#181818") >= 4.5);
     assert.ok(contrastRatio(plan.colorPalette.price, "#181818") >= 4.5);
     assert.ok(contrastRatio(plan.colorPalette.ctaText, plan.colorPalette.ctaBackground) >= 4.5);
-    for (const box of [
-      plan.productPlacement,
-      plan.textPlacement,
-      plan.bodyPlacement,
-      plan.pricePlacement,
-      plan.ctaPlacement,
-    ]) {
+    for (const box of [plan.productPlacement, plan.textPlacement, plan.bodyPlacement, plan.pricePlacement, plan.ctaPlacement]) {
       assert.ok(box.x >= 0 && box.y >= 0, `${plan.layoutType} starts outside the canvas`);
       assert.ok(box.x + box.width <= 1200, `${plan.layoutType} exceeds canvas width`);
       assert.ok(box.y + box.height <= 1200, `${plan.layoutType} exceeds canvas height`);
@@ -490,10 +431,7 @@ test("changing the selected background recalculates layout, placement and colors
   );
   assert.notDeepEqual(darkPlans[0].textPlacement, brightPlans[0].textPlacement);
   assert.notEqual(darkPlans[0].colorPalette.headline, brightPlans[0].colorPalette.headline);
-  assert.notEqual(
-    darkPlans[0].contrastAdjustments.gradientDirection,
-    brightPlans[0].contrastAdjustments.gradientDirection
-  );
+  assert.notEqual(darkPlans[0].contrastAdjustments.gradientDirection, brightPlans[0].contrastAdjustments.gradientDirection);
 });
 
 test("price and CTA regions are hidden when those facts are unavailable", () => {
@@ -541,12 +479,7 @@ test("another-background flow excludes recent files without duplicates", () => {
   assert.equal(second.recommendations.length, 3);
   assert.equal(new Set(first.recommendations.map((item) => item.background.file)).size, 3);
   assert.ok(second.recommendations.every((item) => item.background.category === "fashion"));
-  assert.ok(
-    second.recommendations.every(
-      (item) =>
-        !first.recommendations.some((previous) => previous.background.id === item.background.id)
-    )
-  );
+  assert.ok(second.recommendations.every((item) => !first.recommendations.some((previous) => previous.background.id === item.background.id)));
 });
 
 test("unknown products fall back to promotion assets", () => {

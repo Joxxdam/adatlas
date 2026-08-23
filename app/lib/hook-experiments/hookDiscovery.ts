@@ -16,26 +16,15 @@ function productName(truth: ProductTruth) {
 }
 
 function benefit(truth: ProductTruth) {
-  return (
-    truth.product.mainBenefit ||
-    truth.product.verifiedBenefits?.[0] ||
-    truth.product.extractedDescription ||
-    "상품의 핵심 정보"
-  );
+  return truth.product.mainBenefit || truth.product.verifiedBenefits?.[0] || truth.product.extractedDescription || "상품의 핵심 정보";
 }
 
 function hasReviews(truth: ProductTruth) {
-  return Boolean(
-    truth.product.reviewSources?.length ||
-    truth.product.creativeContext?.reviewInsightIds?.length ||
-    truth.product.creativeContext?.reviewInsightSummaries?.length
-  );
+  return Boolean(truth.product.reviewSources?.length || truth.product.creativeContext?.reviewInsightIds?.length || truth.product.creativeContext?.reviewInsightSummaries?.length);
 }
 
 function factIds(truth: ProductTruth, keys: string[]) {
-  return truth.facts
-    .filter((fact) => keys.some((key) => fact.key.startsWith(key)))
-    .map((fact) => fact.id);
+  return truth.facts.filter((fact) => keys.some((key) => fact.key.startsWith(key))).map((fact) => fact.id);
 }
 
 const always = () => ({ eligible: true });
@@ -59,8 +48,7 @@ const definitions: HookDefinition[] = [
     label: "궁금증형",
     applicability: always,
     message: (truth) => `${productName(truth)},\n왜 다르게 느껴질까요?`,
-    hypothesis:
-      "확인 가능한 상품 차이를 질문으로 예고하면 상세 정보를 확인하려는 반응이 늘어납니다.",
+    hypothesis: "확인 가능한 상품 차이를 질문으로 예고하면 상세 정보를 확인하려는 반응이 늘어납니다.",
     reason: "근거 없는 숫자 없이 상품 차이에 대한 궁금증을 만듭니다.",
   },
   {
@@ -68,8 +56,7 @@ const definitions: HookDefinition[] = [
     type: "problem-solution",
     label: "문제 해결형",
     applicability: always,
-    message: (truth) =>
-      `${truth.product.category || "상품"} 고민,\n${productName(truth)}로 바꿔보세요`,
+    message: (truth) => `${truth.product.category || "상품"} 고민,\n${productName(truth)}로 바꿔보세요`,
     hypothesis: "익숙한 고객 문제와 확인된 상품 효용을 연결하면 선택 이유가 선명해집니다.",
     reason: "고객 문제와 상품의 실제 핵심 혜택을 직접 연결합니다.",
   },
@@ -79,13 +66,9 @@ const definitions: HookDefinition[] = [
     label: "브랜드 메시지형",
     applicability: (truth) => ({
       eligible: Boolean(truth.product.brandName || truth.product.advertiserName),
-      warnings:
-        truth.product.brandName || truth.product.advertiserName
-          ? []
-          : ["브랜드 정보가 부족해 신뢰도 확인이 필요합니다."],
+      warnings: truth.product.brandName || truth.product.advertiserName ? [] : ["브랜드 정보가 부족해 신뢰도 확인이 필요합니다."],
     }),
-    message: (truth) =>
-      `${truth.product.brandName || truth.product.advertiserName || productName(truth)},\n${benefit(truth)}`,
+    message: (truth) => `${truth.product.brandName || truth.product.advertiserName || productName(truth)},\n${benefit(truth)}`,
     hypothesis: "브랜드명과 대표 상품 메시지를 함께 제시하면 기억점이 선명해집니다.",
     reason: "브랜드와 대표 USP를 하나의 기억점으로 결합합니다.",
   },
@@ -95,15 +78,9 @@ const definitions: HookDefinition[] = [
     label: "가격·혜택형",
     applicability: (truth) => ({
       eligible: Boolean(truth.product.price || truth.product.discountInfo),
-      warnings:
-        truth.product.price || truth.product.discountInfo
-          ? []
-          : ["확인된 가격·혜택이 없어 제외됩니다."],
+      warnings: truth.product.price || truth.product.discountInfo ? [] : ["확인된 가격·혜택이 없어 제외됩니다."],
     }),
-    message: (truth) =>
-      [productName(truth), truth.product.discountInfo, truth.product.price]
-        .filter(Boolean)
-        .join("\n"),
+    message: (truth) => [productName(truth), truth.product.discountInfo, truth.product.price].filter(Boolean).join("\n"),
     hypothesis: "확인된 가격·구성을 명확히 보여주면 상품 비교가 쉬워집니다.",
     reason: "상세페이지에서 확인된 가격과 혜택만 사용합니다.",
   },
@@ -133,8 +110,7 @@ const definitions: HookDefinition[] = [
     type: "empathy-situation",
     label: "상황 공감형",
     applicability: always,
-    message: (truth) =>
-      `${truth.product.targetCustomer || "이 상품이 필요한 순간"},\n${benefit(truth)}`,
+    message: (truth) => `${truth.product.targetCustomer || "이 상품이 필요한 순간"},\n${benefit(truth)}`,
     hypothesis: "고객이 겪는 일상 상황에서 시작하면 상품 필요성을 빠르게 이해합니다.",
     reason: "타깃의 일상 상황과 실제 상품 효용을 연결합니다.",
   },
@@ -170,23 +146,11 @@ const definitions: HookDefinition[] = [
   },
 ];
 
-export const defaultDiscoveryHookCodes: ExperimentHookCode[] = [
-  "SEN",
-  "CUR",
-  "PRB",
-  "PRC",
-  "USP",
-  "EMP",
-];
+export const defaultDiscoveryHookCodes: ExperimentHookCode[] = ["SEN", "CUR", "PRB", "PRC", "USP", "EMP"];
 
 export const HookDiscoveryService = {
-  recommend(
-    truth: ProductTruth,
-    options: { selectedHookCodes?: ExperimentHookCode[]; useControl?: boolean; limit?: number } = {}
-  ) {
-    const requested = options.selectedHookCodes?.length
-      ? options.selectedHookCodes
-      : defaultDiscoveryHookCodes;
+  recommend(truth: ProductTruth, options: { selectedHookCodes?: ExperimentHookCode[]; useControl?: boolean; limit?: number } = {}) {
+    const requested = options.selectedHookCodes?.length ? options.selectedHookCodes : defaultDiscoveryHookCodes;
     const mapped = requested
       .map((code) => definitions.find((item) => item.code === code))
       .filter((item): item is HookDefinition => Boolean(item))
@@ -201,14 +165,7 @@ export const HookDiscoveryService = {
           recommendationReason: definition.reason,
           eligible: applicability.eligible,
           warnings: applicability.warnings || [],
-          factIds: factIds(truth, [
-            "product-name",
-            "main-benefit",
-            "verified-benefit",
-            "price",
-            "discount",
-            "category",
-          ]),
+          factIds: factIds(truth, ["product-name", "main-benefit", "verified-benefit", "price", "discount", "category"]),
         };
       });
     const eligible = mapped.filter((item) => item.eligible);
@@ -228,14 +185,7 @@ export const HookDiscoveryService = {
         recommendationReason: definition.reason,
         eligible: true,
         warnings: [],
-        factIds: factIds(truth, [
-          "product-name",
-          "main-benefit",
-          "verified-benefit",
-          "price",
-          "discount",
-          "category",
-        ]),
+        factIds: factIds(truth, ["product-name", "main-benefit", "verified-benefit", "price", "discount", "category"]),
       });
     }
     if (options.useControl && !eligible.some((item) => item.hookCode === "CTL")) {

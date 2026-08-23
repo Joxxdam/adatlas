@@ -1,7 +1,6 @@
 import type { ExtractedPalette } from "./types";
 
-export type DesignCategory =
-  "food" | "meat" | "beauty" | "body-care" | "household" | "health" | "fashion" | "general";
+export type DesignCategory = "food" | "meat" | "beauty" | "body-care" | "household" | "health" | "fashion" | "general";
 
 export const categoryFallbackPalettes: Record<DesignCategory, ExtractedPalette> = {
   meat: {
@@ -113,8 +112,7 @@ export const categoryFallbackPalettes: Record<DesignCategory, ExtractedPalette> 
 export function inferDesignCategory(value?: string): DesignCategory {
   const text = String(value || "").toLowerCase();
   if (/(한우|고기|육류|등심|갈비|스테이크|meat|beef|pork)/i.test(text)) return "meat";
-  if (/(뷰티|화장품|스킨|쿠션|앰플|크림|세럼|메이크업|beauty|cosmetic)/i.test(text))
-    return "beauty";
+  if (/(뷰티|화장품|스킨|쿠션|앰플|크림|세럼|메이크업|beauty|cosmetic)/i.test(text)) return "beauty";
   if (/(바디|샤워|젤|샴푸|워시|향수|데오|body|shower|wash)/i.test(text)) return "body-care";
   if (/(리빙|생활|세제|청소|주방|house|living)/i.test(text)) return "household";
   if (/(건강|영양|홍삼|비타민|health|supplement)/i.test(text)) return "health";

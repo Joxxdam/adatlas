@@ -13,7 +13,11 @@ export function canonicalProductUrl(value: string) {
     url.pathname = url.pathname.replace(/\/+$/, "") || "/";
     return url.toString();
   } catch {
-    return value.trim().replace(/[?#].*$/, "").replace(/\/+$/, "").toLowerCase();
+    return value
+      .trim()
+      .replace(/[?#].*$/, "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
   }
 }
 
@@ -30,27 +34,22 @@ export function normalizedProductFamilyName(value: string) {
 }
 
 function stableImageSimilarity(candidate: Pick<AutoProductionProductCandidate, "productInfo">) {
-  return (candidate.productInfo.sourceImageCandidates || [])
-    .map((image) => image.perceptualHash || image.contentHash || "")
-    .find(Boolean) || "";
+  return (candidate.productInfo.sourceImageCandidates || []).map((image) => image.perceptualHash || image.contentHash || "").find(Boolean) || "";
 }
 
 export function productFamilyKey(candidate: Pick<AutoProductionProductCandidate, "advertiserId" | "productName" | "productUrl" | "category" | "productInfo">) {
   const familyName = normalizedProductFamilyName(candidate.productName);
   const canonical = canonicalProductUrl(candidate.productUrl);
-  const pathHint = canonical.replace(/^https?:\/\/[^/]+/i, "").replace(/\d+/g, "").replace(/[^a-z가-힣]+/gi, "-").replace(/^-+|-+$/g, "");
+  const pathHint = canonical
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/\d+/g, "")
+    .replace(/[^a-z가-힣]+/gi, "-")
+    .replace(/^-+|-+$/g, "");
   const imageHint = stableImageSimilarity(candidate);
   const identity = familyName.length >= 2 ? familyName : pathHint || imageHint || canonical;
   return [candidate.advertiserId, normalizedProductFamilyName(candidate.category), identity].join(":");
 }
 
 export function candidateIdentityKeys(candidate: AutoProductionProductCandidate) {
-  return Array.from(new Set([
-    `id:${candidate.id}`,
-    candidate.externalId ? `external:${candidate.externalId}` : "",
-    candidate.productCode ? `code:${candidate.productCode}` : "",
-    candidate.sku ? `sku:${candidate.sku}` : "",
-    `url:${candidate.canonicalProductUrl || canonicalProductUrl(candidate.productUrl)}`,
-    `family:${candidate.productFamilyKey || productFamilyKey(candidate)}`,
-  ].filter(Boolean)));
+  return Array.from(new Set([`id:${candidate.id}`, candidate.externalId ? `external:${candidate.externalId}` : "", candidate.productCode ? `code:${candidate.productCode}` : "", candidate.sku ? `sku:${candidate.sku}` : "", `url:${candidate.canonicalProductUrl || canonicalProductUrl(candidate.productUrl)}`, `family:${candidate.productFamilyKey || productFamilyKey(candidate)}`].filter(Boolean)));
 }

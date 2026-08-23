@@ -9,9 +9,7 @@ function referenceProductInfo(detail: ProductDetailAnalysis): ProductInfoForProm
     productName: detail.product.name,
     category: detail.product.category || "기타",
     price: detail.product.salePrice ? `${detail.product.salePrice.toLocaleString("ko-KR")}원` : "",
-    originalPrice: detail.product.originalPrice
-      ? `${detail.product.originalPrice.toLocaleString("ko-KR")}원`
-      : "",
+    originalPrice: detail.product.originalPrice ? `${detail.product.originalPrice.toLocaleString("ko-KR")}원` : "",
     discountInfo: detail.product.discountRate ? `${detail.product.discountRate}% 할인` : "",
     mainBenefit: detail.uspCandidates.join(" · "),
     targetCustomer: detail.reviewAnalysis?.purchaseSituations.join(", ") || "",

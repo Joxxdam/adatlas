@@ -6,10 +6,7 @@ import test from "node:test";
 
 import { buildCreativeArchiveEntries } from "../app/lib/creative-archive/archive.ts";
 import { createCreativeArchiveMetadataRepository } from "../app/lib/creative-archive/metadataRepository.server.ts";
-import {
-  archiveEntriesToMetaDrafts,
-  prepareArchivePerformanceSelection,
-} from "../app/lib/meta/archivePerformanceSelection.ts";
+import { archiveEntriesToMetaDrafts, prepareArchivePerformanceSelection } from "../app/lib/meta/archivePerformanceSelection.ts";
 
 const createdAt = "2026-08-21T01:00:00.000Z";
 
@@ -175,6 +172,37 @@ test("아카이브 레퍼런스 메타데이터는 태그와 메모를 정리해
   assert.deepEqual((await reloaded.list())[entryId], saved);
 });
 
+test("아카이브 후처리 메타데이터는 원본을 보존하고 미리보기·다운로드에 후처리본을 연결한다", async (context) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-archive-branding-"));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  const repository = createCreativeArchiveMetadataRepository({ dataDirectory: directory });
+  const entryId = "asset:asset-001";
+  const branding = {
+    logoId: "original-source",
+    aiDisclosure: true,
+    imagePath: "/private/archive-delivery.jpg",
+    sourceImagePath: "/generated-ads/mint-h01.jpg",
+    updatedAt: "2026-08-23T08:00:00.000Z",
+  };
+  await repository.updateDeliveryBranding(entryId, branding);
+  const metadata = await repository.list();
+  const [entry] = buildCreativeArchiveEntries({ assets: [asset()], jobs: [], metadata });
+  assert.deepEqual(entry.deliveryBranding, {
+    logoId: "original-source",
+    aiDisclosure: true,
+    updatedAt: branding.updatedAt,
+  });
+  assert.equal(entry.brandingEligible, true);
+  assert.match(entry.imageUrl, /\/api\/creative-archive\/asset%3Aasset-001\/image\?branding=/);
+  assert.match(entry.downloadUrl, /download=1/);
+  assert.doesNotMatch(JSON.stringify(entry), /private\/archive-delivery/);
+
+  await repository.updateDeliveryBranding(entryId, undefined);
+  const restored = buildCreativeArchiveEntries({ assets: [asset()], jobs: [], metadata: await repository.list() })[0];
+  assert.equal(restored.imageUrl, "/generated-ads/mint-h01.jpg");
+  assert.equal(restored.deliveryBranding, undefined);
+});
+
 test("삭제한 아카이브 항목은 원본 생성 결과가 남아 있어도 목록에 다시 나타나지 않는다", async (context) => {
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-archive-delete-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
@@ -189,9 +217,9 @@ test("삭제한 아카이브 항목은 원본 생성 결과가 남아 있어도 
   await repository.hide(["asset:asset-001"]);
   const metadata = await repository.list();
   assert.ok(metadata["asset:asset-001"].deletedAt);
-  assert.equal(metadata["asset:asset-001"].savedAsReference,false);
-  const entries = buildCreativeArchiveEntries({ assets:[registered], jobs:[job([matching])], metadata });
-  assert.equal(entries.length,0);
+  assert.equal(metadata["asset:asset-001"].savedAsReference, false);
+  const entries = buildCreativeArchiveEntries({ assets: [registered], jobs: [job([matching])], metadata });
+  assert.equal(entries.length, 0);
 });
 
 test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독립 화면으로 제공된다", async () => {
@@ -211,6 +239,13 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /개별 삭제/);
   assert.match(workspace, /이 상품 전체 선택/);
   assert.match(workspace, /선택한 이미지 모두 삭제/);
+  assert.match(workspace, /아카이브 이미지에 로고·AI 고지 적용/);
+  assert.match(workspace, /업체를 선택하세요/);
+  assert.match(workspace, /상품을 선택하세요/);
+  assert.match(workspace, /로고·AI: 이 상품 전체/);
+  assert.match(workspace, /visibleLogos\.map/);
+  assert.match(workspace, /선택한 \$\{brandingIds\.length\}장에만 적용/);
+  assert.doesNotMatch(workspace, /현재 목록 선택(?: 해제)?/);
   assert.match(collectionRoute, /export async function DELETE/);
   assert.match(entryRoute, /export async function DELETE/);
 });
@@ -236,10 +271,7 @@ test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차�
   assert.equal(hookOnly.testType, "hook-only");
   assert.equal(hookOnly.hookOnlyEligible, true);
 
-  const mixed = prepareArchivePerformanceSelection([
-    base,
-    { ...second, productId: "another-product", productName: "다른 상품" },
-  ]);
+  const mixed = prepareArchivePerformanceSelection([base, { ...second, productId: "another-product", productName: "다른 상품" }]);
   assert.equal(mixed.valid, false);
   assert.match(mixed.message, /같은 광고주·같은 상품/);
 });

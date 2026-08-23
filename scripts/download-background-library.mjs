@@ -63,7 +63,10 @@ async function perceptualHash(buffer) {
       bits += data[row * 9 + column] > data[row * 9 + column + 1] ? "1" : "0";
     }
   }
-  return bits.match(/.{4}/g).map((chunk) => Number.parseInt(chunk, 2).toString(16)).join("");
+  return bits
+    .match(/.{4}/g)
+    .map((chunk) => Number.parseInt(chunk, 2).toString(16))
+    .join("");
 }
 
 async function inspectFile(file) {
@@ -109,11 +112,7 @@ async function optimize(buffer, outputFile) {
   const size = minSide >= 1600 ? 1600 : 1200;
   let output;
   for (const quality of [84, 81, 78, 74]) {
-    output = await sharp(buffer)
-      .rotate()
-      .resize(size, size, { fit: "cover", position: "attention", withoutEnlargement: true })
-      .webp({ quality, effort: 5, smartSubsample: true })
-      .toBuffer();
+    output = await sharp(buffer).rotate().resize(size, size, { fit: "cover", position: "attention", withoutEnlargement: true }).webp({ quality, effort: 5, smartSubsample: true }).toBuffer();
     if (output.length <= 1_000_000) break;
   }
   if (!output || output.length > 1_200_000) throw new Error(`WebP 최적화 후 용량 초과: ${output?.length || 0}`);
@@ -152,9 +151,7 @@ async function buildOne(item, previous) {
 const manifest = await readJson(manifestPath);
 const current = await readJson(metadataPath);
 const source = verifyOnly ? current : manifest;
-const selected = source.filter(
-  (item) => (!categoryFilter || item.category === categoryFilter) && (!idFilter || item.id === idFilter)
-);
+const selected = source.filter((item) => (!categoryFilter || item.category === categoryFilter) && (!idFilter || item.id === idFilter));
 if (!selected.length) throw new Error("처리할 배경 소스가 없습니다.");
 const previousById = new Map(current.map((item) => [item.id, item]));
 const failures = [];

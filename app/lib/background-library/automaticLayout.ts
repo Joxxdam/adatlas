@@ -1,36 +1,12 @@
 import type { GeneratedAdCopy } from "../mvp/types";
-import type {
-  AutomaticLayoutPreset,
-  BackgroundHookType,
-  BackgroundLibraryItem,
-} from "./types";
+import type { AutomaticLayoutPreset, BackgroundHookType, BackgroundLibraryItem } from "./types";
 
-export function selectAutomaticLayout(params: {
-  background: Pick<
-    BackgroundLibraryItem,
-    | "assetType"
-    | "category"
-    | "textSafeArea"
-    | "productPosition"
-    | "includesPerson"
-    | "personPosition"
-    | "brightness"
-    | "recommendedLayouts"
-  >;
-  hookType: BackgroundHookType;
-  copy?: Partial<GeneratedAdCopy>;
-  hasPrice?: boolean;
-}): AutomaticLayoutPreset {
+export function selectAutomaticLayout(params: { background: Pick<BackgroundLibraryItem, "assetType" | "category" | "textSafeArea" | "productPosition" | "includesPerson" | "personPosition" | "brightness" | "recommendedLayouts">; hookType: BackgroundHookType; copy?: Partial<GeneratedAdCopy>; hasPrice?: boolean }): AutomaticLayoutPreset {
   const { background, hookType } = params;
   const preferred = background.recommendedLayouts?.[0];
   if (preferred) return preferred;
-  if (
-    ["price_offer", "urgency"].includes(hookType) ||
-    (params.hasPrice && background.category === "promotion")
-  ) {
-    return background.category === "promotion"
-      ? "centered-product-promotion"
-      : "price-focused";
+  if (["price_offer", "urgency"].includes(hookType) || (params.hasPrice && background.category === "promotion")) {
+    return background.category === "promotion" ? "centered-product-promotion" : "price-focused";
   }
   if (background.category === "fashion") return "fashion-lookbook";
   if (["ingredient_scene", "pattern_texture"].includes(background.assetType)) {

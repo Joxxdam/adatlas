@@ -1,16 +1,13 @@
 import "server-only";
 import type { GenerationJob, GenerationJobSummary } from "./types";
-import { executionResults } from "./jobRunnerPolicy";
+import { executionResults, failedGenerationResultStatuses, terminalGenerationResultStatuses } from "./jobRunnerPolicy";
 import { nativeResultImageUrl } from "./nativeCreativeStorage.server";
 
 const localPathPattern = /(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s"']+/g;
 const secretPattern = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/gi;
 
 export function toPublicGenerationError(error: unknown, fallback: string) {
-  return (error instanceof Error ? error.message : fallback)
-    .replace(localPathPattern, "로컬 파일")
-    .replace(secretPattern, "[비공개 인증정보]")
-    .slice(0, 600);
+  return (error instanceof Error ? error.message : fallback).replace(localPathPattern, "로컬 파일").replace(secretPattern, "[비공개 인증정보]").slice(0, 600);
 }
 
 export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
@@ -73,39 +70,46 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
     imagePaths: job.productTruth.imagePaths.map(safeWebPath).filter(Boolean),
     imageAssets: job.productTruth.imageAssets.map((asset) => ({ ...asset, path: safeWebPath(asset.path), reason: "상품 참조 이미지" })).filter((asset) => asset.path),
     referenceImages: job.productTruth.referenceImages.map((asset) => ({ ...asset, path: safeWebPath(asset.path), reason: "상품 참조 이미지" })).filter((asset) => asset.path),
-    confirmedProductImage: job.productTruth.confirmedProductImage && safeWebPath(job.productTruth.confirmedProductImage.path)
-      ? { ...job.productTruth.confirmedProductImage, path: safeWebPath(job.productTruth.confirmedProductImage.path), reason: "제작 기준 상품" }
-      : undefined,
+    confirmedProductImage:
+      job.productTruth.confirmedProductImage && safeWebPath(job.productTruth.confirmedProductImage.path)
+        ? {
+            ...job.productTruth.confirmedProductImage,
+            path: safeWebPath(job.productTruth.confirmedProductImage.path),
+            reason: "제작 기준 상품",
+          }
+        : undefined,
     completeness: job.productTruth.completeness,
     createdAt: job.productTruth.createdAt,
   };
   const publicJob = {
     ...job,
     paidApiAuthorization: undefined,
-    adCopy: job.adCopy ? {
-      id: job.adCopy.id,
-      jobId: job.adCopy.jobId,
-      advertiserId: job.adCopy.advertiserId,
-      productId: job.adCopy.productId,
-      creativeId: job.adCopy.creativeId,
-      representativeResultId: job.adCopy.representativeResultId,
-      basedOnHookId: job.adCopy.basedOnHookId,
-      basedOnCreativeBriefId: job.adCopy.basedOnCreativeBriefId,
-      primaryText: job.adCopy.status === "needs-review" ? undefined : job.adCopy.primaryText,
-      assetCode: job.adCopy.assetCode,
-      adName: job.adCopy.adName,
-      utm: job.adCopy.utm,
-      verifiedFacts: [],
-      languageTraits: [],
-      generatedAt: job.adCopy.generatedAt,
-      updatedAt: job.adCopy.updatedAt,
-      status: job.adCopy.status,
-      revision: job.adCopy.revision,
-      promptVersion: "",
-      sourceFingerprint: "",
-      approvedAt: job.adCopy.approvedAt,
-    } : undefined,
-    codexThreadId: undefined,
+    adCopy: job.adCopy
+      ? {
+          id: job.adCopy.id,
+          jobId: job.adCopy.jobId,
+          advertiserId: job.adCopy.advertiserId,
+          productId: job.adCopy.productId,
+          creativeId: job.adCopy.creativeId,
+          representativeResultId: job.adCopy.representativeResultId,
+          basedOnHookId: job.adCopy.basedOnHookId,
+          basedOnCreativeBriefId: job.adCopy.basedOnCreativeBriefId,
+          primaryText: job.adCopy.status === "needs-review" ? undefined : job.adCopy.primaryText,
+          adTitle: job.adCopy.status === "needs-review" ? undefined : job.adCopy.adTitle,
+          assetCode: job.adCopy.assetCode,
+          adName: job.adCopy.adName,
+          utm: job.adCopy.utm,
+          verifiedFacts: [],
+          languageTraits: [],
+          generatedAt: job.adCopy.generatedAt,
+          updatedAt: job.adCopy.updatedAt,
+          status: job.adCopy.status,
+          revision: job.adCopy.revision,
+          promptVersion: "",
+          sourceFingerprint: "",
+          approvedAt: job.adCopy.approvedAt,
+        }
+      : undefined,
     productTruth: publicTruth,
     productReferenceProfile: job.productReferenceProfile
       ? {
@@ -114,17 +118,26 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
           brandName: job.productReferenceProfile.brandName,
           category: job.productReferenceProfile.category,
           immutableFacts: {},
-          visualIdentity: { silhouette: "", proportions: "", surfaceTexture: "", signatureDetails: [], mustPreserve: [], mustNotGenerate: [] },
+          visualIdentity: {
+            silhouette: "",
+            proportions: "",
+            surfaceTexture: "",
+            signatureDetails: [],
+            mustPreserve: [],
+            mustNotGenerate: [],
+          },
           verifiedClaims: [],
           prohibitedClaims: [],
-          referenceImages: job.productReferenceProfile.referenceImages.map((image) => ({
-            id: image.id,
-            url: safeWebPath(image.url),
-            role: image.role,
-            importance: image.importance,
-            usableForGeneration: image.usableForGeneration,
-            description: "상품 참조 이미지",
-          })).filter((image) => image.url),
+          referenceImages: job.productReferenceProfile.referenceImages
+            .map((image) => ({
+              id: image.id,
+              url: safeWebPath(image.url),
+              role: image.role,
+              importance: image.importance,
+              usableForGeneration: image.usableForGeneration,
+              description: "상품 참조 이미지",
+            }))
+            .filter((image) => image.url),
           referenceSufficiency: job.productReferenceProfile.referenceSufficiency,
           createdAt: job.productReferenceProfile.createdAt,
         }
@@ -136,7 +149,10 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
     groupValidation: job.groupValidation
       ? {
           ...job.groupValidation,
-          duplicatePairs: job.groupValidation.duplicatePairs.map((pair) => ({ ...pair, reason: "유사 장면 감지" })),
+          duplicatePairs: job.groupValidation.duplicatePairs.map((pair) => ({
+            ...pair,
+            reason: "유사 장면 감지",
+          })),
           failures: [],
         }
       : undefined,
@@ -176,14 +192,25 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
       masterScene: undefined,
       renderPlan: undefined,
       autoRepairs: [],
-      qa: result.qa
-        ? { ...result.qa, findings: [], autoRepairs: [] }
-        : undefined,
+      qa: result.qa ? { ...result.qa, findings: [], autoRepairs: [] } : undefined,
       contentNoteCompliance: result.contentNoteCompliance
-        ? { ...result.contentNoteCompliance, appliedNoteIds: [], requiredMissing: [], prohibitedFound: [], repairs: [] }
+        ? {
+            ...result.contentNoteCompliance,
+            appliedNoteIds: [],
+            requiredMissing: [],
+            prohibitedFound: [],
+            repairs: [],
+          }
         : undefined,
       error: result.error ? "광고 생성 또는 품질 검수 결과를 확인해 주세요." : undefined,
       imagePath: result.nativeCreative?.finalPath ? nativeResultImageUrl(job.id, result.id) : result.imagePath,
+      deliveryBranding: result.deliveryBranding
+        ? {
+            logoId: result.deliveryBranding.logoId,
+            aiDisclosure: result.deliveryBranding.aiDisclosure,
+            updatedAt: result.deliveryBranding.updatedAt,
+          }
+        : undefined,
       nativeCreative: result.nativeCreative
         ? {
             ...result.nativeCreative,
@@ -206,10 +233,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
 }
 
 export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean): GenerationJobSummary {
-  const publicJob = toPublicGenerationJob(job);
-  const scopedResults = executionResults(publicJob);
-  const completedStatuses = new Set(["success", "failed", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"]);
-  const failedStatuses = new Set(["failed", "korean-review", "product-review", "quality-review", "group-review"]);
+  const scopedResults = executionResults(job);
   return {
     jobId: job.id,
     advertiserId: job.advertiserId,
@@ -217,10 +241,12 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     productId: job.productTruth.productId,
     productName: job.productTruth.product.productName,
     productUrl: job.productTruth.product.landingUrl,
+    sourceType: job.sourceType || "manual",
     totalCount: scopedResults.length,
-    completedCount: scopedResults.filter((result) => completedStatuses.has(result.status)).length,
+    completedCount: scopedResults.filter((result) => terminalGenerationResultStatuses.has(result.status)).length,
+    generatedCount: scopedResults.filter((result) => Boolean(result.imagePath)).length,
     successCount: scopedResults.filter((result) => result.status === "success" || result.status === "approved").length,
-    failedCount: scopedResults.filter((result) => failedStatuses.has(result.status)).length,
+    failedCount: scopedResults.filter((result) => failedGenerationResultStatuses.has(result.status)).length,
     currentHookCode: scopedResults.find((result) => result.status === "running")?.hookPlan.hookCode,
     status: job.status,
     runnerActive,
@@ -228,7 +254,5 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     startedAt: job.startedAt,
     updatedAt: job.updatedAt,
     completedAt: job.completedAt,
-    completedResults: scopedResults.filter((result) => completedStatuses.has(result.status)),
-    failedResults: scopedResults.filter((result) => failedStatuses.has(result.status)),
   };
 }

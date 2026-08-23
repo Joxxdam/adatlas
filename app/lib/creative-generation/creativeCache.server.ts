@@ -1,11 +1,7 @@
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type {
-  MasterSceneArtifact,
-  MasterSceneSpec,
-  ProductReferenceProfile,
-} from "./types.ts";
+import type { MasterSceneArtifact, MasterSceneSpec, ProductReferenceProfile } from "./types.ts";
 
 const CACHE_DIRECTORY = path.join(process.cwd(), "data", "creative-generation-master-scenes");
 const CACHE_INDEX = path.join(CACHE_DIRECTORY, "index.json");
@@ -35,23 +31,16 @@ async function fileExists(publicPath: string) {
   if (!publicPath.startsWith("/generated-master-scenes/")) return false;
   const file = path.resolve(process.cwd(), "public", publicPath.replace(/^\/+/, ""));
   if (!file.startsWith(`${PUBLIC_DIRECTORY}${path.sep}`)) return false;
-  return fs.access(file).then(() => true).catch(() => false);
+  return fs
+    .access(file)
+    .then(() => true)
+    .catch(() => false);
 }
 
-export function masterSceneCacheKey(input: {
-  productId: string;
-  profile: ProductReferenceProfile;
-  spec: MasterSceneSpec;
-  promptVersion: string;
-  imageModel: string;
-  sourceAssetFile?: string;
-  revision?: number;
-}) {
+export function masterSceneCacheKey(input: { productId: string; profile: ProductReferenceProfile; spec: MasterSceneSpec; promptVersion: string; imageModel: string; sourceAssetFile?: string; revision?: number }) {
   const payload = JSON.stringify({
     productId: input.productId,
-    references: input.profile.referenceImages
-      .filter((image) => image.usableForGeneration && !image.duplicateOf)
-      .map((image) => image.contentHash || image.url),
+    references: input.profile.referenceImages.filter((image) => image.usableForGeneration && !image.duplicateOf).map((image) => image.contentHash || image.url),
     concept: input.spec.concept,
     mode: input.spec.generationMode,
     promptVersion: input.promptVersion,
@@ -72,7 +61,9 @@ export async function readCachedMasterScene(cacheKey: string) {
 
 export async function writeMasterSceneFile(cacheKey: string, buffer: Buffer, suffix = "") {
   await fs.mkdir(PUBLIC_DIRECTORY, { recursive: true });
-  const safeSuffix = String(suffix || "").replace(/[^a-z0-9-]/gi, "").slice(0, 18);
+  const safeSuffix = String(suffix || "")
+    .replace(/[^a-z0-9-]/gi, "")
+    .slice(0, 18);
   const fileName = `master-${cacheKey.slice(0, 24)}${safeSuffix ? `-${safeSuffix}` : ""}.webp`;
   const target = path.join(PUBLIC_DIRECTORY, fileName);
   const temporary = `${target}.${process.pid}.${Date.now()}.tmp`;

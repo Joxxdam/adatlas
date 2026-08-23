@@ -2,13 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import {
-  cancelGenerationJob,
-  resumeGenerationJob,
-  selectRunnableResult,
-  selectRunnableResults,
-  staleRunningResultIds,
-} from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { cancelGenerationJob, resumeGenerationJob, selectRunnableResult, selectRunnableResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -33,13 +27,10 @@ function job(statuses = ["pending", "pending", "pending"]) {
 }
 
 test("1. 작업 생성 API는 저장 직후 서버 runner를 자동 시작하고 202를 반환한다", async () => {
-  const [route, service] = await Promise.all([
-    read("app/api/creative-generation/jobs/route.ts"),
-    read("app/lib/creative-generation/createNativeGenerationJob.server.ts"),
-  ]);
+  const [route, service] = await Promise.all([read("app/api/creative-generation/jobs/route.ts"), read("app/lib/creative-generation/createNativeGenerationJob.server.ts")]);
   assert.match(route, /createNativeGenerationJob\(body\)/);
   assert.match(service, /enqueueGenerationJob\(job\.id, \{ priority: job\.sourceType === "manual" \}\)/);
-  assert.match(service, /supersedeActiveForProduct/);
+  assert.match(service, /supersedeActiveForProduct\(job\.productTruth\.product\.landingUrl, undefined, "manual"\)/);
   assert.match(service, /cancelQueuedGenerationJob/);
   assert.match(route, /status: 202/);
 });
@@ -47,7 +38,8 @@ test("1. 작업 생성 API는 저장 직후 서버 runner를 자동 시작하고
 test("1-1. 활성 작업 조회는 같은 상품의 최신 작업만 재개하고 전체 조회가 과거 큐를 다시 실행하지 않는다", async () => {
   const active = await read("app/api/creative-generation/jobs/active/route.ts");
   assert.match(active, /selectedCandidates = requestedProductUrl \? candidates\.slice\(0, 1\) : candidates/);
-  assert.match(active, /supersedeActiveForProduct/);
+  assert.match(active, /candidate\.sourceType !== "auto-production"/);
+  assert.match(active, /supersedeActiveForProduct\(requestedProductUrl, selectedCandidates\[0\]\.id, "manual"\)/);
   assert.match(active, /cancelQueuedGenerationJob/);
   assert.match(active, /enqueueGenerationJob\(job\.id, \{ priority: true \}\)/);
 });
@@ -73,8 +65,13 @@ test("3. idempotent server runner는 호출자가 기다리지 않아도 등록�
 test("4. 동일 jobId를 두 번 enqueue해도 실행은 한 번뿐이다", async () => {
   let calls = 0;
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
-  const runner = createIdempotentJobRunner(async () => { calls += 1; await gate; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const runner = createIdempotentJobRunner(async () => {
+    calls += 1;
+    await gate;
+  });
   assert.equal(runner.enqueue("job-a"), true);
   assert.equal(runner.enqueue("job-a"), false);
   release();
@@ -139,14 +136,20 @@ test("7-2. 빠른 로컬 합성 v7 작업도 서버 runner가 복구·실행할 
   const current = job(["pending", "pending", "pending"]);
   current.version = "generation-job-v7-fast-local-composition";
   current.concurrency = 3;
-  assert.deepEqual(selectRunnableResults(current, new Set()).map((item) => item.id), ["h01", "h02", "h03"]);
+  assert.deepEqual(
+    selectRunnableResults(current, new Set()).map((item) => item.id),
+    ["h01", "h02", "h03"]
+  );
 });
 
 test("8. resume은 완료 결과를 유지하고 미완료 결과만 pending으로 되돌린다", () => {
   const current = job(["success", "approved", "cancelled", "failed", "running"]);
   current.status = "cancelled";
   const resumed = resumeGenerationJob(current, false);
-  assert.deepEqual(resumed.results.map((item) => item.status), ["success", "approved", "pending", "pending", "pending", "success"]);
+  assert.deepEqual(
+    resumed.results.map((item) => item.status),
+    ["success", "approved", "pending", "pending", "pending", "success"]
+  );
 });
 
 test("9. runner가 없고 일정 시간 멈춘 running 결과만 stale 복구 대상으로 잡는다", () => {
@@ -161,18 +164,50 @@ test("10. active API는 진행률·현재 후킹·완료·실패 결과를 공�
   const active = await read("app/api/creative-generation/jobs/active/route.ts");
   const publicJob = await read("app/lib/creative-generation/publicJob.server.ts");
   assert.match(active, /activeJobs/);
-  for (const field of ["currentHookCode", "completedResults", "failedResults", "runnerActive"]) {
+  for (const field of ["currentHookCode", "generatedCount", "runnerActive"]) {
     assert.match(publicJob, new RegExp(field));
   }
+  assert.doesNotMatch(publicJob, /completedResults:/);
+  assert.doesNotMatch(publicJob, /failedResults:/);
 });
 
 test("11. 입력 폼이 비어도 저장 jobId와 ProductTruth로 작업을 복원한다", async () => {
   const client = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
+  const storage = await read("app/lib/creative-generation/activeCreativeJob.client.ts");
   const dashboard = await read("app/components/MvpDashboard.tsx");
-  assert.match(client, /daywiz-active-creative-job-id/);
+  assert.match(client, /ACTIVE_CREATIVE_JOB_STORAGE_KEY/);
+  assert.match(storage, /daywiz-active-creative-job-id/);
   assert.match(client, /진행 중이던 광고 콘텐츠 작업을 불러왔습니다/);
+  assert.match(client, /shouldPersistGenerationJob/);
+  assert.match(client, /creative-generation\/jobs\/recent\?limit=10/);
   assert.doesNotMatch(client, /sameProduct|samePlan/);
   assert.match(dashboard, /productLoaded=\{currentProductLoaded\}/);
+});
+
+test("11-1. 다른 메뉴에서도 백그라운드 제작 진행률을 전역으로 표시한다", async () => {
+  const layout = await read("app/layout.tsx");
+  const indicator = await read("app/components/features/creative-generation/CreativeJobStatusIndicator.tsx");
+  const client = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
+  const storage = await read("app/lib/creative-generation/activeCreativeJob.client.ts");
+  const css = await read("app/components/features/creative-generation/CreativeJobStatusIndicator.module.css");
+  assert.match(layout, /CreativeJobStatusIndicator/);
+  assert.match(indicator, /광고 제작 백그라운드 진행 중/);
+  assert.match(indicator, /currentHookCode/);
+  assert.match(indicator, /진행 상황 보기/);
+  assert.match(indicator, /activeJobs\.find/);
+  assert.match(indicator, /activeJobs\.find\(\(item\) => item\.runnerActive\)/);
+  assert.match(indicator, /localStorage\.removeItem\(ACTIVE_CREATIVE_JOB_STORAGE_KEY\)/);
+  assert.match(indicator, /generatedCount/);
+  assert.match(indicator, /\?summary=1/);
+  assert.doesNotMatch(indicator, /광고 제작 결과 확인/);
+  assert.match(storage, /daywiz-creative-job-completed-notified/);
+  assert.match(indicator, /광고 제작이 완료됐습니다/);
+  assert.match(indicator, /완성 결과 확인/);
+  assert.match(indicator, /\?step=product&jobId=/);
+  assert.match(indicator, /storedSummary\.generatedCount < storedSummary\.totalCount/);
+  assert.match(client, /globalStoredJobId/);
+  assert.match(client, /restoringGlobalWithoutProduct/);
+  assert.match(css, /\.indicator \{[\s\S]*position: fixed/);
 });
 
 test("12. native 생성 분기는 레거시 템플릿 렌더러를 정적 import하지 않는다", async () => {
@@ -198,6 +233,6 @@ test("14. Codex 로컬 실패는 유료 API로 자동 전환되지 않고 생성
   assert.match(access, /loopbackHosts/);
   assert.match(access, /headers\.get\("host"\)/);
   assert.match(access, /ADATLAS_INTERNAL_GENERATION_TOKEN/);
-  assert.match(publicJob, /codexThreadId:\s*undefined/);
+  assert.doesNotMatch(publicJob, /codexThreadId/);
   assert.match(publicJob, /finalPath:\s*undefined/);
 });

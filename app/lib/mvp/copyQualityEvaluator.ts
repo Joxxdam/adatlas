@@ -1,13 +1,5 @@
 import { cleanGeneratedText, trimCopyToLimit, visibleCopyLength } from "./copyQuality";
-import type {
-  AdBrief,
-  CopyQualityDimension,
-  CopyQualityFinding,
-  CopyQualityReport,
-  CopySlotKey,
-  GeneratedAdCopy,
-  TemplateCopyLimits,
-} from "./types";
+import type { AdBrief, CopyQualityDimension, CopyQualityFinding, CopyQualityReport, CopySlotKey, GeneratedAdCopy, TemplateCopyLimits } from "./types";
 
 const vagueTerms = ["특별한", "새로운", "최고의", "완벽한", "놀라운", "프리미엄한"];
 const overclaimTerms = ["무조건", "100% 효과", "완치", "절대", "유일", "최저가 보장"];
@@ -18,34 +10,22 @@ function addFinding(findings: CopyQualityFinding[], finding: Omit<CopyQualityFin
 }
 
 function repeatedMeaning(copy: GeneratedAdCopy) {
-  const slots = [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy]
-    .map((text) => cleanGeneratedText(text).replace(/\s+/g, ""))
-    .filter((text) => text.length >= 5);
-  return slots.some((text, index) =>
-    slots.slice(index + 1).some((other) => text.includes(other) || other.includes(text))
-  );
+  const slots = [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].map((text) => cleanGeneratedText(text).replace(/\s+/g, "")).filter((text) => text.length >= 5);
+  return slots.some((text, index) => slots.slice(index + 1).some((other) => text.includes(other) || other.includes(text)));
 }
 
 function numberMentions(copy: GeneratedAdCopy) {
-  return [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].filter((text) =>
-    /\d[\d,]*(?:원|%|만원)/.test(text || "")
-  ).length;
+  return [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy].filter((text) => /\d[\d,]*(?:원|%|만원)/.test(text || "")).length;
 }
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-export function evaluateCopyQuality(params: {
-  copy: GeneratedAdCopy;
-  brief: AdBrief;
-  copyLimits?: TemplateCopyLimits;
-}): CopyQualityReport {
+export function evaluateCopyQuality(params: { copy: GeneratedAdCopy; brief: AdBrief; copyLimits?: TemplateCopyLimits }): CopyQualityReport {
   const { copy, brief, copyLimits = {} } = params;
   const findings: CopyQualityFinding[] = [];
-  const slotEntries = Object.entries(copyLimits) as Array<
-    [CopySlotKey, TemplateCopyLimits[CopySlotKey]]
-  >;
+  const slotEntries = Object.entries(copyLimits) as Array<[CopySlotKey, TemplateCopyLimits[CopySlotKey]]>;
 
   for (const [slot, limit] of slotEntries) {
     if (!limit) continue;
@@ -68,9 +48,7 @@ export function evaluateCopyQuality(params: {
     }
   }
 
-  const allText = [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy, copy.cta]
-    .filter(Boolean)
-    .join(" ");
+  const allText = [copy.headline, copy.bodyCopy, copy.highlightCopy, copy.bottomBarCopy, copy.cta].filter(Boolean).join(" ");
   const vagueCount = vagueTerms.filter((term) => allText.includes(term)).length;
   const overclaimCount = overclaimTerms.filter((term) => allText.includes(term)).length;
 
@@ -129,18 +107,10 @@ export function evaluateCopyQuality(params: {
     }
   }
 
-  const hasSpecificFact = Boolean(
-    [brief.productName, brief.price, brief.discountInfo, brief.mainBenefit]
-      .filter(Boolean)
-      .some(
-        (fact) => allText.includes(fact) || (fact.length > 6 && allText.includes(fact.slice(0, 6)))
-      )
-  );
+  const hasSpecificFact = Boolean([brief.productName, brief.price, brief.discountInfo, brief.mainBenefit].filter(Boolean).some((fact) => allText.includes(fact) || (fact.length > 6 && allText.includes(fact.slice(0, 6)))));
   const hasBenefit = Boolean(copy.bodyCopy || copy.highlightCopy) && Boolean(brief.mainBenefit);
   const hasPrice = Boolean(copy.price || /\d[\d,]*(?:원|만원)/.test(allText));
-  const targetSignal = brief.targetCustomer
-    ? allText.includes(brief.targetCustomer) || Boolean(brief.customerProblem)
-    : true;
+  const targetSignal = brief.targetCustomer ? allText.includes(brief.targetCustomer) || Boolean(brief.customerProblem) : true;
   const basePenalty = findings.filter((finding) => finding.severity === "warning").length * 6;
   const errorPenalty = findings.filter((finding) => finding.severity === "error").length * 14;
 
@@ -154,18 +124,12 @@ export function evaluateCopyQuality(params: {
     overclaimSafety: clamp(100 - overclaimCount * 28),
     repetitionSafety: clamp(repeatedMeaning(copy) ? 62 : 92),
   };
-  const totalScore = clamp(
-    Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.values(scores).length -
-      errorPenalty * 0.2
-  );
+  const totalScore = clamp(Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.values(scores).length - errorPenalty * 0.2);
 
   return { totalScore, scores, findings, checkedAt: new Date().toISOString() };
 }
 
-export function tightenCopyToTemplate(
-  copy: GeneratedAdCopy,
-  copyLimits?: TemplateCopyLimits
-): GeneratedAdCopy {
+export function tightenCopyToTemplate(copy: GeneratedAdCopy, copyLimits?: TemplateCopyLimits): GeneratedAdCopy {
   if (!copyLimits) return copy;
   const next = { ...copy };
   for (const key of ["headline", "bodyCopy", "highlightCopy", "bottomBarCopy", "cta"] as const) {

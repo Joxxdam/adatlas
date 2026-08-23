@@ -7,10 +7,7 @@ import { publicAutoProductionError } from "../../../../../../../lib/auto-product
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ runId: string; taskId: string }> }
-) {
+export async function GET(request: Request, context: { params: Promise<{ runId: string; taskId: string }> }) {
   try {
     verifyAutoProductionAccess(request);
     const { runId, taskId } = await context.params;
@@ -23,9 +20,6 @@ export async function GET(
       },
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: publicAutoProductionError(error, "상품별 자동 제작 ZIP을 만들지 못했습니다.") },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: publicAutoProductionError(error, "상품별 자동 제작 ZIP을 만들지 못했습니다.") }, { status: 400 });
   }
 }

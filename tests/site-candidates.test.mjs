@@ -2,33 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import {
-  isPrivateIpAddress,
-  isSameStoreDomain,
-  isSameStorePathScope,
-  publicSnapshotMarkdownToHtml,
-  publicSnapshotUrl,
-  safeFetchHtml,
-  validatePublicHttpUrl,
-} from "../app/lib/store-analysis/urlSafety.ts";
+import { isPrivateIpAddress, isSameStoreDomain, isSameStorePathScope, publicSnapshotMarkdownToHtml, publicSnapshotUrl, safeFetchHtml, validatePublicHttpUrl } from "../app/lib/store-analysis/urlSafety.ts";
 import { selectDiverseSiteCandidates } from "../app/lib/site-candidates/diversity.ts";
-import {
-  deduplicateProductUrls,
-  detectSitePageType,
-  normalizeSitePageUrl,
-} from "../app/lib/site-candidates/pageClassifier.ts";
+import { deduplicateProductUrls, detectSitePageType, normalizeSitePageUrl } from "../app/lib/site-candidates/pageClassifier.ts";
 import { extractSiteProductRecord } from "../app/lib/site-candidates/productSignals.ts";
-import {
-  buildSiteAdCandidate,
-  evidenceLevelForProduct,
-  exclusionReasons,
-  scoreEvidenceSection,
-} from "../app/lib/site-candidates/scoring.ts";
-import {
-  assertSiteAnalysisRateLimit,
-  clearSiteAnalysisRateLimits,
-  SiteAnalysisRateLimitError,
-} from "../app/lib/site-candidates/rateLimit.server.ts";
+import { buildSiteAdCandidate, evidenceLevelForProduct, exclusionReasons, scoreEvidenceSection } from "../app/lib/site-candidates/scoring.ts";
+import { assertSiteAnalysisRateLimit, clearSiteAnalysisRateLimits, SiteAnalysisRateLimitError } from "../app/lib/site-candidates/rateLimit.server.ts";
 
 test("사이트 후보 분석 캐시는 TTL·원본 URL·분석·선택 결과를 서버 파일에 영속화한다", async () => {
   const source = await readFile(new URL("../app/lib/site-candidates/cache.server.ts", import.meta.url), "utf8");
@@ -85,10 +64,7 @@ function product(overrides = {}) {
     category: "바디워시",
     productUrl: "https://shop.example.com/product/mint/65",
     representativeImage: "https://shop.example.com/images/mint-main.jpg",
-    additionalImages: [
-      "https://shop.example.com/images/mint-detail-1.jpg",
-      "https://shop.example.com/images/mint-detail-2.jpg",
-    ],
+    additionalImages: ["https://shop.example.com/images/mint-detail-1.jpg", "https://shop.example.com/images/mint-detail-2.jpg"],
     regularPrice: 18_000,
     salePrice: 12_900,
     discountRate: 28,
@@ -226,56 +202,23 @@ function extractionInput(overrides = {}) {
 
 test("홈페이지 URL 유형을 판별한다", () => {
   assert.equal(detectSitePageType("https://shop.example.com/", "<html></html>"), "homepage");
-  assert.equal(
-    detectSitePageType(
-      "https://www.chanel.com/kr/",
-      '<a href="https://www.chanel.com/kr/fragrance/p/120600/product-name/">상품</a>'
-    ),
-    "homepage"
-  );
-  assert.equal(
-    detectSitePageType(
-      "https://moguchon.co.kr/wn/",
-      '<a href="/wn/products/products_view.php?pseq=443">제품</a>'
-    ),
-    "homepage"
-  );
+  assert.equal(detectSitePageType("https://www.chanel.com/kr/", '<a href="https://www.chanel.com/kr/fragrance/p/120600/product-name/">상품</a>'), "homepage");
+  assert.equal(detectSitePageType("https://moguchon.co.kr/wn/", '<a href="/wn/products/products_view.php?pseq=443">제품</a>'), "homepage");
 });
 
 test("카테고리 URL 유형을 판별한다", () => {
-  assert.equal(
-    detectSitePageType("https://shop.example.com/category/body/24", "<html></html>"),
-    "category"
-  );
-  assert.equal(
-    detectSitePageType(
-      "https://moguchon.co.kr/wn/products/products_list.php?gb=1",
-      "<html></html>"
-    ),
-    "category"
-  );
+  assert.equal(detectSitePageType("https://shop.example.com/category/body/24", "<html></html>"), "category");
+  assert.equal(detectSitePageType("https://moguchon.co.kr/wn/products/products_list.php?gb=1", "<html></html>"), "category");
 });
 
 test("기획전 URL 유형을 판별한다", () => {
-  assert.equal(
-    detectSitePageType("https://shop.example.com/event/summer", "<html></html>"),
-    "promotion"
-  );
+  assert.equal(detectSitePageType("https://shop.example.com/event/summer", "<html></html>"), "promotion");
 });
 
 test("상품 URL과 JSON-LD Product를 상품 상세페이지로 판별한다", () => {
-  assert.equal(
-    detectSitePageType("https://shop.example.com/product/mint/65", PRODUCT_HTML),
-    "product"
-  );
+  assert.equal(detectSitePageType("https://shop.example.com/product/mint/65", PRODUCT_HTML), "product");
   assert.equal(detectSitePageType("https://shop.example.com/custom-view", PRODUCT_HTML), "product");
-  assert.equal(
-    detectSitePageType(
-      "https://moguchon.co.kr/wn/products/products_view.php?pseq=443",
-      "<html></html>"
-    ),
-    "product"
-  );
+  assert.equal(detectSitePageType("https://moguchon.co.kr/wn/products/products_view.php?pseq=443", "<html></html>"), "product");
 });
 
 test("공개 텍스트 스냅샷을 기존 상품 추출기가 읽을 수 있는 안전한 HTML로 변환한다", () => {
@@ -293,56 +236,31 @@ Markdown Content:
 ![제품 이미지](https://www.chanel.com/images/gabrielle-120600.jpg)
 [관련 상품](https://www.chanel.com/kr/fragrance/p/120630/gabrielle-spray/)
 [![상품 이미지](https://moguchon.co.kr/upload/product.jpg) 살코기햄](https://moguchon.co.kr/wn/products/products_view.php?pseq=266)`;
-  const html = publicSnapshotMarkdownToHtml(
-    markdown,
-    "https://www.chanel.com/kr/fragrance/p/120600/gabrielle/"
-  );
+  const html = publicSnapshotMarkdownToHtml(markdown, "https://www.chanel.com/kr/fragrance/p/120600/gabrielle/");
   assert.match(html, /<title>가브리엘 샤넬 에쌍스 \| CHANEL 샤넬<\/title>/);
   assert.match(html, /meta name="description"/);
   assert.match(html, /property="product:price:amount" content="325,000"/);
   assert.match(html, /<img src="https:\/\/www\.chanel\.com\/images\/gabrielle-120600\.jpg"/);
   assert.match(html, /<a href="https:\/\/www\.chanel\.com\/kr\/fragrance\/p\/120630/);
-  assert.match(
-    html,
-    /<a href="https:\/\/moguchon\.co\.kr\/wn\/products\/products_view\.php\?pseq=266">살코기햄<\/a>/
-  );
+  assert.match(html, /<a href="https:\/\/moguchon\.co\.kr\/wn\/products\/products_view\.php\?pseq=266">살코기햄<\/a>/);
 });
 
 test("공개 스냅샷 URL은 인증성 쿼리를 전달하지 않는다", () => {
-  assert.equal(
-    publicSnapshotUrl("https://www.chanel.com/kr/"),
-    "https://r.jina.ai/https://www.chanel.com/kr/"
-  );
-  assert.throws(
-    () => publicSnapshotUrl("https://shop.example.com/product/1?access_token=secret"),
-    /인증 정보/
-  );
+  assert.equal(publicSnapshotUrl("https://www.chanel.com/kr/"), "https://r.jina.ai/https://www.chanel.com/kr/");
+  assert.throws(() => publicSnapshotUrl("https://shop.example.com/product/1?access_token=secret"), /인증 정보/);
 });
 
 test("일반 콘텐츠 페이지는 unsupported로 판별한다", () => {
-  assert.equal(
-    detectSitePageType("https://shop.example.com/blog/story", "<html></html>"),
-    "unsupported"
-  );
+  assert.equal(detectSitePageType("https://shop.example.com/blog/story", "<html></html>"), "unsupported");
 });
 
 test("추적 파라미터를 제거하고 동일 상품 URL을 중복 제거한다", () => {
-  const items = [
-    { url: "https://shop.example.com/product/mint/65?utm_source=meta" },
-    { url: "https://shop.example.com/product/mint/65?fbclid=abc" },
-    { url: "https://shop.example.com/product/soap/66" },
-  ];
+  const items = [{ url: "https://shop.example.com/product/mint/65?utm_source=meta" }, { url: "https://shop.example.com/product/mint/65?fbclid=abc" }, { url: "https://shop.example.com/product/soap/66" }];
   const result = deduplicateProductUrls(items);
   assert.equal(result.length, 2);
   assert.equal(result[0].url.includes("utm_source"), false);
   assert.equal(normalizeSitePageUrl(`${items[2].url}#reviews`).includes("#"), false);
-  assert.equal(
-    deduplicateProductUrls([
-      { url: "https://moguchon.co.kr/wn/products/products_view.php?pseq=443&page=1" },
-      { url: "https://moguchon.co.kr/wn/products/products_view.php?pseq=443&page=2" },
-    ]).length,
-    1
-  );
+  assert.equal(deduplicateProductUrls([{ url: "https://moguchon.co.kr/wn/products/products_view.php?pseq=443&page=1" }, { url: "https://moguchon.co.kr/wn/products/products_view.php?pseq=443&page=2" }]).length, 1);
 });
 
 test("상품 URL 후보는 최대 30개까지만 유지한다", () => {
@@ -367,10 +285,7 @@ test("JSON-LD와 기존 추출기를 통해 상품·가격·평점·이미지를
 });
 
 test("공통 정책의 품절 문구를 현재 상품 품절로 오인하지 않는다", () => {
-  const html = PRODUCT_HTML.replace(
-    "</body>",
-    "<footer>품절된 상품은 구매할 수 없습니다.</footer></body>"
-  );
+  const html = PRODUCT_HTML.replace("</body>", "<footer>품절된 상품은 구매할 수 없습니다.</footer></body>");
   const { summary, detail } = extractionInput({ isSoldOut: true });
   const result = extractSiteProductRecord({ html, summary, detail });
   assert.equal(result.stockStatus, "in-stock");
@@ -383,9 +298,7 @@ test("공통 메뉴 혜택과 UI 아이콘을 상품 근거로 사용하지 않�
      <button>성인인증 하기</button></body>`
   );
   const { summary, detail } = extractionInput();
-  detail.imageUrls.push(
-    "https://img.echosting.cafe24.com/skin/base_ko_KR/product/btn_count_up.gif"
-  );
+  detail.imageUrls.push("https://img.echosting.cafe24.com/skin/base_ko_KR/product/btn_count_up.gif");
   detail.uspCandidates.push("혜택 현재 진행 이벤트 종료된 이벤트 카톡 채널 쿠폰 세트 혜택 -->");
   const result = extractSiteProductRecord({ html, summary, detail });
   assert.equal(result.setComposition, undefined);
@@ -402,21 +315,13 @@ test("공통 메뉴 혜택과 UI 아이콘을 상품 근거로 사용하지 않�
     false
   );
   assert.equal(
-    [result.representativeImage, ...result.additionalImages].some((value) =>
-      /btn_count_up\.gif/.test(value || "")
-    ),
+    [result.representativeImage, ...result.additionalImages].some((value) => /btn_count_up\.gif/.test(value || "")),
     false
   );
 });
 
 test("비활성 품절 구매 버튼은 명시적 품절로 판정한다", () => {
-  const html = PRODUCT_HTML.replace(
-    "<button>바로 구매하기</button>",
-    '<button class="sold-out" disabled>품절</button>'
-  ).replace(
-    '"availability": "https://schema.org/InStock"',
-    '"availability": "https://schema.org/OutOfStock"'
-  );
+  const html = PRODUCT_HTML.replace("<button>바로 구매하기</button>", '<button class="sold-out" disabled>품절</button>').replace('"availability": "https://schema.org/InStock"', '"availability": "https://schema.org/OutOfStock"');
   const { summary, detail } = extractionInput({ isSoldOut: true });
   const result = extractSiteProductRecord({ html, summary, detail });
   assert.equal(result.stockStatus, "sold-out");
@@ -465,14 +370,7 @@ test("리뷰 미확인은 리뷰 0개가 아니라 unavailable로 유지한다",
 
 test("콘텐츠 적합도는 여섯 항목 합계이며 0~100 범위를 지킨다", () => {
   const candidate = buildSiteAdCandidate(product(), new Date("2026-08-14T00:00:00Z"));
-  assert.deepEqual(Object.keys(candidate.score.sections).sort(), [
-    "creative",
-    "landing",
-    "messageUsp",
-    "offer",
-    "season",
-    "trust",
-  ]);
+  assert.deepEqual(Object.keys(candidate.score.sections).sort(), ["creative", "landing", "messageUsp", "offer", "season", "trust"]);
   assert.equal(
     Object.values(candidate.score.sections).reduce((sum, section) => sum + section.maxScore, 0),
     100
@@ -492,24 +390,11 @@ test("리뷰 수와 평점이 특히 강한 상품은 고객 신뢰를 대표 �
       coupon: undefined,
       freeShipping: false,
       shippingInfo: undefined,
-      evidence: evidenceStates([
-        "product-name",
-        "description",
-        "price",
-        "reviews",
-        "images",
-        "purchase-button",
-        "stock",
-        "usp",
-        "origin",
-        "certifications",
-      ]),
+      evidence: evidenceStates(["product-name", "description", "price", "reviews", "images", "purchase-button", "stock", "usp", "origin", "certifications"]),
     })
   );
   assert.equal(candidate.primaryRecommendationType, "review-trust");
-  assert.ok(
-    candidate.recommendationSummary.topStrengths.some((item) => item.sectionKey === "trust")
-  );
+  assert.ok(candidate.recommendationSummary.topStrengths.some((item) => item.sectionKey === "trust"));
   assert.match(candidate.recommendationSummary.coreReason, /리뷰 12,400개.*평점 5\.0/);
 });
 
@@ -532,23 +417,11 @@ test("할인·쿠폰·무료배송·세트 구성이 강한 상품은 가격 혜
       benefits: ["35% 할인", "첫 구매 10% 쿠폰", "무료배송", "3개 세트 구성"],
       usageContexts: [],
       targetSignals: [],
-      evidence: evidenceStates([
-        "product-name",
-        "description",
-        "price",
-        "regular-price",
-        "images",
-        "purchase-button",
-        "stock",
-        "benefits",
-        "shipping",
-      ]),
+      evidence: evidenceStates(["product-name", "description", "price", "regular-price", "images", "purchase-button", "stock", "benefits", "shipping"]),
     })
   );
   assert.equal(candidate.primaryRecommendationType, "price-benefit");
-  assert.ok(
-    candidate.recommendationSummary.topStrengths.some((item) => item.sectionKey === "offer")
-  );
+  assert.ok(candidate.recommendationSummary.topStrengths.some((item) => item.sectionKey === "offer"));
   assert.match(candidate.recommendationSummary.coreReason, /35% 할인.*쿠폰.*무료배송/);
 });
 
@@ -571,23 +444,11 @@ test("구체적 USP와 수치·성분 근거가 강한 상품은 메시지 USP�
       shippingInfo: undefined,
       usageContexts: [],
       targetSignals: [],
-      evidence: evidenceStates([
-        "product-name",
-        "description",
-        "price",
-        "images",
-        "purchase-button",
-        "stock",
-        "usp",
-        "origin",
-        "certifications",
-      ]),
+      evidence: evidenceStates(["product-name", "description", "price", "images", "purchase-button", "stock", "usp", "origin", "certifications"]),
     })
   );
   assert.equal(candidate.primaryRecommendationType, "core-usp");
-  assert.ok(
-    candidate.recommendationSummary.topStrengths.some((item) => item.sectionKey === "messageUsp")
-  );
+  assert.ok(candidate.recommendationSummary.topStrengths.some((item) => item.sectionKey === "messageUsp"));
   assert.match(candidate.recommendationSummary.coreReason, /민트잎 7,927장/);
 });
 
@@ -604,24 +465,11 @@ test("가격 확인 불가 상품에는 가격 경쟁력 추천을 만들지 않
       setComposition: undefined,
       giftBenefit: undefined,
       membershipBenefit: undefined,
-      evidence: evidenceStates([
-        "product-name",
-        "description",
-        "reviews",
-        "images",
-        "purchase-button",
-        "stock",
-        "usp",
-        "origin",
-        "certifications",
-      ]),
+      evidence: evidenceStates(["product-name", "description", "reviews", "images", "purchase-button", "stock", "usp", "origin", "certifications"]),
     })
   );
   assert.equal(candidate.recommendationTypes.includes("price-benefit"), false);
-  assert.doesNotMatch(
-    `${candidate.recommendationSummary.coreReason} ${candidate.recommendationSummary.recommendedTest}`,
-    /가격·혜택형|가격 경쟁력/
-  );
+  assert.doesNotMatch(`${candidate.recommendationSummary.coreReason} ${candidate.recommendationSummary.recommendedTest}`, /가격·혜택형|가격 경쟁력/);
 });
 
 test("영역에서 근거 하나만 확인되면 만점에 가깝게 계산하지 않는다", () => {
@@ -655,36 +503,16 @@ test("상품의 실제 강점에 따라 추천 핵심과 후킹 조합이 서로
       setComposition: "3개 세트",
       usageContexts: [],
       targetSignals: [],
-      evidence: evidenceStates([
-        "product-name",
-        "description",
-        "price",
-        "regular-price",
-        "images",
-        "purchase-button",
-        "stock",
-        "benefits",
-        "shipping",
-      ]),
+      evidence: evidenceStates(["product-name", "description", "price", "regular-price", "images", "purchase-button", "stock", "benefits", "shipping"]),
     })
   );
-  assert.notEqual(
-    reviewCandidate.recommendationSummary.coreReason,
-    offerCandidate.recommendationSummary.coreReason
-  );
-  assert.notEqual(
-    reviewCandidate.recommendationSummary.recommendedTest,
-    offerCandidate.recommendationSummary.recommendedTest
-  );
+  assert.notEqual(reviewCandidate.recommendationSummary.coreReason, offerCandidate.recommendationSummary.coreReason);
+  assert.notEqual(reviewCandidate.recommendationSummary.recommendedTest, offerCandidate.recommendationSummary.recommendedTest);
 });
 
 test("추천 문구는 판매성과·전환율·ROAS를 예측하지 않는다", () => {
   const candidate = buildSiteAdCandidate(product());
-  const generated = [
-    candidate.recommendationSummary.coreReason,
-    candidate.recommendationSummary.recommendedTest,
-    ...candidate.recommendationReasons,
-  ].join(" ");
+  const generated = [candidate.recommendationSummary.coreReason, candidate.recommendationSummary.recommendedTest, ...candidate.recommendationReasons].join(" ");
   assert.doesNotMatch(generated, /판매성과|판매 가능성|전환율|ROAS|매출 상승|성과가 높/);
 });
 
@@ -749,30 +577,14 @@ test("추천 이유는 실제 상품 근거만 인용하고 판매성과를 예�
 
 test("명시적 품절 상품과 대표 이미지 없는 상품을 제외한다", () => {
   assert.match(exclusionReasons(product({ stockStatus: "sold-out" })).join(" "), /품절/);
-  assert.match(
-    exclusionReasons(product({ representativeImage: undefined })).join(" "),
-    /대표 이미지/
-  );
+  assert.match(exclusionReasons(product({ representativeImage: undefined })).join(" "), /대표 이미지/);
 });
 
 test("추천 후보는 최대 8개이고 유형·카테고리 다양성을 우선한다", () => {
-  const types = [
-    "review-trust",
-    "core-usp",
-    "price-benefit",
-    "problem-solution",
-    "situation",
-    "visual-hook",
-    "new-product-test",
-    "seasonal-test",
-    "bundle-value",
-    "clear-target",
-  ];
+  const types = ["review-trust", "core-usp", "price-benefit", "problem-solution", "situation", "visual-hook", "new-product-test", "seasonal-test", "bundle-value", "clear-target"];
   const tiers = ["evidence-backed", "content-potential", "experiment"];
   const candidates = types.map((type, index) => ({
-    ...buildSiteAdCandidate(
-      product({ id: `p-${index}`, productUrl: `https://shop.example.com/product/p/${index}` })
-    ),
+    ...buildSiteAdCandidate(product({ id: `p-${index}`, productUrl: `https://shop.example.com/product/p/${index}` })),
     id: `candidate-${index}`,
     primaryRecommendationType: type,
     recommendationTypes: [type],
@@ -798,38 +610,14 @@ test("추천 후보는 최대 8개이고 유형·카테고리 다양성을 우�
 });
 
 test("동일 호스트만 같은 사이트로 허용한다", () => {
-  assert.equal(
-    isSameStoreDomain("https://shop.example.com/product/1", "https://shop.example.com/"),
-    true
-  );
-  assert.equal(
-    isSameStoreDomain("https://cdn.example.com/product/1", "https://shop.example.com/"),
-    false
-  );
+  assert.equal(isSameStoreDomain("https://shop.example.com/product/1", "https://shop.example.com/"), true);
+  assert.equal(isSameStoreDomain("https://cdn.example.com/product/1", "https://shop.example.com/"), false);
 });
 
 test("국가·마운트 경로가 있는 사이트는 같은 경로 범위의 상품만 허용한다", () => {
-  assert.equal(
-    isSameStorePathScope(
-      "https://www.chanel.com/kr/fragrance/p/120600/product/",
-      "https://www.chanel.com/kr/"
-    ),
-    true
-  );
-  assert.equal(
-    isSameStorePathScope(
-      "https://www.chanel.com/ae-ar/fashion/p/ABC/product/",
-      "https://www.chanel.com/kr/"
-    ),
-    false
-  );
-  assert.equal(
-    isSameStorePathScope(
-      "https://moguchon.co.kr/wn/products/products_view.php?pseq=443",
-      "https://moguchon.co.kr/wn/"
-    ),
-    true
-  );
+  assert.equal(isSameStorePathScope("https://www.chanel.com/kr/fragrance/p/120600/product/", "https://www.chanel.com/kr/"), true);
+  assert.equal(isSameStorePathScope("https://www.chanel.com/ae-ar/fashion/p/ABC/product/", "https://www.chanel.com/kr/"), false);
+  assert.equal(isSameStorePathScope("https://moguchon.co.kr/wn/products/products_view.php?pseq=443", "https://moguchon.co.kr/wn/"), true);
 });
 
 test("사설·루프백·링크 로컬·메타데이터 IP를 식별한다", () => {
@@ -840,21 +628,14 @@ test("사설·루프백·링크 로컬·메타데이터 IP를 식별한다", () 
 });
 
 test("localhost, 사설 IP, 메타데이터 IP, 비 HTTP 프로토콜을 차단한다", async () => {
-  for (const unsafeUrl of [
-    "http://localhost:3000/",
-    "http://127.0.0.1/",
-    "http://10.0.0.2/",
-    "http://169.254.169.254/latest/meta-data/",
-    "file:///etc/passwd",
-  ]) {
+  for (const unsafeUrl of ["http://localhost:3000/", "http://127.0.0.1/", "http://10.0.0.2/", "http://169.254.169.254/latest/meta-data/", "file:///etc/passwd"]) {
     await assert.rejects(() => validatePublicHttpUrl(unsafeUrl), /분석할 수 없습니다|공개 URL/);
   }
 });
 
 test("공개 URL이 내부 주소로 리디렉션되면 재검증해 차단한다", async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () =>
-    new Response(null, { status: 302, headers: { location: "http://127.0.0.1/private" } });
+  globalThis.fetch = async () => new Response(null, { status: 302, headers: { location: "http://127.0.0.1/private" } });
   try {
     await assert.rejects(() => safeFetchHtml("http://8.8.8.8/product/1"), /내부망|사설 IP/);
   } finally {
@@ -866,9 +647,7 @@ test("요청 시간이 초과되면 TIMEOUT 오류로 처리한다", async () =>
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (_url, init) =>
     new Promise((_resolve, reject) => {
-      init.signal.addEventListener("abort", () =>
-        reject(new DOMException("Aborted", "AbortError"))
-      );
+      init.signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
     });
   try {
     await assert.rejects(
@@ -888,9 +667,6 @@ test("사이트 URL 분석 API rate limit은 동일 클라이언트의 반복 �
   for (let index = 0; index < 10; index += 1) {
     assert.doesNotThrow(() => assertSiteAnalysisRateLimit(request, "discover"));
   }
-  assert.throws(
-    () => assertSiteAnalysisRateLimit(request, "discover"),
-    SiteAnalysisRateLimitError
-  );
+  assert.throws(() => assertSiteAnalysisRateLimit(request, "discover"), SiteAnalysisRateLimitError);
   clearSiteAnalysisRateLimits();
 });

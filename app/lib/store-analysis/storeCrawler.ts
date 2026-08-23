@@ -1,20 +1,7 @@
-import type {
-  DiscoveredProductLink,
-  DiscoveredStorePage,
-  StoreAnalysisOptions,
-  StoreExtractor,
-  StoreInfo,
-} from "./types";
+import type { DiscoveredProductLink, DiscoveredStorePage, StoreAnalysisOptions, StoreExtractor, StoreInfo } from "./types";
 import { extractorForPlatform, detectStorePlatform } from "./platformDetector";
 import { mergeAndPrioritizeProductLinks } from "./productDiscovery";
-import {
-  isSameStoreDomain,
-  readRobotsPolicy,
-  robotsAllowsUrl,
-  safeFetchHtml,
-  type RobotsPolicy,
-  type SafeHtmlResponse,
-} from "./urlSafety";
+import { isSameStoreDomain, readRobotsPolicy, robotsAllowsUrl, safeFetchHtml, type RobotsPolicy, type SafeHtmlResponse } from "./urlSafety";
 
 const MAX_CATEGORY_PAGES = 10;
 const MAX_LIST_PAGES = 20;
@@ -32,24 +19,15 @@ function pageAllowedByOptions(page: DiscoveredStorePage, options: StoreAnalysisO
   if (page.kind === "new" && !options.includeNew) return false;
   if (page.kind === "promotion" && !options.includeDiscounted) return false;
   const signal = `${page.label} ${page.url}`.toLowerCase().replace(/\s+/g, "");
-  return !options.excludedCategories.some((value) =>
-    signal.includes(value.toLowerCase().replace(/\s+/g, ""))
-  );
+  return !options.excludedCategories.some((value) => signal.includes(value.toLowerCase().replace(/\s+/g, "")));
 }
 
 function prioritizePages(pages: DiscoveredStorePage[], options: StoreAnalysisOptions) {
   return pages.sort((a, b) => {
     const score = (page: DiscoveredStorePage) => {
       const signal = `${page.label} ${page.url}`.toLowerCase().replace(/\s+/g, "");
-      const priority = options.priorityCategories.some((value) =>
-        signal.includes(value.toLowerCase().replace(/\s+/g, ""))
-      );
-      return (
-        (priority ? 100 : 0) +
-        (page.kind === "best" ? 30 : 0) +
-        (page.kind === "new" ? 20 : 0) +
-        (page.kind === "promotion" ? 10 : 0)
-      );
+      const priority = options.priorityCategories.some((value) => signal.includes(value.toLowerCase().replace(/\s+/g, "")));
+      return (priority ? 100 : 0) + (page.kind === "best" ? 30 : 0) + (page.kind === "new" ? 20 : 0) + (page.kind === "promotion" ? 10 : 0);
     };
     return score(b) - score(a);
   });
@@ -118,15 +96,9 @@ export class StoreCrawler {
         .filter((page) => pageAllowedByOptions(page, options)),
       options
     );
-    const categoryPages = discoveredPages
-      .filter((page) => page.kind === "category")
-      .slice(0, MAX_CATEGORY_PAGES);
+    const categoryPages = discoveredPages.filter((page) => page.kind === "category").slice(0, MAX_CATEGORY_PAGES);
     const nonCategoryPages = discoveredPages.filter((page) => page.kind !== "category");
-    const pagesToVisit = [...categoryPages, ...nonCategoryPages]
-      .filter(
-        (page, index, pages) => pages.findIndex((candidate) => candidate.url === page.url) === index
-      )
-      .slice(0, MAX_LIST_PAGES);
+    const pagesToVisit = [...categoryPages, ...nonCategoryPages].filter((page, index, pages) => pages.findIndex((candidate) => candidate.url === page.url) === index).slice(0, MAX_LIST_PAGES);
 
     for (const page of pagesToVisit) {
       try {
@@ -138,45 +110,27 @@ export class StoreCrawler {
           })
         );
       } catch (error) {
-        warnings.push(
-          `${page.label || page.url} 페이지를 분석하지 못했습니다: ${error instanceof Error ? error.message : "요청 실패"}`
-        );
+        warnings.push(`${page.label || page.url} 페이지를 분석하지 못했습니다: ${error instanceof Error ? error.message : "요청 실패"}`);
       }
     }
 
     storeInfo.categoryUrls = categoryPages.map((page) => page.url);
-    storeInfo.bestPageUrls = pagesToVisit
-      .filter((page) => page.kind === "best")
-      .map((page) => page.url);
-    storeInfo.newPageUrls = pagesToVisit
-      .filter((page) => page.kind === "new")
-      .map((page) => page.url);
-    storeInfo.promotionPageUrls = pagesToVisit
-      .filter((page) => page.kind === "promotion")
-      .map((page) => page.url);
+    storeInfo.bestPageUrls = pagesToVisit.filter((page) => page.kind === "best").map((page) => page.url);
+    storeInfo.newPageUrls = pagesToVisit.filter((page) => page.kind === "new").map((page) => page.url);
+    storeInfo.promotionPageUrls = pagesToVisit.filter((page) => page.kind === "promotion").map((page) => page.url);
     const productLinks = mergeAndPrioritizeProductLinks(allProductLinks, options);
     if (!pagesToVisit.length) {
-      warnings.push(
-        "상품 목록 또는 카테고리 구조를 자동으로 찾지 못해 메인 페이지 링크만 분석했습니다."
-      );
+      warnings.push("상품 목록 또는 카테고리 구조를 자동으로 찾지 못해 메인 페이지 링크만 분석했습니다.");
     }
     if (!productLinks.length) {
-      warnings.push(
-        "상품 링크를 자동으로 찾지 못했습니다. 상품 URL을 직접 추가하거나 선택 상품 제작하기를 사용해 주세요."
-      );
+      warnings.push("상품 링크를 자동으로 찾지 못했습니다. 상품 URL을 직접 추가하거나 선택 상품 제작하기를 사용해 주세요.");
     } else if (productLinks.length < options.maxProducts) {
-      warnings.push(
-        `요청한 ${options.maxProducts}개 중 공개 HTML에서 ${productLinks.length}개 상품 후보를 찾았습니다.`
-      );
+      warnings.push(`요청한 ${options.maxProducts}개 중 공개 HTML에서 ${productLinks.length}개 상품 후보를 찾았습니다.`);
     }
     if (platform === "smartstore") {
-      warnings.push(
-        "스마트스토어는 동적 렌더링과 접근 정책에 따라 일부 공개 상품만 수집될 수 있습니다."
-      );
+      warnings.push("스마트스토어는 동적 렌더링과 접근 정책에 따라 일부 공개 상품만 수집될 수 있습니다.");
     } else if (platform === "generic" || platform === "unknown") {
-      warnings.push(
-        "일반 HTML 구조로 분석했습니다. 일부 카테고리·리뷰·상품 상태를 가져오지 못할 수 있습니다."
-      );
+      warnings.push("일반 HTML 구조로 분석했습니다. 일부 카테고리·리뷰·상품 상태를 가져오지 못할 수 있습니다.");
     }
     return { storeInfo, extractor, productLinks, warnings };
   }

@@ -1,41 +1,9 @@
 import type { ProductReviewAnalysis } from "./types";
 import { cleanText, uniqueStrings } from "./htmlUtils";
 
-const POSITIVE_KEYWORDS = [
-  "부드러움",
-  "부드럽",
-  "맛있",
-  "신선",
-  "잡내 없",
-  "양이 많",
-  "넉넉",
-  "가성비",
-  "포장",
-  "배송",
-  "재구매",
-  "만족",
-  "편리",
-  "고급",
-  "촉촉",
-  "향",
-];
+const POSITIVE_KEYWORDS = ["부드러움", "부드럽", "맛있", "신선", "잡내 없", "양이 많", "넉넉", "가성비", "포장", "배송", "재구매", "만족", "편리", "고급", "촉촉", "향"];
 
-const NEGATIVE_KEYWORDS = [
-  "질김",
-  "질기",
-  "잡내",
-  "지방",
-  "느끼",
-  "작음",
-  "적음",
-  "비쌈",
-  "아쉬",
-  "파손",
-  "누락",
-  "늦",
-  "불편",
-  "건조",
-];
+const NEGATIVE_KEYWORDS = ["질김", "질기", "잡내", "지방", "느끼", "작음", "적음", "비쌈", "아쉬", "파손", "누락", "늦", "불편", "건조"];
 
 const SITUATIONS: Array<[string, RegExp]> = [
   ["가족식사", /가족|아이|부모님|식구|저녁|반찬/],
@@ -60,11 +28,7 @@ function displayKeyword(keyword: string) {
   return keyword;
 }
 
-export function analyzeReviewTexts(params: {
-  reviewTexts: string[];
-  reviewCount?: number;
-  averageRating?: number;
-}): ProductReviewAnalysis | undefined {
+export function analyzeReviewTexts(params: { reviewTexts: string[]; reviewCount?: number; averageRating?: number }): ProductReviewAnalysis | undefined {
   const texts = uniqueStrings(
     params.reviewTexts.map((text) => cleanText(text, 360)).filter((text) => text.length >= 8),
     80
@@ -91,12 +55,8 @@ export function analyzeReviewTexts(params: {
   }))
     .filter((item) => item.count >= occurrenceThreshold)
     .sort((a, b) => b.count - a.count);
-  const repeatedBenefits = positive
-    .filter((item) => item.count >= 2)
-    .map((item) => displayKeyword(item.keyword));
-  const repeatedComplaints = negative
-    .filter((item) => item.count >= 2)
-    .map((item) => displayKeyword(item.keyword));
+  const repeatedBenefits = positive.filter((item) => item.count >= 2).map((item) => displayKeyword(item.keyword));
+  const repeatedComplaints = negative.filter((item) => item.count >= 2).map((item) => displayKeyword(item.keyword));
   const positiveKeywords = uniqueStrings(
     positive.map((item) => displayKeyword(item.keyword)),
     8
@@ -106,17 +66,9 @@ export function analyzeReviewTexts(params: {
     8
   );
   const purchaseSituations = situations.map((item) => item.name);
-  const copyUsableInsights = uniqueStrings(
-    [
-      ...repeatedBenefits.map((keyword) => `후기에서 '${keyword}' 장점이 반복 확인됨`),
-      ...purchaseSituations.map((situation) => `'${situation}' 구매·사용 상황이 확인됨`),
-    ],
-    8
-  );
+  const copyUsableInsights = uniqueStrings([...repeatedBenefits.map((keyword) => `후기에서 '${keyword}' 장점이 반복 확인됨`), ...purchaseSituations.map((situation) => `'${situation}' 구매·사용 상황이 확인됨`)], 8);
   const sampleConfidence = Math.min(1, texts.length / 12);
-  const countConfidence = params.reviewCount
-    ? Math.min(1, Math.log10(params.reviewCount + 1) / 2)
-    : 0;
+  const countConfidence = params.reviewCount ? Math.min(1, Math.log10(params.reviewCount + 1) / 2) : 0;
 
   return {
     reviewCount: params.reviewCount,

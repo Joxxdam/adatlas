@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  VIDEO_CONCEPT_ARCHETYPE_OPTIONS,
-  type VideoProject,
-} from "../../lib/video-collaboration/types";
+import { VIDEO_CONCEPT_ARCHETYPE_OPTIONS, type VideoProject } from "../../lib/video-collaboration/types";
 import { VIDEO_STATUS_LABELS } from "../../lib/video-collaboration/workflow";
 import styles from "./VideoPlanning.module.css";
 
@@ -103,17 +100,8 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         </div>
         <div className={styles.topActions}>
           <span className={styles.status}>{VIDEO_STATUS_LABELS[project.status]}</span>
-          {[
-            "production_requested",
-            "in_production",
-            "marketer_review",
-            "revision_requested",
-            "approved",
-          ].includes(project.status) ? (
-            <Link
-              className={styles.secondaryButton}
-              href={`/video-planning/${project.id}/production`}
-            >
+          {["production_requested", "in_production", "marketer_review", "revision_requested", "approved"].includes(project.status) ? (
+            <Link className={styles.secondaryButton} href={`/video-planning/${project.id}/production`}>
               제작·검수
             </Link>
           ) : null}
@@ -142,18 +130,11 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
           <small>{project.advertiserName}</small>
         </div>
         <div className={styles.productFactChips}>
-          {[...project.productAnalysis.coreUsps, ...project.productAnalysis.keyFeatures]
-            .slice(0, 4)
-            .map((fact) => (
-              <span key={fact}>{fact}</span>
-            ))}
+          {[...project.productAnalysis.coreUsps, ...project.productAnalysis.keyFeatures].slice(0, 4).map((fact, index) => (
+            <span key={`${index}-${fact}`}>{fact}</span>
+          ))}
         </div>
-        <a
-          className={styles.ghostButton}
-          href={project.productUrl}
-          rel="noreferrer"
-          target="_blank"
-        >
+        <a className={styles.ghostButton} href={project.productUrl} rel="noreferrer" target="_blank">
           상세페이지 보기
         </a>
       </section>
@@ -162,9 +143,7 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         <div className={styles.sectionHead}>
           <div>
             <h2>서로 다른 영상 콘셉트 4안</h2>
-            <p>
-              요약만 비교하고, 자세히 연 콘셉트에 대해서만 15개 이상의 자막·장면안을 생성합니다.
-            </p>
+            <p>요약만 비교하고, 자세히 연 콘셉트에 대해서만 15개 이상의 자막·장면안을 생성합니다.</p>
           </div>
           {!project.concepts.length ? (
             <button className={styles.primaryButton} disabled={busy} onClick={generate}>
@@ -184,9 +163,7 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         {project.concepts.length ? (
           <div className={styles.conceptGrid}>
             {project.concepts.map((concept) => {
-              const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(
-                (option) => option.id === concept.conceptArchetype
-              );
+              const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((option) => option.id === concept.conceptArchetype);
               const selected = project.selectedConceptId === concept.id;
               return (
                 <article className={styles.conceptCard} data-selected={selected} key={concept.id}>
@@ -219,28 +196,15 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
                     </div>
                     <div>
                       <dt>기존안과 차이</dt>
-                      <dd>
-                        {concept.differenceFromPrevious || "첫 사건과 화자 구성을 다르게 설계"}
-                      </dd>
+                      <dd>{concept.differenceFromPrevious || "첫 사건과 화자 구성을 다르게 설계"}</dd>
                     </div>
                   </dl>
-                  {concept.benefitAvailability === "insufficient" ? (
-                    <div className={styles.benefitWarning}>
-                      확인 가능한 혜택 정보가 부족합니다. 가격·구성·배송 정보를 추가해 주세요.
-                    </div>
-                  ) : null}
+                  {concept.benefitAvailability === "insufficient" ? <div className={styles.benefitWarning}>확인 가능한 혜택 정보가 부족합니다. 가격·구성·배송 정보를 추가해 주세요.</div> : null}
                   <div className={styles.conceptActions}>
-                    <Link
-                      className={styles.primaryButton}
-                      href={`/video-planning/${project.id}/concept/${concept.id}`}
-                    >
+                    <Link className={styles.primaryButton} href={`/video-planning/${project.id}/concept/${concept.id}`}>
                       자세히 보기
                     </Link>
-                    <button
-                      className={styles.secondaryButton}
-                      disabled={busy || selected}
-                      onClick={() => selectConcept(concept.id)}
-                    >
+                    <button className={styles.secondaryButton} disabled={busy || selected} onClick={() => selectConcept(concept.id)}>
                       {selected ? "선택 완료" : "이 콘셉트 선택"}
                     </button>
                   </div>

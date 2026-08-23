@@ -14,10 +14,6 @@ export function verifyAutoProductionAccess(request: Request, mutation = false) {
     mutation,
   });
   if (!trusted) {
-    throw new AutoProductionAccessError(
-      mutation
-        ? "자동 제작 변경 요청은 localhost 브라우저 또는 내부 자동 제작 토큰에서만 허용됩니다."
-        : "자동 제작 정보는 이 컴퓨터의 localhost에서만 확인할 수 있습니다."
-    );
+    throw new AutoProductionAccessError(mutation ? "자동 제작 변경 요청은 localhost 브라우저 또는 내부 자동 제작 토큰에서만 허용됩니다." : "자동 제작 정보는 이 컴퓨터의 localhost에서만 확인할 수 있습니다.");
   }
 }

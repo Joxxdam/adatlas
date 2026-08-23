@@ -1,10 +1,6 @@
 import type { CreativeIntensity, ProductImageRenderEffect } from "../mvp/types";
 
-export function buildProductTreatment(params: {
-  archetypeId: string;
-  intensity: CreativeIntensity;
-  colorHints?: string[];
-}): ProductImageRenderEffect {
+export function buildProductTreatment(params: { archetypeId: string; intensity: CreativeIntensity; colorHints?: string[] }): ProductImageRenderEffect {
   const hero = ["product-hero", "giant-hook", "price-event"].includes(params.archetypeId);
   const review = params.archetypeId === "community-review";
   const performance = params.intensity === "performance";
@@ -27,11 +23,7 @@ export function buildProductTreatment(params: {
     glowColor: accent,
     glowBlur: hero ? 28 : 18,
     productScale: hero ? 1.12 : review ? 0.94 : 1,
-    productOffsetX: ["problem-solution", "community-review", "lifestyle-context"].includes(
-      params.archetypeId
-    )
-      ? 70
-      : 0,
+    productOffsetX: ["problem-solution", "community-review", "lifestyle-context"].includes(params.archetypeId) ? 70 : 0,
     productOffsetY: hero ? 12 : 0,
     productRotation: params.archetypeId === "product-hero" ? -3 : 0,
   };

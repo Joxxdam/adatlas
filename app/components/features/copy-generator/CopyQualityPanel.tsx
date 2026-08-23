@@ -25,22 +25,17 @@ export function CopyQualityPanel(props: { report: CopyQualityReport; onTighten: 
         </div>
       </div>
       <div className={styles.scoreGrid}>
-        {(Object.entries(props.report.scores) as Array<[CopyQualityDimension, number]>).map(
-          ([key, score]) => (
-            <div className={styles.scoreItem} key={key}>
-              <span>{dimensionLabels[key]}</span>
-              <strong>{score}</strong>
-            </div>
-          )
-        )}
+        {(Object.entries(props.report.scores) as Array<[CopyQualityDimension, number]>).map(([key, score]) => (
+          <div className={styles.scoreItem} key={key}>
+            <span>{dimensionLabels[key]}</span>
+            <strong>{score}</strong>
+          </div>
+        ))}
       </div>
       {props.report.findings.length ? (
         <ul className={styles.findingList}>
           {props.report.findings.map((finding) => (
-            <li
-              className={`${styles.finding} ${finding.severity === "error" ? styles.findingError : ""}`}
-              key={finding.id}
-            >
+            <li className={`${styles.finding} ${finding.severity === "error" ? styles.findingError : ""}`} key={finding.id}>
               <strong>
                 {finding.slot ? `${finding.slot}: ` : ""}
                 {finding.message}

@@ -552,6 +552,11 @@
   color: #ffffff;
 }
 
+.productConfirmationActions button:first-child:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
 .productConfirmationActions button:last-child {
   background: #ffffff;
   color: #455b72;

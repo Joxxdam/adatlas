@@ -70,9 +70,7 @@ function summarizedResult(job: GenerationJob, result: GenerationResult) {
           passed: result.qa.creativePassed,
           score: result.qa.creativeScore,
           productAreaRatio: result.qa.productAreaRatio,
-          findings: result.qa.findings.filter(
-            (finding) => !["technical", "text-overflow"].includes(finding.dimension)
-          ),
+          findings: result.qa.findings.filter((finding) => !["technical", "text-overflow"].includes(finding.dimension)),
           designLockVerified: result.qa.designLockVerified,
         }
       : null,

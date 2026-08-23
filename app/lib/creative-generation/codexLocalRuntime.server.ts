@@ -16,24 +16,10 @@ const runtimeGlobal = globalThis as typeof globalThis & { [cacheKey]?: RuntimeCa
 const cache = runtimeGlobal[cacheKey] ?? {};
 runtimeGlobal[cacheKey] = cache;
 
-const paidApiEnvironmentKeys = new Set([
-  "OPENAI_API_KEY",
-  "CODEX_API_KEY",
-  "AZURE_OPENAI_API_KEY",
-  "OPENAI_BASE_URL",
-  "AZURE_OPENAI_ENDPOINT",
-  "OPENAI_ORGANIZATION",
-  "OPENAI_PROJECT",
-]);
+const paidApiEnvironmentKeys = new Set(["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY", "OPENAI_BASE_URL", "AZURE_OPENAI_ENDPOINT", "OPENAI_ORGANIZATION", "OPENAI_PROJECT"]);
 
 export function codexLocalEnvironment() {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      ([key, value]) =>
-        value !== undefined &&
-        !paidApiEnvironmentKeys.has(key)
-    )
-  ) as Record<string, string>;
+  return Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !paidApiEnvironmentKeys.has(key))) as Record<string, string>;
 }
 
 export function resolveCodexLocalExecutable() {
@@ -48,12 +34,7 @@ export function resolveCodexLocalExecutable() {
 
 export async function codexLocalAuthenticated(options: { force?: boolean } = {}) {
   const ttl = Math.max(30_000, Number(process.env.ADATLAS_CODEX_STATUS_TTL_MS || 5 * 60_000));
-  if (
-    !options.force &&
-    typeof cache.authenticated === "boolean" &&
-    cache.checkedAt &&
-    Date.now() - cache.checkedAt < ttl
-  ) {
+  if (!options.force && typeof cache.authenticated === "boolean" && cache.checkedAt && Date.now() - cache.checkedAt < ttl) {
     return cache.authenticated;
   }
   if (!options.force && cache.pending) return cache.pending;

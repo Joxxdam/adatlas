@@ -4,34 +4,13 @@ import { getOpenAIImageModel } from "../mvp/openaiImageClient.ts";
 import { OpenAISceneGenerationProvider } from "../image-generation/OpenAISceneGenerationProvider.ts";
 import { isPaidImageGenerationEnabled } from "../image-generation/SceneGenerationProvider.ts";
 import type { SceneGenerationProvider } from "../image-generation/SceneGenerationProvider.ts";
-import {
-  masterSceneCacheKey,
-  readCachedMasterScene,
-  saveMasterSceneArtifact,
-  writeMasterSceneFile,
-} from "./creativeCache.server.ts";
+import { masterSceneCacheKey, readCachedMasterScene, saveMasterSceneArtifact, writeMasterSceneFile } from "./creativeCache.server.ts";
 import { readCreativeRasterAsset } from "./assets.server.ts";
-import {
-  AI_BACKGROUND_PROMPT_VERSION,
-  AI_FULL_CREATIVE_PROMPT_VERSION,
-  buildAiBackgroundPrompt,
-  buildAiFullCreativePrompt,
-  buildMasterScenePrompt,
-  MASTER_SCENE_PROMPT_VERSION,
-} from "./promptBuilder.ts";
+import { AI_BACKGROUND_PROMPT_VERSION, AI_FULL_CREATIVE_PROMPT_VERSION, buildAiBackgroundPrompt, buildAiFullCreativePrompt, buildMasterScenePrompt, MASTER_SCENE_PROMPT_VERSION } from "./promptBuilder.ts";
 import { createProtectedProductComposite } from "./protectedProductCompositor.server.ts";
 import { evaluateProductIdentity } from "./productIdentityEvaluator.ts";
 import { evaluateMasterSceneCandidate } from "./sceneQualityEvaluator.ts";
-import type {
-  CreativeImageAsset,
-  MasterSceneArtifact,
-  MasterSceneCandidate,
-  MasterSceneGenerationMode,
-  MasterSceneSpec,
-  ProductReferenceProfile,
-  ProductTruth,
-  SceneAsset,
-} from "./types.ts";
+import type { CreativeImageAsset, MasterSceneArtifact, MasterSceneCandidate, MasterSceneGenerationMode, MasterSceneSpec, ProductReferenceProfile, ProductTruth, SceneAsset } from "./types.ts";
 
 function clampCandidates() {
   const value = Number(process.env.ADATLAS_MAX_SCENE_CANDIDATES || 3);
@@ -39,12 +18,7 @@ function clampCandidates() {
 }
 
 async function normalizedMasterBuffer(buffer: Buffer) {
-  return sharp(buffer)
-    .rotate()
-    .resize(1200, 1200, { fit: "cover", position: "centre" })
-    .removeAlpha()
-    .webp({ quality: 92, effort: 5 })
-    .toBuffer();
+  return sharp(buffer).rotate().resize(1200, 1200, { fit: "cover", position: "centre" }).removeAlpha().webp({ quality: 92, effort: 5 }).toBuffer();
 }
 
 function digest(buffer: Buffer) {
@@ -62,14 +36,7 @@ function candidateProvider(provider: string): MasterSceneCandidate["provider"] {
   return provider === "openai" ? "openai" : "library";
 }
 
-async function protectedCandidate(input: {
-  truth: ProductTruth;
-  profile: ProductReferenceProfile;
-  spec: MasterSceneSpec;
-  fallbackScene: SceneAsset;
-  cacheKey: string;
-  warning?: string;
-}) {
+async function protectedCandidate(input: { truth: ProductTruth; profile: ProductReferenceProfile; spec: MasterSceneSpec; fallbackScene: SceneAsset; cacheKey: string; warning?: string }) {
   const product = selectedProductImage(input.truth);
   const composited = await createProtectedProductComposite({
     backgroundPath: input.fallbackScene.file,
@@ -105,21 +72,11 @@ async function protectedCandidate(input: {
       selected: true,
       warning: input.warning,
     },
-    warnings: [
-      input.warning,
-      "실제 상품 사진을 유지하여 장면과 자연스럽게 결합했습니다.",
-      ...composited.repairs,
-    ].filter((value): value is string => Boolean(value)),
+    warnings: [input.warning, "실제 상품 사진을 유지하여 장면과 자연스럽게 결합했습니다.", ...composited.repairs].filter((value): value is string => Boolean(value)),
   };
 }
 
-async function realPhotoCandidate(input: {
-  truth: ProductTruth;
-  profile: ProductReferenceProfile;
-  spec: MasterSceneSpec;
-  fallbackScene: SceneAsset;
-  cacheKey: string;
-}) {
+async function realPhotoCandidate(input: { truth: ProductTruth; profile: ProductReferenceProfile; spec: MasterSceneSpec; fallbackScene: SceneAsset; cacheKey: string }) {
   const product = selectedProductImage(input.truth);
   const sceneIsCurrentProductPhoto = input.fallbackScene.sourceType === "product";
   if (product.role !== "product-lifestyle" || !sceneIsCurrentProductPhoto) {
@@ -129,14 +86,7 @@ async function realPhotoCandidate(input: {
   // Preserve the scene selected for this hook instead of silently reusing the
   // representative image for every result.
   const source = await readCreativeRasterAsset(input.fallbackScene.file);
-  const buffer = await sharp(source)
-    .rotate()
-    .resize(1200, 1200, { fit: "cover", position: "centre" })
-    .modulate({ brightness: 1.01, saturation: 1.04 })
-    .sharpen({ sigma: 0.55, m1: 0.35, m2: 0.8 })
-    .removeAlpha()
-    .webp({ quality: 94, effort: 5 })
-    .toBuffer();
+  const buffer = await sharp(source).rotate().resize(1200, 1200, { fit: "cover", position: "centre" }).modulate({ brightness: 1.01, saturation: 1.04 }).sharpen({ sigma: 0.55, m1: 0.35, m2: 0.8 }).removeAlpha().webp({ quality: 94, effort: 5 }).toBuffer();
   const identity = await evaluateProductIdentity({
     profile: input.profile,
     candidate: buffer,
@@ -165,22 +115,11 @@ async function realPhotoCandidate(input: {
       selected: true,
       warning: "실제 상세페이지 상품 사진을 1:1 광고 장면으로 보존했습니다.",
     },
-    warnings: [
-      "배경 제거 대신 실제 상품 사진 전체를 보존했습니다.",
-      "상품 색·표면 질감·판매 품목을 바꾸지 않고 광고 비율과 선명도만 조정했습니다.",
-    ],
+    warnings: ["배경 제거 대신 실제 상품 사진 전체를 보존했습니다.", "상품 색·표면 질감·판매 품목을 바꾸지 않고 광고 비율과 선명도만 조정했습니다."],
   };
 }
 
-export async function createOrReuseMasterScene(input: {
-  truth: ProductTruth;
-  profile: ProductReferenceProfile;
-  spec: MasterSceneSpec;
-  fallbackScene?: SceneAsset;
-  forceRevision?: boolean;
-  revision?: number;
-  provider?: SceneGenerationProvider;
-}): Promise<MasterSceneArtifact> {
+export async function createOrReuseMasterScene(input: { truth: ProductTruth; profile: ProductReferenceProfile; spec: MasterSceneSpec; fallbackScene?: SceneAsset; forceRevision?: boolean; revision?: number; provider?: SceneGenerationProvider }): Promise<MasterSceneArtifact> {
   // Legacy master-scene creation never opts into a paid provider implicitly.
   // A caller must inject an explicitly authorized provider from a separate paid UI.
   const provider = input.provider || new OpenAISceneGenerationProvider();
@@ -188,15 +127,9 @@ export async function createOrReuseMasterScene(input: {
   const requestedMode = input.spec.generationMode;
   const aiBackgroundOnly = requestedMode === "ai-background-composite";
   const aiFullCreative = requestedMode === "ai-reference-full-creative";
-  const promptVersion = aiFullCreative
-    ? AI_FULL_CREATIVE_PROMPT_VERSION
-    : aiBackgroundOnly
-      ? AI_BACKGROUND_PROMPT_VERSION
-      : MASTER_SCENE_PROMPT_VERSION;
+  const promptVersion = aiFullCreative ? AI_FULL_CREATIVE_PROMPT_VERSION : aiBackgroundOnly ? AI_BACKGROUND_PROMPT_VERSION : MASTER_SCENE_PROMPT_VERSION;
   if ((aiBackgroundOnly || aiFullCreative) && !paidConfigured) {
-    throw new Error(
-      "후킹별 AI 광고 콘텐츠 생성 설정이 필요합니다. OPENAI_API_KEY와 ADATLAS_IMAGE_GENERATION_ENABLED=true를 설정해 주세요. 기존 배경으로 대체하지 않습니다."
-    );
+    throw new Error("후킹별 AI 광고 콘텐츠 생성 설정이 필요합니다. OPENAI_API_KEY와 ADATLAS_IMAGE_GENERATION_ENABLED=true를 설정해 주세요. 기존 배경으로 대체하지 않습니다.");
   }
   const imageModel = paidConfigured ? getOpenAIImageModel() : "local-protected-composite-v1";
   const revision = input.forceRevision ? Math.max(1, input.revision || Date.now()) : Math.max(0, input.revision || 0);
@@ -229,10 +162,9 @@ export async function createOrReuseMasterScene(input: {
     | undefined;
 
   if (aiFullCreative) {
-    const referenceImageUrls = Array.from(new Set([
-      selectedProductImage(input.truth).path,
-      ...input.spec.referenceImageUrls,
-    ])).filter(Boolean).slice(0, 4);
+    const referenceImageUrls = Array.from(new Set([selectedProductImage(input.truth).path, ...input.spec.referenceImageUrls]))
+      .filter(Boolean)
+      .slice(0, 4);
     if (!referenceImageUrls.length) {
       throw new Error("AI 전체 콘텐츠 제작에 사용할 상세페이지 상품 레퍼런스가 없습니다.");
     }
@@ -262,16 +194,8 @@ export async function createOrReuseMasterScene(input: {
       generationMode: "ai-reference-full-creative",
       identity,
     });
-    if (
-      identity.brandMismatch ||
-      identity.severeDistortion ||
-      identity.humanArtifactDetected ||
-      identity.textArtifactDetected ||
-      identity.score < 55
-    ) {
-      throw new Error(
-        `AI 전체 콘텐츠가 상품 동일성 검사를 통과하지 못했습니다: ${identity.findings.join(" · ") || "상품 형태·라벨 확인 필요"}`
-      );
+    if (identity.brandMismatch || identity.severeDistortion || identity.humanArtifactDetected || identity.textArtifactDetected || identity.score < 55) {
+      throw new Error(`AI 전체 콘텐츠가 상품 동일성 검사를 통과하지 못했습니다: ${identity.findings.join(" · ") || "상품 형태·라벨 확인 필요"}`);
     }
     const file = await writeMasterSceneFile(cacheKey, buffer, "ai-full-creative");
     const candidate: MasterSceneCandidate = {
@@ -289,21 +213,10 @@ export async function createOrReuseMasterScene(input: {
       file,
       quality,
       productBounds: identity.productBounds || input.spec.productSafeZone,
-      estimatedProductAreaRatio: identity.estimatedProductAreaRatio || Number(
-        ((input.spec.productSafeZone.width * input.spec.productSafeZone.height * 0.72) / (1200 * 1200)).toFixed(4)
-      ),
+      estimatedProductAreaRatio: identity.estimatedProductAreaRatio || Number(((input.spec.productSafeZone.width * input.spec.productSafeZone.height * 0.72) / (1200 * 1200)).toFixed(4)),
       mode: "ai-reference-full-creative",
       provider: candidate.provider,
-      warnings: [
-        "상세페이지의 실제 상품·사용·질감 이미지를 참조해 이 후킹의 완성형 키비주얼 전체를 AI로 제작했습니다.",
-        "기존 배경 라이브러리와 배경 선택 기능은 사용하지 않았습니다.",
-        "상품 동일성 자동 검사를 통과한 뒤 정확한 한국어 카피와 원본 로고를 후처리했습니다.",
-        quality.copySafetyScore < 55
-          ? "AI 장면의 카피 영역이 복잡해 렌더 단계에서 가독성 보호 그라데이션을 자동 적용했습니다."
-          : undefined,
-        quality.productIdentityScore < 78 ? "상품 라벨과 세부 형태를 최종 화면에서 한 번 더 확인해 주세요." : undefined,
-        generated.warning,
-      ].filter((value): value is string => Boolean(value)),
+      warnings: ["상세페이지의 실제 상품·사용·질감 이미지를 참조해 이 후킹의 완성형 키비주얼 전체를 AI로 제작했습니다.", "기존 배경 라이브러리와 배경 선택 기능은 사용하지 않았습니다.", "상품 동일성 자동 검사를 통과한 뒤 정확한 한국어 카피와 원본 로고를 후처리했습니다.", quality.copySafetyScore < 55 ? "AI 장면의 카피 영역이 복잡해 렌더 단계에서 가독성 보호 그라데이션을 자동 적용했습니다." : undefined, quality.productIdentityScore < 78 ? "상품 라벨과 세부 형태를 최종 화면에서 한 번 더 확인해 주세요." : undefined, generated.warning].filter((value): value is string => Boolean(value)),
     };
   }
 
@@ -361,15 +274,7 @@ export async function createOrReuseMasterScene(input: {
       estimatedProductAreaRatio: 0,
       mode: "ai-background-composite",
       provider: candidate.provider,
-      warnings: [
-        "이 후킹만을 위해 AI 광고 장면을 새로 생성했습니다.",
-        "기존 배경 라이브러리는 사용하지 않았습니다.",
-        "검증된 실제 상품 누끼와 로고·한국어 문구는 렌더 단계에서 정확하게 합성합니다.",
-        quality.copySafetyScore < 55
-          ? "AI 장면의 카피 영역이 복잡해 렌더 단계에서 가독성 보호 그라데이션을 자동 적용했습니다."
-          : undefined,
-        generated.warning,
-      ].filter((value): value is string => Boolean(value)),
+      warnings: ["이 후킹만을 위해 AI 광고 장면을 새로 생성했습니다.", "기존 배경 라이브러리는 사용하지 않았습니다.", "검증된 실제 상품 누끼와 로고·한국어 문구는 렌더 단계에서 정확하게 합성합니다.", quality.copySafetyScore < 55 ? "AI 장면의 카피 영역이 복잡해 렌더 단계에서 가독성 보호 그라데이션을 자동 적용했습니다." : undefined, generated.warning].filter((value): value is string => Boolean(value)),
     };
   }
 
@@ -402,12 +307,7 @@ export async function createOrReuseMasterScene(input: {
     }
   }
 
-  const canGenerateFullScene =
-    !selected &&
-    paidConfigured &&
-    requestedMode !== "protected-product-composite" &&
-    requestedMode !== "library-fallback" &&
-    input.spec.referenceImageUrls.length > 0;
+  const canGenerateFullScene = !selected && paidConfigured && requestedMode !== "protected-product-composite" && requestedMode !== "library-fallback" && input.spec.referenceImageUrls.length > 0;
   if (canGenerateFullScene) {
     let retryFailures: string[] = [];
     for (let index = 0; index < clampCandidates(); index += 1) {
@@ -448,18 +348,13 @@ export async function createOrReuseMasterScene(input: {
         };
         candidates.push(candidate);
         retryFailures = quality.failures;
-        if (
-          quality.recommendation === "approve" &&
-          (!selected || quality.score > selected.quality.score)
-        ) {
+        if (quality.recommendation === "approve" && (!selected || quality.score > selected.quality.score)) {
           selected = {
             buffer,
             file,
             quality,
             productBounds: input.spec.productSafeZone,
-            estimatedProductAreaRatio: Number(
-              ((input.spec.productSafeZone.width * input.spec.productSafeZone.height * 0.58) / (1200 * 1200)).toFixed(4)
-            ),
+            estimatedProductAreaRatio: Number(((input.spec.productSafeZone.width * input.spec.productSafeZone.height * 0.58) / (1200 * 1200)).toFixed(4)),
             mode: requestedMode,
             provider: candidate.provider,
             warnings: generated.warning ? [generated.warning] : [],
@@ -475,11 +370,7 @@ export async function createOrReuseMasterScene(input: {
     if (!input.fallbackScene) {
       throw new Error("안전 합성에 사용할 장면이 없습니다.");
     }
-    const reason = canGenerateFullScene
-      ? "생성된 제품 모습을 자동 승인하기 어려워 실제 상품 사진을 유지했습니다."
-      : paidConfigured
-        ? "제품 레퍼런스가 부족해 실제 상품 사진을 유지했습니다."
-        : "이미지 생성 기능이 꺼져 있어 실제 상품 사진을 유지한 안전한 장면으로 제작했습니다.";
+    const reason = canGenerateFullScene ? "생성된 제품 모습을 자동 승인하기 어려워 실제 상품 사진을 유지했습니다." : paidConfigured ? "제품 레퍼런스가 부족해 실제 상품 사진을 유지했습니다." : "이미지 생성 기능이 꺼져 있어 실제 상품 사진을 유지한 안전한 장면으로 제작했습니다.";
     try {
       const protectedResult = await protectedCandidate({
         truth: input.truth,
@@ -501,9 +392,7 @@ export async function createOrReuseMasterScene(input: {
         warnings: protectedResult.warnings,
       };
     } catch (error) {
-      const background = await normalizedMasterBuffer(
-        await readCreativeRasterAsset(input.fallbackScene.file)
-      );
+      const background = await normalizedMasterBuffer(await readCreativeRasterAsset(input.fallbackScene.file));
       const identity = await evaluateProductIdentity({
         profile: input.profile,
         candidate: background,
@@ -525,10 +414,7 @@ export async function createOrReuseMasterScene(input: {
         estimatedProductAreaRatio: 0,
         mode: "library-fallback",
         provider: "library",
-        warnings: [
-          "실제 상품 사진 합성을 완료하지 못했습니다. 다른 상품 사진으로 다시 제작해주세요.",
-          error instanceof Error ? error.message : "보호 합성 실패",
-        ],
+        warnings: ["실제 상품 사진 합성을 완료하지 못했습니다. 다른 상품 사진으로 다시 제작해주세요.", error instanceof Error ? error.message : "보호 합성 실패"],
       };
       candidates.push({
         id: `candidate-library-${cacheKey.slice(0, 12)}`,
@@ -542,9 +428,7 @@ export async function createOrReuseMasterScene(input: {
     }
   }
 
-  const selectedCandidate = candidates.find(
-    (candidate) => candidate.file === selected!.file && candidate.generationMode === selected!.mode
-  );
+  const selectedCandidate = candidates.find((candidate) => candidate.file === selected!.file && candidate.generationMode === selected!.mode);
   candidates.forEach((candidate) => {
     candidate.selected = candidate === selectedCandidate;
   });
@@ -556,17 +440,11 @@ export async function createOrReuseMasterScene(input: {
     productReferenceProfileId: input.profile.id,
     generationMode: selected.mode,
     requestedGenerationMode: requestedMode,
-    includesProduct:
-      selected.mode !== "library-fallback" &&
-      selected.mode !== "ai-background-composite",
+    includesProduct: selected.mode !== "library-fallback" && selected.mode !== "ai-background-composite",
     provider: selected.provider,
     imageModel,
     generationPromptVersion: promptVersion,
-    referenceImageIds: aiBackgroundOnly
-      ? []
-      : input.profile.referenceImages
-          .filter((image) => input.spec.referenceImageUrls.includes(image.url))
-          .map((image) => image.id),
+    referenceImageIds: aiBackgroundOnly ? [] : input.profile.referenceImages.filter((image) => input.spec.referenceImageUrls.includes(image.url)).map((image) => image.id),
     sceneSpec: { ...input.spec, generationMode: selected.mode },
     sceneQualityResult: selected.quality,
     candidates,
@@ -575,10 +453,7 @@ export async function createOrReuseMasterScene(input: {
     estimatedProductAreaRatio: selected.estimatedProductAreaRatio,
     productBounds: selected.productBounds,
     reused: false,
-    requiresProductReview: aiBackgroundOnly
-      ? false
-      : selected.quality.recommendation !== "approve" ||
-        selected.quality.productIdentityScore < 78,
+    requiresProductReview: aiBackgroundOnly ? false : selected.quality.recommendation !== "approve" || selected.quality.productIdentityScore < 78,
     warnings: selected.warnings,
     createdAt: new Date().toISOString(),
   };

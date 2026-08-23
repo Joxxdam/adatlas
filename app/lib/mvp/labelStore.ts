@@ -1,25 +1,22 @@
 import { AdImageLabel } from "./types";
 import { JsonArrayRepository } from "./jsonRepository";
 
-const labelRepository = new JsonArrayRepository<AdImageLabel>(
-  "data/ad-image-labels.json",
-  (label) => ({
-    ...label,
-    category: label.category ?? label.finalLabel?.category ?? "",
-    aiDraft: {
-      ...label.aiDraft,
-      category: label.aiDraft?.category ?? label.finalLabel?.category ?? label.category ?? "",
-    },
-    finalLabel: {
-      ...label.finalLabel,
-      category: label.finalLabel?.category ?? label.category ?? "",
-    },
-    structuredLabels: label.structuredLabels || {
-      hookTypes: label.finalLabel?.hookType ? [label.finalLabel.hookType] : [],
-      appealPoints: label.finalLabel?.appealPoint ? [label.finalLabel.appealPoint] : [],
-    },
-  })
-);
+const labelRepository = new JsonArrayRepository<AdImageLabel>("data/ad-image-labels.json", (label) => ({
+  ...label,
+  category: label.category ?? label.finalLabel?.category ?? "",
+  aiDraft: {
+    ...label.aiDraft,
+    category: label.aiDraft?.category ?? label.finalLabel?.category ?? label.category ?? "",
+  },
+  finalLabel: {
+    ...label.finalLabel,
+    category: label.finalLabel?.category ?? label.category ?? "",
+  },
+  structuredLabels: label.structuredLabels || {
+    hookTypes: label.finalLabel?.hookType ? [label.finalLabel.hookType] : [],
+    appealPoints: label.finalLabel?.appealPoint ? [label.finalLabel.appealPoint] : [],
+  },
+}));
 
 export async function readAdImageLabels() {
   return labelRepository.read();

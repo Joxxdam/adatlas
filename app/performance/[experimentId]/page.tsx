@@ -5,15 +5,9 @@ import { metaRepository } from "../../lib/meta/repository.server";
 
 export const dynamic = "force-dynamic";
 
-export default async function PerformanceDetailPage({
-  params,
-}: {
-  params: Promise<{ experimentId: string }>;
-}) {
+export default async function PerformanceDetailPage({ params }: { params: Promise<{ experimentId: string }> }) {
   const { experimentId } = await params;
-  const experiment = (await metaRepository.read()).performance.find(
-    (item) => item.id === experimentId
-  );
+  const experiment = (await metaRepository.read()).performance.find((item) => item.id === experimentId);
   if (!experiment) notFound();
   return (
     <FeaturePageShell activeFeature="performance">

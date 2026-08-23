@@ -3,23 +3,11 @@ import { randomInt } from "node:crypto";
 import path from "node:path";
 import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
-import {
-  defaultCompositionTypes,
-  pickCompatibleRandomItems,
-  scoreReferenceCompatibility,
-  type ProductReferenceCompatibilityProfile,
-} from "./referenceSelection";
+import { defaultCompositionTypes, pickCompatibleRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import {
-  normalizeNativeReferenceCompatibility,
-  type ManagedNativeReferenceItem,
-  type NativeReferenceProductForm,
-} from "./referenceLibraryManagement";
+import { normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
-export type NativeReferenceCategoryGroup =
-  | "fashion"
-  | "food"
-  | "beauty";
+export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
 
 export type NativeAdReference = {
   id: string;
@@ -28,6 +16,7 @@ export type NativeAdReference = {
   sourceFile: string;
   layoutFamily: string;
   categoryGroup: NativeReferenceCategoryGroup;
+  foodSubcategory?: NativeReferenceFoodSubcategory;
   categoryLabel: string;
   selectionReason: string;
   productForm?: ManagedNativeReferenceItem["productForm"];
@@ -39,14 +28,12 @@ export type NativeAdReference = {
   compatibilityConfidence?: ManagedNativeReferenceItem["compatibilityConfidence"];
 };
 
+type ReferenceSelectionJob = Pick<GenerationJob, "productTruth" | "referenceCategoryOverride">;
+
 const publicRoot = path.resolve(/* turbopackIgnore: true */ process.cwd(), "public");
 
 function categoryGroupFromOrdinal(ordinal: number): NativeReferenceCategoryGroup {
-  if (
-    [2, 4, 7, 9, 44].includes(ordinal) ||
-    (ordinal >= 11 && ordinal <= 36) ||
-    (ordinal >= 50 && ordinal <= 66)
-  ) return "food";
+  if ([2, 4, 7, 9, 44].includes(ordinal) || (ordinal >= 11 && ordinal <= 36) || (ordinal >= 50 && ordinal <= 66)) return "food";
   return "beauty";
 }
 
@@ -59,10 +46,12 @@ function normalizeCategoryGroup(value: string | undefined, ordinal: number): Nat
 // Next 개발 서버가 JSON import를 캐시한 상태에서도 새 카테고리 정책이 즉시
 // 적용되도록 검수된 순번 분류를 fallback으로 사용한다.
 function readReferenceItems() {
-  return readNativeReferenceManifestSync().items.map((item) => normalizeNativeReferenceCompatibility({
+  return readNativeReferenceManifestSync().items.map((item) =>
+    normalizeNativeReferenceCompatibility({
       ...item,
       categoryGroup: normalizeCategoryGroup(item.categoryGroup, item.ordinal),
-    }));
+    })
+  );
 }
 
 function stableHash(value: string) {
@@ -74,10 +63,7 @@ function stableHash(value: string) {
   return hash >>> 0;
 }
 
-function toNativeAdReference(
-  selected: ManagedNativeReferenceItem,
-  selectionReason: string
-): NativeAdReference {
+function toNativeAdReference(selected: ManagedNativeReferenceItem, selectionReason: string): NativeAdReference {
   const publicPath = selected.publicPath;
   return {
     id: selected.id,
@@ -86,6 +72,7 @@ function toNativeAdReference(
     sourceFile: selected.sourceFile,
     layoutFamily: selected.layoutFamily,
     categoryGroup: selected.categoryGroup as NativeReferenceCategoryGroup,
+    foodSubcategory: selected.foodSubcategory,
     categoryLabel: categoryLabel(selected.categoryGroup as NativeReferenceCategoryGroup),
     selectionReason,
     productForm: selected.productForm,
@@ -104,34 +91,24 @@ function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
   return "화장품";
 }
 
-export function resolveNativeReferenceCategoryGroup(
-  job: Pick<GenerationJob, "productTruth">
-): NativeReferenceCategoryGroup {
+export function resolveNativeReferenceCategoryGroup(job: ReferenceSelectionJob): NativeReferenceCategoryGroup {
+  if (job.referenceCategoryOverride === "fashion") return "fashion";
+  if (job.referenceCategoryOverride === "food" || job.referenceCategoryOverride === "food-produce") return "food";
+  if (job.referenceCategoryOverride === "beauty") return "beauty";
   const category = resolveCategoryCreativeProfile(job.productTruth).category;
   if (category.startsWith("food_")) return "food";
   if (category === "fashion") return "fashion";
   return "beauty";
 }
 
-const packagedForms = new Set<NativeReferenceProductForm>([
-  "bottle", "tube", "pouch", "box", "tray", "jar", "can", "bundle", "universal-packshot",
-]);
+const packagedForms = new Set<NativeReferenceProductForm>(["bottle", "tube", "pouch", "box", "tray", "jar", "can", "bundle", "universal-packshot"]);
 
-function resolveProductForm(job: Pick<GenerationJob, "productTruth">): NativeReferenceProductForm {
+function resolveProductForm(job: ReferenceSelectionJob, categoryGroup: NativeReferenceCategoryGroup, foodSubcategory?: NativeReferenceFoodSubcategory): NativeReferenceProductForm {
   const truth = job.productTruth;
-  const categoryGroup = resolveNativeReferenceCategoryGroup(job);
-  const text = [
-    truth.normalized.cleanProductName,
-    truth.normalized.rawProductTitle,
-    truth.normalized.category,
-    truth.normalized.quantity,
-    truth.normalized.composition,
-    truth.normalized.packageOrOption,
-    truth.product.productName,
-  ].filter(Boolean).join(" ").toLowerCase();
+  const text = [truth.normalized.cleanProductName, truth.normalized.rawProductTitle, truth.normalized.category, truth.normalized.quantity, truth.normalized.composition, truth.normalized.packageOrOption, truth.product.productName].filter(Boolean).join(" ").toLowerCase();
   if (categoryGroup === "fashion") return "fashion-item";
-  if (/스테이크|등심|안심|갈비|삼겹|목살|한우|소고기|돼지고기|육류|meat|beef|pork/.test(text)) return "meat-cut";
-  if (/과일|채소|농산|수산|생물|원물|produce|fruit|vegetable/.test(text)) return "produce";
+  if (categoryGroup === "food" && /스테이크|등심|안심|갈비|삼겹|목살|한우|소고기|돼지고기|육류|meat|beef|pork/.test(text)) return "meat-cut";
+  if (foodSubcategory) return "produce";
   if (/캔|can\b/.test(text)) return "can";
   if (/튜브|tube/.test(text)) return "tube";
   if (/파우치|봉지|팩(?:\s|$|\d)|분말|즙|pouch|sachet/.test(text)) return "pouch";
@@ -144,25 +121,33 @@ function resolveProductForm(job: Pick<GenerationJob, "productTruth">): NativeRef
   return "universal-packshot";
 }
 
-function resolveProductCount(job: Pick<GenerationJob, "productTruth">) {
-  const text = [
-    job.productTruth.normalized.quantity,
-    job.productTruth.normalized.composition,
-    job.productTruth.normalized.packageOrOption,
-  ].filter(Boolean).join(" ");
+export function resolveNativeReferenceFoodSubcategory(job: ReferenceSelectionJob): NativeReferenceFoodSubcategory | undefined {
+  if (job.referenceCategoryOverride === "food-produce") return "produce-agriculture";
+  // 사용자가 일반 식품이나 다른 대분류를 직접 골랐다면 자동 과일 판정을 덮어씁니다.
+  if (job.referenceCategoryOverride) return undefined;
+  const truth = job.productTruth;
+  const identityText = [truth.product.category, truth.product.productSubCategory, truth.product.detectedProductType, truth.product.productName, truth.normalized.category, truth.normalized.cleanProductName, truth.normalized.rawProductTitle].filter(Boolean).join(" ").toLowerCase();
+  const isProcessedFood = /주스|과즙|즙(?:\s|$|팩)|잼|청(?:\s|$)|말랭이|건조|분말|스낵|과자|음료|우유|요거트|소스|냉동|통조림|가공|젤리|juice|jam|snack|drink|milk|powder/.test(identityText);
+  const hasProduceIdentity = /농산|청과|과채|과일|채소|사과|복숭아|자두|포도|수박|배(?:\s|$)|감귤|귤(?:\s|$)|오렌지|레몬|라임|딸기|멜론|참외|토마토|고구마|감자|양파|마늘|버섯|옥수수|산지직송|제철|생과|produce|fruit|vegetable/.test(identityText);
+  const isFreshProfile = resolveCategoryCreativeProfile(truth).category === "food_fresh";
+  return !isProcessedFood && (hasProduceIdentity || isFreshProfile) ? "produce-agriculture" : undefined;
+}
+
+function resolveProductCount(job: ReferenceSelectionJob) {
+  const text = [job.productTruth.normalized.quantity, job.productTruth.normalized.composition, job.productTruth.normalized.packageOrOption].filter(Boolean).join(" ");
   const match = text.match(/(?:^|\s)([2-6])\s*(?:개|병|캔|팩|박스|세트|입)(?:\s|$)/);
   return match ? Number(match[1]) : 1;
 }
 
-export function buildProductReferenceCompatibilityProfile(
-  job: Pick<GenerationJob, "productTruth">
-): ProductReferenceCompatibilityProfile {
+export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectionJob): ProductReferenceCompatibilityProfile {
   const categoryGroup = resolveNativeReferenceCategoryGroup(job);
-  const productForm = resolveProductForm(job);
+  const foodSubcategory = resolveNativeReferenceFoodSubcategory(job);
+  const productForm = resolveProductForm(job, categoryGroup, foodSubcategory);
   const packagedProduct = packagedForms.has(productForm);
   const naturalFood = categoryGroup === "food" && ["meat-cut", "natural-food", "produce"].includes(productForm);
   const profile: ProductReferenceCompatibilityProfile = {
     categoryGroup,
+    foodSubcategory,
     productForm,
     productCount: resolveProductCount(job),
     packagedProduct,
@@ -180,21 +165,13 @@ export function buildProductReferenceCompatibilityProfile(
  * 선택 결과는 GenerationJob에 저장되므로 새로고침·재시도·서버 복구 시에는
  * 다시 추첨하지 않고 같은 디자인을 이어서 편집한다.
  */
-export function selectCategoryNativeAdReferences(
-  job: Pick<GenerationJob, "productTruth">,
-  count = 6,
-  nextIndex: (maxExclusive: number) => number = randomInt
-): NativeAdReference[] {
+export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, count = 6, nextIndex: (maxExclusive: number) => number = randomInt): NativeAdReference[] {
   const profile = buildProductReferenceCompatibilityProfile(job);
   const categoryGroup = profile.categoryGroup;
-  const categoryName = categoryLabel(categoryGroup);
+  const categoryName = profile.foodSubcategory ? `${categoryLabel(categoryGroup)} > 과일/농산물` : categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
-  return pickCompatibleRandomItems(referenceItems, count, profile, nextIndex).map((candidate, index) =>
-    toNativeAdReference(
-      candidate.item,
-      `${categoryName} · ${profile.productForm} 호환 후보에서 ${index + 1}번째 레퍼런스로 무작위 선택했습니다(호환 점수 ${candidate.score}: ${candidate.reasons.join(", ")}). 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`
-    )
-  );
+  const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
+  return pickCompatibleRandomItems(referenceItems, count, profile, nextIndex).map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${categoryName} · ${profile.productForm} 호환 후보에서 ${index + 1}번째 레퍼런스로 무작위 선택했습니다(호환 점수 ${candidate.score}: ${candidate.reasons.join(", ")}). 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */
@@ -207,11 +184,9 @@ export function selectNativeAdReference(job: GenerationJob, result: GenerationRe
     .filter((candidate) => candidate.score >= 60)
     .sort((left, right) => right.score - left.score);
   if (!compatible.length) {
-    throw new Error(`${categoryLabel(profile.categoryGroup)} · ${profile.productForm} 상품과 호환되는 복구용 레퍼런스가 없습니다.`);
+    const categoryName = profile.foodSubcategory ? `${categoryLabel(profile.categoryGroup)} > 과일/농산물` : categoryLabel(profile.categoryGroup);
+    throw new Error(`${categoryName} · ${profile.productForm} 상품과 호환되는 복구용 레퍼런스가 없습니다.`);
   }
   const selected = compatible[stableHash(`${job.id}:${job.productTruth.productId}:${result.id}`) % compatible.length];
-  return toNativeAdReference(
-    selected.item,
-    `과거 작업 복구를 위해 ${categoryLabel(profile.categoryGroup)} · ${profile.productForm} 호환 풀에서 결정적으로 선택했습니다(호환 점수 ${selected.score}).`
-  );
+  return toNativeAdReference(selected.item, `과거 작업 복구를 위해 ${profile.foodSubcategory ? `${categoryLabel(profile.categoryGroup)} > 과일/농산물` : categoryLabel(profile.categoryGroup)} · ${profile.productForm} 호환 풀에서 결정적으로 선택했습니다(호환 점수 ${selected.score}).`);
 }

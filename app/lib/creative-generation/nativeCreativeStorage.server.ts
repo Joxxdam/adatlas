@@ -43,6 +43,9 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
     ["ingredient", 380],
     ["product-detail", 350],
   ]);
+  const truthSources = job.productTruth.imageAssets
+    .filter((asset) => asset.role !== "ad-reference" && asset.role !== "product-cutout" && asset.verified)
+    .filter((asset) => !/\/(?:processed-products|product-cutouts)\//i.test(asset.path));
   const profileSources: CreativeImageAsset[] = (job.productReferenceProfile?.referenceImages || [])
     .filter((image) => image.usableForGeneration && !image.duplicateOf && !image.watermarkRisk)
     // Text-heavy square/detail images are often finished ads or promotional
@@ -55,37 +58,36 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
     .map((image) => ({
       id: image.id,
       path: image.url,
-      role: image.role === "lifestyle" || image.role === "usage" || image.role === "worn" || image.role === "cooked" ? "product-lifestyle" as const : image.role === "product-detail" || image.role === "texture" || image.role === "ingredient" ? "detail-image" as const : "product-packshot" as const,
+      role: image.role === "lifestyle" || image.role === "usage" || image.role === "worn" || image.role === "cooked" ? ("product-lifestyle" as const) : image.role === "product-detail" || image.role === "texture" || image.role === "ingredient" ? ("detail-image" as const) : ("product-packshot" as const),
       source: "product-page" as const,
       verified: true,
       reason: image.description,
       validationStatus: "confirmed" as const,
     }));
-  const unique = [...profileSources, ...job.productTruth.imageAssets, ...job.productTruth.referenceImages]
-    .filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index);
-  const originals = unique.filter(
-    (asset) =>
-      asset.role !== "product-cutout" &&
-      !/\/(?:processed-products|product-cutouts)\//i.test(asset.path)
-  );
+  // imageAssets의 순서는 사용자가 확인한 대표 이미지 우선순위다. 상세페이지
+  // 분석기가 긴 배송/고시 이미지를 front-package로 오인하더라도 그 결과가
+  // 실제 대표 상품 이미지를 밀어내지 못하게 한다.
+  const unique = [...truthSources, ...profileSources, ...job.productTruth.referenceImages].filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index);
+  const originals = unique.filter((asset) => asset.role !== "product-cutout" && !/\/(?:processed-products|product-cutouts)\//i.test(asset.path));
   const productScore = (asset: CreativeImageAsset) => {
     if (asset.role === "product-packshot") return 500;
     if (asset.role === "product-lifestyle") return 420;
     if (asset.role === "detail-image") return 340;
     return 0;
   };
-  const productSources = originals
-    .filter((asset) => asset.role !== "ad-reference" && asset.verified)
-    .sort((left, right) => productScore(right) - productScore(left));
-  const primary = productSources[0];
+  const productSources = originals.filter((asset) => asset.role !== "ad-reference" && asset.verified).sort((left, right) => productScore(right) - productScore(left));
+  const primary = truthSources.find((asset) => productSources.some((candidate) => candidate.path === asset.path)) || productSources[0];
   if (!primary) return [];
-  const supporting = productSources
-    .filter((asset) => asset.path !== primary.path)
-    .sort((left, right) => {
-      const roleBonus = (asset: CreativeImageAsset) => asset.role === "product-lifestyle" ? 30 : asset.role === "detail-image" ? 20 : 0;
+  const sortSupporting = (assets: CreativeImageAsset[]) =>
+    assets.sort((left, right) => {
+      const roleBonus = (asset: CreativeImageAsset) => (asset.role === "product-lifestyle" ? 30 : asset.role === "detail-image" ? 20 : 0);
       return productScore(right) + roleBonus(right) - productScore(left) - roleBonus(left);
-    })
-    .slice(0, 4);
+    });
+  const truthPaths = new Set(truthSources.map((asset) => asset.path));
+  const supporting = [
+    ...sortSupporting(productSources.filter((asset) => asset.path !== primary.path && truthPaths.has(asset.path))),
+    ...sortSupporting(productSources.filter((asset) => asset.path !== primary.path && !truthPaths.has(asset.path))),
+  ].slice(0, 4);
   // This function prepares only authoritative product evidence. A curated ad
   // reference is selected separately and is attached only while recreating
   // its macro structure; it never replaces ProductTruth evidence.
@@ -119,13 +121,7 @@ export async function optimizeNativeFinalImage(inputFile: string, outputFile: st
   let final: Buffer | undefined;
   let selectedQuality = 65;
   for (const quality of [90, 88, 85, 82, 78, 74, 70, 65]) {
-    const candidate = await sharp(source)
-      .rotate()
-      .resize(1200, 1200, { fit: "cover", position: "centre" })
-      .toColorspace("srgb")
-      .flatten({ background: "#ffffff" })
-      .jpeg({ quality, progressive: true, mozjpeg: true, chromaSubsampling: "4:2:0" })
-      .toBuffer();
+    const candidate = await sharp(source).rotate().resize(1200, 1200, { fit: "cover", position: "centre" }).toColorspace("srgb").flatten({ background: "#ffffff" }).jpeg({ quality, progressive: true, mozjpeg: true, chromaSubsampling: "4:2:0" }).toBuffer();
     final = candidate;
     selectedQuality = quality;
     if (candidate.length <= TARGET_BYTES) break;
@@ -136,19 +132,27 @@ export async function optimizeNativeFinalImage(inputFile: string, outputFile: st
   const temporary = `${outputFile}.${process.pid}.tmp`;
   await writeFile(temporary, final);
   await rename(temporary, outputFile);
-  return { file: outputFile, bytes: final.length, width: 1200 as const, height: 1200 as const, format: "jpeg" as const, quality: selectedQuality, colorSpace: "srgb" as const };
+  return {
+    file: outputFile,
+    bytes: final.length,
+    width: 1200 as const,
+    height: 1200 as const,
+    format: "jpeg" as const,
+    quality: selectedQuality,
+    colorSpace: "srgb" as const,
+  };
 }
 
 export async function createNativeContactSheet(job: GenerationJob) {
-  const entries = job.results
-    .filter((result) => result.nativeCreative?.finalPath && ["success", "approved"].includes(result.status))
-    .slice(0, 6);
+  const entries = job.results.filter((result) => result.nativeCreative?.finalPath && ["success", "approved"].includes(result.status)).slice(0, 6);
   if (entries.length !== 6) throw new Error("그룹 검수에는 검증된 광고 6장이 필요합니다.");
   const tileSize = 400;
-  const composites = await Promise.all(entries.map(async (result, index) => {
-    const input = await sharp(result.nativeCreative!.finalPath!).resize(tileSize, tileSize, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
-    return { input, left: (index % 3) * tileSize, top: Math.floor(index / 3) * tileSize };
-  }));
+  const composites = await Promise.all(
+    entries.map(async (result, index) => {
+      const input = await sharp(result.nativeCreative!.finalPath!).resize(tileSize, tileSize, { fit: "cover" }).jpeg({ quality: 82 }).toBuffer();
+      return { input, left: (index % 3) * tileSize, top: Math.floor(index / 3) * tileSize };
+    })
+  );
   const directory = path.join(nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id), "qa");
   const file = path.join(directory, `group-contact-sheet-${Date.now()}.jpg`);
   await mkdir(directory, { recursive: true });
@@ -178,15 +182,18 @@ async function writeNativeJobArtifacts(job: GenerationJob, brandMemory?: PromptB
       unverifiedClaims: job.productTruth.unverifiedClaims,
       referenceImages: [...job.productTruth.referenceImages, ...job.productTruth.imageAssets],
     }),
-    atomicJson(path.join(directory, "hook-hypotheses.json"), job.results.map((result) => ({
-      hookId: result.hookPlan.hookCode,
-      hypothesisId: result.hookPlan.creativeBrief?.hypothesisId || result.hookPlan.id,
-      hypothesis: result.hookPlan.hypothesis,
-      mainHook: result.hookPlan.headline,
-      subCopy: result.hookPlan.body,
-      selectionReason: result.hookPlan.selectionReason,
-      factIds: result.hookPlan.factIds,
-    }))),
+    atomicJson(
+      path.join(directory, "hook-hypotheses.json"),
+      job.results.map((result) => ({
+        hookId: result.hookPlan.hookCode,
+        hypothesisId: result.hookPlan.creativeBrief?.hypothesisId || result.hookPlan.id,
+        hypothesis: result.hookPlan.hypothesis,
+        mainHook: result.hookPlan.headline,
+        subCopy: result.hookPlan.body,
+        selectionReason: result.hookPlan.selectionReason,
+        factIds: result.hookPlan.factIds,
+      }))
+    ),
     atomicJson(path.join(directory, "diversity-matrix.json"), job.visualDiversityMatrix || []),
     ...job.results.flatMap((result) => {
       const hookDirectory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, result.hookPlan.hookCode);
@@ -199,7 +206,7 @@ async function writeNativeJobArtifacts(job: GenerationJob, brandMemory?: PromptB
               stage: "reference-copy",
               source: result.nativeCreative?.adReference,
               output: result.nativeCreative?.stagePaths?.structurePath || "01-structure.[source-extension]",
-              operation: "byte-for-byte copy; no provider.generate call",
+              operation: "byte-for-byte copy; no image session generate call",
             },
             {
               stage: "product-replacement",
@@ -236,56 +243,65 @@ export async function writeNativeManifest(job: GenerationJob, brandMemory?: Prom
   const file = path.join(nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id), "manifest.json");
   await mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, `${JSON.stringify({
-    version: "native-creative-manifest-v2",
-    jobId: job.id,
-    advertiserId: job.advertiserId,
-    advertiserName: job.advertiserName,
-    engine: job.engine,
-    paidApiUsed: job.paidApiUsed,
-    codexThreadId: job.codexThreadId,
-    productId: job.productTruth.productId,
-    productUrl: job.productTruth.product.landingUrl,
-    productName: job.productTruth.product.productName,
-    generatedAt: job.createdAt,
-    visualDiversityMatrix: job.visualDiversityMatrix,
-    results: job.results.map((result) => ({
-      id: result.id,
-      hookId: result.hookPlan.hookCode,
-      creativeCode: result.creativeAsset?.assetCode,
-      mainHook: result.hookPlan.headline,
-      subCopy: result.hookPlan.body,
-      visualConcept: job.visualDiversityMatrix?.find((entry) => entry.hookCode === result.hookPlan.hookCode),
-      adReference: result.nativeCreative?.adReference,
-      stagePaths: result.nativeCreative?.stagePaths,
-      referenceImages: result.nativeCreative?.referencePaths || [...job.productTruth.referenceImages, ...job.productTruth.imageAssets].map((asset) => asset.path),
-      generationEngine: result.nativeCreative?.engine || job.engine,
-      revisionCount: result.nativeCreative?.revisionCount || 0,
-      koreanTextVerified: (result.nativeCreative?.validation?.koreanTextAccuracy || 0) >= 95,
-      productIdentityVerified: (result.nativeCreative?.validation?.productIdentity || 0) >= 80,
-      hookAlignmentVerified: (result.nativeCreative?.validation?.hookAlignment || 0) >= 80,
-      width: result.nativeCreative?.export?.width,
-      height: result.nativeCreative?.export?.height,
-      fileSizeBytes: result.nativeCreative?.export?.fileSizeBytes,
-      jpegQuality: result.nativeCreative?.export?.jpegQuality,
-      colorSpace: result.nativeCreative?.export?.colorSpace,
-      finalImagePath: result.imagePath,
-      scores: result.nativeCreative?.validation,
-      status: result.status,
-      failureReasons: result.nativeCreative?.validation?.failures || (result.error ? [result.error] : []),
-      nativeCreative: result.nativeCreative,
-      creativeAsset: result.creativeAsset,
-    })),
-    updatedAt: new Date().toISOString(),
-  }, null, 2)}\n`, "utf8");
+  await writeFile(
+    temporary,
+    `${JSON.stringify(
+      {
+        version: "native-creative-manifest-v2",
+        jobId: job.id,
+        advertiserId: job.advertiserId,
+        advertiserName: job.advertiserName,
+        engine: job.engine,
+        paidApiUsed: job.paidApiUsed,
+        productId: job.productTruth.productId,
+        productUrl: job.productTruth.product.landingUrl,
+        productName: job.productTruth.product.productName,
+        generatedAt: job.createdAt,
+        visualDiversityMatrix: job.visualDiversityMatrix,
+        results: job.results.map((result) => ({
+          id: result.id,
+          hookId: result.hookPlan.hookCode,
+          creativeCode: result.creativeAsset?.assetCode,
+          mainHook: result.hookPlan.headline,
+          subCopy: result.hookPlan.body,
+          visualConcept: job.visualDiversityMatrix?.find((entry) => entry.hookCode === result.hookPlan.hookCode),
+          adReference: result.nativeCreative?.adReference,
+          stagePaths: result.nativeCreative?.stagePaths,
+          referenceImages: result.nativeCreative?.referencePaths || [...job.productTruth.referenceImages, ...job.productTruth.imageAssets].map((asset) => asset.path),
+          generationEngine: result.nativeCreative?.engine || job.engine,
+          revisionCount: result.nativeCreative?.revisionCount || 0,
+          koreanTextVerified: (result.nativeCreative?.validation?.koreanTextAccuracy || 0) >= 95,
+          productIdentityVerified: (result.nativeCreative?.validation?.productIdentity || 0) >= 80,
+          hookAlignmentVerified: (result.nativeCreative?.validation?.hookAlignment || 0) >= 80,
+          width: result.nativeCreative?.export?.width,
+          height: result.nativeCreative?.export?.height,
+          fileSizeBytes: result.nativeCreative?.export?.fileSizeBytes,
+          jpegQuality: result.nativeCreative?.export?.jpegQuality,
+          colorSpace: result.nativeCreative?.export?.colorSpace,
+          finalImagePath: result.imagePath,
+          scores: result.nativeCreative?.validation,
+          status: result.status,
+          failureReasons: result.nativeCreative?.validation?.failures || (result.error ? [result.error] : []),
+          nativeCreative: result.nativeCreative,
+          creativeAsset: result.creativeAsset,
+        })),
+        updatedAt: new Date().toISOString(),
+      },
+      null,
+      2
+    )}\n`,
+    "utf8"
+  );
   await rename(temporary, file);
 }
 
-export function resolveValidatedNativeDownload(job: GenerationJob, resultId: string) {
+function resolveValidatedNativeFile(job: GenerationJob, resultId: string, preferDeliveryBranding: boolean) {
   const result = job.results.find((item) => item.id === resultId);
   const expected = nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id);
   const legacyExpected = path.join(LEGACY_GENERATED_ROOT, segment(job.advertiserId || "unknown-advertiser"), segment(job.id));
-  let file = result?.nativeCreative?.finalPath ? path.resolve(result.nativeCreative.finalPath) : "";
+  const original = result?.nativeCreative?.finalPath ? path.resolve(result.nativeCreative.finalPath) : "";
+  const delivery = result?.deliveryBranding?.imagePath && result.deliveryBranding.sourceImagePath === result.nativeCreative?.finalPath ? path.resolve(result.deliveryBranding.imagePath) : "";
+  let file = preferDeliveryBranding && delivery && existsSync(delivery) ? delivery : original;
   if (file.startsWith(`${legacyExpected}${path.sep}`)) {
     const migrated = path.join(/* turbopackIgnore: true */ expected, path.relative(legacyExpected, file));
     if (existsSync(migrated)) file = migrated;
@@ -301,4 +317,12 @@ export function resolveValidatedNativeDownload(job: GenerationJob, resultId: str
   }
   if (!file.startsWith(`${expected}${path.sep}`)) throw new Error("결과 파일 경로가 작업 범위를 벗어났습니다.");
   return file;
+}
+
+export function resolveValidatedNativeOriginal(job: GenerationJob, resultId: string) {
+  return resolveValidatedNativeFile(job, resultId, false);
+}
+
+export function resolveValidatedNativeDownload(job: GenerationJob, resultId: string) {
+  return resolveValidatedNativeFile(job, resultId, true);
 }

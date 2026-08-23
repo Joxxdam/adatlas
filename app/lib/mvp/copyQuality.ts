@@ -1,10 +1,4 @@
-import type {
-  AdImageLabel,
-  CopySlotKey,
-  GeneratedAdCopy,
-  GeneratedAdCopyVariant,
-  ProductInfoForPrompt,
-} from "./types";
+import type { AdImageLabel, CopySlotKey, GeneratedAdCopy, GeneratedAdCopyVariant, ProductInfoForPrompt } from "./types";
 
 const emojiRegex = /[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]/gu;
 
@@ -21,38 +15,11 @@ const forbiddenPhraseReplacements: Array<[RegExp, string]> = [
   [/지금 바로 확인하기/g, "구성 보러가기"],
 ];
 
-const genericHeadlinePatterns = [
-  /새로운\s*즐거움/,
-  /특별한\s*선택/,
-  /필수\s*아이템/,
-  /만나보세요/,
-  /기다립니다/,
-  /고급스러운\s*선택/,
-  /가격\s*있는\s*하루/,
-  /여러분/,
-  /undefined|null|NaN/i,
-];
+const genericHeadlinePatterns = [/새로운\s*즐거움/, /특별한\s*선택/, /필수\s*아이템/, /만나보세요/, /기다립니다/, /고급스러운\s*선택/, /가격\s*있는\s*하루/, /여러분/, /undefined|null|NaN/i];
 
-const brokenHeadlinePatterns = [
-  /^[0-9,\s원만원대]+$/,
-  /[0-9]+이면/,
-  /분만함|분만한|분만/,
-  /나와버르/,
-  /성색|생색\s*제대로\s*내는\s*선물\s*찾았습니다/i,
-  /[0-9]{2,}\s*이면\s*\S{1,4}함/,
-];
+const brokenHeadlinePatterns = [/^[0-9,\s원만원대]+$/, /[0-9]+이면/, /분만함|분만한|분만/, /나와버르/, /성색|생색\s*제대로\s*내는\s*선물\s*찾았습니다/i, /[0-9]{2,}\s*이면\s*\S{1,4}함/];
 
-const informalBodyEndings = [
-  /[^요]다$/,
-  /듯$/,
-  /각$/,
-  /임$/,
-  /함$/,
-  /됨$/,
-  /템$/,
-  /없음$/,
-  /좋음$/,
-];
+const informalBodyEndings = [/[^요]다$/, /듯$/, /각$/, /임$/, /함$/, /됨$/, /템$/, /없음$/, /좋음$/];
 
 export function stripEmoji(value: string): string {
   return String(value || "")
@@ -148,36 +115,10 @@ export function isBadHeadline(headline: string): boolean {
 function textPool(product: ProductInfoForPrompt, reference?: AdImageLabel): string {
   const finalLabel = reference?.finalLabel;
 
-  return [
-    product.productName,
-    product.category,
-    product.price,
-    product.discountInfo,
-    product.mainBenefit,
-    product.targetCustomer,
-    product.extractedDescription,
-    finalLabel?.ocrText,
-    finalLabel?.hookType,
-    finalLabel?.appealPoint,
-    finalLabel?.copyNuance,
-    finalLabel?.whyItWorks,
-    finalLabel?.firstLineHook,
-    finalLabel?.copyStructure,
-    finalLabel?.toneOfVoice,
-    finalLabel?.trendElements,
-    finalLabel?.consumerInsight,
-    finalLabel?.purchaseTrigger,
-    finalLabel?.reusableCopyPattern,
-    finalLabel?.visualCopyRelation,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return [product.productName, product.category, product.price, product.discountInfo, product.mainBenefit, product.targetCustomer, product.extractedDescription, finalLabel?.ocrText, finalLabel?.hookType, finalLabel?.appealPoint, finalLabel?.copyNuance, finalLabel?.whyItWorks, finalLabel?.firstLineHook, finalLabel?.copyStructure, finalLabel?.toneOfVoice, finalLabel?.trendElements, finalLabel?.consumerInsight, finalLabel?.purchaseTrigger, finalLabel?.reusableCopyPattern, finalLabel?.visualCopyRelation].filter(Boolean).join(" ");
 }
 
-export function buildSafeHeadlineFallback(params: {
-  product: ProductInfoForPrompt;
-  reference?: AdImageLabel;
-}): string {
+export function buildSafeHeadlineFallback(params: { product: ProductInfoForPrompt; reference?: AdImageLabel }): string {
   const { product, reference } = params;
   const pool = textPool(product, reference);
   const price = normalizeKoreanPricePhrase(product.price || product.discountInfo);
@@ -210,12 +151,7 @@ function foodKeyword(product: ProductInfoForPrompt, pool: string): string {
   return product.category || "고기";
 }
 
-export function repairHeadline(params: {
-  headline: string;
-  product: ProductInfoForPrompt;
-  reference?: AdImageLabel;
-  maxChars?: number;
-}): {
+export function repairHeadline(params: { headline: string; product: ProductInfoForPrompt; reference?: AdImageLabel; maxChars?: number }): {
   headline: string;
   repaired: boolean;
   reason: string;
@@ -268,33 +204,13 @@ export function normalizeBodyCopyPolite(value: string, fallback: string, maxChar
   return trimCopyToLimit(text, maxChars) || fallback;
 }
 
-export function normalizeCopyVariant(
-  variant: Partial<GeneratedAdCopyVariant> | undefined,
-  fallback: GeneratedAdCopyVariant,
-  copyLimits?: Partial<Record<CopySlotKey, { maxChars?: number }>>
-): GeneratedAdCopyVariant {
+export function normalizeCopyVariant(variant: Partial<GeneratedAdCopyVariant> | undefined, fallback: GeneratedAdCopyVariant, copyLimits?: Partial<Record<CopySlotKey, { maxChars?: number }>>): GeneratedAdCopyVariant {
   return {
-    headline: trimCopyToLimit(
-      variant?.headline || fallback.headline,
-      copyLimits?.headline?.maxChars || 18
-    ),
-    bodyCopy: normalizeBodyCopyPolite(
-      variant?.bodyCopy || fallback.bodyCopy,
-      fallback.bodyCopy,
-      copyLimits?.bodyCopy?.maxChars || 36
-    ),
-    highlightCopy: trimCopyToLimit(
-      variant?.highlightCopy || fallback.highlightCopy,
-      copyLimits?.highlightCopy?.maxChars || 28
-    ),
-    bottomBarCopy: trimCopyToLimit(
-      variant?.bottomBarCopy || fallback.bottomBarCopy,
-      copyLimits?.bottomBarCopy?.maxChars || 32
-    ),
-    cta: trimCopyToLimit(
-      variant?.cta || fallback.cta || "구성 보러가기",
-      copyLimits?.cta?.maxChars || 10
-    ),
+    headline: trimCopyToLimit(variant?.headline || fallback.headline, copyLimits?.headline?.maxChars || 18),
+    bodyCopy: normalizeBodyCopyPolite(variant?.bodyCopy || fallback.bodyCopy, fallback.bodyCopy, copyLimits?.bodyCopy?.maxChars || 36),
+    highlightCopy: trimCopyToLimit(variant?.highlightCopy || fallback.highlightCopy, copyLimits?.highlightCopy?.maxChars || 28),
+    bottomBarCopy: trimCopyToLimit(variant?.bottomBarCopy || fallback.bottomBarCopy, copyLimits?.bottomBarCopy?.maxChars || 32),
+    cta: trimCopyToLimit(variant?.cta || fallback.cta || "구성 보러가기", copyLimits?.cta?.maxChars || 10),
     price: cleanGeneratedText(variant?.price || fallback.price || ""),
   };
 }

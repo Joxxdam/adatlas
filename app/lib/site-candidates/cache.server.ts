@@ -3,11 +3,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 
-import type {
-  SiteCandidateAnalysisResult,
-  SiteCandidateSelection,
-  SiteDiscoveryResult,
-} from "./types";
+import type { SiteCandidateAnalysisResult, SiteCandidateSelection, SiteDiscoveryResult } from "./types";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const CACHE_FILE = path.join(process.cwd(), ".data", "site-candidates", "cache.json");
@@ -58,8 +54,7 @@ function restoreCache(): SiteCandidateCache {
     const stored = JSON.parse(fs.readFileSync(CACHE_FILE, "utf8")) as PersistedCache;
     if (stored.version !== 1) return empty;
     const now = Date.now();
-    const active = <T>(entries: Array<[string, CacheEntry<T>]>) =>
-      new Map(entries.filter(([, entry]) => entry.expiresAt > now));
+    const active = <T>(entries: Array<[string, CacheEntry<T>]>) => new Map(entries.filter(([, entry]) => entry.expiresAt > now));
     return {
       discoveries: active(stored.discoveries || []),
       analyses: active(stored.analyses || []),
@@ -75,9 +70,7 @@ function restoreCache(): SiteCandidateCache {
   }
 }
 
-const cache: SiteCandidateCache =
-  globalThis.__adatlasSiteCandidateCache ||
-  (globalThis.__adatlasSiteCandidateCache = restoreCache());
+const cache: SiteCandidateCache = globalThis.__adatlasSiteCandidateCache || (globalThis.__adatlasSiteCandidateCache = restoreCache());
 cache.discoveryByUrl ||= new Map<string, CacheEntry<string>>();
 cache.analysisByDiscovery ||= new Map<string, CacheEntry<string>>();
 

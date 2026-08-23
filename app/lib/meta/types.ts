@@ -1,14 +1,4 @@
-export type MetaOperation =
-  | "connection"
-  | "accounts"
-  | "campaigns"
-  | "adsets"
-  | "ads"
-  | "insights"
-  | "media.upload"
-  | "adset.create"
-  | "creative.create"
-  | "ad.create";
+export type MetaOperation = "connection" | "accounts" | "campaigns" | "adsets" | "ads" | "insights" | "media.upload" | "adset.create" | "creative.create" | "ad.create";
 
 export type MetaAccount = {
   id: string;

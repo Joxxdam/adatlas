@@ -10,9 +10,6 @@ export async function POST(request: NextRequest) {
       confirmation: createMetaDraftRegistrationService().issueConfirmation(input),
     });
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "최종 확인 실패" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "최종 확인 실패" }, { status: 400 });
   }
 }

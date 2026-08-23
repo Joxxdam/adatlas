@@ -1,31 +1,11 @@
 import "server-only";
 
 import { randomUUID } from "crypto";
-import {
-  absoluteHttpUrl,
-  extractJsonLdNodes,
-  firstRecord,
-  jsonLdTypeIncludes,
-  stringValue,
-  uniqueStrings,
-} from "../store-analysis/htmlUtils";
+import { absoluteHttpUrl, extractJsonLdNodes, firstRecord, jsonLdTypeIncludes, stringValue, uniqueStrings } from "../store-analysis/htmlUtils";
 import { extractorForPlatform, detectStorePlatform } from "../store-analysis/platformDetector";
 import type { DiscoveredProductLink, DiscoveredStorePage } from "../store-analysis/types";
-import {
-  isSameStoreDomain,
-  isSameStorePathScope,
-  readRobotsPolicy,
-  robotsAllowsUrl,
-  safeFetchStorefrontHtml,
-  safeFetchPublicText,
-  validatePublicHttpUrl,
-} from "../store-analysis/urlSafety";
-import {
-  deduplicateProductUrls,
-  detectSitePageType,
-  looksLikeProductPageUrl,
-  normalizeSitePageUrl,
-} from "./pageClassifier";
+import { isSameStoreDomain, isSameStorePathScope, readRobotsPolicy, robotsAllowsUrl, safeFetchStorefrontHtml, safeFetchPublicText, validatePublicHttpUrl } from "../store-analysis/urlSafety";
+import { deduplicateProductUrls, detectSitePageType, looksLikeProductPageUrl, normalizeSitePageUrl } from "./pageClassifier";
 import type { SiteDiscoveredProduct, SiteDiscoveryResult } from "./types";
 
 const MAX_PRODUCTS = 30;
@@ -47,9 +27,7 @@ class RequestPacer {
 
 function sitemapLocations(xml: string, baseUrl: string) {
   return uniqueStrings(
-    Array.from(xml.matchAll(/<loc\b[^>]*>([\s\S]*?)<\/loc>/gi)).map((match) =>
-      absoluteHttpUrl(match[1].trim(), baseUrl)
-    ),
+    Array.from(xml.matchAll(/<loc\b[^>]*>([\s\S]*?)<\/loc>/gi)).map((match) => absoluteHttpUrl(match[1].trim(), baseUrl)),
     500
   );
 }
@@ -67,9 +45,7 @@ function linkedPublicFeeds(html: string, baseUrl: string) {
 
 function publicFeedProductUrls(feed: string, baseUrl: string) {
   return uniqueStrings(
-    Array.from(
-      feed.matchAll(/<(?:g:)?link\b[^>]*>(?:<!\[CDATA\[)?\s*(https?:\/\/[^<\]\s]+)/gi)
-    ).map((match) => absoluteHttpUrl(match[1].trim(), baseUrl)),
+    Array.from(feed.matchAll(/<(?:g:)?link\b[^>]*>(?:<!\[CDATA\[)?\s*(https?:\/\/[^<\]\s]+)/gi)).map((match) => absoluteHttpUrl(match[1].trim(), baseUrl)),
     MAX_PRODUCTS
   );
 }
@@ -94,16 +70,7 @@ function jsonLdProductUrls(html: string, baseUrl: string) {
 
 function sourceScore(link: DiscoveredProductLink) {
   const source = link.discoveredFrom.join(" ").toLowerCase();
-  return (
-    (/입력 페이지|입력 홈페이지|입력 카테고리|입력 기획전/.test(source) ? 100 : 0) +
-    (/json-ld/.test(source) ? 90 : 0) +
-    (/feed|피드/.test(source) ? 70 : 0) +
-    (/sitemap|사이트맵/.test(source) ? 50 : 0) +
-    (link.isBest ? 60 : 0) +
-    (link.isNew ? 50 : 0) +
-    (link.isDiscounted ? 40 : 0) +
-    (/상품 목록|product-list|category/.test(source) ? 30 : 0)
-  );
+  return (/입력 페이지|입력 홈페이지|입력 카테고리|입력 기획전/.test(source) ? 100 : 0) + (/json-ld/.test(source) ? 90 : 0) + (/feed|피드/.test(source) ? 70 : 0) + (/sitemap|사이트맵/.test(source) ? 50 : 0) + (link.isBest ? 60 : 0) + (link.isNew ? 50 : 0) + (link.isDiscounted ? 40 : 0) + (/상품 목록|product-list|category/.test(source) ? 30 : 0);
 }
 
 function mergeLinks(links: DiscoveredProductLink[]) {
@@ -144,9 +111,7 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
   const warnings: string[] = [];
   const links: DiscoveredProductLink[] = [];
   if (firstPage.retrievalMode === "public-snapshot") {
-    warnings.push(
-      "원본 사이트의 자동 접근 제한으로 공개 텍스트 스냅샷을 사용했습니다. 가격·재고 등 시점 정보는 상세페이지에서 다시 확인해주세요."
-    );
+    warnings.push("원본 사이트의 자동 접근 제한으로 공개 텍스트 스냅샷을 사용했습니다. 가격·재고 등 시점 정보는 상세페이지에서 다시 확인해주세요.");
   }
 
   if (pageType === "product") {
@@ -158,19 +123,10 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
   } else if (pageType !== "unsupported") {
     const source: DiscoveredStorePage = {
       url: normalizedUrl,
-      label:
-        pageType === "homepage"
-          ? "입력 홈페이지"
-          : pageType === "category"
-            ? "입력 카테고리"
-            : "입력 기획전",
+      label: pageType === "homepage" ? "입력 홈페이지" : pageType === "category" ? "입력 카테고리" : "입력 기획전",
       kind: pageType === "homepage" ? "home" : pageType === "category" ? "category" : "promotion",
     };
-    links.push(
-      ...extractor
-        .discoverProductUrls(normalizedUrl, firstPage.html, source)
-        .filter((link) => isSameStorePathScope(link.url, normalizedUrl))
-    );
+    links.push(...extractor.discoverProductUrls(normalizedUrl, firstPage.html, source).filter((link) => isSameStorePathScope(link.url, normalizedUrl)));
     for (const url of jsonLdProductUrls(firstPage.html, normalizedUrl)) {
       if (!isSameStorePathScope(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
       links.push({ url, discoveredFrom: ["JSON-LD 상품 목록"] });
@@ -187,9 +143,7 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
         });
         if (isSameStoreDomain(sitemap.finalUrl, normalizedUrl)) {
           let sitemapUrls = sitemapLocations(sitemap.html, sitemap.finalUrl);
-          const childSitemaps = sitemapUrls
-            .filter((url) => /\.xml(?:\?|$)/i.test(url) && isSameStoreDomain(url, normalizedUrl))
-            .slice(0, MAX_SITEMAP_CHILDREN);
+          const childSitemaps = sitemapUrls.filter((url) => /\.xml(?:\?|$)/i.test(url) && isSameStoreDomain(url, normalizedUrl)).slice(0, MAX_SITEMAP_CHILDREN);
           for (const childUrl of childSitemaps) {
             if (Date.now() - startedAt >= TOTAL_TIMEOUT_MS) break;
             try {
@@ -207,24 +161,17 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
             }
           }
           for (const url of sitemapUrls) {
-            if (!isSameStorePathScope(url, normalizedUrl) || !looksLikeProductPageUrl(url))
-              continue;
+            if (!isSameStorePathScope(url, normalizedUrl) || !looksLikeProductPageUrl(url)) continue;
             links.push({ url, discoveredFrom: ["사이트맵"] });
           }
         }
       } catch {
-        warnings.push(
-          "공개 사이트맵을 확인하지 못해 입력 페이지와 상품 목록을 기준으로 탐색했습니다."
-        );
+        warnings.push("공개 사이트맵을 확인하지 못해 입력 페이지와 상품 목록을 기준으로 탐색했습니다.");
       }
     }
 
     for (const feedUrl of linkedPublicFeeds(firstPage.html, normalizedUrl)) {
-      if (
-        Date.now() - startedAt >= TOTAL_TIMEOUT_MS ||
-        !isSameStoreDomain(feedUrl, normalizedUrl) ||
-        !robotsAllowsUrl(robots, feedUrl)
-      ) {
+      if (Date.now() - startedAt >= TOTAL_TIMEOUT_MS || !isSameStoreDomain(feedUrl, normalizedUrl) || !robotsAllowsUrl(robots, feedUrl)) {
         continue;
       }
       try {
@@ -245,12 +192,7 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
     }
 
     const discoveredFromInput = links.length;
-    const listPageLimit =
-      firstPage.retrievalMode === "public-snapshot" && discoveredFromInput > 0
-        ? 0
-        : firstPage.retrievalMode === "public-snapshot"
-          ? 3
-          : MAX_LIST_PAGES;
+    const listPageLimit = firstPage.retrievalMode === "public-snapshot" && discoveredFromInput > 0 ? 0 : firstPage.retrievalMode === "public-snapshot" ? 3 : MAX_LIST_PAGES;
     const listPages = extractor
       .discoverCategoryUrls(normalizedUrl, firstPage.html)
       .filter((page) => isSameStorePathScope(page.url, normalizedUrl))
@@ -284,9 +226,7 @@ export async function discoverSiteCandidates(inputUrl: string): Promise<SiteDisc
   const productLimit = firstPage.retrievalMode === "public-snapshot" ? 8 : MAX_PRODUCTS;
   const products = mergeLinks(links).slice(0, productLimit).map(toPublicProduct);
   if (!products.length) {
-    warnings.push(
-      "상품을 자동으로 찾지 못했습니다. 카테고리 또는 상품 상세페이지 URL을 입력해주세요."
-    );
+    warnings.push("상품을 자동으로 찾지 못했습니다. 카테고리 또는 상품 상세페이지 URL을 입력해주세요.");
   }
   const analyzedAt = new Date().toISOString();
   return {

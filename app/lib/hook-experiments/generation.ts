@@ -1,45 +1,24 @@
 import crypto from "node:crypto";
 import { readBackgroundLibrary } from "../background-library/store.ts";
-import {
-  buildCreativePlan,
-  createGenerationJob,
-  planScenes,
-} from "../creative-generation/planner.ts";
+import { buildCreativePlan, createGenerationJob, planScenes } from "../creative-generation/planner.ts";
 import { buildProductTruth } from "../creative-generation/productTruth.ts";
-import type {
-  CreativeBlueprintId,
-  CreativePlan,
-  GenerationJob,
-  HookPlan,
-} from "../creative-generation/types.ts";
+import type { CreativeBlueprintId, CreativePlan, GenerationJob, HookPlan } from "../creative-generation/types.ts";
 import { isPaidImageGenerationEnabled } from "../image-generation/SceneGenerationProvider.ts";
 import { createBrandCode } from "../creative-assets/code.ts";
 import { createExperimentCode, createHookCategoryCode } from "./codes.ts";
 import { HookDiscoveryService } from "./hookDiscovery.ts";
-import type {
-  CreateExperimentInput,
-  CreateExperimentPlanResult,
-  CreativeExperiment,
-  ExperimentAsset,
-  ExperimentRuleConfig,
-  ExperimentStage,
-  HookGroup,
-  HookRecommendation,
-  MetaTestPlan,
-  VisualExpressionType,
-} from "./types.ts";
+import type { CreateExperimentInput, CreateExperimentPlanResult, CreativeExperiment, ExperimentAsset, ExperimentRuleConfig, ExperimentStage, HookGroup, HookRecommendation, MetaTestPlan, VisualExpressionType } from "./types.ts";
 
-const blueprintVariants: Array<{ blueprintId: CreativeBlueprintId; visual: VisualExpressionType }> =
-  [
-    { blueprintId: "proof-data", visual: "COPY_INFORMATION" },
-    { blueprintId: "product-hero-lifestyle", visual: "SCENE_VISUAL" },
-    { blueprintId: "product-hero-lifestyle", visual: "PRODUCT_HERO" },
-    { blueprintId: "editorial-story", visual: "USAGE_SCENE" },
-    { blueprintId: "proof-data", visual: "INFORMATION_FOCUS" },
-    { blueprintId: "chat-ugc", visual: "TRUST_PROOF" },
-    { blueprintId: "comparison-versus", visual: "PROMOTION_VISUAL" },
-    { blueprintId: "problem-solution-split", visual: "PROBLEM_EMPATHY" },
-  ];
+const blueprintVariants: Array<{ blueprintId: CreativeBlueprintId; visual: VisualExpressionType }> = [
+  { blueprintId: "proof-data", visual: "COPY_INFORMATION" },
+  { blueprintId: "product-hero-lifestyle", visual: "SCENE_VISUAL" },
+  { blueprintId: "product-hero-lifestyle", visual: "PRODUCT_HERO" },
+  { blueprintId: "editorial-story", visual: "USAGE_SCENE" },
+  { blueprintId: "proof-data", visual: "INFORMATION_FOCUS" },
+  { blueprintId: "chat-ugc", visual: "TRUST_PROOF" },
+  { blueprintId: "comparison-versus", visual: "PROMOTION_VISUAL" },
+  { blueprintId: "problem-solution-split", visual: "PROBLEM_EMPATHY" },
+];
 
 export const defaultExperimentRuleConfig: ExperimentRuleConfig = {
   minimumSpend: 10,
@@ -64,17 +43,10 @@ function stageDefaults(stage: ExperimentStage) {
 
 function visualVariants(stage: ExperimentStage, count: number) {
   const start = stage === "DISCOVERY" ? 0 : 2;
-  return Array.from(
-    { length: count },
-    (_, index) => blueprintVariants[(start + index) % blueprintVariants.length]
-  );
+  return Array.from({ length: count }, (_, index) => blueprintVariants[(start + index) % blueprintVariants.length]);
 }
 
-function metaPlan(
-  input: CreateExperimentInput,
-  hooks: HookRecommendation[],
-  assetsPerHook: number
-): MetaTestPlan {
+function metaPlan(input: CreateExperimentInput, hooks: HookRecommendation[], assetsPerHook: number): MetaTestPlan {
   const batches =
     hooks.length > 4
       ? [
@@ -106,14 +78,10 @@ export function buildExperimentPlan(input: CreateExperimentInput): CreateExperim
   const stage = input.stage || "DISCOVERY";
   const round = stageRound(stage);
   const defaults = stageDefaults(stage);
-  const variantsPerHook =
-    stage === "DISCOVERY"
-      ? Math.max(1, Math.min(3, input.variantsPerHook || defaults.variantsPerHook))
-      : 6;
+  const variantsPerHook = stage === "DISCOVERY" ? Math.max(1, Math.min(3, input.variantsPerHook || defaults.variantsPerHook)) : 6;
   const truth = buildProductTruth({
     product: input.product,
-    productImagePaths:
-      input.product.productImagePaths || [input.product.productImagePath].filter(Boolean),
+    productImagePaths: input.product.productImagePaths || [input.product.productImagePath].filter(Boolean),
     source: input.product.landingUrl ? "landing-page" : "user-input",
   });
   const discovery = HookDiscoveryService.recommend(truth, {
@@ -121,26 +89,16 @@ export function buildExperimentPlan(input: CreateExperimentInput): CreateExperim
     useControl: input.useControl,
     limit: (input.selectedHookCodes?.length || defaults.hookCount) + (input.useControl ? 1 : 0),
   });
-  const recommendations = discovery.recommendations.slice(
-    0,
-    defaults.hookCount + (input.useControl ? 1 : 0)
-  );
+  const recommendations = discovery.recommendations.slice(0, defaults.hookCount + (input.useControl ? 1 : 0));
   if (recommendations.length < (stage === "DISCOVERY" ? 4 : defaults.hookCount)) {
     throw new Error("이 상품에 안전하게 적용할 수 있는 후킹이 부족합니다.");
   }
   const now = new Date().toISOString();
-  const brandName =
-    input.brandName || input.product.brandName || input.product.advertiserName || "브랜드 미지정";
+  const brandName = input.brandName || input.product.brandName || input.product.advertiserName || "브랜드 미지정";
   const brandCode = createBrandCode(brandName, input.brandId);
   const experimentId = crypto.randomUUID();
-  const advertiserId =
-    input.advertiserId ||
-    input.product.creativeContext?.advertiserId ||
-    `advertiser-${brandCode.toLowerCase()}`;
-  const productId =
-    input.productId ||
-    input.product.creativeContext?.productId ||
-    `product-${input.originalHostProductNo}`;
+  const advertiserId = input.advertiserId || input.product.creativeContext?.advertiserId || `advertiser-${brandCode.toLowerCase()}`;
+  const productId = input.productId || input.product.creativeContext?.productId || `product-${input.originalHostProductNo}`;
   const experiment: CreativeExperiment = {
     id: experimentId,
     experimentCode: createExperimentCode({
@@ -167,15 +125,11 @@ export function buildExperimentPlan(input: CreateExperimentInput): CreateExperim
     variantsPerHook,
     totalAssetCount: recommendations.length * variantsPerHook,
     useControl: Boolean(input.useControl),
-    contentNoteIds:
-      input.product.creativeContext?.appliedContentNotes?.map((note) => note.id) || [],
+    contentNoteIds: input.product.creativeContext?.appliedContentNotes?.map((note) => note.id) || [],
     ruleConfig: {
       ...defaultExperimentRuleConfig,
       ...input.ruleConfig,
-      minimumEligibleAssetsPerHook: Math.max(
-        input.ruleConfig?.minimumEligibleAssetsPerHook || 1,
-        stage === "VALIDATION" ? 3 : 1
-      ),
+      minimumEligibleAssetsPerHook: Math.max(input.ruleConfig?.minimumEligibleAssetsPerHook || 1, stage === "VALIDATION" ? 3 : 1),
     },
     metaTestPlan: metaPlan(input, recommendations, variantsPerHook),
     createdAt: now,
@@ -229,19 +183,8 @@ function hookPlans(plan: CreateExperimentPlanResult): HookPlan[] {
   return plan.recommendations.flatMap((recommendation, hookIndex) =>
     variants.map((variant, variantIndex) => {
       const asset = plan.experimentAssets[hookIndex * variants.length + variantIndex];
-      const offer =
-        recommendation.hookCode === "PRC" || recommendation.hookCode === "VAL"
-          ? [plan.experiment.product.discountInfo, plan.experiment.product.price]
-              .filter(Boolean)
-              .join(" · ")
-          : "";
-      const proof =
-        recommendation.hookCode === "REV"
-          ? plan.experiment.product.creativeContext?.reviewInsightSummaries?.[0] ||
-            "실제 리뷰 인사이트 확인"
-          : recommendation.hookCode === "USP"
-            ? plan.experiment.product.verifiedBenefits?.[0] || plan.experiment.product.mainBenefit
-            : "";
+      const offer = recommendation.hookCode === "PRC" || recommendation.hookCode === "VAL" ? [plan.experiment.product.discountInfo, plan.experiment.product.price].filter(Boolean).join(" · ") : "";
+      const proof = recommendation.hookCode === "REV" ? plan.experiment.product.creativeContext?.reviewInsightSummaries?.[0] || "실제 리뷰 인사이트 확인" : recommendation.hookCode === "USP" ? plan.experiment.product.verifiedBenefits?.[0] || plan.experiment.product.mainBenefit : "";
       return {
         id: `hook-experiment-${recommendation.hookCode}-${asset.variant}`,
         blueprintId: variant.blueprintId,
@@ -250,10 +193,7 @@ function hookPlans(plan: CreateExperimentPlanResult): HookPlan[] {
         hypothesis: recommendation.hypothesis,
         confidence: "medium",
         headline: recommendation.mainMessage,
-        body:
-          variant.visual === "COPY_INFORMATION"
-            ? plan.experiment.product.mainBenefit || recommendation.recommendationReason
-            : recommendation.recommendationReason,
+        body: variant.visual === "COPY_INFORMATION" ? plan.experiment.product.mainBenefit || recommendation.recommendationReason : recommendation.recommendationReason,
         proof,
         offer,
         cta: "상품 정보 보기",
@@ -275,13 +215,10 @@ async function createExperimentGenerationJob(plan: CreateExperimentPlanResult) {
   const started = Date.now();
   const truth = buildProductTruth({
     product: plan.experiment.product,
-    productImagePaths:
-      plan.experiment.product.productImagePaths ||
-      [plan.experiment.product.productImagePath].filter(Boolean),
+    productImagePaths: plan.experiment.product.productImagePaths || [plan.experiment.product.productImagePath].filter(Boolean),
     source: plan.experiment.product.landingUrl ? "landing-page" : "user-input",
   });
-  if (!truth.imagePaths.length)
-    throw new Error("실험 콘텐츠에 사용할 실제 상품 이미지가 필요합니다.");
+  if (!truth.imagePaths.length) throw new Error("실험 콘텐츠에 사용할 실제 상품 이미지가 필요합니다.");
   const base = buildCreativePlan(truth);
   const creativePlan: CreativePlan = {
     ...base,
@@ -311,8 +248,6 @@ export const DiscoveryCreativeGenerationService = { createJob: createExperimentG
 export const HookValidationService = { createJob: createExperimentGenerationJob };
 export const RefinementCreativeGenerationService = { createJob: createExperimentGenerationJob };
 
-export async function buildGenerationJobForExperiment(
-  plan: CreateExperimentPlanResult
-): Promise<GenerationJob> {
+export async function buildGenerationJobForExperiment(plan: CreateExperimentPlanResult): Promise<GenerationJob> {
   return createExperimentGenerationJob(plan);
 }

@@ -13,8 +13,14 @@ export function buildDevelopmentFixture(endDate = "2026-08-11") {
     ["P-006", "신상품 티트리 바디젤", "뷰티", 18900, 100, "판매중", true, "2026-08-01"],
     ["P-007", "품절 샤워젤", "뷰티", 12900, 0, "품절", false, "2025-10-01"],
   ].map(([code, name, category, price, stock, status, display, createdAt]) => ({
-    상품코드: code, 상품명: name, 카테고리: category, 판매가: price, 재고: stock,
-    상품상태: status, 진열: display, 등록일: createdAt,
+    상품코드: code,
+    상품명: name,
+    카테고리: category,
+    판매가: price,
+    재고: stock,
+    상품상태: status,
+    진열: display,
+    등록일: createdAt,
     상품URL: `https://example.com/products/${String(code).toLowerCase()}`,
     상품이미지: "/test-fixtures/creative/original-source-product.svg",
   }));

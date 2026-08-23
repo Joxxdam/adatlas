@@ -1,10 +1,4 @@
-import type {
-  VideoConcept,
-  VideoCut,
-  VideoDuration,
-  VideoProject,
-  VideoSceneReferenceImage,
-} from "./types.ts";
+import type { VideoConcept, VideoCut, VideoDuration, VideoProject, VideoSceneReferenceImage } from "./types.ts";
 
 function cleanText(value: unknown, max = 5000) {
   return String(value || "")
@@ -75,15 +69,11 @@ export function resequenceVideoCuts(cuts: VideoCut[], duration: VideoDuration): 
   const count = Math.max(1, cuts.length);
   return cuts.map((cut, index) => {
     const startSecond = Number(((duration * index) / count).toFixed(2));
-    const endSecond =
-      index === count - 1 ? duration : Number(((duration * (index + 1)) / count).toFixed(2));
+    const endSecond = index === count - 1 ? duration : Number(((duration * (index + 1)) / count).toFixed(2));
     return {
       ...normalizeVideoCut(cut, index),
       cutNumber: index + 1,
-      sceneName:
-        !cut.sceneName || /^장면\s*\d+$/u.test(cut.sceneName.trim())
-          ? `장면 ${index + 1}`
-          : cut.sceneName.trim(),
+      sceneName: !cut.sceneName || /^장면\s*\d+$/u.test(cut.sceneName.trim()) ? `장면 ${index + 1}` : cut.sceneName.trim(),
       startSecond,
       endSecond,
     };
@@ -107,48 +97,18 @@ export function preserveSceneReferences(next: VideoConcept, previous?: VideoConc
 }
 
 export function getProjectScript(project: VideoProject) {
-  return (
-    project.finalScript ||
-    project.concepts.find((concept) => concept.id === project.selectedConceptId) ||
-    project.concepts[0] ||
-    null
-  );
+  return project.finalScript || project.concepts.find((concept) => concept.id === project.selectedConceptId) || project.concepts[0] || null;
 }
 
-export function videoScriptClipboard(
-  project: VideoProject,
-  mode: "all" | "captions" | "scenes" = "all"
-) {
+export function videoScriptClipboard(project: VideoProject, mode: "all" | "captions" | "scenes" = "all") {
   const script = getProjectScript(project);
   if (!script) return "";
   const rows = script.cuts.map((cut) => {
-    if (mode === "captions")
-      return `${cut.sceneName || `장면 ${cut.cutNumber}`}\n자막: ${cut.caption}`;
-    if (mode === "scenes")
-      return `${cut.sceneName || `장면 ${cut.cutNumber}`}\n영상 장면: ${cut.sceneDescription}`;
-    return [
-      cut.sceneName || `장면 ${cut.cutNumber}`,
-      `자막: ${cut.caption || "없음"}`,
-      `영상 장면: ${cut.sceneDescription || "없음"}`,
-      `예상 시간: ${cut.startSecond}-${cut.endSecond}초`,
-      `내레이션: ${cut.narration || "없음"}`,
-      `필요 소스: ${cut.requiredSources.join(", ") || "없음"}`,
-      `추가 제작 메모: ${cut.productionMemo || "없음"}`,
-      `형식: ${cut.sceneFormat || "실사"}`,
-      `카메라·구도: ${cut.cameraComposition || "없음"}`,
-      `움직임·연출: ${cut.motionDirection || "없음"}`,
-      `전환: ${cut.transition || "없음"}`,
-      `생성 프롬프트: ${cut.generationPrompt || "없음"}`,
-    ].join("\n");
+    if (mode === "captions") return `${cut.sceneName || `장면 ${cut.cutNumber}`}\n자막: ${cut.caption}`;
+    if (mode === "scenes") return `${cut.sceneName || `장면 ${cut.cutNumber}`}\n영상 장면: ${cut.sceneDescription}`;
+    return [cut.sceneName || `장면 ${cut.cutNumber}`, `자막: ${cut.caption || "없음"}`, `영상 장면: ${cut.sceneDescription || "없음"}`, `예상 시간: ${cut.startSecond}-${cut.endSecond}초`, `내레이션: ${cut.narration || "없음"}`, `필요 소스: ${cut.requiredSources.join(", ") || "없음"}`, `추가 제작 메모: ${cut.productionMemo || "없음"}`, `형식: ${cut.sceneFormat || "실사"}`, `카메라·구도: ${cut.cameraComposition || "없음"}`, `움직임·연출: ${cut.motionDirection || "없음"}`, `전환: ${cut.transition || "없음"}`, `생성 프롬프트: ${cut.generationPrompt || "없음"}`].join("\n");
   });
-  return [
-    `[${script.materialCode}] ${project.projectName}`,
-    `${project.advertiserName} · ${project.productAnalysis.productName}`,
-    "",
-    ...rows.flatMap((row) => [row, ""]),
-  ]
-    .join("\n")
-    .trim();
+  return [`[${script.materialCode}] ${project.projectName}`, `${project.advertiserName} · ${project.productAnalysis.productName}`, "", ...rows.flatMap((row) => [row, ""])].join("\n").trim();
 }
 
 function csvCell(value: unknown) {
@@ -158,31 +118,7 @@ function csvCell(value: unknown) {
 export function videoScriptCsv(project: VideoProject) {
   const script = getProjectScript(project);
   if (!script) return "";
-  const header = [
-    "장면",
-    "시간",
-    "형식",
-    "화면 자막",
-    "내레이션",
-    "장면 구성",
-    "카메라·구도",
-    "움직임·연출",
-    "전환",
-    "필요 소스",
-    "생성 프롬프트",
-  ];
-  const rows = script.cuts.map((cut) => [
-    cut.sceneName,
-    `${cut.startSecond}-${cut.endSecond}초`,
-    cut.sceneFormat || "실사",
-    cut.caption,
-    cut.narration,
-    cut.sceneDescription,
-    cut.cameraComposition || "",
-    cut.motionDirection || "",
-    cut.transition || "",
-    cut.requiredSources.join(" | "),
-    cut.generationPrompt || "",
-  ]);
+  const header = ["장면", "시간", "형식", "화면 자막", "내레이션", "장면 구성", "카메라·구도", "움직임·연출", "전환", "필요 소스", "생성 프롬프트"];
+  const rows = script.cuts.map((cut) => [cut.sceneName, `${cut.startSecond}-${cut.endSecond}초`, cut.sceneFormat || "실사", cut.caption, cut.narration, cut.sceneDescription, cut.cameraComposition || "", cut.motionDirection || "", cut.transition || "", cut.requiredSources.join(" | "), cut.generationPrompt || ""]);
   return [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
 }

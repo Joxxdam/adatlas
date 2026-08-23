@@ -10,10 +10,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { collectionId?: string; categoryId?: string; limit?: number; dryRun?: boolean };
+    const body = (await request.json()) as { collectionId?: string; categoryId?: string; limit?: number; dryRun?: boolean };
     const result = await createComfyPlan({
-      collectionId: String(body.collectionId || ""), categoryId: body.categoryId ? String(body.categoryId) : undefined,
-      limit: Number(body.limit || 12), dryRun: body.dryRun !== false,
+      collectionId: String(body.collectionId || ""),
+      categoryId: body.categoryId ? String(body.categoryId) : undefined,
+      limit: Number(body.limit || 12),
+      dryRun: body.dryRun !== false,
     });
     return NextResponse.json({ ok: true, result });
   } catch (error) {

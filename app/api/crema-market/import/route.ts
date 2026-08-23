@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     if (!payload.products.length || !payload.dailyMetrics.length) {
       return NextResponse.json({ ok: false, error: "연결 가능한 상품과 일별 지표가 없습니다. 상품코드와 날짜 열을 확인해 주세요.", warnings: payload.warnings }, { status: 422 });
     }
-    const periodDays = [1, 7, 14, 28].includes(Number(form.get("periodDays"))) ? Number(form.get("periodDays")) as 1 | 7 | 14 | 28 : 14;
+    const periodDays = [1, 7, 14, 28].includes(Number(form.get("periodDays"))) ? (Number(form.get("periodDays")) as 1 | 7 | 14 | 28) : 14;
     const result = await importAndAnalyzeCremaMarket({ payload, provider: "file_upload", periodDays });
     return NextResponse.json({ ok: true, ...result }, { status: 201 });
   } catch (error) {

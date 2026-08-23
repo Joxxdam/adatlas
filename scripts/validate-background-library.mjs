@@ -9,8 +9,8 @@ const metadataPath = path.join(root, "data/background-library.json");
 const reportPath = path.join(root, "data/background-library-validation.json");
 const minimumCounts = { fashion: 12, beauty: 12, health: 12, agriculture: 8, meat: 12, seafood: 6, "processed-food": 8, "food-mall": 8, living: 6, kids: 4, pet: 4, promotion: 4 };
 const minimumTotal = 96;
-const assetTypes = new Set(["lifestyle_photo","people_photo","product_set","pattern_texture","ingredient_scene","ai_generated","designed_asset","user_uploaded"]);
-const sourceTypes = new Set(["stock_photo","ai_generated","designed_asset","user_uploaded"]);
+const assetTypes = new Set(["lifestyle_photo", "people_photo", "product_set", "pattern_texture", "ingredient_scene", "ai_generated", "designed_asset", "user_uploaded"]);
+const sourceTypes = new Set(["stock_photo", "ai_generated", "designed_asset", "user_uploaded"]);
 const items = JSON.parse(await fs.readFile(metadataPath, "utf8"));
 const errors = [];
 const warnings = [];
@@ -84,7 +84,7 @@ for (const [category, minimum] of Object.entries(minimumCounts)) {
 }
 if (items.length < minimumTotal) errors.push(`전체 수량: ${items.length}/${minimumTotal}개 미만`);
 const assetTypeCounts = Object.fromEntries([...assetTypes].map((type) => [type, items.filter((item) => item.assetType === type).length]));
-const ageGroups = ["teens","twenties","thirties","forties","fifties","senior","kids","family","couple","friends","no_people"];
+const ageGroups = ["teens", "twenties", "thirties", "forties", "fifties", "senior", "kids", "family", "couple", "friends", "no_people"];
 const ageCounts = Object.fromEntries(ageGroups.map((age) => [age, items.filter((item) => item.includesPerson && item.ageGroups.includes(age)).length]));
 if (items.some((item) => /plain|gradient|placeholder/i.test(`${item.id} ${item.scene}`))) warnings.push("단색/그라데이션 후보가 있어 수동 검수가 필요합니다.");
 const report = { valid: errors.length === 0, checkedAt: new Date().toISOString(), total: items.length, totalBytes, categoryCounts, assetTypeCounts, peopleTotal: items.filter((item) => item.includesPerson).length, ageCounts, errors, warnings };

@@ -5,7 +5,10 @@ import type { CremaMarketDataset, ProductOpportunity } from "./types.ts";
 const dataDirectory = path.join(process.cwd(), "data", "crema-market");
 
 function safeId(value: string) {
-  const normalized = value.trim().replace(/[^a-z0-9가-힣_-]+/gi, "-").slice(0, 80);
+  const normalized = value
+    .trim()
+    .replace(/[^a-z0-9가-힣_-]+/gi, "-")
+    .slice(0, 80);
   if (!normalized) throw new Error("광고주 ID가 필요합니다.");
   return normalized;
 }
@@ -52,13 +55,7 @@ export const cremaMarketRepository = {
     const found = await this.findOpportunity(opportunityId);
     if (!found) return null;
     found.opportunity.status = updates.status || found.opportunity.status;
-    found.opportunity.recommendationStatus = found.opportunity.status === "creative_generated"
-      ? "creative_generated"
-      : found.opportunity.status === "excluded"
-        ? "rejected"
-        : found.opportunity.status === "later"
-          ? "reviewed"
-          : "accepted";
+    found.opportunity.recommendationStatus = found.opportunity.status === "creative_generated" ? "creative_generated" : found.opportunity.status === "excluded" ? "rejected" : found.opportunity.status === "later" ? "reviewed" : "accepted";
     found.opportunity.updatedAt = new Date().toISOString();
     await this.save(found.dataset);
     return found.opportunity;

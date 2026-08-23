@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  extractCatalogZip,
-  importBackgroundSources,
-  type CatalogImportSource,
-} from "../../../lib/background-library/importPipeline.server";
+import { extractCatalogZip, importBackgroundSources, type CatalogImportSource } from "../../../lib/background-library/importPipeline.server";
 
 export const runtime = "nodejs";
 

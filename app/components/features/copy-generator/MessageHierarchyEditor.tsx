@@ -11,10 +11,7 @@ const fields: Array<{ key: keyof MessageHierarchy; label: string }> = [
   { key: "actionMessage", label: "행동 유도" },
 ];
 
-export function MessageHierarchyEditor(props: {
-  value: MessageHierarchy;
-  onChange: (value: MessageHierarchy) => void;
-}) {
+export function MessageHierarchyEditor(props: { value: MessageHierarchy; onChange: (value: MessageHierarchy) => void }) {
   return (
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
@@ -27,12 +24,7 @@ export function MessageHierarchyEditor(props: {
         {fields.map((field) => (
           <label key={field.key}>
             {field.label}
-            <input
-              value={props.value[field.key]}
-              onChange={(event) =>
-                props.onChange({ ...props.value, [field.key]: event.target.value })
-              }
-            />
+            <input value={props.value[field.key]} onChange={(event) => props.onChange({ ...props.value, [field.key]: event.target.value })} />
           </label>
         ))}
       </div>

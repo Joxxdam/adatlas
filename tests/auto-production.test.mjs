@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import { executionResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, executionResults, isCurrentAutoProductionGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 import { hasDuplicateRunKey, isProductRecentlyProduced, selectFreshHook, textSimilarity } from "../app/lib/auto-production/duplicateGuard.ts";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "../app/lib/auto-production/hookSelector.ts";
 import { eligibleAutoProductionCandidates, plannedImageCount, selectAutoProductionCandidates } from "../app/lib/auto-production/productSelector.ts";
@@ -12,13 +12,7 @@ import { runCandidateSourceFallback } from "../app/lib/auto-production/sourceFal
 import { createAutoProductionTaskId, normalizeAutoProductionTaskIds } from "../app/lib/auto-production/taskIdentity.ts";
 import { candidateIdentityKeys, normalizedProductFamilyName, productFamilyKey } from "../app/lib/auto-production/productIdentity.ts";
 import { verifyAutoProductionProductImages } from "../app/lib/auto-production/productImageValidation.ts";
-import {
-  AUTO_PRODUCTION_CREATIVES_PER_PRODUCT,
-  AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
-  AUTO_PRODUCTION_IMAGES_PER_MALL,
-  AUTO_PRODUCTION_PRODUCTS_PER_MALL,
-  minimumDailyImageCapacity,
-} from "../app/lib/auto-production/policy.ts";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "../app/lib/auto-production/policy.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -29,7 +23,7 @@ function config(overrides = {}) {
     aliases: [],
     enabled: true,
     timezone: "Asia/Seoul",
-    scheduleTime: "07:00",
+    scheduleTime: "00:00",
     scheduleDays: [0, 1, 2, 3, 4, 5, 6],
     productsPerRun: 4,
     creativesPerProduct: 6,
@@ -161,10 +155,17 @@ function job(overrides = {}) {
   };
 }
 
-test("1. 오전 7시 Asia/Seoul에 활성 광고주가 실행 대상으로 선택된다", () => {
-  const at = new Date("2026-08-19T22:00:00.000Z");
-  assert.deepEqual(seoulClock(at), { date: "2026-08-20", hour: 7, minute: 0, weekday: 4 });
+test("1. 날짜가 바뀌는 자정 Asia/Seoul에 활성 광고주가 실행 대상으로 선택된다", () => {
+  const at = new Date("2026-08-19T15:00:00.000Z");
+  assert.deepEqual(seoulClock(at), { date: "2026-08-20", hour: 0, minute: 0, weekday: 4 });
   assert.equal(isScheduleDue(config(), at), true);
+});
+
+test("자정 예약을 놓친 작업은 저녁 서버 재시작 시 보충 실행하지 않는다", () => {
+  assert.equal(isScheduleDue(config(), new Date("2026-08-20T11:18:00.000Z")), false);
+  assert.equal(dueAdvertisers([config()], new Set(), new Date("2026-08-20T11:18:00.000Z")).length, 0);
+  assert.equal(isScheduleDue(config(), new Date("2026-08-19T15:09:00.000Z")), true);
+  assert.equal(isScheduleDue(config(), new Date("2026-08-19T15:10:00.000Z")), false);
 });
 
 test("서로 다른 상품 작업은 같은 실행에서도 고유한 React key를 갖고 기존 중복 ID도 복구된다", () => {
@@ -195,6 +196,13 @@ test("4. 동일 runKey는 두 번 실행 대상으로 선택되지 않는다", (
   assert.equal(hasDuplicateRunKey([{ runKey: key }], key), true);
 });
 
+test("예약 시간을 바꿔도 같은 날짜의 광고주 작업을 중복 실행하지 않는다", () => {
+  const at = new Date("2026-08-20T10:00:00.000Z");
+  const active = config({ scheduleTime: "00:00" });
+  const oldScheduleKey = `2026-08-20:${active.advertiserId}:07:00`;
+  assert.equal(dueAdvertisers([active], new Set([oldScheduleKey]), at).length, 0);
+});
+
 test("자동제작은 관리 도구 경로로 분리되고 기존 경로는 redirect 된다", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
   const legacyPage = await read("app/auto-production/page.tsx");
@@ -206,9 +214,12 @@ test("자동제작은 관리 도구 경로로 분리되고 기존 경로는 redi
   assert.match(adminPage, /AutoProductionWorkspace/);
 });
 
-test("기본 광고주 3곳은 매일 오전 7시, 상품 4개 × 광고 6장으로 설정된다", async () => {
+test("기본 광고주 3곳은 매일 자정, 상품 4개 × 광고 6장으로 설정된다", async () => {
   const seeds = JSON.parse(await read("data/auto-production/advertiser-seed.json"));
-  assert.deepEqual(seeds.map((item) => item.advertiserName), ["국대한우", "대한한우", "힘내라농가"]);
+  assert.deepEqual(
+    seeds.map((item) => item.advertiserName),
+    ["국대한우", "대한한우", "힘내라농가"]
+  );
   for (const item of seeds) {
     assert.equal(item.scheduleTime, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME);
     assert.deepEqual(item.scheduleDays, [0, 1, 2, 3, 4, 5, 6]);
@@ -220,11 +231,7 @@ test("기본 광고주 3곳은 매일 오전 7시, 상품 4개 × 광고 6장으
 
 test("동일 상품군의 용량·수량·옵션 변형은 실행당 한 번만 선정된다", () => {
   assert.equal(normalizedProductFamilyName("알등심 250g 2팩 [선물용]"), normalizedProductFamilyName("알등심 1kg 4팩"));
-  const variants = [
-    candidate("sirloin-250", { productName: "알등심 250g 2팩" }),
-    candidate("sirloin-1kg", { productName: "알등심 1kg 세트" }),
-    candidate("rib", { productName: "갈비살 500g" }),
-  ];
+  const variants = [candidate("sirloin-250", { productName: "알등심 250g 2팩" }), candidate("sirloin-1kg", { productName: "알등심 1kg 세트" }), candidate("rib", { productName: "갈비살 500g" })];
   assert.equal(productFamilyKey(variants[0]), productFamilyKey(variants[1]));
   const selected = selectAutoProductionCandidates(variants, config({ productsPerRun: 3, maxImagesPerRun: 3 }));
   assert.equal(selected.filter((item) => item.productName.includes("알등심")).length, 1);
@@ -263,7 +270,10 @@ test("예약 CLI는 도래한 광고주만 실행하고 force를 API에 명시�
 });
 
 test("5. 광고주별 상품 후보는 최대 4개 선정된다", () => {
-  const selected = selectAutoProductionCandidates(Array.from({ length: 9 }, (_, index) => candidate(String(index))), config());
+  const selected = selectAutoProductionCandidates(
+    Array.from({ length: 9 }, (_, index) => candidate(String(index))),
+    config()
+  );
   assert.equal(selected.length, 4);
 });
 
@@ -275,33 +285,32 @@ test("6. 판매 규모가 큰 상품은 단순한 전주 하락만으로 탈락�
 });
 
 test("7. 네 가지 상품 역할은 가능한 범위에서 분산된다", () => {
-  const selected = selectAutoProductionCandidates([
-    candidate("core", { currentSales: 1_000_000, orders: 1_000 }),
-    candidate("low", { conversionRate: 0.2, impressions: 10 }),
-    candidate("react", { currentSales: 1, previousSales: 1_000_000 }),
-    candidate("new", { isNew: true }),
-  ], config());
+  const selected = selectAutoProductionCandidates([candidate("core", { currentSales: 1_000_000, orders: 1_000 }), candidate("low", { conversionRate: 0.2, impressions: 10 }), candidate("react", { currentSales: 1, previousSales: 1_000_000 }), candidate("new", { isNew: true })], config());
   assert.deepEqual(new Set(selected.map((item) => item.recommendationRole)), new Set(["core-expansion", "low-exposure-opportunity", "reactivation", "new-exploration"]));
 });
 
 test("8. 필수 상품을 먼저 선정하고 품절·제외 상품은 빠진다", () => {
   const active = config({ excludedProductIds: ["excluded"], excludedCategories: ["금지"] });
-  const eligible = eligibleAutoProductionCandidates([
-    candidate("ok"), candidate("sold", { soldOut: true }), candidate("excluded"), candidate("category", { category: "금지 상품" }),
-  ], active);
-  assert.deepEqual(eligible.map((item) => item.id), ["ok"]);
-
-  const selected = selectAutoProductionCandidates(
-    [candidate("higher", { selectionScore: 99 }), candidate("required", { selectionScore: 1 })],
-    config({ requiredProductIds: ["required"], productsPerRun: 1, maxImagesPerRun: 1 })
+  const eligible = eligibleAutoProductionCandidates([candidate("ok"), candidate("sold", { soldOut: true }), candidate("excluded"), candidate("category", { category: "금지 상품" })], active);
+  assert.deepEqual(
+    eligible.map((item) => item.id),
+    ["ok"]
   );
+
+  const selected = selectAutoProductionCandidates([candidate("higher", { selectionScore: 99 }), candidate("required", { selectionScore: 1 })], config({ requiredProductIds: ["required"], productsPerRun: 1, maxImagesPerRun: 1 }));
   assert.equal(selected[0].id, "required");
 });
 
 test("9. 최근 7일 내 제작 상품은 기본적으로 제외된다", () => {
   const selected = selectAutoProductionCandidates([candidate("recent"), candidate("fresh")], config(), new Set(["recent"]));
-  assert.equal(selected.some((item) => item.id === "recent"), false);
-  assert.equal(selected.some((item) => item.id === "fresh"), true);
+  assert.equal(
+    selected.some((item) => item.id === "recent"),
+    false
+  );
+  assert.equal(
+    selected.some((item) => item.id === "fresh"),
+    true
+  );
   assert.equal(isProductRecentlyProduced(candidate("recent"), [{ status: "completed", candidate: candidate("recent") }]), true);
 });
 
@@ -322,10 +331,15 @@ test("10. 동일 또는 유사 후킹은 최근 14일 내 반복되지 않는다
 });
 
 test("11. BigQuery 실패 시 사이트 분석 fallback이 작동한다", async () => {
-  const result = await runCandidateSourceFallback([
-    async () => { throw new Error("BigQuery 연결 실패"); },
-    async () => ({ candidates: [candidate("site")], source: "site" }),
-  ], "site");
+  const result = await runCandidateSourceFallback(
+    [
+      async () => {
+        throw new Error("BigQuery 연결 실패");
+      },
+      async () => ({ candidates: [candidate("site")], source: "site" }),
+    ],
+    "site"
+  );
   assert.equal(result.source, "site");
   assert.equal(result.fallbackUsed, true);
   assert.match(result.warnings[0], /BigQuery/);
@@ -347,7 +361,10 @@ test("13. 상품별 후킹 후보 6개가 저장된다", () => {
 
 test("14. 자동 제작에서도 수동 제작과 동일하게 상품별 6장을 독립 실행한다", () => {
   const generated = job({ executionResultIds: job().results.map((result) => result.id) });
-  assert.deepEqual(executionResults(generated).map((result) => result.id), job().results.map((result) => result.id));
+  assert.deepEqual(
+    executionResults(generated).map((result) => result.id),
+    job().results.map((result) => result.id)
+  );
 });
 
 test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성기를 사용한다", async () => {
@@ -358,8 +375,39 @@ test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성
   const factory = await read("app/lib/creative-generation/createNativeGenerationJob.server.ts");
   assert.match(runner, /createNativeGenerationJob/);
   assert.match(runner, /executionResultIds = job\.results\.map/);
+  assert.match(runner, /isCurrentAutoProductionGenerationJob/);
+  assert.match(runner, /assignedReferences/);
   assert.doesNotMatch(runner, /config\.creativesPerProduct|fullHookTestForNewProducts/);
   assert.match(factory, /selectCategoryNativeAdReferences\(job, job\.results\.length\)/);
+});
+
+test("구형 4장 자동제작은 실행·복구하지 않고 v12 레퍼런스 6장만 허용한다", () => {
+  const base = job();
+  const referenceResults = base.results.map((result, index) => ({
+    ...result,
+    nativeCreative: { adReference: { id: `reference-${index + 1}` } },
+  }));
+  const current = {
+    ...base,
+    sourceType: "auto-production",
+    version: CURRENT_AUTO_PRODUCTION_JOB_VERSION,
+    pipeline: "reference-staged-edit",
+    results: referenceResults,
+    executionResultIds: referenceResults.map((result) => result.id),
+  };
+  assert.equal(isCurrentAutoProductionGenerationJob(current), true);
+  assert.equal(isServerRunnableGenerationJob(current), true);
+  assert.equal(isCurrentAutoProductionGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
+  assert.equal(isServerRunnableGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
+  assert.equal(isServerRunnableGenerationJob({ ...current, sourceType: "manual", version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined }), true);
+  assert.equal(isCurrentAutoProductionGenerationJob({ ...current, results: current.results.map((result) => ({ ...result, nativeCreative: undefined })) }), false);
+});
+
+test("핫리로드는 구형 v1 스케줄러를 폐기하고 정확한 시간 창을 쓰는 v2만 유지한다", async () => {
+  const scheduler = await read("app/lib/auto-production/scheduler.server.ts");
+  assert.match(scheduler, /scheduler-v2-exact-window/);
+  assert.match(scheduler, /retireLegacyAutoProductionSchedulers/);
+  assert.match(scheduler, /clearInterval/);
 });
 
 test("16. 하루 기본 용량은 활성 3개 몰의 4×6, 총 72장이며 추가 제작과 분리된다", async () => {
@@ -386,16 +434,17 @@ test("17. 한 상품 실패가 다음 상품 작업을 막지 않는다", async 
   assert.deepEqual(seen, ["failed-product", "next-product"]);
 });
 
-test("18. 후킹별 일회성 실행을 분리하고 한 상품에서 최대 3장을 병렬 처리한다", async () => {
-  const [generation, provider, runner] = await Promise.all([
-    read("app/lib/creative-generation/nativeResultGeneration.server.ts"),
-    read("app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts"),
-    read("app/lib/creative-generation/jobRunner.server.ts"),
-  ]);
+test("18. 후킹별 단일 세션을 분리하고 한 상품에서 최대 3장을 병렬 처리한다", async () => {
+  const [generation, provider, runner] = await Promise.all([read("app/lib/creative-generation/nativeResultGeneration.server.ts"), read("app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts"), read("app/lib/creative-generation/jobRunner.server.ts")]);
   assert.doesNotMatch(generation, /codexProductThreadKey|resumeThread|saveAdvertiserThread/);
   assert.doesNotMatch(generation, /advertiserLocks/);
-  assert.match(provider, /this\.codex\.startThread/);
-  assert.doesNotMatch(provider, /resumeThread|saveAdvertiserThread|codexProductThreadKey/);
+  assert.match(generation, /withNativeCreativeSession\(provider/);
+  assert.match(generation, /session\.generate/);
+  assert.match(generation, /session\.validate/);
+  assert.doesNotMatch(generation, /provider\.(?:generate|validate)\(/);
+  const sessionBlock = provider.slice(provider.indexOf("async openSession"), provider.indexOf("async validateGroup"));
+  assert.equal((sessionBlock.match(/this\.codex\.startThread/g) || []).length, 1);
+  assert.doesNotMatch(provider, /qaThread|resumeThread|saveAdvertiserThread|codexProductThreadKey/);
   assert.match(runner, /selectRunnableResults/);
   assert.match(runner, /Promise\.all/);
 });
@@ -442,10 +491,14 @@ test("23. Codex 실패 시 유료 API로 자동 전환되지 않는다", async (
 
 test("23-1. 완료 실행은 출근 전 ZIP과 후킹별 광고 세팅 파일을 미리 준비한다", async () => {
   const source = await read("app/lib/auto-production/package.server.ts");
+  const productRoute = await read("app/api/auto-production/runs/[runId]/products/[taskId]/download/route.ts");
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
   assert.match(source, /meta-ad-settings\.csv/);
   assert.match(source, /\$\{hookCode\}-ad-setup\.json/);
   assert.match(source, /engine: "codex_local"/);
+  assert.match(source, /buildAutoProductionProductPackage/);
+  assert.match(source, /failures\.json/);
+  assert.match(productRoute, /buildAutoProductionProductPackage/);
   assert.match(runner, /buildAutoProductionPackage/);
   assert.match(runner, /packageStatus: "ready"/);
 });
@@ -466,40 +519,84 @@ test("25. 광고주 추가·수정·일시정지 기능이 API와 화면에 연�
   assert.match(workspace, /광고주 추가/);
   assert.match(workspace, /전체 일시정지/);
   assert.match(workspace, /설정 수정/);
+  assert.match(workspace, /새 광고주는 일시정지 상태로 저장됩니다/);
+  const repository = await read("app/lib/auto-production/advertiserConfig.server.ts");
+  assert.match(repository, /current\?\.enabled \?\? false/);
+  assert.match(repository, /usingSeed \? \{ \.\.\.config, enabled: false \}/);
 });
 
 test("27. 공개 자동제작 응답은 원본 분석 후보와 로컬 비공개 정보를 제거한다", async () => {
   const source = await read("app/lib/auto-production/publicAutoProduction.server.ts");
   assert.match(source, /sourceImageCandidates: \[\]/);
-  assert.match(source, /selectionScore: 0/);
+  assert.match(source, /selectionScore: Math\.max\(0, Math\.min\(100/);
+  assert.match(source, /verifiedEvidence: candidate\.verifiedEvidence\.slice/);
   assert.match(source, /currentSales: null/);
   assert.match(source, /dataEvidence: \[\]/);
   assert.match(source, /tasks: run\.tasks\.map/);
   assert.match(source, /\[비공개 인증정보\]/);
 });
 
-test("28. UI는 현황·후보·작업 큐와 접힌 설정만 제공하고 공통 결과로 연결한다", async () => {
+test("28. UI는 날짜별 실행 내역과 자동제작 이미지를 한 화면에서 보여준다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
-  for (const label of [
-    "자동 콘텐츠 제작",
-    "오늘의 제작 현황",
-    "오늘 후보 미리보기",
-    "자동제작 설정",
-    "공통 제작 결과에서 보기",
-  ]) {
+  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "몰별 다음 제작 예정 상품", "이 4개로 예정상품 확정", "자동제작 설정", "최근 자동 제작 결과", "어제", "최근 7일", "기간 선택", "전체 {productionRun.completedImages}장 ZIP 다운로드", "상품 {downloadableCount}장 ZIP", "다운로드"]) {
     assert.match(workspace, new RegExp(label));
   }
   assert.match(workspace, /settingsPanel/);
-  assert.match(workspace, /일정·후보·제외조건·작업 큐만 관리합니다/);
+  assert.match(workspace, /result\.imageUrl/);
+  assert.match(workspace, /result\.downloadUrl/);
+  assert.match(workspace, /dateFrom/);
+  assert.match(workspace, /dateTo/);
   assert.match(workspace, /\/create-product\?view=results/);
   assert.doesNotMatch(workspace, /골든 레퍼런스로 등록/);
 });
 
-test("26. 후킹 6개 전체 제작은 공용 엔진을 사용하고 자동제작 화면은 결과를 복제하지 않는다", async () => {
+test("26. 후킹 6개 전체 제작은 공용 엔진을 사용하고 자동제작 화면에도 저장 결과를 표시한다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
-  assert.match(workspace, /공통 제작 결과에서 보기/);
+  assert.match(workspace, /imageResults/);
+  assert.match(workspace, /\/products\/\$\{encodeURIComponent\(task\.id\)\}\/download/);
   assert.doesNotMatch(workspace, /후킹 가설 6개 보기/);
   assert.doesNotMatch(workspace, /6개 후킹 모두 제작/);
   assert.match(runner, /hookCodes\.length \? hookCodes : allHookCodes\(job\)/);
+});
+
+test("29. 최근 실행 API는 오늘·어제·7일·직접 기간 조회를 서버 날짜 범위로 제한한다", async () => {
+  const route = await read("app/api/auto-production/runs/route.ts");
+  const repository = await read("app/lib/auto-production/productionRepository.server.ts");
+  assert.match(route, /dateFrom/);
+  assert.match(route, /dateTo/);
+  assert.match(route, /dateFrom > dateTo/);
+  assert.match(repository, /run\.businessDate >= options\.dateFrom/);
+  assert.match(repository, /run\.businessDate <= options\.dateTo/);
+});
+
+test("30. 스케줄러는 저장된 전역 광고주 동시성만큼만 run을 시작한다", async () => {
+  const scheduler = await read("app/lib/auto-production/scheduler.server.ts");
+  assert.match(scheduler, /availableAdvertiserSlots\(settings\.globalConcurrency\)/);
+  assert.match(scheduler, /slice\(0, slots\.available\)/);
+  assert.match(scheduler, /activeAdvertisers\.has\(config\.advertiserId\)/);
+});
+
+test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과를 같은 화면에서 확인한다", async () => {
+  const [workspace, route, runner, packaging, source] = await Promise.all([
+    read("app/components/auto-production/AutoProductionWorkspace.tsx"),
+    read("app/api/auto-production/run/route.ts"),
+    read("app/lib/auto-production/productionRunner.server.ts"),
+    read("app/lib/auto-production/package.server.ts"),
+    read("app/lib/auto-production/productSource.server.ts"),
+  ]);
+  assert.match(workspace, /plannedUrlDrafts/);
+  assert.match(workspace, /adminProductUrls: urls/);
+  assert.match(workspace, /저장하고 지금 제작/);
+  assert.doesNotMatch(workspace, /상품 URL 직접 제작/);
+  assert.match(workspace, /result\.imageUrl/);
+  assert.match(route, /body\.productUrl/);
+  assert.match(route, /directProductInfo/);
+  assert.match(route, /runAutoProductionForProduct/);
+  assert.match(runner, /createNativeGenerationJob/);
+  assert.match(runner, /config\.adminProductUrls\.length/);
+  assert.match(source, /fromPlannedProductUrls/);
+  assert.match(source, /자동제작 화면에서 확정한 다음 제작 예정 상품 URL/);
+  assert.match(runner, /Boolean\(result\.imageUrl\)/);
+  assert.match(packaging, /Boolean\(result\.nativeCreative\?\.finalPath\)/);
 });

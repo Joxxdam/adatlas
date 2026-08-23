@@ -7,12 +7,7 @@ type GeminiImageClientResult = {
 };
 
 function geminiApiKey() {
-  return (
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-    ""
-  );
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || "";
 }
 
 function contentTypeFromSource(source: string) {
@@ -25,13 +20,10 @@ function contentTypeFromSource(source: string) {
 function imageBufferFromLegacyGeminiResponse(result: Record<string, unknown>) {
   const candidates = Array.isArray(result.candidates) ? result.candidates : [];
   for (const candidate of candidates) {
-    const content = (candidate as Record<string, unknown>).content as
-      Record<string, unknown> | undefined;
+    const content = (candidate as Record<string, unknown>).content as Record<string, unknown> | undefined;
     const parts = Array.isArray(content?.parts) ? content.parts : [];
     for (const part of parts) {
-      const inlineData =
-        (part as Record<string, unknown>).inlineData ||
-        (part as Record<string, unknown>).inline_data;
+      const inlineData = (part as Record<string, unknown>).inlineData || (part as Record<string, unknown>).inline_data;
       if (inlineData && typeof inlineData === "object") {
         const data = (inlineData as Record<string, unknown>).data;
         if (typeof data === "string" && data) return Buffer.from(data, "base64");
@@ -52,11 +44,7 @@ function imageBufferFromInteractionResponse(result: Record<string, unknown>) {
     const record = value as Record<string, unknown>;
     const mimeType = record.mime_type || record.mimeType;
     const type = record.type;
-    if (
-      typeof record.data === "string" &&
-      record.data &&
-      ((typeof mimeType === "string" && mimeType.startsWith("image/")) || type === "image")
-    ) {
+    if (typeof record.data === "string" && record.data && ((typeof mimeType === "string" && mimeType.startsWith("image/")) || type === "image")) {
       return Buffer.from(record.data, "base64");
     }
 
@@ -78,8 +66,7 @@ function imageBufferFromInteractionResponse(result: Record<string, unknown>) {
 }
 
 function imageBufferFromGeminiResponse(result: Record<string, unknown>) {
-  const buffer =
-    imageBufferFromInteractionResponse(result) || imageBufferFromLegacyGeminiResponse(result);
+  const buffer = imageBufferFromInteractionResponse(result) || imageBufferFromLegacyGeminiResponse(result);
   if (buffer) return buffer;
   throw new Error("Gemini 이미지 응답에서 이미지 데이터를 찾지 못했습니다.");
 }
@@ -98,10 +85,7 @@ function interactionInputFromParts(parts: Array<Record<string, unknown>>) {
   });
 }
 
-async function callGeminiImageModel(
-  parts: Array<Record<string, unknown>>,
-  prompt: string
-): Promise<GeminiImageClientResult> {
+async function callGeminiImageModel(parts: Array<Record<string, unknown>>, prompt: string): Promise<GeminiImageClientResult> {
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error("GEMINI_API_KEY를 확인해주세요.");
 
@@ -120,17 +104,14 @@ async function callGeminiImageModel(
   if (model.includes("3.1-flash-image")) {
     requestBody.generation_config = { thinking_level: "high" };
   }
-  const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/interactions",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify(requestBody),
-    }
-  );
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
+    body: JSON.stringify(requestBody),
+  });
 
   const text = await response.text();
   let result: Record<string, unknown> = {};
@@ -151,17 +132,11 @@ async function callGeminiImageModel(
   };
 }
 
-export async function generateGeminiImageFromText(params: {
-  prompt: string;
-}): Promise<GeminiImageClientResult> {
+export async function generateGeminiImageFromText(params: { prompt: string }): Promise<GeminiImageClientResult> {
   return callGeminiImageModel([{ text: params.prompt }], params.prompt);
 }
 
-export async function editGeminiImageFromSource(params: {
-  sourceImagePath: string;
-  referenceImagePaths?: string[];
-  prompt: string;
-}): Promise<GeminiImageClientResult> {
+export async function editGeminiImageFromSource(params: { sourceImagePath: string; referenceImagePaths?: string[]; prompt: string }): Promise<GeminiImageClientResult> {
   if (!params.sourceImagePath) {
     throw new Error("나노바나나 기준 이미지 생성에는 원본 기준 이미지가 필요합니다.");
   }

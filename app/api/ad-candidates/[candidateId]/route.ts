@@ -6,10 +6,7 @@ import { assertInternalApiAccess, InternalApiAccessError } from "../../../lib/in
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ candidateId: string }> }
-) {
+export async function GET(request: Request, context: { params: Promise<{ candidateId: string }> }) {
   try {
     assertInternalApiAccess(request);
     const { candidateId } = await context.params;
@@ -17,10 +14,7 @@ export async function GET(
     if (!candidate) {
       return NextResponse.json({ ok: false, error: "광고 후보를 찾지 못했습니다." }, { status: 404 });
     }
-    return NextResponse.json(
-      { ok: true, candidate },
-      { headers: { "Cache-Control": "private, no-store" } }
-    );
+    return NextResponse.json({ ok: true, candidate }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof InternalApiAccessError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: error.status });

@@ -1,10 +1,4 @@
-import type {
-  ProductImageState,
-  ProductInfoForPrompt,
-  SelectedAdImageSource,
-  SelectedAdImageState,
-  SourceImageSelectionState,
-} from "./types";
+import type { ProductImageState, ProductInfoForPrompt, SelectedAdImageSource, SelectedAdImageState, SourceImageSelectionState } from "./types";
 
 export type ResolveCurrentProductImagePathsInput = {
   selectedAdImages?: SelectedAdImageState;
@@ -49,25 +43,16 @@ function output(paths: string[], source: SelectedAdImageSource): ResolvedProduct
   };
 }
 
-function outputWithoutSelectedBackground(
-  paths: string[],
-  source: SelectedAdImageSource,
-  backgroundImagePath?: string
-) {
+function outputWithoutSelectedBackground(paths: string[], source: SelectedAdImageSource, backgroundImagePath?: string) {
   const normalized = compactUniqueImagePaths(paths);
-  const productOnly = backgroundImagePath
-    ? normalized.filter((path) => path !== backgroundImagePath)
-    : normalized;
+  const productOnly = backgroundImagePath ? normalized.filter((path) => path !== backgroundImagePath) : normalized;
   return output(productOnly.length ? productOnly : normalized, source);
 }
 
 function resolveProductImageStatePath(productImageState?: ProductImageState) {
   if (!productImageState) return "";
 
-  if (
-    productImageState.selectedImageMode === "styled-cutout" &&
-    productImageState.styledCutoutImagePath
-  ) {
+  if (productImageState.selectedImageMode === "styled-cutout" && productImageState.styledCutoutImagePath) {
     return productImageState.styledCutoutImagePath;
   }
 
@@ -83,39 +68,18 @@ function resolveSelectedProcessedProductPath(productImageState?: ProductImageSta
   return resolveProductImageStatePath(productImageState);
 }
 
-export function resolveCurrentProductImagePaths(
-  input: ResolveCurrentProductImagePathsInput
-): ResolvedProductImagePaths {
-  const {
-    selectedAdImages,
-    productInfo,
-    sourceImageSelection,
-    selectedSourceImagePath,
-    productImageState,
-    uploadedMainImageDataUrl,
-    gptMainImagePath,
-    backgroundImagePath,
-  } = input;
+export function resolveCurrentProductImagePaths(input: ResolveCurrentProductImagePathsInput): ResolvedProductImagePaths {
+  const { selectedAdImages, productInfo, sourceImageSelection, selectedSourceImagePath, productImageState, uploadedMainImageDataUrl, gptMainImagePath, backgroundImagePath } = input;
 
   const selectedProcessedProductPath = resolveSelectedProcessedProductPath(productImageState);
   if (selectedProcessedProductPath) {
     const selectedPaths = selectedAdImages?.selectedImagePaths || [];
-    const secondaryPaths = selectedPaths.filter(
-      (imagePath) => imagePath !== productImageState?.originalImagePath
-    );
-    return outputWithoutSelectedBackground(
-      [selectedProcessedProductPath, ...secondaryPaths],
-      selectedAdImages?.source || "product",
-      backgroundImagePath
-    );
+    const secondaryPaths = selectedPaths.filter((imagePath) => imagePath !== productImageState?.originalImagePath);
+    return outputWithoutSelectedBackground([selectedProcessedProductPath, ...secondaryPaths], selectedAdImages?.source || "product", backgroundImagePath);
   }
 
   if (selectedAdImages?.selectedImagePaths.length) {
-    return outputWithoutSelectedBackground(
-      selectedAdImages.selectedImagePaths,
-      selectedAdImages.source || "detail",
-      backgroundImagePath
-    );
+    return outputWithoutSelectedBackground(selectedAdImages.selectedImagePaths, selectedAdImages.source || "detail", backgroundImagePath);
   }
 
   if (uploadedMainImageDataUrl) {
@@ -126,24 +90,16 @@ export function resolveCurrentProductImagePaths(
     return output([gptMainImagePath], "gpt");
   }
 
-  const selectedCandidatePath =
-    sourceImageSelection?.selectedSourceImagePath || selectedSourceImagePath || "";
+  const selectedCandidatePath = sourceImageSelection?.selectedSourceImagePath || selectedSourceImagePath || "";
   if (selectedCandidatePath) {
     return output([selectedCandidatePath], "detail");
   }
 
   if (productInfo.productImagePaths?.length) {
-    return outputWithoutSelectedBackground(
-      productInfo.productImagePaths,
-      "product",
-      backgroundImagePath
-    );
+    return outputWithoutSelectedBackground(productInfo.productImagePaths, "product", backgroundImagePath);
   }
 
-  const productInfoPaths = compactUniqueImagePaths([
-    productInfo.productImagePath,
-    productInfo.secondaryProductImagePath,
-  ]);
+  const productInfoPaths = compactUniqueImagePaths([productInfo.productImagePath, productInfo.secondaryProductImagePath]);
   if (productInfoPaths.length) {
     return output(productInfoPaths, "product");
   }
@@ -154,10 +110,7 @@ export function resolveCurrentProductImagePaths(
 
   const productStateImagePath = resolveProductImageStatePath(productImageState);
   if (productStateImagePath || productImageState?.originalImagePath) {
-    return output(
-      compactUniqueImagePaths([productStateImagePath, productImageState?.originalImagePath]),
-      "product"
-    );
+    return output(compactUniqueImagePaths([productStateImagePath, productImageState?.originalImagePath]), "product");
   }
 
   if (backgroundImagePath) {

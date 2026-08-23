@@ -19,15 +19,11 @@ function jsonEnv<T>(value: string | undefined, fallback: T): T {
 function normalizeAssetMaps(value: unknown): MetaAdvertiserAssetMap[] {
   if (Array.isArray(value)) return value as MetaAdvertiserAssetMap[];
   if (!value || typeof value !== "object") return [];
-  return Object.entries(value as Record<string, Omit<MetaAdvertiserAssetMap, "advertiserId">>).map(
-    ([advertiserId, mapping]) => ({ advertiserId, ...mapping })
-  );
+  return Object.entries(value as Record<string, Omit<MetaAdvertiserAssetMap, "advertiserId">>).map(([advertiserId, mapping]) => ({ advertiserId, ...mapping }));
 }
 
 export function readMetaServerConfig() {
-  const advertiserMap = normalizeAssetMaps(
-    jsonEnv<unknown>(process.env.META_ADVERTISER_ASSET_MAP_JSON, {})
-  );
+  const advertiserMap = normalizeAssetMaps(jsonEnv<unknown>(process.env.META_ADVERTISER_ASSET_MAP_JSON, {}));
   return {
     graphApiVersion: process.env.META_GRAPH_API_VERSION?.trim() || "",
     appId: process.env.META_APP_ID?.trim() || "",

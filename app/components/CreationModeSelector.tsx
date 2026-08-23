@@ -7,14 +7,7 @@ const modes = [
     eyebrow: "STORE DISCOVERY",
     title: "광고 기회 상품 찾기",
     description: "BigQuery·크리마켓·업로드 지표를 비교하고, 미연결 시 기존 쇼핑몰 분석으로 광고 후보를 찾습니다.",
-    features: [
-      "BigQuery 판매·노출 데이터 분석",
-      "베스트 카테고리 분석",
-      "광고 후보 상품 추천",
-      "후기/USP 분석",
-      "신상품 및 할인 상품 분석",
-      "추천 콘텐츠 전략",
-    ],
+    features: ["BigQuery 판매·노출 데이터 분석", "베스트 카테고리 분석", "광고 후보 상품 추천", "후기/USP 분석", "신상품 및 할인 상품 분석", "추천 콘텐츠 전략"],
     href: "/analyze-store",
     button: "광고 기회 찾기",
     accent: "analysis",
@@ -24,13 +17,7 @@ const modes = [
     eyebrow: "DIRECT CREATION",
     title: "상세페이지로 광고 만들기",
     description: "제작할 상품이 정해져 있다면 상품 URL을 입력해 바로 광고 소재를 만듭니다.",
-    features: [
-      "상품정보 추출",
-      "상품 근거 기반 후킹 후보 기획",
-      "최종 후킹 6개 선정",
-      "후킹별 AI 완성 광고 생성",
-      "개별 검수·수정·다운로드",
-    ],
+    features: ["상품정보 추출", "상품 근거 기반 후킹 후보 기획", "최종 후킹 6개 선정", "후킹별 AI 완성 광고 생성", "개별 검수·수정·다운로드"],
     href: "/create-product",
     button: "상세페이지로 제작 시작",
     accent: "creation",
@@ -48,16 +35,25 @@ export function CreationModeSelector() {
           </div>
           <p className="eyebrow">CREATIVE OPERATIONS</p>
           <h1>광고 제작을 어디서 시작할까요?</h1>
-          <p>
-            쇼핑몰에서 광고 후보를 먼저 찾거나, 준비된 상품으로 후킹별 AI 완성 광고를 바로 만들 수
-            있습니다.
-          </p>
+          <p>쇼핑몰에서 광고 후보를 먼저 찾거나, 준비된 상품으로 후킹별 AI 완성 광고를 바로 만들 수 있습니다.</p>
         </section>
         <ol className="mode-selector-flow" aria-label="기본 광고 제작 순서">
-          <li><b>1</b><span>광고 후보 찾기</span></li>
-          <li><b>2</b><span>상품 선택</span></li>
-          <li><b>3</b><span>AI 광고 만들기</span></li>
-          <li><b>4</b><span>제작 결과 확인</span></li>
+          <li>
+            <b>1</b>
+            <span>광고 후보 찾기</span>
+          </li>
+          <li>
+            <b>2</b>
+            <span>상품 선택</span>
+          </li>
+          <li>
+            <b>3</b>
+            <span>AI 광고 만들기</span>
+          </li>
+          <li>
+            <b>4</b>
+            <span>제작 결과 확인</span>
+          </li>
         </ol>
         <section className="mode-card-grid" aria-label="제작 방식 선택">
           {modes.map((mode, index) => (
@@ -84,9 +80,7 @@ export function CreationModeSelector() {
           <div>
             <p className="eyebrow">CREATIVE REFERENCE LIBRARY</p>
             <h2 id="reference-mode-title">광고 제작 레퍼런스 관리</h2>
-            <p>
-              현재 수동·자동 이미지 제작에서 실제로 참고하는 기존 광고 레퍼런스를 확인하고 관리합니다.
-            </p>
+            <p>현재 수동·자동 이미지 제작에서 실제로 참고하는 기존 광고 레퍼런스를 확인하고 관리합니다.</p>
           </div>
           <ul>
             <li>기존 제작 레퍼런스 확인</li>

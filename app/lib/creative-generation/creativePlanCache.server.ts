@@ -34,14 +34,18 @@ function normalizedUrl(value: string) {
 }
 
 export function buildCreativePlanFingerprint(truth: ProductTruth) {
-  const factsHash = digest(truth.facts.map((fact) => ({ id:fact.id, value:fact.value, verification:fact.verification, usableInCopy:fact.usableInCopy })));
+  const factsHash = digest(truth.facts.map((fact) => ({ id: fact.id, value: fact.value, verification: fact.verification, usableInCopy: fact.usableInCopy })));
   const representative = truth.confirmedProductImage;
-  const representativeImageHash = digest(representative ? {
-    path:representative.path,
-    width:representative.width,
-    height:representative.height,
-    transparent:representative.transparent,
-  } : null);
+  const representativeImageHash = digest(
+    representative
+      ? {
+          path: representative.path,
+          width: representative.width,
+          height: representative.height,
+          transparent: representative.transparent,
+        }
+      : null
+  );
   return digest({
     normalizedUrl: normalizedUrl(truth.product.landingUrl),
     productId: truth.productId,
@@ -52,7 +56,7 @@ export function buildCreativePlanFingerprint(truth: ProductTruth) {
     productTruthVersion: PRODUCT_TRUTH_VERSION,
     referenceGrammarVersion: REFERENCE_CREATIVE_GRAMMAR_VERSION,
     hookQualityVersion: HOOK_QUALITY_VERSION,
-    cacheVersion:CREATIVE_PLAN_CACHE_VERSION,
+    cacheVersion: CREATIVE_PLAN_CACHE_VERSION,
   });
 }
 
@@ -64,31 +68,19 @@ export async function readCreativePlanCache(fingerprint: string) {
     if (parsed.fingerprint !== fingerprint) return null;
     const candidates = parsed.exploration?.candidates || [];
     const selected = parsed.exploration?.selected || [];
-    const validCopy = selected.every((item) =>
-      item.mainHook && item.subCopy &&
-      !hasBannedCreativePhrase(`${item.mainHook} ${item.subCopy}`) &&
-      !looksLikeGenericOrRepetitiveCopy(item.mainHook,item.subCopy) &&
-      item.score?.total >= 35
-    );
+    const validCopy = selected.every((item) => item.mainHook && item.subCopy && !hasBannedCreativePhrase(`${item.mainHook} ${item.subCopy}`) && !looksLikeGenericOrRepetitiveCopy(item.mainHook, item.subCopy) && item.score?.total >= 35);
     const distinctTags = new Set(selected.map((item) => item.primaryTag)).size;
-    const normalized = (value: string) => String(value || "")
-      .normalize("NFKC")
-      .toLocaleLowerCase("ko-KR")
-      .replace(/[^가-힣a-z0-9]/g, "");
+    const normalized = (value: string) =>
+      String(value || "")
+        .normalize("NFKC")
+        .toLocaleLowerCase("ko-KR")
+        .replace(/[^가-힣a-z0-9]/g, "");
     const claims = selected.map((item) => normalized(item.coreClaim || item.verifiedEvidence?.[0] || item.customerReason));
     const scenes = selected.map((item) => normalized(item.sceneKey));
     const duplicateClaim = claims.some((claim, index) => !claim || claims.indexOf(claim) !== index);
     const duplicateScene = scenes.some((scene, index) => !scene || scenes.indexOf(scene) !== index);
     const priceCount = selected.filter((item) => item.primaryTag === "price-value").length;
-    if (
-      candidates.length < 12 ||
-      selected.length !== 6 ||
-      distinctTags < 4 ||
-      duplicateClaim ||
-      duplicateScene ||
-      priceCount > 2 ||
-      !validCopy
-    ) return null;
+    if (candidates.length < 12 || selected.length !== 6 || distinctTags < 4 || duplicateClaim || duplicateScene || priceCount > 2 || !validCopy) return null;
     return parsed;
   } catch {
     return null;
@@ -96,9 +88,9 @@ export async function readCreativePlanCache(fingerprint: string) {
 }
 
 export async function writeCreativePlanCache(input: CachedPlan) {
-  await mkdir(root, { recursive:true });
+  await mkdir(root, { recursive: true });
   const file = path.join(root, `${input.fingerprint}.json`);
   const temporary = `${file}.${process.pid}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(input,null,2)}\n`, "utf8");
-  await rename(temporary,file);
+  await writeFile(temporary, `${JSON.stringify(input, null, 2)}\n`, "utf8");
+  await rename(temporary, file);
 }

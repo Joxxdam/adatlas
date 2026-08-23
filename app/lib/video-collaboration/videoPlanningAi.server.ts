@@ -7,37 +7,16 @@ import { promisify } from "node:util";
 import { Codex } from "@openai/codex-sdk";
 import type { VideoGenerationStage } from "./types.ts";
 import { assertStructuredVideoPlanningResponse } from "./structuredSchema.ts";
-import {
-  createOpenAiVideoPlanningRunner,
-  resolveVideoPlanningProvider,
-  resolveVideoPlanningStageConfig,
-  sanitizeVideoPlanningErrorMessage,
-  videoPlanningFailureMessage,
-  VideoPlanningGenerationError,
-  type VideoPlanningAiInput,
-} from "./videoPlanningAiCore.ts";
+import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, videoPlanningFailureMessage, VideoPlanningGenerationError, type VideoPlanningAiInput } from "./videoPlanningAiCore.ts";
 
-export {
-  sanitizeVideoPlanningErrorMessage,
-  VideoPlanningGenerationError,
-  videoPlanningFailureHttpStatus,
-} from "./videoPlanningAiCore.ts";
+export { sanitizeVideoPlanningErrorMessage, VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "./videoPlanningAiCore.ts";
 
 const execFileAsync = promisify(execFile);
 let authenticatedExecutablePromise: Promise<string> | undefined;
 
 function safeEnvironment() {
-  const secretNames = new Set([
-    "OPENAI_API_KEY",
-    "CODEX_API_KEY",
-    "AZURE_OPENAI_API_KEY",
-    "REMOVE_BG_API_KEY",
-  ]);
-  return Object.fromEntries(
-    Object.entries(process.env).filter(
-      ([key, value]) => value !== undefined && !secretNames.has(key)
-    )
-  ) as Record<string, string>;
+  const secretNames = new Set(["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY", "REMOVE_BG_API_KEY"]);
+  return Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !secretNames.has(key))) as Record<string, string>;
 }
 
 function codexExecutable() {
@@ -76,26 +55,9 @@ function safeMessage(error: unknown) {
   return sanitizeVideoPlanningErrorMessage(error);
 }
 
-function logStage(input: {
-  stage: VideoGenerationStage;
-  event: "start" | "retry" | "success" | "failure";
-  attempt: number;
-  model: string;
-  effort: string;
-  startedAt: string;
-  endedAt?: string;
-  durationMs?: number;
-  code?: string;
-}) {
+function logStage(input: { stage: VideoGenerationStage; event: "start" | "retry" | "success" | "failure"; attempt: number; model: string; effort: string; startedAt: string; endedAt?: string; durationMs?: number; code?: string }) {
   if (process.env.NODE_ENV === "production" && process.env.VIDEO_PLANNING_LOGS !== "true") return;
-  console.info(
-    `[video-planning-ai] stage=${input.stage} provider=codex-local model=${input.model} effort=${input.effort}` +
-      ` startedAt=${input.startedAt}` +
-      (input.endedAt ? ` endedAt=${input.endedAt}` : "") +
-      ` event=${input.event} attempt=${input.attempt}` +
-      (input.durationMs === undefined ? "" : ` durationMs=${input.durationMs}`) +
-      (input.code ? ` code=${input.code}` : "")
-  );
+  console.info(`[video-planning-ai] stage=${input.stage} provider=codex-local model=${input.model} effort=${input.effort}` + ` startedAt=${input.startedAt}` + (input.endedAt ? ` endedAt=${input.endedAt}` : "") + ` event=${input.event} attempt=${input.attempt}` + (input.durationMs === undefined ? "" : ` durationMs=${input.durationMs}`) + (input.code ? ` code=${input.code}` : ""));
 }
 
 function failureCode(error: unknown) {
@@ -113,10 +75,7 @@ async function runCodexVideoPlanningAi<T>(input: VideoPlanningAiInput): Promise<
   let attempts = 0;
   let lastError: unknown;
   const config = resolveVideoPlanningStageConfig(input);
-  const model =
-    process.env.VIDEO_PLANNING_CODEX_MODEL?.trim() ||
-    process.env.ADATLAS_CODEX_MODEL?.trim() ||
-    "gpt-5.6-sol";
+  const model = process.env.VIDEO_PLANNING_CODEX_MODEL?.trim() || process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol";
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     attempts = attempt;
     logStage({
@@ -140,9 +99,7 @@ async function runCodexVideoPlanningAi<T>(input: VideoPlanningAiInput): Promise<
       });
       const response = await thread.run(input.prompt, {
         outputSchema: input.outputSchema,
-        signal: AbortSignal.timeout(
-          input.timeoutMs || Number(process.env.VIDEO_PLANNING_CODEX_TIMEOUT_MS || 180_000)
-        ),
+        signal: AbortSignal.timeout(input.timeoutMs || Number(process.env.VIDEO_PLANNING_CODEX_TIMEOUT_MS || 180_000)),
       });
       let parsed: T;
       try {

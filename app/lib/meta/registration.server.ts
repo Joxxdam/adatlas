@@ -5,17 +5,9 @@ import { metaConfirmationTokens } from "./confirmationToken.server.ts";
 import { createGuardedMetaClient } from "./guardedClient.server.ts";
 import { validateMetaDraftPreflight } from "./preflight.ts";
 import { GraphMetaProvider, type MetaProvider } from "./provider.server.ts";
-import {
-  buildPausedAdRequest,
-  buildPausedAdSetRequest,
-  buildSingleMediaCreativeRequest,
-} from "./requestBuilders.ts";
+import { buildPausedAdRequest, buildPausedAdSetRequest, buildSingleMediaCreativeRequest } from "./requestBuilders.ts";
 import { metaRepository, type createMetaRepository } from "./repository.server.ts";
-import type {
-  MetaDraftRegistrationInput,
-  MetaRegistrationJob,
-  MetaRegistrationItem,
-} from "./types.ts";
+import type { MetaDraftRegistrationInput, MetaRegistrationJob, MetaRegistrationItem } from "./types.ts";
 
 type Repository = ReturnType<typeof createMetaRepository>;
 
@@ -28,10 +20,7 @@ async function contentHash(path: string, fallback: string) {
   }
 }
 
-export function createMetaDraftRegistrationService(options?: {
-  provider?: MetaProvider;
-  repository?: Repository;
-}) {
+export function createMetaDraftRegistrationService(options?: { provider?: MetaProvider; repository?: Repository }) {
   const config = readMetaServerConfig();
   const repository = options?.repository || metaRepository;
   const provider =
@@ -49,14 +38,9 @@ export function createMetaDraftRegistrationService(options?: {
     dryRun: config.dryRun,
   });
 
-  async function ensurePerformanceExperiment(
-    input: MetaDraftRegistrationInput,
-    job: MetaRegistrationJob
-  ) {
+  async function ensurePerformanceExperiment(input: MetaDraftRegistrationInput, job: MetaRegistrationJob) {
     if (!job.adSetId) return;
-    const creativeByMaterialCode = new Map(
-      input.creatives.map((creative) => [creative.materialCode, creative])
-    );
+    const creativeByMaterialCode = new Map(input.creatives.map((creative) => [creative.materialCode, creative]));
     const rows = job.items
       .filter((item) => Boolean(item.adId))
       .map((item) => {
@@ -82,9 +66,7 @@ export function createMetaDraftRegistrationService(options?: {
       });
     if (!rows.length) return;
     const experimentId = `meta-performance-${job.id}`;
-    const alreadyLinked = (await repository.read()).performance.find(
-      (experiment) => experiment.adSetId === job.adSetId && experiment.id !== experimentId
-    );
+    const alreadyLinked = (await repository.read()).performance.find((experiment) => experiment.adSetId === job.adSetId && experiment.id !== experimentId);
     if (alreadyLinked) return;
     await repository.upsertPerformance({
       id: experimentId,
@@ -113,20 +95,12 @@ export function createMetaDraftRegistrationService(options?: {
     });
   }
 
-  async function verifyCreatedDraft(
-    input: MetaDraftRegistrationInput,
-    job: MetaRegistrationJob,
-    expectedBudget: number
-  ) {
+  async function verifyCreatedDraft(input: MetaDraftRegistrationInput, job: MetaRegistrationJob, expectedBudget: number) {
     if (!config.readEnabled || !job.adSetId) return false;
     const adSet = await client.read<Record<string, unknown>>("adsets", job.adSetId, {
       fields: "id,status,effective_status,daily_budget,campaign_id",
     });
-    if (
-      String(adSet.status) !== "PAUSED" ||
-      Number(adSet.daily_budget) !== expectedBudget ||
-      String(adSet.campaign_id) !== input.campaign.id
-    ) {
+    if (String(adSet.status) !== "PAUSED" || Number(adSet.daily_budget) !== expectedBudget || String(adSet.campaign_id) !== input.campaign.id) {
       return false;
     }
     for (const item of job.items) {
@@ -151,15 +125,13 @@ export function createMetaDraftRegistrationService(options?: {
     async register(input: MetaDraftRegistrationInput, confirmationToken: string) {
       const preflight = validateMetaDraftPreflight(input, config);
       if (!preflight.ok) throw new Error("Meta 등록 사전 검토를 통과하지 못했습니다.");
-      if (!metaConfirmationTokens.consume(confirmationToken, input))
-        throw new Error("최종 확인 토큰이 없거나 만료되었거나 등록 내용이 변경되었습니다.");
+      if (!metaConfirmationTokens.consume(confirmationToken, input)) throw new Error("최종 확인 토큰이 없거나 만료되었거나 등록 내용이 변경되었습니다.");
       const existing = await repository.findRegistrationByRequestKey(input.requestKey);
       if (existing) {
         await ensurePerformanceExperiment(input, existing);
         return existing;
       }
-      if (!repository.acquireLock(input.requestKey))
-        throw new Error("동일한 Meta 등록 요청이 이미 처리 중입니다.");
+      if (!repository.acquireLock(input.requestKey)) throw new Error("동일한 Meta 등록 요청이 이미 처리 중입니다.");
       const now = new Date().toISOString();
       const job: MetaRegistrationJob = {
         id: `meta-registration-${randomUUID()}`,
@@ -178,12 +150,7 @@ export function createMetaDraftRegistrationService(options?: {
       };
       await repository.saveRegistration(job);
       try {
-        const adSet = await client.write<{ id: string }>(
-          "adset.create",
-          `${input.adAccount.id}/adsets`,
-          buildPausedAdSetRequest(input, preflight),
-          { userConfirmed: true }
-        );
+        const adSet = await client.write<{ id: string }>("adset.create", `${input.adAccount.id}/adsets`, buildPausedAdSetRequest(input, preflight), { userConfirmed: true });
         job.adSetId = adSet.id;
         for (const creative of input.creatives) {
           const item: MetaRegistrationItem = {
@@ -192,27 +159,16 @@ export function createMetaDraftRegistrationService(options?: {
             status: "failed",
           };
           try {
-            const hash =
-              creative.mediaHash || (await contentHash(creative.mediaPath, creative.materialCode));
+            const hash = creative.mediaHash || (await contentHash(creative.mediaPath, creative.materialCode));
             let mediaId = await repository.findMediaId(hash);
             if (!mediaId) {
-              const uploaded = await client.write<{ id?: string; hash?: string }>(
-                "media.upload",
-                `${input.adAccount.id}/adimages`,
-                { filename: creative.mediaPath, hash },
-                { userConfirmed: true }
-              );
+              const uploaded = await client.write<{ id?: string; hash?: string }>("media.upload", `${input.adAccount.id}/adimages`, { filename: creative.mediaPath, hash }, { userConfirmed: true });
               mediaId = uploaded.hash || uploaded.id || "";
               if (!mediaId) throw new Error("Meta 미디어 ID를 확인하지 못했습니다.");
               await repository.saveMediaHash(hash, mediaId);
             }
             item.mediaId = mediaId;
-            const createdCreative = await client.write<{ id: string }>(
-              "creative.create",
-              `${input.adAccount.id}/adcreatives`,
-              buildSingleMediaCreativeRequest(input, creative, mediaId),
-              { userConfirmed: true }
-            );
+            const createdCreative = await client.write<{ id: string }>("creative.create", `${input.adAccount.id}/adcreatives`, buildSingleMediaCreativeRequest(input, creative, mediaId), { userConfirmed: true });
             item.creativeId = createdCreative.id;
             const createdAd = await client.write<{ id: string }>(
               "ad.create",

@@ -9,9 +9,7 @@
     "productComposition": {
       "mode": "single",
       "requiresTransparentProduct": false,
-      "instances": [
-        { "role": "primary", "x": 670, "y": 590, "width": 430, "height": 420, "fit": "contain", "rotation": 0 }
-      ]
+      "instances": [{ "role": "primary", "x": 670, "y": 590, "width": 430, "height": 420, "fit": "contain", "rotation": 0 }]
     },
     "textSafeArea": { "x": 700, "y": 100, "width": 410, "height": 500 },
     "logoBox": { "x": 60, "y": 970, "width": 230, "height": 150 },
@@ -64,9 +62,7 @@
     "productComposition": {
       "mode": "single",
       "requiresTransparentProduct": false,
-      "instances": [
-        { "role": "primary", "x": 205, "y": 135, "width": 500, "height": 505, "fit": "cover", "rotation": 0 }
-      ]
+      "instances": [{ "role": "primary", "x": 205, "y": 135, "width": 500, "height": 505, "fit": "cover", "rotation": 0 }]
     },
     "textSafeArea": { "x": 185, "y": 655, "width": 920, "height": 430 },
     "logoBox": { "x": 60, "y": 35, "width": 160, "height": 100 },
@@ -117,9 +113,7 @@
     "productComposition": {
       "mode": "single",
       "requiresTransparentProduct": false,
-      "instances": [
-        { "role": "primary", "x": 580, "y": 220, "width": 560, "height": 770, "fit": "contain", "rotation": -2 }
-      ]
+      "instances": [{ "role": "primary", "x": 580, "y": 220, "width": 560, "height": 770, "fit": "contain", "rotation": -2 }]
     },
     "textSafeArea": { "x": 75, "y": 90, "width": 520, "height": 610 },
     "logoBox": { "x": 950, "y": 45, "width": 190, "height": 120 },

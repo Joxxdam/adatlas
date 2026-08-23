@@ -5,5 +5,9 @@ export const dynamic = "force-dynamic";
 
 export default async function VideoPlanningProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
-  return <FeaturePageShell activeFeature="video-planning"><VideoPlanningProjectWorkspace projectId={projectId} /></FeaturePageShell>;
+  return (
+    <FeaturePageShell activeFeature="video-planning">
+      <VideoPlanningProjectWorkspace projectId={projectId} />
+    </FeaturePageShell>
+  );
 }

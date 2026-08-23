@@ -9,10 +9,7 @@ export function normalizeProductCreationUrl(value?: string | null) {
   }
 }
 
-export function buildProductCreationHref(
-  handoff: Record<string, string | null | undefined>,
-  productUrl?: string | null
-) {
+export function buildProductCreationHref(handoff: Record<string, string | null | undefined>, productUrl?: string | null) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(handoff)) {
     const normalized = String(value || "").trim();

@@ -1,34 +1,17 @@
 import crypto from "node:crypto";
-import type {
-  ProductAnalysisSnapshot,
-  ProductLockedAsset,
-  ReferenceVideoAnalysis,
-  VideoConcept,
-  VideoConceptScore,
-  VideoCreativeStyle,
-  VideoHookCandidate,
-  VideoHookType,
-  VideoPipelineProgress,
-  VideoPlanValidation,
-  VideoReferenceAsset,
-  VideoVisualBible,
-} from "./types.ts";
+import type { ProductAnalysisSnapshot, ProductLockedAsset, ReferenceVideoAnalysis, VideoConcept, VideoConceptScore, VideoCreativeStyle, VideoHookCandidate, VideoHookType, VideoPipelineProgress, VideoPlanValidation, VideoReferenceAsset, VideoVisualBible } from "./types.ts";
 import { VIDEO_PLANNING_PIPELINE } from "./prompts.ts";
 
-const genericHookPatterns = [
-  /일상을 바꿔/i,
-  /특별한 경험/i,
-  /새로운 선택/i,
-  /지금 만나/i,
-  /놀라운 변화/i,
-];
+const genericHookPatterns = [/일상을 바꿔/i, /특별한 경험/i, /새로운 선택/i, /지금 만나/i, /놀라운 변화/i];
 
 function clamp(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 function text(value: unknown) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function first(values: string[] | undefined, fallback = "") {
@@ -46,19 +29,8 @@ function evidenceIds(analysis: ProductAnalysisSnapshot, query: string) {
     .slice(0, 3);
 }
 
-function hookScore(input: {
-  hook: string;
-  visualIdea: string;
-  evidenceCount: number;
-  hasProblem: boolean;
-  policySafe: boolean;
-  typeIndex: number;
-}) {
-  const specificity = /\d|원|%|장|개|초|분|kg|ml|g/i.test(input.hook)
-    ? 92
-    : input.evidenceCount
-      ? 80
-      : 58;
+function hookScore(input: { hook: string; visualIdea: string; evidenceCount: number; hasProblem: boolean; policySafe: boolean; typeIndex: number }) {
+  const specificity = /\d|원|%|장|개|초|분|kg|ml|g/i.test(input.hook) ? 92 : input.evidenceCount ? 80 : 58;
   const values = {
     stopPower: clamp(82 - input.typeIndex * 2 + (/[?!]|왜|말고|후/i.test(input.hook) ? 8 : 0)),
     specificity,
@@ -71,16 +43,7 @@ function hookScore(input: {
   };
   return {
     ...values,
-    total: clamp(
-      values.stopPower * 0.17 +
-        values.specificity * 0.13 +
-        values.productRelevance * 0.15 +
-        values.visualPotential * 0.13 +
-        values.evidenceStrength * 0.14 +
-        values.conversionPotential * 0.13 +
-        values.originality * 0.08 +
-        values.policySafety * 0.07
-    ),
+    total: clamp(values.stopPower * 0.17 + values.specificity * 0.13 + values.productRelevance * 0.15 + values.visualPotential * 0.13 + values.evidenceStrength * 0.14 + values.conversionPotential * 0.13 + values.originality * 0.08 + values.policySafety * 0.07),
   };
 }
 
@@ -121,10 +84,7 @@ export function buildVideoHookCandidates(analysis: ProductAnalysisSnapshot) {
       evidenceIds: [...new Set(ids)],
       visualIdea,
       score,
-      rejectionReasons: [
-        ...(genericHookPatterns.some((pattern) => pattern.test(hook)) ? ["범용 문구"] : []),
-        ...(!policySafe ? ["확인되지 않은 주장 포함"] : []),
-      ],
+      rejectionReasons: [...(genericHookPatterns.some((pattern) => pattern.test(hook)) ? ["범용 문구"] : []), ...(!policySafe ? ["확인되지 않은 주장 포함"] : [])],
     };
   });
 }
@@ -133,10 +93,7 @@ export function selectTopDistinctHooks(candidates: VideoHookCandidate[], count =
   return [...candidates]
     .filter((candidate) => !candidate.rejectionReasons.length)
     .sort((left, right) => right.score.total - left.score.total)
-    .filter(
-      (candidate, index, items) =>
-        items.findIndex((item) => item.hookType === candidate.hookType) === index
-    )
+    .filter((candidate, index, items) => items.findIndex((item) => item.hookType === candidate.hookType) === index)
     .slice(0, count);
 }
 
@@ -145,10 +102,7 @@ export function conceptScoreFromHook(hook: VideoHookCandidate): VideoConceptScor
   return { ...hook.score, narrativeFlow, total: clamp(hook.score.total * 0.9 + narrativeFlow * 0.1) };
 }
 
-export function buildVisualBible(
-  analysis: ProductAnalysisSnapshot,
-  style: VideoCreativeStyle = "auto"
-): VideoVisualBible {
+export function buildVisualBible(analysis: ProductAnalysisSnapshot, style: VideoCreativeStyle = "auto"): VideoVisualBible {
   const category = text(analysis.category).toLowerCase();
   const isFood = /식품|농산|축산|육류|고기|과일/.test(category);
   const isBeauty = /뷰티|화장|바디|샤워|생활/.test(category);

@@ -1,10 +1,4 @@
-import type {
-  AdBrief,
-  AdImageLabel,
-  AutoReferenceContext,
-  ProductInfoForPrompt,
-  ReferenceMatchResult,
-} from "./types";
+import type { AdBrief, AdImageLabel, AutoReferenceContext, ProductInfoForPrompt, ReferenceMatchResult } from "./types";
 
 function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -31,16 +25,8 @@ function labelContext(label: AdImageLabel): AutoReferenceContext {
   return {
     referenceId: label.imageId,
     category: final?.category || label.category || undefined,
-    hookTypes: Array.from(
-      new Set(
-        [...(label.structuredLabels?.hookTypes || []), clean(final?.hookType)].filter(Boolean)
-      )
-    ),
-    appealPoints: Array.from(
-      new Set(
-        [...(label.structuredLabels?.appealPoints || []), clean(final?.appealPoint)].filter(Boolean)
-      )
-    ),
+    hookTypes: Array.from(new Set([...(label.structuredLabels?.hookTypes || []), clean(final?.hookType)].filter(Boolean))),
+    appealPoints: Array.from(new Set([...(label.structuredLabels?.appealPoints || []), clean(final?.appealPoint)].filter(Boolean))),
     copyNuance: final?.copyNuance || final?.toneOfVoice || undefined,
     consumerInsight: final?.consumerInsight || undefined,
     purchaseTrigger: final?.purchaseTrigger || undefined,
@@ -52,28 +38,12 @@ function labelContext(label: AdImageLabel): AutoReferenceContext {
 }
 
 function analysisCompleteness(context: AutoReferenceContext) {
-  const fields = [
-    context.category,
-    context.copyNuance,
-    context.consumerInsight,
-    context.purchaseTrigger,
-    context.reusablePattern,
-    context.visualTone,
-    context.layoutPattern,
-    context.ocrText,
-  ];
-  return (
-    fields.filter(Boolean).length +
-    (context.hookTypes?.length || 0) +
-    (context.appealPoints?.length || 0)
-  );
+  const fields = [context.category, context.copyNuance, context.consumerInsight, context.purchaseTrigger, context.reusablePattern, context.visualTone, context.layoutPattern, context.ocrText];
+  return fields.filter(Boolean).length + (context.hookTypes?.length || 0) + (context.appealPoints?.length || 0);
 }
 
 function intensityScore(intensity: AdBrief["creativeIntensity"], text: string) {
-  if (
-    intensity === "performance" &&
-    /가격|할인|특가|긴급|한정|UGC|문제|후기|리뷰|구성/.test(text)
-  ) {
+  if (intensity === "performance" && /가격|할인|특가|긴급|한정|UGC|문제|후기|리뷰|구성/.test(text)) {
     return 12;
   }
   if (intensity === "brand" && /프리미엄|고급|신뢰|브랜드|감성|선물/.test(text)) {
@@ -85,23 +55,8 @@ function intensityScore(intensity: AdBrief["creativeIntensity"], text: string) {
   return 0;
 }
 
-export function matchReferences(params: {
-  product: ProductInfoForPrompt;
-  brief: AdBrief;
-  labels: AdImageLabel[];
-  limit?: number;
-}): ReferenceMatchResult[] {
-  const productText = [
-    params.product.productName,
-    params.product.category,
-    params.product.mainBenefit,
-    params.product.extractedDescription,
-    params.product.discountInfo,
-    params.product.targetCustomer,
-    params.brief.additionalEmphasis,
-  ]
-    .filter(Boolean)
-    .join(" ");
+export function matchReferences(params: { product: ProductInfoForPrompt; brief: AdBrief; labels: AdImageLabel[]; limit?: number }): ReferenceMatchResult[] {
+  const productText = [params.product.productName, params.product.category, params.product.mainBenefit, params.product.extractedDescription, params.product.discountInfo, params.product.targetCustomer, params.brief.additionalEmphasis].filter(Boolean).join(" ");
   const productTokens = tokens(productText);
   const productPrice = numberFromPrice(params.product.price);
   const hasDiscount = Boolean(params.product.discountInfo || params.product.originalPrice);
@@ -111,20 +66,7 @@ export function matchReferences(params: {
     .filter((label) => label.finalLabel && Object.values(label.finalLabel).some(Boolean))
     .map((label) => {
       const context = labelContext(label);
-      const referenceText = [
-        context.category,
-        ...(context.hookTypes || []),
-        ...(context.appealPoints || []),
-        context.copyNuance,
-        context.consumerInsight,
-        context.purchaseTrigger,
-        context.reusablePattern,
-        context.visualTone,
-        context.layoutPattern,
-        context.ocrText,
-      ]
-        .filter(Boolean)
-        .join(" ");
+      const referenceText = [context.category, ...(context.hookTypes || []), ...(context.appealPoints || []), context.copyNuance, context.consumerInsight, context.purchaseTrigger, context.reusablePattern, context.visualTone, context.layoutPattern, context.ocrText].filter(Boolean).join(" ");
       const referenceTokens = tokens(referenceText);
       const reasons: string[] = [];
       let score = 0;
@@ -132,18 +74,12 @@ export function matchReferences(params: {
 
       const productCategory = clean(params.product.category).toLowerCase();
       const referenceCategory = clean(context.category).toLowerCase();
-      const hasUsefulCategory = Boolean(
-        productCategory && !["기타", "default", "etc"].includes(productCategory)
-      );
+      const hasUsefulCategory = Boolean(productCategory && !["기타", "default", "etc"].includes(productCategory));
       if (hasUsefulCategory && referenceCategory && productCategory === referenceCategory) {
         score += 40;
         productRelationScore += 40;
         reasons.push("동일 카테고리");
-      } else if (
-        hasUsefulCategory &&
-        referenceCategory &&
-        (productCategory.includes(referenceCategory) || referenceCategory.includes(productCategory))
-      ) {
+      } else if (hasUsefulCategory && referenceCategory && (productCategory.includes(referenceCategory) || referenceCategory.includes(productCategory))) {
         score += 24;
         productRelationScore += 24;
         reasons.push("유사 카테고리");
@@ -162,8 +98,7 @@ export function matchReferences(params: {
 
       const referencePrice = numberFromPrice(context.ocrText || "");
       if (productPrice && referencePrice) {
-        const ratio =
-          Math.max(productPrice, referencePrice) / Math.min(productPrice, referencePrice);
+        const ratio = Math.max(productPrice, referencePrice) / Math.min(productPrice, referencePrice);
         if (ratio <= 1.35) {
           score += 12;
           productRelationScore += 12;
@@ -191,31 +126,19 @@ export function matchReferences(params: {
         score += intensity;
         reasons.push("광고 강도와 카피 뉘앙스 일치");
       }
-      if (
-        params.brief.adObjective === "purchase" &&
-        /구매|가격|혜택|CTA|전환|트리거/.test(referenceText)
-      ) {
+      if (params.brief.adObjective === "purchase" && /구매|가격|혜택|CTA|전환|트리거/.test(referenceText)) {
         score += 6;
         reasons.push("구매 목표 적합");
       }
-      if (
-        params.brief.adObjective === "signup" &&
-        /신규|첫|입문|체험|발견|차별|필요|문제|해결/.test(referenceText)
-      ) {
+      if (params.brief.adObjective === "signup" && /신규|첫|입문|체험|발견|차별|필요|문제|해결/.test(referenceText)) {
         score += 6;
         reasons.push("신규 고객 확보 목표 적합");
       }
-      if (
-        params.brief.adObjective === "awareness" &&
-        /브랜드|감성|신뢰|발견|반전|비주얼/.test(referenceText)
-      ) {
+      if (params.brief.adObjective === "awareness" && /브랜드|감성|신뢰|발견|반전|비주얼/.test(referenceText)) {
         score += 6;
         reasons.push("인지 목표 적합");
       }
-      if (
-        params.brief.adObjective === "retargeting" &&
-        /재구매|다시|혜택|가격|구성|후기|리뷰|한정|CTA|전환/.test(referenceText)
-      ) {
+      if (params.brief.adObjective === "retargeting" && /재구매|다시|혜택|가격|구성|후기|리뷰|한정|CTA|전환/.test(referenceText)) {
         score += 6;
         reasons.push("재구매·리타겟팅 목표 적합");
       }
@@ -245,7 +168,5 @@ export function matchReferences(params: {
 
 export function labelsForReferenceMatches(labels: AdImageLabel[], matches: ReferenceMatchResult[]) {
   const byId = new Map(labels.map((label) => [label.imageId, label]));
-  return matches
-    .map((match) => byId.get(match.referenceId))
-    .filter((label): label is AdImageLabel => Boolean(label));
+  return matches.map((match) => byId.get(match.referenceId)).filter((label): label is AdImageLabel => Boolean(label));
 }

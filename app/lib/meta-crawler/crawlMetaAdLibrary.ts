@@ -57,12 +57,7 @@ function imageFromStyle(value: string | undefined, baseUrl: string) {
 }
 
 function extractStartedAt(text: string) {
-  const patterns = [
-    /Started running on\s+([^.\n]+)/i,
-    /Library ID:\s*\d+[\s\S]{0,160}?Started running on\s+([^.\n]+)/i,
-    /게재 시작[:\s]+([^.\n]+)/i,
-    /시작일[:\s]+([^.\n]+)/i,
-  ];
+  const patterns = [/Started running on\s+([^.\n]+)/i, /Library ID:\s*\d+[\s\S]{0,160}?Started running on\s+([^.\n]+)/i, /게재 시작[:\s]+([^.\n]+)/i, /시작일[:\s]+([^.\n]+)/i];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
@@ -78,20 +73,10 @@ async function extractCard(card: Locator, brandName: string, pageUrl: string): P
   const crawledAt = new Date().toISOString();
   const text = await safeText(card);
   const imageUrl = absoluteUrl(await safeAttr(card.locator("img").first(), "src"), pageUrl);
-  const videoThumbnailUrl =
-    absoluteUrl(await safeAttr(card.locator("video").first(), "poster"), pageUrl) ??
-    imageFromStyle(
-      await safeAttr(card.locator("[style*='background-image']").first(), "style"),
-      pageUrl
-    );
-  const rawSnapshotHref =
-    (await safeAttr(card.locator("a[href*='ads/library/?id=']").first(), "href")) ??
-    (await safeAttr(card.locator("a[href*='ad_archive_id']").first(), "href")) ??
-    (await safeAttr(card.locator("a[href*='library_id']").first(), "href"));
+  const videoThumbnailUrl = absoluteUrl(await safeAttr(card.locator("video").first(), "poster"), pageUrl) ?? imageFromStyle(await safeAttr(card.locator("[style*='background-image']").first(), "style"), pageUrl);
+  const rawSnapshotHref = (await safeAttr(card.locator("a[href*='ads/library/?id=']").first(), "href")) ?? (await safeAttr(card.locator("a[href*='ad_archive_id']").first(), "href")) ?? (await safeAttr(card.locator("a[href*='library_id']").first(), "href"));
   const adSnapshotUrl = absoluteUrl(rawSnapshotHref, pageUrl);
-  const landingHref =
-    (await safeAttr(card.locator("a[href^='http']").last(), "href")) ??
-    (await safeAttr(card.locator("a[role='link']").last(), "href"));
+  const landingHref = (await safeAttr(card.locator("a[href^='http']").last(), "href")) ?? (await safeAttr(card.locator("a[role='link']").last(), "href"));
   const landingUrl = absoluteUrl(landingHref, pageUrl);
 
   return {
@@ -107,13 +92,7 @@ async function extractCard(card: Locator, brandName: string, pageUrl: string): P
 }
 
 async function collectCandidateCards(page: Page) {
-  const selectors = [
-    "[data-testid='ad-library-card']",
-    "div:has-text('Library ID')",
-    "div:has-text('Sponsored')",
-    "div:has-text('Started running')",
-    "div[role='article']",
-  ];
+  const selectors = ["[data-testid='ad-library-card']", "div:has-text('Library ID')", "div:has-text('Sponsored')", "div:has-text('Started running')", "div[role='article']"];
 
   for (const selector of selectors) {
     const locator = page.locator(selector);
@@ -139,11 +118,7 @@ async function scrollToLoad(page: Page, limit: number) {
   }
 }
 
-async function collectImageCandidates(
-  page: Page,
-  brandName: string,
-  limit: number
-): Promise<MetaAdCard[]> {
+async function collectImageCandidates(page: Page, brandName: string, limit: number): Promise<MetaAdCard[]> {
   const pageUrl = page.url();
   const crawledAt = new Date().toISOString();
   const candidates = await page.evaluate(() => {
@@ -151,13 +126,7 @@ async function collectImageCandidates(
 
     return Array.from(document.images)
       .map((image) => {
-        const source =
-          image.currentSrc ||
-          image.src ||
-          image.getAttribute("data-src") ||
-          image.getAttribute("data-imgsrc") ||
-          image.getAttribute("srcset")?.split(",")[0]?.trim().split(/\s+/)[0] ||
-          "";
+        const source = image.currentSrc || image.src || image.getAttribute("data-src") || image.getAttribute("data-imgsrc") || image.getAttribute("srcset")?.split(",")[0]?.trim().split(/\s+/)[0] || "";
 
         return {
           source,
@@ -219,17 +188,14 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
     const context = await browser.newContext({
       viewport: { width: 1440, height: 1200 },
       locale: "ko-KR",
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
     });
     const page = await context.newPage();
 
     try {
       await page.goto(metaLibraryUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     } catch (error) {
-      throw new Error(
-        `Meta 페이지 접속 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`
-      );
+      throw new Error(`Meta 페이지 접속 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
     }
     await page.waitForTimeout(2500);
     await scrollToLoad(page, limit);
@@ -249,9 +215,7 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
 
     const cards = await collectCandidateCards(page);
     const count = Math.min(await cards.count(), limit * 3);
-    const byKey = new Map<string, MetaAdCard>(
-      imageCandidates.map((ad) => [ad.imageUrl ?? ad.adSnapshotUrl ?? ad.adText, ad])
-    );
+    const byKey = new Map<string, MetaAdCard>(imageCandidates.map((ad) => [ad.imageUrl ?? ad.adSnapshotUrl ?? ad.adText, ad]));
 
     for (let index = 0; index < count && byKey.size < limit; index += 1) {
       try {
@@ -266,9 +230,7 @@ export async function crawlMetaAdLibrary(request: MetaCrawlRequest): Promise<Met
           byKey.set(dedupeKey, ad);
         }
       } catch (error) {
-        warnings.push(
-          error instanceof Error ? error.message : `Card ${index + 1} extraction failed.`
-        );
+        warnings.push(error instanceof Error ? error.message : `Card ${index + 1} extraction failed.`);
       }
     }
 

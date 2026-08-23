@@ -2,21 +2,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  buildReviewHeadline,
-  clampReviewBox,
-  recommendReviewTemplate,
-  reviewTemplateLabel,
-  reviewTypeLabel,
-} from "../../../lib/mvp/reviewCreative";
-import type {
-  NormalizedImageBox,
-  ReviewCreativeTemplate,
-  ReviewPrivacyMaskStyle,
-  ReviewPrivacyRegion,
-  ReviewSourceCandidate,
-  ReviewType,
-} from "../../../lib/mvp/types";
+import { buildReviewHeadline, clampReviewBox, recommendReviewTemplate, reviewTemplateLabel, reviewTypeLabel } from "../../../lib/mvp/reviewCreative";
+import type { NormalizedImageBox, ReviewCreativeTemplate, ReviewPrivacyMaskStyle, ReviewPrivacyRegion, ReviewSourceCandidate, ReviewType } from "../../../lib/mvp/types";
 import styles from "./ReviewCreativeWorkbench.module.css";
 
 type EditSnapshot = {
@@ -24,22 +11,8 @@ type EditSnapshot = {
   masks: Record<string, ReviewPrivacyRegion[]>;
 };
 
-const reviewTypes: ReviewType[] = [
-  "review-text-screenshot",
-  "review-photo-with-text",
-  "review-photo-only",
-  "community-reaction",
-  "before-after",
-  "review-card",
-  "testimonial-graphic",
-  "not-review",
-];
-const templates: ReviewCreativeTemplate[] = [
-  "reaction-comment",
-  "real-review-focus",
-  "review-collection",
-  "before-after-usage",
-];
+const reviewTypes: ReviewType[] = ["review-text-screenshot", "review-photo-with-text", "review-photo-only", "community-reaction", "before-after", "review-card", "testimonial-graphic", "not-review"];
+const templates: ReviewCreativeTemplate[] = ["reaction-comment", "real-review-focus", "review-collection", "before-after-usage"];
 
 function initialIds(candidates: ReviewSourceCandidate[]) {
   const recommended = candidates.find((candidate) => candidate.recommended) || candidates[0];
@@ -85,7 +58,10 @@ function maskClass(style: ReviewPrivacyMaskStyle) {
 }
 
 function reviewTextKey(value: string) {
-  return value.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase().slice(0, 180);
+  return value
+    .replace(/[^0-9a-z가-힣]/gi, "")
+    .toLowerCase()
+    .slice(0, 180);
 }
 
 function keySentenceRegion(candidate: ReviewSourceCandidate) {
@@ -97,24 +73,13 @@ function keySentenceRegion(candidate: ReviewSourceCandidate) {
   })?.box;
 }
 
-export default function ReviewCreativeWorkbench(props: {
-  initialCandidates: ReviewSourceCandidate[];
-  productName: string;
-  productDescription?: string;
-  productImagePath?: string;
-  backgroundImagePath?: string;
-  accentColor?: string;
-}) {
+export default function ReviewCreativeWorkbench(props: { initialCandidates: ReviewSourceCandidate[]; productName: string; productDescription?: string; productImagePath?: string; backgroundImagePath?: string; accentColor?: string }) {
   const [candidates, setCandidates] = useState(() => props.initialCandidates.slice(0, 5));
   const [selectedIds, setSelectedIds] = useState(() => initialIds(props.initialCandidates));
   const [crops, setCrops] = useState(() => initialCrops(props.initialCandidates));
   const [masks, setMasks] = useState(() => initialMasks(props.initialCandidates));
-  const [template, setTemplate] = useState<ReviewCreativeTemplate>(() =>
-    recommendReviewTemplate(props.initialCandidates, initialIds(props.initialCandidates))
-  );
-  const [headline, setHeadline] = useState(() =>
-    buildReviewHeadline(props.initialCandidates.find((candidate) => candidate.recommended) || props.initialCandidates[0])
-  );
+  const [template, setTemplate] = useState<ReviewCreativeTemplate>(() => recommendReviewTemplate(props.initialCandidates, initialIds(props.initialCandidates)));
+  const [headline, setHeadline] = useState(() => buildReviewHeadline(props.initialCandidates.find((candidate) => candidate.recommended) || props.initialCandidates[0]));
   const [status, setStatus] = useState<{
     kind: "idle" | "loading" | "success" | "error";
     message: string;
@@ -128,10 +93,7 @@ export default function ReviewCreativeWorkbench(props: {
   const primaryCrop = primary ? crops[primary.id] || primary.recommendedCrop : undefined;
   const primaryMasks = primary ? masks[primary.id] || [] : [];
 
-  const selectedCandidates = useMemo(
-    () => selectedIds.map((id) => candidates.find((candidate) => candidate.id === id)).filter(Boolean) as ReviewSourceCandidate[],
-    [candidates, selectedIds]
-  );
+  const selectedCandidates = useMemo(() => selectedIds.map((id) => candidates.find((candidate) => candidate.id === id)).filter(Boolean) as ReviewSourceCandidate[], [candidates, selectedIds]);
 
   function snapshot(): EditSnapshot {
     return {
@@ -162,14 +124,7 @@ export default function ReviewCreativeWorkbench(props: {
         return current.filter((id) => id !== candidate.id);
       }
       const duplicateText = reviewTextKey(candidate.ocrText);
-      if (
-        duplicateText.length >= 24 &&
-        current.some((id) =>
-          candidates.some(
-            (item) => item.id === id && reviewTextKey(item.ocrText) === duplicateText
-          )
-        )
-      ) {
+      if (duplicateText.length >= 24 && current.some((id) => candidates.some((item) => item.id === id && reviewTextKey(item.ocrText) === duplicateText))) {
         setStatus({ kind: "error", message: "같은 내용의 후기는 모음형에 중복 추가할 수 없습니다." });
         return current;
       }
@@ -184,11 +139,7 @@ export default function ReviewCreativeWorkbench(props: {
     setGeneratedImagePath("");
   }
 
-  async function analyzeImage(input: {
-    imagePath: string;
-    sourceType: ReviewSourceCandidate["sourceType"];
-    sourceContext?: string;
-  }) {
+  async function analyzeImage(input: { imagePath: string; sourceType: ReviewSourceCandidate["sourceType"]; sourceContext?: string }) {
     const response = await fetch("/api/reviews/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -231,12 +182,7 @@ export default function ReviewCreativeWorkbench(props: {
       const uploaded = await uploadResponse.json();
       if (!uploadResponse.ok || !uploaded.success) throw new Error(uploaded.error || "후기 업로드 실패");
       const next = await analyzeImage({ imagePath: uploaded.imagePath, sourceType: "upload" });
-      const duplicate = candidates.find(
-        (candidate) =>
-          (next.contentHash && candidate.contentHash === next.contentHash) ||
-          (reviewTextKey(next.ocrText).length >= 24 &&
-            reviewTextKey(candidate.ocrText) === reviewTextKey(next.ocrText))
-      );
+      const duplicate = candidates.find((candidate) => (next.contentHash && candidate.contentHash === next.contentHash) || (reviewTextKey(next.ocrText).length >= 24 && reviewTextKey(candidate.ocrText) === reviewTextKey(next.ocrText)));
       if (duplicate) {
         selectPrimary(duplicate);
         setStatus({ kind: "success", message: "동일한 후기 이미지가 이미 있어 기존 분석 결과를 재사용했습니다." });
@@ -298,11 +244,7 @@ export default function ReviewCreativeWorkbench(props: {
       crops,
       masks: {
         ...masks,
-        [primary.id]: primaryMasks.map((mask) =>
-          mask.id === id
-            ? { ...mask, ...patch, box: patch.box ? clampReviewBox(patch.box) : mask.box }
-            : mask
-        ),
+        [primary.id]: primaryMasks.map((mask) => (mask.id === id ? { ...mask, ...patch, box: patch.box ? clampReviewBox(patch.box) : mask.box } : mask)),
       },
     });
     setGeneratedImagePath("");
@@ -390,7 +332,9 @@ export default function ReviewCreativeWorkbench(props: {
               const selected = selectedIds.includes(candidate.id);
               return (
                 <article className={`${styles.candidate} ${selected ? styles.selected : ""}`} key={candidate.id}>
-                  <div className={styles.candidateImage}><img alt="후기 후보" src={candidate.imagePath} /></div>
+                  <div className={styles.candidateImage}>
+                    <img alt="후기 후보" src={candidate.imagePath} />
+                  </div>
                   <div className={styles.badges}>
                     {candidate.recommended ? <b>AI 추천</b> : null}
                     <span>{reviewTypeLabel(candidate.reviewType)}</span>
@@ -398,12 +342,15 @@ export default function ReviewCreativeWorkbench(props: {
                   </div>
                   <strong>{candidate.keySentence || "핵심 문장 직접 입력 필요"}</strong>
                   <small>
-                    OCR {candidate.ocrProvider} · {Math.round(candidate.ocrConfidence * 100)}%
-                    {candidate.privacyRegions.length ? ` · 개인정보 ${candidate.privacyRegions.length}곳` : ""}
+                    OCR {candidate.ocrProvider} · {Math.round(candidate.ocrConfidence * 100)}%{candidate.privacyRegions.length ? ` · 개인정보 ${candidate.privacyRegions.length}곳` : ""}
                   </small>
                   <div className={styles.cardActions}>
-                    <button onClick={() => selectPrimary(candidate)} type="button">이 후기 사용</button>
-                    <label><input checked={selected} onChange={() => toggleCollection(candidate)} type="checkbox" /> 모음에 추가</label>
+                    <button onClick={() => selectPrimary(candidate)} type="button">
+                      이 후기 사용
+                    </button>
+                    <label>
+                      <input checked={selected} onChange={() => toggleCollection(candidate)} type="checkbox" /> 모음에 추가
+                    </label>
                   </div>
                 </article>
               );
@@ -415,65 +362,162 @@ export default function ReviewCreativeWorkbench(props: {
               <div className={styles.controls}>
                 <label>
                   <span>추천 템플릿</span>
-                  <select value={template} onChange={(event) => { setTemplate(event.target.value as ReviewCreativeTemplate); setGeneratedImagePath(""); }}>
-                    {templates.map((item) => <option key={item} value={item}>{reviewTemplateLabel(item)}</option>)}
+                  <select
+                    value={template}
+                    onChange={(event) => {
+                      setTemplate(event.target.value as ReviewCreativeTemplate);
+                      setGeneratedImagePath("");
+                    }}
+                  >
+                    {templates.map((item) => (
+                      <option key={item} value={item}>
+                        {reviewTemplateLabel(item)}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className={styles.headlineField}>
                   <span>상단 후킹 문구</span>
-                  <input maxLength={120} value={headline} onChange={(event) => { setHeadline(event.target.value); setGeneratedImagePath(""); }} />
+                  <input
+                    maxLength={120}
+                    value={headline}
+                    onChange={(event) => {
+                      setHeadline(event.target.value);
+                      setGeneratedImagePath("");
+                    }}
+                  />
                   <small>AI 광고 문구이며 실제 후기 인용문처럼 따옴표로 표시하지 않습니다.</small>
                 </label>
-                <button disabled={status.kind === "loading"} onClick={renderCreative} type="button">후기 광고 소재 생성</button>
+                <button disabled={status.kind === "loading"} onClick={renderCreative} type="button">
+                  후기 광고 소재 생성
+                </button>
               </div>
 
               <div className={styles.previewGrid}>
-                <figure><figcaption>원본 후기</figcaption><div className={styles.previewSurface}><img alt="원본 후기" src={primary.imagePath} /></div></figure>
-                <figure><figcaption>자동·수정 크롭</figcaption><div className={styles.cropSurface}><div className={styles.zoomLayer} style={{ transform: `scale(${previewZoom})` }}><img alt="후기 크롭" src={primary.imagePath} style={cropImageStyle(primaryCrop)} /></div></div></figure>
+                <figure>
+                  <figcaption>원본 후기</figcaption>
+                  <div className={styles.previewSurface}>
+                    <img alt="원본 후기" src={primary.imagePath} />
+                  </div>
+                </figure>
+                <figure>
+                  <figcaption>자동·수정 크롭</figcaption>
+                  <div className={styles.cropSurface}>
+                    <div className={styles.zoomLayer} style={{ transform: `scale(${previewZoom})` }}>
+                      <img alt="후기 크롭" src={primary.imagePath} style={cropImageStyle(primaryCrop)} />
+                    </div>
+                  </div>
+                </figure>
                 <figure>
                   <figcaption>개인정보 가림 미리보기</figcaption>
                   <div className={styles.cropSurface}>
                     <div className={styles.zoomLayer} style={{ transform: `scale(${previewZoom})` }}>
                       <img alt="개인정보 가림 후기" src={primary.imagePath} style={cropImageStyle(primaryCrop)} />
-                      {primaryMasks.filter((mask) => mask.enabled).map((mask) => <span className={maskClass(mask.maskStyle)} key={mask.id} style={maskInCrop(mask.box, primaryCrop)} />)}
+                      {primaryMasks
+                        .filter((mask) => mask.enabled)
+                        .map((mask) => (
+                          <span className={maskClass(mask.maskStyle)} key={mask.id} style={maskInCrop(mask.box, primaryCrop)} />
+                        ))}
                     </div>
                   </div>
                 </figure>
-                <figure><figcaption>1200×1200 합성 결과</figcaption><div className={styles.previewSurface}>{generatedImagePath ? <img alt="후기 광고 결과" src={generatedImagePath} /> : <span>소재 생성 후 표시됩니다.</span>}</div></figure>
+                <figure>
+                  <figcaption>1200×1200 합성 결과</figcaption>
+                  <div className={styles.previewSurface}>{generatedImagePath ? <img alt="후기 광고 결과" src={generatedImagePath} /> : <span>소재 생성 후 표시됩니다.</span>}</div>
+                </figure>
               </div>
 
               <details className={styles.advanced}>
                 <summary>고급 옵션 · OCR, 크롭, 개인정보 마스킹 수정</summary>
                 <div className={styles.historyActions}>
-                  <button disabled={!undoStack.length} onClick={undo} type="button">실행 취소</button>
-                  <button disabled={!redoStack.length} onClick={redo} type="button">다시 실행</button>
-                  <button onClick={resetCrop} type="button">자동 크롭으로 초기화</button>
-                  <button onClick={() => reanalyze(primary)} type="button">다시 분석</button>
-                  <button onClick={() => setStatus({ kind: "success", message: "현재 크롭과 마스킹 수정 결과를 렌더링에 적용합니다." })} type="button">수정 결과 적용</button>
-                  <button onClick={resetPrimaryEdits} type="button">수정 취소</button>
+                  <button disabled={!undoStack.length} onClick={undo} type="button">
+                    실행 취소
+                  </button>
+                  <button disabled={!redoStack.length} onClick={redo} type="button">
+                    다시 실행
+                  </button>
+                  <button onClick={resetCrop} type="button">
+                    자동 크롭으로 초기화
+                  </button>
+                  <button onClick={() => reanalyze(primary)} type="button">
+                    다시 분석
+                  </button>
+                  <button onClick={() => setStatus({ kind: "success", message: "현재 크롭과 마스킹 수정 결과를 렌더링에 적용합니다." })} type="button">
+                    수정 결과 적용
+                  </button>
+                  <button onClick={resetPrimaryEdits} type="button">
+                    수정 취소
+                  </button>
                 </div>
                 <div className={styles.advancedGrid}>
-                  <label><span>후기 유형</span><select value={primary.reviewType} onChange={(event) => updateCandidate(primary.id, { reviewType: event.target.value as ReviewType, classificationConfidence: 1 })}>{reviewTypes.map((type) => <option key={type} value={type}>{reviewTypeLabel(type)}</option>)}</select></label>
-                  <label><span>핵심 후기 문장</span><input value={primary.keySentence} onChange={(event) => updateCandidate(primary.id, { keySentence: event.target.value })} /></label>
-                  <label className={styles.full}><span>실제 OCR 원문</span><textarea rows={6} value={primary.ocrText} onChange={(event) => updateCandidate(primary.id, { ocrText: event.target.value, ocrProvider: "manual" })} /></label>
+                  <label>
+                    <span>후기 유형</span>
+                    <select value={primary.reviewType} onChange={(event) => updateCandidate(primary.id, { reviewType: event.target.value as ReviewType, classificationConfidence: 1 })}>
+                      {reviewTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {reviewTypeLabel(type)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>핵심 후기 문장</span>
+                    <input value={primary.keySentence} onChange={(event) => updateCandidate(primary.id, { keySentence: event.target.value })} />
+                  </label>
+                  <label className={styles.full}>
+                    <span>실제 OCR 원문</span>
+                    <textarea rows={6} value={primary.ocrText} onChange={(event) => updateCandidate(primary.id, { ocrText: event.target.value, ocrProvider: "manual" })} />
+                  </label>
                 </div>
                 <div className={styles.sliderGrid}>
-                  <label><span>미리보기 확대 · {previewZoom.toFixed(1)}×</span><input min="1" max="2.5" step="0.1" type="range" value={previewZoom} onChange={(event) => setPreviewZoom(Number(event.target.value))} /></label>
-                  {(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>크롭 {key} · {pct(primaryCrop[key])}</span><input min="0" max="1" step="0.01" type="range" value={primaryCrop[key]} onChange={(event) => updateCrop(key, Number(event.target.value))} /></label>)}
+                  <label>
+                    <span>미리보기 확대 · {previewZoom.toFixed(1)}×</span>
+                    <input min="1" max="2.5" step="0.1" type="range" value={previewZoom} onChange={(event) => setPreviewZoom(Number(event.target.value))} />
+                  </label>
+                  {(["x", "y", "width", "height"] as const).map((key) => (
+                    <label key={key}>
+                      <span>
+                        크롭 {key} · {pct(primaryCrop[key])}
+                      </span>
+                      <input min="0" max="1" step="0.01" type="range" value={primaryCrop[key]} onChange={(event) => updateCrop(key, Number(event.target.value))} />
+                    </label>
+                  ))}
                 </div>
-                <div className={styles.maskHeader}><strong>개인정보 마스킹</strong><button onClick={addMask} type="button">가림 영역 추가</button></div>
+                <div className={styles.maskHeader}>
+                  <strong>개인정보 마스킹</strong>
+                  <button onClick={addMask} type="button">
+                    가림 영역 추가
+                  </button>
+                </div>
                 {primaryMasks.map((mask) => (
                   <div className={styles.maskRow} key={mask.id}>
-                    <label><input checked={mask.enabled} onChange={(event) => updateMask(mask.id, { enabled: event.target.checked })} type="checkbox" /> {mask.reason}</label>
-                    <select value={mask.maskStyle} onChange={(event) => updateMask(mask.id, { maskStyle: event.target.value as ReviewPrivacyMaskStyle })}><option value="blur">블러</option><option value="mosaic">모자이크</option><option value="solid">단색</option></select>
-                    {(["x", "y", "width", "height"] as const).map((key) => <label key={key}><span>{key}</span><input min="0" max="1" step="0.01" type="range" value={mask.box[key]} onChange={(event) => updateMask(mask.id, { box: { ...mask.box, [key]: Number(event.target.value) } })} /></label>)}
-                    <button onClick={() => deleteMask(mask.id)} type="button">삭제</button>
+                    <label>
+                      <input checked={mask.enabled} onChange={(event) => updateMask(mask.id, { enabled: event.target.checked })} type="checkbox" /> {mask.reason}
+                    </label>
+                    <select value={mask.maskStyle} onChange={(event) => updateMask(mask.id, { maskStyle: event.target.value as ReviewPrivacyMaskStyle })}>
+                      <option value="blur">블러</option>
+                      <option value="mosaic">모자이크</option>
+                      <option value="solid">단색</option>
+                    </select>
+                    {(["x", "y", "width", "height"] as const).map((key) => (
+                      <label key={key}>
+                        <span>{key}</span>
+                        <input min="0" max="1" step="0.01" type="range" value={mask.box[key]} onChange={(event) => updateMask(mask.id, { box: { ...mask.box, [key]: Number(event.target.value) } })} />
+                      </label>
+                    ))}
+                    <button onClick={() => deleteMask(mask.id)} type="button">
+                      삭제
+                    </button>
                   </div>
                 ))}
               </details>
 
               <p className={styles.rightsNotice}>실제 광고에 사용하기 전 후기 이미지의 광고 활용 권한과 개인정보 포함 여부를 확인해주세요.</p>
-              {generatedImagePath ? <a className={styles.download} download href={generatedImagePath}>1200×1200 PNG 다운로드</a> : null}
+              {generatedImagePath ? (
+                <a className={styles.download} download href={generatedImagePath}>
+                  1200×1200 PNG 다운로드
+                </a>
+              ) : null}
             </>
           ) : null}
         </>

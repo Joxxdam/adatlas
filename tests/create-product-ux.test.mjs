@@ -1,21 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import {
-  buildProductCreationHref,
-  normalizeProductCreationUrl,
-} from "../app/lib/product-creation/handoffUrl.ts";
+import { buildProductCreationHref, normalizeProductCreationUrl } from "../app/lib/product-creation/handoffUrl.ts";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("create-product keeps every existing candidate handoff", async () => {
   const page = await read("app/create-product/page.tsx");
-  for (const handoff of [
-    "buildProductCreationHandoff",
-    "buildOpportunityProductCreationHandoff",
-    "buildBigQueryProductCreationHandoff",
-    "buildSiteCandidateProductCreationHandoff",
-  ]) {
+  for (const handoff of ["buildProductCreationHandoff", "buildOpportunityProductCreationHandoff", "buildBigQueryProductCreationHandoff", "buildSiteCandidateProductCreationHandoff"]) {
     assert.match(page, new RegExp(handoff));
   }
 });
@@ -32,16 +24,11 @@ test("analysis handoff keeps the selected product URL independently of cached de
   const page = await read("app/create-product/page.tsx");
   const dashboard = await read("app/components/MvpDashboard.tsx");
   const selectionRoute = await read("app/api/ad-candidates/site/select/route.ts");
-  const bigQueryWorkspace = await read(
-    "app/components/bigquery/BigQueryCandidateWorkspace.tsx"
-  );
+  const bigQueryWorkspace = await read("app/components/bigquery/BigQueryCandidateWorkspace.tsx");
   assert.match(page, /initialProductUrl/);
   assert.match(dashboard, /선택한 상품 URL을 자동으로 입력했습니다/);
   assert.match(selectionRoute, /selection\.candidate\.product\.productUrl/);
-  assert.match(
-    bigQueryWorkspace,
-    /buildProductCreationHref\([\s\S]*dataCandidateId: candidate\.id[\s\S]*candidate\.productUrl/
-  );
+  assert.match(bigQueryWorkspace, /buildProductCreationHref\([\s\S]*dataCandidateId: candidate\.id[\s\S]*candidate\.productUrl/);
 });
 
 test("main navigation separates image creation, video planning, archive, and performance operations", async () => {
@@ -68,10 +55,7 @@ test("main navigation separates image creation, video planning, archive, and per
 test("성과 확인과 이미지 제작 관리 도구는 광고 제작 아래의 간결한 드롭다운으로 표시된다", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
   const home = await read("app/components/CreationModeSelector.tsx");
-  const imageSection = navigation.slice(
-    navigation.indexOf('<section className="feature-navigation-group feature-navigation-image"'),
-    navigation.indexOf('<section className="feature-navigation-group feature-navigation-video"')
-  );
+  const imageSection = navigation.slice(navigation.indexOf('<section className="feature-navigation-group feature-navigation-image"'), navigation.indexOf('<section className="feature-navigation-group feature-navigation-video"'));
   assert.match(imageSection, /IMAGE_CONTENT_FEATURES\.map[\s\S]*feature-navigation-performance-menu[\s\S]*성과 확인[\s\S]*이미지 제작 관리 도구/);
   assert.match(imageSection, /href=\{PERFORMANCE_FEATURE\.href\}[\s\S]*광고 성과 확인/);
   assert.doesNotMatch(imageSection, /⚙/);
@@ -84,11 +68,13 @@ test("성과 확인과 이미지 제작 관리 도구는 광고 제작 아래의
   assert.doesNotMatch(home, /href="\/image-analysis-references"/);
 });
 
-test("auto production manages orchestration and links to the shared creative result", async () => {
+test("auto production manages orchestration and shows stored creative results directly", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
   assert.doesNotMatch(workspace, /ProductAdCopyPanel|ResultActions|next\/image/);
-  assert.match(workspace, /공통 제작 결과에서 보기/);
+  assert.match(workspace, /최근 자동 제작 결과/);
+  assert.match(workspace, /result\.imageUrl/);
+  assert.match(workspace, /result\.downloadUrl/);
   assert.match(workspace, /\/create-product\?view=results/);
   assert.match(runner, /createNativeGenerationJob|runCreativeGenerationJob/);
 });
@@ -98,7 +84,7 @@ test("공통 화면은 데이위즈 로고와 설정 없는 ZIP 레퍼런스 단
   const dashboard = await read("app/components/MvpDashboard.tsx");
   const creationSteps = await read("app/components/features/creative-generation/CreativeCreationSteps.tsx");
   const brand = await read("app/components/DaywizBrand.tsx");
-  const logo = await read("public/daywiz-logo.svg");
+  const logo = await readFile(new URL("../public/daywiz-logo.png", import.meta.url));
   assert.match(navigation, /DaywizBrand/);
   for (const label of ["상품 확인", "상품군 레퍼런스 6장 선택", "상품·문구 단계별 교체"]) assert.match(creationSteps, new RegExp(label));
   assert.doesNotMatch(creationSteps, /광고 목표 선택/);
@@ -108,18 +94,20 @@ test("공통 화면은 데이위즈 로고와 설정 없는 ZIP 레퍼런스 단
   assert.doesNotMatch(briefForm, /제작 설정 변경|productionSettings|objectiveOptions/);
   assert.match(dashboard, /CreativeCreationSteps/);
   assert.match(dashboard, /legacyManualProductionToolsAvailable = false/);
-  assert.match(brand, /\/daywiz-logo\.svg/);
-  assert.match(logo, /DAYWIZ/);
+  assert.match(brand, /\/daywiz-logo\.png/);
+  assert.ok(logo.length > 0);
   assert.doesNotMatch(navigation, />AdAtlas</);
 });
 
 test("create-product defaults to URL analysis and preserves admin entry points", async () => {
   const dashboard = await read("app/components/MvpDashboard.tsx");
-  const productSummary = await read(
-    "app/components/features/product-brief/ProductAnalysisSummary.tsx"
-  );
+  const productSummary = await read("app/components/features/product-brief/ProductAnalysisSummary.tsx");
   assert.match(dashboard, /상품 분석하기/);
   assert.match(productSummary, /이 상품으로 광고 만들기/);
+  assert.match(productSummary, /선택 완료 · 아래에서 제작 상태 확인/);
+  assert.match(dashboard, /loaded=\{currentProductLoaded\}/);
+  assert.match(dashboard, /selectedForGeneration=\{generationPlanConfirmed\}/);
+  assert.doesNotMatch(dashboard, /loaded=\{currentProductLoaded && !generationPlanConfirmed\}/);
   assert.match(dashboard, /onUseProduct=\{\(\) => \{[\s\S]*setGenerationPlanConfirmed\(true\)/);
   assert.doesNotMatch(dashboard, /<ProductBriefForm/);
   assert.match(dashboard, /카테고리 관리/);
@@ -129,12 +117,8 @@ test("create-product defaults to URL analysis and preserves admin entry points",
 });
 
 test("reference creatives are server-driven and deliver each completed card immediately", async () => {
-  const generator = await read(
-    "app/components/features/creative-generation/SixCreativeGenerator.tsx"
-  );
-  const assetActions = await read(
-    "app/components/features/creative-assets/CreativeAssetActions.tsx"
-  );
+  const generator = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
+  const assetActions = await read("app/components/features/creative-assets/CreativeAssetActions.tsx");
   assert.match(generator, /백그라운드에서 계속 제작/);
   assert.match(generator, /creative-generation\/jobs\/active/);
   assert.doesNotMatch(generator, /function runPending/);
@@ -155,22 +139,19 @@ test("reference creatives are server-driven and deliver each completed card imme
 });
 
 test("같은 URL도 다시 분석하면 새 제작을 시작하고 진행 중 작업만 복원한다", async () => {
-  const [dashboard, generator, activeRoute, downloadRoute, assetRoute] = await Promise.all([
-    read("app/components/MvpDashboard.tsx"),
-    read("app/components/features/creative-generation/SixCreativeGenerator.tsx"),
-    read("app/api/creative-generation/jobs/active/route.ts"),
-    read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/download/route.ts"),
-    read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/asset/route.ts"),
-  ]);
+  const [dashboard, generator, jobStorage, activeRoute, downloadRoute, assetRoute] = await Promise.all([read("app/components/MvpDashboard.tsx"), read("app/components/features/creative-generation/SixCreativeGenerator.tsx"), read("app/lib/creative-generation/activeCreativeJob.client.ts"), read("app/api/creative-generation/jobs/active/route.ts"), read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/download/route.ts"), read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/asset/route.ts")]);
 
   assert.match(dashboard, /analyzedProductUrl=\{lastLoadedProductUrl\}/);
   assert.match(dashboard, /setProductAnalysisRevision\(\(current\) => current \+ 1\)/);
   assert.match(generator, /props\.analysisRevision/);
   assert.match(generator, /hasGenerationWorkRemaining/);
-  assert.match(generator, /localStorage\.getItem\(`\$\{storedJobKey\}:\$\{currentProductUrl\}`\)/);
+  assert.match(generator, /shouldPersistGenerationJob/);
+  assert.match(generator, /activeCreativeProductJobStorageKey\(currentProductUrl\)/);
+  assert.match(jobStorage, /daywiz-active-creative-job-id/);
   assert.match(generator, /상품 분석이 완료됐습니다\. 이 상품으로 새 광고 6장을 제작합니다/);
   assert.match(generator, /다운로드가 완료됐습니다\. 같은 상품 URL을 다시 분석하면 새 광고 6장을 제작합니다/);
-  assert.match(generator, /jobs\/active\?productUrl=/);
+  assert.match(generator, /jobs\/active\$\{query\}/);
+  assert.match(generator, /jobs\/recent\?limit=10/);
   assert.match(activeRoute, /requestedProductUrl/);
   assert.match(activeRoute, /candidate\.productTruth\.product\.landingUrl/);
   assert.match(downloadRoute, /result\?\.imagePath/);
@@ -199,5 +180,5 @@ test("workspace exposes an accessible mobile drawer and single-column mobile res
   assert.match(dashboard, /aria-expanded=\{mobileNavOpen\}/);
   assert.match(css, /@media \(max-width: 1024px\)/);
   assert.match(css, /\.mvp-shell-simplified \.mvp-sidebar\.open/);
-  assert.match(css, /\.six-creative-grid \{ grid-template-columns: 1fr; \}/);
+  assert.match(css, /\.six-creative-grid\s*\{[\s\S]*?grid-template-columns:\s*1fr;/);
 });

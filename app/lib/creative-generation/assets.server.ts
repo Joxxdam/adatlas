@@ -6,6 +6,7 @@ import { validatePublicHttpUrl } from "../store-analysis/urlSafety.ts";
 const MAX_ASSET_BYTES = 12 * 1024 * 1024;
 const MAX_REDIRECTS = 4;
 const publicRoot = path.join(process.cwd(), "public");
+const generatedRoot = path.join(process.cwd(), ".data", "generated");
 
 async function readLimited(response: Response) {
   const declared = Number(response.headers.get("content-length") || 0);
@@ -72,13 +73,42 @@ function resolvePublicFile(value: string) {
   return resolved;
 }
 
+function isWithinRoot(root: string, candidate: string) {
+  const relative = path.relative(root, candidate);
+  return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
+}
+
+function resolveLocalRasterFile(value: string) {
+  if (!path.isAbsolute(value)) return resolvePublicFile(value);
+  const resolved = path.resolve(value);
+  if (!isWithinRoot(publicRoot, resolved) && !isWithinRoot(generatedRoot, resolved)) {
+    throw new Error("허용되지 않은 로컬 이미지 경로입니다.");
+  }
+  return resolved;
+}
+
+async function readLocalRasterFile(value: string) {
+  const resolved = resolveLocalRasterFile(value);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const stat = await fs.stat(resolved);
+      if (!stat.isFile() || stat.size > MAX_ASSET_BYTES) throw new Error("이미지 용량은 12MB 이하여야 합니다.");
+      const buffer = await fs.readFile(resolved);
+      if (buffer.length !== stat.size) throw new Error("이미지 파일 저장이 아직 완료되지 않았습니다.");
+      return buffer;
+    } catch (error) {
+      lastError = error;
+      if (!isWithinRoot(generatedRoot, resolved) || attempt === 5) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+  }
+  throw lastError;
+}
+
 export async function readCreativeRasterAsset(value: string) {
   const data = decodeDataUrl(value);
-  const buffer = data
-    ? data
-    : /^https?:\/\//i.test(value)
-      ? await downloadRemoteAsset(value)
-      : await fs.readFile(resolvePublicFile(value));
+  const buffer = data ? data : /^https?:\/\//i.test(value) ? await downloadRemoteAsset(value) : await readLocalRasterFile(value);
   const metadata = await sharp(buffer).metadata();
   if (!metadata.width || !metadata.height || metadata.width * metadata.height > 40_000_000) {
     throw new Error("이미지 해상도가 지원 범위를 벗어났습니다.");

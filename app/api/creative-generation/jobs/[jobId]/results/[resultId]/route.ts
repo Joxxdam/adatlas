@@ -10,10 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ jobId: string; resultId: string }> }
-) {
+export async function POST(request: Request, context: { params: Promise<{ jobId: string; resultId: string }> }) {
   const startedAtMs = Date.now();
   const { jobId, resultId } = await context.params;
   try {
@@ -34,26 +31,18 @@ export async function POST(
       const native = await handleNativeResultGeneration({ jobId, resultId, requestId: body.requestId, action: body.action, feedback: body.feedback, copy: body.copy });
       const ok = ["success", "approved", "excluded"].includes(native.result.status) || body.action === "feedback" || body.action === "golden-reference";
       const publicJob = toPublicGenerationJob(native.job);
-      return NextResponse.json({
-        ok,
-        job: publicJob,
-        result: publicJob.results.find((result) => result.id === native.result.id),
-      }, { status: ok ? 200 : 422 });
+      return NextResponse.json(
+        {
+          ok,
+          job: publicJob,
+          result: publicJob.results.find((result) => result.id === native.result.id),
+        },
+        { status: ok ? 200 : 422 }
+      );
     }
     // 레거시 작업만 지연 로드한다. AI native-final 작업에서는 템플릿·Sharp
     // 합성 렌더러 모듈 자체를 불러오지 않는다.
-    const [
-      { createAssetFromGenerationResult },
-      { creativeAssetRepository },
-      { toCreativeAssetSnapshot },
-      { renderCreativeResult },
-      { validateCopyAgainstTruth },
-      { messageSimilarity },
-      { planMasterScene },
-      { createOrReuseMasterScene },
-      { applyCreativeContentNotesToCopy },
-      { cremaMarketRepository },
-    ] = await Promise.all([
+    const [{ createAssetFromGenerationResult }, { creativeAssetRepository }, { toCreativeAssetSnapshot }, { renderCreativeResult }, { validateCopyAgainstTruth }, { messageSimilarity }, { planMasterScene }, { createOrReuseMasterScene }, { applyCreativeContentNotesToCopy }, { cremaMarketRepository }] = await Promise.all([
       import("../../../../../../lib/creative-assets/fromGeneration.server"),
       import("../../../../../../lib/creative-assets/repository.server"),
       import("../../../../../../lib/creative-assets/types"),
@@ -65,10 +54,10 @@ export async function POST(
       import("../../../../../../lib/creative-content-notes/service"),
       import("../../../../../../lib/crema-market/repository.server"),
     ]);
-    const requestId = String(body.requestId || "").trim().slice(0, 160);
-    const generationRequestKey = requestId
-      ? `creative-result:${jobId}:${resultId}:${requestId}`
-      : `creative-result:${jobId}:${resultId}:attempt-${target.attempts + 1}`;
+    const requestId = String(body.requestId || "")
+      .trim()
+      .slice(0, 160);
+    const generationRequestKey = requestId ? `creative-result:${jobId}:${resultId}:${requestId}` : `creative-result:${jobId}:${resultId}:attempt-${target.attempts + 1}`;
     const idempotentAsset = await creativeAssetRepository.getByGenerationRequestKey(generationRequestKey);
     if (idempotentAsset) {
       if (!target.creativeAsset) {
@@ -95,19 +84,25 @@ export async function POST(
         result: toPublicGenerationJob(job).results.find((result) => result.id === resultId),
       });
     }
-    const noteApplication = applyCreativeContentNotesToCopy({
-      headline: body.copy?.headline ?? target.hookPlan.headline,
-      body: body.copy?.body ?? target.hookPlan.body,
-      proof: body.copy?.proof ?? target.hookPlan.proof,
-      offer: body.copy?.offer ?? target.hookPlan.offer,
-      cta: body.copy?.cta ?? target.hookPlan.cta,
-    }, job.productTruth.product.creativeContext?.appliedContentNotes || []);
+    const noteApplication = applyCreativeContentNotesToCopy(
+      {
+        headline: body.copy?.headline ?? target.hookPlan.headline,
+        body: body.copy?.body ?? target.hookPlan.body,
+        proof: body.copy?.proof ?? target.hookPlan.proof,
+        offer: body.copy?.offer ?? target.hookPlan.offer,
+        cta: body.copy?.cta ?? target.hookPlan.cta,
+      },
+      job.productTruth.product.creativeContext?.appliedContentNotes || []
+    );
     if (noteApplication.compliance.state === "blocked") {
-      return NextResponse.json({
-        ok: false,
-        error: "광고 콘텐츠 참고사항의 필수·금지 규칙을 충족하지 못해 생성을 중단했습니다.",
-        compliance: noteApplication.compliance,
-      }, { status: 409 });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "광고 콘텐츠 참고사항의 필수·금지 규칙을 충족하지 못해 생성을 중단했습니다.",
+          compliance: noteApplication.compliance,
+        },
+        { status: 409 }
+      );
     }
     const copyText = Object.values(noteApplication.copy).join(" ");
     const factual = validateCopyAgainstTruth(copyText, job.productTruth);
@@ -115,22 +110,12 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          error: `ProductTruth에 없는 수치 또는 금지 표현입니다: ${[
-            ...factual.unauthorizedNumericTokens,
-            ...factual.blockedClaims,
-          ].join(", ")}`,
+          error: `ProductTruth에 없는 수치 또는 금지 표현입니다: ${[...factual.unauthorizedNumericTokens, ...factual.blockedClaims].join(", ")}`,
         },
         { status: 400 }
       );
     }
-    const duplicate = job.results.find(
-      (result) =>
-        result.id !== resultId &&
-        messageSimilarity(
-          `${noteApplication.copy.headline} ${noteApplication.copy.body}`,
-          `${result.hookPlan.headline} ${result.hookPlan.body}`
-        ) >= 0.68
-    );
+    const duplicate = job.results.find((result) => result.id !== resultId && messageSimilarity(`${noteApplication.copy.headline} ${noteApplication.copy.body}`, `${result.hookPlan.headline} ${result.hookPlan.body}`) >= 0.68);
     if (duplicate) {
       return NextResponse.json(
         {
@@ -157,17 +142,11 @@ export async function POST(
       ),
     }));
     let active = job.results.find((result) => result.id === resultId)!;
-    if (
-      job.productReferenceProfile &&
-      active.creativeDesign &&
-      (!active.masterScene || body.regenerateScene)
-    ) {
+    if (job.productReferenceProfile && active.creativeDesign && (!active.masterScene || body.regenerateScene)) {
       const productReferenceProfile = job.productReferenceProfile;
       job = await creativeGenerationJobStore.update(jobId, (current) => ({
         ...current,
-        results: current.results.map((result) =>
-          result.id === resultId ? { ...result, generationStage: "scene-generating" } : result
-        ),
+        results: current.results.map((result) => (result.id === resultId ? { ...result, generationStage: "scene-generating" } : result)),
       }));
       active = job.results.find((result) => result.id === resultId)!;
       const sceneSpec = planMasterScene({
@@ -219,9 +198,7 @@ export async function POST(
     const autoRepairs: string[] = [];
     job = await creativeGenerationJobStore.update(jobId, (current) => ({
       ...current,
-      results: current.results.map((result) =>
-        result.id === resultId ? { ...result, generationStage: "copy-rendering" } : result
-      ),
+      results: current.results.map((result) => (result.id === resultId ? { ...result, generationStage: "copy-rendering" } : result)),
     }));
     active = job.results.find((result) => result.id === resultId)!;
     let rendered = await renderCreativeResult({
@@ -230,18 +207,9 @@ export async function POST(
       overrides: requestedCopy,
       repairPass: 0,
     });
-    const overflowSlots = new Set(
-      rendered.qa.findings
-        .filter((finding) => finding.id === "text-overflow")
-        .flatMap(() =>
-          rendered.renderPlan.renderedSlots.filter((slot) => slot.overflow).map((slot) => slot.id)
-        )
-    );
+    const overflowSlots = new Set(rendered.qa.findings.filter((finding) => finding.id === "text-overflow").flatMap(() => rendered.renderPlan.renderedSlots.filter((slot) => slot.overflow).map((slot) => slot.id)));
     const repairCopy = { ...requestedCopy };
-    if (
-      overflowSlots.has("headline") &&
-      requestedCopy.headline !== active.hookPlan.headline
-    ) {
+    if (overflowSlots.has("headline") && requestedCopy.headline !== active.hookPlan.headline) {
       repairCopy.headline = active.hookPlan.headline;
       autoRepairs.push("슬롯을 초과한 사용자 헤드라인을 검증된 H 후킹 원문으로 복구");
     }
@@ -284,7 +252,10 @@ export async function POST(
               contentNoteCompliance: noteApplication.compliance,
               error: rendered.qa.passed
                 ? undefined
-                : rendered.qa.findings.filter((finding) => finding.severity === "error").map((finding) => finding.message).join(" · "),
+                : rendered.qa.findings
+                    .filter((finding) => finding.severity === "error")
+                    .map((finding) => finding.message)
+                    .join(" · "),
               completedAt: new Date().toISOString(),
               durationMs: Date.now() - startedAtMs,
             }
@@ -295,22 +266,21 @@ export async function POST(
     if (opportunityId && rendered.qa.passed && assetResult) {
       await cremaMarketRepository.updateOpportunity(opportunityId, { status: "creative_generated" }).catch(() => undefined);
     }
-    return NextResponse.json({
-      ok: rendered.qa.passed,
-      job: toPublicGenerationJob(completed),
-      result: toPublicGenerationJob(completed).results.find((result) => result.id === resultId),
-    }, { status: rendered.qa.passed ? 200 : 422 });
+    return NextResponse.json(
+      {
+        ok: rendered.qa.passed,
+        job: toPublicGenerationJob(completed),
+        result: toPublicGenerationJob(completed).results.find((result) => result.id === resultId),
+      },
+      { status: rendered.qa.passed ? 200 : 422 }
+    );
   } catch (error) {
     const message = toPublicGenerationError(error, "광고 결과 생성 실패");
     try {
       const failed = await creativeGenerationJobStore.update(jobId, (current) => ({
         ...current,
         errors: [...current.errors, message].slice(-20),
-        results: current.results.map((result) =>
-          result.id === resultId
-            ? { ...result, status: "failed", error: message, completedAt: new Date().toISOString(), durationMs: Date.now() - startedAtMs }
-            : result
-        ),
+        results: current.results.map((result) => (result.id === resultId ? { ...result, status: "failed", error: message, completedAt: new Date().toISOString(), durationMs: Date.now() - startedAtMs } : result)),
       }));
       if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
       return NextResponse.json({ ok: false, error: message, job: toPublicGenerationJob(failed) }, { status: localAccessError(error) ? 403 : 500 });

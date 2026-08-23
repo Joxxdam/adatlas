@@ -1,7 +1,6 @@
 import type { ProductInfoForPrompt } from "../mvp/types";
 
-export type StorePlatform =
-  "cafe24" | "makeshop" | "shopify" | "smartstore" | "generic" | "unknown";
+export type StorePlatform = "cafe24" | "makeshop" | "shopify" | "smartstore" | "generic" | "unknown";
 
 export type StoreAnalysisOptions = {
   storeUrl: string;
@@ -99,19 +98,7 @@ export type DetailPageQualityAnalysis = {
 export type ContentAngleRecommendation = {
   id: string;
   name: string;
-  type:
-    | "price-shock"
-    | "review"
-    | "quality"
-    | "family"
-    | "camping"
-    | "gift"
-    | "ingredient"
-    | "problem-solution"
-    | "new-product"
-    | "comparison"
-    | "bundle-value"
-    | "seasonal";
+  type: "price-shock" | "review" | "quality" | "family" | "camping" | "gift" | "ingredient" | "problem-solution" | "new-product" | "comparison" | "bundle-value" | "seasonal";
   reason: string;
   evidence: string[];
   headlineDirection?: string;
@@ -131,8 +118,7 @@ export type ProductAdvertisingAnalysis = {
   contentExpansionScore: number;
   detailPageQualityScore: number;
   confidence: number;
-  recommendationType:
-    "proven-candidate" | "new-test-candidate" | "rediscovery-candidate" | "low-priority";
+  recommendationType: "proven-candidate" | "new-test-candidate" | "rediscovery-candidate" | "low-priority";
   reasons: string[];
   risks: string[];
   recommendedAngles: ContentAngleRecommendation[];
@@ -141,19 +127,7 @@ export type ProductAdvertisingAnalysis = {
   recommendedStyleName?: string;
   recommendedLayoutPattern?: string;
   recommendedVisualTone?: string;
-  scoreAvailability?: Partial<
-    Record<
-      | "productStrength"
-      | "priceAttractiveness"
-      | "reviewUsability"
-      | "imageUsability"
-      | "uspClarity"
-      | "seasonFit"
-      | "contentExpansion"
-      | "detailPageQuality",
-      boolean
-    >
-  >;
+  scoreAvailability?: Partial<Record<"productStrength" | "priceAttractiveness" | "reviewUsability" | "imageUsability" | "uspClarity" | "seasonFit" | "contentExpansion" | "detailPageQuality", boolean>>;
 };
 
 export type ProductDetailAnalysis = {
@@ -233,22 +207,9 @@ export interface StoreExtractor {
   canHandle(url: string, html?: string): boolean;
   extractStoreInfo(url: string, html: string): StoreInfo;
   discoverCategoryUrls(url: string, html: string): DiscoveredStorePage[];
-  discoverProductUrls(
-    url: string,
-    html: string,
-    source: DiscoveredStorePage
-  ): DiscoveredProductLink[];
-  extractProductSummary(
-    url: string,
-    html: string,
-    discovered?: DiscoveredProductLink
-  ): StoreProductSummary;
-  extractProductDetail(
-    url: string,
-    html: string,
-    summary: StoreProductSummary,
-    analyzeReviews: boolean
-  ): ProductDetailAnalysis;
+  discoverProductUrls(url: string, html: string, source: DiscoveredStorePage): DiscoveredProductLink[];
+  extractProductSummary(url: string, html: string, discovered?: DiscoveredProductLink): StoreProductSummary;
+  extractProductDetail(url: string, html: string, summary: StoreProductSummary, analyzeReviews: boolean): ProductDetailAnalysis;
 }
 
 export type ProductCreationHandoff = {
@@ -270,13 +231,4 @@ export type ProductCreationHandoff = {
   creativeContext?: import("../creative-content-notes/types").CreativeOpportunityContext;
 };
 
-export type StoreAnalysisJobStatus =
-  | "queued"
-  | "discovering-store"
-  | "discovering-products"
-  | "analyzing-products"
-  | "analyzing-reviews"
-  | "scoring"
-  | "generating-strategies"
-  | "completed"
-  | "failed";
+export type StoreAnalysisJobStatus = "queued" | "discovering-store" | "discovering-products" | "analyzing-products" | "analyzing-reviews" | "scoring" | "generating-strategies" | "completed" | "failed";

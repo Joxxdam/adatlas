@@ -1,13 +1,4 @@
-import type {
-  BigQueryAdCandidate,
-  BigQueryCandidateMetric,
-  BigQueryOfferVariant,
-  BigQueryProductFamily,
-  BigQueryProductFamilyMatchSource,
-  BigQueryRecommendationType,
-  BigQueryScoreBreakdown,
-  BigQueryTrendState,
-} from "./types";
+import type { BigQueryAdCandidate, BigQueryCandidateMetric, BigQueryOfferVariant, BigQueryProductFamily, BigQueryProductFamilyMatchSource, BigQueryRecommendationType, BigQueryScoreBreakdown, BigQueryTrendState } from "./types";
 
 export const BIGQUERY_RECOMMENDATION_THRESHOLDS = {
   MIN_PURCHASES_FOR_EFFICIENCY: 3,
@@ -87,11 +78,7 @@ type CandidateContext = {
   candidateId: (row: BigQueryProductSignalRow) => string;
 };
 
-export function resolveBigQueryProductUrl(input: {
-  source: "host24" | "hostmk";
-  storeUrl?: string | null;
-  productId?: string | null;
-}) {
+export function resolveBigQueryProductUrl(input: { source: "host24" | "hostmk"; storeUrl?: string | null; productId?: string | null }) {
   const productId = String(input.productId || "").trim();
   if (!/^\d+$/.test(productId)) return null;
 
@@ -99,10 +86,7 @@ export function resolveBigQueryProductUrl(input: {
     const store = new URL(String(input.storeUrl || "").trim());
     if (store.protocol !== "http:" && store.protocol !== "https:") return null;
 
-    const detail = new URL(
-      input.source === "host24" ? "/product/detail.html" : "/shop/shopdetail.html",
-      store.origin
-    );
+    const detail = new URL(input.source === "host24" ? "/product/detail.html" : "/shop/shopdetail.html", store.origin);
     detail.searchParams.set(input.source === "host24" ? "product_no" : "branduid", productId);
     return detail.toString();
   } catch {
@@ -127,10 +111,7 @@ function stableHash(value: string) {
   return (hash >>> 0).toString(36);
 }
 
-function weightedAvailable(
-  values: Record<string, number | null | undefined>,
-  weights: Record<string, number>
-) {
+function weightedAvailable(values: Record<string, number | null | undefined>, weights: Record<string, number>) {
   let sum = 0;
   let used = 0;
   for (const [key, weight] of Object.entries(weights)) {
@@ -153,19 +134,12 @@ function shareScore(share: number) {
 }
 
 function efficiencyRatio(row: BigQueryProductSignalRow) {
-  if (
-    row.conversionRate === null ||
-    row.brandConversionRate === null ||
-    row.brandConversionRate <= 0
-  ) return null;
+  if (row.conversionRate === null || row.brandConversionRate === null || row.brandConversionRate <= 0) return null;
   return row.conversionRate / row.brandConversionRate;
 }
 
 function hasEfficiencySample(row: BigQueryProductSignalRow) {
-  return (
-    row.currentPurchases >= BIGQUERY_RECOMMENDATION_THRESHOLDS.MIN_PURCHASES_FOR_EFFICIENCY &&
-    row.currentExposures >= BIGQUERY_RECOMMENDATION_THRESHOLDS.MIN_EXPOSURES_FOR_EFFICIENCY
-  );
+  return row.currentPurchases >= BIGQUERY_RECOMMENDATION_THRESHOLDS.MIN_PURCHASES_FOR_EFFICIENCY && row.currentExposures >= BIGQUERY_RECOMMENDATION_THRESHOLDS.MIN_EXPOSURES_FOR_EFFICIENCY;
 }
 
 export function determineTrendState(row: BigQueryProductSignalRow): BigQueryTrendState {
@@ -239,22 +213,16 @@ function scoreRow(row: BigQueryProductSignalRow) {
   const trends = trendScores(state);
   const currentPurchaseFlow = row.recent4WeekPurchases ?? row.currentPurchases;
   const previousPurchaseFlow = row.previous4WeekPurchases ?? row.previousPurchases;
-  const purchaseMomentum = previousPurchaseFlow > 0
-    ? momentumFromChange((currentPurchaseFlow - previousPurchaseFlow) / previousPurchaseFlow)
-    : null;
-  const positiveMomentum = trends.positive === null
-    ? purchaseMomentum
-    : purchaseMomentum === null
-      ? trends.positive
-      : rounded(trends.positive * 0.7 + purchaseMomentum * 0.3);
+  const purchaseMomentum = previousPurchaseFlow > 0 ? momentumFromChange((currentPurchaseFlow - previousPurchaseFlow) / previousPurchaseFlow) : null;
+  const positiveMomentum = trends.positive === null ? purchaseMomentum : purchaseMomentum === null ? trends.positive : rounded(trends.positive * 0.7 + purchaseMomentum * 0.3);
   const rawRatio = efficiencyRatio(row);
-  const rawEfficiency = rawRatio === null ? 45 : clamp((rawRatio - 0.45) / 1.1 * 100);
+  const rawEfficiency = rawRatio === null ? 45 : clamp(((rawRatio - 0.45) / 1.1) * 100);
   const efficiencyScore = hasEfficiencySample(row) ? rawEfficiency : Math.min(42, rawEfficiency);
   const exposureRatio = row.averageExposures > 0 ? row.currentExposures / row.averageExposures : 1;
-  const exposureHeadroomScore = clamp((1.35 - exposureRatio) / 1.05 * 100);
-  const exposureScaleScore = clamp((exposureRatio - 0.55) / 1.1 * 100);
+  const exposureHeadroomScore = clamp(((1.35 - exposureRatio) / 1.05) * 100);
+  const exposureScaleScore = clamp(((exposureRatio - 0.55) / 1.1) * 100);
   const purchaseSignal = Math.log10(row.currentPurchases + 1) * 0.7 + Math.log10(row.currentCarts + 1) * 0.3;
-  const purchaseEvidenceScore = clamp(purchaseSignal / 2.2 * 100);
+  const purchaseEvidenceScore = clamp((purchaseSignal / 2.2) * 100);
   const efficiencyGapScore = clamp(100 - efficiencyScore);
   const improvementHeadroom = rounded(efficiencyGapScore * 0.65 + exposureScaleScore * 0.35);
   const businessBreakdown = {
@@ -312,7 +280,7 @@ export function detectOfferVariant(productName: string) {
   ];
   const found = matches.filter(([, pattern]) => pattern.test(name));
   return {
-    variant: found[0]?.[0] || "single" as BigQueryOfferVariant,
+    variant: found[0]?.[0] || ("single" as BigQueryOfferVariant),
     signals: found.map(([, , label]) => label),
   };
 }
@@ -341,61 +309,62 @@ export function buildProductFamilies(rows: BigQueryProductSignalRow[]): BigQuery
     const key = familyKey(row);
     groups.set(key, [...(groups.get(key) || []), row]);
   }
-  const brandSales = Math.max(0, ...rows.map((row) => row.brandTotalSales || 0), rows.reduce((sum, row) => sum + row.currentSales, 0));
-  const brandPurchases = Math.max(0, ...rows.map((row) => row.brandTotalPurchases || 0), rows.reduce((sum, row) => sum + row.currentPurchases, 0));
-  return [...groups.entries()].map(([key, products]) => {
-    const sorted = [...products].sort((left, right) => right.currentSales - left.currentSales || right.currentPurchases - left.currentPurchases);
-    const totalSales = products.reduce((sum, row) => sum + row.currentSales, 0);
-    const totalPurchases = products.reduce((sum, row) => sum + row.currentPurchases, 0);
-    const recent4 = products.reduce((sum, row) => sum + (row.recent4WeekSales ?? row.currentSales), 0);
-    const previous4 = products.reduce((sum, row) => sum + (row.previous4WeekSales ?? row.previousSales), 0);
-    const recent12 = products.reduce((sum, row) => sum + (row.recent12WeekSales || 0), 0);
-    const offerRows = sorted.map((row) => ({ row, offer: detectOfferVariant(row.productName) }));
-    const topOffer = offerRows.find((item) => item.offer.variant !== "single")?.offer.variant || "single";
-    const distinctIds = new Set(products.map((row) => row.productIdHint).filter(Boolean));
-    const normalizedChanged = products.some((row) => normalizeProductFamilyName(row.productName) !== row.productName.replace(/\([0-9]+\)\s*$/u, "").trim());
-    const matchSource: BigQueryProductFamilyMatchSource =
-      products.length > 1 && distinctIds.size === 1 && distinctIds.size > 0
-        ? "stable-product-id"
-        : products.length > 1 || normalizedChanged
-          ? "normalized-product-name"
-          : "product-only";
-    const trendState = determineTrendState({
-      ...sorted[0],
-      recent4WeekSales: recent4,
-      previous4WeekSales: previous4,
-      recent12WeekSales: recent12,
-    });
-    const hasSingle = offerRows.some((item) => item.offer.variant === "single");
-    const hasOffer = offerRows.some((item) => item.offer.variant !== "single");
-    const recommendedAction = hasSingle && hasOffer
-      ? "기본상품과 혜택상품의 후킹 반응을 함께 비교"
-      : hasOffer
-        ? "가격·혜택 메시지 반응 가능성 테스트"
-        : "상품 USP 중심 후킹 테스트";
-    return {
-      familyId: `bqf.${stableHash(key)}`,
-      familyName: normalizeProductFamilyName(sorted[0].productName),
-      products: sorted.map((row) => ({
-        productId: row.productIdHint,
-        productName: row.productName,
-        sales: row.currentSales,
-        purchases: row.currentPurchases,
-        offerVariant: detectOfferVariant(row.productName).variant,
-      })),
-      productIds: products.map((row) => row.productIdHint || `name-${stableHash(row.productName)}`),
-      productNames: products.map((row) => row.productName),
-      totalSales,
-      totalPurchases,
-      salesShare: brandSales > 0 ? totalSales / brandSales : 0,
-      purchaseShare: brandPurchases > 0 ? totalPurchases / brandPurchases : 0,
-      topProduct: sorted[0].productName,
-      topOfferVariant: topOffer,
-      trendState,
-      recommendedAction,
-      matchSource,
-    };
-  }).sort((left, right) => right.totalSales - left.totalSales || right.totalPurchases - left.totalPurchases);
+  const brandSales = Math.max(
+    0,
+    ...rows.map((row) => row.brandTotalSales || 0),
+    rows.reduce((sum, row) => sum + row.currentSales, 0)
+  );
+  const brandPurchases = Math.max(
+    0,
+    ...rows.map((row) => row.brandTotalPurchases || 0),
+    rows.reduce((sum, row) => sum + row.currentPurchases, 0)
+  );
+  return [...groups.entries()]
+    .map(([key, products]) => {
+      const sorted = [...products].sort((left, right) => right.currentSales - left.currentSales || right.currentPurchases - left.currentPurchases);
+      const totalSales = products.reduce((sum, row) => sum + row.currentSales, 0);
+      const totalPurchases = products.reduce((sum, row) => sum + row.currentPurchases, 0);
+      const recent4 = products.reduce((sum, row) => sum + (row.recent4WeekSales ?? row.currentSales), 0);
+      const previous4 = products.reduce((sum, row) => sum + (row.previous4WeekSales ?? row.previousSales), 0);
+      const recent12 = products.reduce((sum, row) => sum + (row.recent12WeekSales || 0), 0);
+      const offerRows = sorted.map((row) => ({ row, offer: detectOfferVariant(row.productName) }));
+      const topOffer = offerRows.find((item) => item.offer.variant !== "single")?.offer.variant || "single";
+      const distinctIds = new Set(products.map((row) => row.productIdHint).filter(Boolean));
+      const normalizedChanged = products.some((row) => normalizeProductFamilyName(row.productName) !== row.productName.replace(/\([0-9]+\)\s*$/u, "").trim());
+      const matchSource: BigQueryProductFamilyMatchSource = products.length > 1 && distinctIds.size === 1 && distinctIds.size > 0 ? "stable-product-id" : products.length > 1 || normalizedChanged ? "normalized-product-name" : "product-only";
+      const trendState = determineTrendState({
+        ...sorted[0],
+        recent4WeekSales: recent4,
+        previous4WeekSales: previous4,
+        recent12WeekSales: recent12,
+      });
+      const hasSingle = offerRows.some((item) => item.offer.variant === "single");
+      const hasOffer = offerRows.some((item) => item.offer.variant !== "single");
+      const recommendedAction = hasSingle && hasOffer ? "기본상품과 혜택상품의 후킹 반응을 함께 비교" : hasOffer ? "가격·혜택 메시지 반응 가능성 테스트" : "상품 USP 중심 후킹 테스트";
+      return {
+        familyId: `bqf.${stableHash(key)}`,
+        familyName: normalizeProductFamilyName(sorted[0].productName),
+        products: sorted.map((row) => ({
+          productId: row.productIdHint,
+          productName: row.productName,
+          sales: row.currentSales,
+          purchases: row.currentPurchases,
+          offerVariant: detectOfferVariant(row.productName).variant,
+        })),
+        productIds: products.map((row) => row.productIdHint || `name-${stableHash(row.productName)}`),
+        productNames: products.map((row) => row.productName),
+        totalSales,
+        totalPurchases,
+        salesShare: brandSales > 0 ? totalSales / brandSales : 0,
+        purchaseShare: brandPurchases > 0 ? totalPurchases / brandPurchases : 0,
+        topProduct: sorted[0].productName,
+        topOfferVariant: topOffer,
+        trendState,
+        recommendedAction,
+        matchSource,
+      };
+    })
+    .sort((left, right) => right.totalSales - left.totalSales || right.totalPurchases - left.totalPurchases);
 }
 
 function familySummary(family: BigQueryProductFamily, row: BigQueryProductSignalRow) {
@@ -417,47 +386,23 @@ function familySummary(family: BigQueryProductFamily, row: BigQueryProductSignal
 function recommendationScore(type: BigQueryRecommendationType, scored: ReturnType<typeof scoreRow>) {
   const b = scored.breakdown;
   if (type === "core-scale") {
-    return weightedAvailable(
-      { business: scored.businessImportanceScore, efficiency: b.efficiencyScore, momentum: b.positiveMomentumScore },
-      { business: 0.6, efficiency: 0.25, momentum: 0.15 }
-    );
+    return weightedAvailable({ business: scored.businessImportanceScore, efficiency: b.efficiencyScore, momentum: b.positiveMomentumScore }, { business: 0.6, efficiency: 0.25, momentum: 0.15 });
   }
   if (type === "core-recovery") {
-    return weightedAvailable(
-      { business: scored.businessImportanceScore, recovery: b.recoveryOpportunityScore, purchase: b.purchaseEvidenceScore },
-      { business: 0.65, recovery: 0.2, purchase: 0.15 }
-    );
+    return weightedAvailable({ business: scored.businessImportanceScore, recovery: b.recoveryOpportunityScore, purchase: b.purchaseEvidenceScore }, { business: 0.65, recovery: 0.2, purchase: 0.15 });
   }
   if (type === "hidden-potential") {
-    return weightedAvailable(
-      { efficiency: b.efficiencyScore, exposure: b.exposureHeadroomScore, momentum: b.positiveMomentumScore, purchase: b.purchaseEvidenceScore },
-      { efficiency: 0.4, exposure: 0.3, momentum: 0.15, purchase: 0.15 }
-    );
+    return weightedAvailable({ efficiency: b.efficiencyScore, exposure: b.exposureHeadroomScore, momentum: b.positiveMomentumScore, purchase: b.purchaseEvidenceScore }, { efficiency: 0.4, exposure: 0.3, momentum: 0.15, purchase: 0.15 });
   }
-  return weightedAvailable(
-    { business: scored.businessImportanceScore, exposure: b.exposureScaleScore, gap: b.efficiencyGapScore, recovery: b.recoveryOpportunityScore },
-    { business: 0.45, exposure: 0.25, gap: 0.2, recovery: 0.1 }
-  );
+  return weightedAvailable({ business: scored.businessImportanceScore, exposure: b.exposureScaleScore, gap: b.efficiencyGapScore, recovery: b.recoveryOpportunityScore }, { business: 0.45, exposure: 0.25, gap: 0.2, recovery: 0.1 });
 }
 
 function classify(row: BigQueryProductSignalRow, scored: ReturnType<typeof scoreRow>) {
   const t = BIGQUERY_RECOMMENDATION_THRESHOLDS;
-  const businessCore =
-    row.currentSales >= t.MIN_SALES_FOR_SCALE &&
-    (row.salesRank <= t.CORE_TOP_RANK || scored.salesShare >= t.CORE_SALES_SHARE || scored.purchaseShare >= t.CORE_PURCHASE_SHARE);
+  const businessCore = row.currentSales >= t.MIN_SALES_FOR_SCALE && (row.salesRank <= t.CORE_TOP_RANK || scored.salesShare >= t.CORE_SALES_SHARE || scored.purchaseShare >= t.CORE_PURCHASE_SHARE);
   const decline = scored.state === "short-term-decline" || scored.state === "sustained-decline";
-  const hidden =
-    !businessCore &&
-    hasEfficiencySample(row) &&
-    scored.ratio !== null &&
-    scored.ratio >= t.HIGH_EFFICIENCY_RATIO &&
-    scored.exposureRatio < t.LOW_EXPOSURE_RATIO;
-  const improvement =
-    scored.businessImportanceScore >= 35 &&
-    row.currentExposures >= t.MIN_EXPOSURES_FOR_EFFICIENCY &&
-    scored.exposureRatio >= t.HIGH_EXPOSURE_RATIO &&
-    scored.ratio !== null &&
-    scored.ratio < t.LOW_EFFICIENCY_RATIO;
+  const hidden = !businessCore && hasEfficiencySample(row) && scored.ratio !== null && scored.ratio >= t.HIGH_EFFICIENCY_RATIO && scored.exposureRatio < t.LOW_EXPOSURE_RATIO;
+  const improvement = scored.businessImportanceScore >= 35 && row.currentExposures >= t.MIN_EXPOSURES_FOR_EFFICIENCY && scored.exposureRatio >= t.HIGH_EXPOSURE_RATIO && scored.ratio !== null && scored.ratio < t.LOW_EFFICIENCY_RATIO;
   let primary: BigQueryRecommendationType | null = null;
   if (businessCore && decline) primary = "core-recovery";
   else if (businessCore) primary = "core-scale";
@@ -471,12 +416,7 @@ function classify(row: BigQueryProductSignalRow, scored: ReturnType<typeof score
   return { primary, secondary };
 }
 
-function recommendation(
-  type: BigQueryRecommendationType,
-  row: BigQueryProductSignalRow,
-  scored: ReturnType<typeof scoreRow>,
-  offerVariant: BigQueryOfferVariant
-) {
+function recommendation(type: BigQueryRecommendationType, row: BigQueryProductSignalRow, scored: ReturnType<typeof scoreRow>, offerVariant: BigQueryOfferVariant) {
   const salesShare = `${(scored.salesShare * 100).toFixed(1)}%`;
   if (type === "core-recovery") {
     return {
@@ -530,85 +470,83 @@ export function buildCandidatesFromSignals(rows: BigQueryProductSignalRow[], con
   const derivedBrandPurchases = rows.reduce((sum, row) => sum + row.currentPurchases, 0);
   const families = buildProductFamilies(rows);
   const familyByName = new Map(families.flatMap((family) => family.productNames.map((name) => [name, family] as const)));
-  const candidates = rows.map<BigQueryAdCandidate | null>((originalRow) => {
-    const row: BigQueryProductSignalRow = {
-      ...originalRow,
-      brandTotalSales: originalRow.brandTotalSales || derivedBrandSales,
-      brandTotalPurchases: originalRow.brandTotalPurchases || derivedBrandPurchases,
-      productSalesShare: originalRow.productSalesShare ?? (derivedBrandSales > 0 ? originalRow.currentSales / derivedBrandSales : 0),
-      productPurchaseShare: originalRow.productPurchaseShare ?? (derivedBrandPurchases > 0 ? originalRow.currentPurchases / derivedBrandPurchases : 0),
-      purchaseRank: originalRow.purchaseRank || originalRow.salesRank,
-    };
-    const scored = scoreRow(row);
-    const classified = classify(row, scored);
-    if (!classified.primary) return null;
-    const offer = detectOfferVariant(row.productName);
-    const family = familyByName.get(row.productName)!;
-    const message = recommendation(classified.primary, row, scored, offer.variant);
-    const finalScore = recommendationScore(classified.primary, scored);
-    return {
-      id: context.candidateId(row),
-      advertiserId: context.advertiserId,
-      source: context.source,
-      brandId: context.brandId,
-      brandName: context.brandName,
-      productId: row.productIdHint,
-      productName: row.productName,
-      category: context.category,
-      productUrl: resolveBigQueryProductUrl({
+  const candidates = rows
+    .map<BigQueryAdCandidate | null>((originalRow) => {
+      const row: BigQueryProductSignalRow = {
+        ...originalRow,
+        brandTotalSales: originalRow.brandTotalSales || derivedBrandSales,
+        brandTotalPurchases: originalRow.brandTotalPurchases || derivedBrandPurchases,
+        productSalesShare: originalRow.productSalesShare ?? (derivedBrandSales > 0 ? originalRow.currentSales / derivedBrandSales : 0),
+        productPurchaseShare: originalRow.productPurchaseShare ?? (derivedBrandPurchases > 0 ? originalRow.currentPurchases / derivedBrandPurchases : 0),
+        purchaseRank: originalRow.purchaseRank || originalRow.salesRank,
+      };
+      const scored = scoreRow(row);
+      const classified = classify(row, scored);
+      if (!classified.primary) return null;
+      const offer = detectOfferVariant(row.productName);
+      const family = familyByName.get(row.productName)!;
+      const message = recommendation(classified.primary, row, scored, offer.variant);
+      const finalScore = recommendationScore(classified.primary, scored);
+      return {
+        id: context.candidateId(row),
+        advertiserId: context.advertiserId,
         source: context.source,
-        storeUrl: context.storeUrl,
+        brandId: context.brandId,
+        brandName: context.brandName,
         productId: row.productIdHint,
-      }),
-      imageUrl: null,
-      primaryType: classified.primary,
-      secondaryTypes: classified.secondary,
-      score: finalScore,
-      recommendationScore: finalScore,
-      businessImportanceScore: scored.businessImportanceScore,
-      adOpportunityScore: scored.adOpportunityScore,
-      scoreBreakdown: scored.breakdown,
-      dataSufficiency: "analysis-ready",
-      recommendationReason: message.reason,
-      metrics: metrics(row, scored),
-      currentSales: row.currentSales,
-      previousSales: row.previousSales,
-      salesChangeRate: row.previousSales > 0 ? row.salesChangeRate : null,
-      purchaseCount: row.currentPurchases,
-      purchaseRank: row.purchaseRank || null,
-      salesRank: row.salesRank,
-      salesShare: scored.salesShare,
-      purchaseShare: scored.purchaseShare,
-      brandTotalSales: row.brandTotalSales || 0,
-      brandTotalPurchases: row.brandTotalPurchases || 0,
-      exposureCount: row.currentExposures,
-      conversionRate: row.conversionRate,
-      reviewCount: null,
-      analysisPeriodStart: context.analysisPeriodStart,
-      analysisPeriodEnd: context.analysisPeriodEnd,
-      comparisonPeriodStart: context.comparisonPeriodStart,
-      comparisonPeriodEnd: context.comparisonPeriodEnd,
-      latestDataDate: row.latestDate,
-      sourceTables: [context.sourceTable],
-      cautions: [
-        "취소·반품 반영 기준은 원본 집계 정의를 따릅니다.",
-        "증감률은 성과 원인의 확정이 아니라 다음 광고 행동을 정하는 관찰 신호입니다.",
-        "후킹 성과는 실제 광고 실험에서 최종 확인해야 합니다.",
-      ],
-      recommendedHookTypes: message.hooks,
-      recommendedMessageAngles: message.angles,
-      recommendedAction: message.action,
-      trendState: scored.state,
-      trendLabel: trendLabel(scored.state),
-      offerVariant: offer.variant,
-      offerSignals: offer.signals,
-      productFamilyId: family.familyId,
-      productFamilyName: family.familyName,
-      productFamilyMatchSource: family.matchSource,
-      productFamilySummary: familySummary(family, row),
-      productMatchConfidence: row.productIdHint ? "source-id-hint" : "temporary-name-key",
-    };
-  }).filter((candidate): candidate is BigQueryAdCandidate => candidate !== null);
+        productName: row.productName,
+        category: context.category,
+        productUrl: resolveBigQueryProductUrl({
+          source: context.source,
+          storeUrl: context.storeUrl,
+          productId: row.productIdHint,
+        }),
+        imageUrl: null,
+        primaryType: classified.primary,
+        secondaryTypes: classified.secondary,
+        score: finalScore,
+        recommendationScore: finalScore,
+        businessImportanceScore: scored.businessImportanceScore,
+        adOpportunityScore: scored.adOpportunityScore,
+        scoreBreakdown: scored.breakdown,
+        dataSufficiency: "analysis-ready",
+        recommendationReason: message.reason,
+        metrics: metrics(row, scored),
+        currentSales: row.currentSales,
+        previousSales: row.previousSales,
+        salesChangeRate: row.previousSales > 0 ? row.salesChangeRate : null,
+        purchaseCount: row.currentPurchases,
+        purchaseRank: row.purchaseRank || null,
+        salesRank: row.salesRank,
+        salesShare: scored.salesShare,
+        purchaseShare: scored.purchaseShare,
+        brandTotalSales: row.brandTotalSales || 0,
+        brandTotalPurchases: row.brandTotalPurchases || 0,
+        exposureCount: row.currentExposures,
+        conversionRate: row.conversionRate,
+        reviewCount: null,
+        analysisPeriodStart: context.analysisPeriodStart,
+        analysisPeriodEnd: context.analysisPeriodEnd,
+        comparisonPeriodStart: context.comparisonPeriodStart,
+        comparisonPeriodEnd: context.comparisonPeriodEnd,
+        latestDataDate: row.latestDate,
+        sourceTables: [context.sourceTable],
+        cautions: ["취소·반품 반영 기준은 원본 집계 정의를 따릅니다.", "증감률은 성과 원인의 확정이 아니라 다음 광고 행동을 정하는 관찰 신호입니다.", "후킹 성과는 실제 광고 실험에서 최종 확인해야 합니다."],
+        recommendedHookTypes: message.hooks,
+        recommendedMessageAngles: message.angles,
+        recommendedAction: message.action,
+        trendState: scored.state,
+        trendLabel: trendLabel(scored.state),
+        offerVariant: offer.variant,
+        offerSignals: offer.signals,
+        productFamilyId: family.familyId,
+        productFamilyName: family.familyName,
+        productFamilyMatchSource: family.matchSource,
+        productFamilySummary: familySummary(family, row),
+        productMatchConfidence: row.productIdHint ? "source-id-hint" : "temporary-name-key",
+      };
+    })
+    .filter((candidate): candidate is BigQueryAdCandidate => candidate !== null);
 
   const groupOrder: Record<BigQueryRecommendationType, number> = {
     "core-scale": 0,
@@ -616,11 +554,5 @@ export function buildCandidatesFromSignals(rows: BigQueryProductSignalRow[], con
     "hidden-potential": 1,
     "creative-improvement": 2,
   };
-  return candidates.sort((left, right) =>
-    groupOrder[left.primaryType] - groupOrder[right.primaryType] ||
-    right.recommendationScore - left.recommendationScore ||
-    right.businessImportanceScore - left.businessImportanceScore ||
-    (right.currentSales || 0) - (left.currentSales || 0) ||
-    (right.purchaseCount || 0) - (left.purchaseCount || 0)
-  );
+  return candidates.sort((left, right) => groupOrder[left.primaryType] - groupOrder[right.primaryType] || right.recommendationScore - left.recommendationScore || right.businessImportanceScore - left.businessImportanceScore || (right.currentSales || 0) - (left.currentSales || 0) || (right.purchaseCount || 0) - (left.purchaseCount || 0));
 }
