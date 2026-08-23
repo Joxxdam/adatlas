@@ -44,3 +44,10 @@ export function createAsyncConcurrencyGate(limit: number): AsyncConcurrencyGate 
     pendingCount: () => queue.length,
   };
 }
+
+const codexGateKey = Symbol.for("daywiz.codex-local-shared-gate-v2");
+const codexGateGlobal = globalThis as typeof globalThis & { [codexGateKey]?: AsyncConcurrencyGate };
+
+/** 이미지·광고문구를 포함한 모든 로컬 Codex 실행이 같은 동시성 한도를 쓴다. */
+export const codexCreativeGate = codexGateGlobal[codexGateKey] ?? createAsyncConcurrencyGate(resolveCodexCreativeParallelLimit());
+codexGateGlobal[codexGateKey] = codexCreativeGate;

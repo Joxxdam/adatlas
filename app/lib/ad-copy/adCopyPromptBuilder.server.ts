@@ -2,7 +2,7 @@ import "server-only";
 import type { ApprovedAdCopyMemory } from "./types";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 
-export const AD_COPY_PROMPT_VERSION = "meta-primary-copy-v2-social-performance-tone";
+export const AD_COPY_PROMPT_VERSION = "meta-primary-copy-v3-product-truth-first";
 
 export function buildAdCopyPrompt(input: { job: GenerationJob; result: GenerationResult; approvedCopies: ApprovedAdCopyMemory[]; copyGuideContent?: string; retryFailures?: string[] }) {
   const { job, result } = input;
@@ -16,7 +16,7 @@ export function buildAdCopyPrompt(input: { job: GenerationJob; result: Generatio
     adTitle: copy.adTitle,
     approvalReason: copy.approvalReason,
   }));
-  return `당신은 한국 Meta 퍼포먼스 광고의 시니어 카피라이터다. 완성된 대표 광고 이미지와 대표 후킹을 분석해 이 상품의 Meta '기본 문구(primaryText)' 하나와 짧은 '광고 제목(adTitle)' 하나를 작성한다.
+  return `당신은 한국 Meta 퍼포먼스 광고의 시니어 카피라이터다. 이미지 제작을 기다리지 않고 검증된 ProductTruth와 대표 후킹을 분석해 이 상품의 Meta '기본 문구(primaryText)' 하나와 짧은 '광고 제목(adTitle)' 하나를 작성한다.
 
 출력 규칙:
 - primaryText는 5~8개의 짧은 문장 줄로 쓴다. 의미 단락 사이에는 빈 줄을 최대 2개 넣어 모바일에서 숨 쉴 틈을 만든다.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { adCopyFingerprint, buildAdCopyCsv, canGenerateAdCopyAfterQa, selectRepresentativeResultId, shouldRegenerateAdCopy, validateAdCopyAgainstTruth } from "../app/lib/ad-copy/adCopyValidator.ts";
+import { adCopyFingerprint, buildAdCopyCsv, selectRepresentativeResultId, shouldRegenerateAdCopy, validateAdCopyAgainstTruth } from "../app/lib/ad-copy/adCopyValidator.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -67,15 +67,16 @@ test("여러 이미지 중 사용자가 승인한 대표 이미지가 문구 기
   assert.equal(id, "r3");
 });
 
-test("최종 이미지 QA 전에는 광고문구를 생성하지 않는다", () => {
-  assert.equal(canGenerateAdCopyAfterQa({ resultStatus: "running", nativeQaRecommendation: "approve" }), false);
-  assert.equal(canGenerateAdCopyAfterQa({ resultStatus: "success", nativeQaRecommendation: "revise" }), false);
-  assert.equal(canGenerateAdCopyAfterQa({ resultStatus: "success", nativeQaRecommendation: "approve" }), true);
-});
-
-test("6장 그룹 검수가 필요한 경우 그룹 승인 후에만 생성한다", () => {
-  assert.equal(canGenerateAdCopyAfterQa({ resultStatus: "success", nativeQaRecommendation: "approve", groupRequired: true, groupRecommendation: "revise" }), false);
-  assert.equal(canGenerateAdCopyAfterQa({ resultStatus: "success", nativeQaRecommendation: "approve", groupRequired: true, groupRecommendation: "approve" }), true);
+test("이미지 생성 전 pending 결과도 광고문구의 대표 후킹으로 선택한다", () => {
+  const id = selectRepresentativeResultId({
+    representativeResultId: "r1",
+    executionResultIds: ["r1", "r2"],
+    results: [
+      { id: "r1", status: "pending" },
+      { id: "r2", status: "pending" },
+    ],
+  });
+  assert.equal(id, "r1");
 });
 
 test("대표 후킹과 연결된 자연스러운 5~8줄 문구를 통과시킨다", () => {
@@ -160,7 +161,7 @@ test("광고 설정 CSV는 문구 줄바꿈과 UTF-8 BOM을 포함한다", () =>
   assert.match(csv, /저녁 메뉴 고민/);
 });
 
-test("이미지 제작 완료 후 상품당 한 번 설명 문구를 자동 생성하고 내부 프롬프트는 공개 응답에서 제거한다", async () => {
+test("이미지 제작과 동시에 상품당 한 번 설명 문구를 먼저 생성하고 내부 프롬프트는 공개 응답에서 제거한다", async () => {
   const native = await read("app/lib/creative-generation/nativeResultGeneration.server.ts");
   const runner = await read("app/lib/creative-generation/jobRunner.server.ts");
   const publicJob = await read("app/lib/creative-generation/publicJob.server.ts");
@@ -169,14 +170,15 @@ test("이미지 제작 완료 후 상품당 한 번 설명 문구를 자동 생�
   const autoUi = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   const autoRunner = await read("app/lib/auto-production/productionRunner.server.ts");
   assert.doesNotMatch(native, /ensureProductAdCopy/);
-  assert.match(runner, /hasGeneratedImage && !completed\.adCopy/);
+  assert.match(runner, /const copyTask =/);
+  assert.match(runner, /Promise\.allSettled\(\[copyTask, generationTask\]\)/);
   assert.match(runner, /ensureProductAdCopy\(jobId\)/);
   assert.match(manualUi, /ProductAdCopyPanel/);
   assert.match(adCopyPanel, /상품 광고 설명 문구 · 상품당 1개/);
-  assert.match(adCopyPanel, /이미지 제작이 끝나면 자동으로 생성됩니다/);
+  assert.match(adCopyPanel, /이미지와 별도로 광고 문구·제목을 먼저 만들고 있습니다/);
   assert.match(adCopyPanel, /광고 제목/);
   const prompt = await read("app/lib/ad-copy/adCopyPromptBuilder.server.ts");
-  assert.match(prompt, /meta-primary-copy-v2-social-performance-tone/);
+  assert.match(prompt, /meta-primary-copy-v3-product-truth-first/);
   assert.match(prompt, /SNS 게시글처럼 직접적이고 리듬감/);
   assert.match(prompt, /primaryText, adTitle, languageTraits/);
   assert.match(autoRunner, /createNativeGenerationJob/);

@@ -788,6 +788,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               ) : null}
             </div>
           ) : null}
+          <ProductAdCopyPanel adCopy={job.adCopy} autoReady jobId={job.id} onChanged={(changed) => setJob(changed)} productName={job.productTruth.product.productName} />
           {visibleGeneratedResults.length ? (
             <div className="simple-completed-results">
               <div className="simple-completed-head">
@@ -997,7 +998,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               ))}
             </div>
           ) : null}
-          <ProductAdCopyPanel adCopy={job.adCopy} autoReady={Boolean(visibleGeneratedResults.length && !generationInProgress)} jobId={job.id} onChanged={(changed) => setJob(changed)} productName={job.productTruth.product.productName} />
           <div className={`simple-zip-download ${allCreativesReady ? "ready" : "locked"}`}>
             <div>
               <strong>{allCreativesReady ? "6장 ZIP 다운로드" : "생성된 이미지 ZIP 다운로드"}</strong>

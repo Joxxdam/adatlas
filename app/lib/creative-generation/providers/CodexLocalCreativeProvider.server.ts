@@ -6,16 +6,11 @@ import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeVa
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
 import { resolveFastCreativeRuntime } from "../fastCreativeRuntime";
-import { createAsyncConcurrencyGate, resolveCodexCreativeParallelLimit } from "../asyncConcurrencyGate";
+import { codexCreativeGate } from "../asyncConcurrencyGate";
+import { resolveRuntimeTimeout } from "../fastCreativeRuntime";
 import { normalizeNativeCreativeValidation } from "../nativeCreativeValidation";
 
 const DEFAULT_IMAGE_GENERATION_TIMEOUT_MS = 12 * 60 * 1000;
-const creativeGateKey = Symbol.for("daywiz.codex-local-creative-gate-v1");
-const creativeGateGlobal = globalThis as typeof globalThis & {
-  [creativeGateKey]?: ReturnType<typeof createAsyncConcurrencyGate>;
-};
-const creativeGate = creativeGateGlobal[creativeGateKey] ?? createAsyncConcurrencyGate(resolveCodexCreativeParallelLimit());
-creativeGateGlobal[creativeGateKey] = creativeGate;
 
 async function waitForStableGeneratedOutput(file: string) {
   const deadline = Date.now() + 15_000;
@@ -145,9 +140,9 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       const attachments = [stageSource, ...(stage === "structure-recreation" ? [] : productReferences.slice(0, 4)), ...(stage === "structure-recreation" || !input.adReferencePath ? [] : [input.adReferencePath])].filter((file, index, files) => Boolean(file) && files.indexOf(file) === index).slice(0, 6);
       const prompt = buildNativeStagePrompt(stage, input.job, input.result, input.outputPath, input.feedback);
       const content = [{ type: "text" as const, text: prompt }, ...attachments.map((file) => ({ type: "local_image" as const, path: file }))];
-      await creativeGate.run(() =>
+      await codexCreativeGate.run(() =>
         activeThread().run(content, {
-          signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS || DEFAULT_IMAGE_GENERATION_TIMEOUT_MS)),
+          signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS, DEFAULT_IMAGE_GENERATION_TIMEOUT_MS, 60_000)),
         })
       );
       // ImageGen 하위 작업이 최종 응답 직전에 파일을 복사·리사이즈할 수 있다.
@@ -159,10 +154,10 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
     const validate = async (input: NativeValidationInput) => {
       const validationReferences = [input.adReferencePath, ...input.referencePaths].filter((file, index, files): file is string => Boolean(file) && files.indexOf(file) === index).slice(0, 5);
       const content = [{ type: "text" as const, text: buildNativeValidationPrompt(input.job, input.result) }, { type: "local_image" as const, path: input.imagePath }, ...validationReferences.map((file) => ({ type: "local_image" as const, path: file }))];
-      const response = await creativeGate.run(() =>
+      const response = await codexCreativeGate.run(() =>
         activeThread().run(content, {
           outputSchema: validationSchema,
-          signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS || 150_000)),
+          signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS, 150_000, 30_000)),
         })
       );
       const parsed = JSON.parse(response.finalResponse) as Omit<NativeCreativeValidation, "checkedAt">;
@@ -197,7 +192,7 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
       modelReasoningEffort: "high",
     });
-    const response = await creativeGate.run(() =>
+    const response = await codexCreativeGate.run(() =>
       groupThread.run(
         [
           { type: "text" as const, text: buildNativeGroupValidationPrompt(input.job) },
@@ -205,7 +200,7 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
         ],
         {
           outputSchema: groupValidationSchema,
-          signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS || 150_000)),
+          signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS, 150_000, 30_000)),
         }
       )
     );

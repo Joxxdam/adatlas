@@ -95,7 +95,14 @@ export function assertProductImageReady(truth: ProductTruth) {
  * identity, usage and texture reference.
  */
 export function assertNativeProductReferenceReady(truth: ProductTruth) {
-  const usableReference = truth.imageAssets.some((asset) => Boolean(asset.path) && ["product-packshot", "product-lifestyle", "detail-image"].includes(asset.role));
+  const usableReference = truth.imageAssets.some(
+    (asset) =>
+      Boolean(asset.path) &&
+      asset.verified &&
+      asset.validationStatus !== "excluded" &&
+      ["product-packshot", "product-lifestyle", "detail-image"].includes(asset.role) &&
+      !/\/(?:processed-products|product-cutouts)\//i.test(asset.path)
+  );
   if (!usableReference) {
     throw new Error("AI 광고 제작에 사용할 상세페이지 원본 이미지가 없습니다. 상품 사진 또는 상세 이미지를 선택해 주세요.");
   }

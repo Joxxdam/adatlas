@@ -18,6 +18,11 @@ function bounded(value: string | undefined, fallback: number, min: number, max: 
   return Math.max(min, Math.min(max, Number.isFinite(parsed) ? Math.floor(parsed) : fallback));
 }
 
+export function resolveRuntimeTimeout(value: string | undefined, fallback: number, min = 10_000, max = 30 * 60 * 1000) {
+  const parsed = Number(value);
+  return Math.max(min, Math.min(max, Number.isFinite(parsed) ? Math.floor(parsed) : fallback));
+}
+
 function effort(value: string | undefined, fallback: FastCreativeRuntimeConfig["plannerReasoning"]) {
   return value === "low" || value === "medium" || value === "high" ? value : fallback;
 }

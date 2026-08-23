@@ -7,6 +7,8 @@ import { randomUUID } from "node:crypto";
 import { Codex } from "@openai/codex-sdk";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { executionResults } from "../creative-generation/jobRunnerPolicy";
+import { codexCreativeGate } from "../creative-generation/asyncConcurrencyGate";
+import { resolveRuntimeTimeout } from "../creative-generation/fastCreativeRuntime";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 import { getAdvertiserThread, resetAdvertiserThread, saveAdvertiserThread } from "../creative-generation/codexRegistry.server";
 import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader";
@@ -124,17 +126,22 @@ async function generateWithCodex(job: GenerationJob, result: GenerationResult, a
     const content = [{ type: "text" as const, text: prompt }, ...(result.nativeCreative?.finalPath ? [{ type: "local_image" as const, path: result.nativeCreative.finalPath }] : [])];
     let response;
     try {
-      response = await thread.run(content, { outputSchema: generationSchema, signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_COPY_TIMEOUT_MS || 150_000)) });
+      response = await codexCreativeGate.run(() => thread.run(content, { outputSchema: generationSchema, signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_COPY_TIMEOUT_MS, 150_000, 30_000)) }));
     } catch (error) {
       if (!record?.threadId || attempt > 0) throw error;
       await resetAdvertiserThread(identity);
       thread = codex.startThread(options);
-      response = await thread.run(content, { outputSchema: generationSchema, signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_COPY_TIMEOUT_MS || 150_000)) });
+      response = await codexCreativeGate.run(() => thread.run(content, { outputSchema: generationSchema, signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_COPY_TIMEOUT_MS, 150_000, 30_000)) }));
     }
     const generated = JSON.parse(response.finalResponse) as GeneratedCopy;
     const local = validateAdCopyAgainstTruth({ primaryText: generated.primaryText, adTitle: generated.adTitle, truth: job.productTruth, hookHeadline: result.hookPlan.headline, approvedCopies: approvedTexts });
     const qaThread = codex.startThread(options);
-    const qaResponse = await qaThread.run(buildAdCopyQaPrompt({ job, result, primaryText: generated.primaryText, adTitle: generated.adTitle }), { outputSchema: qaSchema, signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_COPY_QA_TIMEOUT_MS || 120_000)) });
+    const qaResponse = await codexCreativeGate.run(() =>
+      qaThread.run(buildAdCopyQaPrompt({ job, result, primaryText: generated.primaryText, adTitle: generated.adTitle }), {
+        outputSchema: qaSchema,
+        signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_COPY_QA_TIMEOUT_MS, 120_000, 30_000)),
+      })
+    );
     const qa = JSON.parse(qaResponse.finalResponse) as QaResponse;
     failures = [...new Set([...local.failures, ...qa.failures])];
     if (local.passed && qa.recommendation === "approve" && qa.factualAccuracy >= 95 && qa.hookAlignment >= 85 && qa.metaReadability >= 85) {

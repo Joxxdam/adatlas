@@ -375,7 +375,7 @@ export async function syncAutoProductionRun(runId: string) {
 export function ensureAutoProductionRunMonitor(runId: string) {
   if (monitors.has(runId)) return false;
   const monitor = (async () => {
-    for (let index = 0; index < 900; index += 1) {
+    while (true) {
       const run = await syncAutoProductionRun(runId);
       if (!run || !activeStatuses.includes(run.status)) return;
       await wait(4_000);

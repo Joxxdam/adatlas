@@ -11,7 +11,7 @@ export function ProductAdCopyPanel({ jobId, adCopy, productName, autoReady = fal
 
   async function action(value: "regenerate" | "approve" | "exclude") {
     setWorking(true);
-    setNotice(value === "regenerate" ? "대표 이미지와 후킹을 다시 확인해 문구를 만들고 있어요." : "");
+    setNotice(value === "regenerate" ? "상품 사실과 대표 후킹을 다시 확인해 문구를 만들고 있어요." : "");
     try {
       const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(jobId)}/ad-copy`, {
         method: "POST",
@@ -39,7 +39,7 @@ export function ProductAdCopyPanel({ jobId, adCopy, productName, autoReady = fal
     return (
       <section className={styles.panel}>
         <p className={styles.eyebrow}>상품 광고 설명 문구 · 상품당 1개</p>
-        <strong>{autoReady ? "광고 설명 문구를 준비하고 있습니다." : "이미지 제작이 끝나면 자동으로 생성됩니다."}</strong>
+        <strong>{autoReady ? "광고 설명 문구를 준비하고 있습니다." : "이미지와 별도로 광고 문구·제목을 먼저 만들고 있습니다."}</strong>
         <p className={styles.help}>같은 상품의 6장에 공통으로 사용할 설명 문구·광고명·UTM을 한 번만 만듭니다.</p>
         {autoReady ? (
           <div className={styles.actions}>
@@ -65,7 +65,7 @@ export function ProductAdCopyPanel({ jobId, adCopy, productName, autoReady = fal
         </div>
         <span data-status={adCopy.status}>{adCopy.status === "ready" ? "검수 완료" : adCopy.status === "approved" ? "승인" : adCopy.status === "needs-review" ? "확인 필요" : adCopy.status === "generating" ? "생성 중" : "제외"}</span>
       </header>
-      {visible ? <pre>{adCopy.primaryText}</pre> : <p className={styles.help}>{adCopy.status === "needs-review" ? "독립 문구 QA에서 사실성 또는 가독성을 통과하지 못해 문구를 숨겼습니다." : "완성 이미지와 대표 후킹을 분석하고 있습니다."}</p>}
+      {visible ? <pre>{adCopy.primaryText}</pre> : <p className={styles.help}>{adCopy.status === "needs-review" ? "독립 문구 QA에서 사실성 또는 가독성을 통과하지 못해 문구를 숨겼습니다." : "상품 사실과 대표 후킹으로 문구를 만들고 있습니다."}</p>}
       <dl>
         <div>
           <dt>광고 제목</dt>

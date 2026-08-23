@@ -144,9 +144,12 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.results = job.results.map((result, index) => ({
     ...result,
     materialCode: `M${String(index + 1).padStart(2, "0")}`,
-    status: referencePlanning.plans[index]?.validationStatus === "invalid" ? "quality-review" : result.status,
-    error: referencePlanning.plans[index]?.validationStatus === "invalid" ? `문구 확인 필요 · ${referencePlanning.plans[index].validationErrors.join(" · ")}` : result.error,
-    completedAt: referencePlanning.plans[index]?.validationStatus === "invalid" ? new Date().toISOString() : result.completedAt,
+    // 문구 구조가 레퍼런스와 완전히 일치하지 않아도 ProductTruth를 지킨 안이면
+    // 이미지 제작은 진행한다. 이 검증은 생성 차단 조건이 아니라 이후 수정에
+    // 참고할 진단 정보이며, 사용자는 완성 결과를 보고 직접 판단한다.
+    status: result.status,
+    error: undefined,
+    completedAt: undefined,
     referenceAdaptedCopyPlan: referencePlanning.plans[index],
     nativeCreative: {
       engine,
@@ -174,10 +177,6 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.copyPlanMode = "reference-adapted";
   job.version = "generation-job-v13-reference-first-adapted-copy";
   job.pipeline = "reference-first-adapted-copy";
-  if (job.results.every((result) => result.status !== "pending")) {
-    job.status = "partial";
-    job.completedAt = new Date().toISOString();
-  }
   if (job.sourceType === "manual") {
     // 수동 새 작업은 같은 상품의 이전 수동 작업만 교체한다. 자정 자동 제작과
     // 수동 제작이 겹쳐도 서로의 서버 작업을 취소하지 않는다.

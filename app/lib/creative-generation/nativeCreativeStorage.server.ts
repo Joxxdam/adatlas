@@ -108,7 +108,10 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
     // Always refresh the prepared file. Older jobs may have cached an ad
     // reference at the same numbered path before the product-only policy.
     const buffer = await readCreativeRasterAsset(sources[index].path);
-    await writeFile(file, buffer);
+    // Codex local_image가 확장자로 MIME을 추론해도 실제 파일 포맷과 일치하도록
+    // 모든 상품 근거 이미지를 진짜 PNG로 정규화한다.
+    const normalized = await sharp(buffer, { limitInputPixels: 50_000_000 }).rotate().toColorspace("srgb").png({ compressionLevel: 9 }).toBuffer();
+    await writeFile(file, normalized);
     files.push(file);
   }
   if (!files.length) throw new Error("AI 제작에 사용할 실제 상품 참조 이미지가 없습니다.");

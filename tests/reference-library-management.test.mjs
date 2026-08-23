@@ -44,7 +44,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(generator, /referenceCategoryOverride:\s*referenceCategoryOverride \|\| undefined/);
   assert.match(generator, /식품 · 과일\/농산물/);
   assert.match(factory, /job\.referenceCategoryOverride\s*=/);
-  assert.ok(factory.indexOf("job.referenceCategoryOverride =") < factory.indexOf("selectCategoryNativeAdReferences(job"));
+  assert.ok(factory.indexOf("const referenceCategoryOverride =") < factory.indexOf("selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }"));
   assert.match(selector, /job\.referenceCategoryOverride === "food-produce"/);
   assert.match(selector, /사용자 수동 지정/);
 });

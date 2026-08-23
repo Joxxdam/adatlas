@@ -137,10 +137,11 @@ test("새 상품군 우선 ZIP 레퍼런스 작업 버전은 서버 러너가 �
   );
 });
 
-test("개발 서버 핫리로드는 식품 분류·파일 인계 보강을 포함한 v6 러너를 사용한다", async () => {
+test("개발 서버 핫리로드는 사전 차단 복구·선행 광고문구를 포함한 v7 러너를 사용한다", async () => {
   const source = await readFile(new URL("../app/lib/creative-generation/jobRunner.server.ts", import.meta.url), "utf8");
-  assert.match(source, /server-runner-v6-resilient-food-handoff/);
+  assert.match(source, /server-runner-v7-early-copy-and-unblocked-results/);
   assert.match(source, /시작 전 v11 작업을 상품군 우선 ZIP 레퍼런스로 재배정/);
+  assert.match(source, /사전 문구 검증 차단을 해제하고 pending으로 복구/);
   assert.match(source, /resolveFastCreativeRuntime\(\)\.concurrency/);
 });
 

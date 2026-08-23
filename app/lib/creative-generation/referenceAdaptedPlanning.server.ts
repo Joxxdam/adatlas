@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Codex } from "@openai/codex-sdk";
+import { resolveRuntimeTimeout } from "./fastCreativeRuntime";
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -280,7 +281,7 @@ async function runCodexJson<T>(prompt: string, outputSchema: object) {
   if (!(await codexLocalAuthenticated())) throw new Error("로컬 Codex 로그인이 없습니다.");
   const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: resolveCodexLocalExecutable() });
   const thread = codex.startThread({ workingDirectory: process.cwd(), sandboxMode: "read-only", approvalPolicy: "never", networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "low" });
-  const response = await thread.run(prompt, { outputSchema, signal: AbortSignal.timeout(Number(process.env.ADATLAS_CODEX_REFERENCE_COPY_TIMEOUT_MS || 180_000)) });
+  const response = await thread.run(prompt, { outputSchema, signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_REFERENCE_COPY_TIMEOUT_MS, 180_000, 30_000)) });
   return JSON.parse(response.finalResponse) as T;
 }
 

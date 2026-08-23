@@ -87,14 +87,7 @@ export function shouldRegenerateAdCopy(change: AdCopyChange) {
 export function selectRepresentativeResultId(input: { representativeResultId?: string; executionResultIds?: string[]; results: Array<{ id: string; status: string }> }) {
   const approved = input.results.filter((result) => ["success", "approved"].includes(result.status));
   const preferred = input.representativeResultId || input.executionResultIds?.[0];
-  return approved.find((result) => result.id === preferred)?.id || approved[0]?.id;
-}
-
-export function canGenerateAdCopyAfterQa(input: { resultStatus?: string; imageQaPassed?: boolean; nativeQaRecommendation?: string; groupRequired?: boolean; groupRecommendation?: string }) {
-  if (!["success", "approved"].includes(input.resultStatus || "")) return false;
-  const imagePassed = input.nativeQaRecommendation ? input.nativeQaRecommendation === "approve" : input.imageQaPassed === true;
-  if (!imagePassed) return false;
-  return !input.groupRequired || input.groupRecommendation === "approve";
+  return approved.find((result) => result.id === preferred)?.id || approved[0]?.id || input.results.find((result) => result.id === preferred)?.id || input.results[0]?.id;
 }
 
 export function adCopyFingerprint(parts: string[]) {

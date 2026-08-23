@@ -11,7 +11,7 @@ import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v6-resilient-food-handoff");
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v7-early-copy-and-unblocked-results");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;
@@ -37,6 +37,36 @@ export function isGenerationJobRunnerActive(jobId: string) {
 
 export async function recoverGenerationJob(jobId: string, ignoreRunner = false): Promise<GenerationJob | null> {
   let current = await creativeGenerationJobStore.get(jobId);
+  const preGenerationCopyBlocks =
+    current?.version === "generation-job-v13-reference-first-adapted-copy"
+      ? current.results.filter(
+          (result) =>
+            result.status === "quality-review" &&
+            !result.imagePath &&
+            !result.startedAt &&
+            result.attempts === 0 &&
+            (result.generationStage || "planned") === "planned" &&
+            result.referenceAdaptedCopyPlan?.validationStatus === "invalid"
+        )
+      : [];
+  if (current && preGenerationCopyBlocks.length) {
+    const blockedIds = new Set(preGenerationCopyBlocks.map((result) => result.id));
+    current = await creativeGenerationJobStore.update(current.id, (job) => ({
+      ...job,
+      status: "pending",
+      completedAt: undefined,
+      errors: [...job.errors, "이전 문구 적합성 판정으로 제작 전 중단된 항목을 이미지 생성 대기로 복구했습니다."].slice(-20),
+      recoveryLog: [
+        ...(job.recoveryLog || []),
+        { at: new Date().toISOString(), message: "사전 문구 검증 차단을 해제하고 pending으로 복구", resultIds: [...blockedIds] },
+      ].slice(-20),
+      results: job.results.map((result) =>
+        blockedIds.has(result.id)
+          ? { ...result, status: "pending" as const, error: undefined, completedAt: undefined, generationStage: "planned" as const }
+          : result
+      ),
+    }));
+  }
   const untouchedRandomJob = Boolean(current && current.version === "generation-job-v11-random-reference-edit" && ["pending", "running"].includes(current.status) && current.results.every((result) => result.status === "pending" && !result.startedAt && !result.nativeCreative?.stagePaths?.structurePath));
   if (current && untouchedRandomJob) {
     const references = selectCategoryNativeAdReferences(current, current.results.length);
@@ -91,7 +121,7 @@ async function markResultFailed(jobId: string, resultId: string, error: unknown)
         ? {
             ...result,
             status: "failed",
-            generationStage: "quality-check",
+            generationStage: result.generationStage || "planned",
             error: message,
             completedAt: new Date().toISOString(),
           }
@@ -147,14 +177,17 @@ async function runSafely(jobId: string) {
   try {
     const recovered = await recoverGenerationJob(jobId, true);
     if (!recovered || recovered.status === "cancelled") return;
-    await runGenerationJob(jobId);
-    const completed = await creativeGenerationJobStore.get(jobId);
-    const hasGeneratedImage = Boolean(completed && executionResults(completed).some((result) => result.imagePath));
-    // 상품 설명 문구는 이미지 결과별이 아니라 작업(상품)별로 단 한 번만 자동 생성한다.
-    // 실패/확인 필요 레코드도 재호출하지 않고 사용자가 명시적으로 다시 만들 때만 force한다.
-    if (completed && hasGeneratedImage && !completed.adCopy) {
-      await ensureProductAdCopy(jobId);
+    // 상품당 한 번 만드는 Meta 기본 문구·광고 제목은 완성 이미지를 기다리지
+    // 않는다. ProductTruth와 이미 준비된 대표 후킹으로 즉시 시작하고, 이미지
+    // 6장 서버 작업과 병렬로 저장한다.
+    const copyTask = !recovered.adCopy || recovered.adCopy.status === "generating" ? ensureProductAdCopy(jobId) : Promise.resolve(recovered);
+    const generationTask = runGenerationJob(jobId);
+    const [copyOutcome, generationOutcome] = await Promise.allSettled([copyTask, generationTask]);
+    if (copyOutcome.status === "rejected") {
+      const copyMessage = runnerErrorMessage(copyOutcome.reason);
+      await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, `광고문구 생성: ${copyMessage}`].slice(-20) })).catch(() => undefined);
     }
+    if (generationOutcome.status === "rejected") throw generationOutcome.reason;
   } catch (error) {
     const message = runnerErrorMessage(error);
     await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, message].slice(-20) })).catch(() => undefined);
