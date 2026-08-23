@@ -211,7 +211,10 @@ export type AutoProductionNotification = {
 export type AutoProductionDashboardStatus = {
   nextRunAt?: string;
   activeAdvertiserCount: number;
-  plannedProductCount: number;
+  plannedImageCount: number;
+  selectedProductCount: number;
+  /** 과거 클라이언트 읽기 호환용. 신규 UI는 plannedImageCount를 사용한다. */
+  plannedProductCount?: number;
   completedTodayCount: number;
   failedTodayCount: number;
   activeRunCount: number;

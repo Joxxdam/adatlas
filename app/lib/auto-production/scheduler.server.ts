@@ -6,13 +6,33 @@ import { dueAdvertisers, seoulClock } from "./schedule";
 
 const schedulerKey = Symbol.for("daywiz.auto-production.scheduler-v1");
 const globalState = globalThis as typeof globalThis & { [schedulerKey]?: ReturnType<typeof setInterval> };
+const activeRunStatuses = [
+  "scheduled",
+  "selecting-products",
+  "analyzing-products",
+  "generating-hooks",
+  "queued",
+  "generating-creatives",
+] as const;
+
+async function availableAdvertiserSlots(globalConcurrency: number) {
+  const activeRuns = await autoProductionRepository.list({ statuses: [...activeRunStatuses], limit: 200 });
+  const activeAdvertisers = new Set(activeRuns.map((run) => run.advertiserId));
+  return {
+    activeAdvertisers,
+    available: Math.max(0, globalConcurrency - activeAdvertisers.size),
+  };
+}
 
 export async function tickAutoProductionScheduler(now = new Date()) {
   const settings = await autoProductionAdvertiserRepository.settings();
   if (settings.paused) return [];
   const configs = await autoProductionAdvertiserRepository.list();
   const keys = await autoProductionRepository.runKeysForDate(seoulClock(now).date);
-  const due = dueAdvertisers(configs, keys, now);
+  const slots = await availableAdvertiserSlots(settings.globalConcurrency);
+  const due = dueAdvertisers(configs, keys, now)
+    .filter((config) => !slots.activeAdvertisers.has(config.advertiserId))
+    .slice(0, slots.available);
   const runs = [];
   for (const config of due) {
     const result = await runAutoProductionForAdvertiser(config, { trigger: "scheduled", now });
@@ -29,9 +49,13 @@ export async function runAutoProductionNow(input: { advertiserId?: string; trigg
   const active = configs.filter((config) => config.enabled && (!input.advertiserId || config.advertiserId === input.advertiserId));
   if (input.advertiserId && !active.length) throw new Error("실행할 활성 광고주 설정을 찾지 못했습니다.");
   const now = input.now || new Date();
-  const selected = input.trigger === "cli" && !input.force
+  const due = input.trigger === "cli" && !input.force
     ? dueAdvertisers(active, await autoProductionRepository.runKeysForDate(seoulClock(now).date), now)
     : active;
+  const slots = await availableAdvertiserSlots(settings.globalConcurrency);
+  const selected = due
+    .filter((config) => !slots.activeAdvertisers.has(config.advertiserId))
+    .slice(0, slots.available);
   const runs = [];
   for (const config of selected) {
     const result = await runAutoProductionForAdvertiser(config, { trigger: input.trigger || "manual", now });

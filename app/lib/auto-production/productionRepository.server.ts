@@ -70,7 +70,7 @@ export const autoProductionRepository = {
       throw error;
     }
   },
-  async list(options: { limit?: number; statuses?: AutoProductionRunStatus[]; advertiserId?: string; businessDate?: string } = {}) {
+  async list(options: { limit?: number; statuses?: AutoProductionRunStatus[]; advertiserId?: string; businessDate?: string; dateFrom?: string; dateTo?: string } = {}) {
     try {
       const status = options.statuses?.length ? new Set(options.statuses) : null;
       const files = (await fs.readdir(runsDirectory)).filter((file) => /^auto-run-.*\.json$/i.test(file));
@@ -88,6 +88,8 @@ export const autoProductionRepository = {
         .filter((run) => !status || status.has(run.status))
         .filter((run) => !options.advertiserId || run.advertiserId === options.advertiserId)
         .filter((run) => !options.businessDate || run.businessDate === options.businessDate)
+        .filter((run) => !options.dateFrom || run.businessDate >= options.dateFrom)
+        .filter((run) => !options.dateTo || run.businessDate <= options.dateTo)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, Math.max(1, Math.min(200, options.limit || 40)));
     } catch (error) {

@@ -4,7 +4,7 @@ import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerati
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
 import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "ai-native-staged-reference-edit-v2-product-policy";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-staged-edit-v3-lossless-structure";
 
 function verifiedFacts(job: GenerationJob, result: GenerationResult) {
   const selected = new Set(result.hookPlan.factIds || []);
@@ -44,6 +44,7 @@ export function buildNativeFinalCreativePrompt(
     .slice(-6);
   const facts = verifiedFacts(job, result);
   const verifiedReviewEvidence = hasVerifiedReviewEvidence(job, result);
+  const productPolicy = resolveProductRenderingPolicy(job);
   const productContract = productRenderingPromptContract(job, result);
   const exactCopy = [
     `MAIN HOOK: ${result.hookPlan.headline}`,
@@ -60,7 +61,8 @@ NON-NEGOTIABLE OUTPUT
 - Square 1:1 composition for a final 1200 x 1200 export.
 - The generated raster itself must already contain the real product depiction, hook-specific scene, exact Korean advertising copy, typography, graphic emphasis and verified offer/CTA.
 - This is NOT a background plate. Do not reserve an empty product slot or copy-safe placeholder for later compositing.
-- No template renderer, cutout overlay, SVG text layer, canvas text layer or post-render copy panel will be added after generation.
+- No template renderer, SVG text layer, canvas text layer or post-render copy panel will be added after generation.
+${productPolicy === "identity-locked-packaged-product" ? "- Identity-lock exception: the untouched original packaged-product raster is restored locally after AI editing; no other local product redraw or text overlay is allowed." : "- No cutout overlay or local product redraw will be added after generation."}
 
 AUTHORITATIVE PRODUCT REFERENCE
 - The FIRST attached product-page image is the authoritative product identity and sales unit.
@@ -126,7 +128,8 @@ ${feedback ? `REVISION DIRECTION\n${feedback}\nRegenerate the ENTIRE final adver
 /**
  * Builds one explicit edit instruction for the staged native-AI pipeline.
  * Each stage produces a complete raster that becomes the first source image of
- * the next stage. No local text/product overlay is permitted between stages.
+ * the next stage. Text is never overlaid locally. Identity-locked packaged goods
+ * use the untouched original package as the protected product layer.
  */
 export function buildNativeStagePrompt(
   stage: NativeCreativeGenerationStage,
@@ -160,22 +163,19 @@ ${productContract}
 `;
 
   if (stage === "structure-recreation") {
-    return `STAGE 1 OF 4 — RECREATE THE HIGH-QUALITY ADVERTISING STRUCTURE
+    return `LEGACY STAGE 1 — DO NOT USE FOR NEW REFERENCE-STAGED-EDIT JOBS
 ${shared}
 SOURCE ORDER
 - The FIRST and only required attachment is a curated high-quality advertisement reference.
 
 TASK
-- Recreate the attached reference as a high-resolution square working master with very high visual fidelity.
-- Preserve its composition, background, color system, headline/subcopy/offer placement, typography scale and outline treatment, product count, product scale, spacing, shapes, lower banner and overall commercial finish.
-- Keep the source product and source copy temporarily in this intermediate master. Do not reinterpret the design, invent a new scene, simplify it into a template or move major elements.
-- Re-render cleanly rather than embedding a screenshot or browser chrome. The result must contain only the advertisement raster.
-- This is an intermediate edit source. Source product identity and source wording will be replaced in stages 2 and 3 and must not survive the final advertisement.
+- New v12 reference-staged-edit jobs copy the curated source file byte-for-byte into 01-structure and must never call image generation for this stage.
+- This legacy prompt exists only so persisted historical stage names remain readable.
 `;
   }
 
   if (stage === "product-replacement") {
-    if (productPolicy === "identity-locked-beauty") {
+    if (productPolicy === "identity-locked-packaged-product") {
       return `STAGE 2 OF 4 — PREPARE A CLEAN LANDING ZONE FOR THE ORIGINAL PRODUCT
 ${shared}
 SOURCE ORDER
@@ -184,7 +184,7 @@ SOURCE ORDER
 
 TASK
 - Remove the source advertisement's product completely and reconstruct the background behind it naturally.
-- Do NOT draw, imitate, repaint or insert the target cosmetic package in this AI stage. A local identity-lock step will place the untouched original product raster afterward.
+- Do NOT draw, imitate, repaint or insert the target package in this AI stage. A local identity-lock step will place the untouched original product raster afterward.
 - Keep the instructed landing zones clear, physically grounded and free of text, hands, foam, water, ingredients and decoration.
 - Preserve every non-product design element: source wording, price, typography, badges, colors, shapes, borders, spacing and macro layout.
 - Do not invent variants, flavors, package counts, labels or extra products.
@@ -207,8 +207,8 @@ TASK
   }
 
   if (stage === "copy-replacement") {
-    const beautyCopyLock = productPolicy === "identity-locked-beauty"
-      ? "- The protected product has not been inserted yet. Keep every instructed product landing zone empty and unchanged; do not synthesize, paint or cover a package. The original product raster is inserted locally after this copy edit."
+    const packagedCopyLock = productPolicy === "identity-locked-packaged-product"
+      ? "- Treat the protected product visible in stage 2 as an identity guide only: do not synthesize, repaint, recolor, move or cover it, and keep its landing zone free of new text or decoration. The untouched original product raster is restored locally after this copy edit."
       : "- Never regenerate, deform, recolor, move or relabel the target product in this stage.";
     return `STAGE 3 OF 4 — REPLACE ALL COPY WITH PRODUCTTRUTH-BACKED KOREAN COPY
 ${shared}
@@ -224,8 +224,9 @@ TASK
 - Remove every source-ad phrase, old price, old logo, unsupported badge and stray glyph so no prior advertiser identity survives.
 - Render the exact Korean strings above without paraphrasing, duplication or unsupported additions.
 - Keep the inherited typography style, hierarchy, outline, emphasis colors, shapes and copy zones as closely as possible. Adjust only line breaks and font size needed to fit the exact target copy.
+- Preserve the reference's strong contrast. Derive at most one accent from the real product and pair it with a contrasting color; never recolor the package, tint the whole scene with the package color, or reduce text/background contrast.
 - Main hook is the dominant 1–2 line message. Supporting copy is compact. Show price/offer only if supplied above.
-${beautyCopyLock}
+${packagedCopyLock}
 - Produce one fully finished advertisement raster. There will be no local text overlay afterward.
 ${(brandMemory?.goldenReferences || []).length ? "- Reuse only approved abstract tone traits from brand memory; never copy old campaign wording." : ""}
 `;
@@ -246,7 +247,7 @@ TASK
 - Repair every discovered issue inside the full raster with image generation. Preserve the randomly selected reference's composition and the established product placement and correct text wherever possible.
 - Remove any hallucinated source brand, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price.
 - Do not create a new unrelated concept and do not patch with a local overlay.
-${productPolicy === "identity-locked-beauty" ? "- The protected original cosmetic product raster will be restored after this repair. Keep its landing zone unchanged and never place copy or decoration across it." : ""}
+${productPolicy === "identity-locked-packaged-product" ? "- The protected original packaged-product raster will be restored after this repair. Keep its landing zone unchanged and never place copy or decoration across it." : ""}
 ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass even when no prior validator feedback is supplied."}
 `;
 }
@@ -265,7 +266,7 @@ The inspected attachment has already been locally normalized and decoded as a 12
 Check fidelity to the reference layout, product/package identity, exact Korean copy, factual safety, mobile readability, natural anatomy/food texture, and whether this is one coherent finished ad rather than a background plus pasted product/text panel. The final image must keep the reference's design grammar but contain no source product, source wording, source price or source advertiser identity. A detached cutout, fake label, broken Hangul, invented claim, large layout drift or surviving source identity requires revise. Scores must use the 0–100 scale. Return the configured JSON schema.
 
 ${productContract}
-For identity-locked beauty products, any changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure and requires revise. For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;
+For every identity-locked packaged product—including cosmetics, wellness goods, drinks, milk, bottles, cans, pouches and boxes—any changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure and requires revise. For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;
 }
 
 export function buildNativeGroupValidationPrompt(job: GenerationJob) {

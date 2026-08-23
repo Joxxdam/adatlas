@@ -8,6 +8,7 @@ import sharp from "sharp";
 import { classifyNativeReferenceImage } from "./nativeReferenceClassifier.server";
 import {
   normalizeNativeReferenceCategory,
+  normalizeNativeReferenceCompatibility,
   removeManagedNativeReference,
   type ManagedNativeReferenceItem,
   type ManagedNativeReferenceManifest,
@@ -28,7 +29,7 @@ function normalizeManifest(value: ManagedNativeReferenceManifest): ManagedNative
   return {
     ...value,
     items: Array.isArray(value.items)
-      ? value.items.map((item, index) => ({
+      ? value.items.map((item, index) => normalizeNativeReferenceCompatibility({
           ...item,
           ordinal: Number(item.ordinal) || index + 1,
           categoryGroup: normalizeNativeReferenceCategory(item.categoryGroup),
@@ -129,24 +130,25 @@ export const nativeReferenceLibraryRepository = {
             imagePath: outputPath,
             sourceFile: path.basename(file.name || fileName),
           });
-          added.push({
+          added.push(normalizeNativeReferenceCompatibility({
             id,
             publicPath: `/creative-references/reference-copy/${fileName}`,
             sourceFile: path.basename(file.name || fileName).slice(0, 180),
             layoutFamily: "managed-reference",
             categoryGroup: classification.categoryGroup,
+            ...classification.compatibility,
             ordinal: nextOrdinal,
             contentHash: normalized.contentHash,
             uploadedAt: new Date().toISOString(),
             classificationMethod: classification.classificationMethod,
-          });
+          }));
           nextOrdinal += 1;
           existingHashes.add(normalized.contentHash);
         }
         if (!added.length) throw new Error("새로 추가할 이미지가 없습니다. 이미 등록된 이미지인지 확인해 주세요.");
         const updated = {
           ...manifest,
-          version: "native-creative-reference-library-v5-managed",
+          version: "native-creative-reference-library-v6-compatible",
           updatedAt: new Date().toISOString(),
           sourceLabel: "레퍼런스 관리 화면에서 운영하는 제작용 이미지 라이브러리",
           items: [...manifest.items, ...added],
@@ -161,15 +163,28 @@ export const nativeReferenceLibraryRepository = {
   },
 
   async updateCategory(id: string, categoryGroup: NativeReferenceCategoryGroup) {
+    return this.updateCompatibility(id, { categoryGroup });
+  },
+
+  async updateCompatibility(id: string, patch: Partial<ManagedNativeReferenceItem>) {
     return serialize(async () => {
       const manifest = readNativeReferenceManifestSync();
       if (!manifest.items.some((item) => item.id === id)) throw new Error("레퍼런스를 찾지 못했습니다.");
       const updated = {
         ...manifest,
-        version: "native-creative-reference-library-v5-managed",
+        version: "native-creative-reference-library-v6-compatible",
         updatedAt: new Date().toISOString(),
         items: manifest.items.map((item) => item.id === id
-          ? { ...item, categoryGroup: normalizeNativeReferenceCategory(categoryGroup), classificationMethod: "manual" as const }
+          ? normalizeNativeReferenceCompatibility({
+              ...item,
+              ...patch,
+              id: item.id,
+              publicPath: item.publicPath,
+              sourceFile: item.sourceFile,
+              ordinal: item.ordinal,
+              categoryGroup: normalizeNativeReferenceCategory(patch.categoryGroup ?? item.categoryGroup),
+              classificationMethod: "manual" as const,
+            })
           : item),
       };
       await atomicWriteManifest(updated);
@@ -195,7 +210,7 @@ export const nativeReferenceLibraryRepository = {
       try {
         const updated = {
           ...manifest,
-          version: "native-creative-reference-library-v5-managed",
+          version: "native-creative-reference-library-v6-compatible",
           updatedAt: new Date().toISOString(),
           items: removeManagedNativeReference(manifest.items, id),
         };

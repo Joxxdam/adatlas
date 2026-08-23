@@ -571,6 +571,13 @@ export type NativeCreativeArtifact = {
     categoryGroup?: "fashion" | "food" | "beauty";
     categoryLabel?: string;
     selectionReason: string;
+    productForm?: import("./referenceLibraryManagement").NativeReferenceProductForm;
+    compositionType?: import("./referenceLibraryManagement").NativeReferenceCompositionType;
+    productSlotCount?: number;
+    productSlotShape?: import("./referenceLibraryManagement").NativeReferenceSlotShape;
+    photographyType?: import("./referenceLibraryManagement").NativeReferencePhotographyType;
+    textDensity?: import("./referenceLibraryManagement").NativeReferenceTextDensity;
+    compatibilityConfidence?: import("./referenceLibraryManagement").NativeReferenceCompatibilityConfidence;
   };
   /** Persisted outputs from the staged native-AI edit pipeline. */
   stagePaths?: {
@@ -1132,6 +1139,8 @@ export type GenerationJob = {
   timing: { planningMs: number; totalMs?: number };
   errors: string[];
   version: string;
+  /** Semantic pipeline name. Older v12 jobs may omit it and remain readable. */
+  pipeline?: "reference-staged-edit";
   engine?: CreativeGenerationEngine;
   /** 서버 저장용 작업별 유료 API 승인. 기본 Codex 작업에는 존재하지 않는다. */
   paidApiAuthorization?: PaidApiAuthorization;
@@ -1196,7 +1205,7 @@ export type CreateGenerationJobInput = {
   preserveBackgroundAssetId?: string;
   excludedMasterDesignIds?: CreativeBlueprintId[];
   testCode?: `T${string}`;
-  generationModePreference?: "auto" | "actual-product" | "ai-full-scene";
+  generationModePreference?: "auto" | "actual-product" | "ai-full-scene" | "reference-staged-edit";
   forceSceneRevision?: boolean;
   strategyVariation?: number;
   mode?: CreativeExplorationMode;

@@ -38,27 +38,6 @@ const modes = [
   },
 ] as const;
 
-const operationLinks = [
-  {
-    eyebrow: "ASSET LIBRARY",
-    title: "완성 이미지 확인",
-    description: "상품별 제작 결과를 모아보고 다운로드하거나 성과 테스트에 사용할 소재를 선택합니다.",
-    href: "/archive",
-    action: "아카이브 열기",
-    accent: "archive",
-    steps: ["제작 결과 확인", "상품별 다운로드", "성과 소재 선택"],
-  },
-  {
-    eyebrow: "PERFORMANCE",
-    title: "광고 성과 확인",
-    description: "선택한 소재를 Meta 성과와 연결하고 어떤 후킹과 디자인이 효과적인지 비교합니다.",
-    href: "/performance",
-    action: "성과 확인하기",
-    accent: "performance",
-    steps: ["소재 조합 설정", "Meta 성과 연결", "결과 비교"],
-  },
-] as const;
-
 export function CreationModeSelector() {
   return (
     <FeaturePageShell>
@@ -100,50 +79,23 @@ export function CreationModeSelector() {
             </article>
           ))}
         </section>
-        <section className="home-operation-section" aria-labelledby="home-operation-title">
-          <div className="home-operation-heading">
-            <div>
-              <p className="eyebrow">AFTER CREATION</p>
-              <h2 id="home-operation-title">만든 광고를 확인하고 성과까지 이어보세요</h2>
-            </div>
-            <p>제작 완료 이미지는 아카이브에 모이고, 선택한 소재는 성과 확인에서 바로 비교할 수 있습니다.</p>
-          </div>
-          <div className="home-operation-grid">
-            {operationLinks.map((item) => (
-              <Link className={`home-operation-card ${item.accent}`} href={item.href} key={item.title}>
-                <div>
-                  <p className="eyebrow">{item.eyebrow}</p>
-                  <h3>{item.title}</h3>
-                  <p>{item.description}</p>
-                </div>
-                <ul aria-label={`${item.title} 주요 기능`}>
-                  {item.steps.map((step) => <li key={step}>{step}</li>)}
-                </ul>
-                <strong>{item.action}<span aria-hidden="true">→</span></strong>
-              </Link>
-            ))}
-          </div>
-        </section>
-        <p className="mode-selector-note">
-          후보 탐색과 바로 제작은 같은 6장 생성 흐름을 사용하며, 완성 결과는 아카이브와 성과 확인으로 연결됩니다.
-        </p>
         <section className="reference-mode-entry" aria-labelledby="reference-mode-title">
           <div className="reference-mode-index">03</div>
           <div>
-            <p className="eyebrow">IMAGE ANALYSIS ARCHIVE</p>
-            <h2 id="reference-mode-title">이미지 분석 레퍼런스 보러가기</h2>
+            <p className="eyebrow">CREATIVE REFERENCE LIBRARY</p>
+            <h2 id="reference-mode-title">광고 제작 레퍼런스 관리</h2>
             <p>
-              기존에 수집한 광고 이미지를 선택하고 AI 분석 결과와 레퍼런스 라벨을 확인합니다.
+              현재 수동·자동 이미지 제작에서 실제로 참고하는 기존 광고 레퍼런스를 확인하고 관리합니다.
             </p>
           </div>
           <ul>
-            <li>수집 이미지 확인</li>
-            <li>AI 이미지 분석</li>
-            <li>카테고리·후킹·소구점 라벨</li>
-            <li>기존 레퍼런스 분석 화면</li>
+            <li>기존 제작 레퍼런스 확인</li>
+            <li>패션·식품·화장품 분류</li>
+            <li>새 이미지 업로드</li>
+            <li>분류 수정·삭제</li>
           </ul>
-          <Link href="/image-analysis-references">
-            이미지 분석 레퍼런스 보러가기
+          <Link href="/admin/references?tab=library">
+            제작 레퍼런스 보러가기
             <span aria-hidden="true">→</span>
           </Link>
         </section>

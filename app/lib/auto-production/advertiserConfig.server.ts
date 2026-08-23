@@ -68,7 +68,7 @@ export function normalizeAdvertiserConfig(
     advertiserId: safeId(input.advertiserId || current?.advertiserId || input.advertiserName),
     advertiserName: String(input.advertiserName || current?.advertiserName || "").trim().slice(0, 100),
     aliases: textList(input.aliases ?? current?.aliases),
-    enabled: input.enabled ?? current?.enabled ?? true,
+    enabled: input.enabled ?? current?.enabled ?? false,
     timezone: "Asia/Seoul",
     scheduleTime,
     scheduleDays: scheduleDays.length ? Array.from(new Set(scheduleDays)) : [0, 1, 2, 3, 4, 5, 6],
@@ -115,13 +115,18 @@ async function serialize<T>(work: () => Promise<T>) {
 
 async function readConfigs() {
   let source = configFile;
+  let usingSeed = false;
   try {
     await fs.access(source);
   } catch {
     source = seedFile;
+    usingSeed = true;
   }
   const parsed = JSON.parse(await fs.readFile(source, "utf8")) as AutoProductionAdvertiserConfig[];
-  return parsed.map((config) => normalizeAdvertiserConfig(config, config));
+  return parsed.map((config) => normalizeAdvertiserConfig(
+    usingSeed ? { ...config, enabled: false } : config,
+    usingSeed ? undefined : config
+  ));
 }
 
 export const autoProductionAdvertiserRepository = {

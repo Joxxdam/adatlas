@@ -5,6 +5,12 @@ import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
 import {
   nativeReferenceCategoryGroups,
   nativeReferenceCategoryLabel,
+  nativeReferenceCompatibilityConfidences,
+  nativeReferenceCompositionTypes,
+  nativeReferencePhotographyTypes,
+  nativeReferenceProductForms,
+  nativeReferenceSlotShapes,
+  nativeReferenceTextDensities,
   type ManagedNativeReferenceItem,
   type NativeReferenceCategoryGroup,
 } from "../../lib/creative-generation/referenceLibraryManagement";
@@ -74,18 +80,26 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
   }
 
   async function updateCategory(item: ManagedNativeReferenceItem, categoryGroup: NativeReferenceCategoryGroup) {
+    await updateMetadata(item, { categoryGroup }, `${nativeReferenceCategoryLabel(categoryGroup)} 상품군으로 옮겼습니다.`);
+  }
+
+  async function updateMetadata(
+    item: ManagedNativeReferenceItem,
+    patch: Partial<ManagedNativeReferenceItem>,
+    successMessage = "고급 호환 태그를 저장했습니다."
+  ) {
     setBusy(item.id);
     setError("");
     try {
       const result = await parseResponse(await fetch("/api/admin/references", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: item.id, categoryGroup }),
+        body: JSON.stringify({ id: item.id, ...patch }),
       }));
       setLibrary(result.library);
-      setMessage(`${item.sourceFile}을(를) ${nativeReferenceCategoryLabel(categoryGroup)}으로 옮겼습니다.`);
+      setMessage(`${item.sourceFile}: ${successMessage}`);
     } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "카테고리 수정에 실패했습니다.");
+      setError(updateError instanceof Error ? updateError.message : "레퍼런스 호환 정보 수정에 실패했습니다.");
     } finally {
       setBusy("");
     }
@@ -185,6 +199,56 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                     ))}
                   </select>
                 </label>
+                <details className={styles.advanced}>
+                  <summary>고급 호환 태그</summary>
+                  <label>상품 형태
+                    <select disabled={Boolean(busy)} value={item.productForm} onChange={(event) => void updateMetadata(item, { productForm: event.target.value as ManagedNativeReferenceItem["productForm"] })}>
+                      {nativeReferenceProductForms.map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label>구성 유형
+                    <select disabled={Boolean(busy)} value={item.compositionType} onChange={(event) => void updateMetadata(item, { compositionType: event.target.value as ManagedNativeReferenceItem["compositionType"] })}>
+                      {nativeReferenceCompositionTypes.map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label>상품 슬롯 수
+                    <select disabled={Boolean(busy)} value={item.productSlotCount || 1} onChange={(event) => void updateMetadata(item, { productSlotCount: Number(event.target.value) })}>
+                      {[1, 2, 3, 4, 5, 6].map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label>슬롯 형태
+                    <select disabled={Boolean(busy)} value={item.productSlotShape} onChange={(event) => void updateMetadata(item, { productSlotShape: event.target.value as ManagedNativeReferenceItem["productSlotShape"] })}>
+                      {nativeReferenceSlotShapes.map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label>사진 유형
+                    <select disabled={Boolean(busy)} value={item.photographyType} onChange={(event) => void updateMetadata(item, { photographyType: event.target.value as ManagedNativeReferenceItem["photographyType"] })}>
+                      {nativeReferencePhotographyTypes.map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label>문구 밀도
+                    <select disabled={Boolean(busy)} value={item.textDensity} onChange={(event) => void updateMetadata(item, { textDensity: event.target.value as ManagedNativeReferenceItem["textDensity"] })}>
+                      {nativeReferenceTextDensities.map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  <label>태그 신뢰도
+                    <select disabled={Boolean(busy)} value={item.compatibilityConfidence} onChange={(event) => void updateMetadata(item, { compatibilityConfidence: event.target.value as ManagedNativeReferenceItem["compatibilityConfidence"] })}>
+                      {nativeReferenceCompatibilityConfidences.map((value) => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                  </label>
+                  {([
+                    ["supportsPackagedProduct", "포장 상품"],
+                    ["supportsNaturalFood", "자연 식품"],
+                    ["supportsHumanModel", "사람 모델"],
+                    ["supportsMultipleProducts", "복수 상품"],
+                  ] as const).map(([key, label]) => (
+                    <label key={key}>{label}
+                      <select disabled={Boolean(busy)} value={item[key] ? "true" : "false"} onChange={(event) => void updateMetadata(item, { [key]: event.target.value === "true" })}>
+                        <option value="true">지원</option><option value="false">미지원</option>
+                      </select>
+                    </label>
+                  ))}
+                </details>
                 <button className={styles.deleteButton} disabled={Boolean(busy)} onClick={() => void remove(item)} type="button">
                   {busy === item.id ? "처리 중…" : "삭제"}
                 </button>
@@ -198,4 +262,3 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
     </section>
   );
 }
-

@@ -89,6 +89,11 @@
 .cardBody > strong { overflow: hidden; color: #172b45; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .cardBody label { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; color: #697c92; font-size: 12px; font-weight: 800; }
 .cardBody select { min-height: 36px; border: 1px solid #d8e1eb; border-radius: 9px; padding: 0 9px; color: #233b57; background: #fff; font-weight: 800; }
+.advanced { border: 1px solid #e1e8f0; border-radius: 10px; padding: 8px; background: #f8fbfe; }
+.advanced summary { color: #46617e; font-size: 12px; font-weight: 900; cursor: pointer; }
+.advanced[open] { display: grid; gap: 8px; }
+.advanced[open] summary { margin-bottom: 4px; }
+.advanced label { grid-template-columns: minmax(74px, auto) minmax(0, 1fr); }
 .deleteButton { min-height: 36px; border: 1px solid #f1caca; border-radius: 9px; color: #b43a3a; background: #fff7f7; font-weight: 900; cursor: pointer; }
 .deleteButton:disabled { cursor: wait; opacity: .55; }
 .empty { border: 1px dashed #cfdbe8; border-radius: 14px; padding: 50px 20px; color: #6d7f92; text-align: center; background: #fbfdff; font-weight: 800; }
@@ -101,4 +106,3 @@
   .cardBody { padding: 9px; }
   .cardBody label { grid-template-columns: 1fr; }
 }
-

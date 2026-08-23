@@ -16,6 +16,40 @@ const layoutFamilies = [
   "social-proof",
   "sensory-editorial",
 ];
+const verifiedPackagedFoodProfiles = new Map([
+  [2, { productForm: "bundle", compositionType: "product-lineup", productSlotCount: 3, supportsMultipleProducts: true }],
+  [9, { productForm: "pouch", compositionType: "product-lineup", productSlotCount: 3, supportsMultipleProducts: true }],
+  [15, { productForm: "pouch", compositionType: "product-lineup", productSlotCount: 2, supportsMultipleProducts: true }],
+  [20, { productForm: "pouch", compositionType: "product-lineup", productSlotCount: 3, supportsMultipleProducts: true }],
+  [24, { productForm: "bottle", compositionType: "price-card", productSlotCount: 1, supportsMultipleProducts: false }],
+  [25, { productForm: "pouch", compositionType: "product-lineup", productSlotCount: 3, supportsMultipleProducts: true }],
+]);
+
+function compatibilityFor(categoryGroup, ordinal, layoutFamily) {
+  const packagedProfile = categoryGroup === "food" ? verifiedPackagedFoodProfiles.get(ordinal) : undefined;
+  const packagedFood = Boolean(packagedProfile);
+  const naturalFood = categoryGroup === "food" && !packagedFood;
+  const compositionType = naturalFood
+    ? (["sensory-editorial", "situation-story"].includes(layoutFamily) ? "natural-food-scene" : layoutFamily === "price-offer" ? "price-card" : "product-packshot")
+    : layoutFamily === "price-offer" ? "price-card"
+      : layoutFamily === "social-proof" ? "review-card"
+        : layoutFamily === "situation-story" ? "lifestyle-scene"
+          : layoutFamily === "sensory-editorial" ? "sensory-closeup"
+            : "product-packshot";
+  return {
+    productForm: categoryGroup === "fashion" ? "fashion-item" : naturalFood ? "meat-cut" : packagedProfile?.productForm || "universal-packshot",
+    compositionType: packagedProfile?.compositionType || compositionType,
+    productSlotCount: packagedProfile?.productSlotCount || 1,
+    productSlotShape: naturalFood ? "wide" : categoryGroup === "fashion" ? "tall" : "flexible",
+    photographyType: naturalFood ? "natural-food" : compositionType === "lifestyle-scene" ? "lifestyle" : "packshot",
+    textDensity: ["price-offer", "usp-evidence", "social-proof"].includes(layoutFamily) ? "dense" : "medium",
+    supportsPackagedProduct: !naturalFood,
+    supportsNaturalFood: naturalFood,
+    supportsHumanModel: categoryGroup === "fashion",
+    supportsMultipleProducts: packagedProfile?.supportsMultipleProducts || false,
+    compatibilityConfidence: categoryGroup === "food" ? "high" : "medium",
+  };
+}
 
 // 사용자 제공 ZIP을 육안 검수해 분류한 상품군입니다. 파일명이 숫자뿐이라
 // 재가져오기 때도 같은 자연 정렬 순번을 기준으로 카테고리를 보존합니다.
@@ -67,23 +101,26 @@ for (let index = 0; index < sources.length; index += 1) {
     .toColorspace("srgb")
     .jpeg({ quality: 88, progressive: true, mozjpeg: true })
     .toFile(outputPath);
+  const categoryGroup = categoryGroupForSource(sources[index], ordinal);
+  const layoutFamily = layoutFamilies[index % layoutFamilies.length];
   items.push({
     id: `reference-copy-${String(ordinal).padStart(3, "0")}`,
     publicPath: `/creative-references/reference-copy/${fileName}`,
     sourceFile: path.basename(sources[index]),
-    layoutFamily: layoutFamilies[index % layoutFamilies.length],
-    categoryGroup: categoryGroupForSource(sources[index], ordinal),
+    layoutFamily,
+    categoryGroup,
+    ...compatibilityFor(categoryGroup, ordinal, layoutFamily),
     ordinal,
     classificationMethod: "imported",
   });
 }
 
 await fs.writeFile(manifestPath, `${JSON.stringify({
-  version: "native-creative-reference-library-v5-managed",
+  version: "native-creative-reference-library-v6-compatible",
   importedAt: new Date().toISOString(),
   sourceLabel: "이미지참고복사용.zip을 초기 데이터로 등록한 관리형 제작 레퍼런스",
-  selectionPolicy: "레퍼런스 관리 화면에 현재 등록된 패션·식품·화장품 세 그룹 중 상품과 같은 풀에서 중복 없이 6장을 무작위 선택하고 작업에 고정한다. 건강·웰니스와 퍼스널케어는 화장품에 포함하며, 삭제된 항목은 즉시 선택 대상에서 제외한다. 같은 그룹이 6장보다 적을 때만 가까운 풀에서 보충하고 패션은 식품 레퍼런스로 보충하지 않는다.",
-  usagePolicy: "선택한 광고의 디자인을 작업용 마스터로 재현한 뒤 URL 상품과 ProductTruth 문구로 단계별 교체하며, 최종 결과에는 원본 브랜드·상품·문구·가격·로고를 남기지 않는다.",
+  selectionPolicy: "레퍼런스 관리 화면에 현재 등록된 패션·식품·화장품 세 그룹 중 상품군·상품 형태·구도·슬롯 호환 점수를 통과한 후보에서 중복 없이 6장을 무작위 선택하고 작업에 고정한다. 건강·웰니스와 퍼스널케어는 화장품에 포함하며 삭제된 항목은 즉시 제외한다. 후보가 부족해도 타 상품군이나 비호환 항목으로 보충하지 않는다.",
+  usagePolicy: "선택한 광고 원본을 01-structure로 바이트 동일 복사한 뒤 URL 상품과 ProductTruth 문구로 단계별 교체한다. 재시도·복구·문구 수정은 같은 레퍼런스를 유지하고 명시적인 6장 전체 새로 만들기에서만 다시 추첨한다.",
   items,
 }, null, 2)}\n`, "utf8");
 

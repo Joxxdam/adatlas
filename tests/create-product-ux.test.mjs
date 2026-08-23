@@ -51,7 +51,7 @@ test("main navigation separates image creation, video planning, archive, and per
   }
   const imageBlock = navigation.slice(navigation.indexOf("IMAGE_CONTENT_FEATURES"), navigation.indexOf("VIDEO_PLANNING_FEATURE"));
   assert.equal((imageBlock.match(/index: "0[12]"/g) || []).length, 2);
-  assert.doesNotMatch(imageBlock, /영상 기획|video-planning|성과 확인|performance|자동 콘텐츠 제작|auto-production/);
+  assert.doesNotMatch(imageBlock, /영상 기획|video-planning|자동 콘텐츠 제작|auto-production/);
   assert.match(navigation, /IMAGE CONTENT/);
   assert.match(navigation, />이미지 콘텐츠</);
   assert.match(navigation, /VIDEO CONTENT/);
@@ -65,20 +65,23 @@ test("main navigation separates image creation, video planning, archive, and per
   assert.doesNotMatch(navigation, /상품 선택[\s\S]*IMAGE_CONTENT_FEATURES|AI 광고 만들기[\s\S]*IMAGE_CONTENT_FEATURES/);
 });
 
-test("management tools sit directly below image ad production and home exposes performance operations", async () => {
+test("성과 확인과 이미지 제작 관리 도구는 광고 제작 아래의 간결한 드롭다운으로 표시된다", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
   const home = await read("app/components/CreationModeSelector.tsx");
   const imageSection = navigation.slice(
     navigation.indexOf('<section className="feature-navigation-group feature-navigation-image"'),
     navigation.indexOf('<section className="feature-navigation-group feature-navigation-video"')
   );
-  assert.match(imageSection, /IMAGE_CONTENT_FEATURES\.map[\s\S]*feature-navigation-management[\s\S]*관리 도구/);
+  assert.match(imageSection, /IMAGE_CONTENT_FEATURES\.map[\s\S]*feature-navigation-performance-menu[\s\S]*성과 확인[\s\S]*이미지 제작 관리 도구/);
+  assert.match(imageSection, /href=\{PERFORMANCE_FEATURE\.href\}[\s\S]*광고 성과 확인/);
+  assert.doesNotMatch(imageSection, /⚙/);
+  assert.equal((navigation.match(/feature-navigation-performance-link/g) || []).length, 0);
   assert.match(imageSection, /AuxiliaryFeatureNavigation/);
   assert.doesNotMatch(navigation.slice(navigation.indexOf("<AppFeatureNavigation activeFeature")), /mvp-management-tools/);
-  assert.match(home, /만든 광고를 확인하고 성과까지 이어보세요/);
-  assert.match(home, /href: "\/archive"[\s\S]*href: "\/performance"/);
-  assert.match(home, /광고 성과 확인/);
-  assert.match(home, /성과 확인하기/);
+  assert.doesNotMatch(home, /AFTER CREATION|만든 광고를 확인하고 성과까지 이어보세요|ASSET LIBRARY|성과 확인하기|home-operation-section|mode-selector-note/);
+  assert.match(home, /href="\/admin\/references\?tab=library"/);
+  assert.match(home, /광고 제작 레퍼런스 관리/);
+  assert.doesNotMatch(home, /href="\/image-analysis-references"/);
 });
 
 test("auto production manages orchestration and links to the shared creative result", async () => {
@@ -132,14 +135,16 @@ test("reference creatives are server-driven and deliver each completed card imme
   const assetActions = await read(
     "app/components/features/creative-assets/CreativeAssetActions.tsx"
   );
-  assert.match(generator, /백그라운드에서 계속 제작됩니다/);
+  assert.match(generator, /백그라운드에서 계속 제작/);
   assert.match(generator, /creative-generation\/jobs\/active/);
   assert.doesNotMatch(generator, /function runPending/);
   assert.doesNotMatch(generator, /workerCount/);
   assert.match(generator, /six-creative-grid/);
   assert.match(generator, /visibleGeneratedResults/);
-  assert.match(generator, /검수 결과와 관계없이 이미지가 만들어지는 즉시 표시됩니다/);
-  assert.match(generator, /이미지는 생성됐으며 품질 확인이 필요합니다/);
+  assert.match(generator, /이미지가 만들어지는 즉시 표시되고 다운로드할 수 있습니다/);
+  assert.match(generator, /다운로드 가능/);
+  assert.match(generator, /Boolean\(result\.imagePath && result\.nativeCreative\?\.finalPath\)/);
+  assert.doesNotMatch(generator, /이미지는 생성됐으며 품질 확인이 필요합니다/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
   assert.match(generator, /copyEdits|수정 문구로 전체 광고 재생성|문구 수정·제작 정보/);
@@ -149,20 +154,30 @@ test("reference creatives are server-driven and deliver each completed card imme
   }
 });
 
-test("새 URL을 분석할 때만 제작 카드를 교체하고 같은 상품 작업은 메뉴 이동 후 복원한다", async () => {
-  const [dashboard, generator, activeRoute] = await Promise.all([
+test("같은 URL도 다시 분석하면 새 제작을 시작하고 진행 중 작업만 복원한다", async () => {
+  const [dashboard, generator, activeRoute, downloadRoute, assetRoute] = await Promise.all([
     read("app/components/MvpDashboard.tsx"),
     read("app/components/features/creative-generation/SixCreativeGenerator.tsx"),
     read("app/api/creative-generation/jobs/active/route.ts"),
+    read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/download/route.ts"),
+    read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/asset/route.ts"),
   ]);
 
   assert.match(dashboard, /analyzedProductUrl=\{lastLoadedProductUrl\}/);
-  assert.doesNotMatch(generator, /props\.analysisRevision/);
+  assert.match(dashboard, /setProductAnalysisRevision\(\(current\) => current \+ 1\)/);
+  assert.match(generator, /props\.analysisRevision/);
+  assert.match(generator, /hasGenerationWorkRemaining/);
   assert.match(generator, /localStorage\.getItem\(`\$\{storedJobKey\}:\$\{currentProductUrl\}`\)/);
-  assert.match(generator, /jobUrl === currentUrl/);
+  assert.match(generator, /상품 분석이 완료됐습니다\. 이 상품으로 새 광고 6장을 제작합니다/);
+  assert.match(generator, /다운로드가 완료됐습니다\. 같은 상품 URL을 다시 분석하면 새 광고 6장을 제작합니다/);
   assert.match(generator, /jobs\/active\?productUrl=/);
   assert.match(activeRoute, /requestedProductUrl/);
   assert.match(activeRoute, /candidate\.productTruth\.product\.landingUrl/);
+  assert.match(downloadRoute, /result\?\.imagePath/);
+  assert.match(downloadRoute, /result\.nativeCreative\?\.finalPath/);
+  assert.doesNotMatch(downloadRoute, /\["success","approved"\]\.includes\(result\.status\)/);
+  assert.match(assetRoute, /result\.imagePath/);
+  assert.match(assetRoute, /result\.nativeCreative\?\.finalPath/);
 });
 
 test("creative reasoning and vision defaults use GPT-5.6 Sol while image generation stays dedicated", async () => {

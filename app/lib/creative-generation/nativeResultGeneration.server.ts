@@ -23,6 +23,7 @@ import { validateCopyAgainstTruth } from "./productTruth";
 import { selectNativeAdReference } from "./referenceCreativeLibrary.server";
 import { createIdentityLockedProductComposite } from "./protectedProductCompositor.server";
 import { identityLockedProductPlacements, resolveProductRenderingPolicy } from "./productRenderingPolicy";
+import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
 
 type NativeResultInput = {
   jobId: string;
@@ -69,6 +70,13 @@ function manualReviewValidation(message: string): NativeCreativeValidation {
 function conciseQaFeedback(validation: NativeCreativeValidation) {
   const failures = validation.failures.slice(0, 6).join("; ");
   return `AI quality review requested a complete remake. ${failures || "Improve product identity, exact Korean text, hierarchy and coherent hook-specific composition."}`;
+}
+
+export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation) {
+  if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
+  return validation.failures.some((failure) =>
+    /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|이전\s*문구|출처\s*문구|가격|할인|수량|용량|한글|한국어|오탈자|깨진\s*글자|잘림|가림|충돌|source\s*(?:brand|copy|price)|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap/i.test(failure)
+  );
 }
 
 async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<CopyPlan>) {
@@ -173,7 +181,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const started = Date.now();
   let referenceMs = 0;
   let generationMs = 0;
-  const compositionMs = 0;
+  let compositionMs = 0;
   let validationMs = 0;
   let exportMs = 0;
   const loadedJob = await creativeGenerationJobStore.get(input.jobId);
@@ -256,15 +264,17 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const active = job.results.find((result)=>result.id===input.resultId)!;
   const productRenderingPolicy = resolveProductRenderingPolicy(job);
   const identityLockedPlacements = identityLockedProductPlacements(active);
-  async function restoreIdentityLockedProduct(file: string) {
-    if (productRenderingPolicy !== "identity-locked-beauty") return file;
+  async function restoreIdentityLockedProduct(sourceFile: string, outputFile = sourceFile) {
+    if (productRenderingPolicy !== "identity-locked-packaged-product") return sourceFile;
+    const compositionStarted = Date.now();
     const composited = await createIdentityLockedProductComposite({
-      backgroundPath:file,
+      backgroundPath:sourceFile,
       productImagePath:generationReferences[0],
       placements:identityLockedPlacements,
     });
-    await writeFile(file,composited.buffer);
-    return file;
+    await writeFile(outputFile,composited.buffer);
+    compositionMs += Date.now() - compositionStarted;
+    return outputFile;
   }
   const existingStages = active.nativeCreative?.stagePaths || {};
   let structurePath = existingStages.structurePath;
@@ -282,8 +292,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   }
 
   async function runStage(
-    stage: "structure-recreation"|"product-replacement"|"copy-replacement"|"qa-repair",
-    generationStage: "structure-recreating"|"product-replacing"|"copy-replacing"|"qa-repairing",
+    stage: "product-replacement"|"copy-replacement"|"qa-repair",
+    generationStage: "product-replacing"|"copy-replacing"|"qa-repairing",
     outputPath: string,
     sourceImagePath: string,
     feedback?: string
@@ -316,17 +326,27 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     if (!await validStageFile(generatedPath)) throw new Error("다시 검수할 AI 완성 광고가 없습니다.");
   } else {
     if (!await validStageFile(structurePath)) {
-      structurePath = path.join(directory,"01-structure.png");
-      await runStage("structure-recreation","structure-recreating",structurePath,selectedAdReference.path,input.feedback);
+      const sourceExtension = path.extname(selectedAdReference.path).toLowerCase();
+      structurePath = path.join(directory,`01-structure${sourceExtension === ".jpeg" ? ".jpg" : sourceExtension || ".jpg"}`);
+      job = await updateNativeProgress(job,input.resultId,"structure-recreating");
+      await copyReferenceStructureLosslessly(selectedAdReference.path,structurePath);
+      await validateGeneratedFinal(structurePath);
       job = await updateNativeProgress(job,input.resultId,"structure-recreating",(result)=>({
         nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath}},
       }));
     }
-    if (!structurePath) throw new Error("광고 구조 재현 결과가 없습니다.");
+    if (!structurePath) throw new Error("광고 레퍼런스 원본 복사 결과가 없습니다.");
 
     if (!await validStageFile(productPath)) {
       productPath = path.join(directory,"02-product.png");
-      await runStage("product-replacement","product-replacing",productPath,structurePath,input.feedback);
+      if (productRenderingPolicy === "identity-locked-packaged-product") {
+        const productBasePath = path.join(directory,"02-product-base.png");
+        await runStage("product-replacement","product-replacing",productBasePath,structurePath,input.feedback);
+        await restoreIdentityLockedProduct(productBasePath,productPath);
+        await validateGeneratedFinal(productPath);
+      } else {
+        await runStage("product-replacement","product-replacing",productPath,structurePath,input.feedback);
+      }
       job = await updateNativeProgress(job,input.resultId,"product-replacing",(result)=>({
         nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath,productPath}},
       }));
@@ -335,15 +355,10 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
     if (!await validStageFile(copyPath)) {
       copyPath = path.join(directory,"03-copy.png");
-      if (productRenderingPolicy === "identity-locked-beauty") {
+      if (productRenderingPolicy === "identity-locked-packaged-product") {
         const copyBasePath = path.join(directory,"03-copy-base.png");
         await runStage("copy-replacement","copy-replacing",copyBasePath,productPath,input.feedback);
-        const composited = await createIdentityLockedProductComposite({
-          backgroundPath:copyBasePath,
-          productImagePath:generationReferences[0],
-          placements:identityLockedPlacements,
-        });
-        await writeFile(copyPath,composited.buffer);
+        await restoreIdentityLockedProduct(copyBasePath,copyPath);
         await validateGeneratedFinal(copyPath);
       } else {
         await runStage("copy-replacement","copy-replacing",copyPath,productPath,input.feedback);
@@ -398,7 +413,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       validation = manualReviewValidation("AI 완성 광고 검수 응답을 받지 못해 사람 검수가 필요합니다.");
     }
     validationMs += Date.now() - validationStarted;
-    if (validation.recommendation !== "revise" || action === "revalidate" || attempt >= runtime.autoRevisionLimit) break;
+    const criticalFailure = hasCriticalNativeQaFailure(validation);
+    if (validation.recommendation !== "revise" || !criticalFailure || action === "revalidate" || attempt >= Math.min(1,runtime.autoRevisionLimit)) break;
     const repairedPath = path.join(directory,`04-qa-repair-${attempt + 1}.png`);
     await runStage("qa-repair","qa-repairing",repairedPath,generatedPath,[input.feedback,conciseQaFeedback(validation)].filter(Boolean).join("\n"));
     await restoreIdentityLockedProduct(repairedPath);

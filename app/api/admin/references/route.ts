@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
 import {
+  nativeReferenceCompatibilityConfidences,
+  nativeReferenceCompositionTypes,
   nativeReferenceCategoryGroups,
+  nativeReferencePhotographyTypes,
+  nativeReferenceProductForms,
+  nativeReferenceSlotShapes,
+  nativeReferenceTextDensities,
   normalizeNativeReferenceCategory,
+  type ManagedNativeReferenceItem,
 } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
@@ -62,13 +69,24 @@ export async function PATCH(request: Request) {
     assertTrustedMutation(request);
     const body = await request.json().catch(() => ({}));
     const id = String(body.id || "").trim();
-    const categoryGroup = normalizeNativeReferenceCategory(body.categoryGroup);
     if (!id) throw new Error("수정할 레퍼런스 ID가 필요합니다.");
-    await nativeReferenceLibraryRepository.updateCategory(id, categoryGroup);
+    const patch: Partial<ManagedNativeReferenceItem> = {};
+    if (body.categoryGroup !== undefined) patch.categoryGroup = normalizeNativeReferenceCategory(body.categoryGroup);
+    if (nativeReferenceProductForms.includes(body.productForm)) patch.productForm = body.productForm;
+    if (nativeReferenceCompositionTypes.includes(body.compositionType)) patch.compositionType = body.compositionType;
+    if (nativeReferenceSlotShapes.includes(body.productSlotShape)) patch.productSlotShape = body.productSlotShape;
+    if (nativeReferencePhotographyTypes.includes(body.photographyType)) patch.photographyType = body.photographyType;
+    if (nativeReferenceTextDensities.includes(body.textDensity)) patch.textDensity = body.textDensity;
+    if (nativeReferenceCompatibilityConfidences.includes(body.compatibilityConfidence)) patch.compatibilityConfidence = body.compatibilityConfidence;
+    if (body.productSlotCount !== undefined) patch.productSlotCount = Math.max(1, Math.min(6, Math.round(Number(body.productSlotCount) || 1)));
+    for (const key of ["supportsPackagedProduct", "supportsNaturalFood", "supportsHumanModel", "supportsMultipleProducts"] as const) {
+      if (typeof body[key] === "boolean") patch[key] = body[key];
+    }
+    await nativeReferenceLibraryRepository.updateCompatibility(id, patch);
     return NextResponse.json({ ok: true, library: publicLibrary() });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "카테고리 수정에 실패했습니다." },
+      { ok: false, error: error instanceof Error ? error.message : "레퍼런스 호환 정보 수정에 실패했습니다." },
       { status: 400 }
     );
   }
@@ -94,4 +112,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-

@@ -6,10 +6,11 @@
 
 ```text
 무작위 ZIP 레퍼런스
-→ 레퍼런스 재현
+→ 레퍼런스 원본 무손실 복사
 → URL 상품만 교체
 → ProductTruth 문구만 교체
-→ 레퍼런스·상품·문구 AI QA
+→ 레퍼런스·상품·문구 비생성 QA
+→ 치명 오류에만 AI 보정 최대 1회
 ```
 
 설치된 Codex CLI와 현재 ChatGPT 로그인을 사용하며 자식 프로세스에서 `OPENAI_API_KEY`를 제거합니다. 로컬 Codex 실패를 유료 API나 배경 라이브러리로 자동 전환하지 않습니다.
@@ -30,7 +31,8 @@ ADATLAS_PAID_API_EXPLICIT_ENABLED=false
 
 `CreativeGenerationProvider`는 현재 기본 경로에서 다음 계약을 가집니다.
 
-- `generate(input)`: `structure-recreation`, `product-replacement`, `copy-replacement`, `qa-repair` 중 한 단계의 완성 래스터를 저장
+- `generate(input)`: 신규 `reference-staged-edit`에서는 `product-replacement`, `copy-replacement`, 치명 오류의 `qa-repair`에만 완성 래스터를 저장
+- 구조 단계: provider를 호출하지 않고 원본을 바이트 동일하게 `01-structure`로 복사. `structure-recreation` 타입은 과거 저장 작업 읽기 호환용으로만 유지
 - `validate(input)`: 최종 광고, 선택 ZIP 레퍼런스, URL 상품 원본을 비교하고 구조 충실도·상품 동일성·문구 정확성을 JSON으로 반환
 - 각 단계의 `sourceImagePath`는 첫 번째 편집 소스
 - `productReferencePaths`는 URL 상세페이지에서 검증한 상품 이미지

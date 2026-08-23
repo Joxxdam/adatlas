@@ -12,7 +12,20 @@ export async function GET(request: Request) {
     verifyAutoProductionAccess(request);
     const url = new URL(request.url);
     const advertiserId = url.searchParams.get("advertiserId") || undefined;
-    const runs = await autoProductionRepository.list({ advertiserId, limit: Number(url.searchParams.get("limit") || 40) });
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    const requestedFrom = url.searchParams.get("dateFrom") || "";
+    const requestedTo = url.searchParams.get("dateTo") || "";
+    const dateFrom = datePattern.test(requestedFrom) ? requestedFrom : undefined;
+    const dateTo = datePattern.test(requestedTo) ? requestedTo : undefined;
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      return NextResponse.json({ ok: false, error: "조회 시작일은 종료일보다 늦을 수 없습니다." }, { status: 400 });
+    }
+    const runs = await autoProductionRepository.list({
+      advertiserId,
+      dateFrom,
+      dateTo,
+      limit: Number(url.searchParams.get("limit") || 80),
+    });
     const synced = [];
     for (const run of runs) {
       const copyPending = run.tasks.some((task) => task.generationJobId && task.results.some((result) => ["success", "approved"].includes(result.status)) && (!task.adCopy || task.adCopy.status === "generating"));

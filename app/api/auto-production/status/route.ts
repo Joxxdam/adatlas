@@ -26,12 +26,15 @@ export async function GET(request: Request) {
     const validRuns = synced.filter((run): run is NonNullable<typeof run> => Boolean(run));
     const active = validRuns.filter((run) => ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"].includes(run.status));
     const nextRunAt = advertisers.filter((config) => config.enabled && config.nextRunAt).map((config) => config.nextRunAt).sort()[0];
+    const plannedImages = Math.min(settings.maxImagesPerDay, plannedImageCount(advertisers));
     return NextResponse.json({
       ok: true,
       status: {
         nextRunAt,
         activeAdvertiserCount: advertisers.filter((config) => config.enabled).length,
-        plannedProductCount: Math.min(settings.maxImagesPerDay, plannedImageCount(advertisers)),
+        plannedImageCount: plannedImages,
+        selectedProductCount: validRuns.reduce((sum, run) => sum + run.tasks.length, 0),
+        plannedProductCount: plannedImages,
         completedTodayCount: validRuns.reduce((sum, run) => sum + run.completedImages, 0),
         failedTodayCount: validRuns.reduce((sum, run) => sum + run.failedImages, 0),
         activeRunCount: active.length,

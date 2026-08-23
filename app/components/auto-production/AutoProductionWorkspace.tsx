@@ -22,6 +22,8 @@ type GlobalSettings = {
   globalConcurrency: number;
 };
 
+type RunPeriod = "today" | "yesterday" | "seven-days" | "custom" | "all";
+
 type FormState = {
   advertiserName: string;
   bigQueryBrandMatch: string;
@@ -55,7 +57,7 @@ const emptyForm: FormState = {
   adminProductUrls: "",
   adObjective: "purchase",
   productVisibilityMode: "site-visible-only",
-  enabled: true,
+  enabled: false,
 };
 
 const weekdayLabels = ["일", "월", "화", "수", "목", "금", "토"];
@@ -88,6 +90,45 @@ const terminalRunStatuses = new Set<AutoProductionRun["status"]>([
   "cancelled",
   "skipped",
 ]);
+
+const productStatusLabels: Record<AutoProductionProductTask["status"], string> = {
+  selected: "상품 선정",
+  analyzing: "상품 분석 중",
+  "hooks-ready": "문구 준비 완료",
+  queued: "이미지 제작 대기",
+  generating: "이미지 제작 중",
+  completed: "완료",
+  failed: "실패",
+  "skipped-duplicate": "중복 제외",
+  "skipped-insufficient-data": "상품 정보 부족",
+  "skipped-unavailable": "상품 이용 불가",
+};
+
+const sourceLabels: Record<AutoProductionProductTask["candidate"]["source"], string> = {
+  bigquery: "BigQuery 읽기 전용",
+  crema: "크리마 읽기 전용",
+  site: "공개 사이트",
+  admin: "직접 지정 URL",
+};
+
+function resultStatusLabel(status: AutoProductionProductTask["results"][number]["status"]) {
+  if (["success", "approved"].includes(status)) return "완료";
+  if (["quality-review", "korean-review", "product-review", "group-review"].includes(status)) return "확인 필요";
+  if (status === "failed") return "실패";
+  if (status === "running") return "제작 중";
+  if (status === "cancelled") return "취소";
+  return "대기";
+}
+
+function seoulBusinessDate(offsetDays = 0) {
+  const date = new Date(Date.now() + offsetDays * 86_400_000);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
 
 function list(value: string) {
   return value
@@ -180,6 +221,34 @@ export function AutoProductionWorkspace() {
   const [showForm, setShowForm] = useState(false);
   const [working, setWorking] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [runPeriod, setRunPeriod] = useState<RunPeriod>("today");
+  const [customFrom, setCustomFrom] = useState(() => seoulBusinessDate(-6));
+  const [customTo, setCustomTo] = useState(() => seoulBusinessDate());
+
+  const runDateRange = useMemo(() => {
+    if (runPeriod === "all") return {};
+    if (runPeriod === "today") {
+      const today = seoulBusinessDate();
+      return { dateFrom: today, dateTo: today };
+    }
+    if (runPeriod === "yesterday") {
+      const yesterday = seoulBusinessDate(-1);
+      return { dateFrom: yesterday, dateTo: yesterday };
+    }
+    if (runPeriod === "seven-days") {
+      return { dateFrom: seoulBusinessDate(-6), dateTo: seoulBusinessDate() };
+    }
+    return customFrom <= customTo
+      ? { dateFrom: customFrom, dateTo: customTo }
+      : { dateFrom: customTo, dateTo: customFrom };
+  }, [customFrom, customTo, runPeriod]);
+
+  const runQuery = useMemo(() => {
+    const params = new URLSearchParams({ limit: "200" });
+    if (runDateRange.dateFrom) params.set("dateFrom", runDateRange.dateFrom);
+    if (runDateRange.dateTo) params.set("dateTo", runDateRange.dateTo);
+    return params.toString();
+  }, [runDateRange]);
 
   const hasActiveRun = useMemo(
     () => runs.some((run) => !terminalRunStatuses.has(run.status)),
@@ -207,7 +276,7 @@ export function AutoProductionWorkspace() {
           "/api/auto-production/advertisers"
         ),
         api<{ status: AutoProductionDashboardStatus }>("/api/auto-production/status"),
-        api<{ runs: AutoProductionRun[] }>("/api/auto-production/runs?limit=30"),
+        api<{ runs: AutoProductionRun[] }>(`/api/auto-production/runs?${runQuery}`),
       ]);
       setAdvertisers(configPayload.advertisers);
       setSettings(configPayload.settings);
@@ -221,7 +290,7 @@ export function AutoProductionWorkspace() {
           : "자동 제작 정보를 불러오지 못했습니다."
       );
     }
-  }, []);
+  }, [runQuery]);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void refresh(), 0);
@@ -333,7 +402,7 @@ export function AutoProductionWorkspace() {
         </div>
         <div className={styles.stat}>
           <span>오늘 제작 예정</span>
-          <strong>{status?.plannedProductCount ?? 0}장</strong>
+          <strong>{status?.plannedImageCount ?? status?.plannedProductCount ?? 0}장</strong>
         </div>
         <div className={styles.stat}>
           <span>오늘 완료</span>
@@ -398,12 +467,12 @@ export function AutoProductionWorkspace() {
                 <input
                   aria-label="하루 최대 자동 제작 이미지 수"
                   max="120"
-                  min={Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL)}
+                  min={Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedImageCount || status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL)}
                   onChange={(event) =>
                     setSettings((current) => ({
                       ...current,
                         maxImagesPerDay: Math.max(
-                          Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL),
+                          Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedImageCount || status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL),
                           Math.min(120, Number(event.target.value) || AUTO_PRODUCTION_IMAGES_PER_MALL * 3)
                         ),
                     }))
@@ -768,81 +837,204 @@ export function AutoProductionWorkspace() {
       <section className={styles.section} id="auto-production-results">
         <div className={styles.sectionHeader}>
           <div>
-            <h2>최근 자동 제작 실행</h2>
-            <p>
-              이 화면은 일정·후보·제외조건·작업 큐만 관리합니다. 제작 결과는 공통 광고 제작 화면에서
-              확인합니다.
-            </p>
+            <h2>최근 자동 제작 결과</h2>
+            <p>광고주별 실행 상태와 완성 이미지를 확인하고 바로 다운로드할 수 있습니다.</p>
           </div>
+        </div>
+        <div className={styles.historyToolbar}>
+          <div className={styles.periodButtons} aria-label="실행 날짜 범위" role="group">
+            {([
+              ["today", "오늘"],
+              ["yesterday", "어제"],
+              ["seven-days", "최근 7일"],
+              ["custom", "기간 선택"],
+              ["all", "전체"],
+            ] as Array<[RunPeriod, string]>).map(([value, label]) => (
+              <button
+                aria-pressed={runPeriod === value}
+                className={runPeriod === value ? styles.periodActive : undefined}
+                key={value}
+                onClick={() => setRunPeriod(value)}
+                type="button"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {runPeriod === "custom" ? (
+            <div className={styles.customDates}>
+              <label>
+                시작일
+                <input
+                  max={customTo}
+                  onChange={(event) => setCustomFrom(event.target.value)}
+                  type="date"
+                  value={customFrom}
+                />
+              </label>
+              <span>~</span>
+              <label>
+                종료일
+                <input
+                  min={customFrom}
+                  onChange={(event) => setCustomTo(event.target.value)}
+                  type="date"
+                  value={customTo}
+                />
+              </label>
+            </div>
+          ) : null}
+          <strong className={styles.historyCount}>실행 {runs.length}건</strong>
         </div>
         {!runs.length ? (
           <div className={styles.empty}>
-            아직 실행 기록이 없습니다. 후보를 확인한 뒤 오늘 자동 제작을 실행해보세요.
+            선택한 날짜에 자동 제작 기록이 없습니다.
           </div>
         ) : null}
-        {runs.map((productionRun) => (
-          <article className={styles.run} key={productionRun.id}>
-            <header className={styles.runHeader}>
-              <div>
-                <h3>
-                  {productionRun.advertiserName} · {productionRun.businessDate}
-                </h3>
-                <p>
-                  완료 {productionRun.completedImages}/{productionRun.expectedImages} · 실패{" "}
-                  {productionRun.failedImages}
-                </p>
-              </div>
-              <div>
-                <span className={styles.status}>{runStatusLabels[productionRun.status]}</span>
-                {productionRun.packageStatus === "ready" ? (
-                  <a
-                    className={styles.buttonSecondary}
-                    href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/download`}
-                  >
-                    준비 완료 ZIP
+        {runs.map((productionRun, runIndex) => {
+          const reviewCount = productionRun.tasks
+            .flatMap((task) => task.results)
+            .filter((result) => ["quality-review", "korean-review", "product-review", "group-review"].includes(result.status)).length;
+          const productCount = productionRun.tasks.length;
+          return (
+            <details className={styles.run} defaultOpen={runIndex === 0} key={productionRun.id}>
+              <summary className={styles.runHeader}>
+                <div>
+                  <p className={styles.runDate}>{productionRun.businessDate} · {localDateTime(productionRun.startedAt)}</p>
+                  <h3>{productionRun.advertiserName} 자동제작</h3>
+                  <p>
+                    상품 {productCount}개 · 완료 {productionRun.completedImages}/{productionRun.expectedImages}장
+                    {reviewCount ? ` · 확인 필요 ${reviewCount}장` : ""}
+                    {productionRun.failedImages ? ` · 실패 ${productionRun.failedImages}장` : ""}
+                  </p>
+                </div>
+                <div className={styles.runSummaryRight}>
+                  <span className={styles.status}>{runStatusLabels[productionRun.status]}</span>
+                  <span className={styles.expandHint}>결과 펼치기</span>
+                </div>
+              </summary>
+              <div className={styles.runBody}>
+                <div className={styles.runActions}>
+                  {productionRun.completedImages ? (
+                    <a
+                      className={styles.button}
+                      href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/download`}
+                    >
+                      전체 {productionRun.completedImages}장 ZIP 다운로드
+                    </a>
+                  ) : null}
+                  <a className={styles.buttonSecondary} href="/archive">
+                    아카이브 보기
                   </a>
-                ) : productionRun.completedImages ? (
-                  <span className={styles.packagePending}>
-                    {productionRun.packageStatus === "failed" ? "ZIP 재준비 필요" : "ZIP 준비 중"}
-                  </span>
-                ) : null}
-                {!terminalRunStatuses.has(productionRun.status) ? (
-                  <button
-                    className={styles.buttonDanger}
-                    disabled={Boolean(working)}
-                    onClick={() =>
-                      void runAction(`cancel:${productionRun.id}`, async () => {
-                        await api(
-                          `/api/auto-production/runs/${encodeURIComponent(productionRun.id)}`,
-                          { method: "PATCH", body: JSON.stringify({ action: "cancel" }) }
-                        );
-                      })
-                    }
-                    type="button"
-                  >
-                    중지
-                  </button>
+                  {productionRun.packageStatus === "building" || productionRun.packageStatus === "pending" ? (
+                    <span className={styles.packagePending}>ZIP 준비 중</span>
+                  ) : productionRun.packageStatus === "failed" ? (
+                    <span className={styles.packagePending}>클릭 시 ZIP 다시 준비</span>
+                  ) : null}
+                  {!terminalRunStatuses.has(productionRun.status) ? (
+                    <button
+                      className={styles.buttonDanger}
+                      disabled={Boolean(working)}
+                      onClick={() =>
+                        void runAction(`cancel:${productionRun.id}`, async () => {
+                          await api(`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}`, {
+                            method: "PATCH",
+                            body: JSON.stringify({ action: "cancel" }),
+                          });
+                        })
+                      }
+                      type="button"
+                    >
+                      제작 중지
+                    </button>
+                  ) : null}
+                </div>
+
+                <div className={styles.taskResults}>
+                  {productionRun.tasks.map((task, taskIndex) => {
+                    const downloadableCount = task.results.filter((result) => ["success", "approved"].includes(result.status)).length;
+                    return (
+                      <section className={styles.task} key={task.id}>
+                        <header className={styles.taskOverview}>
+                          {task.candidate.imageUrl ? (
+                            <img alt="" src={task.candidate.imageUrl} />
+                          ) : (
+                            <div className={styles.placeholder}>상품</div>
+                          )}
+                          <div>
+                            <p className={styles.taskNumber}>상품 {taskIndex + 1}</p>
+                            <h4>{task.candidate.productName}</h4>
+                            <div className={styles.taskChips}>
+                              <span>{roleLabels[task.selectedRole]}</span>
+                              <span>{sourceLabels[task.candidate.source]}</span>
+                              <span>{productStatusLabels[task.status]}</span>
+                            </div>
+                          </div>
+                          <div className={styles.taskActions}>
+                            {downloadableCount ? (
+                              <a
+                                className={styles.buttonSecondary}
+                                href={`/api/auto-production/runs/${encodeURIComponent(productionRun.id)}/products/${encodeURIComponent(task.id)}/download`}
+                              >
+                                상품 {downloadableCount}장 ZIP
+                              </a>
+                            ) : null}
+                            <a
+                              className={styles.productLink}
+                              href={`/create-product?view=results&productUrl=${encodeURIComponent(task.candidate.productUrl)}${task.generationJobId ? `&jobId=${encodeURIComponent(task.generationJobId)}` : ""}`}
+                            >
+                              상세 제작 화면
+                            </a>
+                          </div>
+                        </header>
+                        <div className={styles.selectionReason}>
+                          <strong>선정 이유</strong>
+                          <span>{task.selectedReason}</span>
+                        </div>
+                        {task.results.length ? (
+                          <div className={styles.imageResults} aria-label={`${task.candidate.productName} 자동제작 이미지`}>
+                            {task.results.map((result, resultIndex) => (
+                              <article className={styles.imageResult} key={result.generationResultId}>
+                                {result.imageUrl ? (
+                                  <a href={result.downloadUrl || result.imageUrl}>
+                                    <img
+                                      alt={`${task.candidate.productName} 광고 ${resultIndex + 1}`}
+                                      loading="lazy"
+                                      src={result.imageUrl}
+                                    />
+                                  </a>
+                                ) : (
+                                  <div className={styles.imagePending}>
+                                    <span>{resultIndex + 1}</span>
+                                    <strong>{resultStatusLabel(result.status)}</strong>
+                                  </div>
+                                )}
+                                <div className={styles.imageMeta}>
+                                  <span>{result.hookCode}</span>
+                                  <strong>{resultStatusLabel(result.status)}</strong>
+                                  {result.downloadUrl ? <a href={result.downloadUrl}>다운로드</a> : null}
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className={styles.taskEmpty}>{productStatusLabels[task.status]}</div>
+                        )}
+                        {task.error ? <p className={styles.error}>{task.error}</p> : null}
+                      </section>
+                    );
+                  })}
+                </div>
+                {productionRun.warnings.length ? (
+                  <details className={styles.runMessages}>
+                    <summary>안내 및 제외 사유 {productionRun.warnings.length}건</summary>
+                    {productionRun.warnings.map((warning) => <p key={warning}>{warning}</p>)}
+                  </details>
                 ) : null}
               </div>
-            </header>
-            <ul className={styles.previewList}>
-              {productionRun.tasks.map((task) => (
-                <li key={task.id}>
-                  <span>{task.candidate.productName}</span>
-                  <small>
-                    {roleLabels[task.selectedRole]} · {task.status} · 결과 {task.results.length}장
-                  </small>
-                  <a
-                    className={styles.productLink}
-                    href={`/create-product?view=results&productUrl=${encodeURIComponent(task.candidate.productUrl)}${task.generationJobId ? `&jobId=${encodeURIComponent(task.generationJobId)}` : ""}`}
-                  >
-                    공통 제작 결과에서 보기
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
+            </details>
+          );
+        })}
       </section>
     </main>
   );

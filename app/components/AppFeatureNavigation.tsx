@@ -12,6 +12,13 @@ export type AppFeatureKey =
   | "advertisers"
   | "references";
 
+export const PERFORMANCE_FEATURE = {
+  key: "performance" as const,
+  href: "/performance",
+  label: "성과 확인",
+  description: "선택 소재를 설정하고 Meta 성과를 비교합니다",
+};
+
 export const IMAGE_CONTENT_FEATURES = [
   {
     key: "store-analysis" as const,
@@ -43,18 +50,11 @@ export const ARCHIVE_FEATURE = {
   description: "완성 콘텐츠를 보관하고 테스트 소재를 선택합니다",
 };
 
-export const PERFORMANCE_FEATURE = {
-  key: "performance" as const,
-  href: "/performance",
-  label: "성과 확인",
-  description: "선택 소재를 설정하고 Meta 성과를 비교합니다",
-};
-
 export const MAIN_FEATURES = [
   ...IMAGE_CONTENT_FEATURES,
+  PERFORMANCE_FEATURE,
   VIDEO_PLANNING_FEATURE,
   ARCHIVE_FEATURE,
-  PERFORMANCE_FEATURE,
 ];
 
 export const MANAGEMENT_FEATURES = [
@@ -88,12 +88,28 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
           ))}
         </div>
         <details
+          className="feature-navigation-management feature-navigation-performance-menu"
+          open={activeFeature === PERFORMANCE_FEATURE.key}
+        >
+          <summary>
+            <span>성과 확인</span>
+          </summary>
+          <nav className="app-auxiliary-navigation" aria-label="성과 확인">
+            <Link
+              aria-current={activeFeature === PERFORMANCE_FEATURE.key ? "page" : undefined}
+              className={activeFeature === PERFORMANCE_FEATURE.key ? "active" : ""}
+              href={PERFORMANCE_FEATURE.href}
+            >
+              광고 성과 확인
+            </Link>
+          </nav>
+        </details>
+        <details
           className="feature-navigation-management"
           open={MANAGEMENT_FEATURES.some((feature) => feature.key === activeFeature)}
         >
           <summary>
-            <span aria-hidden="true">⚙</span>
-            <span>관리 도구</span>
+            <span>이미지 제작 관리 도구</span>
           </summary>
           <AuxiliaryFeatureNavigation activeFeature={activeFeature} />
         </details>
@@ -135,30 +151,13 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
         </Link>
       </section>
 
-      <section className="feature-navigation-group feature-navigation-performance" aria-labelledby="performance-navigation-label">
-        <div className="feature-navigation-group-label" id="performance-navigation-label">
-          <span>PERFORMANCE</span>
-          <strong>광고 성과 운영</strong>
-        </div>
-        <Link
-          aria-current={activeFeature === PERFORMANCE_FEATURE.key ? "page" : undefined}
-          className={`feature-navigation-performance-link${activeFeature === PERFORMANCE_FEATURE.key ? " active" : ""}`}
-          href={PERFORMANCE_FEATURE.href}
-        >
-          <span>META</span>
-          <div>
-            <strong>{PERFORMANCE_FEATURE.label}</strong>
-            <small>{PERFORMANCE_FEATURE.description}</small>
-          </div>
-        </Link>
-      </section>
     </nav>
   );
 }
 
 export function AuxiliaryFeatureNavigation({ activeFeature }: { activeFeature?: AppFeatureKey }) {
   return (
-    <nav className="app-auxiliary-navigation" aria-label="관리 도구">
+    <nav className="app-auxiliary-navigation" aria-label="이미지 제작 관리 도구">
       {MANAGEMENT_FEATURES.map((feature) => (
         <Link
           aria-current={activeFeature === feature.key ? "page" : undefined}

@@ -39,11 +39,14 @@ export type AutoProductionPackageArtifact = {
   generatedAt: string;
 };
 
-export async function buildAutoProductionPackage(
-  runId: string
+async function buildPackage(
+  runId: string,
+  taskId?: string
 ): Promise<AutoProductionPackageArtifact> {
   const run = await autoProductionRepository.get(runId);
   if (!run) throw new Error("자동 제작 실행 기록을 찾지 못했습니다.");
+  const selectedTasks = taskId ? run.tasks.filter((task) => task.id === taskId) : run.tasks;
+  if (taskId && !selectedTasks.length) throw new Error("자동 제작 상품 결과를 찾지 못했습니다.");
 
   const prepared: Array<{
     task: (typeof run.tasks)[number];
@@ -52,7 +55,7 @@ export async function buildAutoProductionPackage(
   }> = [];
   const completedResultIds: string[] = [];
 
-  for (const task of run.tasks) {
+  for (const task of selectedTasks) {
     if (!task.generationJobId) continue;
     const job = await creativeGenerationJobStore.get(task.generationJobId);
     if (!job) continue;
@@ -71,7 +74,8 @@ export async function buildAutoProductionPackage(
   }
 
   const fingerprint = packageFingerprint(completedResultIds);
-  const fileName = `auto-production-${run.businessDate}-${safeName(run.advertiserName)}-${fingerprint}.zip`;
+  const taskName = taskId ? `-${safeName(selectedTasks[0].candidate.productName)}` : "";
+  const fileName = `auto-production-${run.businessDate}-${safeName(run.advertiserName)}${taskName}-${fingerprint}.zip`;
   const packagePath = path.join(packagesDirectory, fileName);
   try {
     await fs.access(packagePath);
@@ -95,6 +99,18 @@ export async function buildAutoProductionPackage(
     hookId?: string;
   }> = [];
   const manifest: Array<Record<string, unknown>> = [];
+  const failures = selectedTasks.flatMap((task) => [
+    ...(task.error ? [{ productName: task.candidate.productName, taskId: task.id, status: task.status, error: task.error }] : []),
+    ...task.results
+      .filter((result) => !["success", "approved"].includes(result.status))
+      .map((result) => ({
+        productName: task.candidate.productName,
+        taskId: task.id,
+        resultId: result.generationResultId,
+        hookCode: result.hookCode,
+        status: result.status,
+      })),
+  ]);
 
   for (const { task, job, results } of prepared) {
     const folder = zip.folder(safeName(task.candidate.productName));
@@ -147,6 +163,13 @@ export async function buildAutoProductionPackage(
   }
 
   zip.file("meta-ad-settings.csv", buildAdCopyCsv(rows));
+  if (failures.length) {
+    zip.file("failures.json", `${JSON.stringify(failures, null, 2)}\n`);
+    zip.file(
+      "failures.txt",
+      `${failures.map((failure) => `${failure.productName} · ${"hookCode" in failure ? failure.hookCode : "상품"} · ${failure.status}${"error" in failure ? ` · ${failure.error}` : ""}`).join("\n")}\n`
+    );
+  }
   zip.file(
     "manifest.json",
     `${JSON.stringify(
@@ -166,7 +189,7 @@ export async function buildAutoProductionPackage(
   );
   zip.file(
     "README.txt",
-    "상품 폴더마다 AI가 전체 생성하고 검수를 통과한 광고 이미지와 후킹별 광고명·UTM·소재코드가 들어 있습니다. meta-ad-settings.csv는 Meta 세팅용 UTF-8 BOM CSV입니다. 이미지는 템플릿·배경 합성 결과가 아니라 Codex 로컬 AI 네이티브 결과입니다.\n"
+    "상품 폴더마다 reference-staged-edit 제작과 검수를 통과한 광고 이미지 및 후킹별 광고명·UTM·소재코드가 들어 있습니다. meta-ad-settings.csv는 Meta 세팅용 UTF-8 BOM CSV이며, 실패 항목이 있으면 failures 파일에서 확인할 수 있습니다.\n"
   );
 
   const buffer = await zip.generateAsync({
@@ -184,4 +207,12 @@ export async function buildAutoProductionPackage(
     imageCount: rows.length,
     generatedAt: new Date().toISOString(),
   };
+}
+
+export function buildAutoProductionPackage(runId: string) {
+  return buildPackage(runId);
+}
+
+export function buildAutoProductionProductPackage(runId: string, taskId: string) {
+  return buildPackage(runId, taskId);
 }

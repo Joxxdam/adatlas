@@ -196,10 +196,10 @@ async function writeNativeJobArtifacts(job: GenerationJob, brandMemory?: PromptB
           promptVersion: NATIVE_FINAL_PROMPT_VERSION,
           workflow: [
             {
-              stage: "structure-recreation",
+              stage: "reference-copy",
               source: result.nativeCreative?.adReference,
-              output: "01-structure.png",
-              prompt: buildNativeStagePrompt("structure-recreation", job, result, "01-structure.png", undefined, brandMemory),
+              output: result.nativeCreative?.stagePaths?.structurePath || "01-structure.[source-extension]",
+              operation: "byte-for-byte copy; no provider.generate call",
             },
             {
               stage: "product-replacement",

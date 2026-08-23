@@ -37,6 +37,8 @@ test("레퍼런스 관리 API는 목록·업로드·분류수정·삭제를 지�
   assert.match(route, /export async function PATCH/);
   assert.match(route, /export async function DELETE/);
   assert.match(route, /nativeReferenceLibraryRepository\.remove/);
+  assert.match(route, /updateCompatibility/);
+  assert.match(route, /supportsPackagedProduct/);
 });
 
 test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업로드·삭제 UI를 표시한다", async () => {
@@ -47,6 +49,7 @@ test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업�
   assert.match(manager, /이미지 업로드/);
   assert.match(manager, /자동 분류/);
   assert.match(manager, /삭제/);
+  assert.match(manager, /고급 호환 태그/);
+  assert.match(manager, /productForm/);
   assert.match(manager, /\/api\/admin\/references/);
 });
-

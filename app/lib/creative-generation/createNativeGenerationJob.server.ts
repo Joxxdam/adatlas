@@ -208,6 +208,7 @@ export async function createNativeGenerationJob(
   job.templateRegistryVersion = REFERENCE_CREATIVE_GRAMMAR_VERSION;
   job.unusedPerformanceTemplateIds = [];
   job.version = "generation-job-v12-category-reference-edit";
+  job.pipeline = "reference-staged-edit";
   if (job.sourceType === "manual") {
     const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(
       job.productTruth.product.landingUrl

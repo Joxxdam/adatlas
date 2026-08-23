@@ -41,8 +41,8 @@ const resultStatusLabels: Record<GenerationResult["status"], string> = {
   cancelled: "취소됨",
   "korean-review": "한국어 검수 필요",
   "product-review": "상품 확인 필요",
-  "quality-review": "생성 완료",
-  "group-review": "생성 완료",
+  "quality-review": "품질 확인 필요",
+  "group-review": "품질 확인 필요",
   approved: "승인",
   excluded: "제외",
 };
@@ -53,15 +53,15 @@ const reviewResultStatuses = new Set<GenerationResult["status"]>([
 
 const generationStageLabels: Record<NonNullable<GenerationResult["generationStage"]>, string> = {
   planned: "생성 대기",
-  "reference-selecting": "고품질 광고 레퍼런스 선택 중",
-  "structure-recreating": "광고 구조 재현 중",
-  "product-replacing": "실제 상품 교체 중",
-  "copy-replacing": "ProductTruth 문구 교체 중",
-  "qa-repairing": "로고·가격·한국어 AI 검수 중",
+  "reference-selecting": "참고 이미지 불러오는 중",
+  "structure-recreating": "원본 구조 적용 중",
+  "product-replacing": "상품 교체 중",
+  "copy-replacing": "문구 교체 중",
+  "qa-repairing": "품질 확인 중 · 치명 오류 1회 보정",
   "scene-generating": "이전 작업 호환 처리 중",
   compositing: "이전 작업 호환 처리 중",
   "copy-rendering": "이전 작업 호환 처리 중",
-  "quality-check": "AI 완성 광고 검수 중",
+  "quality-check": "품질 확인 중",
   completed: "완료",
   "reference-preparing": "상품 분석 중",
   "ai-generating": "AI 전체 광고 생성 중",
@@ -116,7 +116,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
   const [copyEdits, setCopyEdits] = useState<Record<string, Partial<CopyPlan>>>({});
-  const generationModePreference = "ai-full-scene" as const;
+  const generationModePreference = "reference-staged-edit" as const;
   const [strategyVariation, setStrategyVariation] = useState(0);
   const [providerStatus, setProviderStatus] = useState("로컬 Codex 상태 확인 중…");
   const [latestCompletedResultId, setLatestCompletedResultId] = useState<string>();
@@ -126,6 +126,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   const creatingJob = useRef(false);
   const restoreRequestVersion = useRef(0);
   const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl);
+  const previousAnalyzedProductUrl = useRef(currentProductUrl);
   const canGenerate = Boolean(props.product.productName.trim() && props.productImagePaths.length);
   const canStart = canGenerate && props.planConfirmed;
   const progress = useMemo(() => {
@@ -248,6 +249,12 @@ export function HookExperimentCreativeGenerator(props: Props) {
   useEffect(() => {
     if (previousAnalysisRevision.current === props.analysisRevision) return;
     previousAnalysisRevision.current = props.analysisRevision;
+    const previousUrl = previousAnalyzedProductUrl.current;
+    previousAnalyzedProductUrl.current = currentProductUrl;
+    if (previousUrl === currentProductUrl) {
+      setMessage("같은 상품 분석이 갱신되어 진행 중인 광고 작업을 그대로 유지합니다.");
+      return;
+    }
     restoreRequestVersion.current += 1;
     window.localStorage.removeItem(storedJobKey);
     if (currentProductUrl) window.localStorage.removeItem(`${storedJobKey}:${currentProductUrl}`);
@@ -386,7 +393,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
     setFeedbacks({});
     setMessage(
       mode === "scene"
-          ? "제품 모습은 유지하면서 후킹마다 다른 전체 콘텐츠를 다시 만들고 있어요."
+          ? "호환 레퍼런스 6장을 새로 추첨해 전체 광고를 다시 만들고 있어요."
         : "상품에 어울리는 광고 이미지를 만들고 있어요."
     );
     try {
@@ -418,7 +425,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
         window.localStorage.setItem(`${storedJobKey}:${currentProductUrl}`, payload.job.id);
       }
       setMessage(payload.runnerActive
-        ? "광고 콘텐츠 생성을 시작했습니다. 첫 3장을 준비 중이며 다른 메뉴를 이용해도 백그라운드에서 계속 제작됩니다."
+        ? "광고 콘텐츠 생성을 시작했습니다. 호환 레퍼런스를 고정한 뒤 최대 3장을 병렬 처리하며 완성되는 즉시 한 장씩 표시합니다."
         : "광고 작업은 저장됐지만 생성기가 아직 연결되지 않았습니다. 중단 지점부터 재개해 주세요.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "후킹 실험 생성에 실패했습니다.");
@@ -477,7 +484,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
   async function startOrResumeGeneration(mode: "new" | "scene" = "new") {
     const jobUrl = normalizeCreativeProductUrl(job?.productTruth.product.landingUrl || "");
     const matchesCurrentProduct = Boolean(job && currentProductUrl && jobUrl === currentProductUrl);
-    const usesRandomReferencePipeline = job?.version === "generation-job-v12-category-reference-edit";
+    const usesRandomReferencePipeline = job?.pipeline === "reference-staged-edit" || job?.version === "generation-job-v12-category-reference-edit";
     const resumableStatus = Boolean(
       job &&
       usesRandomReferencePipeline &&
@@ -722,7 +729,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
                   <div className="six-creative-card-head">
                     <span>{result.order}</span>
                     <div><strong>{result.order}번째 광고 완성</strong><small>{result.hookPlan.headline}</small></div>
-                    <b>다운로드 가능</b>
+                    <b>{["quality-review", "group-review"].includes(result.status) ? "품질 확인 필요 · 다운로드 가능" : "다운로드 가능"}</b>
                   </div>
                   <div className="six-creative-preview">
                     <img alt={`${result.blueprintLabel} 생성 결과`} src={result.imagePath} />
@@ -749,7 +756,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
                       <label><span>혜택·가격</span><input value={copyEdits[result.id]?.offer ?? result.hookPlan.offer} onChange={(event)=>setCopyEdits((current)=>({...current,[result.id]:{...current[result.id],offer:event.target.value}}))} /></label>
                       <label><span>CTA</span><input value={copyEdits[result.id]?.cta ?? result.hookPlan.cta} onChange={(event)=>setCopyEdits((current)=>({...current,[result.id]:{...current[result.id],cta:event.target.value}}))} /></label>
                       <button disabled={loading || !result.imagePath} onClick={()=>void applyCopyUpdate(result)} type="button">수정 문구로 전체 광고 재생성</button>
-                      <small>사후 문구 합성 없이 상품·장면·문구·타이포그래피 전체를 AI가 새로 생성합니다.</small>
+                      <small>선택된 레퍼런스와 상품 교체 결과를 유지하고 ProductTruth 문구 단계부터 다시 편집합니다.</small>
                     </div>
                     <div className="six-creative-card-actions">
                       <button disabled={!result.imagePath} onClick={() => void sendResultAction(result,"approve").catch((error)=>setMessage(error instanceof Error ? error.message : "선호 결과 저장 실패"))} type="button">선호 결과로 저장</button>
@@ -783,7 +790,7 @@ export function HookExperimentCreativeGenerator(props: Props) {
             <p>선택 카테고리 · {selectedCategoryLabel || "상품군 자동 분류"}</p>
             <p>{providerStatus}</p>
             {job.groupValidation ? <p>그룹 다양성 검수 · {job.groupValidation.recommendation === "approve" ? "완료" : "확인 필요"}</p> : null}
-            <button disabled={loading || generationInProgress} onClick={() => void startGeneration("scene")} type="button">광고 6장 전체 새로 만들기</button>
+            <button disabled={loading || generationInProgress} onClick={() => void startGeneration("scene")} type="button">호환 레퍼런스도 새로 뽑아 6장 전체 새로 만들기</button>
             <ProductAdCopyPanel adCopy={job.adCopy} jobId={job.id} onChanged={(changed) => setJob(changed)} productName={job.productTruth.product.productName} />
           </details>
         </>
