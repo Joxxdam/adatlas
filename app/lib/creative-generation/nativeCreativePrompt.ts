@@ -4,7 +4,7 @@ import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerati
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
 import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-first-v5-adapted-copy-full-ai-product";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v6-locked-regions";
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -55,7 +55,7 @@ AUTHORITATIVE PRODUCT REFERENCE
 - Faithfully preserve the product's package geometry, dominant colors, label hierarchy, logo placement, material, count and recognizable silhouette.
 - Integrate the product naturally into the hook-specific scene with coherent perspective, contact shadow, lighting and scale. It must not look like a floating cutout pasted over a stock background.
 - Additional attached product-page images are evidence for texture, use, ingredients, context and alternate views. They are not ads to copy.
-- Never copy old reference-ad wording, prices, badges, logos or layouts. Never place an ad screenshot, poster fragment or a second pre-made ad inside the new ad.
+- The selected reference advertisement's composition and non-product/non-copy pixels are locked. Its source product and source advertiser identity must be replaced, not retained.
 - Repeat or overlap the same product only when the verified composition and this hook genuinely need quantity/lineup emphasis. Otherwise use one dominant product hero.
 
 ${productContract}
@@ -73,8 +73,8 @@ COPY RULES
 - 확인되지 않은 효능·가격·구성·후기·수치 근거는 생성 프롬프트와 이미지에 사용하지 않는다.
 - 실제 후기 근거 존재: ${verifiedReviewEvidence ? "예. 위의 검증된 사실과 정확한 광고 문구 범위 안에서만 사용할 것." : "아니오. 후기 문장, 댓글, 닉네임, 별점, 댓글 수, 커뮤니티 캡처를 생성하지 말 것."}
 
-REFERENCE-DERIVED PERFORMANCE-AD GRAMMAR
-- The supplied quality references were analyzed for reusable principles, not for 1:1 imitation.
+REFERENCE-PRESERVING PERFORMANCE-AD EDIT
+- The selected quality reference is the source raster to preserve, not an abstract style suggestion.
 - One dominant visual story per card: product/food/use moment should occupy roughly 45-70% of the visual attention.
 - Clear hierarchy: hook first, product/use proof second, verified offer or CTA third. Keep secondary decoration restrained.
 - Use strong contrast and one category/brand accent plus at most one urgency color.
@@ -122,7 +122,17 @@ export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job
   const facts = verifiedFacts(job, result);
   const productPolicy = resolveProductRenderingPolicy(job);
   const productContract = productRenderingPromptContract(job, result);
-  const exactCopy = [`메인 문구: ${result.hookPlan.headline}`, result.hookPlan.body ? `서브 문구: ${result.hookPlan.body}` : "", result.hookPlan.proof ? `근거 문구: ${result.hookPlan.proof}` : "", result.hookPlan.offer ? `가격·혜택: ${result.hookPlan.offer}` : "", result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : ""].filter(Boolean).join("\n");
+  const referenceRawCopy = result.referenceAdaptedCopyPlan?.referenceRawCopy || result.nativeCreative?.adReference?.nativeCopy?.rawText || "";
+  const referenceRawLines = result.referenceAdaptedCopyPlan?.referenceRawLines || result.nativeCreative?.adReference?.nativeCopy?.rawLines || [];
+  const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
+  const exactCopy = [
+    `줄별 최종 문구(JSON 배열, 각 원소가 한 줄): ${JSON.stringify(adaptedLines)}`,
+    `메인 문구: ${result.hookPlan.headline}`,
+    result.hookPlan.body ? `서브 문구: ${result.hookPlan.body}` : "",
+    result.hookPlan.proof ? `근거 문구: ${result.hookPlan.proof}` : "",
+    result.hookPlan.offer ? `가격·혜택: ${result.hookPlan.offer}` : "",
+    result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : "",
+  ].filter(Boolean).join("\n");
   const shared = `
 OUTPUT CONTRACT
 - Use the image generation skill to EDIT or CREATE exactly one complete square raster and save it to: ${outputPath}
@@ -161,6 +171,8 @@ TASK
 - Treat the entire non-product region as locked pixels: do not change the background, typography, source wording, price, badges, colors, graphic shapes, borders, spacing or layout in this stage.
 - If the reference repeats one product visually, repeat the same verified target product cleanly without implying a bundle or changing the verified sales unit.
 - Do not invent variants, flavors, package counts or labels. Do not add new marketing copy, price or offer yet.
+- LOCKED REGIONS: every pixel outside the old product region, including all original copy, typography, background, people, props, graphic shapes, badges and spacing.
+- EDITABLE REGION: only the old product region(s).
 `;
   }
 
@@ -177,11 +189,23 @@ SOURCE ORDER
 EXACT COPY TO RENDER
 ${exactCopy}
 
+REFERENCE NATIVE COPY — SOURCE TEXT TO ADAPT, NOT A GENERIC BLUEPRINT
+${referenceRawCopy || "No reliable OCR text was stored; read the visible source text directly from the stage-2 raster."}
+
+SOURCE LINE ORDER
+${referenceRawLines.length ? referenceRawLines.map((line, index) => `${index + 1}. ${line}`).join("\n") : "Read the visible source lines in their original order."}
+
+TARGET ADAPTED LINE ORDER
+${adaptedLines.map((line, index) => `${index + 1}. ${line}`).join("\n")}
+
 TASK
-- Change ONLY the source advertisement's copy, price/offer text, advertiser logo and source-specific badges. Preserve the stage-2 product pixels and every unrelated design pixel.
+- LOCKED REGIONS: the stage-2 target product, background, people, props, lighting, colors, borders, shapes and every non-copy pixel.
+- EDITABLE REGIONS: only the source copy, source price/offer, source advertiser logo and source-specific text badges.
+- Change ONLY the source advertisement's copy, price/offer text, advertiser logo and source-specific text badges inside those editable regions. Preserve the stage-2 product pixels and every unrelated design pixel.
 - Remove every source-ad phrase, old price, old logo, unsupported badge and stray glyph so no prior advertiser identity survives.
 - Render the exact Korean strings above without paraphrasing, duplication or unsupported additions.
-- Keep the inherited typography style, hierarchy, outline, emphasis colors, shapes and copy zones as closely as possible. Adjust only line breaks and font size needed to fit the exact target copy.
+- Keep the reference raw copy's word order, line count, punctuation, emoji and colloquial endings such as ㅋㅋ, ;;, .. or 겨 when they exist. Do not add chat/comment/meme language when the source lacks it.
+- Keep the inherited typography style, hierarchy, outline, emphasis colors, shapes and copy zones as closely as possible. Adjust font size only as needed to fit; preserve source line breaks whenever the target facts allow it.
 - Preserve the reference's strong contrast. Derive at most one accent from the real product and pair it with a contrasting color; never recolor the package, tint the whole scene with the package color, or reduce text/background contrast.
 - Main hook is the dominant 1–2 line message. Supporting copy is compact. Show price/offer only if supplied above.
 ${packagedCopyLock}
@@ -200,8 +224,11 @@ SOURCE ORDER
 AUTHORITATIVE COPY
 ${exactCopy}
 
+REFERENCE RAW COPY
+${referenceRawCopy || "Read it directly from the original reference attachment."}
+
 TASK
-- Inspect the entire advertisement for: real product/package identity, product count, logo/label fidelity, verified price and offer, exact Korean copy, Hangul spelling, mobile readability, clipping, collisions, natural shadows/perspective and coherent commercial finish.
+- Inspect the entire advertisement for: reference preservation outside editable product/copy regions, real product/package identity, product count, logo/label fidelity, verified price and offer, exact Korean copy, preservation of the reference's line order/punctuation/slang, scene-copy alignment, Hangul spelling, mobile readability, clipping, collisions, natural shadows/perspective and coherent commercial finish.
 - Repair every discovered issue inside the full raster with image generation. Preserve the randomly selected reference's composition and the established product placement and correct text wherever possible.
 - Remove any hallucinated source brand, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price.
 - Do not create a new unrelated concept and do not patch with a local overlay.
@@ -234,5 +261,5 @@ export function buildNativeGroupValidationPrompt(job: GenerationJob) {
     mainCopy: result.hookPlan.headline,
     referenceProfile: result.referenceAdaptedCopyPlan?.referenceCopyProfileId,
   }));
-  return `Compare the six COMPLETE advertisements as independent reference-adapted materials. Check reference separation, product role, layout, palette and typography without claiming a hook-only causal experiment. 이전 광고 조각을 재사용한 경우, 또는 배경 위에 상품·큰 문구 패널을 붙인 것처럼 보이는 경우 실패로 판정한다. ${JSON.stringify(materials)}`;
+  return `Compare the six COMPLETE advertisements as independent reference-adapted materials. Check reference separation, product role, layout, palette and typography without claiming a hook-only causal experiment. 문구만 다르고 배경·제품 배치가 사실상 같으면 실패로 판정한다. 이전 광고 조각을 재사용한 경우, 또는 배경 위에 상품·큰 문구 패널을 붙인 것처럼 보이는 경우에도 실패로 판정한다. ${JSON.stringify(materials)}`;
 }

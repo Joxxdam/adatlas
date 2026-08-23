@@ -233,5 +233,8 @@ test("13. 비공개 프롬프트·골든 레퍼런스·내부 작업은 public �
   assert.match(registry, /"\.data", "codex"/);
   assert.doesNotMatch(`${storage}\n${registry}`, /public[^\n]{0,80}golden-references/);
   assert.match(publicJob, /candidateHypotheses: undefined/);
-  assert.match(publicJob, /nativeCreative: result\.nativeCreative/);
+  assert.match(publicJob, /nativeCreative: publicNativeCreative/);
+  assert.match(publicJob, /referenceRawCopy: ""/);
+  assert.match(publicJob, /nativeCopy: undefined/);
+  assert.match(publicJob, /provenance: undefined/);
 });

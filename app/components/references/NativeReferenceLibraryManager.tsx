@@ -31,6 +31,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [copyDrafts, setCopyDrafts] = useState<Record<string, string>>({});
   const fileInput = useRef<HTMLInputElement>(null);
 
   const visibleItems = useMemo(() => library.items.filter((item) => filter === "all" || (filter === "food-produce" ? item.categoryGroup === "food" && item.foodSubcategory === "produce-agriculture" : item.categoryGroup === filter)).sort((left, right) => right.ordinal - left.ordinal), [filter, library.items]);
@@ -109,6 +110,41 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
       setMessage(result.message || "삭제한 이미지를 제작 추첨 대상에서 제외했습니다.");
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "삭제에 실패했습니다.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function saveNativeCopy(item: ManagedNativeReferenceItem, useForCopyAdaptation = item.nativeCopy?.useForCopyAdaptation !== false) {
+    const rawText = copyDrafts[item.id] ?? item.nativeCopy?.rawText ?? "";
+    await updateMetadata(
+      item,
+      { nativeCopy: { ...(item.nativeCopy || {}), rawText, useForCopyAdaptation } } as ReferenceMetadataPatch,
+      useForCopyAdaptation ? "원문 문구를 저장하고 제작 문구 적응에 사용합니다." : "원문 문구를 저장하고 문구 적응 대상에서는 제외했습니다."
+    );
+  }
+
+  async function reanalyzeNativeCopy(item: ManagedNativeReferenceItem) {
+    if (!window.confirm(`${item.sourceFile}의 문구를 이미지에서 다시 읽을까요?\n수동으로 고친 원문은 새 분석 결과로 교체됩니다.`)) return;
+    setBusy(item.id);
+    setError("");
+    try {
+      const result = await parseResponse(
+        await fetch("/api/admin/references", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: item.id }),
+        })
+      );
+      setLibrary(result.library);
+      setCopyDrafts((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      setMessage(`${item.sourceFile}: 이미지의 문구를 다시 분석했습니다.`);
+    } catch (reanalyzeError) {
+      setError(reanalyzeError instanceof Error ? reanalyzeError.message : "문구 재분석에 실패했습니다.");
     } finally {
       setBusy("");
     }
@@ -193,6 +229,32 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                         <span>과일/농산물 레퍼런스로도 사용</span>
                       </label>
                     ) : null}
+                    <details className={styles.nativeCopy} open={!item.nativeCopy?.rawText}>
+                      <summary>
+                        실제 광고 원문
+                        <small>{item.nativeCopy?.manuallyCorrected ? "수동 보정" : item.nativeCopy?.rawText ? "자동 추출" : "확인 필요"}</small>
+                      </summary>
+                      <p>이미지에 보이는 줄바꿈·기호·말투를 그대로 보관합니다. 생성할 때 이 원문에서 상품 관련 부분만 바꿉니다.</p>
+                      <textarea
+                        disabled={Boolean(busy)}
+                        onChange={(event) => setCopyDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
+                        rows={7}
+                        value={copyDrafts[item.id] ?? item.nativeCopy?.rawText ?? ""}
+                      />
+                      <label className={styles.nativeCopyToggle}>
+                        <input
+                          checked={item.nativeCopy?.useForCopyAdaptation !== false}
+                          disabled={Boolean(busy)}
+                          onChange={(event) => void saveNativeCopy(item, event.target.checked)}
+                          type="checkbox"
+                        />
+                        <span>이 원문을 상품 문구 적응에 사용</span>
+                      </label>
+                      <div className={styles.nativeCopyActions}>
+                        <button disabled={Boolean(busy)} onClick={() => void saveNativeCopy(item)} type="button">원문 저장</button>
+                        <button disabled={Boolean(busy)} onClick={() => void reanalyzeNativeCopy(item)} type="button">이미지에서 다시 읽기</button>
+                      </div>
+                    </details>
                     <details className={styles.advanced}>
                       <summary>고급 호환 태그</summary>
                       <label>

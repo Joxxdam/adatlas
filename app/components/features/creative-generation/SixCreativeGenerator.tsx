@@ -359,7 +359,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     resultId: string,
     options: {
       regenerateScene?: boolean;
-      action?: "generate" | "regenerate" | "revise" | "copy-update";
+      action?: "generate" | "regenerate" | "regenerate-new-reference" | "revise" | "copy-update";
       feedback?: string;
       copy?: Partial<CopyPlan>;
     } = {}
@@ -538,6 +538,20 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setMessage(`${result.blueprintLabel} 카드를 다시 생성했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "재생성 실패");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function retryResultWithNewReference(result: GenerationResult) {
+    if (!job) return;
+    setLoading(true);
+    try {
+      await generateOne(job, result.id, { action: "regenerate-new-reference" });
+      await refreshJob(job.id);
+      setMessage(`소재 ${String(result.order).padStart(2, "0")}에 다른 호환 레퍼런스를 배정해 다시 생성했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "다른 레퍼런스 재생성 실패");
     } finally {
       setLoading(false);
     }
@@ -875,7 +889,10 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                         )}
                         <div className="six-creative-card-actions">
                           <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">
-                            이 콘텐츠 다시 만들기
+                            동일 레퍼런스로 다시 만들기
+                          </button>
+                          <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResultWithNewReference(result)} type="button">
+                            다른 레퍼런스로 다시 만들기
                           </button>
                           <label>
                             <span>광고 수정 요청</span>
@@ -906,6 +923,15 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                             수정 반영하기
                           </button>
                         </div>
+                        {result.nativeCreative?.adReference ? (
+                          <details className="six-creative-source-reference">
+                            <summary>원본 레퍼런스 보기</summary>
+                            {result.nativeCreative.adReference.publicPath ? (
+                              <img alt={`소재 ${String(result.order).padStart(2, "0")} 원본 레퍼런스`} src={result.nativeCreative.adReference.publicPath} />
+                            ) : null}
+                            <small>{result.nativeCreative.adReference.sourceFile || result.nativeCreative.adReference.id}</small>
+                          </details>
+                        ) : null}
                         <div className="six-creative-copy-editor">
                           <label>
                             <span>{referenceAdapted ? "메인 문구" : "메인 후킹"}</span>

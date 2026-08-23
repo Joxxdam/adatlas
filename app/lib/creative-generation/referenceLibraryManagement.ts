@@ -33,6 +33,54 @@ export type NativeReferenceCompatibility = {
   compatibilityConfidence: NativeReferenceCompatibilityConfidence;
 };
 
+export type ReferenceTextRegion = {
+  id: string;
+  role: "headline" | "support" | "proof" | "offer" | "cta" | "badge" | "other";
+  text: string;
+  lines: string[];
+  /** 0~1 비율 좌표입니다. OCR이 좌표를 확신하지 못하면 생략합니다. */
+  box?: { x: number; y: number; width: number; height: number };
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  align?: "left" | "center" | "right" | "unknown";
+  emphasis?: "none" | "light" | "strong";
+  colorHint?: string;
+  confidence?: number;
+};
+
+/**
+ * 레퍼런스에 실제로 적힌 문구의 원본 기록입니다. 문구 청사진이나 요약본이
+ * 아니며 줄바꿈·기호·구어체를 그대로 보존합니다.
+ */
+export type ReferenceNativeCopy = {
+  /** 레퍼런스 관리 manifest의 영구 ID입니다. */
+  referenceId: string;
+  rawText: string;
+  rawLines: string[];
+  textRegions: ReferenceTextRegion[];
+  confidence?: number;
+  ocrConfidence?: number;
+  manuallyCorrected: boolean;
+  useForCopyAdaptation: boolean;
+  extractionSource: "codex-local" | "manual" | "unavailable";
+  extractedAt?: string;
+  updatedAt: string;
+};
+
+/**
+ * OCR·수동 입력의 실제 행 순서와 중간 빈 줄을 보존합니다. 운영상 의미가 없는
+ * 맨 앞·뒤의 완전한 빈 줄과 Windows CR만 제거하며 문장 내부 띄어쓰기와
+ * 인터넷 표현은 교정하지 않습니다.
+ */
+export function normalizeReferenceRawLines(value: unknown): string[] {
+  const lines = (Array.isArray(value) ? value : String(value ?? "").split("\n")).map((line) => String(line).replace(/\r/g, ""));
+  while (lines[0] === "") lines.shift();
+  while (lines.at(-1) === "") lines.pop();
+  return lines;
+}
+
 export type ManagedNativeReferenceItem = {
   id: string;
   publicPath: string;
@@ -56,6 +104,8 @@ export type ManagedNativeReferenceItem = {
   supportsHumanModel?: boolean;
   supportsMultipleProducts?: boolean;
   compatibilityConfidence?: NativeReferenceCompatibilityConfidence;
+  /** 이미지에 실제로 적힌 문구. 레퍼런스 등록 시 1회 추출하고 이후 수동 수정합니다. */
+  nativeCopy?: ReferenceNativeCopy;
 };
 
 export type ManagedNativeReferenceManifest = {

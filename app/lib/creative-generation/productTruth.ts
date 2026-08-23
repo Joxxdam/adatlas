@@ -61,6 +61,9 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
   const seasonOrEvent = firstMatch(`${rawProductTitle} ${description}`, /(?:봄|여름|가을|겨울|명절|설날|추석|크리스마스|신상품|시즌|\d{1,2}일\s*한정|한정\s*판매)/u);
   const packageOrOption = product.packageType || composition || firstMatch(`${rawProductTitle} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
   const promotionalTokens = compact(rawProductTitle.match(/(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량|반란|\d{1,3}\s*%\s*(?:할인|OFF)?|\d+\s*\+\s*\d+)/giu) || []);
+  const offerTokens = compact([product.price, product.originalPrice || product.oldPrice, product.discountInfo, shipping, promotion]);
+  const selectionTokens = compact(rawProductTitle.match(/(?:택\s*\d+|옵션\s*\d+|골라\s*담기|선택\s*구성|\d+종\s*선택)/giu) || []);
+  const volumeTokens = compact([quantity, salesUnit, composition]);
   const titleDescriptor = firstMatch(cleanProductName, /(?:바삭달콤|상큼한|달콤한|고소한|쫄깃한|부드러운|촉촉한|산뜻한|시원한|진한|담백한|매콤한)/u);
   const removableTitleTokens = [quantity, salesUnit, composition, titleDescriptor, ...promotionalTokens]
     .filter((token): token is string => Boolean(token));
@@ -75,10 +78,15 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
     rawProductTitle,
     cleanProductName,
     baseProductName: baseProductName || cleanProductName,
+    baseName: baseProductName || cleanProductName,
     verifiedDescriptor,
     descriptor: verifiedDescriptor || baseProductName || cleanProductName,
     salesUnit: salesUnit || composition || quantity,
     promotionalTokens,
+    offerTokens,
+    selectionTokens,
+    volumeTokens,
+    promotionTokens: promotionalTokens,
     brandName: String(product.brandName || product.advertiserName || "").trim(),
     category: String(product.category || "").trim(),
     price: product.price || undefined,

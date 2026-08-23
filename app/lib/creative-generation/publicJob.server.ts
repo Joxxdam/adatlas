@@ -180,43 +180,28 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
       experimentContext: undefined,
       copyGeneration: { ...job.creativePlan.copyGeneration, warnings: [] },
     },
-    results: job.results.map((result) => ({
-      ...result,
-      scenePlan: {
-        ...result.scenePlan,
-        prompt: undefined,
-        negativePrompt: undefined,
-        sceneAsset: { ...result.scenePlan.sceneAsset, file: "" },
-      },
-      creativeDesign: undefined,
-      masterScene: undefined,
-      renderPlan: undefined,
-      autoRepairs: [],
-      qa: result.qa ? { ...result.qa, findings: [], autoRepairs: [] } : undefined,
-      contentNoteCompliance: result.contentNoteCompliance
+    results: job.results.map((result) => {
+      const publicReferenceCopyPlan = result.referenceAdaptedCopyPlan
         ? {
-            ...result.contentNoteCompliance,
-            appliedNoteIds: [],
-            requiredMissing: [],
-            prohibitedFound: [],
-            repairs: [],
+            ...result.referenceAdaptedCopyPlan,
+            referenceRawCopy: "",
+            referenceRawLines: [],
           }
-        : undefined,
-      error: result.error ? "광고 생성 또는 품질 검수 결과를 확인해 주세요." : undefined,
-      imagePath: result.nativeCreative?.finalPath ? nativeResultImageUrl(job.id, result.id) : result.imagePath,
-      deliveryBranding: result.deliveryBranding
-        ? {
-            logoId: result.deliveryBranding.logoId,
-            aiDisclosure: result.deliveryBranding.aiDisclosure,
-            updatedAt: result.deliveryBranding.updatedAt,
-          }
-        : undefined,
-      nativeCreative: result.nativeCreative
+        : undefined;
+      const publicNativeCreative = result.nativeCreative
         ? {
             ...result.nativeCreative,
+            adReference: result.nativeCreative.adReference
+              ? {
+                  ...result.nativeCreative.adReference,
+                  path: "",
+                  nativeCopy: undefined,
+                }
+              : undefined,
             originalPath: undefined,
             revisionPaths: [],
             finalPath: undefined,
+            provenance: undefined,
             validation: result.nativeCreative.validation
               ? {
                   ...result.nativeCreative.validation,
@@ -225,8 +210,42 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
                 }
               : undefined,
           }
-        : undefined,
-    })),
+        : undefined;
+      return {
+        ...result,
+        referenceAdaptedCopyPlan: publicReferenceCopyPlan,
+        scenePlan: {
+          ...result.scenePlan,
+          prompt: undefined,
+          negativePrompt: undefined,
+          sceneAsset: { ...result.scenePlan.sceneAsset, file: "" },
+        },
+        creativeDesign: undefined,
+        masterScene: undefined,
+        renderPlan: undefined,
+        autoRepairs: [],
+        qa: result.qa ? { ...result.qa, findings: [], autoRepairs: [] } : undefined,
+        contentNoteCompliance: result.contentNoteCompliance
+          ? {
+              ...result.contentNoteCompliance,
+              appliedNoteIds: [],
+              requiredMissing: [],
+              prohibitedFound: [],
+              repairs: [],
+            }
+          : undefined,
+        error: result.error ? "광고 생성 또는 품질 검수 결과를 확인해 주세요." : undefined,
+        imagePath: result.nativeCreative?.finalPath ? nativeResultImageUrl(job.id, result.id) : result.imagePath,
+        deliveryBranding: result.deliveryBranding
+          ? {
+              logoId: result.deliveryBranding.logoId,
+              aiDisclosure: result.deliveryBranding.aiDisclosure,
+              updatedAt: result.deliveryBranding.updatedAt,
+            }
+          : undefined,
+        nativeCreative: publicNativeCreative,
+      };
+    }),
   };
   const serialized = JSON.stringify(publicJob).replace(localPathPattern, "로컬 파일").replace(secretPattern, "[비공개 인증정보]");
   return JSON.parse(serialized) as GenerationJob;

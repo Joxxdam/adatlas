@@ -19,7 +19,7 @@ export async function POST(request: Request, context: { params: Promise<{ jobId:
       copy?: Partial<CopyPlan>;
       requestId?: string;
       regenerateScene?: boolean;
-      action?: "generate" | "regenerate" | "revise" | "revalidate" | "copy-update" | "approve" | "exclude" | "feedback" | "golden-reference";
+      action?: "generate" | "regenerate" | "regenerate-new-reference" | "revise" | "revalidate" | "copy-update" | "approve" | "exclude" | "feedback" | "golden-reference";
       feedback?: string;
     };
     let job = await creativeGenerationJobStore.get(jobId);

@@ -1113,6 +1113,34 @@
   font: inherit;
 }
 
+.six-creative-source-reference {
+  margin-top: 12px;
+  border: 1px solid #d8e4f0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fbff;
+}
+
+.six-creative-source-reference summary {
+  color: #28587f;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.six-creative-source-reference img {
+  display: block;
+  width: min(100%, 320px);
+  margin: 10px auto 6px;
+  border-radius: 9px;
+}
+
+.six-creative-source-reference small {
+  display: block;
+  color: #6b7d91;
+  text-align: center;
+}
+
 .six-creative-copy-editor {
   display: grid;
   gap: 10px;

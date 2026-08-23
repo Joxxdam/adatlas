@@ -1,13 +1,14 @@
 import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
-import { writeNativeManifest } from "./nativeCreativeStorage.server";
-import type { GenerationJob } from "./types";
+import { createNativeContactSheet, writeNativeManifest } from "./nativeCreativeStorage.server";
+import { hasExplicitPaidApiAuthorization, type GenerationJob } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
 import { executionResults, isServerRunnableGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
+import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
@@ -131,6 +132,43 @@ async function markResultFailed(jobId: string, resultId: string, error: unknown)
   if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
 }
 
+async function validateCompletedReferenceGroup(jobId: string) {
+  const current = await creativeGenerationJobStore.get(jobId);
+  if (!current || current.groupValidation || executionResults(current).length !== 6) return;
+  if (!executionResults(current).every((result) => ["success", "approved"].includes(result.status) && Boolean(result.nativeCreative?.finalPath))) return;
+  try {
+    const contactSheetPath = await createNativeContactSheet(current);
+    const provider = createCreativeGenerationProvider(current.engine || "codex_local", {
+      explicitPaidApiAuthorization: hasExplicitPaidApiAuthorization(current.paidApiAuthorization),
+    });
+    const groupValidation = await provider.validateGroup({ job: current, contactSheetPath });
+    const passed = groupValidation.recommendation === "approve";
+    const updated = await creativeGenerationJobStore.update(jobId, (job) => ({
+      ...job,
+      groupValidation,
+      results: job.results.map((result) => ({
+        ...result,
+        nativeCreative: result.nativeCreative
+          ? {
+              ...result.nativeCreative,
+              provenance: result.nativeCreative.provenance
+                ? { ...result.nativeCreative.provenance, groupDiversityQa: passed ? "passed" : "manual-review" }
+                : result.nativeCreative.provenance,
+            }
+          : result.nativeCreative,
+      })),
+    }));
+    await writeNativeManifest(updated).catch(() => undefined);
+  } catch (error) {
+    const message = runnerErrorMessage(error);
+    const updated = await creativeGenerationJobStore.update(jobId, (job) => ({
+      ...job,
+      errors: [...job.errors, `6장 묶음 검수: ${message}`].slice(-20),
+    }));
+    await writeNativeManifest(updated).catch(() => undefined);
+  }
+}
+
 export async function runGenerationJob(jobId: string) {
   const attempted = new Set<string>();
   while (true) {
@@ -170,6 +208,7 @@ export async function runGenerationJob(jobId: string) {
         }
       })
     );
+    await validateCompletedReferenceGroup(jobId);
   }
 }
 

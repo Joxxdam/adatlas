@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
-import { nativeAdReferenceFromManagedItem } from "../../../lib/creative-generation/referenceCreativeLibrary.server";
-import { prewarmReferenceCopyProfiles } from "../../../lib/creative-generation/referenceAdaptedPlanning.server";
 import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, type ManagedNativeReferenceItem } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
@@ -42,10 +40,11 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
     const result = await nativeReferenceLibraryRepository.add(files);
-    const profileAnalysis = result.added.length
-      ? await prewarmReferenceCopyProfiles(result.added.map(nativeAdReferenceFromManagedItem))
-      : { analyzedCount: 0, fallbackCount: 0 };
-    return NextResponse.json({ ok: true, added: result.added, profileAnalysis: { analyzedCount: profileAnalysis.analyzedCount, fallbackCount: profileAnalysis.fallbackCount }, library: publicLibrary() });
+    const nativeCopies = [];
+    for (let index = 0; index < result.added.length; index += 3) {
+      nativeCopies.push(...(await Promise.all(result.added.slice(index, index + 3).map((item) => nativeReferenceLibraryRepository.extractNativeCopy(item.id)))));
+    }
+    return NextResponse.json({ ok: true, added: result.added, nativeCopyAnalysis: { analyzedCount: nativeCopies.filter((copy) => copy.extractionSource === "codex-local").length, fallbackCount: nativeCopies.filter((copy) => copy.extractionSource !== "codex-local").length }, library: publicLibrary() });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 업로드에 실패했습니다." }, { status: 400 });
   }
@@ -72,10 +71,35 @@ export async function PATCH(request: Request) {
     for (const key of ["supportsPackagedProduct", "supportsNaturalFood", "supportsHumanModel", "supportsMultipleProducts"] as const) {
       if (typeof body[key] === "boolean") patch[key] = body[key];
     }
-    await nativeReferenceLibraryRepository.updateCompatibility(id, patch);
+    if (body.nativeCopy !== undefined) {
+      const rawText = String(body.nativeCopy.rawText || "").replace(/\r/g, "");
+      await nativeReferenceLibraryRepository.updateNativeCopy(id, {
+        ...body.nativeCopy,
+        rawText,
+        rawLines: rawText.split("\n"),
+        manuallyCorrected: true,
+        extractionSource: "manual",
+        useForCopyAdaptation: body.nativeCopy.useForCopyAdaptation !== false,
+      });
+    } else {
+      await nativeReferenceLibraryRepository.updateCompatibility(id, patch);
+    }
     return NextResponse.json({ ok: true, library: publicLibrary() });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 호환 정보 수정에 실패했습니다." }, { status: 400 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    assertTrustedMutation(request);
+    const body = await request.json().catch(() => ({}));
+    const id = String(body.id || "").trim();
+    if (!id) throw new Error("다시 분석할 레퍼런스 ID가 필요합니다.");
+    const nativeCopy = await nativeReferenceLibraryRepository.extractNativeCopy(id);
+    return NextResponse.json({ ok: true, nativeCopy, library: publicLibrary() });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 문구 재분석에 실패했습니다." }, { status: 400 });
   }
 }
 

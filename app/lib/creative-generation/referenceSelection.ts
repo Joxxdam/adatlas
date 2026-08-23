@@ -32,6 +32,44 @@ export type ScoredCompatibleReference<T extends ManagedNativeReferenceItem = Man
   reasons: string[];
 };
 
+function nativeCopySignature(item: ManagedNativeReferenceItem) {
+  return String(item.nativeCopy?.rawText || "")
+    .normalize("NFKC")
+    .replace(/[\s\p{P}\p{S}]+/gu, "")
+    .slice(0, 80);
+}
+
+function pickDiverseCompatibleReferences<T extends ManagedNativeReferenceItem>(items: readonly ScoredCompatibleReference<T>[], count: number, nextIndex: (maxExclusive: number) => number) {
+  const remaining = pickUniqueRandomItems(items, items.length, nextIndex);
+  const selected: ScoredCompatibleReference<T>[] = [];
+  const compositions = new Set<string>();
+  const layouts = new Set<string>();
+  const copies = new Set<string>();
+  while (selected.length < count && remaining.length) {
+    let bestIndex = 0;
+    let bestNovelty = -1;
+    remaining.forEach((candidate, index) => {
+      const copy = nativeCopySignature(candidate.item);
+      const novelty =
+        (compositions.has(candidate.item.compositionType || "") ? 0 : 4) +
+        (layouts.has(candidate.item.layoutFamily || "") ? 0 : 3) +
+        (!copy || copies.has(copy) ? 0 : 5) +
+        candidate.score / 1000;
+      if (novelty > bestNovelty) {
+        bestNovelty = novelty;
+        bestIndex = index;
+      }
+    });
+    const [picked] = remaining.splice(bestIndex, 1);
+    selected.push(picked);
+    compositions.add(picked.item.compositionType || "");
+    layouts.add(picked.item.layoutFamily || "");
+    const copy = nativeCopySignature(picked.item);
+    if (copy) copies.add(copy);
+  }
+  return selected;
+}
+
 const packagedForms = new Set<NativeReferenceProductForm>(["bottle", "tube", "pouch", "box", "tray", "jar", "can", "bundle", "universal-packshot"]);
 const safePackagedCompositions = new Set<NativeReferenceCompositionType>(["product-packshot", "price-card", "product-lineup", "lifestyle-scene", "review-card", "sensory-closeup"]);
 const safeNaturalCompositions = new Set<NativeReferenceCompositionType>(["product-packshot", "price-card", "lifestyle-scene", "sensory-closeup", "natural-food-scene"]);
@@ -97,7 +135,7 @@ export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(
   const topScore = compatible[0]?.score || minimumScore;
   const topBand = compatible.filter((candidate) => candidate.score >= Math.max(minimumScore, topScore - 12));
   const pool = topBand.length >= count ? topBand : compatible;
-  return pickUniqueRandomItems(pool, count, nextIndex);
+  return pickDiverseCompatibleReferences(pool, count, nextIndex);
 }
 
 export function defaultCompositionTypes(profile: Pick<ProductReferenceCompatibilityProfile, "packagedProduct" | "naturalFood" | "productCount">): NativeReferenceCompositionType[] {

@@ -138,8 +138,8 @@ productInfo
 ProductTruth
 → 상품군·상품 형태·구도·슬롯 호환 점수를 통과한 사용자 제공 ZIP 풀에서 중복 없는 광고 레퍼런스 6장 무작위 선택
 → 선택 결과를 GenerationJob에 저장해 재시도·복구에도 고정
-→ 레퍼런스별 문구 구조·역할·길이·밀도·말투 분석 및 파일 해시 캐시
-→ 여섯 레퍼런스에 맞춘 ProductTruth 기반 한국어 문구를 한 번의 짧은 배치로 생성
+→ 업로드 또는 운영자의 명시적 재분석 때 저장한 레퍼런스 실제 OCR 원문 로드
+→ 원문의 줄·문장부호·구어체·의미 구조를 유지하고 상품 관련 사실만 ProductTruth로 교체
 → 비생성 문구 검증과 실패 항목 최대 1회 배치 수정
 → 선택 광고 원본을 `01-structure`로 바이트 동일 무손실 복사(생성 API 호출 금지)
 → URL 상세페이지 원본을 기준으로 상품만 교체하고 비상품 영역 잠금
@@ -160,7 +160,7 @@ ProductTruth
 - 레퍼런스를 상품 fingerprint에 영구 고정하지 않습니다. 같은 상품도 새 전체 작업·새 작업 ID·새 제작일에는 호환 풀에서 다시 무작위 선택합니다.
 - H01~H06은 하위 호환용 내부 순번으로만 유지하고 사용자 UI에는 `소재 01~06`으로 표시합니다. 시각 장면·카피 전략·성과 가설·레퍼런스 선택 기준으로 사용하지 않습니다.
 - 신규 작업은 `copyPlanMode: "reference-adapted"`를 저장합니다. 이 값이 없는 과거 작업은 `legacy-hook-first`로 읽고 기존 데이터와 재시도 동작을 보존합니다.
-- 레퍼런스 프로필은 파일 SHA-256과 profile version으로 캐시합니다. 프로필 분석 또는 문구 생성 실패 시 검증된 ProductTruth 사실만 사용하는 안전 최소 문구로 계속하며 과거 후킹 엔진으로 fallback하지 않습니다.
+- 레퍼런스 실제 문구는 업로드 또는 운영자의 명시적 재분석에서만 OCR하고 manifest에 저장합니다. 생성 작업 중에는 OCR을 자동 실행하지 않습니다. 원문이 아직 없는 기존 항목은 마이그레이션 호환 후보로만 사용하며 문구 생성 실패 시 검증된 ProductTruth 사실만 사용하는 안전 최소 문구로 계속합니다.
 - 단계 1은 레퍼런스 원본 파일을 확장자와 픽셀을 바꾸지 않고 `01-structure`로 바이트 동일 복사합니다. 이 단계에서 `session.generate()` 또는 다른 생성형 편집을 호출하지 않습니다.
 - 단계 2는 상품 픽셀만 URL 상품으로 교체하고 배경·문구·가격·배지·레이아웃을 바꾸지 않습니다.
 - 단계 3은 원본 광고주의 문구·가격·로고·배지만 ProductTruth 기반 내용으로 교체하고 상품·배경·배치를 바꾸지 않습니다.
@@ -566,7 +566,7 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 
 ## Universal Creative Generation
 
-- 자동 6장 생성은 `ProductTruth → Category-matched ZIP References × 6 고정 → Reference Copy Profile → Reference-adapted Copy Batch → Reference Recreation → Product-only Replacement → Copy-only Replacement → Reference/Product QA → Export` 순서를 유지합니다.
+- 자동 6장 생성은 `ProductTruth → Category-matched ZIP References × 6 고정 → 저장된 ReferenceNativeCopy 원문 → 상품 사실만 바꾸는 Copy Batch → Lossless Reference Copy → Product-only Replacement → Copy-only Replacement → 개별 QA → 6장 Group QA → Export` 순서를 유지합니다.
 - 6장은 상품군별 ZIP 풀에서 중복 없이 선택한 서로 다른 완성 광고 디자인을 사용하며 한 장의 실패가 나머지 결과를 막지 않습니다.
 - 상세페이지의 실제 상품·사용·질감 이미지는 상품 정체성의 기준이며, 기존 배경 라이브러리와 신규 text-free 장면 생성은 기본 경로에서 사용하지 않습니다.
 - 상품 교체 단계와 문구 교체 단계의 잠금 범위를 섞지 않습니다. 하나의 거대한 프롬프트로 디자인·상품·문구를 동시에 새로 만들지 않습니다.

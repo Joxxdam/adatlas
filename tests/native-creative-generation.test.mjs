@@ -11,7 +11,7 @@ import { createAsyncConcurrencyGate, resolveCodexCreativeParallelLimit } from ".
 import { buildNativeFinalCreativePrompt, buildNativeStagePrompt, buildNativeValidationPrompt } from "../app/lib/creative-generation/nativeCreativePrompt.ts";
 import { normalizeNativeCreativeValidation } from "../app/lib/creative-generation/nativeCreativeValidation.ts";
 import { pickCompatibleRandomItems, pickUniqueRandomItems } from "../app/lib/creative-generation/referenceSelection.ts";
-import { normalizeNativeReferenceCompatibility } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
+import { normalizeNativeReferenceCompatibility, normalizeReferenceRawLines } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
 import { copyReferenceStructureLosslessly } from "../app/lib/creative-generation/referenceStructureCopy.server.ts";
 import { optimizeNativeFinalImage, selectNativeReferenceSources } from "../app/lib/creative-generation/nativeCreativeStorage.server.ts";
 import { buildCreativePlanFingerprint } from "../app/lib/creative-generation/creativePlanCache.server.ts";
@@ -28,6 +28,7 @@ import { resolveProductRenderingPolicy } from "../app/lib/creative-generation/pr
 import { isPaidImageGenerationEnabled } from "../app/lib/image-generation/SceneGenerationProvider.ts";
 import { hasExplicitPaidApiAuthorization } from "../app/lib/creative-generation/types.ts";
 import { withNativeCreativeSession } from "../app/lib/creative-generation/providers/CreativeGenerationProvider.ts";
+import { applyReferenceCopyGroupRules } from "../app/lib/creative-generation/referenceCopyDiversity.ts";
 
 const product = {
   productName: "민트 샤워젤",
@@ -446,6 +447,93 @@ test("ZIP 전체 풀에서 무작위 6장을 중복 없이 선택한다", () => 
   assert.ok(selected.every((item) => source.includes(item)));
 });
 
+test("레퍼런스 선택은 같은 호환 점수 안에서도 이미지 구성과 원문 문구가 다른 항목을 우선한다", () => {
+  const source = Array.from({ length: 8 }, (_, index) =>
+    normalizeNativeReferenceCompatibility({
+      id: `diverse-${index + 1}`,
+      publicPath: `/diverse-${index + 1}.jpg`,
+      sourceFile: `diverse-${index + 1}.jpg`,
+      layoutFamily: index % 2 ? "situation-story" : "price-offer",
+      categoryGroup: "beauty",
+      ordinal: 500 + index,
+      productForm: "bottle",
+      compositionType: index % 3 === 0 ? "lifestyle-scene" : index % 3 === 1 ? "price-card" : "sensory-closeup",
+      supportsPackagedProduct: true,
+      compatibilityConfidence: "high",
+      nativeCopy: {
+        referenceId: `diverse-${index + 1}`,
+        rawText: index < 2 ? "같은 원문" : `서로 다른 원문 ${index + 1}`,
+        rawLines: [index < 2 ? "같은 원문" : `서로 다른 원문 ${index + 1}`],
+        textRegions: [],
+        manuallyCorrected: false,
+        useForCopyAdaptation: true,
+        extractionSource: "manual",
+        updatedAt: "2026-08-24T00:00:00.000Z",
+      },
+    })
+  );
+  const selected = pickCompatibleRandomItems(
+    source,
+    6,
+    {
+      categoryGroup: "beauty",
+      productForm: "bottle",
+      productCount: 1,
+      packagedProduct: true,
+      naturalFood: false,
+      allowsHumanModel: false,
+      compatibleCompositionTypes: ["lifestyle-scene", "price-card", "sensory-closeup"],
+    },
+    () => 0
+  );
+  assert.equal(selected.length, 6);
+  assert.equal(new Set(selected.map((candidate) => candidate.item.id)).size, 6);
+  assert.ok(new Set(selected.map((candidate) => candidate.item.compositionType)).size >= 3);
+  assert.ok(new Set(selected.map((candidate) => candidate.item.nativeCopy.rawText)).size >= 5);
+});
+
+test("레퍼런스 원문은 중간 빈 줄·띄어쓰기·인터넷 표현을 교정하지 않고 보존한다", () => {
+  assert.deepEqual(normalizeReferenceRawLines(["", "회사에선  몰랐는데", "", "퇴근하고 맡아보면;;", "쉰냄새가...ㅋㅋ", ""]), [
+    "회사에선  몰랐는데",
+    "",
+    "퇴근하고 맡아보면;;",
+    "쉰냄새가...ㅋㅋ",
+  ]);
+});
+
+test("6장 묶음 문구 규칙은 가격·할인·수량·상품 근거 반복과 동일 의미를 해당 소재만 표시한다", () => {
+  const plans = Array.from({ length: 6 }, (_, index) => ({
+    id: `plan-${index + 1}`,
+    resultCode: `H0${index + 1}`,
+    referenceId: `reference-${index + 1}`,
+    referenceCopyProfileId: `profile-${index + 1}`,
+    referenceRawCopy: `원문 ${index + 1}`,
+    referenceRawLines: [`원문 ${index + 1}`],
+    adaptedLines: [`민트 사용감 ${12_000 + index}원`],
+    headline: index < 3 ? "민트 사용감 12,000원" : `서로 다른 생활 문구 ${index + 1}`,
+    subCopy: "",
+    proof: "",
+    offer: index < 3 ? "12,000원" : "",
+    cta: "",
+    factIds: ["benefit", "price"],
+    sourceFactValues: ["민트 사용감", "12,000원"],
+    numericTokens: index < 3 ? ["12,000원"] : [],
+    naturalnessScore: 100,
+    referenceFitScore: 100,
+    factualSafetyScore: 100,
+    validationStatus: "valid",
+    validationErrors: [],
+    plannerProvider: "fallback",
+  }));
+  const checked = applyReferenceCopyGroupRules(plans, truth);
+  assert.equal(checked[0].validationStatus, "valid");
+  assert.equal(checked[1].validationStatus, "invalid");
+  assert.equal(checked[2].validationStatus, "invalid");
+  assert.match(checked[2].validationErrors.join(" "), /가격.*최대 2장/);
+  assert.match(checked[2].validationErrors.join(" "), /상품 근거.*최대 2장/);
+  assert.match(checked[1].validationErrors.join(" "), /문구 의미가 지나치게 유사/);
+});
+
 test("병 상품은 고기·타 카테고리를 제외한 호환 레퍼런스에서만 6장을 뽑는다", () => {
   const compatible = Array.from({ length: 8 }, (_, index) =>
     normalizeNativeReferenceCompatibility({
@@ -856,7 +944,7 @@ test("native 실행은 구조를 무손실 복사하고 상품·문구·치명 Q
   assert.match(source, /runStage\(\s*"qa-repair"/);
   assert.match(source, /stagePaths:/);
   assert.match(source, /previousArtifact && previousArtifact\.promptVersion !== NATIVE_FINAL_PROMPT_VERSION/);
-  assert.match(source, /action === "regenerate" \|\| promptVersionChanged/);
+  assert.match(source, /action === "regenerate" \|\| action === "regenerate-new-reference" \|\| promptVersionChanged/);
   assert.doesNotMatch(source, /selectGoldenReferences/);
   assert.doesNotMatch(source, /composeAdaptiveNativeCreative|validateAdaptiveNativeCreative|composeLocalPerformanceCreative|localValidation/);
   assert.match(source, /action === "copy-update"/);
@@ -1050,10 +1138,12 @@ test("최종 내보내기는 1200x1200 JPEG 800KB 이하로만 저장한다", as
 test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전체 ZIP 흐름을 제공한다", async () => {
   const source = await readFile(new URL("../app/components/features/creative-generation/SixCreativeGenerator.tsx", import.meta.url), "utf8");
   const jobFactory = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
+  const adaptedPlanner = await readFile(new URL("../app/lib/creative-generation/referenceAdaptedPlanning.server.ts", import.meta.url), "utf8");
   assert.match(source, /concurrency: 3/);
   assert.match(source, /수정 문구로 전체 광고 재생성/);
   assert.doesNotMatch(source, /문구만 적용|AI 재생성 없이/);
-  assert.match(source, /이 콘텐츠 다시 만들기/);
+  assert.match(source, /동일 레퍼런스로 다시 만들기/);
+  assert.match(source, /다른 레퍼런스로 다시 만들기/);
   assert.match(jobFactory, /generation-job-v13-reference-first-adapted-copy/);
   assert.match(source, /reference-first-adapted-copy/);
   assert.match(source, /generationStageProgress/);
@@ -1075,6 +1165,7 @@ test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전�
   assert.doesNotMatch(source, /후킹 실험 생성에 실패|후킹 기획을 다시/);
   assert.doesNotMatch(jobFactory, /후킹 기획을 다시 실행해 주세요/);
   assert.match(jobFactory, /planReferenceAdaptedCopies/);
+  assert.match(adaptedPlanner, /adaptedLines.*rawLines.*같은 개수·순서·빈 줄/);
   assert.doesNotMatch(jobFactory, /planHooksWithCodexLocal|buildExplorationCreativePlan/);
   const localPlanner = await readFile(new URL("../app/lib/creative-generation/CodexLocalHookPlanner.server.ts", import.meta.url), "utf8");
   assert.doesNotMatch(localPlanner, /로컬 Codex 후킹 기획을 사용할 수 없어/);

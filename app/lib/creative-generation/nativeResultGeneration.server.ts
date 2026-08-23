@@ -16,14 +16,15 @@ import { hasExplicitPaidApiAuthorization, type CopyPlan, type GenerationJob, typ
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
 import { validateCopyAgainstTruth } from "./productTruth";
-import { selectNativeAdReference } from "./referenceCreativeLibrary.server";
+import { selectCategoryNativeAdReferences, selectNativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
 
 type NativeResultInput = {
   jobId: string;
   resultId: string;
   requestId?: string;
-  action?: "generate" | "regenerate" | "revise" | "revalidate" | "copy-update" | "approve" | "exclude" | "feedback" | "golden-reference";
+  action?: "generate" | "regenerate" | "regenerate-new-reference" | "revise" | "revalidate" | "copy-update" | "approve" | "exclude" | "feedback" | "golden-reference";
   feedback?: string;
   copy?: Partial<CopyPlan>;
 };
@@ -243,7 +244,51 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     initial = job.results.find((result) => result.id === input.resultId)!;
   }
 
-  const isRevision = ["regenerate", "revise", "copy-update"].includes(action);
+  if (action === "regenerate-new-reference") {
+    const excludedReferenceIds = new Set(job.results.map((result) => result.nativeCreative?.adReference?.id).filter((id): id is string => Boolean(id)));
+    const [replacementReference] = selectCategoryNativeAdReferences(job, 1, undefined, excludedReferenceIds);
+    if (!replacementReference) throw new Error("현재 상품과 호환되는 다른 레퍼런스가 없습니다.");
+    const copyPlanning = await planReferenceAdaptedCopies({ truth: job.productTruth, references: [replacementReference] });
+    const replacementCopy = copyPlanning.plans[0];
+    const replacementCreativePlan = buildReferenceAdaptedCreativePlan({
+      truth: job.productTruth,
+      references: [replacementReference],
+      copyPlans: [replacementCopy],
+      provider: copyPlanning.provider,
+      warnings: copyPlanning.warnings,
+    });
+    const projectedHook = replacementCreativePlan.hookPlans[0];
+    const projectedScene = buildReferenceScenes([replacementReference], [replacementCopy])[0];
+    const currentCode = initial.hookPlan.hookCode;
+    job = await creativeGenerationJobStore.update(job.id, (active) => ({
+      ...active,
+      results: active.results.map((result) =>
+        result.id === input.resultId
+          ? {
+              ...result,
+              referenceAdaptedCopyPlan: { ...replacementCopy, id: result.referenceAdaptedCopyPlan?.id || replacementCopy.id, resultCode: currentCode },
+              hookPlan: { ...projectedHook, id: result.hookPlan.id, hookCode: currentCode, title: result.hookPlan.title },
+              scenePlan: { ...projectedScene, id: result.scenePlan.id, blueprintId: projectedHook.blueprintId },
+              blueprintId: projectedHook.blueprintId,
+              nativeCreative: {
+                ...result.nativeCreative!,
+                adReference: replacementReference,
+                stagePaths: undefined,
+                originalPath: undefined,
+                finalPath: undefined,
+                validation: undefined,
+              },
+              imagePath: undefined,
+              creativeAsset: undefined,
+              completedAt: undefined,
+            }
+          : result
+      ),
+    }));
+    initial = job.results.find((result) => result.id === input.resultId)!;
+  }
+
+  const isRevision = ["regenerate", "regenerate-new-reference", "revise", "copy-update"].includes(action);
   const previousArtifact = initial.nativeCreative;
   const promptVersionChanged = Boolean(previousArtifact && previousArtifact.promptVersion !== NATIVE_FINAL_PROMPT_VERSION);
   const revisionCount = isRevision ? (previousArtifact?.revisionCount || 0) + 1 : previousArtifact?.revisionCount || 0;
@@ -265,7 +310,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
               adReference: result.nativeCreative?.adReference,
               // Old staged files may contain the removed local product-cutout
               // exception. Never reuse them after a full-AI prompt migration.
-              stagePaths: action === "regenerate" || promptVersionChanged ? undefined : result.nativeCreative?.stagePaths,
+              stagePaths: action === "regenerate" || action === "regenerate-new-reference" || promptVersionChanged ? undefined : result.nativeCreative?.stagePaths,
               referencePaths: result.nativeCreative?.referencePaths || [],
               backgroundPath: undefined,
               originalPath: result.nativeCreative?.originalPath,
@@ -315,7 +360,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   let productPath = existingStages.productPath;
   let copyPath = existingStages.copyPath;
   let qaRepairPaths = [...(existingStages.qaRepairPaths || [])];
-  if (action === "regenerate") {
+  if (action === "regenerate" || action === "regenerate-new-reference") {
     structurePath = undefined;
     productPath = undefined;
     copyPath = undefined;
@@ -526,6 +571,28 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                 promptVersion: NATIVE_FINAL_PROMPT_VERSION,
                 revisionCount,
                 validation,
+                provenance: {
+                  referenceId: selectedAdReference.id,
+                  referenceSourcePath: selectedAdReference.path,
+                  referenceRawCopy: result.referenceAdaptedCopyPlan?.referenceRawCopy || selectedAdReference.nativeCopy?.rawText,
+                  adaptedCopy: [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean).join("\n"),
+                  productSourcePaths: generationReferences,
+                  sourceProductImageIds: job.productTruth.imageAssets.filter((asset) => generationReferences.includes(asset.path)).map((asset) => asset.id),
+                  finalImageId: result.id,
+                  editableRegions: ["source-product", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
+                  lockedRegions: ["background", "people", "animals", "props", "camera", "composition", "text-box-position", "non-product-graphics"],
+                  productReplacementSummary: "선택 레퍼런스의 상품 영역만 URL 상품 레퍼런스로 교체",
+                  copyReplacementSummary: "원문 줄·문장부호·말투를 기준으로 ProductTruth 상품 관련 표현만 교체",
+                  finalOutputPath: finalFile,
+                  productQa: { status: validation.productIdentity >= 75 ? "passed" : "manual-review", score: validation.productIdentity },
+                  referencePreservationDetails: { status: validation.composition >= 75 ? "passed" : "manual-review", score: validation.composition },
+                  copyQaDetails: { status: validation.factualAccuracy >= 75 && validation.koreanTextAccuracy >= 75 ? "passed" : "manual-review", factualAccuracy: validation.factualAccuracy, koreanTextAccuracy: validation.koreanTextAccuracy },
+                  sceneCopyAlignmentDetails: { status: validation.hookAlignment >= 70 ? "passed" : "manual-review", score: validation.hookAlignment },
+                  referencePreservationQa: validation.recommendation === "approve" ? "passed" : "manual-review",
+                  copyQa: validation.factualAccuracy >= 75 && validation.koreanTextAccuracy >= 75 ? "passed" : "manual-review",
+                  sceneCopyAlignmentQa: validation.hookAlignment >= 70 ? "passed" : "manual-review",
+                  groupDiversityQa: current.groupValidation?.recommendation === "approve" ? "passed" : "manual-review",
+                },
                 timing: {
                   referenceMs,
                   generationMs,

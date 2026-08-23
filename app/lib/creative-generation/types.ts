@@ -60,6 +60,10 @@ export type ReferenceAdaptedCopyPlan = {
   resultCode: string;
   referenceId: string;
   referenceCopyProfileId: string;
+  /** 선택 레퍼런스에 실제로 적혀 있던 원문과 줄 구조입니다. */
+  referenceRawCopy?: string;
+  referenceRawLines?: string[];
+  adaptedLines?: string[];
   headline: string;
   subCopy: string;
   proof: string;
@@ -253,10 +257,15 @@ export type ProductTruth = {
     rawProductTitle: string;
     cleanProductName: string;
     baseProductName?: string;
+    baseName?: string;
     verifiedDescriptor?: string;
     descriptor?: string;
     salesUnit?: string;
     promotionalTokens?: string[];
+    offerTokens?: string[];
+    selectionTokens?: string[];
+    volumeTokens?: string[];
+    promotionTokens?: string[];
     brandName: string;
     category: string;
     price?: string;
@@ -530,6 +539,7 @@ export type NativeCreativeArtifact = {
     photographyType?: import("./referenceLibraryManagement").NativeReferencePhotographyType;
     textDensity?: import("./referenceLibraryManagement").NativeReferenceTextDensity;
     compatibilityConfidence?: import("./referenceLibraryManagement").NativeReferenceCompatibilityConfidence;
+    nativeCopy?: import("./referenceLibraryManagement").ReferenceNativeCopy;
   };
   /** Persisted outputs from the staged native-AI edit pipeline. */
   stagePaths?: {
@@ -548,6 +558,28 @@ export type NativeCreativeArtifact = {
   promptVersion: string;
   revisionCount: number;
   validation?: NativeCreativeValidation;
+  provenance?: {
+    referenceId: string;
+    referenceSourcePath: string;
+    referenceRawCopy?: string;
+    adaptedCopy: string;
+    productSourcePaths: string[];
+    sourceProductImageIds?: string[];
+    finalImageId?: string;
+    editableRegions?: string[];
+    lockedRegions?: string[];
+    productReplacementSummary: string;
+    copyReplacementSummary: string;
+    finalOutputPath?: string;
+    productQa?: { status: "passed" | "manual-review"; score: number };
+    referencePreservationDetails?: { status: "passed" | "manual-review"; score: number };
+    copyQaDetails?: { status: "passed" | "manual-review"; factualAccuracy: number; koreanTextAccuracy: number };
+    sceneCopyAlignmentDetails?: { status: "passed" | "manual-review"; score: number };
+    referencePreservationQa?: "passed" | "manual-review";
+    copyQa?: "passed" | "manual-review";
+    sceneCopyAlignmentQa?: "passed" | "manual-review";
+    groupDiversityQa?: "passed" | "manual-review";
+  };
   timing?: {
     referenceMs: number;
     generationMs: number;

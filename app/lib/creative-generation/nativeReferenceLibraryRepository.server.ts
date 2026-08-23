@@ -6,7 +6,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { classifyNativeReferenceImage } from "./nativeReferenceClassifier.server";
-import { normalizeNativeReferenceCategory, normalizeNativeReferenceCompatibility, removeManagedNativeReference, type ManagedNativeReferenceItem, type ManagedNativeReferenceManifest, type NativeReferenceCategoryGroup } from "./referenceLibraryManagement";
+import { normalizeNativeReferenceCategory, normalizeNativeReferenceCompatibility, removeManagedNativeReference, type ManagedNativeReferenceItem, type ManagedNativeReferenceManifest, type NativeReferenceCategoryGroup, type ReferenceNativeCopy } from "./referenceLibraryManagement";
+import { extractReferenceNativeCopy, normalizeReferenceNativeCopy } from "./referenceNativeCopy.server";
 
 const manifestPath = path.resolve(process.cwd(), "data", "native-creative-reference-library.json");
 const publicRoot = path.resolve(process.cwd(), "public");
@@ -27,6 +28,7 @@ function normalizeManifest(value: ManagedNativeReferenceManifest): ManagedNative
       ? value.items.map((item, index) =>
           normalizeNativeReferenceCompatibility({
             ...item,
+            nativeCopy: normalizeReferenceNativeCopy(item.nativeCopy ? { ...item.nativeCopy, referenceId: item.id } : undefined),
             ordinal: Number(item.ordinal) || index + 1,
             categoryGroup: normalizeNativeReferenceCategory(item.categoryGroup),
           })
@@ -187,6 +189,55 @@ export const nativeReferenceLibraryRepository = {
       await atomicWriteManifest(updated);
       return updated;
     });
+  },
+
+  async updateNativeCopy(id: string, nativeCopy: Partial<ReferenceNativeCopy>) {
+    return serialize(async () => {
+      const manifest = readNativeReferenceManifestSync();
+      const target = manifest.items.find((item) => item.id === id);
+      if (!target) throw new Error("레퍼런스를 찾지 못했습니다.");
+      const normalized = normalizeReferenceNativeCopy({
+        ...target.nativeCopy,
+        ...nativeCopy,
+        referenceId: id,
+        updatedAt: new Date().toISOString(),
+      });
+      const updated = {
+        ...manifest,
+        version: managedManifestVersion,
+        updatedAt: new Date().toISOString(),
+        items: manifest.items.map((item) => (item.id === id ? { ...item, nativeCopy: normalized } : item)),
+      };
+      await atomicWriteManifest(updated);
+      return updated;
+    });
+  },
+
+  async extractNativeCopy(id: string) {
+    const manifest = readNativeReferenceManifestSync();
+    const target = manifest.items.find((item) => item.id === id);
+    if (!target) throw new Error("레퍼런스를 찾지 못했습니다.");
+    let nativeCopy: ReferenceNativeCopy;
+    try {
+      nativeCopy = await extractReferenceNativeCopy(safeReferencePath(target.publicPath));
+    } catch {
+      nativeCopy = {
+        referenceId: id,
+        rawText: target.nativeCopy?.rawText || "",
+        rawLines: target.nativeCopy?.rawLines || [],
+        textRegions: target.nativeCopy?.textRegions || [],
+        confidence: target.nativeCopy?.confidence,
+        ocrConfidence: target.nativeCopy?.ocrConfidence ?? target.nativeCopy?.confidence,
+        manuallyCorrected: Boolean(target.nativeCopy?.manuallyCorrected),
+        useForCopyAdaptation: Boolean(target.nativeCopy?.rawLines?.length) && target.nativeCopy?.useForCopyAdaptation !== false,
+        extractionSource: target.nativeCopy?.manuallyCorrected ? "manual" : "unavailable",
+        extractedAt: target.nativeCopy?.extractedAt,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    nativeCopy.referenceId = id;
+    await this.updateNativeCopy(id, nativeCopy);
+    return nativeCopy;
   },
 
   async remove(id: string) {

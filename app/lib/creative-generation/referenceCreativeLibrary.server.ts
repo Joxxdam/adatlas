@@ -26,6 +26,7 @@ export type NativeAdReference = {
   photographyType?: ManagedNativeReferenceItem["photographyType"];
   textDensity?: ManagedNativeReferenceItem["textDensity"];
   compatibilityConfidence?: ManagedNativeReferenceItem["compatibilityConfidence"];
+  nativeCopy?: ManagedNativeReferenceItem["nativeCopy"];
 };
 
 type ReferenceSelectionJob = Pick<GenerationJob, "productTruth" | "referenceCategoryOverride">;
@@ -82,6 +83,7 @@ function toNativeAdReference(selected: ManagedNativeReferenceItem, selectionReas
     photographyType: selected.photographyType,
     textDensity: selected.textDensity,
     compatibilityConfidence: selected.compatibilityConfidence,
+    nativeCopy: selected.nativeCopy,
   };
 }
 
@@ -174,28 +176,39 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const profile = buildProductReferenceCompatibilityProfile(job);
   const categoryGroup = profile.categoryGroup;
   const categoryName = profile.foodSubcategory ? `${categoryLabel(categoryGroup)} > 과일/농산물` : categoryLabel(categoryGroup);
-  const referenceItems = readReferenceItems();
+  const referenceItems = readReferenceItems().filter((item) => item.nativeCopy?.useForCopyAdaptation !== false);
+  const copyReadyItems = referenceItems.filter((item) => Boolean(item.nativeCopy?.rawLines?.length));
   const freshItems = referenceItems.filter((item) => !recentReferenceIds.has(item.id));
+  const freshCopyReadyItems = copyReadyItems.filter((item) => !recentReferenceIds.has(item.id));
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
   let selected;
-  try {
-    selected = pickCompatibleRandomItems(freshItems, count, profile, nextIndex);
-  } catch {
-    // 최근 사용 제외로 풀이 부족하면 제작 자체를 막지 않고 전체 호환 풀로 돌아갑니다.
-    selected = pickCompatibleRandomItems(referenceItems, count, profile, nextIndex);
+  let lastError: unknown;
+  // 원문 OCR이 준비된 레퍼런스를 항상 우선한다. 기존 라이브러리 마이그레이션
+  // 중에는 제작을 막지 않기 위해 원문 미분석 항목까지 단계적으로 넓힌다.
+  for (const pool of [freshCopyReadyItems, copyReadyItems, freshItems, referenceItems]) {
+    try {
+      selected = pickCompatibleRandomItems(pool, count, profile, nextIndex);
+      break;
+    } catch (error) {
+      lastError = error;
+    }
   }
+  if (!selected) throw lastError instanceof Error ? lastError : new Error("호환되는 광고 레퍼런스가 부족합니다.");
   return selected.map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${categoryName} · ${profile.productForm} 호환 후보에서 ${index + 1}번째 레퍼런스로 무작위 선택했습니다(호환 점수 ${candidate.score}: ${candidate.reasons.join(", ")}). 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */
 export function selectNativeAdReference(job: GenerationJob, result: GenerationResult): NativeAdReference {
-  const referenceItems = readReferenceItems();
-  if (!referenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
+  const allReferenceItems = readReferenceItems().filter((item) => item.nativeCopy?.useForCopyAdaptation !== false);
+  const copyReadyItems = allReferenceItems.filter((item) => Boolean(item.nativeCopy?.rawLines?.length));
   const profile = buildProductReferenceCompatibilityProfile(job);
-  const compatible = referenceItems
-    .map((item) => scoreReferenceCompatibility(profile, item))
-    .filter((candidate) => candidate.score >= 60)
-    .sort((left, right) => right.score - left.score);
+  if (!allReferenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
+  const compatibleIn = (items: typeof allReferenceItems) => items
+      .map((item) => scoreReferenceCompatibility(profile, item))
+      .filter((candidate) => candidate.score >= 60)
+      .sort((left, right) => right.score - left.score);
+  const copyReadyCompatible = compatibleIn(copyReadyItems);
+  const compatible = copyReadyCompatible.length ? copyReadyCompatible : compatibleIn(allReferenceItems);
   if (!compatible.length) {
     const categoryName = profile.foodSubcategory ? `${categoryLabel(profile.categoryGroup)} > 과일/농산물` : categoryLabel(profile.categoryGroup);
     throw new Error(`${categoryName} · ${profile.productForm} 상품과 호환되는 복구용 레퍼런스가 없습니다.`);

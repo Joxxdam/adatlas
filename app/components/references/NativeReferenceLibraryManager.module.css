@@ -245,6 +245,64 @@
   gap: 9px;
   padding-top: 11px;
 }
+.nativeCopy {
+  border: 1px solid #d9e8f5;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f8fbff;
+}
+.nativeCopy > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #214b73;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.nativeCopy > summary small {
+  color: #71849a;
+  font-size: 10px;
+}
+.nativeCopy p {
+  margin: 9px 0;
+  color: #6a7c91;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.nativeCopy textarea {
+  width: 100%;
+  min-height: 124px;
+  resize: vertical;
+  border: 1px solid #cfdce9;
+  border-radius: 9px;
+  padding: 9px;
+  color: #1c3552;
+  background: #fff;
+  font: inherit;
+  line-height: 1.5;
+}
+.nativeCopy .nativeCopyToggle {
+  display: flex;
+  margin-top: 8px;
+}
+.nativeCopyActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 8px;
+}
+.nativeCopyActions button {
+  min-height: 34px;
+  border: 1px solid #bcd3e8;
+  border-radius: 8px;
+  color: #155f9f;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
 .cardBody select {
   min-height: 36px;
   border: 1px solid #d8e1eb;
