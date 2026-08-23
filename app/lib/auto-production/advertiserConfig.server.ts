@@ -29,7 +29,7 @@ export type AutoProductionGlobalSettings = {
 
 const defaultSettings: AutoProductionGlobalSettings = {
   paused: false,
-  maxImagesPerDay: 48,
+  maxImagesPerDay: AUTO_PRODUCTION_IMAGES_PER_MALL * 3,
   globalConcurrency: 2,
   updatedAt: new Date(0).toISOString(),
 };
@@ -77,7 +77,7 @@ export function normalizeAdvertiserConfig(
     fullHookTestForNewProducts: false,
     productCooldownDays: numeric(input.productCooldownDays ?? current?.productCooldownDays, 7, 0, 90),
     productFamilyCooldownDays: numeric(input.productFamilyCooldownDays ?? current?.productFamilyCooldownDays, 14, 0, 180),
-    hookCooldownDays: numeric(input.hookCooldownDays ?? current?.hookCooldownDays, 14, 0, 180),
+    hookCooldownDays: 0,
     maxImagesPerRun: AUTO_PRODUCTION_IMAGES_PER_MALL,
     dataSource: input.dataSource || current?.dataSource || "auto",
     bigQueryBrandMatch: String(input.bigQueryBrandMatch ?? current?.bigQueryBrandMatch ?? input.advertiserName).trim().slice(0, 120),
@@ -89,7 +89,7 @@ export function normalizeAdvertiserConfig(
     productVisibilityMode: input.productVisibilityMode || current?.productVisibilityMode || "site-visible-only",
     selectionPriorities: priorities.length ? Array.from(new Set(priorities)) : [...autoProductionRoles],
     adObjective: input.adObjective || current?.adObjective || "purchase",
-    explorationRatio: Math.max(0, Math.min(1, Number(input.explorationRatio ?? current?.explorationRatio ?? 0.3))),
+    explorationRatio: 0,
     lastRunAt: input.lastRunAt ?? current?.lastRunAt ?? null,
     nextRunAt: "",
     createdAt,
@@ -185,7 +185,7 @@ export const autoProductionAdvertiserRepository = {
         paused: input.paused ?? current.paused,
         maxImagesPerDay: Math.max(
           minimumDailyImageCapacity(await readConfigs()),
-          numeric(input.maxImagesPerDay ?? current.maxImagesPerDay, 48, 1, 240)
+          numeric(input.maxImagesPerDay ?? current.maxImagesPerDay, defaultSettings.maxImagesPerDay, 1, 240)
         ),
         globalConcurrency: numeric(input.globalConcurrency ?? current.globalConcurrency, 2, 1, 2),
         updatedAt: new Date().toISOString(),

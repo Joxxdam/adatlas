@@ -455,7 +455,7 @@ export function planScenes(
           reason: [
             "배경 제거 없이 현재 상품의 실제 상세페이지 사진을 전체 장면으로 사용",
             hookPlan.creativeBrief?.visualStory,
-            "상품 품종·색·질감은 원본 픽셀로 보존하고 정확한 한국어 문구만 후처리",
+            "실제 상품 레퍼런스의 품종·색·질감을 기준으로 상품과 정확한 한국어 문구를 AI 완성 광고 전체 안에서 함께 생성",
             ...designNotes,
           ].filter(Boolean).join(" · "),
         };
@@ -481,7 +481,7 @@ export function planScenes(
         reason: [
           recommendation?.reasons.join(" · ") || "카테고리 안전 배경 fallback",
           hookPlan.creativeBrief?.sceneDescription,
-          "실제 상품 레퍼런스를 사용하고 정확한 한국어 문구는 렌더 단계에서 후처리",
+          "실제 상품 레퍼런스와 정확한 한국어 문구를 AI 완성 광고 전체 안에서 함께 생성",
           ...designNotes,
         ].filter(Boolean).join(" · "),
       };

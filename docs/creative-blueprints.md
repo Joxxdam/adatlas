@@ -1,5 +1,7 @@
 # Creative Blueprint 카탈로그
 
+> 레거시 템플릿/성과 실험용 카탈로그입니다. 현재 `/create-product` 기본 생성은 이 좌표형 블루프린트를 렌더하지 않고 사용자 제공 ZIP에서 무작위 선택한 완성 광고를 단계별로 편집합니다. 현재 기준은 [광고 생성 명세](creative-generation-spec.md)입니다.
+
 블루프린트는 카피 생성기가 아니라 이미 생성된 후킹과 사실을 배치하는 렌더 계약이다. 정의 원본은 `data/creative-blueprints.json`이다.
 
 ## problem-solution-split

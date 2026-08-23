@@ -14,7 +14,10 @@ import {
 } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "../app/lib/video-collaboration/videoPlanningCorrection.ts";
 import {
+  compactPlanningCta,
+  hasFinalPlanningCta,
   missingSceneSignals,
+  repairDetailedPlanningCta,
   repairDetailedPlanningSceneDescriptions,
 } from "../app/lib/video-collaboration/planningValidation.ts";
 import {
@@ -377,6 +380,45 @@ test("이미 구체적인 장면은 자동 보완기가 변경하지 않는다",
   const concept = { cuts: [cut] };
   assert.deepEqual(missingSceneSignals(cut), []);
   assert.equal(repairDetailedPlanningSceneDescriptions(concept, analysis), concept);
+});
+
+test("마지막 구간에 누락된 CTA는 전체 재생성 없이 자동 보완한다", () => {
+  const concept = {
+    objective: "benefit",
+    cta: "추석 선물 가격 조건을 상세페이지에서 확인하세요",
+    fullScript: "선물 가격을 비교해 보세요.",
+    cuts: [
+      { id: "cut-1", startSecond: 0, endSecond: 1, caption: "가격이 왜 다르지?" },
+      { id: "cut-2", startSecond: 29, endSecond: 30, caption: "선물 준비 끝" },
+    ],
+  };
+  assert.equal(hasFinalPlanningCta(concept), false);
+  const repaired = repairDetailedPlanningCta(concept);
+  assert.equal(hasFinalPlanningCta(repaired), true);
+  assert.equal(repaired.cuts[1].caption, repaired.cta);
+  assert.ok(repaired.cuts[1].caption.length <= 34);
+  assert.match(repaired.fullScript, new RegExp(repaired.cta));
+});
+
+test("CTA가 앞 구간에만 있으면 마지막 CTA로 오인하지 않는다", () => {
+  const concept = {
+    objective: "purchase",
+    cta: "구매 조건을 확인하세요",
+    cuts: [
+      { id: "cut-1", startSecond: 0, endSecond: 1, caption: "구매 조건을 확인하세요" },
+      { id: "cut-2", startSecond: 29, endSecond: 30, caption: "마지막 제품 화면" },
+    ],
+  };
+  assert.equal(hasFinalPlanningCta(concept), false);
+});
+
+test("긴 CTA는 단어를 자르지 않고 자막 길이에 맞춘다", () => {
+  const cta = compactPlanningCta(
+    "지금 상세페이지에서 추석 선물 가격과 배송 조건을 빠짐없이 직접 확인해 보세요",
+    "구매 조건을 확인하세요"
+  );
+  assert.ok(cta.length <= 34);
+  assert.doesNotMatch(cta, /빠짐없$/);
 });
 
 test("동일 상세 생성 요청은 서버 in-flight lock에서 한 번만 실행된다", async () => {

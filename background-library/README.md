@@ -1,5 +1,7 @@
 # AdAtlas large background library
 
+> Legacy/advanced asset-management subsystem. The default `/create-product` flow uses six randomly selected advertisements from the user-provided ZIP and does not use this library as a generation fallback.
+
 This directory contains only versioned configuration and schemas. Runtime images and job state are
 kept out of Git.
 

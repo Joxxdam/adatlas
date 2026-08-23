@@ -175,11 +175,32 @@ test("아카이브 레퍼런스 메타데이터는 태그와 메모를 정리해
   assert.deepEqual((await reloaded.list())[entryId], saved);
 });
 
+test("삭제한 아카이브 항목은 원본 생성 결과가 남아 있어도 목록에 다시 나타나지 않는다", async (context) => {
+  const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-archive-delete-"));
+  context.after(() => rm(directory, { recursive: true, force: true }));
+  const repository = createCreativeArchiveMetadataRepository({ dataDirectory: directory });
+  const registered = asset();
+  const matching = result({
+    id: "result-h01",
+    hookCode: "H01",
+    imagePath: registered.generatedImageUrl,
+    creativeAsset: { id: registered.id, assetCode: registered.assetCode },
+  });
+  await repository.hide(["asset:asset-001"]);
+  const metadata = await repository.list();
+  assert.ok(metadata["asset:asset-001"].deletedAt);
+  assert.equal(metadata["asset:asset-001"].savedAsReference,false);
+  const entries = buildCreativeArchiveEntries({ assets:[registered], jobs:[job([matching])], metadata });
+  assert.equal(entries.length,0);
+});
+
 test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독립 화면으로 제공된다", async () => {
   const { readFile } = await import("node:fs/promises");
   const navigation = await readFile("app/components/AppFeatureNavigation.tsx", "utf8");
   const page = await readFile("app/archive/page.tsx", "utf8");
   const workspace = await readFile("app/components/creative-archive/CreativeArchiveWorkspace.tsx", "utf8");
+  const collectionRoute = await readFile("app/api/creative-archive/route.ts", "utf8");
+  const entryRoute = await readFile("app/api/creative-archive/[entryId]/route.ts", "utf8");
   assert.match(navigation, /ARCHIVE_FEATURE[\s\S]*href: "\/archive"[\s\S]*label: "아카이브"/);
   assert.match(navigation, /ASSET LIBRARY/);
   assert.match(page, /CreativeArchiveWorkspace/);
@@ -187,6 +208,11 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /태그·메모/);
   assert.match(workspace, /제작 결과 열기/);
   assert.match(workspace, /선택 소재로 성과 설정/);
+  assert.match(workspace, /개별 삭제/);
+  assert.match(workspace, /이 상품 전체 선택/);
+  assert.match(workspace, /선택한 이미지 모두 삭제/);
+  assert.match(collectionRoute, /export async function DELETE/);
+  assert.match(entryRoute, /export async function DELETE/);
 });
 
 test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차이를 소재 조합 테스트로 표시한다", () => {

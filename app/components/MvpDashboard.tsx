@@ -16,7 +16,6 @@ import type {
   CreativeGenerationMode,
 } from "../lib/background-library/types";
 import type {
-  AdBrief,
   AdImageAnalysisDraft,
   AdImageLabel,
   BatchRenderResult,
@@ -54,7 +53,6 @@ import type {
   TemplateFittedCopy,
 } from "../lib/mvp/types";
 import { inferProductRepresentation } from "../lib/mvp/productImagePipeline";
-import { applyAdBriefToProductInfo } from "../lib/mvp/adBrief";
 import { evaluateCopyQuality, tightenCopyToTemplate } from "../lib/mvp/copyQualityEvaluator";
 import { resolveTemplateFontAssignment, systemFontOptions } from "../lib/mvp/fontCatalog";
 import { copyToMessageHierarchy, messageHierarchyToCopy } from "../lib/mvp/messageHierarchy";
@@ -75,7 +73,6 @@ import { CopyQualityPanel } from "./features/copy-generator/CopyQualityPanel";
 import { MessageHierarchyEditor } from "./features/copy-generator/MessageHierarchyEditor";
 import { useCreativeWorkflow } from "./features/creative-workflow/useCreativeWorkflow";
 import { ProductAnalysisSummary } from "./features/product-brief/ProductAnalysisSummary";
-import { ProductBriefForm } from "./features/product-brief/ProductBriefForm";
 import { StrategySelector } from "./features/strategy/StrategySelector";
 import { BackgroundRecommendationPanel } from "./features/background-library/BackgroundRecommendationPanel";
 import { AdaptiveCreativePanel } from "./features/background-library/AdaptiveCreativePanel";
@@ -127,7 +124,57 @@ type RecentProductSummary = {
 };
 
 const recentProductsStorageKey = "adatlas-recent-products";
+const productAnalysisStorageKeyPrefix = "adatlas-product-analysis:";
 const legacyManualProductionToolsAvailable = false;
+
+type StoredProductAnalysis = {
+  productInfo: ProductInfoForPrompt;
+  selectedAdvertiserName: string;
+  generationPlanConfirmed: boolean;
+  savedAt: string;
+};
+
+function normalizeStoredProductUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  try {
+    const url = new URL(trimmed);
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return trimmed;
+  }
+}
+
+function productAnalysisStorageKey(productUrl: string) {
+  return `${productAnalysisStorageKeyPrefix}${encodeURIComponent(
+    normalizeStoredProductUrl(productUrl)
+  )}`;
+}
+
+function readStoredProductAnalysis(productUrl: string): StoredProductAnalysis | null {
+  if (typeof window === "undefined" || !productUrl.trim()) return null;
+  try {
+    const raw = window.localStorage.getItem(productAnalysisStorageKey(productUrl));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredProductAnalysis>;
+    if (
+      !parsed.productInfo?.productName ||
+      normalizeStoredProductUrl(parsed.productInfo.landingUrl || "") !==
+        normalizeStoredProductUrl(productUrl)
+    ) {
+      return null;
+    }
+    return {
+      productInfo: parsed.productInfo,
+      selectedAdvertiserName: parsed.selectedAdvertiserName || "",
+      generationPlanConfirmed: Boolean(parsed.generationPlanConfirmed),
+      savedAt: parsed.savedAt || "",
+    };
+  } catch {
+    return null;
+  }
+}
 
 type HeadlineStyleOverrides = {
   headlineFontPreset?:
@@ -821,6 +868,8 @@ export function MvpDashboard({
     initialCreationHandoff ? initialLandingUrl : ""
   );
   const [generationPlanConfirmed, setGenerationPlanConfirmed] = useState(false);
+  const [productAnalysisRevision, setProductAnalysisRevision] = useState(0);
+  const restoredProductUrlRef = useRef("");
   const [sourceImageSelection, setSourceImageSelection] = useState<SourceImageSelectionState>(
     () => ({
       ...emptySourceImageSelection,
@@ -1454,6 +1503,95 @@ export function MvpDashboard({
   );
 
   useEffect(() => {
+    if (initialCreationHandoff) return;
+    const currentUrl = productInfo.landingUrl.trim();
+    if (
+      !currentUrl ||
+      currentUrl === lastLoadedProductUrl ||
+      restoredProductUrlRef.current === currentUrl
+    ) {
+      return;
+    }
+
+    restoredProductUrlRef.current = currentUrl;
+    const stored = readStoredProductAnalysis(currentUrl);
+    if (!stored) return;
+
+    const restoredProductInfo: ProductInfoForPrompt = {
+      ...emptyProductInfo,
+      ...stored.productInfo,
+      landingUrl: currentUrl,
+    };
+    const restoredImagePaths = compactUniqueImagePaths([
+      restoredProductInfo.productImagePath,
+      ...(restoredProductInfo.productImagePaths ?? []),
+      restoredProductInfo.extractedMainImage,
+      ...(restoredProductInfo.extractedGalleryImages ?? []),
+    ]).slice(0, 4);
+    const restoredMainImage = restoredImagePaths[0] || "";
+
+    setProductInfo(restoredProductInfo);
+    setLastLoadedProductUrl(currentUrl);
+    setSelectedAdvertiserName(stored.selectedAdvertiserName);
+    setGenerationPlanConfirmed(false);
+    setSourceImageSelection({
+      candidates: restoredProductInfo.sourceImageCandidates ?? [],
+      selectedSourceImageId: restoredProductInfo.selectedSourceImageId,
+      selectedSourceImagePath: restoredProductInfo.selectedSourceImagePath,
+    });
+    setSelectedAdImages({
+      selectedImagePaths: restoredImagePaths,
+      primaryImagePath: restoredImagePaths[0] || "",
+      secondaryImagePath: restoredImagePaths[1] || "",
+      source: restoredImagePaths.length ? "detail" : "unknown",
+      updatedAt: stored.savedAt || new Date().toISOString(),
+    });
+    setProductImageState({
+      ...emptyProductImageState,
+      originalImagePath: restoredMainImage,
+      representation:
+        restoredProductInfo.productRepresentation ||
+        inferProductRepresentation({
+          productName: restoredProductInfo.productName,
+          description:
+            restoredProductInfo.extractedDescription || restoredProductInfo.mainBenefit,
+          category: restoredProductInfo.category,
+        }),
+    });
+    setProductExtractStatus({
+      kind: "success",
+      message: "이전에 분석한 동일 상품 정보를 복원했습니다. 이 상품으로 새 광고 제작을 시작할 수 있습니다.",
+    });
+  }, [initialCreationHandoff, lastLoadedProductUrl, productInfo.landingUrl]);
+
+  useEffect(() => {
+    if (!currentProductLoaded || !productInfo.productName.trim()) return;
+    try {
+      const stored: StoredProductAnalysis = {
+        productInfo: {
+          ...productInfo,
+          landingUrl: lastLoadedProductUrl,
+        },
+        selectedAdvertiserName,
+        generationPlanConfirmed,
+        savedAt: new Date().toISOString(),
+      };
+      window.localStorage.setItem(
+        productAnalysisStorageKey(lastLoadedProductUrl),
+        JSON.stringify(stored)
+      );
+    } catch {
+      // 분석 결과 복원은 편의 기능이므로 브라우저 저장소 오류가 제작을 막지 않게 합니다.
+    }
+  }, [
+    currentProductLoaded,
+    generationPlanConfirmed,
+    lastLoadedProductUrl,
+    productInfo,
+    selectedAdvertiserName,
+  ]);
+
+  useEffect(() => {
     refreshImages().catch(() => undefined);
   }, []);
 
@@ -1825,23 +1963,6 @@ export function MvpDashboard({
     }
   }
 
-  function updateAdBrief(nextBrief: AdBrief) {
-    const strategyInputsChanged =
-      nextBrief.adObjective !== creativeWorkflow.adBrief.adObjective ||
-      nextBrief.creativeIntensity !== creativeWorkflow.adBrief.creativeIntensity;
-    if (strategyInputsChanged) {
-      creativeWorkflow.resetStrategies();
-      setAutomaticCopySet([]);
-      setStrategyStatus({
-        kind: "idle",
-        message: "변경한 광고 목표와 강도로 광고문구 6개를 다시 생성해주세요.",
-      });
-    }
-    setGenerationPlanConfirmed(false);
-    creativeWorkflow.setAdBrief(nextBrief);
-    setProductInfo((current) => applyAdBriefToProductInfo(nextBrief, current));
-  }
-
   function updateMessageHierarchy(nextHierarchy: typeof creativeWorkflow.messageHierarchy) {
     creativeWorkflow.setMessageHierarchy(nextHierarchy);
     const mapped = messageHierarchyToCopy(nextHierarchy, bannerCopy);
@@ -2031,6 +2152,8 @@ export function MvpDashboard({
       return productInfo;
     }
 
+    const isNewProductUrl = productUrl !== lastLoadedProductUrl;
+
     if (!options.silent) {
       setGenerationPlanConfirmed(false);
       setProductExtractStatus({
@@ -2052,7 +2175,7 @@ export function MvpDashboard({
       }
 
       let mergedProductInfo = productInfo;
-      const replaceExtractedFieldsForUrl = productUrl !== lastLoadedProductUrl;
+      const replaceExtractedFieldsForUrl = isNewProductUrl;
       setProductInfo((current) => {
         mergedProductInfo = mergeExtractedProductInfo(
           current,
@@ -2119,18 +2242,21 @@ export function MvpDashboard({
         message: "원본 기준 이미지 후보를 불러왔습니다. GPT 생성 기준 이미지를 선택할 수 있습니다.",
       });
       setLastLoadedProductUrl(productUrl);
-      setGeneratedBannerPath("");
-      setGptMainImagePath("");
-      setGptTextAdImagePath("");
-      setGptVisualAsset(null);
-      setGptTextAdAsset(null);
-      setLatestImagePrompt("");
-      creativeWorkflow.resetStrategies();
-      setAutomaticCopySet([]);
+      if (isNewProductUrl) {
+        setGeneratedBannerPath("");
+        setGptMainImagePath("");
+        setGptTextAdImagePath("");
+        setGptVisualAsset(null);
+        setGptTextAdAsset(null);
+        setLatestImagePrompt("");
+        creativeWorkflow.resetStrategies();
+        setAutomaticCopySet([]);
+      }
       setProductExtractStatus({
         kind: "success",
         message: "상품 확인이 끝났어요. 아래 정보가 맞는지 확인해 주세요.",
       });
+      if (!options.silent) setProductAnalysisRevision((current) => current + 1);
       return mergedProductInfo;
     } catch {
       setProductExtractStatus({
@@ -4835,8 +4961,8 @@ export function MvpDashboard({
             <nav className="create-product-step-navigation" aria-label="광고 제작 단계">
               {[
                 ["product", "01 상품 선택"],
-                ["hooks", "02 상품 고유 후킹"],
-                ["creative", "03 AI 광고 제작"],
+                ["hooks", "02 상품 문구 확인"],
+                ["creative", "03 ZIP 광고 제작"],
                 ["results", "04 제작 결과"],
               ].map(([step, label]) => (
                 <Link
@@ -4955,18 +5081,21 @@ export function MvpDashboard({
                   <ProductAnalysisSummary
                     brief={creativeWorkflow.adBrief}
                     imagePaths={hookExperimentProductImagePaths}
-                    loaded={currentProductLoaded}
+                    loaded={currentProductLoaded && !generationPlanConfirmed}
                     onChooseOther={() => {
                       document.getElementById("product-url-input")?.focus();
                       document
                         .getElementById("product-url-step")
                         ?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
-                    onUseProduct={() =>
-                      document
-                        .getElementById("ad-strategy-step")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                    }
+                    onUseProduct={() => {
+                      setGenerationPlanConfirmed(true);
+                      window.requestAnimationFrame(() =>
+                        document
+                          .getElementById("creative-results")
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                      );
+                    }}
                     product={productInfo}
                     references={autoMatchedReferenceLabels}
                   />
@@ -5005,20 +5134,10 @@ export function MvpDashboard({
                         ))}
                     </section>
                   </details>
-                  <div hidden={!currentProductLoaded} id="ad-strategy-step">
-                    <ProductBriefForm
-                      brief={creativeWorkflow.adBrief}
-                      canConfirm={Boolean(
-                        productInfo.productName.trim() && hookExperimentProductImagePaths.length
-                      )}
-                      confirmed={generationPlanConfirmed}
-                      onChange={updateAdBrief}
-                      onConfirm={() => setGenerationPlanConfirmed(true)}
-                    />
-                  </div>
                   <div>
                     <HookExperimentCreativeGenerator
                       adBrief={creativeWorkflow.adBrief}
+                      analysisRevision={productAnalysisRevision}
                       analyzedProductUrl={lastLoadedProductUrl}
                       logoPath={brandLogoPath}
                       planConfirmed={generationPlanConfirmed}

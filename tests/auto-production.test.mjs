@@ -32,12 +32,12 @@ function config(overrides = {}) {
     scheduleTime: "07:00",
     scheduleDays: [0, 1, 2, 3, 4, 5, 6],
     productsPerRun: 4,
-    creativesPerProduct: 4,
+    creativesPerProduct: 6,
     fullHookTestForNewProducts: false,
     productCooldownDays: 7,
     productFamilyCooldownDays: 14,
     hookCooldownDays: 14,
-    maxImagesPerRun: 16,
+    maxImagesPerRun: 24,
     dataSource: "auto",
     bigQueryBrandMatch: "테스트 광고주",
     siteUrl: "https://shop.example.com",
@@ -206,7 +206,7 @@ test("자동제작은 관리 도구 경로로 분리되고 기존 경로는 redi
   assert.match(adminPage, /AutoProductionWorkspace/);
 });
 
-test("기본 광고주 3곳은 매일 오전 7시, 상품 4개 × 광고 4장으로 설정된다", async () => {
+test("기본 광고주 3곳은 매일 오전 7시, 상품 4개 × 광고 6장으로 설정된다", async () => {
   const seeds = JSON.parse(await read("data/auto-production/advertiser-seed.json"));
   assert.deepEqual(seeds.map((item) => item.advertiserName), ["국대한우", "대한한우", "힘내라농가"]);
   for (const item of seeds) {
@@ -345,23 +345,27 @@ test("13. 상품별 후킹 후보 6개가 저장된다", () => {
   assert.equal(new Set(hypotheses.map((item) => item.mainHook)).size, 6);
 });
 
-test("14. 자동 제작에서는 기본적으로 상품별 4장을 독립 실행한다", () => {
-  const generated = job({ executionResultIds: ["result-1", "result-2", "result-3", "result-4"] });
-  assert.deepEqual(executionResults(generated).map((result) => result.id), ["result-1", "result-2", "result-3", "result-4"]);
+test("14. 자동 제작에서도 수동 제작과 동일하게 상품별 6장을 독립 실행한다", () => {
+  const generated = job({ executionResultIds: job().results.map((result) => result.id) });
+  assert.deepEqual(executionResults(generated).map((result) => result.id), job().results.map((result) => result.id));
 });
 
-test("15. 상품별 전체 6장 제작은 명시적 수동 요청에서만 연결된다", async () => {
+test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성기를 사용한다", async () => {
   const generated = job();
   assert.equal(allHookCodes(generated).length, 6);
   assert.equal(resultIdsForHookCodes(generated, ["H02"]).length, 1);
-  const route = await read("app/api/auto-production/runs/[runId]/products/[taskId]/hooks/route.ts");
-  assert.match(route, /body\.all \? \[\] : body\.hookCodes/);
+  const runner = await read("app/lib/auto-production/productionRunner.server.ts");
+  const factory = await read("app/lib/creative-generation/createNativeGenerationJob.server.ts");
+  assert.match(runner, /createNativeGenerationJob/);
+  assert.match(runner, /executionResultIds = job\.results\.map/);
+  assert.doesNotMatch(runner, /config\.creativesPerProduct|fullHookTestForNewProducts/);
+  assert.match(factory, /selectCategoryNativeAdReferences\(job, job\.results\.length\)/);
 });
 
-test("16. 하루 기본 용량은 활성 3개 몰의 4×4, 총 48장이며 추가 제작과 분리된다", async () => {
+test("16. 하루 기본 용량은 활성 3개 몰의 4×6, 총 72장이며 추가 제작과 분리된다", async () => {
   const advertisers = [config({ advertiserId: "a" }), config({ advertiserId: "b" }), config({ advertiserId: "c" })];
-  assert.equal(plannedImageCount(advertisers), 48);
-  assert.equal(minimumDailyImageCapacity(advertisers), 48);
+  assert.equal(plannedImageCount(advertisers), 72);
+  assert.equal(minimumDailyImageCapacity(advertisers), 72);
   const repository = await read("app/lib/auto-production/productionRepository.server.ts");
   assert.match(repository, /automaticExpectedImages \?\? run\.expectedImages/);
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");

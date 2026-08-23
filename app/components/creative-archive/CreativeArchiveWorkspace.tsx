@@ -45,13 +45,19 @@ function downloadFileName(entry: CreativeArchiveEntry) {
 function ArchiveCard({
   entry,
   selected,
+  deletionSelected,
   onSelect,
+  onToggleDeletion,
+  onDelete,
   onUpdate,
   onNotice,
 }: {
   entry: CreativeArchiveEntry;
   selected: boolean;
+  deletionSelected: boolean;
   onSelect: (entry: CreativeArchiveEntry) => void;
+  onToggleDeletion: (entry: CreativeArchiveEntry) => void;
+  onDelete: (entry: CreativeArchiveEntry) => void;
   onUpdate: (entry: CreativeArchiveEntry) => void;
   onNotice: (message: string) => void;
 }) {
@@ -105,7 +111,7 @@ function ArchiveCard({
   }
 
   return (
-    <article className={`${styles.card}${entry.savedAsReference ? ` ${styles.referenceCard}` : ""}${selected ? ` ${styles.selectedCard}` : ""}`}>
+    <article className={`${styles.card}${entry.savedAsReference ? ` ${styles.referenceCard}` : ""}${selected ? ` ${styles.selectedCard}` : ""}${deletionSelected ? ` ${styles.deletionSelectedCard}` : ""}`}>
       <div className={styles.media}>
         {/* Runtime-generated local files intentionally bypass Next image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -133,6 +139,14 @@ function ArchiveCard({
         >
           {selected ? "✓ 테스트 선택됨" : "+ 성과 테스트"}
         </button>
+        <label className={styles.deletionSelect}>
+          <input
+            checked={deletionSelected}
+            onChange={() => onToggleDeletion(entry)}
+            type="checkbox"
+          />
+          <span>{deletionSelected ? "삭제 선택됨" : "삭제 선택"}</span>
+        </label>
       </div>
       <div className={styles.cardBody}>
         <div className={styles.cardHeading}>
@@ -155,6 +169,7 @@ function ArchiveCard({
           <button disabled={busy} onClick={() => void download()} type="button">다운로드</button>
           {entry.resultUrl ? <Link href={entry.resultUrl}>제작 결과 열기</Link> : null}
           <button onClick={() => setEditing((current) => !current)} type="button">태그·메모</button>
+          <button className={styles.deleteButton} disabled={busy} onClick={() => onDelete(entry)} type="button">개별 삭제</button>
         </div>
         {editing ? (
           <div className={styles.editor}>
@@ -203,6 +218,8 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
   const [notice, setNotice] = useState("생성 결과를 복제하지 않고 원본 작업과 소재코드에 연결해 보관합니다.");
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deletionIds, setDeletionIds] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
 
   const advertisers = useMemo(() => unique(entries.map((entry) => entry.advertiserName)), [entries]);
   const products = useMemo(
@@ -263,6 +280,45 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
     setEntries((current) => current.map((entry) => entry.id === next.id ? next : entry));
   }
 
+  function toggleDeletionSelection(entry: CreativeArchiveEntry) {
+    setDeletionIds((current) => current.includes(entry.id)
+      ? current.filter((id) => id !== entry.id)
+      : [...current, entry.id]);
+  }
+
+  function toggleGroupDeletionSelection(groupEntries: CreativeArchiveEntry[]) {
+    const ids = groupEntries.map((entry) => entry.id);
+    const allSelected = ids.every((id) => deletionIds.includes(id));
+    setDeletionIds((current) => allSelected
+      ? current.filter((id) => !ids.includes(id))
+      : Array.from(new Set([...current, ...ids])));
+  }
+
+  async function deleteEntries(entryIds: string[], label: string) {
+    const ids = Array.from(new Set(entryIds)).filter((id) => entries.some((entry) => entry.id === id));
+    if (!ids.length || deleting) return;
+    if (!window.confirm(`${label} ${ids.length}장을 아카이브에서 삭제하시겠습니까?\n원본 제작 작업과 파일은 보존됩니다.`)) return;
+    setDeleting(true);
+    try {
+      const response = await fetch("/api/creative-archive", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryIds: ids }),
+      });
+      const payload = (await response.json()) as Partial<CreativeArchiveResponse> & { deletedIds?: string[]; error?: string };
+      if (!response.ok || !payload.entries || !payload.deletedIds) throw new Error(payload.error || "선택한 이미지를 삭제하지 못했습니다.");
+      const removed = new Set(payload.deletedIds);
+      setEntries(payload.entries);
+      setDeletionIds((current) => current.filter((id) => !removed.has(id)));
+      setSelectedIds((current) => current.filter((id) => !removed.has(id)));
+      setNotice(`${payload.deletedIds.length}장의 이미지 콘텐츠를 아카이브에서 삭제했습니다.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "선택한 이미지를 삭제하지 못했습니다.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function togglePerformanceSelection(entry: CreativeArchiveEntry) {
     if (!isArchivePerformanceEligible(entry)) {
       setNotice("소재코드와 H01~H06이 발급된 완성 이미지만 성과 테스트에 사용할 수 있습니다.");
@@ -300,6 +356,9 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       const payload = (await response.json()) as Partial<CreativeArchiveResponse> & { error?: string };
       if (!response.ok || !payload.entries) throw new Error(payload.error || "아카이브를 새로고침하지 못했습니다.");
       setEntries(payload.entries);
+      const availableIds = new Set(payload.entries.map((entry) => entry.id));
+      setDeletionIds((current) => current.filter((id) => availableIds.has(id)));
+      setSelectedIds((current) => current.filter((id) => availableIds.has(id)));
       setNotice(`최신 이미지 콘텐츠 ${payload.entries.length}개를 반영했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "아카이브를 새로고침하지 못했습니다.");
@@ -367,9 +426,33 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       </section>
 
       <div className={styles.resultSummary}>
-        <strong>{visible.length}개 콘텐츠</strong>
-        <span>{groups.length}개 업체·상품 묶음</span>
+        <div><strong>{visible.length}개 콘텐츠</strong><span>{groups.length}개 업체·상품 묶음</span></div>
+        <button
+          disabled={!visible.length}
+          onClick={() => {
+            const visibleIds = visible.map((entry) => entry.id);
+            const allSelected = visibleIds.every((id) => deletionIds.includes(id));
+            setDeletionIds((current) => allSelected
+              ? current.filter((id) => !visibleIds.includes(id))
+              : Array.from(new Set([...current, ...visibleIds])));
+          }}
+          type="button"
+        >
+          {visible.length > 0 && visible.every((entry) => deletionIds.includes(entry.id)) ? "현재 목록 선택 해제" : "현재 목록 전체 선택"}
+        </button>
       </div>
+
+      {deletionIds.length ? (
+        <section className={styles.deletionTray} aria-label="삭제할 이미지 선택">
+          <div><strong>{deletionIds.length}장 삭제 선택</strong><span>상품별 선택 또는 개별 선택한 이미지만 삭제합니다.</span></div>
+          <div>
+            <button disabled={deleting} onClick={() => setDeletionIds([])} type="button">삭제 선택 해제</button>
+            <button disabled={deleting} onClick={() => void deleteEntries(deletionIds, "선택한 이미지")} type="button">
+              {deleting ? "삭제 중…" : "선택한 이미지 모두 삭제"}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {selectedEntries.length ? (
         <section className={styles.performanceTray} aria-label="성과 테스트 선택 소재">
@@ -404,15 +487,35 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
             <section className={styles.group} key={`${group.advertiserName}:${group.productName}`}>
               <header>
                 <div><span>{group.advertiserName}</span><h2>{group.productName}</h2></div>
-                <b>{group.entries.length}장</b>
+                <div className={styles.groupActions}>
+                  <label>
+                    <input
+                      checked={group.entries.every((entry) => deletionIds.includes(entry.id))}
+                      onChange={() => toggleGroupDeletionSelection(group.entries)}
+                      type="checkbox"
+                    />
+                    <span>이 상품 전체 선택</span>
+                  </label>
+                  <button
+                    disabled={deleting || !group.entries.some((entry) => deletionIds.includes(entry.id))}
+                    onClick={() => void deleteEntries(group.entries.filter((entry) => deletionIds.includes(entry.id)).map((entry) => entry.id), group.productName)}
+                    type="button"
+                  >
+                    선택 삭제
+                  </button>
+                  <b>{group.entries.length}장</b>
+                </div>
               </header>
               <div className={styles.grid}>
                 {group.entries.map((entry) => (
                   <ArchiveCard
                     entry={entry}
                     key={entry.id}
+                    deletionSelected={deletionIds.includes(entry.id)}
+                    onDelete={(target) => void deleteEntries([target.id], target.productName)}
                     onNotice={setNotice}
                     onSelect={togglePerformanceSelection}
+                    onToggleDeletion={toggleDeletionSelection}
                     onUpdate={updateEntry}
                     selected={selectedIds.includes(entry.id)}
                   />

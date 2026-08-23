@@ -15,11 +15,11 @@ export function CreativeCreationSteps({
       </li>
       <li className={generationPlanConfirmed ? "done" : currentProductLoaded ? "active" : ""}>
         <b>2</b>
-        <span><strong>상품 고유 후킹 6개</strong><small>상세페이지 근거로 흔하지 않은 문구를 만듭니다</small></span>
+        <span><strong>상품군 레퍼런스 6장 선택</strong><small>패션·식품·화장품 중 같은 상품군에서 무작위로 고정합니다</small></span>
       </li>
       <li className={generationPlanConfirmed ? "done" : ""}>
         <b>3</b>
-        <span><strong>AI 광고 6장 완성</strong><small>후킹마다 장면과 디자인 전체를 별도로 제작합니다</small></span>
+        <span><strong>상품·문구 단계별 교체</strong><small>URL 상품과 검증 문구만 바꾸고 디자인을 유지합니다</small></span>
       </li>
     </ol>
   );

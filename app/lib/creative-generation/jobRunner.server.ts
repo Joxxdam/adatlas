@@ -5,8 +5,12 @@ import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import type { GenerationJob } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
 import { executionResults, isServerRunnableGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
+import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
+import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v2");
+// 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
+// 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v4-quality-throughput");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;
@@ -24,7 +28,7 @@ function runnerErrorMessage(error: unknown) {
     (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) ||
     /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)
   ) {
-    return "AI 장면 생성이 제한시간을 초과했습니다. 해당 카드의 ‘다시 만들기’로 재시도해 주세요.";
+    return "AI 광고 레퍼런스 편집이 제한시간을 초과했습니다. 해당 카드의 ‘다시 만들기’로 재시도해 주세요.";
   }
   return message.replace(/(?:\/Users|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 600);
 }
@@ -34,7 +38,39 @@ export function isGenerationJobRunnerActive(jobId: string) {
 }
 
 export async function recoverGenerationJob(jobId: string, ignoreRunner = false): Promise<GenerationJob | null> {
-  const current = await creativeGenerationJobStore.get(jobId);
+  let current = await creativeGenerationJobStore.get(jobId);
+  const untouchedRandomJob = Boolean(
+    current &&
+    current.version === "generation-job-v11-random-reference-edit" &&
+    ["pending", "running"].includes(current.status) &&
+    current.results.every(
+      (result) =>
+        result.status === "pending" &&
+        !result.startedAt &&
+        !result.nativeCreative?.stagePaths?.structurePath
+    )
+  );
+  if (current && untouchedRandomJob) {
+    const references = selectCategoryNativeAdReferences(current, current.results.length);
+    current = await creativeGenerationJobStore.update(current.id, (job) => ({
+      ...job,
+      version: "generation-job-v12-category-reference-edit",
+      recoveryLog: [
+        ...(job.recoveryLog || []),
+        {
+          at: new Date().toISOString(),
+          message: "시작 전 v11 작업을 상품군 우선 ZIP 레퍼런스로 재배정",
+          resultIds: job.results.map((result) => result.id),
+        },
+      ].slice(-20),
+      results: job.results.map((result, index) => ({
+        ...result,
+        nativeCreative: result.nativeCreative
+          ? { ...result.nativeCreative, adReference: references[index] }
+          : result.nativeCreative,
+      })),
+    }));
+  }
   if (!current || !isServerRunnableGenerationJob(current) || current.status === "cancelled" || (!ignoreRunner && isGenerationJobRunnerActive(jobId))) return current;
   const staleResults = staleRunningResultIds(current, Date.now(), staleAfterMs(), false);
   if (!staleResults.length) return current;
@@ -85,9 +121,16 @@ async function markResultFailed(jobId: string, resultId: string, error: unknown)
 export async function runGenerationJob(jobId: string) {
   const attempted = new Set<string>();
   while (true) {
-    const job = await creativeGenerationJobStore.get(jobId);
+    let job = await creativeGenerationJobStore.get(jobId);
     if (!job || !isServerRunnableGenerationJob(job) || job.status === "cancelled") return;
-    const batch = selectRunnableResults(job, attempted, job.concurrency);
+    const configuredConcurrency = resolveFastCreativeRuntime().concurrency;
+    if (job.concurrency !== configuredConcurrency) {
+      job = await creativeGenerationJobStore.update(job.id, (current) => ({
+        ...current,
+        concurrency: configuredConcurrency,
+      }));
+    }
+    const batch = selectRunnableResults(job, attempted, configuredConcurrency);
     if (!batch.length) {
       if (executionResults(job).some((result) => result.status === "pending") && attempted.size) {
         attempted.clear();

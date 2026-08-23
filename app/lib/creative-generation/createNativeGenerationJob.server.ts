@@ -23,6 +23,8 @@ import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { buildCreativePlanFingerprint, readCreativePlanCache, writeCreativePlanCache } from "./creativePlanCache.server";
 import { REFERENCE_CREATIVE_GRAMMAR_VERSION, selectCreativeGrammar } from "./referenceCreativeGrammar";
 import { assertCreativeCopyAllowed, looksLikeGenericOrRepetitiveCopy, repairBannedCreativeSentence } from "./bannedCreativePhrases";
+import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
+import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -173,6 +175,18 @@ export async function createNativeGenerationJob(
     planningMs: Date.now() - started,
   });
   job.engine = engine;
+  const selectedAdReferences = selectCategoryNativeAdReferences(job, job.results.length);
+  job.results = job.results.map((result, index) => ({
+    ...result,
+    nativeCreative: {
+      engine,
+      adReference: selectedAdReferences[index],
+      referencePaths: [],
+      revisionPaths: [],
+      promptVersion: NATIVE_FINAL_PROMPT_VERSION,
+      revisionCount: 0,
+    },
+  }));
   job.paidApiAuthorization =
     engine === "openai_api" && explicitPaidApiAuthorization
       ? input.paidApiAuthorization
@@ -193,7 +207,7 @@ export async function createNativeGenerationJob(
   job.planningFingerprint = planningFingerprint;
   job.templateRegistryVersion = REFERENCE_CREATIVE_GRAMMAR_VERSION;
   job.unusedPerformanceTemplateIds = [];
-  job.version = "generation-job-v9-ai-native-complete-ad";
+  job.version = "generation-job-v12-category-reference-edit";
   if (job.sourceType === "manual") {
     const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(
       job.productTruth.product.landingUrl

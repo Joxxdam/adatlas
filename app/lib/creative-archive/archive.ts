@@ -27,6 +27,10 @@ function metadataFor(
   };
 }
 
+function deletedFromArchive(id: string, metadata: Record<string, CreativeArchiveMetadata>) {
+  return Boolean(metadata[id]?.deletedAt);
+}
+
 function resultKey(jobId: string, resultId: string) {
   return `${jobId}:${resultId}`;
 }
@@ -78,6 +82,7 @@ export function buildCreativeArchiveEntries(input: {
     registeredAssetIds.add(asset.id);
     registeredCodes.add(asset.assetCode);
     registeredPaths.add(asset.generatedImageUrl);
+    if (deletedFromArchive(id, metadata)) continue;
     entries.push({
       id,
       source: "creative-asset",
@@ -134,6 +139,7 @@ export function buildCreativeArchiveEntries(input: {
       ) continue;
 
       const id = `result:${job.id}:${result.id}`;
+      if (deletedFromArchive(id, metadata)) continue;
       entries.push({
         id,
         source: "generation-result",

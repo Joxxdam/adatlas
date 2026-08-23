@@ -16,7 +16,7 @@ export function normalizeCreativeProductUrl(value: string) {
 export function isServerRunnableGenerationJob(job: GenerationJob) {
   return Boolean(
     job.engine &&
-    ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad"].includes(job.version) &&
+    ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad", "generation-job-v10-staged-reference-edit", "generation-job-v11-random-reference-edit", "generation-job-v12-category-reference-edit"].includes(job.version) &&
     job.results.length === 6
   );
 }
@@ -24,6 +24,17 @@ export function isServerRunnableGenerationJob(job: GenerationJob) {
 export function executionResults(job: GenerationJob) {
   const requested = job.executionResultIds?.length ? new Set(job.executionResultIds) : null;
   return requested ? job.results.filter((result) => requested.has(result.id)) : job.results;
+}
+
+/**
+ * 제작 화면에서 복원할 수 있는 작업은 실제로 아직 진행할 결과가 남은 작업뿐입니다.
+ * 완료·부분 완료·실패 이력은 JSON 저장소와 아카이브에는 남지만 제작 UI로 되돌리지 않습니다.
+ */
+export function isRestorableGenerationJob(job: GenerationJob) {
+  return Boolean(
+    ["pending", "running"].includes(job.status) &&
+    executionResults(job).some((result) => ["pending", "running"].includes(result.status))
+  );
 }
 
 export function selectRunnableResult(job: GenerationJob, attempted: ReadonlySet<string>): GenerationResult | undefined {
@@ -79,6 +90,14 @@ export function resumeGenerationJob(job: GenerationJob, runnerActive: boolean, n
         : result
     ),
   };
+}
+
+export function hasOrphanedRunningResult(job: GenerationJob, runnerActive: boolean) {
+  return Boolean(
+    !runnerActive &&
+    job.status !== "cancelled" &&
+    executionResults(job).some((result) => result.status === "running")
+  );
 }
 
 export function staleRunningResultIds(job: GenerationJob, nowMs: number, staleMs: number, runnerActive: boolean) {

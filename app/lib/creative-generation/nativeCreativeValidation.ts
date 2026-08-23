@@ -1,4 +1,4 @@
-import type { CategoryCreativeProfileId, NativeGroupValidation } from "./types.ts";
+import type { CategoryCreativeProfileId, NativeCreativeValidation, NativeGroupValidation } from "./types.ts";
 
 type NativeCreativeQaScores = {
   hookAlignment: number;
@@ -35,6 +35,48 @@ export const passesNativeCreativeValidation = (
     qa.productVisibility >= 78 && qa.humanNaturalness >= 80 && qa.categoryFit >= 80 &&
     categorySpecificQuality && qa.exportCompliance >= 100;
 };
+
+const nativeScoreKeys = [
+  "hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy",
+  "readability", "composition", "diversity", "commercialQuality",
+  "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit",
+  "foodAppetiteAppeal", "sensoryExpression", "mobileReadability",
+] as const satisfies ReadonlyArray<keyof NativeCreativeQaScores>;
+
+/**
+ * Vision responses occasionally use a 0–10 scale even though the schema says
+ * 0–100. Normalize that response and make the local JPEG verification the
+ * authority for export compliance so a valid ad is not regenerated merely
+ * because the vision model cannot inspect bytes or MIME metadata.
+ */
+export function normalizeNativeCreativeValidation(
+  validation: NativeCreativeValidation,
+  options: {
+    category?: CategoryCreativeProfileId;
+    exportComplianceVerified?: boolean;
+  } = {}
+): NativeCreativeValidation {
+  const normalized = { ...validation };
+  for (const key of nativeScoreKeys) {
+    const raw = Number(validation[key]);
+    normalized[key] = Math.max(0, Math.min(100, Math.round(raw > 0 && raw <= 10 ? raw * 10 : raw || 0)));
+  }
+  if (options.exportComplianceVerified) normalized.exportCompliance = 100;
+  normalized.observedKoreanText = Array.isArray(validation.observedKoreanText)
+    ? validation.observedKoreanText.map(String).slice(0, 30)
+    : [];
+  normalized.failures = (Array.isArray(validation.failures) ? validation.failures : [])
+    .map(String)
+    .filter((failure) => !options.exportComplianceVerified || !/(?:JPEG|JPG|1200\s*[×xX]\s*1200|800\s*KB|내보내기|납품\s*규격|exportCompliance)/i.test(failure))
+    .slice(0, 20);
+  const passed = passesNativeCreativeValidation(normalized, options.category || "general");
+  normalized.recommendation = passed
+    ? "approve"
+    : validation.recommendation === "manual-review"
+      ? "manual-review"
+      : "revise";
+  return normalized;
+}
 
 export const passesNativeGroupValidation = (qa: Pick<NativeGroupValidation,
   "sceneDiversity" | "productPlacementDiversity" | "cameraDiversity" |

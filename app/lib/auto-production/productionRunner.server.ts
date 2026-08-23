@@ -6,8 +6,9 @@ import { enqueueGenerationJob, recoverGenerationJob } from "../creative-generati
 import { executionResults } from "../creative-generation/jobRunnerPolicy";
 import type { GenerationJob, HookMessageCode } from "../creative-generation/types";
 import { autoProductionAdvertiserRepository } from "./advertiserConfig.server";
-import { recentTasks, selectFreshHook } from "./duplicateGuard";
+import { recentTasks } from "./duplicateGuard";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "./hookSelector";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT } from "./policy";
 import { loadAutoProductionCandidates } from "./productSource.server";
 import { selectAutoProductionCandidates } from "./productSelector";
 import { autoProductionRepository } from "./productionRepository.server";
@@ -109,11 +110,7 @@ export async function previewAutoProduction(config: AutoProductionAdvertiserConf
   const imageWarnings = source.candidates
     .filter((candidate) => candidate.imageVerificationStatus && candidate.imageVerificationStatus !== "verified")
     .map((candidate) => `${candidate.productName}: 상품 이미지 확인 필요 · ${candidate.imageVerificationReasons?.[0] || "정확한 판매 구성 이미지를 확인하지 못했습니다."}`);
-  const maxPerProduct = Math.max(1, Math.min(6, config.creativesPerProduct));
-  const expectedImages = candidates.reduce(
-    (sum, candidate) => sum + (config.fullHookTestForNewProducts && candidate.isNew ? 6 : maxPerProduct),
-    0
-  );
+  const expectedImages = candidates.length * AUTO_PRODUCTION_CREATIVES_PER_PRODUCT;
   return {
     advertiserId: config.advertiserId,
     advertiserName: config.advertiserName,
@@ -152,7 +149,7 @@ function runRecord(config: AutoProductionAdvertiserConfig, trigger: AutoProducti
   };
 }
 
-async function prepareTask(run: AutoProductionRun, config: AutoProductionAdvertiserConfig, task: AutoProductionProductTask, history: AutoProductionProductTask[]) {
+async function prepareTask(run: AutoProductionRun, config: AutoProductionAdvertiserConfig, task: AutoProductionProductTask) {
   await autoProductionRepository.update(run.id, (current) => ({ ...current, status: "generating-hooks", tasks: current.tasks.map((item) => item.id === task.id ? { ...item, status: "analyzing", updatedAt: new Date().toISOString() } : item) }));
   const job = await createNativeGenerationJob({
     product: task.candidate.productInfo,
@@ -161,7 +158,6 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
     source: "landing-page",
     adBrief: adBrief(config, task),
     engine: "codex_local",
-    concurrency: 1,
   }, {
     autoStart: false,
     sourceType: "auto-production",
@@ -170,20 +166,10 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
   });
   const hooks = hookHypothesesFromJob(job);
   if (hooks.length !== 6) throw new Error("상품별 후킹 가설 6개를 구성하지 못했습니다.");
-  const first = selectFreshHook(hooks, history, {
-    explorationRatio: config.explorationRatio,
-    hasPerformanceLearning: job.hookLearningApplied,
-    seed: `${run.businessDate}:${config.advertiserId}:${task.candidate.id}`,
-  });
-  if (!first) {
-    await creativeGenerationJobStore.update(job.id, (current) => ({ ...current, status: "cancelled", cancelledAt: new Date().toISOString(), executionResultIds: [] }));
-    return { skipped: true as const, hooks };
+  const executionResultIds = job.results.map((result) => result.id);
+  if (executionResultIds.length !== AUTO_PRODUCTION_CREATIVES_PER_PRODUCT) {
+    throw new Error("수동 제작과 동일한 광고 레퍼런스 6장을 배정하지 못했습니다.");
   }
-  const desiredCount = config.fullHookTestForNewProducts && task.candidate.isNew
-    ? 6
-    : Math.max(1, Math.min(6, config.creativesPerProduct));
-  const selectedCodes = [first.hook.code, ...hooks.filter((hook) => hook.code !== first.hook.code).map((hook) => hook.code)].slice(0, desiredCount);
-  const executionResultIds = resultIdsForHookCodes(job, selectedCodes);
   const queuedJob = await creativeGenerationJobStore.update(job.id, (current) => ({
     ...current,
     executionResultIds,
@@ -197,15 +183,12 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       ...item,
       status: "queued",
       hookHypotheses: hooks,
-      selectedHookCode: first.hook.code,
-      hookSelectionReason: first.reason,
       generationJobId: queuedJob.id,
       results: resultsFromJob(queuedJob),
       updatedAt: new Date().toISOString(),
     } : item),
   }));
   enqueueGenerationJob(queuedJob.id);
-  return { skipped: false as const, hooks };
 }
 
 export async function runAutoProductionForAdvertiser(
@@ -228,8 +211,8 @@ export async function runAutoProductionForAdvertiser(
     const preview = await previewAutoProduction(config, now);
     const runQuota = Math.min(remainingDaily, config.maxImagesPerRun);
     let selectedExpectedImages = 0;
-    const selected = preview.candidates.filter((candidate) => {
-      const count = config.fullHookTestForNewProducts && candidate.isNew ? 6 : Math.max(1, config.creativesPerProduct);
+    const selected = preview.candidates.filter(() => {
+      const count = AUTO_PRODUCTION_CREATIVES_PER_PRODUCT;
       if (selectedExpectedImages + count > runQuota) return false;
       selectedExpectedImages += count;
       return true;
@@ -249,15 +232,9 @@ export async function runAutoProductionForAdvertiser(
       completedAt: selected.length ? undefined : new Date().toISOString(),
     }));
     if (!selected.length) return { run, created: true };
-    const historyRuns = await autoProductionRepository.list({ advertiserId: config.advertiserId, limit: 100 });
-    const history = recentTasks(historyRuns.filter((item) => item.id !== run.id), config.advertiserId, config.hookCooldownDays, now)
-      .filter((task) => task.status === "completed");
     for (const task of tasks) {
       try {
-        const prepared = await prepareTask(run, config, task, history);
-        if (prepared.skipped) {
-          await autoProductionRepository.update(run.id, (current) => ({ ...current, tasks: current.tasks.map((item) => item.id === task.id ? { ...item, status: "skipped-duplicate", hookHypotheses: prepared.hooks, error: "최근 사용한 메시지와 모두 유사해 오늘은 건너뛰었습니다.", updatedAt: new Date().toISOString() } : item) }));
-        }
+        await prepareTask(run, config, task);
       } catch (error) {
         const message = safeMessage(error, "상품 광고 준비에 실패했습니다.");
         await autoProductionRepository.update(run.id, (current) => ({ ...current, errors: [...current.errors, message], tasks: current.tasks.map((item) => item.id === task.id ? { ...item, status: /이미지|상품정보|후킹/.test(message) ? "skipped-insufficient-data" : "failed", error: message, updatedAt: new Date().toISOString() } : item) }));

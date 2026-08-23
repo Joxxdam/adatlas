@@ -87,6 +87,16 @@ export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFea
             </Link>
           ))}
         </div>
+        <details
+          className="feature-navigation-management"
+          open={MANAGEMENT_FEATURES.some((feature) => feature.key === activeFeature)}
+        >
+          <summary>
+            <span aria-hidden="true">⚙</span>
+            <span>관리 도구</span>
+          </summary>
+          <AuxiliaryFeatureNavigation activeFeature={activeFeature} />
+        </details>
       </section>
 
       <section className="feature-navigation-group feature-navigation-video" aria-labelledby="video-planning-navigation-label">
@@ -182,10 +192,6 @@ export function AppSidebar({
         <h2>제작 영역을 선택하세요</h2>
       </div>
       <AppFeatureNavigation activeFeature={activeFeature} />
-      <details className="feature-sidebar-tools mvp-management-tools">
-        <summary>관리 도구</summary>
-        <AuxiliaryFeatureNavigation activeFeature={activeFeature} />
-      </details>
       <details className="mvp-sidebar-help">
         <summary>도움말</summary>
         <p>상품을 고른 뒤 파란색 버튼을 따라가면 광고 6장을 만들고 결과를 저장할 수 있습니다.</p>

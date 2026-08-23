@@ -29,18 +29,14 @@ type FormState = {
   scheduleTime: string;
   scheduleDays: number[];
   productsPerRun: string;
-  creativesPerProduct: string;
   productCooldownDays: string;
   productFamilyCooldownDays: string;
-  hookCooldownDays: string;
   excludedProductIds: string;
   excludedCategories: string;
   requiredProductIds: string;
   adminProductUrls: string;
   adObjective: AutoProductionAdvertiserConfig["adObjective"];
   productVisibilityMode: AutoProductionAdvertiserConfig["productVisibilityMode"];
-  fullHookTestForNewProducts: boolean;
-  explorationRatio: string;
   enabled: boolean;
 };
 
@@ -51,18 +47,14 @@ const emptyForm: FormState = {
   scheduleTime: AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME,
   scheduleDays: [0, 1, 2, 3, 4, 5, 6],
   productsPerRun: "4",
-  creativesPerProduct: String(AUTO_PRODUCTION_CREATIVES_PER_PRODUCT),
   productCooldownDays: "7",
   productFamilyCooldownDays: "14",
-  hookCooldownDays: "14",
   excludedProductIds: "",
   excludedCategories: "",
   requiredProductIds: "",
   adminProductUrls: "",
   adObjective: "purchase",
   productVisibilityMode: "site-visible-only",
-  fullHookTestForNewProducts: false,
-  explorationRatio: "30",
   enabled: true,
 };
 
@@ -112,18 +104,14 @@ function toForm(config: AutoProductionAdvertiserConfig): FormState {
     scheduleTime: config.scheduleTime,
     scheduleDays: config.scheduleDays,
     productsPerRun: String(config.productsPerRun),
-    creativesPerProduct: String(config.creativesPerProduct),
     productCooldownDays: String(config.productCooldownDays),
     productFamilyCooldownDays: String(config.productFamilyCooldownDays),
-    hookCooldownDays: String(config.hookCooldownDays),
     excludedProductIds: config.excludedProductIds.join(", "),
     excludedCategories: config.excludedCategories.join(", "),
     requiredProductIds: config.requiredProductIds.join(", "),
     adminProductUrls: config.adminProductUrls.join("\n"),
     adObjective: config.adObjective,
     productVisibilityMode: config.productVisibilityMode,
-    fullHookTestForNewProducts: config.fullHookTestForNewProducts,
-    explorationRatio: String(Math.round(config.explorationRatio * 100)),
     enabled: config.enabled,
   };
 }
@@ -140,7 +128,7 @@ function formPayload(form: FormState) {
     maxImagesPerRun: AUTO_PRODUCTION_IMAGES_PER_MALL,
     productCooldownDays: Number(form.productCooldownDays),
     productFamilyCooldownDays: Number(form.productFamilyCooldownDays),
-    hookCooldownDays: Number(form.hookCooldownDays),
+    hookCooldownDays: 0,
     excludedProductIds: list(form.excludedProductIds),
     excludedCategories: list(form.excludedCategories),
     requiredProductIds: list(form.requiredProductIds),
@@ -148,7 +136,7 @@ function formPayload(form: FormState) {
     adObjective: form.adObjective,
     productVisibilityMode: form.productVisibilityMode,
     fullHookTestForNewProducts: false,
-    explorationRatio: Math.max(0, Math.min(1, Number(form.explorationRatio) / 100)),
+    explorationRatio: 0,
     enabled: form.enabled,
   };
 }
@@ -181,7 +169,7 @@ export function AutoProductionWorkspace() {
   const [advertisers, setAdvertisers] = useState<AutoProductionAdvertiserConfig[]>([]);
   const [settings, setSettings] = useState<GlobalSettings>({
     paused: false,
-    maxImagesPerDay: 48,
+    maxImagesPerDay: AUTO_PRODUCTION_IMAGES_PER_MALL * 3,
     globalConcurrency: 2,
   });
   const [status, setStatus] = useState<AutoProductionDashboardStatus | null>(null);
@@ -300,7 +288,7 @@ export function AutoProductionWorkspace() {
         <div>
           <p className={styles.eyebrow}>DAILY CREATIVE OPERATIONS</p>
           <h1>자동 콘텐츠 제작</h1>
-          <p>매일 오전 7시, 몰별 상품 4개와 AI 완성 광고 16장을 출근 전에 준비합니다.</p>
+          <p>매일 오전 7시, 몰별 상품 4개와 레퍼런스 기반 완성 광고 24장을 출근 전에 준비합니다.</p>
         </div>
         <div className={styles.actions}>
           <button
@@ -330,7 +318,8 @@ export function AutoProductionWorkspace() {
       <p className={styles.notice}>
         서버가 켜져 있을 때 백그라운드에서 계속 실행됩니다. 로컬 PC와 서버가 모두 꺼져 있으면
         실행되지 않으며, 같은 날 다시 켜면 누락된 예약을 한 번만 보충합니다. 수기 제작과 동일한
-        Codex 로컬 AI 네이티브 엔진만 사용하며 유료 API로 자동 전환하거나 Meta에 자동 게시하지 않습니다.
+        카테고리별 ZIP 레퍼런스 6장을 사용하는 수동 제작과 동일한 생성 워크플로우만 사용하며,
+        유료 API로 자동 전환하거나 Meta에 자동 게시하지 않습니다.
       </p>
 
       <section className={styles.stats} aria-label="자동 제작 현황">
@@ -401,7 +390,7 @@ export function AutoProductionWorkspace() {
           <div className={styles.sectionHeader}>
             <div>
               <h2>광고주 자동 제작 설정</h2>
-              <p>요일·시간·제외 조건을 저장합니다. 제작량은 몰당 4상품 × 4장으로 고정됩니다.</p>
+              <p>요일·시간·제외 조건을 저장합니다. 제작량은 몰당 4상품 × 6장으로 고정됩니다.</p>
             </div>
             <div className={styles.actions}>
               <label className={styles.limitControl}>
@@ -409,13 +398,13 @@ export function AutoProductionWorkspace() {
                 <input
                   aria-label="하루 최대 자동 제작 이미지 수"
                   max="120"
-                  min={Math.max(16, status?.plannedProductCount || 16)}
+                  min={Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL)}
                   onChange={(event) =>
                     setSettings((current) => ({
                       ...current,
                         maxImagesPerDay: Math.max(
-                          Math.max(16, status?.plannedProductCount || 16),
-                          Math.min(120, Number(event.target.value) || 48)
+                          Math.max(AUTO_PRODUCTION_IMAGES_PER_MALL, status?.plannedProductCount || AUTO_PRODUCTION_IMAGES_PER_MALL),
+                          Math.min(120, Number(event.target.value) || AUTO_PRODUCTION_IMAGES_PER_MALL * 3)
                         ),
                     }))
                   }
@@ -524,8 +513,8 @@ export function AutoProductionWorkspace() {
                 </fieldset>
                 <div className={styles.standardPolicy}>
                   <span>고정 제작 기준</span>
-                  <strong>상품 4개 × 상품별 광고 4장 = 몰당 16장</strong>
-                  <small>후킹·장면·타이포그래피가 서로 다른 광고 전체를 AI가 생성합니다.</small>
+                  <strong>상품 4개 × 상품별 광고 6장 = 몰당 24장</strong>
+                  <small>수동 제작과 동일하게 상품군별 ZIP 레퍼런스 6장을 배정한 뒤 상품과 문구를 교체합니다.</small>
                 </div>
                 <label>
                   상품 재선정 제한(일)
@@ -547,15 +536,6 @@ export function AutoProductionWorkspace() {
                     onChange={(event) =>
                       setForm({ ...form, productFamilyCooldownDays: event.target.value })
                     }
-                  />
-                </label>
-                <label>
-                  후킹 재사용 제한(일)
-                  <input
-                    min="0"
-                    type="number"
-                    value={form.hookCooldownDays}
-                    onChange={(event) => setForm({ ...form, hookCooldownDays: event.target.value })}
                   />
                 </label>
                 <label>
@@ -630,18 +610,6 @@ export function AutoProductionWorkspace() {
                       <option value="admin-only">관리자 지정 상품만</option>
                     </select>
                   </label>
-                  <label>
-                    새 후킹 탐색 비율(%)
-                    <input
-                      max="100"
-                      min="0"
-                      type="number"
-                      value={form.explorationRatio}
-                      onChange={(event) =>
-                        setForm({ ...form, explorationRatio: event.target.value })
-                      }
-                    />
-                  </label>
                   <label className={styles.checkControl}>
                     <input
                       checked={form.enabled}
@@ -695,8 +663,7 @@ export function AutoProductionWorkspace() {
                   </span>
                   <span>
                     상품 {advertiser.productCooldownDays}일 · 상품군{" "}
-                    {advertiser.productFamilyCooldownDays}일 · 후킹 {advertiser.hookCooldownDays}일
-                    중복 방지
+                    {advertiser.productFamilyCooldownDays}일 중복 방지
                   </span>
                   <span>다음 실행 {localDateTime(advertiser.nextRunAt)}</span>
                   <span>

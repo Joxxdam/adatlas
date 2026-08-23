@@ -23,8 +23,8 @@ export async function POST(
       const publicJob = toPublicGenerationJob(job);
       return NextResponse.json({ ok: true, job: publicJob, result: publicJob.results.find((item) => item.id === resultId), created: false });
     }
-    if (result.status !== "success" || !result.imagePath) {
-      return NextResponse.json({ ok: false, error: "완료된 이미지에만 소재코드를 발급할 수 있습니다." }, { status: 409 });
+    if (!result.imagePath || !result.nativeCreative?.finalPath) {
+      return NextResponse.json({ ok: false, error: "생성된 이미지에만 소재코드를 발급할 수 있습니다." }, { status: 409 });
     }
     const copy = result.renderPlan?.copy || {
       headline: result.hookPlan.headline,

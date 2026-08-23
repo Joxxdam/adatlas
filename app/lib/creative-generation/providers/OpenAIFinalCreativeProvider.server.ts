@@ -2,10 +2,11 @@ import "server-only";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { editImageFromSource } from "../../mvp/openaiImageClient.ts";
-import { buildNativeFinalCreativePrompt, buildNativeGroupValidationPrompt, buildNativeValidationPrompt } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt } from "../nativeCreativePrompt.ts";
 import { readBrandMemory } from "../codexRegistry.server.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeGenerationInput } from "./CreativeGenerationProvider.ts";
+import { normalizeNativeCreativeValidation } from "../nativeCreativeValidation";
 
 export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
   readonly engine = "openai_api" as const;
@@ -32,16 +33,26 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
   }
   async generate(input: NativeGenerationInput) {
     const state = await this.status(); if (!state.available) throw new Error(state.detail);
-    const sourceImagePath = input.sourceImagePath || input.referencePaths[0];
+    const stage = input.stage || "copy-replacement";
+    const productReferences = input.productReferencePaths || input.referencePaths;
+    const sourceImagePath = stage === "structure-recreation"
+      ? input.adReferencePath || input.sourceImagePath
+      : input.sourceImagePath;
+    if (!sourceImagePath) throw new Error(`${stage} 단계의 첫 번째 편집 소스가 없습니다.`);
     const memory = await readBrandMemory(input.job.advertiserId || "unknown-advertiser");
     // Golden advertisements contribute only abstract reusable traits through
     // brand memory. Their pixels are deliberately not attached, preventing an
     // older ad or its copy panel from being reproduced inside the new output.
-    const generated = await editImageFromSource({ sourceImagePath, referenceImagePaths: input.referencePaths.filter((file) => file !== sourceImagePath).slice(0, 4), prompt: buildNativeFinalCreativePrompt(input.job, input.result, input.outputPath, input.feedback, memory), size: "1024x1024", quality: "high", explicitPaidApiAuthorization: this.explicitPaidApiAuthorization });
+    const editReferences = stage === "structure-recreation"
+      ? []
+      : [...productReferences.slice(0, 3), input.adReferencePath]
+          .filter((file, index, files): file is string => Boolean(file) && file !== sourceImagePath && files.indexOf(file) === index)
+          .slice(0, 4);
+    const generated = await editImageFromSource({ sourceImagePath, referenceImagePaths: editReferences, prompt: buildNativeStagePrompt(stage, input.job, input.result, input.outputPath, input.feedback, memory), size: "1024x1024", quality: "high", explicitPaidApiAuthorization: this.explicitPaidApiAuthorization });
     await writeFile(input.outputPath, generated.imageBuffer);
     return { outputPath: input.outputPath };
   }
-  async validate(input: { job: NativeGenerationInput["job"]; result: NativeGenerationInput["result"]; imagePath: string; referencePaths: string[] }): Promise<NativeCreativeValidation> {
+  async validate(input: { job: NativeGenerationInput["job"]; result: NativeGenerationInput["result"]; imagePath: string; referencePaths: string[]; adReferencePath?: string; exportComplianceVerified?: boolean }): Promise<NativeCreativeValidation> {
     const state = await this.status();
     if (!state.available) throw new Error(state.detail);
     const imageUrl = async (file: string) => {
@@ -49,6 +60,9 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
       const mediaType = extension === ".png" ? "image/png" : extension === ".webp" ? "image/webp" : "image/jpeg";
       return `data:${mediaType};base64,${(await readFile(file)).toString("base64")}`;
     };
+    const validationReferences = [input.adReferencePath, ...input.referencePaths]
+      .filter((file, index, files): file is string => Boolean(file) && files.indexOf(file) === index)
+      .slice(0, 5);
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -58,7 +72,7 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         input: [{ role: "user", content: [
           { type: "input_text", text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,failures,recommendation}. recommendation은 approve, revise, manual-review 중 하나다.` },
           { type: "input_image", image_url: await imageUrl(input.imagePath), detail: "high" },
-          ...await Promise.all(input.referencePaths.slice(0, 4).map(async (file) => ({ type: "input_image", image_url: await imageUrl(file), detail: "high" }))),
+          ...await Promise.all(validationReferences.map(async (file) => ({ type: "input_image", image_url: await imageUrl(file), detail: "high" }))),
         ] }],
         text: { format: { type: "json_object" } },
       }),
@@ -68,14 +82,17 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
     const text = payload.output_text || payload.output?.flatMap((item) => item.content || []).map((item) => item.text || "").join("\n") || "";
     const parsed = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, "").trim()) as Omit<NativeCreativeValidation, "checkedAt">;
     const score = (value: unknown) => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-    return {
+    return normalizeNativeCreativeValidation({
       hookAlignment: score(parsed.hookAlignment), productIdentity: score(parsed.productIdentity), factualAccuracy: score(parsed.factualAccuracy), koreanTextAccuracy: score(parsed.koreanTextAccuracy), readability: score(parsed.readability), composition: score(parsed.composition), diversity: score(parsed.diversity), commercialQuality: score(parsed.commercialQuality), exportCompliance: score(parsed.exportCompliance),
       productVisibility: score(parsed.productVisibility), humanNaturalness: score(parsed.humanNaturalness), categoryFit: score(parsed.categoryFit), foodAppetiteAppeal: score(parsed.foodAppetiteAppeal), sensoryExpression: score(parsed.sensoryExpression), mobileReadability: score(parsed.mobileReadability),
       observedKoreanText: Array.isArray(parsed.observedKoreanText) ? parsed.observedKoreanText.map(String).slice(0, 30) : [],
       failures: Array.isArray(parsed.failures) ? parsed.failures.map(String).slice(0, 20) : [],
       recommendation: ["approve", "revise", "manual-review"].includes(parsed.recommendation) ? parsed.recommendation : "manual-review",
       checkedAt: new Date().toISOString(),
-    };
+    }, {
+      category: input.job.creativePlan.categoryCreativeProfile?.category || "general",
+      exportComplianceVerified: input.exportComplianceVerified,
+    });
   }
   async validateGroup(input: { job: NativeGenerationInput["job"]; contactSheetPath: string }): Promise<NativeGroupValidation> {
     const state = await this.status();

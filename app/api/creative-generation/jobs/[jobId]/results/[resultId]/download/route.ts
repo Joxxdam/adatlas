@@ -17,7 +17,7 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
     const job = await creativeGenerationJobStore.get(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
     const result = job.results.find((item) => item.id === resultId);
-    if (!result || !["success","approved"].includes(result.status)) return NextResponse.json({ ok: false, error: "검수를 통과한 광고만 다운로드할 수 있습니다." }, { status: 409 });
+    if (!result?.imagePath || !result.nativeCreative?.finalPath) return NextResponse.json({ ok: false, error: "아직 생성된 광고 이미지가 없습니다." }, { status: 409 });
     const file = resolveValidatedNativeDownload(job, resultId);
     const data = await readFile(file);
     const metadata = await sharp(data).metadata();

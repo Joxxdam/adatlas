@@ -152,6 +152,72 @@ function compactTransitionCaption(value: string) {
   return value.replace(/\s+/g, " ").trim().slice(0, 24) || "다음 행동";
 }
 
+function normalizePlanningCopy(value: string | undefined) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function fallbackPlanningCta(concept: VideoConcept) {
+  if (concept.objective === "retargeting") return "상품 정보를 다시 확인하세요";
+  if (concept.objective === "usp") return "제품의 차이를 상세페이지에서 확인하세요";
+  if (concept.objective === "review-ugc") return "후기와 상품 정보를 함께 확인하세요";
+  if (concept.objective === "new-customer-hook") return "상품 정보를 상세페이지에서 확인하세요";
+  if (concept.objective === "benefit") return "확인된 혜택 조건을 살펴보세요";
+  if (concept.objective === "new-product") return "신상품 정보를 상세페이지에서 확인하세요";
+  if (concept.objective === "interest") return "상품의 확인된 정보를 더 살펴보세요";
+  return "구매 조건을 상세페이지에서 확인하세요";
+}
+
+/** 자막 최대 길이 안에서 CTA를 단어 중간이 잘리지 않도록 줄인다. */
+export function compactPlanningCta(value: string, fallback: string) {
+  const normalized = normalizePlanningCopy(value) || normalizePlanningCopy(fallback);
+  if (normalized.length <= 34) return normalized;
+  const words = normalized.split(" ");
+  let result = "";
+  for (const word of words) {
+    const candidate = result ? `${result} ${word}` : word;
+    if (candidate.length > 34) break;
+    result = candidate;
+  }
+  return result || normalized.slice(0, 34);
+}
+
+export function hasFinalPlanningCta(concept: VideoConcept) {
+  const cta = normalizePlanningCopy(concept.cta);
+  const finalCaption = normalizePlanningCopy(
+    [...concept.cuts].sort((left, right) => left.startSecond - right.startSecond).at(-1)?.caption
+  );
+  return Boolean(cta && finalCaption && finalCaption.includes(cta));
+}
+
+/**
+ * AI가 마지막 자막에 CTA를 누락하거나 너무 긴 CTA를 반환한 경우 전체 대본을 다시
+ * 생성하지 않고 마지막 구간만 결정적으로 보완한다. CTA와 마지막 자막을 같은 값으로
+ * 맞춰 한 화면 한 문장 원칙과 34자 제한을 함께 지킨다.
+ */
+export function repairDetailedPlanningCta(concept: VideoConcept) {
+  if (!concept.cuts.length) return concept;
+  const cta = compactPlanningCta(concept.cta, fallbackPlanningCta(concept));
+  const finalCut = [...concept.cuts].sort(
+    (left, right) => left.startSecond - right.startSecond
+  ).at(-1);
+  if (!finalCut) return concept;
+  const alreadyValid =
+    normalizePlanningCopy(concept.cta) === cta &&
+    normalizePlanningCopy(finalCut.caption).includes(cta) &&
+    finalCut.caption.length <= 34;
+  if (alreadyValid) return concept;
+  const cuts = concept.cuts.map((cut) =>
+    cut.id === finalCut.id ? { ...cut, caption: cta } : cut
+  );
+  const fullScript = normalizePlanningCopy(concept.fullScript);
+  return {
+    ...concept,
+    cta,
+    cuts,
+    fullScript: fullScript.includes(cta) ? fullScript : `${fullScript} ${cta}`.trim(),
+  };
+}
+
 /**
  * AI가 작성한 장면의 의미와 순서는 유지하면서 촬영 지시에 꼭 필요한 누락 신호만
  * 결정적으로 보완한다. 장면 신호 한두 개 누락 때문에 20개 대본 전체를 다시 생성하는
@@ -296,7 +362,7 @@ export function validateDetailedPlanning(
     },
     {
       key: "cta",
-      passed: Boolean(concept.cta && cuts.at(-1)?.caption && combined.includes(concept.cta)),
+      passed: hasFinalPlanningCta(concept),
       message: "앞의 구매 이유와 연결되는 CTA가 마지막 구간에 필요합니다.",
     },
   ];

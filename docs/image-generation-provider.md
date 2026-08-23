@@ -1,35 +1,65 @@
-# 이미지 생성 Provider
+# 이미지 생성·편집 Provider
 
-## 기본 정책
+## 현재 기본 정책
 
-자동 광고 6장 생성은 기존 장면 라이브러리를 먼저 사용한다. OpenAI 유료 이미지 생성은 기본적으로 꺼져 있으며 `PAID_IMAGE_GENERATION_ENABLED=true`와 서버의 `OPENAI_API_KEY`가 함께 있을 때만 provider가 활성화된다. 빌드, 테스트, 정적 분석은 이 플래그를 바꾸거나 API를 호출하지 않는다.
+기본 광고 6장 생성은 장면 생성이 아니라 `codex_local`의 단계형 이미지 편집입니다.
 
-```dotenv
-PAID_IMAGE_GENERATION_ENABLED=false
-OPENAI_IMAGE_MODEL=gpt-image-2
-OPENAI_API_KEY=
+```text
+무작위 ZIP 레퍼런스
+→ 레퍼런스 재현
+→ URL 상품만 교체
+→ ProductTruth 문구만 교체
+→ 레퍼런스·상품·문구 AI QA
 ```
 
-## 인터페이스
+설치된 Codex CLI와 현재 ChatGPT 로그인을 사용하며 자식 프로세스에서 `OPENAI_API_KEY`를 제거합니다. 로컬 Codex 실패를 유료 API나 배경 라이브러리로 자동 전환하지 않습니다.
 
-`SceneGenerationProvider`는 다음 계약을 가진다.
+기본값:
 
-- `isConfigured()`: 키와 비용 게이트를 함께 확인한다.
-- `supports(feature)`: `scene`, `reference-image`, `custom-square` 지원 여부를 반환한다.
-- `generateScene(input)`: 제품과 글자가 없는 불투명 장면 plate를 만든다.
-- `generateReferenceImage(input)`: 명시적인 참조 이미지가 있을 때 edit 흐름을 사용한다.
+```dotenv
+ADATLAS_CODEX_MODEL=gpt-5.6-sol
+ADATLAS_CODEX_IMAGE_REASONING=low
+ADATLAS_CREATIVE_CONCURRENCY=3
+ADATLAS_AUTO_REVISION_LIMIT=1
+ADATLAS_CODEX_IMAGE_TIMEOUT_MS=720000
+ADATLAS_CODEX_VALIDATION_TIMEOUT_MS=150000
+ADATLAS_PAID_API_EXPLICIT_ENABLED=false
+```
 
-OpenAI, Gemini, Mock provider가 같은 인터페이스를 구현한다. 자동 생성은 장면 라이브러리가 비어 있거나 부적합하고 비용 게이트가 켜진 경우에만 생성 provider로 확장할 수 있다.
+## Native provider 계약
 
-## OpenAI 구성
+`CreativeGenerationProvider`는 현재 기본 경로에서 다음 계약을 가집니다.
 
-OpenAI 공식 문서 기준 `gpt-image-2`는 Image API의 generation/edit endpoint를 지원하며 임의 해상도 조건 안에서 1200×1200을 요청할 수 있다. 공식 가이드는 JPEG/WebP 출력과 압축 옵션도 설명한다. AdAtlas는 provider 결과를 그대로 납품하지 않고 sharp로 1200×1200 재구성, WebP 압축, 800KB 제한, 재디코딩 QA를 수행한다.
+- `generate(input)`: `structure-recreation`, `product-replacement`, `copy-replacement`, `qa-repair` 중 한 단계의 완성 래스터를 저장
+- `validate(input)`: 최종 광고, 선택 ZIP 레퍼런스, URL 상품 원본을 비교하고 구조 충실도·상품 동일성·문구 정확성을 JSON으로 반환
+- 각 단계의 `sourceImagePath`는 첫 번째 편집 소스
+- `productReferencePaths`는 URL 상세페이지에서 검증한 상품 이미지
+- `adReferencePath`는 작업 생성 시 무작위 선택해 고정한 ZIP 광고
 
-- [GPT Image 2 모델 문서](https://developers.openai.com/api/docs/models/gpt-image-2)
-- [OpenAI 이미지 생성 가이드](https://developers.openai.com/api/docs/guides/image-generation)
+각 결과는 독립된 일회성 실행을 사용하며 결과·prompt version·시간·오류·중간 경로를 GenerationJob에 남깁니다.
 
-`gpt-image-2` reference edit에서는 provider 기본 high-fidelity 처리를 사용하며 별도 `input_fidelity`를 보내지 않는다. 모델은 환경변수로 교체할 수 있지만 사용자가 요청한 `gpt-image-2`를 기본값으로 유지한다.
+## 유료 OpenAI provider
 
-## 비용·재시도
+`openai_api`는 다음 조건이 모두 충족된 작업에서만 사용할 수 있습니다.
 
-기본 동시성은 2, 최대 3이다. 각 결과는 독립적으로 실패하며 생성 결과·모델·prompt version·시간·오류를 job JSON에 남긴다. 장면 생성 실패 시 mock/라이브러리 fallback을 사용하고 완성된 카드 전체를 잃지 않는다.
+- 사용자가 해당 작업에서 유료 API를 명시 선택
+- 서버의 `ADATLAS_PAID_API_EXPLICIT_ENABLED=true`
+- 서버에 `OPENAI_API_KEY` 존재
+- 승인 시각과 scope가 현재 native 작업에 유효
+
+키나 과거 환경변수만으로 유료 이미지 생성을 열지 않습니다. 빌드, 테스트, 정적 분석은 API를 호출하지 않습니다.
+
+## 레거시 SceneGenerationProvider
+
+`SceneGenerationProvider`, `generateScene`, 배경 라이브러리, ComfyUI와 text-free plate는 레거시 장면/배경 관리 기능용입니다. `/create-product`의 기본 ZIP 레퍼런스 광고 6장 경로에서는 호출하지 않습니다.
+
+관련 환경변수 `PAID_IMAGE_GENERATION_ENABLED`, `ADATLAS_IMAGE_GENERATION_ENABLED`, `ADATLAS_MAX_SCENE_CANDIDATES`, `LOCAL_IMAGE_PROVIDER`, `COMFYUI_*`도 레거시 또는 별도 도구용입니다.
+
+## 출력과 재시도
+
+- 한 작업에서 최대 3장을 병렬 편집
+- 개별 자동 QA 수정 최대 1회
+- 실패한 카드만 같은 선택 레퍼런스로 재시도
+- 다른 성공 카드는 유지
+- 최종 1200×1200 JPEG, 800KB 이하
+- 저장 후 sharp 재디코딩 검증

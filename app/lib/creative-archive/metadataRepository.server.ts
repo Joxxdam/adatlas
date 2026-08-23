@@ -73,11 +73,33 @@ export function createCreativeArchiveMetadataRepository(options: { dataDirectory
               : current?.savedAsReference || false,
           tags: input.tags === undefined ? current?.tags || [] : cleanTags(input.tags),
           note: input.note === undefined ? current?.note || "" : cleanText(input.note, 500),
+          ...(current?.deletedAt ? { deletedAt: current.deletedAt } : {}),
           updatedAt: new Date().toISOString(),
         };
         store.entries[entryId] = metadata;
         await writeStore(store);
         return metadata;
+      });
+    },
+
+    async hide(entryIds: string[]) {
+      return locked(async () => {
+        const store = await readStore();
+        const deletedAt = new Date().toISOString();
+        const ids = Array.from(new Set(entryIds.map((id) => cleanText(id, 260)).filter(Boolean)));
+        for (const entryId of ids) {
+          const current = store.entries[entryId];
+          store.entries[entryId] = {
+            entryId,
+            savedAsReference: false,
+            tags: current?.tags || [],
+            note: current?.note || "",
+            deletedAt,
+            updatedAt: deletedAt,
+          };
+        }
+        await writeStore(store);
+        return ids;
       });
     },
   };

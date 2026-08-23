@@ -7,7 +7,10 @@ import sharp from "sharp";
 
 import { findBannedCreativePhrases, hasBannedCreativePhrase, looksLikeGenericOrRepetitiveCopy, repairBannedCreativeSentence } from "../app/lib/creative-generation/bannedCreativePhrases.ts";
 import { resolveFastCreativeRuntime } from "../app/lib/creative-generation/fastCreativeRuntime.ts";
-import { buildNativeFinalCreativePrompt } from "../app/lib/creative-generation/nativeCreativePrompt.ts";
+import { createAsyncConcurrencyGate, resolveCodexCreativeParallelLimit } from "../app/lib/creative-generation/asyncConcurrencyGate.ts";
+import { buildNativeFinalCreativePrompt, buildNativeStagePrompt, buildNativeValidationPrompt } from "../app/lib/creative-generation/nativeCreativePrompt.ts";
+import { normalizeNativeCreativeValidation } from "../app/lib/creative-generation/nativeCreativeValidation.ts";
+import { pickCategoryPreferredItems, pickUniqueRandomItems } from "../app/lib/creative-generation/referenceSelection.ts";
 import { optimizeNativeFinalImage, selectNativeReferenceSources } from "../app/lib/creative-generation/nativeCreativeStorage.server.ts";
 import { buildCreativePlanFingerprint } from "../app/lib/creative-generation/creativePlanCache.server.ts";
 import { performanceTemplateRegistry, selectPerformanceTemplates, unusedPerformanceTemplates } from "../app/lib/creative-generation/performanceTemplateRegistry.ts";
@@ -18,6 +21,7 @@ import { validateAdaptiveNativeCreative } from "../app/lib/creative-generation/n
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "../app/lib/creative-generation/referenceCreativeGrammar.ts";
 import { normalizePlannerScoreValues, recomputeHookTotal, selectQualityDiverseHooks } from "../app/lib/creative-generation/hookQuality.ts";
 import { cleanProductTitle } from "../app/lib/creative-generation/productTruth.ts";
+import { hasOrphanedRunningResult, isServerRunnableGenerationJob, resumeGenerationJob } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 import { isPaidImageGenerationEnabled } from "../app/lib/image-generation/SceneGenerationProvider.ts";
 import { hasExplicitPaidApiAuthorization } from "../app/lib/creative-generation/types.ts";
 
@@ -33,9 +37,91 @@ const grammars = ["PRICE_VALUE","SEASON_URGENCY","FEATURE_EVIDENCE","SENSORY_PRO
 const hooks = ["price-value","scarcity-urgency","feature-usp","sensory-experience","usage-occasion","problem-solution"].map((primaryTag,index)=>({ id:`h${index}`,blueprintId:"product-hero",hookType:primaryTag,title:`후킹 ${index+1}`,hookCode:`H0${index+1}`,primaryTag,headline:`후킹 ${index+1}`,body:`설명 ${index+1}`,proof:"",offer:index===0?"12,000원":"",cta:"상품 보기",audience:product.targetCustomer,factIds:["benefit"],numericTokens:[],hypothesis:`가설 ${index+1}`,confidence:"high",creativeGrammarId:grammars[index],creativeBrief:{sceneDescription:`장면 ${index+1}`,sceneType:`scene-${index+1}`,heroScene:`장면 ${index+1}`},sceneIntent:`장면 ${index+1}` }));
 const results = hooks.map((hookPlan,index)=>({ id:`result-${index+1}`,order:index+1,blueprintId:"product-hero",blueprintLabel:"제품",status:"pending",hookPlan,attempts:0,scenePlan:{sceneAsset:{scene:`장면 ${index+1}`}} }));
 
+test("서버 러너가 사라진 running 결과는 중단 작업으로 감지하고 pending으로 복구한다", () => {
+  const runningResults=results.map((result,index)=>index===2?{...result,status:"running",startedAt:"2026-08-22T00:00:00.000Z"}:result);
+  const job={
+    status:"running",
+    startedAt:"2026-08-22T00:00:00.000Z",
+    updatedAt:"2026-08-22T00:01:00.000Z",
+    results:runningResults,
+  };
+
+  assert.equal(hasOrphanedRunningResult(job,false),true);
+  assert.equal(hasOrphanedRunningResult(job,true),false);
+
+  const resumed=resumeGenerationJob(job,false,"2026-08-22T00:02:00.000Z");
+  assert.equal(resumed.status,"running");
+  assert.equal(resumed.results[2].status,"pending");
+  assert.equal(resumed.results[2].startedAt,undefined);
+});
+
+test("대기 결과만 있는 작업은 유령 running 작업으로 오인하지 않는다", () => {
+  const job={status:"running",updatedAt:"2026-08-22T00:01:00.000Z",results};
+  assert.equal(hasOrphanedRunningResult(job,false),false);
+});
+
+test("새 상품군 우선 ZIP 레퍼런스 작업 버전은 서버 러너가 실행한다", () => {
+  assert.equal(isServerRunnableGenerationJob({
+    engine:"codex_local",
+    version:"generation-job-v12-category-reference-edit",
+    results,
+  }),true);
+});
+
+test("개발 서버 핫리로드는 새 실행 콜백을 가진 v4 러너를 사용한다", async () => {
+  const source=await readFile(new URL("../app/lib/creative-generation/jobRunner.server.ts",import.meta.url),"utf8");
+  assert.match(source,/server-runner-v4-quality-throughput/);
+  assert.match(source,/시작 전 v11 작업을 상품군 우선 ZIP 레퍼런스로 재배정/);
+  assert.match(source,/resolveFastCreativeRuntime\(\)\.concurrency/);
+});
+
 test("고속 모드는 동시 3장·자동 수정 최대 1회·그룹 QA off가 기본이다", () => {
   assert.deepEqual(resolveFastCreativeRuntime({}), { enabled:true,concurrency:3,autoRevisionLimit:1,groupQaEnabled:false,plannerReasoning:"medium",imageReasoning:"low",maxCreatives:6 });
   assert.equal(resolveFastCreativeRuntime({ADATLAS_CREATIVE_CONCURRENCY:"9"}).concurrency,3);
+});
+
+test("한 상품은 3장씩 처리하되 여러 작업의 로컬 Codex 실행도 전역 3개를 넘지 않는다", async () => {
+  assert.equal(resolveCodexCreativeParallelLimit({}),3);
+  assert.equal(resolveCodexCreativeParallelLimit({ADATLAS_CODEX_MAX_PARALLEL_RUNS:"9"}),3);
+  const gate=createAsyncConcurrencyGate(3);
+  let active=0;
+  let maximum=0;
+  let release;
+  const blocker=new Promise((resolve)=>{ release=resolve; });
+  const tasks=Array.from({length:6},()=>gate.run(async()=>{
+    active+=1;
+    maximum=Math.max(maximum,active);
+    await blocker;
+    active-=1;
+  }));
+  await new Promise((resolve)=>setImmediate(resolve));
+  assert.equal(maximum,3);
+  assert.equal(gate.activeCount(),3);
+  assert.equal(gate.pendingCount(),3);
+  release();
+  await Promise.all(tasks);
+});
+
+test("QA는 10점 척도를 100점으로 정규화하고 로컬 검증된 JPEG 때문에 재생성하지 않는다", () => {
+  const validation=normalizeNativeCreativeValidation({
+    hookAlignment:9,productIdentity:9,factualAccuracy:10,koreanTextAccuracy:10,
+    readability:9,composition:9,diversity:8,commercialQuality:9,exportCompliance:0,
+    productVisibility:9,humanNaturalness:9,categoryFit:9,foodAppetiteAppeal:9,
+    sensoryExpression:9,mobileReadability:9,observedKoreanText:[],
+    failures:["1200×1200 JPEG 및 800KB 이하인지 확인할 수 없습니다."],
+    recommendation:"revise",checkedAt:new Date(0).toISOString(),
+  },{category:"general",exportComplianceVerified:true});
+  assert.equal(validation.productIdentity,90);
+  assert.equal(validation.exportCompliance,100);
+  assert.equal(validation.failures.length,0);
+  assert.equal(validation.recommendation,"approve");
+});
+
+test("레퍼런스 교체형 QA는 별도 장면을 강요하지 않고 실제 JPEG 규격을 신뢰한다", () => {
+  const prompt=buildNativeValidationPrompt({productTruth:truth},{hookPlan:hooks[0]});
+  assert.doesNotMatch(prompt,/Intended scene:/);
+  assert.match(prompt,/reference-driven replacement workflow/);
+  assert.match(prompt,/exportCompliance to 100/);
 });
 
 test("키나 기존 이미지 플래그만으로 유료 이미지 생성이 열리지 않는다", () => {
@@ -114,6 +200,103 @@ test("AI 프롬프트는 원본 상품·정확한 한글·검증된 가격을 �
   assert.match(prompt,/CTA: 상품 보기/);
   assert.match(prompt,/No template renderer, cutout overlay, SVG text layer, canvas text layer or post-render copy panel/);
   assert.doesNotMatch(prompt,/text-free square advertising scene plate|No product package/);
+});
+
+test("native imagegen은 레퍼런스 구조·상품 교체·문구 교체·QA 수정을 분리한 4단계를 사용한다", () => {
+  const job={productTruth:truth,creativePlan:{categoryCreativeProfile:{category:"personal_care"}},results};
+  const structure=buildNativeStagePrompt("structure-recreation",job,results[0],"/tmp/01-structure.png");
+  const productReplacement=buildNativeStagePrompt("product-replacement",job,results[0],"/tmp/02-product.png");
+  const copyReplacement=buildNativeStagePrompt("copy-replacement",job,results[0],"/tmp/03-copy.png");
+  const qaRepair=buildNativeStagePrompt("qa-repair",job,results[0],"/tmp/04-qa.png","가격 표기를 다시 확인하세요.");
+
+  assert.match(structure,/STAGE 1 OF 4/);
+  assert.match(structure,/curated high-quality advertisement reference/);
+  assert.match(structure,/very high visual fidelity/);
+  assert.match(structure,/Keep the source product and source copy temporarily/);
+  assert.doesNotMatch(structure,/neutral proxy product forms/);
+  assert.match(productReplacement,/STAGE 2 OF 4/);
+  assert.match(productReplacement,/authoritative product-page images/);
+  assert.match(productReplacement,/Change ONLY the source product instances/);
+  assert.match(productReplacement,/non-product region as locked pixels/);
+  assert.match(productReplacement,/Preserve exact package geometry/);
+  assert.match(copyReplacement,/STAGE 3 OF 4/);
+  assert.match(copyReplacement,/Change ONLY the source advertisement's copy/);
+  assert.match(copyReplacement,/Never regenerate, deform, recolor, move or relabel the target product/);
+  assert.match(copyReplacement,/메인 후킹: 후킹 1/);
+  assert.match(copyReplacement,/가격·혜택: 12,000원/);
+  assert.match(copyReplacement,/There will be no local text overlay/);
+  assert.match(qaRepair,/STAGE 4 OF 4/);
+  assert.match(qaRepair,/product count/);
+  assert.match(qaRepair,/exact Korean copy/);
+  assert.match(qaRepair,/가격 표기를 다시 확인하세요/);
+});
+
+test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로 등록한다", async () => {
+  const manifest=JSON.parse(await readFile(new URL("../data/native-creative-reference-library.json",import.meta.url),"utf8"));
+  const categorySource=await readFile(new URL("../app/lib/creative-generation/referenceCreativeLibrary.server.ts",import.meta.url),"utf8");
+  assert.ok(manifest.items.length>=6);
+  assert.ok(new Set(manifest.items.map((item)=>item.layoutFamily)).size>=1);
+  assert.ok(manifest.items.every((item)=>item.publicPath.startsWith("/creative-references/")));
+  const categoryCounts=manifest.items.reduce((counts,item)=>({...counts,[item.categoryGroup]:(counts[item.categoryGroup]||0)+1}),{});
+  assert.equal(Object.values(categoryCounts).reduce((sum,count)=>sum+count,0),manifest.items.length);
+  assert.ok((categoryCounts.beauty||0)>=6);
+  assert.ok((categoryCounts.food||0)>=6);
+  assert.ok(manifest.items.every((item)=>["fashion","food","beauty"].includes(item.categoryGroup)));
+  assert.match(manifest.selectionPolicy,/패션·식품·화장품 세 그룹/);
+  assert.match(manifest.selectionPolicy,/건강·웰니스와 퍼스널케어는 화장품에 포함/);
+  assert.match(manifest.selectionPolicy,/레퍼런스 관리 화면에 현재 등록된/);
+  assert.match(manifest.selectionPolicy,/삭제된 항목은 즉시 선택 대상에서 제외/);
+  assert.match(manifest.usagePolicy,/URL 상품과 ProductTruth 문구로 단계별 교체/);
+  assert.match(categorySource,/category === "fashion"\) return "fashion"/);
+  assert.match(categorySource,/return "beauty";/);
+  assert.match(categorySource,/"health-wellness" \|\| value === "general"\) return "beauty"/);
+  assert.match(categorySource,/categoryGroup === "fashion"[\s\S]*categoryGroup === "beauty"/);
+  assert.match(categorySource,/readNativeReferenceManifestSync/);
+});
+
+test("ZIP 전체 풀에서 무작위 6장을 중복 없이 선택한다", () => {
+  const source=Array.from({length:113},(_,index)=>`reference-${index+1}`);
+  const selected=pickUniqueRandomItems(source,6,()=>0);
+  assert.equal(selected.length,6);
+  assert.equal(new Set(selected).size,6);
+  assert.ok(selected.every((item)=>source.includes(item)));
+});
+
+test("패션·식품·화장품은 세 개의 넓은 상품군 안에서 6장을 무작위 선택한다", () => {
+  const source=[
+    ...Array.from({length:8},(_,index)=>({id:`fashion-${index}`,categoryGroup:"fashion"})),
+    ...Array.from({length:8},(_,index)=>({id:`food-${index}`,categoryGroup:"food"})),
+    ...Array.from({length:8},(_,index)=>({id:`beauty-${index}`,categoryGroup:"beauty"})),
+  ];
+  const fashion=pickCategoryPreferredItems(source,6,"fashion",()=>0);
+  const food=pickCategoryPreferredItems(source,6,"food",()=>0);
+  const beauty=pickCategoryPreferredItems(source,6,"beauty",()=>0);
+  assert.equal(fashion.length,6);
+  assert.ok(fashion.every((item)=>item.categoryGroup==="fashion"));
+  assert.equal(food.length,6);
+  assert.ok(food.every((item)=>item.categoryGroup==="food"));
+  assert.equal(beauty.length,6);
+  assert.ok(beauty.every((item)=>item.categoryGroup==="beauty"));
+});
+
+test("같은 상품군 레퍼런스가 부족할 때만 다른 풀에서 보충한다", () => {
+  const source=[
+    {id:"fashion-1",categoryGroup:"fashion"},
+    ...Array.from({length:7},(_,index)=>({id:`food-${index}`,categoryGroup:"food"})),
+  ];
+  const selected=pickCategoryPreferredItems(source,6,"fashion",()=>0);
+  assert.equal(selected[0].categoryGroup,"fashion");
+  assert.equal(selected.filter((item)=>item.categoryGroup==="food").length,5);
+  assert.equal(new Set(selected.map((item)=>item.id)).size,6);
+});
+
+test("새 작업에 배정된 상품군 레퍼런스는 재생성에서도 다시 추첨하지 않는다", async () => {
+  const createSource=await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts",import.meta.url),"utf8");
+  const generationSource=await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts",import.meta.url),"utf8");
+  assert.match(createSource,/selectCategoryNativeAdReferences\(job, job\.results\.length\)/);
+  assert.match(createSource,/adReference: selectedAdReferences\[index\]/);
+  assert.match(generationSource,/initial\.nativeCreative\?\.adReference \|\| selectNativeAdReference/);
+  assert.doesNotMatch(generationSource,/adReference && action !== "regenerate"/);
 });
 
 test("손글씨 효과는 같은 상품·후킹 seed에서 결정적이고 허용 범위 안이다", () => {
@@ -236,6 +419,12 @@ test("native 실행은 AI가 완성 광고 전체를 생성·검수하며 로컬
   assert.match(source,/provider\.generate/);
   assert.match(source,/provider\.validate\(/);
   assert.match(source,/referencePaths:generationReferences/);
+  assert.match(source,/selectNativeAdReference/);
+  assert.match(source,/runStage\("structure-recreation"/);
+  assert.match(source,/runStage\("product-replacement"/);
+  assert.match(source,/runStage\("copy-replacement"/);
+  assert.match(source,/runStage\("qa-repair"/);
+  assert.match(source,/stagePaths:/);
   assert.doesNotMatch(source,/selectGoldenReferences/);
   assert.doesNotMatch(source,/composeAdaptiveNativeCreative|validateAdaptiveNativeCreative|composeLocalPerformanceCreative|localValidation/);
   assert.match(source,/action === "copy-update"/);
@@ -260,8 +449,21 @@ test("문구 수정도 기존 배경·후처리 합성을 재사용하지 않고
   const copyIndex=source.indexOf('action === "copy-update"');
   const providerIndex=source.indexOf("createCreativeGenerationProvider",copyIndex);
   assert.ok(copyIndex>0&&providerIndex>copyIndex);
-  assert.match(source,/action !== "revalidate" \|\| !generatedPath/);
+  assert.match(source,/else if \(action === "copy-update"\)/);
+  assert.match(source,/copyPath = undefined/);
+  assert.match(source,/runStage\("copy-replacement"/);
+  assert.match(source,/if \(action === "revise"\)/);
+  assert.match(source,/04-qa-repair-user/);
   assert.doesNotMatch(source,/backgroundPath\) throw|shouldGenerateBackground|composeAdaptiveNativeCreative/);
+});
+
+test("수동 제작과 아침 자동 제작은 동일한 native 생성 작업 팩토리를 사용한다", async () => {
+  const manual=await readFile(new URL("../app/api/creative-generation/jobs/route.ts",import.meta.url),"utf8");
+  const automatic=await readFile(new URL("../app/lib/auto-production/productionRunner.server.ts",import.meta.url),"utf8");
+  assert.match(manual,/createNativeGenerationJob/);
+  assert.match(automatic,/createNativeGenerationJob/);
+  assert.match(automatic,/engine:\s*"codex_local"/);
+  assert.doesNotMatch(automatic,/openai_api/);
 });
 
 test("로컬 공급자는 영구 H 스레드를 저장하지 않고 reasoning low 설정의 일회성 thread를 쓴다", async () => {
@@ -313,12 +515,23 @@ test("최종 내보내기는 1200x1200 JPEG 800KB 이하로만 저장한다", as
   assert.equal(metadata.width,1200); assert.equal(metadata.height,1200); assert.equal(metadata.format,"jpeg"); assert.ok(result.bytes<800*1024);
 });
 
-test("UI는 3장 병렬·개별 전체 광고 재생성·완성 즉시 표시 흐름을 제공한다", async () => {
+test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전체 ZIP 흐름을 제공한다", async () => {
   const source=await readFile(new URL("../app/components/features/creative-generation/SixCreativeGenerator.tsx",import.meta.url),"utf8");
   assert.match(source,/concurrency: 3/);
   assert.match(source,/수정 문구로 전체 광고 재생성/);
   assert.doesNotMatch(source,/문구만 적용|AI 재생성 없이/);
   assert.match(source,/이 콘텐츠 다시 만들기/);
-  assert.match(source,/다른 콘셉트 더 보기/);
-  assert.match(source,/완성된 카드부터 바로 보여드립니다/);
+  assert.match(source,/generation-job-v12-category-reference-edit/);
+  assert.match(source,/generationStageProgress/);
+  assert.match(source,/장째 광고를 제작 중입니다/);
+  assert.match(source,/현재 진행/);
+  assert.match(source,/simple-generation-steps/);
+  assert.match(source,/완성된 광고는 한 장씩 바로 표시됩니다/);
+  assert.match(source,/\.filter\(\(result\) => Boolean\(result\.imagePath\)\)/);
+  assert.match(source,/생성 .*통과/);
+  assert.match(source,/품질 확인이 필요합니다/);
+  assert.match(source,/6장 완성 후 ZIP 다운로드/);
+  assert.match(source,/6장 ZIP 다운로드/);
+  assert.match(source,/allCreativesReady/);
+  assert.doesNotMatch(source,/상품군 선택 레퍼런스/);
 });

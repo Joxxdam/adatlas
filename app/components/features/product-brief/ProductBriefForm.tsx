@@ -14,16 +14,16 @@ export function ProductBriefForm(props: {
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <div>
-          <span className={styles.sectionStep}>2 · 상품 고유 후킹 만들기</span>
-          <h4>상세페이지에서만 나올 수 있는 후킹 6개</h4>
-          <p>광고 목표를 따로 고르지 않습니다. 상품의 실제 특징·사용 상황·고객 긴장·수치 근거를 분석해 흔한 상품명형 문구를 제외합니다.</p>
+          <span className={styles.sectionStep}>2 · 상품 사실과 광고 문구 확인</span>
+          <h4>URL 상품에 맞는 검증 문구 6개 준비</h4>
+          <p>상품의 실제 특징·사용 상황·고객 긴장·수치 근거를 분석합니다. 이 문구는 ZIP 레퍼런스를 고르는 기준이 아니라 선택된 광고의 기존 문구를 교체하는 데만 사용합니다.</p>
         </div>
       </div>
       <div className={styles.recommendedDirection}>
         <div>
           <span>자동 제작 원칙</span>
-          <strong>상세페이지 근거 → 비정형 후킹 6개 → 서로 다른 AI 광고 6장</strong>
-          <p>질문형·상황형·반전형·감각형·근거형 등 문장 리듬과 전체 장면을 후킹마다 다르게 만듭니다.</p>
+          <strong>상세페이지 근거 → 같은 상품군 ZIP 6장 → 상품만 교체 → 문구만 교체</strong>
+          <p>디자인은 사용자 제공 레퍼런스를 유지하고, 상품과 문구만 단계별로 잠금 편집합니다.</p>
         </div>
         <small>상품 형태·패키지·색상과 확인된 사실은 유지하고, 일반적인 표현이나 확인되지 않은 주장은 사용하지 않습니다.</small>
       </div>

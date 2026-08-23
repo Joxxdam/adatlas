@@ -1,4 +1,4 @@
-# 광고 6장 생성 운영 Runbook
+# ZIP 레퍼런스 광고 6장 생성 운영 Runbook
 
 ## 로컬 실행
 
@@ -7,7 +7,22 @@ npm install
 npm run dev
 ```
 
-`/create-product`에서 상품 URL을 불러온 뒤 `광고 콘텐츠 6장 만들기`를 누른다. 추가 설정은 필요 없다. 사용자가 선택한 광고 이미지가 있으면 그 순서를 최우선으로 사용한다.
+`/create-product`에서 상품 URL을 분석한 뒤 상품 확인 카드의 `이 상품으로 광고 만들기`를 누릅니다. 이 한 번의 클릭으로 생성 확정과 서버 작업 시작이 함께 처리되며 별도의 문구 확인, 배경·템플릿·후킹 유형 선택은 필요하지 않습니다.
+
+기본 UI에는 대기 중인 레퍼런스 카드를 노출하지 않습니다. `현재 n장째 제작 중`, 완료 `x/6`, 1~6 상태칸과 이미 완성된 광고만 표시합니다. 내부 레퍼런스는 `패션 / 식품 / 화장품` 세 그룹만 사용하며 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 같은 작업의 새로고침·복구·개별 재시도에서는 선택을 유지합니다.
+
+## 정상 진행 단계
+
+1. `고품질 광고 레퍼런스 선택 중`
+2. `광고 구조 재현 중`
+3. `실제 상품 교체 중`
+4. `ProductTruth 문구 교체 중`
+5. `로고·가격·한국어 AI 검수 중`
+6. `내보내기` 및 `완료`
+
+기본 동시성은 상품당 3장입니다. 여러 수동·자동 작업이 겹쳐도 로컬 Codex 생성·검수는 전역 3개 슬롯을 공유해 과도한 경쟁으로 품질과 지연이 흔들리지 않게 합니다. QA에는 로컬에서 1200×1200 JPEG·800KB 이하로 실제 변환한 미리보기를 전달하며, 파일 규격을 AI가 추측해 불필요하게 다시 생성하지 않습니다. 대표 상태 문구는 실행 중인 광고 중 가장 앞선 순번을 `n장째 제작 중`으로 표시하고, 동시에 처리 중인 장수도 함께 안내합니다. 하나가 실패해도 나머지 결과는 계속 진행하며 완성된 광고부터 UI에 추가합니다.
+
+작업 상태 영역은 현재 장수, 완료 장수, 단계 진행률을 표시합니다. `pending/running` 작업인데 서버 러너가 없으면 생성 중으로 표시하지 않고 `중단 지점부터 재개`를 안내합니다. 성공·승인 결과가 6/6일 때만 전체 ZIP 버튼이 활성화됩니다.
 
 ## 검증
 
@@ -18,40 +33,64 @@ npm run lint
 npm run build
 ```
 
-빌드와 테스트에서는 `PAID_IMAGE_GENERATION_ENABLED`를 켜지 않는다. 결과 파일은 각 카드의 QA 줄에서 1200×1200, KB, 점수를 확인한다.
+테스트와 빌드는 실제 이미지 생성을 실행하지 않습니다. `npm run lint`의 기존 경고는 별도로 관리하되 오류가 있으면 배포하지 않습니다.
+
+최종 파일은 반드시 1200×1200 JPEG, 800KB 이하이고 저장 후 재디코딩에 성공해야 합니다.
 
 ## 작업 복구
 
-브라우저 sessionStorage에는 마지막 job ID를 저장한다. 동일 상품으로 화면을 다시 열면 `GET /api/creative-generation/jobs/:jobId`로 복구한다. `중단 지점부터 재개`는 실패/취소 카드만 pending으로 되돌리고 성공 이미지는 유지한다.
-
-서버 작업 파일은 `data/creative-generation-jobs/<jobId>.json`이다. 상태는 `pending`, `running`, `partial`, `completed`, `failed`, `cancelled`다.
+- 작업 ID와 상품 URL별 복원 정보는 브라우저 localStorage에 저장합니다.
+- 서버 작업 파일과 AI 중간 결과는 `.data/` 비공개 저장소에 저장합니다.
+- `generation-job-v12-category-reference-edit` 작업을 현재 방식으로 이어 만듭니다.
+- 시작 전 상태의 v11 작업은 상품군 우선 레퍼런스로 다시 배정해 v12로 자동 승격합니다.
+- 이미 편집을 시작한 과거 작업은 기존 레퍼런스와 완료 결과를 유지합니다.
+- 로컬 Node 서버나 컴퓨터가 종료되면 생성은 일시 중단되며 서버 재실행 후 stale 결과부터 복구합니다.
 
 ## 실패 대응
 
-- `실제 상품 이미지가 없습니다`: 상품정보 추출 결과에서 이미지를 선택하거나 업로드한다.
-- `ProductTruth에 없는 수치`: 수정 문구에서 수치를 제거하거나 상품 상세페이지의 구조화된 사실로 먼저 등록한다.
-- `800KB 초과`: renderer가 WebP quality를 단계적으로 낮춘다. 계속 실패하면 배경 디테일과 overlay 수를 줄인다.
-- `디코딩 실패`: 해당 카드만 재생성한다. 다른 성공 결과는 ZIP에 유지된다.
-- `배경 장면 없음`: `data/background-library.json`과 실제 `public/background-library` 파일을 검증한다.
-- `OpenAI provider 비활성`: 정상 기본 상태다. 유료 생성을 의도한 경우에만 두 환경변수를 서버에서 설정한다.
+- `실제 상품 이미지가 없습니다`: URL 추출 결과에서 상세페이지 원본 상품 이미지를 선택하거나 원본을 업로드합니다. 자동 누끼와 과거 광고 배너만으로는 시작하지 않습니다.
+- `고품질 광고 레퍼런스가 부족합니다`: `data/native-creative-reference-library.json`과 `public/creative-references/reference-copy/`가 일치하는지 확인합니다.
+- 일상적인 추가·분류 수정·삭제는 `/admin/references`의 `제작 레퍼런스` 탭에서 수행합니다. 이 화면의 현재 목록이 수동·자동 제작이 공통으로 읽는 유일한 선택 풀입니다.
+- `선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다`: manifest의 `publicPath`와 실제 1200×1200 JPEG 파일을 확인합니다.
+- `ProductTruth에 없는 수치`: 수정 문구에서 수치를 제거하거나 상세페이지 출처가 있는 구조화 사실로 먼저 등록합니다.
+- `AI 광고 레퍼런스 편집이 제한시간을 초과했습니다`: 해당 카드의 `다시 만들기`로 같은 레퍼런스부터 재시도합니다.
+- 상품 동일성 낮음: 상품 교체 단계에서 URL 상품 정면·라벨 이미지를 우선하고, 상품 외 영역을 바꾸지 말라는 피드백으로 개별 수정합니다.
+- 레이아웃 충실도 낮음: 전체 새 콘셉트를 만들지 말고 선택 레퍼런스의 구성·배치·색·타이포 위계를 유지하도록 개별 수정합니다.
+- 한국어·가격 오류: 문구 수정에서 ProductTruth 값을 확인한 뒤 copy-only 단계부터 재생성합니다.
+- `Codex 로컬 사용 불가`: `codex login status`를 확인합니다. 유료 API로 자동 전환하지 않습니다.
 
-## 배경 에셋 권리
+## 레퍼런스 ZIP 갱신
 
-`SceneAsset.license`에 source name, source page, license URL, author를 유지한다. 사용자 업로드·AI 생성·stock 장면을 구분하며 원본 출처가 없는 외부 파일을 자동 수집하지 않는다.
+ZIP을 다시 등록할 때는 안전한 임시 폴더에 압축을 해제한 뒤 기존 스크립트를 사용합니다.
 
-## 로그와 보존
+```bash
+node scripts/import-native-creative-references.mjs /path/to/unzipped-reference-folder /path/to/adatlas
+```
 
-작업 JSON에는 planner version, scene prompt version, provider, 시도 횟수, 시작/완료 시간, duration, 오류와 QA를 보존한다. 런타임 job과 생성 이미지는 Git에 커밋하지 않는다. 장기 운영에서는 만료 정책과 object storage adapter를 추가한다.
+스크립트는 `__MACOSX`, `._*` 파일을 제외하고 JPG/JPEG/PNG/WebP를 1200×1200 JPEG로 정규화해 manifest를 다시 만듭니다. 갱신 후 다음을 확인합니다.
 
-## 소재코드와 성과 매칭 키
+- manifest item 수와 실제 파일 수 일치
+- 모든 ID와 publicPath가 고유함
+- 모든 파일이 1200×1200 JPEG로 디코딩됨
+- `categoryGroup`은 `fashion`, `food`, `beauty` 중 하나이며 현재 ZIP은 식품 48장, 화장품 65장으로 유지됨
+- `selectionPolicy`가 상품군 우선·그룹 내 중복 없는 무작위 선택으로 유지됨
 
-QA를 통과한 최종 이미지에는 `AT-{BRAND}-{PRODUCT}-{HOOK}-{YYMMDD}-{UNIQUE}` 형식의 소재코드를 한 번 발급한다. 소재 원본은 `data/creative-assets/assets.json`에 저장하고, Job 결과에는 표시·복구에 필요한 스냅샷을 함께 저장한다. 두 런타임 JSON은 Git에 커밋하지 않는다.
+입력 레퍼런스는 UI 미리보기를 위해 public 경로에 있으므로 외부 배포 전 사용 권리와 공개 범위를 확인합니다.
 
-- 새 렌더 요청은 `generationRequestKey`로 멱등 처리한다.
-- 문구·이미지·레이아웃 재생성은 새 소재가 되며, 이전 코드를 `parentAssetCode`로 연결하고 `version`을 올린다.
-- 개별/ZIP 다운로드 파일명은 `{assetCode}.{실제 확장자}`를 사용한다.
-- 광고명은 소재코드와 같고, UTM 표기는 `utm_content={assetCode}`다.
-- `extractCreativeAssetCode()`로 광고명·파일명에서 정확한 코드만 찾고, `creativeAssetRepository.matchFromText()`가 exact match만 자동 확정한다.
-- `/api/creative-assets`는 코드·브랜드·상품·소구점·기간 검색을 제공한다.
+## 소재코드와 다운로드
 
-현재 JSON repository의 동시성 잠금은 단일 Node 프로세스를 기준으로 한다. 여러 서버 인스턴스로 확장할 때는 같은 repository 인터페이스를 DB의 unique index(`assetCode`, `generationRequestKey`)와 transaction으로 교체한다.
+- QA를 통과한 결과에 소재코드를 한 번 발급합니다.
+- 새 렌더 요청은 `generationRequestKey`로 멱등 처리합니다.
+- 개별/ZIP 다운로드 파일명은 `{assetCode}.{실제 확장자}`를 사용합니다.
+- 광고명은 소재코드와 같고 UTM은 `utm_content={assetCode}`입니다.
+- 성공·승인 결과만 검수 완료 ZIP에 포함하며 한 장의 실패가 다른 결과 다운로드를 막지 않습니다.
+
+## 운영상 금지 사항
+
+- ZIP 레퍼런스는 상품 카테고리 그룹을 우선합니다. HookPlan이나 가격형·후기형 카피 분류로는 제한하지 않습니다.
+- 상품 교체와 문구 교체를 하나의 거대한 프롬프트로 합치지 않습니다.
+- 상품 교체 단계에서 문구·배경·레이아웃을 바꾸지 않습니다.
+- 문구 교체 단계에서 상품·배경·레이아웃을 다시 만들지 않습니다.
+- 원본 광고의 가격·혜택·후기·로고를 최종 결과에 남기지 않습니다.
+- 기존 배경 라이브러리나 text-free 장면 생성으로 자동 fallback하지 않습니다.
+- Codex 실패를 유료 OpenAI API로 자동 전환하지 않습니다.

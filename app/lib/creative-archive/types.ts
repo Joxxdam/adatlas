@@ -8,6 +8,7 @@ export type CreativeArchiveMetadata = {
   savedAsReference: boolean;
   tags: string[];
   note: string;
+  deletedAt?: string;
   updatedAt: string;
 };
 

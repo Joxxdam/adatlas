@@ -1,6 +1,7 @@
 import "server-only";
 import path from "node:path";
-import { mkdir, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
@@ -19,6 +20,9 @@ import {
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
 import { validateCopyAgainstTruth } from "./productTruth";
+import { selectNativeAdReference } from "./referenceCreativeLibrary.server";
+import { createIdentityLockedProductComposite } from "./protectedProductCompositor.server";
+import { identityLockedProductPlacements, resolveProductRenderingPolicy } from "./productRenderingPolicy";
 
 type NativeResultInput = {
   jobId: string;
@@ -30,7 +34,7 @@ type NativeResultInput = {
 };
 
 const resultLocks = new Map<string, Promise<void>>();
-const referenceCacheKey = Symbol.for("daywiz.native-creative-reference-cache-v4-product-only");
+const referenceCacheKey = Symbol.for("daywiz.native-creative-reference-cache-v5-staged-reference-edit");
 const referenceGlobal = globalThis as typeof globalThis & { [referenceCacheKey]?: Map<string, Promise<string[]>> };
 const referenceCache = referenceGlobal[referenceCacheKey] ?? new Map<string, Promise<string[]>>();
 referenceGlobal[referenceCacheKey] = referenceCache;
@@ -139,6 +143,32 @@ async function handlePreference(input: NativeResultInput, job: GenerationJob) {
   return { job:updated, result:updated.results.find((result) => result.id === input.resultId)! };
 }
 
+async function validStageFile(file: string | undefined) {
+  if (!file || !existsSync(file)) return false;
+  try {
+    await validateGeneratedFinal(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function updateNativeProgress(
+  job: GenerationJob,
+  resultId: string,
+  generationStage: NonNullable<GenerationJob["results"][number]["generationStage"]>,
+  mutate?: (result: GenerationJob["results"][number]) => Partial<GenerationJob["results"][number]>
+) {
+  return creativeGenerationJobStore.update(job.id, (active) => ({
+    ...active,
+    results: active.results.map((result) => result.id === resultId ? {
+      ...result,
+      generationStage,
+      ...(mutate?.(result) || {}),
+    } : result),
+  }));
+}
+
 async function runNativeResultGeneration(input: NativeResultInput) {
   const started = Date.now();
   let referenceMs = 0;
@@ -146,10 +176,12 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const compositionMs = 0;
   let validationMs = 0;
   let exportMs = 0;
-  let job = await creativeGenerationJobStore.get(input.jobId);
-  if (!job) throw new Error("작업을 찾지 못했습니다.");
-  let initial = job.results.find((result) => result.id === input.resultId);
-  if (!initial) throw new Error("결과 항목을 찾지 못했습니다.");
+  const loadedJob = await creativeGenerationJobStore.get(input.jobId);
+  if (!loadedJob) throw new Error("작업을 찾지 못했습니다.");
+  let job: GenerationJob = loadedJob;
+  const loadedResult = job.results.find((result) => result.id === input.resultId);
+  if (!loadedResult) throw new Error("결과 항목을 찾지 못했습니다.");
+  let initial: GenerationJob["results"][number] = loadedResult;
   const action = input.action || "generate";
   if (["approve","exclude","feedback","golden-reference"].includes(action)) return handlePreference(input,job);
   if (job.status === "cancelled") throw new Error("취소된 작업입니다.");
@@ -160,12 +192,35 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     initial = job.results.find((result) => result.id === input.resultId)!;
   }
 
+  const isRevision = ["regenerate","revise","copy-update"].includes(action);
+  const previousArtifact = initial.nativeCreative;
+  const revisionCount = isRevision ? (previousArtifact?.revisionCount || 0) + 1 : previousArtifact?.revisionCount || 0;
   job = await creativeGenerationJobStore.update(job.id, (active) => ({
     ...active,
     status:"running",
     startedAt:active.startedAt || new Date().toISOString(),
     results:active.results.map((result) => result.id === input.resultId ? {
-      ...result,status:"running",generationStage:"reference-preparing",attempts:result.attempts + 1,error:undefined,startedAt:new Date().toISOString(),
+      ...result,
+      status:"running",
+      generationStage:"reference-preparing",
+      attempts:result.attempts + 1,
+      error:undefined,
+      startedAt:new Date().toISOString(),
+      nativeCreative:{
+        engine:active.engine || "codex_local",
+        adReference:result.nativeCreative?.adReference,
+        stagePaths:action === "regenerate" ? undefined : result.nativeCreative?.stagePaths,
+        referencePaths:result.nativeCreative?.referencePaths || [],
+        backgroundPath:undefined,
+        originalPath:result.nativeCreative?.originalPath,
+        revisionPaths:result.nativeCreative?.revisionPaths || [],
+        finalPath:result.nativeCreative?.finalPath,
+        promptVersion:NATIVE_FINAL_PROMPT_VERSION,
+        revisionCount,
+        validation:result.nativeCreative?.validation,
+        timing:result.nativeCreative?.timing,
+        export:result.nativeCreative?.export,
+      },
     } : result),
   }));
 
@@ -176,6 +231,13 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     ? [references[1 + ((Math.max(1,initial.order)-1) % (references.length-1))], ...references.slice(1).filter((file)=>file !== references[1 + ((Math.max(1,initial.order)-1) % (references.length-1))])].slice(0,4)
     : [];
   const generationReferences = [references[0],...supportingReferences].filter(Boolean);
+  initial = job.results.find((result) => result.id === input.resultId)!;
+  // 새 작업 생성 시 무작위로 배정한 레퍼런스는 재시도·재생성에서도 고정한다.
+  // 과거 작업에 배정값이 없을 때만 결정적 fallback을 사용한다.
+  const selectedAdReference = initial.nativeCreative?.adReference || selectNativeAdReference(job, initial);
+  if (!await validStageFile(selectedAdReference.path)) {
+    throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
+  }
   referenceMs = Date.now() - referenceStarted;
   const directory = nativeHookDirectory(job.advertiserId || "unknown-advertiser",job.id,initial.hookPlan.hookCode);
   await mkdir(directory,{recursive:true});
@@ -183,65 +245,169 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const provider = createCreativeGenerationProvider(job.engine || "codex_local", {
     explicitPaidApiAuthorization: hasExplicitPaidApiAuthorization(job.paidApiAuthorization),
   });
-  let generatedPath = action === "revalidate"
-    ? initial.nativeCreative?.originalPath || initial.nativeCreative?.finalPath
-    : undefined;
+  job = await updateNativeProgress(job,input.resultId,"reference-selecting",(result)=>({
+    nativeCreative:{
+      ...(result.nativeCreative!),
+      adReference:selectedAdReference,
+      referencePaths:generationReferences,
+    },
+  }));
+
+  const active = job.results.find((result)=>result.id===input.resultId)!;
+  const productRenderingPolicy = resolveProductRenderingPolicy(job);
+  const identityLockedPlacements = identityLockedProductPlacements(active);
+  async function restoreIdentityLockedProduct(file: string) {
+    if (productRenderingPolicy !== "identity-locked-beauty") return file;
+    const composited = await createIdentityLockedProductComposite({
+      backgroundPath:file,
+      productImagePath:generationReferences[0],
+      placements:identityLockedPlacements,
+    });
+    await writeFile(file,composited.buffer);
+    return file;
+  }
+  const existingStages = active.nativeCreative?.stagePaths || {};
+  let structurePath = existingStages.structurePath;
+  let productPath = existingStages.productPath;
+  let copyPath = existingStages.copyPath;
+  let qaRepairPaths = [...(existingStages.qaRepairPaths || [])];
+  if (action === "regenerate") {
+    structurePath = undefined;
+    productPath = undefined;
+    copyPath = undefined;
+    qaRepairPaths = [];
+  } else if (action === "copy-update") {
+    copyPath = undefined;
+    qaRepairPaths = [];
+  }
+
+  async function runStage(
+    stage: "structure-recreation"|"product-replacement"|"copy-replacement"|"qa-repair",
+    generationStage: "structure-recreating"|"product-replacing"|"copy-replacing"|"qa-repairing",
+    outputPath: string,
+    sourceImagePath: string,
+    feedback?: string
+  ) {
+    job = await updateNativeProgress(job,input.resultId,generationStage);
+    const generationStarted = Date.now();
+    await provider.generate({
+      job,
+      result:job.results.find((result)=>result.id===input.resultId)!,
+      outputPath,
+      referencePaths:generationReferences,
+      productReferencePaths:generationReferences,
+      adReferencePath:selectedAdReference.path,
+      sourceImagePath,
+      feedback,
+      stage,
+    });
+    generationMs += Date.now() - generationStarted;
+    await validateGeneratedFinal(outputPath);
+    return outputPath;
+  }
+
+  let generatedPath: string | undefined;
   let validation: NativeCreativeValidation | undefined;
-  let lastError: unknown;
-  let revisionFeedback = input.feedback;
+  let validatedExport: Awaited<ReturnType<typeof optimizeNativeFinalImage>> | undefined;
+  let validatedExportSource: string | undefined;
+
+  if (action === "revalidate") {
+    generatedPath = active.nativeCreative?.finalPath || copyPath || active.nativeCreative?.originalPath;
+    if (!await validStageFile(generatedPath)) throw new Error("다시 검수할 AI 완성 광고가 없습니다.");
+  } else {
+    if (!await validStageFile(structurePath)) {
+      structurePath = path.join(directory,"01-structure.png");
+      await runStage("structure-recreation","structure-recreating",structurePath,selectedAdReference.path,input.feedback);
+      job = await updateNativeProgress(job,input.resultId,"structure-recreating",(result)=>({
+        nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath}},
+      }));
+    }
+    if (!structurePath) throw new Error("광고 구조 재현 결과가 없습니다.");
+
+    if (!await validStageFile(productPath)) {
+      productPath = path.join(directory,"02-product.png");
+      await runStage("product-replacement","product-replacing",productPath,structurePath,input.feedback);
+      job = await updateNativeProgress(job,input.resultId,"product-replacing",(result)=>({
+        nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath,productPath}},
+      }));
+    }
+    if (!productPath) throw new Error("실제 상품 교체 결과가 없습니다.");
+
+    if (!await validStageFile(copyPath)) {
+      copyPath = path.join(directory,"03-copy.png");
+      if (productRenderingPolicy === "identity-locked-beauty") {
+        const copyBasePath = path.join(directory,"03-copy-base.png");
+        await runStage("copy-replacement","copy-replacing",copyBasePath,productPath,input.feedback);
+        const composited = await createIdentityLockedProductComposite({
+          backgroundPath:copyBasePath,
+          productImagePath:generationReferences[0],
+          placements:identityLockedPlacements,
+        });
+        await writeFile(copyPath,composited.buffer);
+        await validateGeneratedFinal(copyPath);
+      } else {
+        await runStage("copy-replacement","copy-replacing",copyPath,productPath,input.feedback);
+      }
+      job = await updateNativeProgress(job,input.resultId,"copy-replacing",(result)=>({
+        nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath,productPath,copyPath,qaRepairPaths}},
+      }));
+    }
+    generatedPath = copyPath;
+  }
+
+  if (!generatedPath) throw new Error("ProductTruth 문구 교체 결과가 없습니다.");
+  await validateGeneratedFinal(generatedPath);
+
+  // 수정 요청은 기존 결과를 재검수하는 데서 끝내지 않고, 사용자의 지시를 반영한
+  // 완성 광고 전체 래스터 편집을 반드시 한 번 수행한다.
+  if (action === "revise") {
+    const repairedPath = path.join(directory,`04-qa-repair-user-${revisionCount}-${qaRepairPaths.length + 1}.png`);
+    await runStage(
+      "qa-repair",
+      "qa-repairing",
+      repairedPath,
+      generatedPath,
+      input.feedback || "사용자 수정 요청을 반영해 상품·로고·가격·한국어를 포함한 광고 전체 래스터를 다시 완성해 주세요."
+    );
+    await restoreIdentityLockedProduct(repairedPath);
+    qaRepairPaths.push(repairedPath);
+    generatedPath = repairedPath;
+    job = await updateNativeProgress(job,input.resultId,"qa-repairing",(result)=>({
+      nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath,productPath,copyPath,qaRepairPaths}},
+    }));
+  }
 
   for (let attempt=0; attempt<=runtime.autoRevisionLimit; attempt += 1) {
+    job = await updateNativeProgress(job,input.resultId,"quality-check");
+    const qaPreviewPath = path.join(directory,`qa-preview-${attempt + 1}.jpg`);
+    const qaExportStarted = Date.now();
+    validatedExport = await optimizeNativeFinalImage(generatedPath,qaPreviewPath);
+    validatedExportSource = generatedPath;
+    exportMs += Date.now() - qaExportStarted;
+    const validationStarted = Date.now();
     try {
-      const shouldGenerate = action !== "revalidate" || !generatedPath;
-      if (shouldGenerate) {
-        job = await creativeGenerationJobStore.update(job.id,(active)=>({
-          ...active,
-          results:active.results.map((result)=>result.id===input.resultId?{...result,generationStage:attempt ? "ai-revising" : "ai-generating"}:result),
-        }));
-        generatedPath = path.join(directory,`ai-final-${Date.now()}-${attempt}.png`);
-        const generationStarted = Date.now();
-        await provider.generate({
-          job,
-          result:job.results.find((result)=>result.id===input.resultId)!,
-          outputPath:generatedPath,
-          referencePaths:generationReferences,
-          sourceImagePath:generationReferences[0],
-          feedback:revisionFeedback,
-        });
-        generationMs += Date.now() - generationStarted;
-      }
-      if (!generatedPath) throw new Error("AI 완성 광고 파일이 없습니다.");
-      await validateGeneratedFinal(generatedPath);
-      job = await creativeGenerationJobStore.update(job.id,(active)=>({
-        ...active,
-        results:active.results.map((result)=>result.id===input.resultId?{...result,generationStage:"quality-check"}:result),
-      }));
-      const validationStarted = Date.now();
-      try {
-        validation = await provider.validate({
-          job,
-          result:job.results.find((result)=>result.id===input.resultId)!,
-          imagePath:generatedPath,
-          referencePaths:generationReferences,
-        });
-      } catch {
-        validation = manualReviewValidation("AI 완성 광고 검수 응답을 받지 못해 사람 검수가 필요합니다.");
-      }
-      validationMs += Date.now() - validationStarted;
-      if (validation.recommendation === "revise" && attempt < runtime.autoRevisionLimit && action !== "revalidate") {
-        revisionFeedback = conciseQaFeedback(validation);
-        continue;
-      }
-      lastError = undefined;
-      break;
-    } catch (error) {
-      lastError = error;
-      if (attempt < runtime.autoRevisionLimit && action !== "revalidate") {
-        revisionFeedback = `The previous complete-ad file was invalid. Regenerate the entire final advertisement from the authoritative product reference. ${input.feedback || ""}`;
-      }
+      validation = await provider.validate({
+        job,
+        result:job.results.find((result)=>result.id===input.resultId)!,
+        imagePath:qaPreviewPath,
+        referencePaths:generationReferences,
+        adReferencePath:selectedAdReference.path,
+        exportComplianceVerified:true,
+      });
+    } catch {
+      validation = manualReviewValidation("AI 완성 광고 검수 응답을 받지 못해 사람 검수가 필요합니다.");
     }
+    validationMs += Date.now() - validationStarted;
+    if (validation.recommendation !== "revise" || action === "revalidate" || attempt >= runtime.autoRevisionLimit) break;
+    const repairedPath = path.join(directory,`04-qa-repair-${attempt + 1}.png`);
+    await runStage("qa-repair","qa-repairing",repairedPath,generatedPath,[input.feedback,conciseQaFeedback(validation)].filter(Boolean).join("\n"));
+    await restoreIdentityLockedProduct(repairedPath);
+    qaRepairPaths.push(repairedPath);
+    generatedPath = repairedPath;
+    job = await updateNativeProgress(job,input.resultId,"qa-repairing",(result)=>({
+      nativeCreative:{...(result.nativeCreative!),stagePaths:{...(result.nativeCreative?.stagePaths || {}),structurePath,productPath,copyPath,qaRepairPaths}},
+    }));
   }
-  if (lastError || !generatedPath) throw lastError instanceof Error ? lastError : new Error("AI 완성 광고 생성에 실패했습니다.");
   validation ||= manualReviewValidation("AI 완성 광고를 수동으로 검수해 주세요.");
 
   const finalFile = path.join(directory,"final.jpg");
@@ -250,8 +416,10 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     results:current.results.map((result)=>result.id===input.resultId?{...result,generationStage:"exporting"}:result),
   }));
   const exportStarted = Date.now();
-  const exported = await optimizeNativeFinalImage(generatedPath,finalFile);
-  exportMs = Date.now() - exportStarted;
+  const exported = validatedExport && validatedExportSource === generatedPath
+    ? (await copyFile(validatedExport.file,finalFile),{...validatedExport,file:finalFile})
+    : await optimizeNativeFinalImage(generatedPath,finalFile);
+  exportMs += Date.now() - exportStarted;
   const publicImage = nativeResultImageUrl(job.id,input.resultId);
   const latest = job.results.find((result)=>result.id===input.resultId)!;
   const assetResult = await createAssetFromGenerationResult({
@@ -260,7 +428,6 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     copy:{headline:latest.hookPlan.headline,body:latest.hookPlan.body,proof:latest.hookPlan.proof,offer:latest.hookPlan.offer},
   });
   const previousOriginal = initial.nativeCreative?.originalPath;
-  const isRevision = ["regenerate","revise","copy-update"].includes(action);
   const reviewRequired = validation.recommendation !== "approve";
   job = await creativeGenerationJobStore.update(job.id,(current)=>({
     ...current,
@@ -274,6 +441,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       creativeAsset:toCreativeAssetSnapshot(assetResult.asset),
       nativeCreative:{
         engine:current.engine || "codex_local",
+        adReference:selectedAdReference,
+        stagePaths:{structurePath,productPath,copyPath,qaRepairPaths},
         referencePaths:generationReferences,
         backgroundPath:undefined,
         originalPath:generatedPath,
@@ -282,7 +451,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
           : result.nativeCreative?.revisionPaths || [],
         finalPath:finalFile,
         promptVersion:NATIVE_FINAL_PROMPT_VERSION,
-        revisionCount:isRevision ? (result.nativeCreative?.revisionCount || 0)+1 : result.nativeCreative?.revisionCount || 0,
+        revisionCount,
         validation,
         timing:{referenceMs,generationMs,compositionMs,validationMs,exportMs,totalMs:Date.now()-started},
         export:{width:exported.width,height:exported.height,fileSizeBytes:exported.bytes,jpegQuality:exported.quality,colorSpace:exported.colorSpace,format:exported.format},

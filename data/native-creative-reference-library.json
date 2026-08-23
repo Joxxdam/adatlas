@@ -1,0 +1,906 @@
+{
+  "version": "native-creative-reference-library-v5-managed",
+  "importedAt": "2026-08-23T05:38:53.931Z",
+  "sourceLabel": "이미지참고복사용.zip을 초기 데이터로 등록한 관리형 제작 레퍼런스",
+  "selectionPolicy": "레퍼런스 관리 화면에 현재 등록된 패션·식품·화장품 세 그룹 중 상품과 같은 풀에서 중복 없이 6장을 무작위 선택하고 작업에 고정한다. 건강·웰니스와 퍼스널케어는 화장품에 포함하며, 삭제된 항목은 즉시 선택 대상에서 제외한다. 같은 그룹이 6장보다 적을 때만 가까운 풀에서 보충하고 패션은 식품 레퍼런스로 보충하지 않는다.",
+  "usagePolicy": "선택한 광고의 디자인을 작업용 마스터로 재현한 뒤 URL 상품과 ProductTruth 문구로 단계별 교체하며, 최종 결과에는 원본 브랜드·상품·문구·가격·로고를 남기지 않는다.",
+  "items": [
+    {
+      "id": "reference-copy-001",
+      "publicPath": "/creative-references/reference-copy/reference-001.jpg",
+      "sourceFile": "1 (1).jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 1
+    },
+    {
+      "id": "reference-copy-002",
+      "publicPath": "/creative-references/reference-copy/reference-002.jpg",
+      "sourceFile": "1.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 2
+    },
+    {
+      "id": "reference-copy-003",
+      "publicPath": "/creative-references/reference-copy/reference-003.jpg",
+      "sourceFile": "2 (1).jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 3
+    },
+    {
+      "id": "reference-copy-004",
+      "publicPath": "/creative-references/reference-copy/reference-004.jpg",
+      "sourceFile": "2.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 4
+    },
+    {
+      "id": "reference-copy-005",
+      "publicPath": "/creative-references/reference-copy/reference-005.jpg",
+      "sourceFile": "2+1 03 (1).jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 5
+    },
+    {
+      "id": "reference-copy-006",
+      "publicPath": "/creative-references/reference-copy/reference-006.jpg",
+      "sourceFile": "3 (1).jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 6
+    },
+    {
+      "id": "reference-copy-007",
+      "publicPath": "/creative-references/reference-copy/reference-007.jpg",
+      "sourceFile": "3.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 7
+    },
+    {
+      "id": "reference-copy-008",
+      "publicPath": "/creative-references/reference-copy/reference-008.jpg",
+      "sourceFile": "4 (1).jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 8
+    },
+    {
+      "id": "reference-copy-009",
+      "publicPath": "/creative-references/reference-copy/reference-009.jpg",
+      "sourceFile": "4.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 9
+    },
+    {
+      "id": "reference-copy-010",
+      "publicPath": "/creative-references/reference-copy/reference-010.jpg",
+      "sourceFile": "5 (1).jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 10
+    },
+    {
+      "id": "reference-copy-011",
+      "publicPath": "/creative-references/reference-copy/reference-011.jpg",
+      "sourceFile": "5.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 11
+    },
+    {
+      "id": "reference-copy-012",
+      "publicPath": "/creative-references/reference-copy/reference-012.jpg",
+      "sourceFile": "6.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 12
+    },
+    {
+      "id": "reference-copy-013",
+      "publicPath": "/creative-references/reference-copy/reference-013.jpg",
+      "sourceFile": "7.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 13
+    },
+    {
+      "id": "reference-copy-014",
+      "publicPath": "/creative-references/reference-copy/reference-014.jpg",
+      "sourceFile": "8.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 14
+    },
+    {
+      "id": "reference-copy-015",
+      "publicPath": "/creative-references/reference-copy/reference-015.jpg",
+      "sourceFile": "9.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 15
+    },
+    {
+      "id": "reference-copy-016",
+      "publicPath": "/creative-references/reference-copy/reference-016.jpg",
+      "sourceFile": "10.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 16
+    },
+    {
+      "id": "reference-copy-017",
+      "publicPath": "/creative-references/reference-copy/reference-017.jpg",
+      "sourceFile": "11.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 17
+    },
+    {
+      "id": "reference-copy-018",
+      "publicPath": "/creative-references/reference-copy/reference-018.jpg",
+      "sourceFile": "12.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 18
+    },
+    {
+      "id": "reference-copy-019",
+      "publicPath": "/creative-references/reference-copy/reference-019.jpg",
+      "sourceFile": "13.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 19
+    },
+    {
+      "id": "reference-copy-020",
+      "publicPath": "/creative-references/reference-copy/reference-020.jpg",
+      "sourceFile": "14.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 20
+    },
+    {
+      "id": "reference-copy-021",
+      "publicPath": "/creative-references/reference-copy/reference-021.jpg",
+      "sourceFile": "15.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 21
+    },
+    {
+      "id": "reference-copy-022",
+      "publicPath": "/creative-references/reference-copy/reference-022.jpg",
+      "sourceFile": "16.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 22
+    },
+    {
+      "id": "reference-copy-023",
+      "publicPath": "/creative-references/reference-copy/reference-023.jpg",
+      "sourceFile": "17.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 23
+    },
+    {
+      "id": "reference-copy-024",
+      "publicPath": "/creative-references/reference-copy/reference-024.jpg",
+      "sourceFile": "18.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 24
+    },
+    {
+      "id": "reference-copy-025",
+      "publicPath": "/creative-references/reference-copy/reference-025.jpg",
+      "sourceFile": "19.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 25
+    },
+    {
+      "id": "reference-copy-026",
+      "publicPath": "/creative-references/reference-copy/reference-026.jpg",
+      "sourceFile": "20.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 26
+    },
+    {
+      "id": "reference-copy-027",
+      "publicPath": "/creative-references/reference-copy/reference-027.jpg",
+      "sourceFile": "21.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 27
+    },
+    {
+      "id": "reference-copy-028",
+      "publicPath": "/creative-references/reference-copy/reference-028.jpg",
+      "sourceFile": "22.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 28
+    },
+    {
+      "id": "reference-copy-029",
+      "publicPath": "/creative-references/reference-copy/reference-029.jpg",
+      "sourceFile": "25.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 29
+    },
+    {
+      "id": "reference-copy-030",
+      "publicPath": "/creative-references/reference-copy/reference-030.jpg",
+      "sourceFile": "26.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 30
+    },
+    {
+      "id": "reference-copy-031",
+      "publicPath": "/creative-references/reference-copy/reference-031.jpg",
+      "sourceFile": "27.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 31
+    },
+    {
+      "id": "reference-copy-032",
+      "publicPath": "/creative-references/reference-copy/reference-032.jpg",
+      "sourceFile": "28.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 32
+    },
+    {
+      "id": "reference-copy-033",
+      "publicPath": "/creative-references/reference-copy/reference-033.jpg",
+      "sourceFile": "29.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 33
+    },
+    {
+      "id": "reference-copy-034",
+      "publicPath": "/creative-references/reference-copy/reference-034.jpg",
+      "sourceFile": "30.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 34
+    },
+    {
+      "id": "reference-copy-036",
+      "publicPath": "/creative-references/reference-copy/reference-036.jpg",
+      "sourceFile": "32.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 36
+    },
+    {
+      "id": "reference-copy-037",
+      "publicPath": "/creative-references/reference-copy/reference-037.jpg",
+      "sourceFile": "34.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 37
+    },
+    {
+      "id": "reference-copy-038",
+      "publicPath": "/creative-references/reference-copy/reference-038.jpg",
+      "sourceFile": "35.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 38
+    },
+    {
+      "id": "reference-copy-039",
+      "publicPath": "/creative-references/reference-copy/reference-039.jpg",
+      "sourceFile": "36.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 39
+    },
+    {
+      "id": "reference-copy-040",
+      "publicPath": "/creative-references/reference-copy/reference-040.jpg",
+      "sourceFile": "37.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 40
+    },
+    {
+      "id": "reference-copy-041",
+      "publicPath": "/creative-references/reference-copy/reference-041.jpg",
+      "sourceFile": "38.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 41
+    },
+    {
+      "id": "reference-copy-042",
+      "publicPath": "/creative-references/reference-copy/reference-042.jpg",
+      "sourceFile": "39.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 42
+    },
+    {
+      "id": "reference-copy-043",
+      "publicPath": "/creative-references/reference-copy/reference-043.jpg",
+      "sourceFile": "40.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 43
+    },
+    {
+      "id": "reference-copy-044",
+      "publicPath": "/creative-references/reference-copy/reference-044.jpg",
+      "sourceFile": "41.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 44
+    },
+    {
+      "id": "reference-copy-045",
+      "publicPath": "/creative-references/reference-copy/reference-045.jpg",
+      "sourceFile": "42.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 45
+    },
+    {
+      "id": "reference-copy-046",
+      "publicPath": "/creative-references/reference-copy/reference-046.jpg",
+      "sourceFile": "43.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 46
+    },
+    {
+      "id": "reference-copy-047",
+      "publicPath": "/creative-references/reference-copy/reference-047.jpg",
+      "sourceFile": "44.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 47
+    },
+    {
+      "id": "reference-copy-048",
+      "publicPath": "/creative-references/reference-copy/reference-048.jpg",
+      "sourceFile": "45.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 48
+    },
+    {
+      "id": "reference-copy-049",
+      "publicPath": "/creative-references/reference-copy/reference-049.jpg",
+      "sourceFile": "46.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 49
+    },
+    {
+      "id": "reference-copy-050",
+      "publicPath": "/creative-references/reference-copy/reference-050.jpg",
+      "sourceFile": "47.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 50
+    },
+    {
+      "id": "reference-copy-051",
+      "publicPath": "/creative-references/reference-copy/reference-051.jpg",
+      "sourceFile": "48.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 51
+    },
+    {
+      "id": "reference-copy-052",
+      "publicPath": "/creative-references/reference-copy/reference-052.jpg",
+      "sourceFile": "49.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 52
+    },
+    {
+      "id": "reference-copy-053",
+      "publicPath": "/creative-references/reference-copy/reference-053.jpg",
+      "sourceFile": "50.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 53
+    },
+    {
+      "id": "reference-copy-054",
+      "publicPath": "/creative-references/reference-copy/reference-054.jpg",
+      "sourceFile": "51.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 54
+    },
+    {
+      "id": "reference-copy-055",
+      "publicPath": "/creative-references/reference-copy/reference-055.jpg",
+      "sourceFile": "52.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 55
+    },
+    {
+      "id": "reference-copy-056",
+      "publicPath": "/creative-references/reference-copy/reference-056.jpg",
+      "sourceFile": "53.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 56
+    },
+    {
+      "id": "reference-copy-057",
+      "publicPath": "/creative-references/reference-copy/reference-057.jpg",
+      "sourceFile": "54.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 57
+    },
+    {
+      "id": "reference-copy-058",
+      "publicPath": "/creative-references/reference-copy/reference-058.jpg",
+      "sourceFile": "55.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 58
+    },
+    {
+      "id": "reference-copy-059",
+      "publicPath": "/creative-references/reference-copy/reference-059.jpg",
+      "sourceFile": "57.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 59
+    },
+    {
+      "id": "reference-copy-060",
+      "publicPath": "/creative-references/reference-copy/reference-060.jpg",
+      "sourceFile": "58.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 60
+    },
+    {
+      "id": "reference-copy-061",
+      "publicPath": "/creative-references/reference-copy/reference-061.jpg",
+      "sourceFile": "59.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "food",
+      "ordinal": 61
+    },
+    {
+      "id": "reference-copy-062",
+      "publicPath": "/creative-references/reference-copy/reference-062.jpg",
+      "sourceFile": "60.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "food",
+      "ordinal": 62
+    },
+    {
+      "id": "reference-copy-063",
+      "publicPath": "/creative-references/reference-copy/reference-063.jpg",
+      "sourceFile": "61.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "food",
+      "ordinal": 63
+    },
+    {
+      "id": "reference-copy-064",
+      "publicPath": "/creative-references/reference-copy/reference-064.jpg",
+      "sourceFile": "62.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "food",
+      "ordinal": 64
+    },
+    {
+      "id": "reference-copy-065",
+      "publicPath": "/creative-references/reference-copy/reference-065.jpg",
+      "sourceFile": "63.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "food",
+      "ordinal": 65
+    },
+    {
+      "id": "reference-copy-066",
+      "publicPath": "/creative-references/reference-copy/reference-066.jpg",
+      "sourceFile": "65.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "food",
+      "ordinal": 66
+    },
+    {
+      "id": "reference-copy-067",
+      "publicPath": "/creative-references/reference-copy/reference-067.jpg",
+      "sourceFile": "67.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 67
+    },
+    {
+      "id": "reference-copy-068",
+      "publicPath": "/creative-references/reference-copy/reference-068.jpg",
+      "sourceFile": "68.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 68
+    },
+    {
+      "id": "reference-copy-069",
+      "publicPath": "/creative-references/reference-copy/reference-069.jpg",
+      "sourceFile": "69.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 69
+    },
+    {
+      "id": "reference-copy-070",
+      "publicPath": "/creative-references/reference-copy/reference-070.jpg",
+      "sourceFile": "70.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 70
+    },
+    {
+      "id": "reference-copy-071",
+      "publicPath": "/creative-references/reference-copy/reference-071.jpg",
+      "sourceFile": "71.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 71
+    },
+    {
+      "id": "reference-copy-072",
+      "publicPath": "/creative-references/reference-copy/reference-072.jpg",
+      "sourceFile": "72.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 72
+    },
+    {
+      "id": "reference-copy-073",
+      "publicPath": "/creative-references/reference-copy/reference-073.jpg",
+      "sourceFile": "74.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 73
+    },
+    {
+      "id": "reference-copy-074",
+      "publicPath": "/creative-references/reference-copy/reference-074.jpg",
+      "sourceFile": "75.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 74
+    },
+    {
+      "id": "reference-copy-075",
+      "publicPath": "/creative-references/reference-copy/reference-075.jpg",
+      "sourceFile": "76.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 75
+    },
+    {
+      "id": "reference-copy-076",
+      "publicPath": "/creative-references/reference-copy/reference-076.jpg",
+      "sourceFile": "77.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 76
+    },
+    {
+      "id": "reference-copy-077",
+      "publicPath": "/creative-references/reference-copy/reference-077.jpg",
+      "sourceFile": "78.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 77
+    },
+    {
+      "id": "reference-copy-078",
+      "publicPath": "/creative-references/reference-copy/reference-078.jpg",
+      "sourceFile": "79.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 78
+    },
+    {
+      "id": "reference-copy-079",
+      "publicPath": "/creative-references/reference-copy/reference-079.jpg",
+      "sourceFile": "80.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 79
+    },
+    {
+      "id": "reference-copy-080",
+      "publicPath": "/creative-references/reference-copy/reference-080.jpg",
+      "sourceFile": "81.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 80
+    },
+    {
+      "id": "reference-copy-081",
+      "publicPath": "/creative-references/reference-copy/reference-081.jpg",
+      "sourceFile": "82.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 81
+    },
+    {
+      "id": "reference-copy-082",
+      "publicPath": "/creative-references/reference-copy/reference-082.jpg",
+      "sourceFile": "83.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 82
+    },
+    {
+      "id": "reference-copy-083",
+      "publicPath": "/creative-references/reference-copy/reference-083.jpg",
+      "sourceFile": "84.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 83
+    },
+    {
+      "id": "reference-copy-084",
+      "publicPath": "/creative-references/reference-copy/reference-084.jpg",
+      "sourceFile": "85.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 84
+    },
+    {
+      "id": "reference-copy-085",
+      "publicPath": "/creative-references/reference-copy/reference-085.jpg",
+      "sourceFile": "86.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 85
+    },
+    {
+      "id": "reference-copy-086",
+      "publicPath": "/creative-references/reference-copy/reference-086.jpg",
+      "sourceFile": "87.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 86
+    },
+    {
+      "id": "reference-copy-087",
+      "publicPath": "/creative-references/reference-copy/reference-087.jpg",
+      "sourceFile": "88.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 87
+    },
+    {
+      "id": "reference-copy-088",
+      "publicPath": "/creative-references/reference-copy/reference-088.jpg",
+      "sourceFile": "89.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 88
+    },
+    {
+      "id": "reference-copy-089",
+      "publicPath": "/creative-references/reference-copy/reference-089.jpg",
+      "sourceFile": "90.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 89
+    },
+    {
+      "id": "reference-copy-090",
+      "publicPath": "/creative-references/reference-copy/reference-090.jpg",
+      "sourceFile": "91.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 90
+    },
+    {
+      "id": "reference-copy-091",
+      "publicPath": "/creative-references/reference-copy/reference-091.jpg",
+      "sourceFile": "92.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 91
+    },
+    {
+      "id": "reference-copy-092",
+      "publicPath": "/creative-references/reference-copy/reference-092.jpg",
+      "sourceFile": "93.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 92
+    },
+    {
+      "id": "reference-copy-093",
+      "publicPath": "/creative-references/reference-copy/reference-093.jpg",
+      "sourceFile": "95.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 93
+    },
+    {
+      "id": "reference-copy-094",
+      "publicPath": "/creative-references/reference-copy/reference-094.jpg",
+      "sourceFile": "96.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 94
+    },
+    {
+      "id": "reference-copy-095",
+      "publicPath": "/creative-references/reference-copy/reference-095.jpg",
+      "sourceFile": "97.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 95
+    },
+    {
+      "id": "reference-copy-096",
+      "publicPath": "/creative-references/reference-copy/reference-096.jpg",
+      "sourceFile": "99.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 96
+    },
+    {
+      "id": "reference-copy-097",
+      "publicPath": "/creative-references/reference-copy/reference-097.jpg",
+      "sourceFile": "100.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 97
+    },
+    {
+      "id": "reference-copy-098",
+      "publicPath": "/creative-references/reference-copy/reference-098.jpg",
+      "sourceFile": "101.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 98
+    },
+    {
+      "id": "reference-copy-099",
+      "publicPath": "/creative-references/reference-copy/reference-099.jpg",
+      "sourceFile": "102.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 99
+    },
+    {
+      "id": "reference-copy-100",
+      "publicPath": "/creative-references/reference-copy/reference-100.jpg",
+      "sourceFile": "103.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 100
+    },
+    {
+      "id": "reference-copy-101",
+      "publicPath": "/creative-references/reference-copy/reference-101.jpg",
+      "sourceFile": "105.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 101
+    },
+    {
+      "id": "reference-copy-102",
+      "publicPath": "/creative-references/reference-copy/reference-102.jpg",
+      "sourceFile": "106.jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 102
+    },
+    {
+      "id": "reference-copy-103",
+      "publicPath": "/creative-references/reference-copy/reference-103.jpg",
+      "sourceFile": "107.jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 103
+    },
+    {
+      "id": "reference-copy-104",
+      "publicPath": "/creative-references/reference-copy/reference-104.jpg",
+      "sourceFile": "108.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 104
+    },
+    {
+      "id": "reference-copy-105",
+      "publicPath": "/creative-references/reference-copy/reference-105.jpg",
+      "sourceFile": "레몬_01.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 105
+    },
+    {
+      "id": "reference-copy-106",
+      "publicPath": "/creative-references/reference-copy/reference-106.jpg",
+      "sourceFile": "레몬_02.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 106
+    },
+    {
+      "id": "reference-copy-107",
+      "publicPath": "/creative-references/reference-copy/reference-107.jpg",
+      "sourceFile": "레몬_03.jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 107
+    },
+    {
+      "id": "reference-copy-108",
+      "publicPath": "/creative-references/reference-copy/reference-108.jpg",
+      "sourceFile": "민트젤 01 (2).jpg",
+      "layoutFamily": "sensory-editorial",
+      "categoryGroup": "beauty",
+      "ordinal": 108
+    },
+    {
+      "id": "reference-copy-109",
+      "publicPath": "/creative-references/reference-copy/reference-109.jpg",
+      "sourceFile": "민트젤 03 (1).jpg",
+      "layoutFamily": "problem-objection",
+      "categoryGroup": "beauty",
+      "ordinal": 109
+    },
+    {
+      "id": "reference-copy-110",
+      "publicPath": "/creative-references/reference-copy/reference-110.jpg",
+      "sourceFile": "선물세트_01.jpg",
+      "layoutFamily": "price-offer",
+      "categoryGroup": "beauty",
+      "ordinal": 110
+    },
+    {
+      "id": "reference-copy-111",
+      "publicPath": "/creative-references/reference-copy/reference-111.jpg",
+      "sourceFile": "선물세트_02.jpg",
+      "layoutFamily": "situation-story",
+      "categoryGroup": "beauty",
+      "ordinal": 111
+    },
+    {
+      "id": "reference-copy-112",
+      "publicPath": "/creative-references/reference-copy/reference-112.jpg",
+      "sourceFile": "선물세트_03.jpg",
+      "layoutFamily": "usp-evidence",
+      "categoryGroup": "beauty",
+      "ordinal": 112
+    },
+    {
+      "id": "reference-copy-113",
+      "publicPath": "/creative-references/reference-copy/reference-113.jpg",
+      "sourceFile": "체취 2 (수정) (1).jpg",
+      "layoutFamily": "social-proof",
+      "categoryGroup": "beauty",
+      "ordinal": 113
+    }
+  ],
+  "updatedAt": "2026-08-23T06:31:03.893Z"
+}

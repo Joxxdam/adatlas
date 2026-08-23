@@ -23,3 +23,14 @@ export async function updateCreativeArchiveEntry(
   await creativeArchiveMetadataRepository.update(entryId, input);
   return (await listCreativeArchiveEntries()).find((entry) => entry.id === entryId) || null;
 }
+
+export async function deleteCreativeArchiveEntries(entryIds: string[]) {
+  const requested = Array.from(new Set(entryIds.map((id) => String(id || "").trim()).filter(Boolean))).slice(0, 500);
+  if (!requested.length) throw new Error("삭제할 이미지 콘텐츠를 선택해 주세요.");
+  const current = await listCreativeArchiveEntries();
+  const available = new Set(current.map((entry) => entry.id));
+  const deletedIds = requested.filter((id) => available.has(id));
+  if (!deletedIds.length) throw new Error("삭제할 아카이브 이미지 콘텐츠를 찾지 못했습니다.");
+  await creativeArchiveMetadataRepository.hide(deletedIds);
+  return { deletedIds, entries: await listCreativeArchiveEntries() };
+}

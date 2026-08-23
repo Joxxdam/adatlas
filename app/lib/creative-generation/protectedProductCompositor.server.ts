@@ -130,3 +130,55 @@ export async function createProtectedProductComposite(input: {
     ],
   };
 }
+
+/**
+ * Restores the authoritative package raster after AI scene/copy editing.
+ * No color, label, shape, rotation or sharpening edit is applied to the
+ * product layer; only transparent isolation and proportional resizing occur.
+ */
+export async function createIdentityLockedProductComposite(input: {
+  backgroundPath: string;
+  productImagePath: string;
+  placements: PlacementBox[];
+}) {
+  const backgroundSource = await readCreativeRasterAsset(input.backgroundPath);
+  const productSource = await readCreativeRasterAsset(input.productImagePath);
+  const metadata = await sharp(productSource).metadata();
+  const isolatedProduct = metadata.hasAlpha
+    ? await sharp(productSource).rotate().ensureAlpha().png().toBuffer()
+    : await removeBackgroundToPng(productSource, {
+        extractionScope: "sales-unit",
+        featherRadius: 0.55,
+      });
+  const trimmed = await sharp(isolatedProduct)
+    .ensureAlpha()
+    .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
+  const placements = input.placements.slice(0, 3).map(integerBox);
+  const overlays: OverlayOptions[] = [];
+  for (const placement of placements) {
+    const product = await sharp(trimmed)
+      .resize(placement.width, placement.height, {
+        fit: "contain",
+        position: "centre",
+        withoutEnlargement: false,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png()
+      .toBuffer();
+    overlays.push(contactShadow(placement));
+    overlays.push({ input: product, left: placement.x, top: placement.y });
+  }
+  const buffer = await sharp(backgroundSource)
+    .rotate()
+    .resize(1200, 1200, { fit: "cover", position: "centre" })
+    .composite(overlays)
+    .png()
+    .toBuffer();
+  return {
+    buffer,
+    productBounds: placements,
+    repairs: ["원본 화장품 패키지 픽셀 보호", "원본 라벨·로고·용기 형태 복원", "접촉 그림자 적용"],
+  };
+}

@@ -3,7 +3,7 @@ import { creativeGenerationJobStore } from "../../../../lib/creative-generation/
 import { enqueueGenerationJob, isGenerationJobRunnerActive, recoverGenerationJob } from "../../../../lib/creative-generation/jobRunner.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError, toPublicGenerationJob } from "../../../../lib/creative-generation/publicJob.server";
-import { cancelGenerationJob, isServerRunnableGenerationJob, resumeGenerationJob } from "../../../../lib/creative-generation/jobRunnerPolicy";
+import { cancelGenerationJob, hasOrphanedRunningResult, isServerRunnableGenerationJob, resumeGenerationJob } from "../../../../lib/creative-generation/jobRunnerPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,10 +12,17 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
   try {
     verifyLocalGenerationAccess(request);
     const { jobId } = await context.params;
-    const job = await recoverGenerationJob(jobId);
+    let job = await recoverGenerationJob(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
-    const hasOrphanedRunningResult = job.results.some((result) => result.status === "running") && !isGenerationJobRunnerActive(job.id);
-    if (isServerRunnableGenerationJob(job) && ["pending", "running"].includes(job.status) && !hasOrphanedRunningResult) enqueueGenerationJob(job.id);
+    const runnerWasActive = isGenerationJobRunnerActive(job.id);
+    if (isServerRunnableGenerationJob(job) && ["pending", "running"].includes(job.status)) {
+      if (hasOrphanedRunningResult(job, runnerWasActive)) {
+        job = await creativeGenerationJobStore.update(job.id, (current) =>
+          resumeGenerationJob(current, false)
+        );
+      }
+      enqueueGenerationJob(job.id);
+    }
     return NextResponse.json({ ok: true, job: toPublicGenerationJob(job), runnerActive: isGenerationJobRunnerActive(job.id) });
   } catch (error) {
     return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "작업 조회 실패") }, { status: localAccessError(error) ? 403 : 400 });

@@ -1,5 +1,7 @@
 # CategoryProfile 운영 가이드
 
+> 현재 ZIP 레퍼런스 기본 경로에서는 상품 사실·문구·QA 보조 정보로만 사용합니다. CategoryProfile이 레퍼런스를 선택하거나 새 배경·장면을 설계하지 않습니다.
+
 카테고리 프로필은 브랜드가 매칭되지 않아도 타깃·색·장면·구도를 합리적으로 선택하기 위한 fallback이다. 정의 원본은 `data/category-profiles.json`이다.
 
 ## personal-care

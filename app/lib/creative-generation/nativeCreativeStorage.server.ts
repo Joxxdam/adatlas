@@ -4,7 +4,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { readCreativeRasterAsset } from "./assets.server.ts";
 import type { CreativeImageAsset, GenerationJob } from "./types.ts";
-import { buildNativeFinalCreativePrompt, NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt.ts";
+import { buildNativeStagePrompt, NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt.ts";
 
 type PromptBrandMemory = import("./codexRegistry.server.ts").AdvertiserBrandMemory;
 
@@ -86,9 +86,9 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
       return productScore(right) + roleBonus(right) - productScore(left) - roleBonus(left);
     })
     .slice(0, 4);
-  // Native AI generation receives only product-page evidence. Advertising
-  // references are distilled into semantic grammar and are never attached as
-  // pixels, so an old ad cannot become part of a new creative.
+  // This function prepares only authoritative product evidence. A curated ad
+  // reference is selected separately and is attached only while recreating
+  // its macro structure; it never replaces ProductTruth evidence.
   return [primary, ...supporting].slice(0, 5);
 }
 
@@ -194,7 +194,35 @@ async function writeNativeJobArtifacts(job: GenerationJob, brandMemory?: PromptB
         atomicJson(path.join(hookDirectory, "creative-brief.json"), result.hookPlan.creativeBrief || null),
         atomicJson(path.join(hookDirectory, "generation-prompt.json"), {
           promptVersion: NATIVE_FINAL_PROMPT_VERSION,
-          prompt: buildNativeFinalCreativePrompt(job, result, "final-output.png", undefined, brandMemory),
+          workflow: [
+            {
+              stage: "structure-recreation",
+              source: result.nativeCreative?.adReference,
+              output: "01-structure.png",
+              prompt: buildNativeStagePrompt("structure-recreation", job, result, "01-structure.png", undefined, brandMemory),
+            },
+            {
+              stage: "product-replacement",
+              source: "01-structure.png",
+              productReferences: result.nativeCreative?.referencePaths || [],
+              output: "02-product.png",
+              prompt: buildNativeStagePrompt("product-replacement", job, result, "02-product.png", undefined, brandMemory),
+            },
+            {
+              stage: "copy-replacement",
+              source: "02-product.png",
+              output: "03-copy.png",
+              prompt: buildNativeStagePrompt("copy-replacement", job, result, "03-copy.png", undefined, brandMemory),
+            },
+            {
+              stage: "qa-repair",
+              source: "03-copy.png",
+              output: "04-qa-repair-N.png",
+              prompt: buildNativeStagePrompt("qa-repair", job, result, "04-qa-repair-N.png", undefined, brandMemory),
+            },
+          ],
+          adReference: result.nativeCreative?.adReference,
+          stagePaths: result.nativeCreative?.stagePaths,
         }),
       ];
       if (result.nativeCreative?.validation) files.push(atomicJson(path.join(hookDirectory, "validation.json"), result.nativeCreative.validation));
@@ -209,7 +237,7 @@ export async function writeNativeManifest(job: GenerationJob, brandMemory?: Prom
   await mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
   await writeFile(temporary, `${JSON.stringify({
-    version: "native-creative-manifest-v1",
+    version: "native-creative-manifest-v2",
     jobId: job.id,
     advertiserId: job.advertiserId,
     advertiserName: job.advertiserName,
@@ -228,6 +256,8 @@ export async function writeNativeManifest(job: GenerationJob, brandMemory?: Prom
       mainHook: result.hookPlan.headline,
       subCopy: result.hookPlan.body,
       visualConcept: job.visualDiversityMatrix?.find((entry) => entry.hookCode === result.hookPlan.hookCode),
+      adReference: result.nativeCreative?.adReference,
+      stagePaths: result.nativeCreative?.stagePaths,
       referenceImages: result.nativeCreative?.referencePaths || [...job.productTruth.referenceImages, ...job.productTruth.imageAssets].map((asset) => asset.path),
       generationEngine: result.nativeCreative?.engine || job.engine,
       revisionCount: result.nativeCreative?.revisionCount || 0,

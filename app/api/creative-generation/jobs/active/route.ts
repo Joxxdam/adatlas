@@ -3,7 +3,7 @@ import { creativeGenerationJobStore } from "../../../../lib/creative-generation/
 import { cancelQueuedGenerationJob, enqueueGenerationJob, isGenerationJobRunnerActive, recoverGenerationJob } from "../../../../lib/creative-generation/jobRunner.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../../lib/creative-generation/localGenerationAccess.server";
 import { toGenerationJobSummary, toPublicGenerationError } from "../../../../lib/creative-generation/publicJob.server";
-import { isServerRunnableGenerationJob, normalizeCreativeProductUrl } from "../../../../lib/creative-generation/jobRunnerPolicy";
+import { hasOrphanedRunningResult, isServerRunnableGenerationJob, normalizeCreativeProductUrl, resumeGenerationJob } from "../../../../lib/creative-generation/jobRunnerPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,10 +29,15 @@ export async function GET(request: Request) {
     const activeJobs = [];
     for (const candidate of selectedCandidates) {
       if (!isServerRunnableGenerationJob(candidate)) continue;
-      const job = await recoverGenerationJob(candidate.id);
+      let job = await recoverGenerationJob(candidate.id);
       if (!job || !["pending", "running"].includes(job.status)) continue;
-      const orphanedRunning = job.results.some((result) => result.status === "running") && !isGenerationJobRunnerActive(job.id);
-      if (requestedProductUrl && !orphanedRunning) enqueueGenerationJob(job.id, { priority: true });
+      const runnerWasActive = isGenerationJobRunnerActive(job.id);
+      if (hasOrphanedRunningResult(job, runnerWasActive)) {
+        job = await creativeGenerationJobStore.update(job.id, (current) =>
+          resumeGenerationJob(current, false)
+        );
+      }
+      if (requestedProductUrl) enqueueGenerationJob(job.id, { priority: true });
       activeJobs.push(toGenerationJobSummary(job, isGenerationJobRunnerActive(job.id)));
     }
     return NextResponse.json({

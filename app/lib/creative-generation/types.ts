@@ -561,7 +561,25 @@ export type NativeGroupValidation = {
 
 export type NativeCreativeArtifact = {
   engine: CreativeGenerationEngine;
-  /** Exact minimal reference set supplied to this result's scene generation. */
+  /** One of the unique advertisements randomly selected from the matching ZIP category for this result. */
+  adReference?: {
+    id: string;
+    path: string;
+    publicPath?: string;
+    sourceFile?: string;
+    layoutFamily: string;
+    categoryGroup?: "fashion" | "food" | "beauty";
+    categoryLabel?: string;
+    selectionReason: string;
+  };
+  /** Persisted outputs from the staged native-AI edit pipeline. */
+  stagePaths?: {
+    structurePath?: string;
+    productPath?: string;
+    copyPath?: string;
+    qaRepairPaths?: string[];
+  };
+  /** Exact URL-product reference set supplied to this result's staged advertisement edits. */
   referencePaths?: string[];
   /** Legacy text-free scene path. New ai-native-final results leave this empty. */
   backgroundPath?: string;
@@ -1070,7 +1088,7 @@ export type GenerationResult = {
   scenePlan: ScenePlan;
   creativeDesign?: MasterCreativeDirection;
   masterScene?: MasterSceneArtifact;
-  generationStage?: "planned" | "reference-preparing" | "ai-generating" | "ai-revising" | "quality-check" | "exporting" | "completed" | "scene-generating" | "compositing" | "copy-rendering";
+  generationStage?: "planned" | "reference-preparing" | "reference-selecting" | "structure-recreating" | "product-replacing" | "copy-replacing" | "qa-repairing" | "ai-generating" | "ai-revising" | "quality-check" | "exporting" | "completed" | "scene-generating" | "compositing" | "copy-rendering";
   renderPlan?: RenderPlan;
   imagePath?: string;
   downloadName?: string;

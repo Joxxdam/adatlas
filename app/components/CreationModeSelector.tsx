@@ -38,6 +38,27 @@ const modes = [
   },
 ] as const;
 
+const operationLinks = [
+  {
+    eyebrow: "ASSET LIBRARY",
+    title: "완성 이미지 확인",
+    description: "상품별 제작 결과를 모아보고 다운로드하거나 성과 테스트에 사용할 소재를 선택합니다.",
+    href: "/archive",
+    action: "아카이브 열기",
+    accent: "archive",
+    steps: ["제작 결과 확인", "상품별 다운로드", "성과 소재 선택"],
+  },
+  {
+    eyebrow: "PERFORMANCE",
+    title: "광고 성과 확인",
+    description: "선택한 소재를 Meta 성과와 연결하고 어떤 후킹과 디자인이 효과적인지 비교합니다.",
+    href: "/performance",
+    action: "성과 확인하기",
+    accent: "performance",
+    steps: ["소재 조합 설정", "Meta 성과 연결", "결과 비교"],
+  },
+] as const;
+
 export function CreationModeSelector() {
   return (
     <FeaturePageShell>
@@ -79,8 +100,32 @@ export function CreationModeSelector() {
             </article>
           ))}
         </section>
+        <section className="home-operation-section" aria-labelledby="home-operation-title">
+          <div className="home-operation-heading">
+            <div>
+              <p className="eyebrow">AFTER CREATION</p>
+              <h2 id="home-operation-title">만든 광고를 확인하고 성과까지 이어보세요</h2>
+            </div>
+            <p>제작 완료 이미지는 아카이브에 모이고, 선택한 소재는 성과 확인에서 바로 비교할 수 있습니다.</p>
+          </div>
+          <div className="home-operation-grid">
+            {operationLinks.map((item) => (
+              <Link className={`home-operation-card ${item.accent}`} href={item.href} key={item.title}>
+                <div>
+                  <p className="eyebrow">{item.eyebrow}</p>
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                </div>
+                <ul aria-label={`${item.title} 주요 기능`}>
+                  {item.steps.map((step) => <li key={step}>{step}</li>)}
+                </ul>
+                <strong>{item.action}<span aria-hidden="true">→</span></strong>
+              </Link>
+            ))}
+          </div>
+        </section>
         <p className="mode-selector-note">
-          두 방식 모두 상품 근거를 확인한 뒤 로컬 Codex로 후킹을 기획하고, 후킹마다 서로 다른 완성 광고를 생성합니다.
+          후보 탐색과 바로 제작은 같은 6장 생성 흐름을 사용하며, 완성 결과는 아카이브와 성과 확인으로 연결됩니다.
         </p>
         <section className="reference-mode-entry" aria-labelledby="reference-mode-title">
           <div className="reference-mode-index">03</div>

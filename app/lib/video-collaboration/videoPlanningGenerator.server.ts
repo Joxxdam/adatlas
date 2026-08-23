@@ -27,6 +27,7 @@ import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } fr
 import {
   assignPlanningTimeline,
   hasVerifiedVideoBenefit,
+  repairDetailedPlanningCta,
   repairDetailedPlanningSceneDescriptions,
   segmentRange,
   validateConceptDiversity,
@@ -1033,6 +1034,7 @@ export async function generateDetailedVideoScriptAi(input: {
     };
     concept = repairDetailedPlanningSceneDescriptions(concept, input.analysis);
     concept = sanitizeGeneratedConceptCopy(concept, input.guideline.forbiddenPhrases);
+    concept = repairDetailedPlanningCta(concept);
     concept.validation = {
       ...validateDetailedPlanning(concept, input.analysis, input.duration),
       revised,
@@ -1140,6 +1142,7 @@ export async function regeneratePlanningSegmentAi(input: {
   };
   concept = repairDetailedPlanningSceneDescriptions(concept, input.analysis);
   concept = sanitizeGeneratedConceptCopy(concept, input.guideline.forbiddenPhrases);
+  concept = repairDetailedPlanningCta(concept);
   concept.validation = validateDetailedPlanning(concept, input.analysis, input.duration);
   return concept;
 }
