@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { DaywizBrand } from "./DaywizBrand";
 
-export type AppFeatureKey = "store-analysis" | "creative-production" | "video-planning" | "performance" | "archive" | "auto-production" | "advertisers" | "references";
+export type AppFeatureKey = "store-analysis" | "creative-production" | "category-creative" | "video-planning" | "performance" | "archive" | "auto-production" | "advertisers" | "references";
 
 export const PERFORMANCE_FEATURE = {
   key: "performance" as const,
@@ -23,8 +23,15 @@ export const IMAGE_CONTENT_FEATURES = [
     key: "creative-production" as const,
     href: "/create-product?step=product",
     index: "02",
-    label: "광고 제작",
+    label: "상품 광고 제작",
     description: "상품 분석부터 이미지 6장 제작까지 진행합니다",
+  },
+  {
+    key: "category-creative" as const,
+    href: "/category-images",
+    index: "03",
+    label: "카테고리 이미지",
+    description: "카테고리 대표 이미지를 두 규격으로 제작합니다",
   },
 ];
 
@@ -143,7 +150,7 @@ export function AppSidebar({ activeFeature, className = "feature-sidebar", id }:
       <AppFeatureNavigation activeFeature={activeFeature} />
       <details className="mvp-sidebar-help">
         <summary>도움말</summary>
-        <p>상품을 고른 뒤 파란색 버튼을 따라가면 광고 6장을 만들고 결과를 저장할 수 있습니다.</p>
+        <p>상품 광고는 URL로 6장을 만들고, 카테고리 이미지는 실제 상품 3~5장으로 한 콘셉트의 두 규격을 만듭니다.</p>
       </details>
     </aside>
   );

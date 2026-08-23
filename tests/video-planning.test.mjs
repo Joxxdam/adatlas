@@ -432,7 +432,10 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource] = await Promise.all([readFile("app/components/AppFeatureNavigation.tsx", "utf8"), readFile("app/video-planning/page.tsx", "utf8"), readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"), readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"), readFile("app/lib/video-collaboration/types.ts", "utf8")]);
   assert.match(navigation, /VIDEO_PLANNING_FEATURE[\s\S]*label: "영상 기획"/);
   assert.match(navigation, /VIDEO CONTENT[\s\S]*영상 콘텐츠/);
-  assert.doesNotMatch(navigation, /IMAGE_CONTENT_FEATURES[\s\S]*index: "03"/);
+  assert.match(
+    navigation,
+    /IMAGE_CONTENT_FEATURES[\s\S]*index: "03"[\s\S]*label: "카테고리 이미지"/,
+  );
   assert.match(listPage, /VideoPlanningList/);
   assert.match(detailPage, /VideoPlanningConceptWorkspace/);
   assert.match(newWorkspace, /4개 콘셉트 생성/);

@@ -1,0 +1,30 @@
+{
+  "id": "fashion-editorial-v1",
+  "name": "패션 에디토리얼 카테고리 대표 이미지",
+  "purpose": "카테고리 이미지 기능의 구도·톤·정보 위계 참고",
+  "files": [
+    "fashion-editorial-001.jpeg",
+    "fashion-editorial-002.jpeg",
+    "fashion-editorial-003.jpeg",
+    "fashion-editorial-004.jpeg",
+    "fashion-editorial-005.jpeg",
+    "fashion-editorial-006.jpeg",
+    "fashion-editorial-007.jpeg",
+    "fashion-editorial-008.jpeg",
+    "fashion-editorial-009.jpeg"
+  ],
+  "allowedSignals": [
+    "한 화면에 여러 착장 배치",
+    "에디토리얼·SNS형 자연스러운 톤",
+    "여백을 둔 큰 한국어 문구",
+    "시즌 컬러와 패션 카탈로그형 구도",
+    "단일 인물과 다중 코디 구도의 혼합"
+  ],
+  "forbiddenCopy": [
+    "MONODAILY 및 원본 업체명·로고",
+    "원본 이미지의 한국어 문구",
+    "페이지 수 표시",
+    "스피커·쇼핑백 등 SNS UI",
+    "인물 또는 의상 픽셀을 상품 원본으로 재사용"
+  ]
+}

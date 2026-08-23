@@ -574,6 +574,17 @@ AI가 수치와 상품 사실을 생성하지 않도록 합니다.
 - 상품당 3장을 병렬 처리하되 여러 수동·자동 작업이 겹쳐도 로컬 Codex 생성·검수는 전역 3개를 넘지 않습니다. QA는 로컬에서 규격 검증한 JPEG를 사용하며 파일 형식 추측만으로 재생성하지 않습니다.
 - 최종 파일은 1200×1200 JPEG, 800KB 이하로 저장 후 재디코딩 검증합니다.
 
+## Category Candidate & Category Image (Separate Feature)
+
+- 카테고리 후보 분석과 카테고리 대표 이미지 제작은 상품 광고 6장 생성과 별도 도메인입니다.
+- 새 경로는 `/category-images`, `/api/category-candidates`, `/api/category-creatives/*`, `.data/category-creatives/*`를 사용합니다.
+- 이 경로에서 상품 광고의 `GenerationJob`, H01~H06, `ProductTruth` 가격 후킹, `ReferenceAdaptedCopyPlan`, Meta 실험 흐름을 호출하지 않습니다.
+- BigQuery는 읽기 전용 집계만 사용하며 원본 상품명은 보존하고 카테고리 정규화 값만 별도로 계산합니다.
+- 같은 광고주·같은 카테고리의 실제 상품 이미지 3~5장만 조합합니다. 선택 실패 시 가상 상품이나 다른 업체 상품으로 보충하지 않습니다.
+- 하나의 콘셉트를 1200×1200과 1080×1920에 각각 반응형 재배치하며 단순 중앙 크롭하지 않습니다.
+- 문구 수정 시 원본·배경·배치를 다시 만들지 않고 저장된 베이스에 한국어 텍스트만 서버에서 재렌더링합니다.
+- `data/category-creative-references/fashion`의 이미지는 구도 참고 전용입니다. 원본 문구·브랜드·워터마크·SNS UI·인물 및 의상 픽셀을 결과에 복사하지 않습니다.
+
 ## Automatic Production
 
 - 새 광고주는 기본 `enabled=false`이며 사용자가 명시적으로 활성화한 광고주만 Asia/Seoul 예약 실행 대상입니다. seed 광고주는 런타임 설정이 없을 때 자동 활성화하지 않습니다.
