@@ -1,9 +1,21 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { videoProjectRepository } from "../../../lib/video-collaboration/repository.server";
 import type { BrandGuideline, ProductAnalysisSnapshot, VideoConcept } from "../../../lib/video-collaboration/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+async function removeProjectOwnedFiles(projectId: string) {
+  if (!/^video-[a-z0-9-]+$/i.test(projectId)) return;
+  const publicRoot = path.join(process.cwd(), "public", "video-collaboration");
+  await Promise.allSettled(
+    ["videos", "script-references"].map((directory) =>
+      fs.rm(path.join(publicRoot, directory, projectId), { recursive: true, force: true })
+    )
+  );
+}
 
 export async function GET(_request: Request, context: { params: Promise<{ projectId: string }> }) {
   try {
@@ -100,6 +112,7 @@ export async function DELETE(_request: Request, context: { params: Promise<{ pro
   try {
     const { projectId } = await context.params;
     const project = await videoProjectRepository.delete(projectId);
+    await removeProjectOwnedFiles(projectId);
     return NextResponse.json({ ok: true, project });
   } catch (error) {
     const message = error instanceof Error ? error.message : "프로젝트 삭제 실패";

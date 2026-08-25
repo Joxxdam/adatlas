@@ -13,6 +13,7 @@ function date(value: string) {
 export function VideoPlanningList() {
   const [projects, setProjects] = useState<VideoProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -25,6 +26,29 @@ export function VideoPlanningList() {
       .catch((caught) => setError(caught instanceof Error ? caught.message : "목록 조회 실패"))
       .finally(() => setLoading(false));
   }, []);
+
+  async function deleteProject(project: VideoProjectSummary) {
+    if (
+      !window.confirm(
+        `“${project.productName}” 영상 기획을 삭제할까요?\n삭제한 기획과 프로젝트 전용 제작 파일은 복구할 수 없습니다.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingId(project.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/video-projects/${project.id}`, { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "영상 기획을 삭제하지 못했습니다.");
+      setProjects((current) => current.filter((item) => item.id !== project.id));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "영상 기획 삭제 실패");
+    } finally {
+      setDeletingId("");
+    }
+  }
 
   return (
     <main className={styles.page}>
@@ -63,6 +87,7 @@ export function VideoPlanningList() {
                   <th>생성일</th>
                   <th>마감일</th>
                   <th>최근 수정</th>
+                  <th>관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -81,6 +106,16 @@ export function VideoPlanningList() {
                     <td>{date(project.createdAt)}</td>
                     <td>{project.deadline || "미정"}</td>
                     <td>{date(project.updatedAt)}</td>
+                    <td>
+                      <button
+                        className={styles.tableDeleteButton}
+                        disabled={Boolean(deletingId)}
+                        onClick={() => void deleteProject(project)}
+                        type="button"
+                      >
+                        {deletingId === project.id ? "삭제 중…" : "삭제"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

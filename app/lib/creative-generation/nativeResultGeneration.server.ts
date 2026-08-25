@@ -11,14 +11,14 @@ import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { createAssetFromGenerationResult } from "../creative-assets/fromGeneration.server";
 import { toCreativeAssetSnapshot } from "../creative-assets/types";
 import { creativePreferenceRepository, type CreativePreferenceState } from "./creativePreferenceRepository.server";
-import { executionResults } from "./jobRunnerPolicy";
+import { CURRENT_REFERENCE_EDIT_WORKFLOW, executionResults, REFERENCE_EDIT_STAGE_ORDER, usesCurrentReferenceEditPipeline } from "./jobRunnerPolicy";
 import { hasExplicitPaidApiAuthorization, type CopyPlan, type GenerationJob, type NativeCreativeValidation } from "./types";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
-import { validateCopyAgainstTruth } from "./productTruth";
-import { selectCategoryNativeAdReferences, selectNativeAdReference } from "./referenceCreativeLibrary.server";
+import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
+import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNativeAdReference, type NativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createTruthFallbackReferenceCopyPlan, hasExecutableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
 
 type NativeResultInput = {
   jobId: string;
@@ -246,7 +246,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
   if (action === "regenerate-new-reference") {
     const excludedReferenceIds = new Set(job.results.map((result) => result.nativeCreative?.adReference?.id).filter((id): id is string => Boolean(id)));
-    const [replacementReference] = selectCategoryNativeAdReferences(job, 1, undefined, excludedReferenceIds);
+    const [replacementReference] = await ensureNativeReferenceCopies(
+      selectCategoryNativeAdReferences(job, 1, undefined, excludedReferenceIds)
+    );
     if (!replacementReference) throw new Error("현재 상품과 호환되는 다른 레퍼런스가 없습니다.");
     const copyPlanning = await planReferenceAdaptedCopies({ truth: job.productTruth, references: [replacementReference] });
     const replacementCopy = copyPlanning.plans[0];
@@ -307,6 +309,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
             startedAt: new Date().toISOString(),
             nativeCreative: {
               engine: active.engine || "codex_local",
+              workflow: result.nativeCreative?.workflow || CURRENT_REFERENCE_EDIT_WORKFLOW,
+              stageOrder: result.nativeCreative?.stageOrder || REFERENCE_EDIT_STAGE_ORDER,
               adReference: result.nativeCreative?.adReference,
               // Old staged files may contain the removed local product-cutout
               // exception. Never reuse them after a full-AI prompt migration.
@@ -333,11 +337,51 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const supportingReferences = references.length > 1 ? [references[1 + ((Math.max(1, initial.order) - 1) % (references.length - 1))], ...references.slice(1).filter((file) => file !== references[1 + ((Math.max(1, initial.order) - 1) % (references.length - 1))])].slice(0, 4) : [];
   const generationReferences = [references[0], ...supportingReferences].filter(Boolean);
   initial = job.results.find((result) => result.id === input.resultId)!;
-  // 새 작업 생성 시 무작위로 배정한 레퍼런스는 재시도·재생성에서도 고정한다.
-  // 과거 작업에 배정값이 없을 때만 결정적 fallback을 사용한다.
-  const selectedAdReference = initial.nativeCreative?.adReference || selectNativeAdReference(job, initial);
+  // 신규 수동·자동 작업은 생성 시 저장한 레퍼런스를 재시도·복구에서도 그대로 사용한다.
+  // 최신 계약에서 누락값을 재추첨하면 같은 작업의 디자인 원본이 바뀌므로 즉시 중단한다.
+  const selectedAdReferenceCandidate = initial.nativeCreative?.adReference || (usesCurrentReferenceEditPipeline(job) ? undefined : selectNativeAdReference(job, initial));
+  if (!selectedAdReferenceCandidate) {
+    throw new Error("이 작업에 고정된 광고 레퍼런스가 없습니다. 새 수동·자동 제작 작업을 시작해 주세요.");
+  }
+  const selectedAdReference = selectedAdReferenceCandidate as NativeAdReference;
   if (!(await validStageFile(selectedAdReference.path))) {
     throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
+  }
+  if (!hasExecutableReferenceCopyContract(initial.referenceAdaptedCopyPlan, job.productTruth)) {
+    const safeCopyPlan = await createTruthFallbackReferenceCopyPlan({
+      truth: job.productTruth,
+      reference: selectedAdReference,
+      index: Math.max(0, initial.order - 1),
+      previous: initial.referenceAdaptedCopyPlan,
+    });
+    job = await creativeGenerationJobStore.update(job.id, (active) => ({
+      ...active,
+      errors: [...active.errors, `${initial.hookPlan.hookCode}의 빈 문구 계획을 ProductTruth 안전 문구로 교체해 제작을 계속합니다.`].slice(-20),
+      recoveryLog: [
+        ...(active.recoveryLog || []),
+        { at: new Date().toISOString(), message: "빈 레퍼런스 문구 계획을 ProductTruth 안전 슬롯으로 복구", resultIds: [initial.id] },
+      ].slice(-20),
+      results: active.results.map((result) => result.id === initial.id
+        ? {
+            ...result,
+            referenceAdaptedCopyPlan: safeCopyPlan,
+            hookPlan: {
+              ...result.hookPlan,
+              headline: safeCopyPlan.headline,
+              body: safeCopyPlan.subCopy,
+              proof: safeCopyPlan.proof,
+              offer: safeCopyPlan.offer,
+              cta: safeCopyPlan.cta,
+              factIds: safeCopyPlan.factIds,
+              numericTokens: extractNumericTokens([safeCopyPlan.headline, safeCopyPlan.subCopy, safeCopyPlan.proof, safeCopyPlan.offer, safeCopyPlan.cta].join(" ")),
+              validationStatus: "fallback",
+              validationErrors: safeCopyPlan.validationErrors,
+              generationSource: "fallback",
+            },
+          }
+        : result),
+    }));
+    initial = job.results.find((result) => result.id === input.resultId)!;
   }
   referenceMs = Date.now() - referenceStarted;
   const directory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, initial.hookPlan.hookCode);
@@ -561,6 +605,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
               creativeAsset: toCreativeAssetSnapshot(assetResult.asset),
               nativeCreative: {
                 engine: current.engine || "codex_local",
+                workflow: CURRENT_REFERENCE_EDIT_WORKFLOW,
+                stageOrder: REFERENCE_EDIT_STAGE_ORDER,
                 adReference: selectedAdReference,
                 stagePaths: { structurePath, productPath, copyPath, qaRepairPaths },
                 referencePaths: generationReferences,
@@ -572,6 +618,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                 revisionCount,
                 validation,
                 provenance: {
+                  workflow: CURRENT_REFERENCE_EDIT_WORKFLOW,
+                  stageOrder: REFERENCE_EDIT_STAGE_ORDER,
                   referenceId: selectedAdReference.id,
                   referenceSourcePath: selectedAdReference.path,
                   referenceRawCopy: result.referenceAdaptedCopyPlan?.referenceRawCopy || selectedAdReference.nativeCopy?.rawText,

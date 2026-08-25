@@ -245,9 +245,13 @@ ADATLAS_CREATIVE_CONCURRENCY=3
 ADATLAS_CODEX_MAX_PARALLEL_RUNS=3
 ADATLAS_AUTO_REVISION_LIMIT=1
 ADATLAS_PAID_API_EXPLICIT_ENABLED=false
+VIDEO_PLANNING_PROVIDER=openai-api
+VIDEO_PLANNING_ANALYSIS_MODEL=gpt-5.6-luna
+VIDEO_PLANNING_CONCEPT_MODEL=gpt-5.6-terra
+VIDEO_PLANNING_SCRIPT_MODEL=gpt-5.6-terra
 ```
 
-유료 API 사용 시에만 `OPENAI_API_KEY`를 서버 환경에 두고 `ADATLAS_PAID_API_EXPLICIT_ENABLED=true`를 설정합니다. 어떠한 키도 `NEXT_PUBLIC_*`로 노출하지 않습니다.
+영상 기획의 상품 분석·콘셉트·상세 대본은 기본적으로 OpenAI Responses API를 사용하므로 서버의 `OPENAI_API_KEY`가 필요합니다. `ADATLAS_PAID_API_EXPLICIT_ENABLED`는 이미지 생성 등 별도로 보호되는 유료 경로에만 적용되며 영상 기획 API를 켜는 스위치가 아닙니다. API 실패 시 로컬 Codex로 자동 전환하지 않고 화면에 재시도 가능한 오류를 표시합니다. 어떠한 키도 `NEXT_PUBLIC_*`로 노출하지 않습니다.
 
 ## 검증
 

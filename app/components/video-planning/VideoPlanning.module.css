@@ -81,7 +81,9 @@
 }
 .primaryButton:disabled,
 .secondaryButton:disabled,
-.ghostButton:disabled {
+.ghostButton:disabled,
+.dangerButton:disabled,
+.tableDeleteButton:disabled {
   opacity: 0.52;
   cursor: not-allowed;
 }
@@ -139,6 +141,18 @@
   color: #15233a;
   font-weight: 800;
   text-decoration: none;
+}
+.tableDeleteButton {
+  border: 1px solid #efb8b3;
+  border-radius: 9px;
+  padding: 7px 10px;
+  color: #a43933;
+  background: #fff7f6;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
 }
 .muted {
   color: #7b899f;
@@ -317,13 +331,15 @@
   grid-template-columns: minmax(0, 760px);
 }
 .conceptCard {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding: 22px;
+  padding: 20px;
   box-shadow: none;
 }
 .conceptCard[data-selected="true"] {
   border: 2px solid #1268d5;
-  padding: 21px;
+  padding: 19px;
   background: linear-gradient(145deg, #f4f9ff, #fff);
 }
 .conceptCardHead {
@@ -336,20 +352,91 @@
   color: #1268d5;
   font-size: 12px;
 }
+.conceptCardHead > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .conceptCard h3 {
-  margin: 10px 0;
-  font-size: 21px;
+  margin: 12px 0 8px;
+  font-size: 20px;
   line-height: 1.35;
 }
 .conceptCard blockquote {
-  margin: 12px 0 18px;
+  margin: 8px 0 14px;
   border-left: 4px solid #1268d5;
-  padding: 9px 13px;
+  padding: 10px 12px;
   color: #142b4b;
   background: #f2f7fd;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 850;
   line-height: 1.5;
+}
+.conceptSnapshot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.conceptSnapshot > div {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid #e4eaf2;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: #fafbfd;
+}
+.conceptSnapshot > div:first-child {
+  grid-column: 1 / -1;
+}
+.conceptSnapshot span {
+  color: #74839a;
+  font-size: 11px;
+  font-weight: 800;
+}
+.conceptSnapshot strong {
+  color: #20334f;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.blueprintSummary {
+  display: grid;
+  gap: 7px;
+  border: 1px solid #b9ddd5;
+  border-radius: 14px;
+  padding: 13px;
+  background: #f1fbf8;
+}
+.blueprintSummary > span {
+  color: #187566;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.blueprintSummary > strong {
+  color: #133e38;
+  line-height: 1.4;
+}
+.blueprintSummary p,
+.blueprintSummary em {
+  margin: 0;
+  color: #53726c;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.55;
+}
+.blueprintSummary > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.blueprintSummary small {
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #17695c;
+  background: #dff4ee;
+  font-weight: 800;
 }
 .conceptCard dl {
   margin: 16px 0;
@@ -371,6 +458,32 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 14px;
+}
+.conceptActions > * {
+  flex: 1 1 160px;
+}
+.conceptCardDetails {
+  margin-top: 14px;
+  border-top: 1px solid #e7edf4;
+  padding-top: 12px;
+}
+.conceptCardDetails summary {
+  color: #53647c;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.conceptDetailsBody {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.conceptDetailsBody .blueprintSummary {
+  margin: 0;
+}
+.conceptDetailsBody dl {
+  margin: 0;
 }
 .benefitWarning {
   margin: 12px 0;
@@ -543,6 +656,12 @@
 .formGrid textarea {
   min-height: 100px;
   resize: vertical;
+}
+.formGrid small {
+  color: #7a879b;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
 }
 .wide {
   grid-column: 1 / -1;
@@ -819,6 +938,184 @@
   display: grid;
   gap: 12px;
 }
+.blueprintPanel {
+  margin-top: 20px;
+  border: 1px solid #bdddd6;
+  border-radius: 22px;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f8fffd, #eef9f6);
+}
+.conceptMapPanel {
+  margin-top: 20px;
+  border: 1px solid #cbdcf1;
+  border-radius: 22px;
+  padding: 20px;
+  background: linear-gradient(145deg, #ffffff, #f3f8ff);
+}
+.conceptMapPanel h2 {
+  margin: 0 0 6px;
+}
+.conceptPrimaryHook {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  border-radius: 15px;
+  padding: 15px 17px;
+  color: #fff;
+  background: #176fd1;
+}
+.conceptPrimaryHook span {
+  font-size: 11px;
+  font-weight: 900;
+  opacity: 0.82;
+}
+.conceptPrimaryHook strong {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.conceptFlowGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.conceptFlowGrid article {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 82px;
+  border: 1px solid #dae6f4;
+  border-radius: 15px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.9);
+}
+.conceptFlowGrid span,
+.conceptDetailsGrid span {
+  color: #1670d5;
+  font-size: 11px;
+  font-weight: 900;
+}
+.conceptFlowGrid strong,
+.conceptDetailsGrid strong {
+  color: #1b3557;
+  font-size: 13px;
+  line-height: 1.48;
+}
+.conceptDetails {
+  margin-top: 12px;
+  border-top: 1px solid #dce7f4;
+  padding-top: 12px;
+}
+.conceptDetails > summary {
+  color: #45627f;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.conceptDetailsGrid {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  margin-top: 12px;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #eaf3ff;
+}
+.conceptDetailsGrid strong:nth-of-type(2) {
+  color: #b24432;
+}
+.blueprintPanel h2 {
+  margin: 0 0 6px;
+}
+.blueprintDisclosureSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.blueprintDisclosureSummary::-webkit-details-marker {
+  display: none;
+}
+.blueprintDisclosureSummary::before {
+  content: "＋";
+  order: 3;
+  color: #17806d;
+  font-size: 20px;
+  font-weight: 800;
+}
+.blueprintPanel[open] .blueprintDisclosureSummary::before {
+  content: "−";
+}
+.blueprintDisclosureSummary h2 {
+  font-size: 18px;
+}
+.blueprintDisclosureMeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.blueprintDisclosureMeta > strong {
+  color: #176f61;
+  font-size: 12px;
+}
+.blueprintBody {
+  border-top: 1px solid #d4e9e4;
+  padding: 18px 20px 20px;
+}
+.blueprintReason {
+  margin: 0 0 14px;
+  color: #5b736f;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.blueprintBeatGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.blueprintBeatGrid article {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 168px;
+  border: 1px solid #d4e9e4;
+  border-radius: 15px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.86);
+}
+.blueprintBeatGrid span {
+  color: #17806d;
+  font-size: 11px;
+  font-weight: 900;
+}
+.blueprintBeatGrid strong {
+  color: #183d37;
+}
+.blueprintBeatGrid p,
+.blueprintBeatGrid small {
+  margin: 0;
+  color: #526d68;
+  line-height: 1.5;
+}
+.blueprintBeatGrid small {
+  color: #728783;
+}
+.secondaryBlueprint {
+  margin-top: 12px;
+  border-radius: 12px;
+  padding: 11px 13px;
+  color: #526e69;
+  background: #e1f3ee;
+  font-size: 12px;
+}
 .scenePlanCard {
   display: grid;
   grid-template-columns: 86px minmax(180px, 0.7fr) minmax(320px, 1.3fr);
@@ -868,6 +1165,34 @@
   color: #33465f;
   line-height: 1.72;
 }
+.sceneProductionDetails {
+  margin-top: 13px;
+  border-top: 1px solid #e0e8ef;
+  padding-top: 12px;
+}
+.sceneProductionDetails > summary {
+  color: #607087;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.sceneProductionDetails > div {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.sceneProductionDetails p {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  gap: 8px;
+  color: #607087;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sceneProductionDetails b {
+  color: #176f61;
+}
 .subtitleColumn textarea,
 .sceneDescriptionColumn textarea {
   width: 100%;
@@ -906,6 +1231,9 @@
   }
   .conceptGrid {
     grid-template-columns: 1fr;
+  }
+  .blueprintBeatGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .formatGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -949,6 +1277,28 @@
     flex-direction: column;
   }
   .scenePlanCard {
+    grid-template-columns: 1fr;
+  }
+  .blueprintBeatGrid {
+    grid-template-columns: 1fr;
+  }
+  .conceptFlowGrid {
+    grid-template-columns: 1fr;
+  }
+  .conceptFlowGrid article {
+    min-height: auto;
+  }
+  .conceptDetailsGrid {
+    grid-template-columns: 1fr;
+  }
+  .blueprintDisclosureSummary,
+  .blueprintDisclosureMeta {
+    align-items: flex-start;
+  }
+  .blueprintDisclosureMeta {
+    flex-direction: column;
+  }
+  .conceptPrimaryHook {
     grid-template-columns: 1fr;
   }
   .scenePlanIndex {

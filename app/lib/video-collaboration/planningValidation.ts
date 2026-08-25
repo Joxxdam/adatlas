@@ -3,6 +3,45 @@ import { containsRawSeoTitle } from "./productName.ts";
 
 const ABSTRACT_SCENES = [/고객(?:이|의)?.*(?:문제|상황).*보여준다/i, /(?:제품|상품).*(?:USP|핵심|근거).*(?:클로즈업|제시|보여준다)/i, /사용\s*전후.*비교/i, /제품\s*전체.*CTA.*보여준다/i, /고객이\s*제품을\s*사용하는\s*장면/i];
 const GENERIC_COPY = [/상품을 소개합니다/i, /여름철 필수템/i, /프리미엄 퀄리티/i, /특별한 경험/i, /놀라운 효과/i, /지금 만나보세요/i, /당신을 위한 선택/i, /일상에 활력을/i, /처음 보는 제품 자세히 보기/i, /확인된 포인트를 설명합니다/i];
+const EVIDENCE_AUDIT_COPY = [
+  /상세페이지(?:의|에서)?\s*(?:구성|가격|할인|수치|중량|용량|정보)?\s*(?:표기|기재)(?:는|가|를|로|상|되어|됐)/i,
+  /상세페이지(?:에서)?\s*확인(?:된|되는|한)\s*(?:구성|가격|할인|수치|중량|용량|정보|표기|내용)/i,
+  /(?:구성|가격|할인|수치|중량|용량)\s*표기(?:예요|에요|입니다|로|가|는)/i,
+  /(?:확인된|확인되는|기재된)\s*(?:표기|수치|정보|내용|조건)/i,
+  /(?:표기|기재)(?:상|로는|에는|가|는)?\s*(?:보입니다|확인됩니다|되어\s*있습니다)/i,
+  /확인\s*결과(?:로|는|가|입니다)?/i,
+  /근거(?:상|에\s*따르면)/i,
+];
+const INTERNAL_PLANNING_COPY = [
+  /(?:담당자|진행자|제작자)\s*[:：]/i,
+  /정보\s*부족/i,
+  /확인부터(?:요|해|하자)?/i,
+  /(?:상품|제품|가격|혜택)\s*(?:검증|근거\s*확인)/i,
+  ...EVIDENCE_AUDIT_COPY,
+  /(?:도장|태블릿)\s*(?:화면|항목|정보)?|표\s*(?:화면|항목|정보|자료|카드)/i,
+  /\b(?:USP|CTA|B-?ROLL)\b/i,
+];
+
+function visibleCaptionLength(value: string) {
+  return value.replace(/\s/g, "").length;
+}
+
+function hasDetailedCaptionDensity(concept: VideoConcept, cuts: VideoCut[]) {
+  // Legacy/template plans were authored under the old compact-caption rule.
+  // Apply the richer density contract only to the new four-concept AI path.
+  if (!concept.conceptArchetype) return cuts.every((cut) => cut.caption.length > 0 && cut.caption.length <= 46);
+  const finalCut = cuts.at(-1);
+  const bodyCuts = cuts.filter((cut) => cut.id !== finalCut?.id && cut.startSecond >= 3);
+  const lengthsAreValid = cuts.every((cut) => {
+    const length = visibleCaptionLength(cut.caption);
+    if (cut.caption.length > 46) return false;
+    if (cut.id === finalCut?.id) return length >= 4;
+    return length >= (cut.startSecond < 3 ? 8 : 11);
+  });
+  if (!lengthsAreValid || bodyCuts.length === 0) return lengthsAreValid;
+  const averageBodyLength = bodyCuts.reduce((sum, cut) => sum + visibleCaptionLength(cut.caption), 0) / bodyCuts.length;
+  return averageBodyLength >= 14;
+}
 
 export function segmentRange(duration: VideoDuration) {
   if (duration === 15) return { min: 15, max: 16, preferred: 15 };
@@ -160,6 +199,53 @@ export function repairDetailedPlanningCta(concept: VideoConcept) {
   };
 }
 
+function naturalizeEvidenceAuditCaption(value: string, isOpening: boolean) {
+  const normalized = normalizePlanningCopy(value);
+  if (!EVIDENCE_AUDIT_COPY.some((pattern) => pattern.test(normalized))) return normalized;
+
+  const core = normalized
+    .replace(/상세페이지(?:의|에서)?\s*(?:구성|가격|할인|수치|중량|용량|정보)?\s*(?:표기|기재)(?:는|가|를|로|상|되어|됐)?/gi, " ")
+    .replace(/상세페이지(?:에서)?\s*확인(?:된|되는|한)\s*(?:구성|가격|할인|수치|중량|용량|정보|표기|내용)?/gi, " ")
+    .replace(/(?:구성|가격|할인|수치|중량|용량)\s*표기(?:예요|에요|입니다|로|가|는)?/gi, (match) => match.replace(/\s*표기.*$/i, ""))
+    .replace(/(?:확인된|확인되는|기재된)\s*(?:표기|수치|정보|내용|조건)/gi, " ")
+    .replace(/(?:표기|기재)(?:상|로는|에는|가|는)?\s*(?:보입니다|확인됩니다|되어\s*있습니다)/gi, " ")
+    .replace(/확인\s*결과(?:로|는|가|입니다)?/gi, " ")
+    .replace(/근거(?:상|에\s*따르면)/gi, " ")
+    .replace(/(?:로\s*)?(?:보입니다|확인됩니다|기재됩니다)[.!?]*$/i, "")
+    .replace(/\s+/g, " ")
+    .replace(/^[,.;:!?\s]+|[,.;:\s]+$/g, "")
+    .trim();
+
+  if (!core) return isOpening ? "잠깐만요.. 이 조건 실화인가요?" : "이 조건.. 그냥 지나치기 어렵죠?";
+  const candidates = isOpening
+    ? [`${core}.. 이거 실화인가요?`, `${core}..?`, core]
+    : [`${core}.. 이건 그냥 지나치기 어렵죠?`, `${core}.. 이거 꽤 놀랍죠?`, `${core}..?`, core];
+  const limit = isOpening ? 24 : 46;
+  return candidates.find((candidate) => candidate.length <= limit) || core.slice(0, limit);
+}
+
+/**
+ * ProductTruth와 상세페이지 출처는 사실 검증에만 사용한다. AI가 그 검수 과정을
+ * 소비자용 자막으로 옮긴 경우, 확인된 사실 자체는 남기고 시청자에게 직접 말하는
+ * 문장으로 바꾼다.
+ */
+export function repairDetailedPlanningAudienceCopy(concept: VideoConcept) {
+  let changed = false;
+  const cuts = concept.cuts.map((cut) => {
+    const caption = naturalizeEvidenceAuditCaption(cut.caption, cut.startSecond < 3);
+    const narration = naturalizeEvidenceAuditCaption(cut.narration, cut.startSecond < 3);
+    if (caption === cut.caption && narration === cut.narration) return cut;
+    changed = true;
+    return { ...cut, caption, narration };
+  });
+  if (!changed) return concept;
+  return {
+    ...concept,
+    cuts,
+    fullScript: cuts.map((cut) => cut.narration || cut.caption).join(" "),
+  };
+}
+
 /**
  * AI가 작성한 장면의 의미와 순서는 유지하면서 촬영 지시에 꼭 필요한 누락 신호만
  * 결정적으로 보완한다. 장면 신호 한두 개 누락 때문에 20개 대본 전체를 다시 생성하는
@@ -258,8 +344,11 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
     },
     {
       key: "natural-copy",
-      passed: cuts.every((cut) => cut.caption.length > 0 && cut.caption.length <= 34) && !GENERIC_COPY.some((pattern) => pattern.test(combined)),
-      message: "자막은 짧은 구어체여야 하며 범용 광고 문구를 사용하지 않아야 합니다.",
+      passed:
+        hasDetailedCaptionDensity(concept, cuts) &&
+        !GENERIC_COPY.some((pattern) => pattern.test(audienceCopy)) &&
+        !cuts.some((cut) => INTERNAL_PLANNING_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))),
+      message: "자막은 시청자에게 직접 말하는 충분한 구어체여야 하며 내부 기획 용어·범용 광고 문구를 사용하지 않아야 합니다.",
     },
     {
       key: "scene-specificity",

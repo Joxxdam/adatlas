@@ -4,7 +4,7 @@ import path from "node:path";
 import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
 import { defaultCompositionTypes, pickCompatibleRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
-import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
+import { nativeReferenceLibraryRepository, readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
 import { normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
 export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
@@ -90,6 +90,36 @@ function toNativeAdReference(selected: ManagedNativeReferenceItem, selectionReas
 /** 관리 화면에서 막 등록된 레퍼런스를 문구 구조 캐시에 전달할 때 사용합니다. */
 export function nativeAdReferenceFromManagedItem(item: ManagedNativeReferenceItem): NativeAdReference {
   return toNativeAdReference(normalizeNativeReferenceCompatibility(item), "레퍼런스 관리 화면에서 등록되어 문구 구조를 사전 분석합니다.");
+}
+
+/**
+ * 예전에 등록되어 OCR 문구가 비어 있는 레퍼런스도 상품명 위주의 안전 문구로
+ * 축약하지 않도록, 선택 직후 원문 문구를 분석해 같은 레퍼런스 객체에 결합한다.
+ * 두 장씩만 분석해 로컬 Codex 세션이 과도하게 동시에 열리지 않게 한다.
+ */
+export async function ensureNativeReferenceCopies(references: NativeAdReference[]) {
+  const hydrated = [...references];
+  const missingIndexes = references
+    .map((reference, index) => ({ reference, index }))
+    .filter(({ reference }) => reference.nativeCopy?.useForCopyAdaptation !== false && !reference.nativeCopy?.rawLines?.length);
+
+  for (let offset = 0; offset < missingIndexes.length; offset += 2) {
+    const batch = missingIndexes.slice(offset, offset + 2);
+    const copies = await Promise.all(
+      batch.map(async ({ reference }) => {
+        try {
+          return await nativeReferenceLibraryRepository.extractNativeCopy(reference.id);
+        } catch {
+          return reference.nativeCopy;
+        }
+      })
+    );
+    batch.forEach(({ reference, index }, batchIndex) => {
+      hydrated[index] = { ...reference, nativeCopy: copies[batchIndex] || reference.nativeCopy };
+    });
+  }
+
+  return hydrated;
 }
 
 function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {

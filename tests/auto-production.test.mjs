@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, executionResults, isCurrentAutoProductionGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, executionResults, isCurrentAutoProductionGenerationJob, isCurrentReferenceEditGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 import { hasDuplicateRunKey, isProductRecentlyProduced, selectFreshHook, textSimilarity } from "../app/lib/auto-production/duplicateGuard.ts";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "../app/lib/auto-production/hookSelector.ts";
 import { eligibleAutoProductionCandidates, plannedImageCount, selectAutoProductionCandidates } from "../app/lib/auto-production/productSelector.ts";
@@ -394,19 +394,25 @@ test("구형 4장 자동제작은 실행·복구하지 않고 현재 레퍼런�
     sourceType: "auto-production",
     version: CURRENT_AUTO_PRODUCTION_JOB_VERSION,
     pipeline: CURRENT_AUTO_PRODUCTION_PIPELINE,
+    copyPlanMode: "reference-adapted",
     results: referenceResults,
     executionResultIds: referenceResults.map((result) => result.id),
   };
   assert.equal(isCurrentAutoProductionGenerationJob(current), true);
   assert.equal(isServerRunnableGenerationJob(current), true);
+  const manual = { ...current, sourceType: "manual", executionResultIds: undefined };
+  assert.equal(isCurrentReferenceEditGenerationJob(manual), true);
+  assert.equal(isServerRunnableGenerationJob(manual), true);
+  assert.equal(isCurrentReferenceEditGenerationJob({ ...manual, results: manual.results.slice(0, 5) }), false);
   assert.equal(isCurrentAutoProductionGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
   assert.equal(isServerRunnableGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
   assert.equal(isServerRunnableGenerationJob({ ...current, sourceType: "manual", version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined }), true);
   assert.equal(isCurrentAutoProductionGenerationJob({ ...current, results: current.results.map((result) => ({ ...result, nativeCreative: undefined })) }), false);
 });
 
-test("핫리로드는 구형 v1 스케줄러를 폐기하고 정확한 시간 창을 쓰는 v2만 유지한다", async () => {
+test("핫리로드는 구형 스케줄러를 폐기하고 영속 순차 대기열을 쓰는 v3만 유지한다", async () => {
   const scheduler = await read("app/lib/auto-production/scheduler.server.ts");
+  assert.match(scheduler, /scheduler-v3-sequential-queue/);
   assert.match(scheduler, /scheduler-v2-exact-window/);
   assert.match(scheduler, /retireLegacyAutoProductionSchedulers/);
   assert.match(scheduler, /clearInterval/);
@@ -572,11 +578,20 @@ test("29. 최근 실행 API는 오늘·어제·7일·직접 기간 조회를 서
   assert.match(repository, /run\.businessDate <= options\.dateTo/);
 });
 
-test("30. 스케줄러는 저장된 전역 광고주 동시성만큼만 run을 시작한다", async () => {
+test("30. 자정 예약은 모든 몰을 먼저 저장하고 기존 작업이 끝날 때마다 하나씩 시작한다", async () => {
   const scheduler = await read("app/lib/auto-production/scheduler.server.ts");
-  assert.match(scheduler, /availableAdvertiserSlots\(settings\.globalConcurrency\)/);
-  assert.match(scheduler, /slice\(0, slots\.available\)/);
-  assert.match(scheduler, /activeAdvertisers\.has\(config\.advertiserId\)/);
+  const runner = await read("app/lib/auto-production/productionRunner.server.ts");
+  assert.match(scheduler, /scheduleAutoProductionForAdvertiser/);
+  assert.match(scheduler, /startNextScheduledRun/);
+  assert.match(scheduler, /if \(processing\.length\) return null/);
+  assert.match(scheduler, /statuses: \["scheduled"\]/);
+  assert.doesNotMatch(scheduler.slice(scheduler.indexOf("export async function tickAutoProductionScheduler"), scheduler.indexOf("export async function runAutoProductionNow")), /slice\(0, slots\.available\)/);
+  assert.doesNotMatch(scheduler, /availableAdvertiserSlots/);
+  assert.match(scheduler, /for \(const config of due\)/);
+  assert.match(scheduler, /예약 후 광고주 자동제작 설정이 비활성화되어 건너뛰었습니다/);
+  assert.match(runner, /if \(run\.status !== "scheduled"\) return run/);
+  assert.match(runner, /startedAt: now\.toISOString\(\)/);
+  assert.match(runner, /statuses: processingStatuses/);
 });
 
 test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과를 같은 화면에서 확인한다", async () => {

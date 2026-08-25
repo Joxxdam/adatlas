@@ -22,7 +22,7 @@ const monitorKey = Symbol.for("daywiz.auto-production.monitors-v2-current-contra
 const globalState = globalThis as typeof globalThis & { [monitorKey]?: Map<string, Promise<void>> };
 const monitors = globalState[monitorKey] ?? new Map<string, Promise<void>>();
 globalState[monitorKey] = monitors;
-const activeStatuses = ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"];
+const processingStatuses = ["selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"];
 const terminalProductStatuses = new Set(["completed", "failed", "skipped-duplicate", "skipped-insufficient-data", "skipped-unavailable"]);
 
 function wait(milliseconds: number) {
@@ -133,7 +133,6 @@ function runRecord(config: AutoProductionAdvertiserConfig, trigger: AutoProducti
     errors: [],
     createdAt: timestamp,
     updatedAt: timestamp,
-    startedAt: timestamp,
   };
 }
 
@@ -141,6 +140,7 @@ function directRunRecord(config: AutoProductionAdvertiserConfig, now: Date): Aut
   return {
     ...runRecord(config, "manual", now),
     runKey: `${seoulClock(now).date}:direct-product:${randomUUID()}`,
+    startedAt: now.toISOString(),
   };
 }
 
@@ -173,7 +173,7 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       errors: [...current.errors, "최신 자동제작 6장 계약을 충족하지 않아 실행을 차단했습니다."].slice(-20),
       results: current.results.map((result) => (result.status === "pending" ? { ...result, status: "cancelled" as const } : result)),
     }));
-    throw new Error("자동제작은 최신 v12 공통 경로와 서로 다른 카테고리 레퍼런스 6장이 모두 준비된 경우에만 실행합니다.");
+    throw new Error("자동제작은 최신 공통 레퍼런스 편집 경로와 서로 다른 카테고리 레퍼런스 6장이 모두 준비된 경우에만 실행합니다.");
   }
   const queuedJob = await creativeGenerationJobStore.update(job.id, (current) => ({
     ...current,
@@ -182,7 +182,7 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
     status: "pending",
   }));
   if (!isCurrentAutoProductionGenerationJob(queuedJob)) {
-    throw new Error("자동제작 작업의 v12·6장 실행 계약 검증에 실패했습니다.");
+    throw new Error("자동제작 작업의 공통 레퍼런스 편집·6장 실행 계약 검증에 실패했습니다.");
   }
   await autoProductionRepository.update(run.id, (current) => ({
     ...current,
@@ -238,19 +238,27 @@ export async function runAutoProductionForProduct(config: AutoProductionAdvertis
   }
 }
 
-export async function runAutoProductionForAdvertiser(config: AutoProductionAdvertiserConfig, options: { trigger?: AutoProductionRun["trigger"]; now?: Date } = {}) {
+export async function scheduleAutoProductionForAdvertiser(config: AutoProductionAdvertiserConfig, options: { trigger?: AutoProductionRun["trigger"]; now?: Date } = {}) {
   const now = options.now || new Date();
-  const created = await autoProductionRepository.createUnique(runRecord(config, options.trigger || "manual", now));
-  if (!created.created || !created.run) return { run: created.run, created: false };
-  const initial = created.run;
+  return autoProductionRepository.createUnique(runRecord(config, options.trigger || "scheduled", now));
+}
+
+export async function startScheduledAutoProductionRun(runId: string, config: AutoProductionAdvertiserConfig, options: { now?: Date } = {}) {
+  const now = options.now || new Date();
+  let claimed = false;
+  const initial = await autoProductionRepository.update(runId, (run) => {
+    if (run.status !== "scheduled") return run;
+    claimed = true;
+    return { ...run, status: "selecting-products", startedAt: now.toISOString() };
+  });
+  if (!claimed) return { run: initial, started: false };
   try {
-    await autoProductionRepository.update(initial.id, (run) => ({ ...run, status: "selecting-products" }));
     const settings = await autoProductionAdvertiserRepository.settings();
     const alreadyReserved = await autoProductionRepository.reservedImageCount(initial.businessDate);
     const remainingDaily = Math.max(0, settings.maxImagesPerDay - alreadyReserved);
     if (!remainingDaily) {
       const skipped = await autoProductionRepository.update(initial.id, (run) => ({ ...run, status: "skipped", completedAt: new Date().toISOString(), warnings: [...run.warnings, "오늘의 자동 제작 이미지 한도에 도달해 실행하지 않았습니다."] }));
-      return { run: skipped, created: true };
+      return { run: skipped, started: true };
     }
     const preview = await previewAutoProduction(config, now);
     const runQuota = Math.min(remainingDaily, config.maxImagesPerRun);
@@ -275,7 +283,7 @@ export async function runAutoProductionForAdvertiser(config: AutoProductionAdver
       warnings: [...current.warnings, ...preview.warnings, ...(selected.length ? [] : ["제작 가능한 상품 후보가 없어 실행하지 않았습니다."])],
       completedAt: selected.length ? undefined : new Date().toISOString(),
     }));
-    if (!selected.length) return { run, created: true };
+    if (!selected.length) return { run, started: true };
     for (const task of tasks) {
       try {
         await prepareTask(run, config, task);
@@ -295,12 +303,20 @@ export async function runAutoProductionForAdvertiser(config: AutoProductionAdver
     }));
     await autoProductionAdvertiserRepository.update(config.advertiserId, { lastRunAt: now.toISOString(), nextRunAt: nextScheduledAt(config, now) });
     if (run.status === "generating-creatives") ensureAutoProductionRunMonitor(run.id);
-    return { run, created: true };
+    return { run, started: true };
   } catch (error) {
     const message = safeMessage(error, "자동 제작 실행에 실패했습니다.");
     const failed = await autoProductionRepository.update(initial.id, (run) => ({ ...run, status: "failed", errors: [...run.errors, message], completedAt: new Date().toISOString() }));
-    return { run: failed, created: true };
+    return { run: failed, started: true };
   }
+}
+
+export async function runAutoProductionForAdvertiser(config: AutoProductionAdvertiserConfig, options: { trigger?: AutoProductionRun["trigger"]; now?: Date } = {}) {
+  const now = options.now || new Date();
+  const created = await scheduleAutoProductionForAdvertiser(config, { trigger: options.trigger || "manual", now });
+  if (!created.created || !created.run) return { run: created.run, created: false };
+  const started = await startScheduledAutoProductionRun(created.run.id, config, { now });
+  return { run: started.run, created: true };
 }
 
 export async function syncAutoProductionRun(runId: string) {
@@ -377,7 +393,7 @@ export function ensureAutoProductionRunMonitor(runId: string) {
   const monitor = (async () => {
     while (true) {
       const run = await syncAutoProductionRun(runId);
-      if (!run || !activeStatuses.includes(run.status)) return;
+      if (!run || !processingStatuses.includes(run.status)) return;
       await wait(4_000);
     }
   })().finally(() => monitors.delete(runId));
@@ -386,13 +402,15 @@ export function ensureAutoProductionRunMonitor(runId: string) {
 }
 
 export async function recoverAutoProductionRuns() {
-  const runs = await autoProductionRepository.list({ statuses: activeStatuses as AutoProductionRun["status"][], limit: 100 });
+  // scheduled는 영속 대기열이다. 아직 task가 없는 대기 작업을 동기화하면
+  // 빈 작업을 실패로 오인하므로 실제 처리가 시작된 run만 복구한다.
+  const runs = await autoProductionRepository.list({ statuses: processingStatuses as AutoProductionRun["status"][], limit: 100 });
   for (const run of runs) {
     for (const task of run.tasks) {
       if (!task.generationJobId || terminalProductStatuses.has(task.status)) continue;
       const stored = await creativeGenerationJobStore.get(task.generationJobId);
       if (stored && stored.sourceType === "auto-production" && !isCurrentAutoProductionGenerationJob(stored)) {
-        const message = "구형 자동제작 작업은 재개하지 않았습니다. 다음 예약부터 최신 v12·레퍼런스 6장 경로로 새로 제작합니다.";
+        const message = "구형 자동제작 작업은 재개하지 않았습니다. 다음 예약부터 최신 레퍼런스 원본 → 상품 교체 → 문구 교체 6장 경로로 새로 제작합니다.";
         await creativeGenerationJobStore.update(stored.id, (current) => ({
           ...current,
           status: "cancelled",

@@ -138,9 +138,9 @@ test("새 상품군 우선 ZIP 레퍼런스 작업 버전은 서버 러너가 �
   );
 });
 
-test("개발 서버 핫리로드는 사전 차단 복구·선행 광고문구를 포함한 v7 러너를 사용한다", async () => {
+test("개발 서버 핫리로드는 고정 레퍼런스 공통 계약을 사용하는 v8 러너를 사용한다", async () => {
   const source = await readFile(new URL("../app/lib/creative-generation/jobRunner.server.ts", import.meta.url), "utf8");
-  assert.match(source, /server-runner-v7-early-copy-and-unblocked-results/);
+  assert.match(source, /server-runner-v8-fixed-reference-edit-contract/);
   assert.match(source, /시작 전 v11 작업을 상품군 우선 ZIP 레퍼런스로 재배정/);
   assert.match(source, /사전 문구 검증 차단을 해제하고 pending으로 복구/);
   assert.match(source, /resolveFastCreativeRuntime\(\)\.concurrency/);
@@ -305,9 +305,22 @@ test("AI 프롬프트는 원본 상품·정확한 한글·검증된 가격을 �
 
 test("신규 reference-first 작업은 구조를 생성하지 않고 상품·문구·치명 QA만 단계 편집한다", () => {
   const job = { productTruth: truth, creativePlan: { categoryCreativeProfile: { category: "personal_care" } }, results };
+  const slotResult = {
+    ...results[0],
+    referenceAdaptedCopyPlan: {
+      referenceRawCopy: "2주만에 흑무릎 탈출\n새까만 무릎, 그거 때 아니야\n1+1 흑무릎 탈색 세럼",
+      referenceRawLines: ["2주만에 흑무릎 탈출", "새까만 무릎, 그거 때 아니야", "1+1 흑무릎 탈색 세럼"],
+      adaptedLines: ["민트 쿨링으로 샤워 고민 탈출", "운동 후 답답함, 상쾌하게 씻어요", "민트 사용감으로 산뜻한 마무리"],
+      copySlots: [
+        { index: 0, role: "headline", sourceText: "2주만에 흑무릎 탈출", targetText: "민트 쿨링으로 샤워 고민 탈출", emphasis: "strong" },
+        { index: 1, role: "support", sourceText: "새까만 무릎, 그거 때 아니야", targetText: "운동 후 답답함, 상쾌하게 씻어요", emphasis: "light" },
+        { index: 2, role: "offer", sourceText: "1+1 흑무릎 탈색 세럼", targetText: "민트 사용감으로 산뜻한 마무리", emphasis: "strong" },
+      ],
+    },
+  };
   const structure = buildNativeStagePrompt("structure-recreation", job, results[0], "/tmp/01-structure.png");
   const productReplacement = buildNativeStagePrompt("product-replacement", job, results[0], "/tmp/02-product.png");
-  const copyReplacement = buildNativeStagePrompt("copy-replacement", job, results[0], "/tmp/03-copy.png");
+  const copyReplacement = buildNativeStagePrompt("copy-replacement", job, slotResult, "/tmp/03-copy.png");
   const qaRepair = buildNativeStagePrompt("qa-repair", job, results[0], "/tmp/04-qa.png", "가격 표기를 다시 확인하세요.");
 
   assert.match(structure, /STAGE 1 OF 4/);
@@ -317,7 +330,9 @@ test("신규 reference-first 작업은 구조를 생성하지 않고 상품·문
   assert.match(productReplacement, /STAGE 2 OF 4/);
   assert.match(productReplacement, /authoritative product-page images/);
   assert.match(productReplacement, /REPLACE THE PRODUCT WITH AUTHORITATIVE PRODUCT REFERENCES/);
-  assert.match(productReplacement, /Change ONLY the source product instances/);
+  assert.match(productReplacement, /Change the source product instances/);
+  assert.match(productReplacement, /clearly different fictional adult/);
+  assert.match(productReplacement, /visible source-person region/);
   assert.match(productReplacement, /Never extract, cut out or locally composite/);
   assert.match(copyReplacement, /STAGE 3 OF 4/);
   assert.match(copyReplacement, /Change ONLY the source advertisement's copy/);
@@ -325,6 +340,11 @@ test("신규 reference-first 작업은 구조를 생성하지 않고 상품·문
   assert.match(copyReplacement, /regenerate this complete raster/);
   assert.match(copyReplacement, /메인 문구: 후킹 1/);
   assert.match(copyReplacement, /가격·혜택: 12,000원/);
+  assert.match(copyReplacement, /SOURCE → TARGET COPY SLOT CONTRACT/);
+  assert.match(copyReplacement, /headline\/strong/);
+  assert.match(copyReplacement, /same number of headline, support, proof, offer\/label, CTA and badge zones/);
+  assert.match(copyReplacement, /must never collapse into a plain product-name label/);
+  assert.match(copyReplacement, /Render no number, price, discount, quantity or benefit that is absent from EXACT COPY/);
   assert.match(copyReplacement, /There will be no local text overlay/);
   assert.match(qaRepair, /STAGE 4 OF 4/);
   assert.match(qaRepair, /product count/);
@@ -343,10 +363,14 @@ test("육류는 원본 부위와 마블링을 근거로 장면 안에 자연스�
   const validation = buildNativeValidationPrompt(meatJob, results[0]);
   assert.equal(resolveProductRenderingPolicy(meatJob), "natural-meat-reference");
   assert.match(productReplacement, /MEAT PRODUCT POLICY — NATURAL SCENE INTEGRATION/);
-  assert.match(productReplacement, /marbling distribution/);
+  assert.match(productReplacement, /irregular marbling boundaries/);
+  assert.match(productReplacement, /non-repeating muscle fibers/);
+  assert.match(productReplacement, /not lacquered, glassy, rubbery or uniformly glossy/);
   assert.match(productReplacement, /never like a rectangular source photo or detached cutout/);
   assert.match(productReplacement, /different cut, grade, origin, quantity or package/);
-  assert.match(productReplacement, /Change ONLY the source product instances/);
+  assert.match(productReplacement, /Change the source product instances/);
+  assert.match(validation, /clearly different fictional adult/);
+  assert.match(validation, /smooth plastic\/waxy surface/);
   assert.match(validation, /natural, appetizing, physically coherent food photography/);
 });
 
@@ -359,7 +383,7 @@ test("화장품은 원본을 참고자료로만 쓰고 로컬 누끼 없이 전�
   assert.equal(resolveProductRenderingPolicy(beautyJob), "ai-packaged-product-reference");
   assert.match(productPrompt, /FULL AI REFERENCE INTEGRATION/);
   assert.match(productPrompt, /Never extract, cut out or locally composite/);
-  assert.match(productPrompt, /Change ONLY the source product instances/);
+  assert.match(productPrompt, /Change the source product instances/);
   assert.match(copyPrompt, /Preserve the AI-integrated package/);
   assert.doesNotMatch(generationSource, /createIdentityLockedProductComposite|restoreIdentityLockedProduct|02-product-base|03-copy-base/);
   assert.doesNotMatch(compositorSource, /createIdentityLockedProductComposite/);
@@ -705,7 +729,8 @@ test("새 작업에 배정된 상품군 레퍼런스는 재생성에서도 다�
   const generationSource = await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts", import.meta.url), "utf8");
   assert.match(createSource, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6/);
   assert.match(createSource, /adReference: selectedAdReferences\[index\]/);
-  assert.match(generationSource, /initial\.nativeCreative\?\.adReference \|\| selectNativeAdReference/);
+  assert.match(generationSource, /usesCurrentReferenceEditPipeline\(job\) \? undefined : selectNativeAdReference/);
+  assert.match(generationSource, /이 작업에 고정된 광고 레퍼런스가 없습니다/);
   assert.doesNotMatch(generationSource, /adReference && action !== "regenerate"/);
 });
 
@@ -714,7 +739,8 @@ test("새 작업은 레퍼런스를 먼저 고정하고 레퍼런스 적응 문�
   assert.match(source, /selectCategoryNativeAdReferences/);
   assert.match(source, /planReferenceAdaptedCopies/);
   assert.match(source, /copyPlanMode = "reference-adapted"/);
-  assert.match(source, /pipeline = "reference-first-adapted-copy"/);
+  assert.match(source, /pipeline = CURRENT_REFERENCE_EDIT_PIPELINE/);
+  assert.match(source, /assertCurrentReferenceEditGenerationJob\(job\)/);
   assert.doesNotMatch(source, /planHooksWithCodexLocal|buildExplorationCreativePlan|readCategoryHookPrior|buildProductHookExploration/);
 });
 
@@ -1139,12 +1165,13 @@ test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전�
   const source = await readFile(new URL("../app/components/features/creative-generation/SixCreativeGenerator.tsx", import.meta.url), "utf8");
   const jobFactory = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
   const adaptedPlanner = await readFile(new URL("../app/lib/creative-generation/referenceAdaptedPlanning.server.ts", import.meta.url), "utf8");
+  const nativeResultGenerator = await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts", import.meta.url), "utf8");
   assert.match(source, /concurrency: 3/);
   assert.match(source, /수정 문구로 전체 광고 재생성/);
   assert.doesNotMatch(source, /문구만 적용|AI 재생성 없이/);
   assert.match(source, /동일 레퍼런스로 다시 만들기/);
   assert.match(source, /다른 레퍼런스로 다시 만들기/);
-  assert.match(jobFactory, /generation-job-v13-reference-first-adapted-copy/);
+  assert.match(jobFactory, /CURRENT_REFERENCE_EDIT_JOB_VERSION/);
   assert.match(source, /reference-first-adapted-copy/);
   assert.match(source, /generationStageProgress/);
   assert.match(source, /장째 광고를 제작 중입니다/);
@@ -1166,6 +1193,11 @@ test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전�
   assert.doesNotMatch(jobFactory, /후킹 기획을 다시 실행해 주세요/);
   assert.match(jobFactory, /planReferenceAdaptedCopies/);
   assert.match(adaptedPlanner, /adaptedLines.*rawLines.*같은 개수·순서·빈 줄/);
+  assert.match(adaptedPlanner, /replaceUnusablePlansWithTruthFallback/);
+  assert.match(adaptedPlanner, /ProductTruth 기반 안전 문구 슬롯으로 생성합니다/);
+  assert.match(adaptedPlanner, /validateCopyAgainstTruth\(renderedCopy, truth\)\.valid/);
+  assert.match(nativeResultGenerator, /createTruthFallbackReferenceCopyPlan/);
+  assert.match(nativeResultGenerator, /빈 문구 계획을 ProductTruth 안전 문구로 교체해 제작을 계속합니다/);
   assert.doesNotMatch(jobFactory, /planHooksWithCodexLocal|buildExplorationCreativePlan/);
   const localPlanner = await readFile(new URL("../app/lib/creative-generation/CodexLocalHookPlanner.server.ts", import.meta.url), "utf8");
   assert.doesNotMatch(localPlanner, /로컬 Codex 후킹 기획을 사용할 수 없어/);

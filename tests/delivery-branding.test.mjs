@@ -14,10 +14,10 @@ test("업체 로고 16개를 완성 이미지 후처리 전용 목록으로 제�
   }
 });
 
-test("결과 UI에서 로고와 AI 고지를 선택해 현재 완성 이미지에 일괄 적용한다", async () => {
+test("상품 광고 제작 결과 UI에는 로고와 AI 고지 후처리를 노출하지 않는다", async () => {
   const workspace = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
-  for (const label of ["완성 이미지에만 로고·AI 고지 일괄 적용", "우측 상단 업체 로고", "AI 생성 이미지 고지 추가", "현재 ${visibleGeneratedResults.length}장에 일괄 적용", "원본으로 되돌리기"]) assert.match(workspace, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.match(workspace, /delivery-branding/);
+  for (const label of ["완성 이미지에만 로고·AI 고지 일괄 적용", "우측 상단 업체 로고", "AI 생성 이미지 고지 추가", "현재 ${visibleGeneratedResults.length}장에 일괄 적용"]) assert.doesNotMatch(workspace, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(workspace, /\/api\/creative-generation\/jobs\/\$\{encodeURIComponent\(job\.id\)\}\/delivery-branding/);
   assert.match(workspace, /deliveryBranding\?\.updatedAt/);
 });
 

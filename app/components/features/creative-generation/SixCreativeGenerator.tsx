@@ -12,7 +12,6 @@ import { buildGenerationSummary } from "../../../lib/creative-generation/generat
 import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
 import { failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
-import { AI_GENERATED_IMAGE_DISCLOSURE, advertiserLogos, findAdvertiserLogo } from "../../../lib/creative-generation/deliveryBranding";
 
 type Props = {
   analysisRevision: number;
@@ -117,9 +116,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const [job, setJob] = useState<GenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [brandingApplying, setBrandingApplying] = useState(false);
-  const [selectedDeliveryLogoId, setSelectedDeliveryLogoId] = useState("");
-  const [includeAiDisclosure, setIncludeAiDisclosure] = useState(false);
   const [referenceCategoryOverride, setReferenceCategoryOverride] = useState<ReferenceCategoryChoice>("");
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
@@ -133,7 +129,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const previousAnalysisRevision = useRef(props.analysisRevision);
   const creatingJob = useRef(false);
   const restoreRequestVersion = useRef(0);
-  const restoredBrandingJobId = useRef("");
   const restoredReferenceCategoryJobId = useRef("");
   const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl);
   const previousAnalyzedProductUrl = useRef(currentProductUrl);
@@ -186,12 +181,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     if (restoredReferenceCategoryJobId.current !== payload.job.id) {
       restoredReferenceCategoryJobId.current = payload.job.id;
       setReferenceCategoryOverride(payload.job.referenceCategoryOverride || "");
-    }
-    const restoredBranding = payload.job.results.find((result) => result.deliveryBranding)?.deliveryBranding;
-    if (restoredBranding && restoredBrandingJobId.current !== payload.job.id) {
-      restoredBrandingJobId.current = payload.job.id;
-      setSelectedDeliveryLogoId(restoredBranding.logoId || "");
-      setIncludeAiDisclosure(restoredBranding.aiDisclosure);
     }
     const restoredProductUrl = normalizeCreativeProductUrl(payload.job.productTruth.product.landingUrl);
     if (shouldPersistGenerationJob(payload.job)) {
@@ -587,37 +576,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     setMessage(action === "approve" ? "광고주 선호 방향으로 저장했습니다. 성과 데이터로 간주하지 않습니다." : action === "exclude" ? "다음 제작의 제외 방향으로 저장했습니다. 성과 데이터로 간주하지 않습니다." : action === "golden-reference" ? "골든 레퍼런스로 등록했습니다. 다음 제작에서는 추상적인 스타일 특성만 참고합니다." : "광고주 피드백을 저장했습니다.");
   }
 
-  async function applyDeliveryBranding(clear = false) {
-    if (!job) return;
-    const resultIds = job.results.filter((result) => Boolean(result.imagePath && result.nativeCreative?.finalPath)).map((result) => result.id);
-    if (!resultIds.length) return;
-    setBrandingApplying(true);
-    try {
-      const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/delivery-branding`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clear,
-          logoId: clear ? undefined : selectedDeliveryLogoId || undefined,
-          aiDisclosure: clear ? false : includeAiDisclosure,
-          resultIds,
-        }),
-      });
-      const payload = (await response.json()) as {
-        job?: GenerationJob;
-        appliedCount?: number;
-        error?: string;
-      };
-      if (!response.ok || !payload.job) throw new Error(payload.error || "완성 이미지 후처리에 실패했습니다.");
-      setJob(payload.job);
-      setMessage(clear ? `완성 이미지 ${payload.appliedCount || resultIds.length}장을 원본 상태로 되돌렸습니다.` : `완성 이미지 ${payload.appliedCount || resultIds.length}장에 선택한 표시를 일괄 적용했습니다.`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "완성 이미지 후처리에 실패했습니다.");
-    } finally {
-      setBrandingApplying(false);
-    }
-  }
-
   async function downloadAll(requireAllResults = false) {
     if (!job) return;
     const completedResults = job.results.filter((result) => Boolean(result.imagePath && result.nativeCreative?.finalPath));
@@ -710,8 +668,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const activeResults = [...(job?.results || [])].filter((result) => result.status === "running").sort((left, right) => left.order - right.order);
   const completedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath && result.nativeCreative?.finalPath)).sort((left, right) => left.order - right.order);
   const visibleGeneratedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);
-  const brandedResultCount = visibleGeneratedResults.filter((result) => Boolean(result.deliveryBranding)).length;
-  const selectedDeliveryLogo = findAdvertiserLogo(selectedDeliveryLogoId);
   const attentionResults = [...(job?.results || [])].filter((result) => failedGenerationResultStatuses.has(result.status)).sort((left, right) => left.order - right.order);
   const attentionResultsWithoutImage = attentionResults.filter((result) => !result.imagePath);
   const missingImageResults = [...(job?.results || [])].filter((result) => !result.imagePath);
@@ -812,41 +768,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                 </div>
                 <small>이미지가 만들어지는 즉시 표시되고 다운로드할 수 있습니다.</small>
               </div>
-              <section className="delivery-branding-panel" aria-label="완성 이미지 로고와 AI 생성 고지 적용">
-                <div className="delivery-branding-copy">
-                  <span>선택 후처리</span>
-                  <strong>완성 이미지에만 로고·AI 고지 일괄 적용</strong>
-                  <small>원본 생성 이미지는 보존됩니다. 적용하지 않거나 언제든 원본으로 되돌릴 수 있습니다.</small>
-                </div>
-                <label className="delivery-logo-select">
-                  <span>우측 상단 업체 로고</span>
-                  <select onChange={(event) => setSelectedDeliveryLogoId(event.target.value)} value={selectedDeliveryLogoId}>
-                    <option value="">로고 적용 안 함</option>
-                    {advertiserLogos.map((logo) => (
-                      <option key={logo.id} value={logo.id}>
-                        {logo.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="delivery-logo-preview">{selectedDeliveryLogo ? <img alt={`${selectedDeliveryLogo.label} 로고 미리보기`} src={selectedDeliveryLogo.imagePath} /> : <span>로고 없음</span>}</div>
-                <label className="delivery-disclosure-option">
-                  <input checked={includeAiDisclosure} onChange={(event) => setIncludeAiDisclosure(event.target.checked)} type="checkbox" />
-                  <span>
-                    <strong>AI 생성 이미지 고지 추가</strong>
-                    <small>{AI_GENERATED_IMAGE_DISCLOSURE}</small>
-                  </span>
-                </label>
-                <div className="delivery-branding-actions">
-                  <button disabled={brandingApplying || (!selectedDeliveryLogoId && !includeAiDisclosure)} onClick={() => void applyDeliveryBranding(false)} type="button">
-                    {brandingApplying ? "일괄 적용 중…" : `현재 ${visibleGeneratedResults.length}장에 일괄 적용`}
-                  </button>
-                  <button disabled={brandingApplying || !brandedResultCount} onClick={() => void applyDeliveryBranding(true)} type="button">
-                    원본으로 되돌리기
-                  </button>
-                  {brandedResultCount ? <small>{brandedResultCount}장에 후처리 적용됨</small> : null}
-                </div>
-              </section>
               <div className="six-creative-grid">
                 {visibleGeneratedResults.map((result) => {
                   return (

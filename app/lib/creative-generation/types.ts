@@ -64,6 +64,14 @@ export type ReferenceAdaptedCopyPlan = {
   referenceRawCopy?: string;
   referenceRawLines?: string[];
   adaptedLines?: string[];
+  /** 원본 문구 블록과 최종 문구 블록의 1:1 편집 계약입니다. */
+  copySlots?: Array<{
+    index: number;
+    role: "headline" | "support" | "proof" | "offer" | "cta" | "badge" | "other";
+    sourceText: string;
+    targetText: string;
+    emphasis: "none" | "light" | "strong";
+  }>;
   headline: string;
   subCopy: string;
   proof: string;
@@ -521,6 +529,9 @@ export type NativeGroupValidation = {
 
 export type NativeCreativeArtifact = {
   engine: CreativeGenerationEngine;
+  /** 수동·자동 신규 작업이 공유하는 고정 레퍼런스 편집 계약입니다. */
+  workflow?: "reference-lock-product-then-copy";
+  stageOrder?: readonly ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"];
   /** One of the unique advertisements randomly selected from the matching ZIP category for this result. */
   adReference?: {
     id: string;
@@ -559,6 +570,8 @@ export type NativeCreativeArtifact = {
   revisionCount: number;
   validation?: NativeCreativeValidation;
   provenance?: {
+    workflow?: "reference-lock-product-then-copy";
+    stageOrder?: readonly ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"];
     referenceId: string;
     referenceSourcePath: string;
     referenceRawCopy?: string;

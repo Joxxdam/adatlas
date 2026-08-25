@@ -4,7 +4,7 @@ import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerati
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
 import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v6-locked-regions";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v8-human-meat-realism";
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -24,6 +24,15 @@ function hasVerifiedReviewEvidence(job: GenerationJob, result: GenerationResult)
   return job.productTruth.facts.some((fact) => fact.evidenceType === "review" && fact.usableInCopy && fact.verification !== "unverified" && (!selected.size || selected.has(fact.id)));
 }
 
+function humanReferenceIdentityContract() {
+  return `HUMAN REFERENCE IDENTITY POLICY
+- When the selected advertisement reference contains a person, preserve only the person's compositional function: approximate position, body pose, gaze direction, action, framing, lighting and product interaction.
+- Replace that source person with a clearly different fictional adult. Change facial structure, eyes, nose, mouth, hairstyle, hair color or texture, wardrobe details and accessories together; a minor face retouch is not enough.
+- Never reproduce, identify or preserve the source person's recognizable face or biometric likeness. The result should feel like the same art direction photographed with a different model.
+- Keep anatomy, hands, product grip, occlusion, perspective and contact physically natural. Do not change the macro layout merely to change identity.
+- When the source reference has no person, do not add one unless the inherited composition and verified usage story clearly require it.`;
+}
+
 /** Native generation creates the complete advertisement, never a background plate. */
 export function buildNativeFinalCreativePrompt(job: GenerationJob, result: GenerationResult, outputPath: string, feedback?: string, brandMemory?: AdvertiserBrandMemory) {
   const brief = result.hookPlan.creativeBrief;
@@ -38,6 +47,7 @@ export function buildNativeFinalCreativePrompt(job: GenerationJob, result: Gener
   const facts = verifiedFacts(job, result);
   const verifiedReviewEvidence = hasVerifiedReviewEvidence(job, result);
   const productContract = productRenderingPromptContract(job, result);
+  const humanContract = humanReferenceIdentityContract();
   const exactCopy = [`MAIN COPY: ${result.hookPlan.headline}`, result.hookPlan.body ? `SUB COPY: ${result.hookPlan.body}` : "", result.hookPlan.proof ? `PROOF: ${result.hookPlan.proof}` : "", result.hookPlan.offer ? `OFFER: ${result.hookPlan.offer}` : "", result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : ""].filter(Boolean).join("\n");
 
   return `Use the image generation skill to create ONE FINAL, COMPLETE, READY-TO-RUN Korean square performance advertisement.
@@ -59,6 +69,8 @@ AUTHORITATIVE PRODUCT REFERENCE
 - Repeat or overlap the same product only when the verified composition and this hook genuinely need quantity/lineup emphasis. Otherwise use one dominant product hero.
 
 ${productContract}
+
+${humanContract}
 
 EXACT KOREAN COPY TO RENDER
 ${exactCopy}
@@ -122,9 +134,15 @@ export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job
   const facts = verifiedFacts(job, result);
   const productPolicy = resolveProductRenderingPolicy(job);
   const productContract = productRenderingPromptContract(job, result);
+  const humanContract = humanReferenceIdentityContract();
   const referenceRawCopy = result.referenceAdaptedCopyPlan?.referenceRawCopy || result.nativeCreative?.adReference?.nativeCopy?.rawText || "";
   const referenceRawLines = result.referenceAdaptedCopyPlan?.referenceRawLines || result.nativeCreative?.adReference?.nativeCopy?.rawLines || [];
   const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
+  const copySlotContract = result.referenceAdaptedCopyPlan?.copySlots?.length
+    ? result.referenceAdaptedCopyPlan.copySlots
+        .map((slot) => `${slot.index + 1}. [${slot.role}/${slot.emphasis}] ${slot.sourceText.trim() ? JSON.stringify(slot.sourceText) : "[read the visually corresponding source zone directly from the reference]"} → ${JSON.stringify(slot.targetText)}`)
+        .join("\n")
+    : referenceRawLines.map((line, index) => `${index + 1}. [원본 역할 유지] ${JSON.stringify(line)} → ${JSON.stringify(adaptedLines[index] || "")}`).join("\n");
   const exactCopy = [
     `줄별 최종 문구(JSON 배열, 각 원소가 한 줄): ${JSON.stringify(adaptedLines)}`,
     `메인 문구: ${result.hookPlan.headline}`,
@@ -143,6 +161,8 @@ OUTPUT CONTRACT
 - ${materialLabel(result)} uses its own randomly assigned ZIP reference. H01-H06 is only an internal ordering code; do not invent or impose a separate hook concept.
 
 ${productContract}
+
+${humanContract}
 `;
 
   if (stage === "structure-recreation") {
@@ -165,14 +185,14 @@ SOURCE ORDER
 - FOLLOWING attachments: authoritative product-page images. They define the real sales unit and product identity.
 
 TASK
-- Change ONLY the source product instances into ${productName} using the attached product references.
+- Change the source product instances into ${productName} using the attached product references. When a source person is visible, regenerate that person as the clearly different fictional adult required by HUMAN REFERENCE IDENTITY POLICY in the same compositional role.
 - Preserve exact package geometry, material, dominant color, cap/container shape, label hierarchy, brand/logo placement, sales-unit count and recognizable product details.
 - Match the original reference product positions, count, perspective, scale, shadows, reflections, contact, depth and lighting so the replacement belongs in exactly the same design.
-- Treat the entire non-product region as locked pixels: do not change the background, typography, source wording, price, badges, colors, graphic shapes, borders, spacing or layout in this stage.
+- Treat the entire region outside the old product and visible source-person regions as locked pixels: do not change the background, typography, source wording, price, badges, colors, graphic shapes, borders, spacing or layout in this stage.
 - If the reference repeats one product visually, repeat the same verified target product cleanly without implying a bundle or changing the verified sales unit.
 - Do not invent variants, flavors, package counts or labels. Do not add new marketing copy, price or offer yet.
-- LOCKED REGIONS: every pixel outside the old product region, including all original copy, typography, background, people, props, graphic shapes, badges and spacing.
-- EDITABLE REGION: only the old product region(s).
+- LOCKED REGIONS: every pixel outside the old product region(s) and any visible source-person region(s), including all original copy, typography, background, unrelated props, graphic shapes, badges and spacing.
+- EDITABLE REGIONS: the old product region(s), plus visible source-person region(s) solely for replacing identity while preserving pose, action, scale, lighting and product interaction.
 `;
   }
 
@@ -198,16 +218,23 @@ ${referenceRawLines.length ? referenceRawLines.map((line, index) => `${index + 1
 TARGET ADAPTED LINE ORDER
 ${adaptedLines.map((line, index) => `${index + 1}. ${line}`).join("\n")}
 
+SOURCE → TARGET COPY SLOT CONTRACT
+${copySlotContract || "Read every visible source text block and replace it one-for-one with the exact target copy above."}
+
 TASK
 - LOCKED REGIONS: the stage-2 target product, background, people, props, lighting, colors, borders, shapes and every non-copy pixel.
 - EDITABLE REGIONS: only the source copy, source price/offer, source advertiser logo and source-specific text badges.
 - Change ONLY the source advertisement's copy, price/offer text, advertiser logo and source-specific text badges inside those editable regions. Preserve the stage-2 product pixels and every unrelated design pixel.
 - Remove every source-ad phrase, old price, old logo, unsupported badge and stray glyph so no prior advertiser identity survives.
 - Render the exact Korean strings above without paraphrasing, duplication or unsupported additions.
+- Replace every visible source text block one-for-one according to the slot contract. Keep the same number of headline, support, proof, offer/label, CTA and badge zones, the same reading order and approximately the same visual text mass. Do not delete a source callout merely because its old price or offer is unsupported; render its assigned verified target line in that zone without preserving the old offer meaning.
+- When a slot's source text says to read the corresponding zone directly, OCR that visible reference zone yourself and replace it with the assigned target. It is never permission to erase the zone or leave an empty panel.
+- Preserve rhetorical force as well as typography. If the source headline is a question, reversal, comparison, objection, urgency or numeric-emphasis hook, the target headline must remain equally dominant and must never collapse into a plain product-name label.
 - Keep the reference raw copy's word order, line count, punctuation, emoji and colloquial endings such as ㅋㅋ, ;;, .. or 겨 when they exist. Do not add chat/comment/meme language when the source lacks it.
 - Keep the inherited typography style, hierarchy, outline, emphasis colors, shapes and copy zones as closely as possible. Adjust font size only as needed to fit; preserve source line breaks whenever the target facts allow it.
 - Preserve the reference's strong contrast. Derive at most one accent from the real product and pair it with a contrasting color; never recolor the package, tint the whole scene with the package color, or reduce text/background contrast.
 - Main hook is the dominant 1–2 line message. Supporting copy is compact. Show price/offer only if supplied above.
+- Render no number, price, discount, quantity or benefit that is absent from EXACT COPY TO RENDER, even if it remains visible in the source raster.
 ${packagedCopyLock}
 - Produce one fully finished advertisement raster. There will be no local text overlay afterward.
 ${(brandMemory?.goldenReferences || []).length ? "- Reuse only approved abstract tone traits from brand memory; never copy old campaign wording." : ""}
@@ -228,9 +255,11 @@ REFERENCE RAW COPY
 ${referenceRawCopy || "Read it directly from the original reference attachment."}
 
 TASK
-- Inspect the entire advertisement for: reference preservation outside editable product/copy regions, real product/package identity, product count, logo/label fidelity, verified price and offer, exact Korean copy, preservation of the reference's line order/punctuation/slang, scene-copy alignment, Hangul spelling, mobile readability, clipping, collisions, natural shadows/perspective and coherent commercial finish.
+- Inspect the entire advertisement for: reference preservation outside editable product/copy regions, real product/package identity, product count, logo/label fidelity, verified price and offer, exact Korean copy, one-for-one preservation of every source copy slot and its visual weight, preservation of the reference's headline strength, line order/punctuation/slang and information density, scene-copy alignment, Hangul spelling, mobile readability, clipping, collisions, natural shadows/perspective and coherent commercial finish.
+- If the original advertisement reference contains a person, confirm that the finished ad uses a visibly different fictional adult while retaining the intended pose, action, framing and product interaction. Repair recognizable source-person identity, face copying or unnatural anatomy.
+- For meat products, inspect the actual cut, fiber direction, irregular marbling/fat boundaries, surface moisture, raw/cooked state, browning and color against the authoritative product references. Repair plastic, waxy, rubbery, cloned, neon-red/orange or uniformly glossy meat texture.
 - Repair every discovered issue inside the full raster with image generation. Preserve the randomly selected reference's composition and the established product placement and correct text wherever possible.
-- Remove any hallucinated source brand, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price.
+- Remove any hallucinated source brand, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price. Any number not present in AUTHORITATIVE COPY is a critical error.
 - Do not create a new unrelated concept and do not patch with a local overlay.
 - Repair product identity inside this complete AI raster. No product cutout or protected local layer will be restored afterward.
 ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass even when no prior validator feedback is supplied."}
@@ -239,6 +268,8 @@ ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass e
 
 export function buildNativeValidationPrompt(job: GenerationJob, result: GenerationResult) {
   const productContract = productRenderingPromptContract(job, result);
+  const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
+  const sourceSlotCount = result.referenceAdaptedCopyPlan?.copySlots?.filter((slot) => slot.sourceText.trim()).length || result.referenceAdaptedCopyPlan?.referenceRawLines?.filter((line) => line.trim()).length || 0;
   return `Inspect the attached COMPLETE Korean performance advertisement.
 Attachment order after the finished advertisement: first the randomly selected ZIP advertisement reference for composition fidelity when present, then authoritative URL product reference images.
 Product: ${job.productTruth.normalized.cleanProductName || job.productTruth.product.productName}
@@ -246,9 +277,13 @@ Required main copy: ${result.hookPlan.headline}
 Required sub copy: ${result.hookPlan.body}
 Required offer: ${result.hookPlan.offer || "none"}
 Required CTA: ${result.hookPlan.cta || "none"}
+Required target lines in order: ${JSON.stringify(adaptedLines)}
+Required visible source-copy slot count to preserve: ${sourceSlotCount || "read from the reference image"}
 This is a reference-driven replacement workflow. Judge the selected reference's composition and design grammar; do not require a separate scene concept that conflicts with that reference.
 The inspected attachment has already been locally normalized and decoded as a 1200x1200 JPEG under 800KB. Set exportCompliance to 100 and never request a visual remake for file format, dimensions or byte size.
-Check fidelity to the reference layout, product/package identity, exact Korean copy, factual safety, mobile readability, natural anatomy/food texture, and whether this is one coherent finished ad rather than a background plus pasted product/text panel. The final image must keep the reference's design grammar but contain no source product, source wording, source price or source advertiser identity. A detached cutout, fake label, broken Hangul, invented claim, large layout drift or surviving source identity requires revise. Scores must use the 0–100 scale. Return the configured JSON schema.
+Check fidelity to the reference layout, product/package identity, exact Korean copy, one-for-one copy-block count, headline rhetorical strength, information density, factual safety, mobile readability, natural anatomy/food texture, and whether this is one coherent finished ad rather than a background plus pasted product/text panel. The final image must keep the reference's design grammar but contain no source product, source wording, source price or source advertiser identity. A detached cutout, plain product-name headline replacing a strong source hook, missing source copy zones, any number absent from the required target lines, fake label, broken Hangul, invented claim, large layout drift or surviving source identity requires revise. Scores must use the 0–100 scale. Return the configured JSON schema.
+
+If the selected advertisement reference contains a person, compare the reference and final advertisement: the compositional role, approximate pose and action should remain, but the final person must be a clearly different fictional adult with no recognizable source-person facial identity. For meat, a generic substituted cut, smooth plastic/waxy surface, repeated marbling, neon color, impossible fibers or uniformly lacquered gloss is a critical foodAppetiteAppeal and productIdentity failure.
 
 ${productContract}
 For every packaged product—including cosmetics, wellness goods, drinks, milk, bottles, cans, pouches and boxes—any changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure and requires a full-raster AI revision. A pasted product cutout is also a critical failure. For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;

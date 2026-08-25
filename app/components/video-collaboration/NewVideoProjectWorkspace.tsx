@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
-import type { BrandGuideline, ProductAnalysisSnapshot, VideoDuration, VideoDurationMode, VideoReferenceAsset } from "../../lib/video-collaboration/types";
+import { VIDEO_DESIGNER_OPTIONS, type BrandGuideline, type ProductAnalysisSnapshot, type VideoDuration, type VideoDurationMode, type VideoReferenceAsset } from "../../lib/video-collaboration/types";
 import { useVideoPlanningOptions } from "../video-planning/useVideoPlanningOptions";
 import styles from "../video-planning/VideoPlanning.module.css";
 
@@ -31,7 +31,7 @@ const durationOptions: Array<{ value: VideoDurationMode | `${VideoDuration}`; la
 export function NewVideoProjectWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { people, products } = useVideoPlanningOptions();
+  const { products } = useVideoPlanningOptions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [stage, setStage] = useState("");
@@ -46,13 +46,12 @@ export function NewVideoProjectWorkspace() {
   const [deadline, setDeadline] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const abortRef = useRef<AbortController | null>(null);
-  const designers = people.filter((person) => person.role === "designer");
 
   function applyAnalysis(next: ProductAnalysisSnapshot, advertiser = "") {
     abortRef.current?.abort();
     setAnalysis(next);
     setProductUrl(next.productUrl || "");
-    setAdvertiserName(advertiser || next.brandName || "업체 미확인");
+    setAdvertiserName(advertiser || next.brandName || "");
     setError("");
   }
 
@@ -97,6 +96,14 @@ export function NewVideoProjectWorkspace() {
 
   async function createFourConcepts() {
     if (!analysis) return;
+    if (!advertiserName.trim()) {
+      setError("업체명을 입력해 주세요. 광고주 구분과 업체별 문구 말투에 사용됩니다.");
+      return;
+    }
+    if (!designerName) {
+      setError("담당 디자이너를 조이 또는 애니 중에서 선택해 주세요.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -109,7 +116,7 @@ export function NewVideoProjectWorkspace() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           projectName: `${analysis.productName} · 영상 콘셉트 4안`,
-          advertiserName: advertiserName || analysis.brandName || "업체 미확인",
+          advertiserName: advertiserName.trim(),
           productUrl,
           marketerName: "마케터",
           designerName,
@@ -217,7 +224,7 @@ export function NewVideoProjectWorkspace() {
             <div>
               <span>분석 상품</span>
               <strong>{analysis.productName}</strong>
-              <small>{advertiserName || analysis.brandName}</small>
+              <small>{advertiserName || "업체명 입력 필요"}</small>
             </div>
             <div className={styles.productFactChips}>
               {[...analysis.coreUsps, ...analysis.keyFeatures].slice(0, 5).map((fact, index) => (
@@ -231,12 +238,25 @@ export function NewVideoProjectWorkspace() {
           <section className={styles.summaryPanel}>
             <div className={styles.sectionHead}>
               <div>
-                <p className={styles.eyebrow}>OPTIONAL</p>
-                <h2>필요한 조건만 추가하세요</h2>
-                <p>입력하지 않은 항목은 상품 근거에 맞춰 AI가 구성합니다.</p>
+                <p className={styles.eyebrow}>PROJECT INFO</p>
+                <h2>업체명과 제작 조건</h2>
+                <p>업체명을 확인하고, 필요한 제작 조건만 추가하세요.</p>
               </div>
             </div>
             <div className={styles.formGrid}>
+              <label className={styles.wide}>
+                업체명 (필수)
+                <input
+                  aria-label="업체명"
+                  autoComplete="organization"
+                  onChange={(event) => setAdvertiserName(event.target.value)}
+                  placeholder="예: 국대한우"
+                  required
+                  type="text"
+                  value={advertiserName}
+                />
+                <small>상품 분석 결과가 자동 입력됩니다. 광고주 구분과 업체별 문구 말투에 사용할 정확한 이름으로 수정할 수 있습니다.</small>
+              </label>
               <label>
                 상품에 관해 추가로 알려줄 내용
                 <textarea value={additional} onChange={(event) => setAdditional(event.target.value)} />
@@ -261,11 +281,11 @@ export function NewVideoProjectWorkspace() {
               </label>
               <label>
                 담당 디자이너
-                <select value={designerName} onChange={(event) => setDesignerName(event.target.value)}>
-                  <option value="">나중에 지정</option>
-                  {designers.map((person) => (
-                    <option key={person.name} value={person.name}>
-                      {person.name}
+                <select required value={designerName} onChange={(event) => setDesignerName(event.target.value)}>
+                  <option value="">담당 디자이너 선택</option>
+                  {VIDEO_DESIGNER_OPTIONS.map((designer) => (
+                    <option key={designer} value={designer}>
+                      {designer}
                     </option>
                   ))}
                 </select>
@@ -285,7 +305,7 @@ export function NewVideoProjectWorkspace() {
                 <strong>패러디 · 리얼 사용/후기 · USP 집중 · 시크릿 혜택</strong>
                 <span>첫 자막, 사건, 화자, 소구, 결말이 서로 다르게 생성됩니다.</span>
               </div>
-              <button className={styles.primaryButton} disabled={busy} onClick={createFourConcepts}>
+              <button className={styles.primaryButton} disabled={busy || !advertiserName.trim() || !designerName} onClick={createFourConcepts}>
                 {busy ? stage || "생성 중…" : "4개 콘셉트 생성"}
               </button>
             </div>

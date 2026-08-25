@@ -4,7 +4,7 @@ import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
 import { createNativeContactSheet, writeNativeManifest } from "./nativeCreativeStorage.server";
 import { hasExplicitPaidApiAuthorization, type GenerationJob } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
-import { executionResults, isServerRunnableGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
+import { CURRENT_REFERENCE_EDIT_JOB_VERSION, executionResults, isServerRunnableGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
@@ -12,7 +12,7 @@ import { createCreativeGenerationProvider } from "./providers/providerFactory.se
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v7-early-copy-and-unblocked-results");
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v8-fixed-reference-edit-contract");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;
@@ -39,7 +39,7 @@ export function isGenerationJobRunnerActive(jobId: string) {
 export async function recoverGenerationJob(jobId: string, ignoreRunner = false): Promise<GenerationJob | null> {
   let current = await creativeGenerationJobStore.get(jobId);
   const preGenerationCopyBlocks =
-    current?.version === "generation-job-v13-reference-first-adapted-copy"
+    current?.version === CURRENT_REFERENCE_EDIT_JOB_VERSION
       ? current.results.filter(
           (result) =>
             result.status === "quality-review" &&

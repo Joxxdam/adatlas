@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       originalFileName: path.basename(file.name).slice(0, 200),
       mimeType: "image/jpeg",
       fileName: `${id}.jpg`,
+      sourceType: "upload",
       createdAt: new Date().toISOString(),
     };
     await saveCategoryCreativeSource(source, normalized);

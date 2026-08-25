@@ -15,8 +15,9 @@ import { cancelQueuedGenerationJob, enqueueGenerationJob } from "./jobRunner.ser
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { buildCreativePlanFingerprint } from "./creativePlanCache.server";
 import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
-import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
+import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
+import { assertCurrentReferenceEditGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, CURRENT_REFERENCE_EDIT_WORKFLOW, REFERENCE_EDIT_STAGE_ORDER } from "./jobRunnerPolicy";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -114,7 +115,9 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
       .flatMap((previous) => previous.results.map((result) => result.nativeCreative?.adReference?.id))
       .filter((id): id is string => Boolean(id))
   );
-  const selectedAdReferences = selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6, undefined, recentReferenceIds);
+  const selectedAdReferences = await ensureNativeReferenceCopies(
+    selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6, undefined, recentReferenceIds)
+  );
   const referencePlanning = await planReferenceAdaptedCopies({ truth, references: selectedAdReferences });
   const creativePlan = buildReferenceAdaptedCreativePlan({
     truth,
@@ -153,6 +156,8 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
     referenceAdaptedCopyPlan: referencePlanning.plans[index],
     nativeCreative: {
       engine,
+      workflow: CURRENT_REFERENCE_EDIT_WORKFLOW,
+      stageOrder: REFERENCE_EDIT_STAGE_ORDER,
       adReference: selectedAdReferences[index],
       referencePaths: [],
       revisionPaths: [],
@@ -175,8 +180,9 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.unusedPerformanceTemplateIds = [];
   job.referenceCopyProfiles = referencePlanning.profiles;
   job.copyPlanMode = "reference-adapted";
-  job.version = "generation-job-v13-reference-first-adapted-copy";
-  job.pipeline = "reference-first-adapted-copy";
+  job.version = CURRENT_REFERENCE_EDIT_JOB_VERSION;
+  job.pipeline = CURRENT_REFERENCE_EDIT_PIPELINE;
+  assertCurrentReferenceEditGenerationJob(job);
   if (job.sourceType === "manual") {
     // 수동 새 작업은 같은 상품의 이전 수동 작업만 교체한다. 자정 자동 제작과
     // 수동 제작이 겹쳐도 서로의 서버 작업을 취소하지 않는다.

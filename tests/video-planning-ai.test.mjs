@@ -29,23 +29,10 @@ function successfulClient(calls) {
   };
 }
 
-test("영상기획 provider 기본값은 로그인된 로컬 Codex다", () => {
-  assert.equal(resolveVideoPlanningProvider({}), "codex-local");
+test("영상기획 provider 기본값은 OpenAI Responses API다", () => {
+  assert.equal(resolveVideoPlanningProvider({}), "openai-api");
   assert.equal(resolveVideoPlanningProvider({ VIDEO_PLANNING_PROVIDER: "codex-local" }), "codex-local");
-  assert.equal(
-    resolveVideoPlanningProvider({
-      VIDEO_PLANNING_PROVIDER: "openai-api",
-      ADATLAS_PAID_API_EXPLICIT_ENABLED: "true",
-    }),
-    "openai-api"
-  );
-});
-
-test("유료 API provider는 서버에서 명시적으로 활성화해야 한다", () => {
-  assert.throws(
-    () => resolveVideoPlanningProvider({ VIDEO_PLANNING_PROVIDER: "openai-api" }),
-    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_PAID_API_DISABLED"
-  );
+  assert.equal(resolveVideoPlanningProvider({ VIDEO_PLANNING_PROVIDER: "openai-api" }), "openai-api");
 });
 
 test("인증 오류는 키 앞뒤 조각과 플랫폼 안내 URL을 공개하지 않는다", async () => {
@@ -127,10 +114,10 @@ test("단계별 모델·reasoning·timeout과 Responses API 보안 옵션을 적
     VIDEO_PLANNING_CONCEPT_MODEL: "concept-model",
     VIDEO_PLANNING_SCRIPT_MODEL: "script-model",
   };
-  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "product-analysis", prompt: "", outputSchema: {} }, env), { purpose: "analysis", model: "analysis-model", effort: "low", timeoutMs: 45_000 });
-  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "concept-summaries", purpose: "concept", prompt: "", outputSchema: {} }, env), { purpose: "concept", model: "concept-model", effort: "low", timeoutMs: 60_000 });
-  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "detailed-script", purpose: "script", prompt: "", outputSchema: {} }, env), { purpose: "script", model: "script-model", effort: "medium", timeoutMs: 90_000 });
-  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "automatic-revision", purpose: "correction", prompt: "", outputSchema: {} }, env), { purpose: "correction", model: "script-model", effort: "low", timeoutMs: 90_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "product-analysis", prompt: "", outputSchema: {} }, env), { purpose: "analysis", model: "analysis-model", effort: "low", verbosity: "low", timeoutMs: 45_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "concept-summaries", purpose: "concept", prompt: "", outputSchema: {} }, env), { purpose: "concept", model: "concept-model", effort: "low", verbosity: "medium", timeoutMs: 60_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "detailed-script", purpose: "script", prompt: "", outputSchema: {} }, env), { purpose: "script", model: "script-model", effort: "medium", verbosity: "high", timeoutMs: 90_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "automatic-revision", purpose: "correction", prompt: "", outputSchema: {} }, env), { purpose: "correction", model: "script-model", effort: "low", verbosity: "high", timeoutMs: 90_000 });
 
   const calls = [];
   const run = createOpenAiVideoPlanningRunner({
@@ -151,6 +138,7 @@ test("단계별 모델·reasoning·timeout과 Responses API 보안 옵션을 적
   assert.deepEqual(calls[0].body.tools, []);
   assert.equal(calls[0].body.text.format.type, "json_schema");
   assert.equal(calls[0].body.text.format.strict, true);
+  assert.equal(calls[0].body.text.verbosity, "medium");
   assert.equal(calls[0].options.timeout, 60_000);
 });
 

@@ -3,8 +3,16 @@ import type { GenerationJob, GenerationResult } from "./types";
 export const terminalGenerationResultStatuses = new Set<GenerationResult["status"]>(["success", "failed", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"]);
 
 export const failedGenerationResultStatuses = new Set<GenerationResult["status"]>(["failed", "korean-review", "product-review", "quality-review", "group-review"]);
-export const CURRENT_AUTO_PRODUCTION_JOB_VERSION = "generation-job-v13-reference-first-adapted-copy";
-export const CURRENT_AUTO_PRODUCTION_PIPELINE = "reference-first-adapted-copy";
+/**
+ * 수동·자동 제작이 함께 사용하는 유일한 신규 제작 계약입니다.
+ * AUTO 별칭은 저장된 자동제작 코드와 테스트의 하위 호환을 위해 유지합니다.
+ */
+export const CURRENT_REFERENCE_EDIT_JOB_VERSION = "generation-job-v13-reference-first-adapted-copy";
+export const CURRENT_REFERENCE_EDIT_PIPELINE = "reference-first-adapted-copy";
+export const CURRENT_REFERENCE_EDIT_WORKFLOW = "reference-lock-product-then-copy" as const;
+export const REFERENCE_EDIT_STAGE_ORDER = ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"] as const;
+export const CURRENT_AUTO_PRODUCTION_JOB_VERSION = CURRENT_REFERENCE_EDIT_JOB_VERSION;
+export const CURRENT_AUTO_PRODUCTION_PIPELINE = CURRENT_REFERENCE_EDIT_PIPELINE;
 
 export function normalizeCreativeProductUrl(value: string) {
   try {
@@ -18,19 +26,37 @@ export function normalizeCreativeProductUrl(value: string) {
 }
 
 export function isServerRunnableGenerationJob(job: GenerationJob) {
-  const compatible = Boolean(job.engine && ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad", "generation-job-v10-staged-reference-edit", "generation-job-v11-random-reference-edit", "generation-job-v12-category-reference-edit", CURRENT_AUTO_PRODUCTION_JOB_VERSION].includes(job.version) && job.results.length === 6);
+  if (usesCurrentReferenceEditPipeline(job)) return isCurrentReferenceEditGenerationJob(job);
+  const compatible = Boolean(job.engine && ["generation-job-v6-ai-native-final", "generation-job-v7-fast-local-composition", "generation-job-v8-adaptive-reference-grammar", "generation-job-v9-ai-native-complete-ad", "generation-job-v10-staged-reference-edit", "generation-job-v11-random-reference-edit", "generation-job-v12-category-reference-edit"].includes(job.version) && job.results.length === 6);
   if (!compatible) return false;
   // 과거 수동 작업은 조회·수정 호환을 유지하지만 자동제작은 구형 4장 경로나
   // 레퍼런스 없는 작업을 절대 복구하지 않는다.
   return job.sourceType !== "auto-production" || isCurrentAutoProductionGenerationJob(job);
 }
 
+export function usesCurrentReferenceEditPipeline(job: Pick<GenerationJob, "version" | "pipeline">) {
+  return job.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && job.pipeline === CURRENT_REFERENCE_EDIT_PIPELINE;
+}
+
+/** 새 수동·자동 작업은 작업 생성 시 서로 다른 레퍼런스 6장을 고정합니다. */
+export function isCurrentReferenceEditGenerationJob(job: GenerationJob) {
+  if (!usesCurrentReferenceEditPipeline(job) || job.copyPlanMode !== "reference-adapted" || job.results.length !== 6) return false;
+  const references = job.results.map((result) => result.nativeCreative?.adReference?.id).filter(Boolean);
+  return references.length === 6 && new Set(references).size === 6;
+}
+
+export function assertCurrentReferenceEditGenerationJob(job: GenerationJob) {
+  if (!isCurrentReferenceEditGenerationJob(job)) {
+    throw new Error("레퍼런스 원본 → 상품 교체 → 문구 교체 공통 제작 계약과 고정 레퍼런스 6장을 확인해 주세요.");
+  }
+  return job;
+}
+
 export function isCurrentAutoProductionGenerationJob(job: GenerationJob) {
-  if (job.sourceType !== "auto-production" || job.version !== CURRENT_AUTO_PRODUCTION_JOB_VERSION || job.pipeline !== CURRENT_AUTO_PRODUCTION_PIPELINE || job.results.length !== 6) return false;
+  if (job.sourceType !== "auto-production" || !isCurrentReferenceEditGenerationJob(job)) return false;
   const requested = job.executionResultIds || [];
   const resultIds = new Set(job.results.map((result) => result.id));
-  const references = job.results.map((result) => result.nativeCreative?.adReference?.id).filter(Boolean);
-  return requested.length === 6 && new Set(requested).size === 6 && requested.every((id) => resultIds.has(id)) && references.length === 6 && new Set(references).size === 6;
+  return requested.length === 6 && new Set(requested).size === 6 && requested.every((id) => resultIds.has(id));
 }
 
 export function executionResults(job: GenerationJob) {

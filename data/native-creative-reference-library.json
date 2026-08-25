@@ -60,7 +60,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-003",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:20:24.947Z"
+      }
     },
     {
       "id": "reference-copy-004",
@@ -117,7 +127,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-006",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T22:56:32.131Z"
+      }
     },
     {
       "id": "reference-copy-007",
@@ -136,7 +156,17 @@
       "supportsNaturalFood": true,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high"
+      "compatibilityConfidence": "high",
+      "nativeCopy": {
+        "referenceId": "reference-copy-007",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:22:35.846Z"
+      }
     },
     {
       "id": "reference-copy-008",
@@ -193,7 +223,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-010",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:50.709Z"
+      }
     },
     {
       "id": "reference-copy-011",
@@ -307,7 +347,17 @@
       "supportsNaturalFood": true,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high"
+      "compatibilityConfidence": "high",
+      "nativeCopy": {
+        "referenceId": "reference-copy-016",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:22:29.663Z"
+      }
     },
     {
       "id": "reference-copy-017",
@@ -459,7 +509,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high"
+      "compatibilityConfidence": "high",
+      "nativeCopy": {
+        "referenceId": "reference-copy-024",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:26.479Z"
+      }
     },
     {
       "id": "reference-copy-025",
@@ -592,26 +652,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-038",
-      "publicPath": "/creative-references/reference-copy/reference-038.jpg",
-      "sourceFile": "35.jpg",
-      "layoutFamily": "price-offer",
-      "categoryGroup": "beauty",
-      "ordinal": 38,
-      "productForm": "universal-packshot",
-      "compositionType": "price-card",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "dense",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-037",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:20:23.947Z"
+      }
     },
     {
       "id": "reference-copy-039",
@@ -668,7 +719,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-041",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:54.705Z"
+      }
     },
     {
       "id": "reference-copy-042",
@@ -706,7 +767,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-043",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T22:56:31.954Z"
+      }
     },
     {
       "id": "reference-copy-044",
@@ -727,7 +798,17 @@
       "supportsMultipleProducts": false,
       "compatibilityConfidence": "high",
       "foodSubcategory": "produce-agriculture",
-      "classificationMethod": "manual"
+      "classificationMethod": "manual",
+      "nativeCopy": {
+        "referenceId": "reference-copy-044",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T12:03:08.141Z"
+      }
     },
     {
       "id": "reference-copy-045",
@@ -765,7 +846,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-046",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T13:51:33.247Z"
+      }
     },
     {
       "id": "reference-copy-047",
@@ -841,7 +932,17 @@
       "supportsNaturalFood": true,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high"
+      "compatibilityConfidence": "high",
+      "nativeCopy": {
+        "referenceId": "reference-copy-050",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:22:29.624Z"
+      }
     },
     {
       "id": "reference-copy-051",
@@ -917,7 +1018,17 @@
       "supportsNaturalFood": true,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high"
+      "compatibilityConfidence": "high",
+      "nativeCopy": {
+        "referenceId": "reference-copy-054",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:22:32.267Z"
+      }
     },
     {
       "id": "reference-copy-055",
@@ -995,7 +1106,17 @@
       "supportsMultipleProducts": false,
       "compatibilityConfidence": "high",
       "foodSubcategory": "produce-agriculture",
-      "classificationMethod": "manual"
+      "classificationMethod": "manual",
+      "nativeCopy": {
+        "referenceId": "reference-copy-058",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T12:03:07.090Z"
+      }
     },
     {
       "id": "reference-copy-059",
@@ -1016,7 +1137,17 @@
       "supportsMultipleProducts": false,
       "compatibilityConfidence": "high",
       "foodSubcategory": "produce-agriculture",
-      "classificationMethod": "manual"
+      "classificationMethod": "manual",
+      "nativeCopy": {
+        "referenceId": "reference-copy-059",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T14:14:56.297Z"
+      }
     },
     {
       "id": "reference-copy-060",
@@ -1075,7 +1206,17 @@
       "supportsMultipleProducts": false,
       "compatibilityConfidence": "high",
       "foodSubcategory": "produce-agriculture",
-      "classificationMethod": "manual"
+      "classificationMethod": "manual",
+      "nativeCopy": {
+        "referenceId": "reference-copy-062",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T12:03:13.114Z"
+      }
     },
     {
       "id": "reference-copy-063",
@@ -1094,7 +1235,17 @@
       "supportsNaturalFood": true,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high"
+      "compatibilityConfidence": "high",
+      "nativeCopy": {
+        "referenceId": "reference-copy-063",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:22:35.518Z"
+      }
     },
     {
       "id": "reference-copy-064",
@@ -1210,7 +1361,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-071",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:20:18.795Z"
+      }
     },
     {
       "id": "reference-copy-072",
@@ -1267,7 +1428,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-074",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T13:51:29.620Z"
+      }
     },
     {
       "id": "reference-copy-075",
@@ -1327,25 +1498,6 @@
       "compatibilityConfidence": "medium"
     },
     {
-      "id": "reference-copy-078",
-      "publicPath": "/creative-references/reference-copy/reference-078.jpg",
-      "sourceFile": "79.jpg",
-      "layoutFamily": "sensory-editorial",
-      "categoryGroup": "beauty",
-      "ordinal": 78,
-      "productForm": "universal-packshot",
-      "compositionType": "sensory-closeup",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
       "id": "reference-copy-079",
       "publicPath": "/creative-references/reference-copy/reference-079.jpg",
       "sourceFile": "80.jpg",
@@ -1362,7 +1514,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-079",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:58.608Z"
+      }
     },
     {
       "id": "reference-copy-080",
@@ -1419,7 +1581,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-082",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T22:56:29.692Z"
+      }
     },
     {
       "id": "reference-copy-083",
@@ -1438,7 +1610,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-083",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T13:51:36.344Z"
+      }
     },
     {
       "id": "reference-copy-084",
@@ -1457,7 +1639,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-084",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:20:21.617Z"
+      }
     },
     {
       "id": "reference-copy-085",
@@ -1514,7 +1706,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-087",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T13:51:31.823Z"
+      }
     },
     {
       "id": "reference-copy-088",
@@ -1525,25 +1727,6 @@
       "ordinal": 88,
       "productForm": "universal-packshot",
       "compositionType": "product-packshot",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "dense",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-089",
-      "publicPath": "/creative-references/reference-copy/reference-089.jpg",
-      "sourceFile": "90.jpg",
-      "layoutFamily": "social-proof",
-      "categoryGroup": "beauty",
-      "ordinal": 89,
-      "productForm": "universal-packshot",
-      "compositionType": "review-card",
       "productSlotCount": 1,
       "productSlotShape": "flexible",
       "photographyType": "packshot",
@@ -1567,82 +1750,6 @@
       "productSlotShape": "flexible",
       "photographyType": "packshot",
       "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-091",
-      "publicPath": "/creative-references/reference-copy/reference-091.jpg",
-      "sourceFile": "92.jpg",
-      "layoutFamily": "problem-objection",
-      "categoryGroup": "beauty",
-      "ordinal": 91,
-      "productForm": "universal-packshot",
-      "compositionType": "product-packshot",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-092",
-      "publicPath": "/creative-references/reference-copy/reference-092.jpg",
-      "sourceFile": "93.jpg",
-      "layoutFamily": "price-offer",
-      "categoryGroup": "beauty",
-      "ordinal": 92,
-      "productForm": "universal-packshot",
-      "compositionType": "price-card",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "dense",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-093",
-      "publicPath": "/creative-references/reference-copy/reference-093.jpg",
-      "sourceFile": "95.jpg",
-      "layoutFamily": "situation-story",
-      "categoryGroup": "beauty",
-      "ordinal": 93,
-      "productForm": "universal-packshot",
-      "compositionType": "lifestyle-scene",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "lifestyle",
-      "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-094",
-      "publicPath": "/creative-references/reference-copy/reference-094.jpg",
-      "sourceFile": "96.jpg",
-      "layoutFamily": "usp-evidence",
-      "categoryGroup": "beauty",
-      "ordinal": 94,
-      "productForm": "universal-packshot",
-      "compositionType": "product-packshot",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "dense",
       "supportsPackagedProduct": true,
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
@@ -1677,25 +1784,6 @@
       "ordinal": 96,
       "productForm": "universal-packshot",
       "compositionType": "sensory-closeup",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
-    },
-    {
-      "id": "reference-copy-097",
-      "publicPath": "/creative-references/reference-copy/reference-097.jpg",
-      "sourceFile": "100.jpg",
-      "layoutFamily": "problem-objection",
-      "categoryGroup": "beauty",
-      "ordinal": 97,
-      "productForm": "universal-packshot",
-      "compositionType": "product-packshot",
       "productSlotCount": 1,
       "productSlotShape": "flexible",
       "photographyType": "packshot",
@@ -1742,7 +1830,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-099",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:54.765Z"
+      }
     },
     {
       "id": "reference-copy-100",
@@ -1780,7 +1878,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-101",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T22:56:26.403Z"
+      }
     },
     {
       "id": "reference-copy-102",
@@ -1799,7 +1907,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-102",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:58.188Z"
+      }
     },
     {
       "id": "reference-copy-103",
@@ -1837,7 +1955,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-104",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:50.714Z"
+      }
     },
     {
       "id": "reference-copy-105",
@@ -1856,7 +1984,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-105",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T22:56:29.774Z"
+      }
     },
     {
       "id": "reference-copy-106",
@@ -1894,7 +2032,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-107",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T13:51:35.943Z"
+      }
     },
     {
       "id": "reference-copy-108",
@@ -1913,7 +2061,17 @@
       "supportsNaturalFood": false,
       "supportsHumanModel": false,
       "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium"
+      "compatibilityConfidence": "medium",
+      "nativeCopy": {
+        "referenceId": "reference-copy-108",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T13:51:26.239Z"
+      }
     },
     {
       "id": "reference-copy-109",
@@ -2294,7 +2452,17 @@
       "ordinal": 126,
       "contentHash": "124cadb0a53ee1f63decf4bdcd5edfc5b116d36065db8a633554972884207ba0",
       "uploadedAt": "2026-08-23T08:16:10.673Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-219446c8-9346-4a6d-83b5-4328740c0db1",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:20:18.519Z"
+      }
     },
     {
       "id": "reference-upload-df1bc876-d8a3-4478-9bc4-d2edacaad73e",
@@ -2404,7 +2572,17 @@
       "ordinal": 131,
       "contentHash": "72eef0022a8dd9cb02e5d656e4b661fe2f33edaacbd7e10971335a96e2abbcd5",
       "uploadedAt": "2026-08-23T08:16:57.310Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-07e4bca5-55de-4b46-b8db-094be6df4139",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T22:56:27.491Z"
+      }
     },
     {
       "id": "reference-upload-4b284c24-f082-4a2f-be67-9d24ae029ad6",
@@ -2625,7 +2803,17 @@
       "contentHash": "8f65f1d72d2bb65533e4282fbf7f1c4b17e70395d429579472c24961d7d1d6d2",
       "uploadedAt": "2026-08-23T08:20:04.234Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-a30fbc12-ad54-4cf9-9aa6-570aee557431",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T14:15:01.783Z"
+      }
     },
     {
       "id": "reference-upload-6847182a-57c5-486e-945a-508230a5740e",
@@ -2648,7 +2836,17 @@
       "contentHash": "cf754e025a563b824d9d3e259444c8b896eafb9b0d5f4326b34db8a58033b96e",
       "uploadedAt": "2026-08-23T08:20:12.472Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-6847182a-57c5-486e-945a-508230a5740e",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:32.728Z"
+      }
     },
     {
       "id": "reference-upload-67ad1689-5b4a-49f3-a0f8-b2c5f6eac17e",
@@ -2694,7 +2892,17 @@
       "contentHash": "496fe3d7186bd5709757defb74ab1309557bb56beedfcc378a93933db08a5c0a",
       "uploadedAt": "2026-08-23T08:20:29.419Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-dfe96e2a-6928-45b6-9546-a06edda3c5e2",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:26.484Z"
+      }
     },
     {
       "id": "reference-upload-80560229-216f-4399-bfd2-0d22a6bb50a0",
@@ -2717,7 +2925,17 @@
       "contentHash": "138dfb953857fe2af9cfa9321ce46a0abaeac8e20115f6813c5ee068bcfd29ee",
       "uploadedAt": "2026-08-23T08:20:39.455Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-80560229-216f-4399-bfd2-0d22a6bb50a0",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T14:14:59.015Z"
+      }
     },
     {
       "id": "reference-upload-5033a688-3dc3-4b8c-bc2a-3b67eb050f8f",
@@ -2762,7 +2980,17 @@
       "contentHash": "b14815f8c4f0aff1a6c2ffd61bed41ec322cd71f18e40618d6f95e00dd6aa01d",
       "uploadedAt": "2026-08-23T08:20:58.574Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-d09e8764-4375-4da8-b2cb-2102634be1e6",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T12:03:10.421Z"
+      }
     },
     {
       "id": "reference-upload-2fc4f93a-26c9-48ec-864f-f91b33575f66",
@@ -2850,7 +3078,17 @@
       "ordinal": 151,
       "contentHash": "9a86d65d104d2c527916204874c5909807eab8a071d66acbd7535a5ddfefb175",
       "uploadedAt": "2026-08-23T08:27:43.004Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-c3669bcf-b0c5-46b7-a9d9-958b274e8445",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:29.483Z"
+      }
     },
     {
       "id": "reference-upload-30cb8f8a-a226-4fd2-9479-8f2fe5a91912",
@@ -2895,7 +3133,17 @@
       "contentHash": "3f5e1c238287e7d9d0696edeeee2c0cddaad857a1820b5731a65684035859485",
       "uploadedAt": "2026-08-23T08:27:59.006Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-8371dd66-9337-400b-a396-0b77b73cf629",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T12:03:13.474Z"
+      }
     },
     {
       "id": "reference-upload-a8040eb5-b77f-4c1c-848b-a68bf07c1ec8",
@@ -3008,7 +3256,17 @@
       "contentHash": "88ad30e1acc7a0ddefbcca714fee33bc4439d52cdda311623f9369e284fbbb78",
       "uploadedAt": "2026-08-23T09:51:58.373Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-a086dde2-3e14-4d5e-aa73-5b92b6c7d783",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T14:14:59.264Z"
+      }
     },
     {
       "id": "reference-upload-222c532e-d84f-4738-9830-ed7498c5ff7c",
@@ -3031,7 +3289,17 @@
       "contentHash": "3973a608dedcb1937e60288564bd9e6a7094f765477725924e0beaa0edf5fb39",
       "uploadedAt": "2026-08-23T09:52:06.664Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-222c532e-d84f-4738-9830-ed7498c5ff7c",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T12:03:10.667Z"
+      }
     },
     {
       "id": "reference-upload-b2265e38-b36f-43bd-8378-c5e3f376fd17",
@@ -3054,7 +3322,17 @@
       "contentHash": "9b2b231641f8dd5dd1b4beac321ef77f14700f4c347899c4d49c4e45d1c62498",
       "uploadedAt": "2026-08-23T09:52:14.514Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-b2265e38-b36f-43bd-8378-c5e3f376fd17",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T14:15:02.257Z"
+      }
     },
     {
       "id": "reference-upload-d159f4c0-985b-487a-9ad0-4ee6d79c45c9",
@@ -3125,29 +3403,6 @@
       "foodSubcategory": "produce-agriculture"
     },
     {
-      "id": "reference-upload-a79067a6-1f63-46be-9f50-51d4dc43880c",
-      "publicPath": "/creative-references/reference-copy/reference-upload-a79067a6-1f63-46be-9f50-51d4dc43880c.jpg",
-      "sourceFile": "과일11.jpg",
-      "layoutFamily": "managed-reference",
-      "categoryGroup": "food",
-      "productForm": "pouch",
-      "compositionType": "product-packshot",
-      "productSlotCount": 1,
-      "productSlotShape": "tall",
-      "photographyType": "packshot",
-      "textDensity": "dense",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "high",
-      "ordinal": 165,
-      "contentHash": "1b92fb46dafad6878e10544f5409802d0bbacf987543c6d49a71cb6cd8084a56",
-      "uploadedAt": "2026-08-23T09:53:00.249Z",
-      "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
-    },
-    {
       "id": "reference-upload-7f1126f4-b0d0-4afa-a438-070131ccb027",
       "publicPath": "/creative-references/reference-copy/reference-upload-7f1126f4-b0d0-4afa-a438-070131ccb027.jpg",
       "sourceFile": "과일12.jpg",
@@ -3168,7 +3423,17 @@
       "contentHash": "cf6d346c4dd8017072c9be69d3d5800872084910343d60b395450481951a323c",
       "uploadedAt": "2026-08-23T09:53:08.658Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-7f1126f4-b0d0-4afa-a438-070131ccb027",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T14:14:55.907Z"
+      }
     },
     {
       "id": "reference-upload-f221ce44-0f36-442a-a861-f38f3660a0b0",
@@ -3282,7 +3547,17 @@
       "contentHash": "de86bb77bf50051192513bb8ab5cc3bb3b3f6dd860ca9e83a131b6605d7360a5",
       "uploadedAt": "2026-08-23T09:57:29.778Z",
       "classificationMethod": "manual",
-      "foodSubcategory": "produce-agriculture"
+      "foodSubcategory": "produce-agriculture",
+      "nativeCopy": {
+        "referenceId": "reference-upload-037b5814-dfbd-4e6e-8e50-cc989eaf9d3e",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:29.799Z"
+      }
     },
     {
       "id": "reference-upload-9f6f3e1d-fe60-4cb7-b6c0-2a3cffcc5105",
@@ -3326,8 +3601,1010 @@
       "ordinal": 174,
       "contentHash": "2e26c5b9ee69f6a2b26a1a024ba4da8b6bf6c1a56feda6d2232e940e4fa7c44e",
       "uploadedAt": "2026-08-23T14:11:53.032Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-ec77c25c-b097-4757-b76f-4e1255ef8416",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:22:32.879Z"
+      }
+    },
+    {
+      "id": "reference-upload-77a61013-5fd1-47e2-8d97-951507dc588e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-77a61013-5fd1-47e2-8d97-951507dc588e.jpg",
+      "sourceFile": "761986195_1333800265621983_4602114723664202795_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "flexible",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 175,
+      "contentHash": "cf9667152e9bc40fb35954a48f2892b28fa51bb9b1a43db8be86bb444bd0b00a",
+      "uploadedAt": "2026-08-24T10:09:21.127Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-77a61013-5fd1-47e2-8d97-951507dc588e",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:29.303Z"
+      }
+    },
+    {
+      "id": "reference-upload-419971d3-92ba-4f73-a2c2-11813bb5db44",
+      "publicPath": "/creative-references/reference-copy/reference-upload-419971d3-92ba-4f73-a2c2-11813bb5db44.jpg",
+      "sourceFile": "759024932_1802673801065761_4994026131432551613_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 176,
+      "contentHash": "3bf5c19fb989d785703892f327e6a847d8884859ec437f0415b8b9225fb50763",
+      "uploadedAt": "2026-08-24T10:09:29.082Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-419971d3-92ba-4f73-a2c2-11813bb5db44",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:29.555Z"
+      }
+    },
+    {
+      "id": "reference-upload-d7ff2d40-f81f-458c-b343-718e0718442b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-d7ff2d40-f81f-458c-b343-718e0718442b.jpg",
+      "sourceFile": "758564072_2098137177576539_3857016816890241744_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 177,
+      "contentHash": "230f425e7f3db3525b246d7fba2f0e8a229f423c47d27ef562d2fa44ac10798b",
+      "uploadedAt": "2026-08-24T10:09:35.494Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-d7ff2d40-f81f-458c-b343-718e0718442b",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:29.427Z"
+      }
+    },
+    {
+      "id": "reference-upload-acc74df7-f6de-4217-91d2-78910d848ab6",
+      "publicPath": "/creative-references/reference-copy/reference-upload-acc74df7-f6de-4217-91d2-78910d848ab6.jpg",
+      "sourceFile": "777801209_2139247010304504_1301639750000608012_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "compositionType": "price-card",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 178,
+      "contentHash": "03e98f34d96749a3d511cf6e9de0b597f316bedb6985110fe8319171f91725de",
+      "uploadedAt": "2026-08-24T10:09:44.500Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-acc74df7-f6de-4217-91d2-78910d848ab6",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:33.143Z"
+      }
+    },
+    {
+      "id": "reference-upload-40f11b19-1d01-4ea5-8efd-5c549e50b5e1",
+      "publicPath": "/creative-references/reference-copy/reference-upload-40f11b19-1d01-4ea5-8efd-5c549e50b5e1.jpg",
+      "sourceFile": "763926233_1338091281814890_7451422138696606631_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 179,
+      "contentHash": "ffb6ed974978f693945feace3ff4186ff4635b10a0d91ed2f729c55d746d9e92",
+      "uploadedAt": "2026-08-24T10:09:51.113Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-40f11b19-1d01-4ea5-8efd-5c549e50b5e1",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:32.763Z"
+      }
+    },
+    {
+      "id": "reference-upload-7532d2bb-cd54-4f17-8691-aeed6ef1dc4f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-7532d2bb-cd54-4f17-8691-aeed6ef1dc4f.jpg",
+      "sourceFile": "762796744_1089749630379242_8124405086672352842_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 180,
+      "contentHash": "3ee4de9b75c73a9cb96255f5a6e42391b7b0fba4bbd5c1f8f239c9070fd32997",
+      "uploadedAt": "2026-08-24T10:09:58.659Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-7532d2bb-cd54-4f17-8691-aeed6ef1dc4f",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:32.341Z"
+      }
+    },
+    {
+      "id": "reference-upload-8e3bd5d3-8d7f-4349-9f48-5f450778fa06",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8e3bd5d3-8d7f-4349-9f48-5f450778fa06.jpg",
+      "sourceFile": "648811985_3903472383119472_20023717696797597_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "universal-packshot",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 181,
+      "contentHash": "fb8098d84d0e9aa335468178eb2eb85aed45819af452d3dba50a1e526b310db1",
+      "uploadedAt": "2026-08-24T10:10:05.308Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-8e3bd5d3-8d7f-4349-9f48-5f450778fa06",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:36.120Z"
+      }
+    },
+    {
+      "id": "reference-upload-13b8644b-eeab-471c-a9a5-2cd81e0066c4",
+      "publicPath": "/creative-references/reference-copy/reference-upload-13b8644b-eeab-471c-a9a5-2cd81e0066c4.jpg",
+      "sourceFile": "674988783_2017956362266716_1079905076507320920_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 182,
+      "contentHash": "b84c13487c338f1b9451647f05638fa52d1687f2fc840bfe4682b608c5dbbc8d",
+      "uploadedAt": "2026-08-24T10:10:11.723Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-13b8644b-eeab-471c-a9a5-2cd81e0066c4",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:36.886Z"
+      }
+    },
+    {
+      "id": "reference-upload-5bbc8c19-c027-4a24-ba2b-41471195d597",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5bbc8c19-c027-4a24-ba2b-41471195d597.jpg",
+      "sourceFile": "780443608_1414875987188788_6561962884906153115_n.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 183,
+      "contentHash": "dad0733aedbec549845f47d6ea531d3ced2b6f314b86e33db0d4f5991af5fc6d",
+      "uploadedAt": "2026-08-24T10:10:21.374Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-5bbc8c19-c027-4a24-ba2b-41471195d597",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:36.028Z"
+      }
+    },
+    {
+      "id": "reference-upload-88c0c189-346a-4ae3-bfad-debdf3c424b9",
+      "publicPath": "/creative-references/reference-copy/reference-upload-88c0c189-346a-4ae3-bfad-debdf3c424b9.jpg",
+      "sourceFile": "751720314_1033537939283889_42352914251287966_n (1).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "compositionType": "comparison",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 184,
+      "contentHash": "37b76c3e493b28abfef174397143b16342e28488d2572d64ca95b0a0a6f13e56",
+      "uploadedAt": "2026-08-24T10:10:26.417Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-88c0c189-346a-4ae3-bfad-debdf3c424b9",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:10:38.918Z"
+      }
+    },
+    {
+      "id": "reference-upload-158de1d2-b84d-453e-9991-29ab08c52c88",
+      "publicPath": "/creative-references/reference-copy/reference-upload-158de1d2-b84d-453e-9991-29ab08c52c88.jpg",
+      "sourceFile": "image (26).png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 185,
+      "contentHash": "311339b5f514f31278deb57181cfc5e983556a5634ee86dacc6345eecdaac0e3",
+      "uploadedAt": "2026-08-24T10:25:24.827Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-158de1d2-b84d-453e-9991-29ab08c52c88",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:25:46.920Z"
+      }
+    },
+    {
+      "id": "reference-upload-626db463-17ea-4657-8a23-7477af0cd0f0",
+      "publicPath": "/creative-references/reference-copy/reference-upload-626db463-17ea-4657-8a23-7477af0cd0f0.jpg",
+      "sourceFile": "image (27).png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 186,
+      "contentHash": "cea46208d88045a485a6a84e609d0b3ec94518e95c49515d4a5fe11d88b6c6f2",
+      "uploadedAt": "2026-08-24T10:25:31.924Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-626db463-17ea-4657-8a23-7477af0cd0f0",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:25:44.442Z"
+      }
+    },
+    {
+      "id": "reference-upload-4b3acf3a-f038-44de-adc9-34deb6bc375a",
+      "publicPath": "/creative-references/reference-copy/reference-upload-4b3acf3a-f038-44de-adc9-34deb6bc375a.jpg",
+      "sourceFile": "751563649_1042002915369107_4782112827871393477_n (2).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 187,
+      "contentHash": "04fc1f1aa5ad5dffaca64c32eb6125807c304a0830a7e6dd9ef4843cb13d45c5",
+      "uploadedAt": "2026-08-24T10:25:41.931Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-4b3acf3a-f038-44de-adc9-34deb6bc375a",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T10:25:44.995Z"
+      }
+    },
+    {
+      "id": "reference-upload-fe5db7d8-a539-4804-9eaf-48028978cfae",
+      "publicPath": "/creative-references/reference-copy/reference-upload-fe5db7d8-a539-4804-9eaf-48028978cfae.jpg",
+      "sourceFile": "식품1.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "bundle",
+      "compositionType": "product-lineup",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 188,
+      "contentHash": "6d52080d2aca3020a48b0ab49d84744d9e82d9129389cf70775ae3fa07ec6e96",
+      "uploadedAt": "2026-08-24T11:34:14.075Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-fe5db7d8-a539-4804-9eaf-48028978cfae",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:14.034Z"
+      }
+    },
+    {
+      "id": "reference-upload-9eda03ae-20a4-4e6a-a8d3-3821cb086599",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9eda03ae-20a4-4e6a-a8d3-3821cb086599.jpg",
+      "sourceFile": "식품(7).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "compositionType": "comparison",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 189,
+      "contentHash": "972e0a48a3ed16dee0e47cf10cbd6eba16f121df06dd21c1da5eb0cb47f1fded",
+      "uploadedAt": "2026-08-24T11:34:22.135Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-9eda03ae-20a4-4e6a-a8d3-3821cb086599",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:14.908Z"
+      }
+    },
+    {
+      "id": "reference-upload-62e4970b-625e-43a6-ba94-9cf79a4b94db",
+      "publicPath": "/creative-references/reference-copy/reference-upload-62e4970b-625e-43a6-ba94-9cf79a4b94db.jpg",
+      "sourceFile": "식품(6).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 190,
+      "contentHash": "d4814876ac757524eb034398a003263a6f2bf88613ae53dc89c97d00f9403591",
+      "uploadedAt": "2026-08-24T11:34:30.999Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-62e4970b-625e-43a6-ba94-9cf79a4b94db",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:14.339Z"
+      }
+    },
+    {
+      "id": "reference-upload-3458ed1f-ce25-4510-9287-04d5457345fb",
+      "publicPath": "/creative-references/reference-copy/reference-upload-3458ed1f-ce25-4510-9287-04d5457345fb.jpg",
+      "sourceFile": "식품(5).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 191,
+      "contentHash": "53ee082b7c2feadfa9a8075d7f15878eff6e029d543293a8528911ba3c65609e",
+      "uploadedAt": "2026-08-24T11:34:39.373Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-3458ed1f-ce25-4510-9287-04d5457345fb",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:17.510Z"
+      }
+    },
+    {
+      "id": "reference-upload-e9df7259-a670-4fdd-b6a9-8c8c856567c5",
+      "publicPath": "/creative-references/reference-copy/reference-upload-e9df7259-a670-4fdd-b6a9-8c8c856567c5.jpg",
+      "sourceFile": "식품(4).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 192,
+      "contentHash": "55d1869a65d4bef4f86cc249bf7a3a0fbb8b879a26001b47a84f25e0651a3ab2",
+      "uploadedAt": "2026-08-24T11:34:50.198Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-e9df7259-a670-4fdd-b6a9-8c8c856567c5",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:18.331Z"
+      }
+    },
+    {
+      "id": "reference-upload-63357f71-3679-4a7b-9cb0-d9ce7d56ea4c",
+      "publicPath": "/creative-references/reference-copy/reference-upload-63357f71-3679-4a7b-9cb0-d9ce7d56ea4c.jpg",
+      "sourceFile": "식품(3).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 193,
+      "contentHash": "1e6f394509d866881b92d3cb6edf024cd00bee2912b768dd9ba15acdc12d17ea",
+      "uploadedAt": "2026-08-24T11:34:56.757Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-63357f71-3679-4a7b-9cb0-d9ce7d56ea4c",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:17.623Z"
+      }
+    },
+    {
+      "id": "reference-upload-b616540b-ce39-4711-a89d-da564919b571",
+      "publicPath": "/creative-references/reference-copy/reference-upload-b616540b-ce39-4711-a89d-da564919b571.jpg",
+      "sourceFile": "식품(2).jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 2,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 194,
+      "contentHash": "547f34322acbf40067566ca9dee4633bca8b7dde113ab1e0cacd350340a9551b",
+      "uploadedAt": "2026-08-24T11:35:11.061Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-b616540b-ce39-4711-a89d-da564919b571",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-24T11:35:20.799Z"
+      }
+    },
+    {
+      "id": "reference-upload-a0f6e0a7-3746-48c4-a7c9-7f3e59aba4ee",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a0f6e0a7-3746-48c4-a7c9-7f3e59aba4ee.jpg",
+      "sourceFile": "신선신비_복숭아_1200_1200_02_174962500101917173824026262813991.png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "price-card",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 195,
+      "contentHash": "0038b8ec713520697e1a2f23e00b0edfbe8389a8a23bacabe5e4fcc8ced06fa4",
+      "uploadedAt": "2026-08-25T07:04:18.334Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-a0f6e0a7-3746-48c4-a7c9-7f3e59aba4ee",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:55.995Z"
+      }
+    },
+    {
+      "id": "reference-upload-3d211f0b-33dc-4782-ad44-d22b66fd14dd",
+      "publicPath": "/creative-references/reference-copy/reference-upload-3d211f0b-33dc-4782-ad44-d22b66fd14dd.jpg",
+      "sourceFile": "신선신비_복숭아_1200_1200_01_17496250004538701451604993617966.png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 196,
+      "contentHash": "8eff3341646cd30c20b2a8066bfdccea6ca19216424eeca8ba3610b5e8faee3f",
+      "uploadedAt": "2026-08-25T07:04:29.165Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-3d211f0b-33dc-4782-ad44-d22b66fd14dd",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:56.896Z"
+      }
+    },
+    {
+      "id": "reference-upload-143d20c5-ed0e-4cd9-9c77-6c87f3ad2b63",
+      "publicPath": "/creative-references/reference-copy/reference-upload-143d20c5-ed0e-4cd9-9c77-6c87f3ad2b63.jpg",
+      "sourceFile": "선녀백도_1200_1200_02_174980018399713849169560001178778.png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 197,
+      "contentHash": "1e8bad912b26d88efa313c5b9f230b1a29ec1890ac0ac8643a9f8030e4481324",
+      "uploadedAt": "2026-08-25T07:04:37.527Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-143d20c5-ed0e-4cd9-9c77-6c87f3ad2b63",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:05:55.545Z"
+      }
+    },
+    {
+      "id": "reference-upload-fdfef8e9-6c36-435e-94c5-62dbe7eace48",
+      "publicPath": "/creative-references/reference-copy/reference-upload-fdfef8e9-6c36-435e-94c5-62dbe7eace48.jpg",
+      "sourceFile": "선녀백도_1200_1200_01_1749800190940848424147007475022.png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 198,
+      "contentHash": "80efa2b22f54fe149ed387507b7f781d598ec86bba4f2c6814f42fe3f75dd612",
+      "uploadedAt": "2026-08-25T07:04:44.870Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-fdfef8e9-6c36-435e-94c5-62dbe7eace48",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:00.009Z"
+      }
+    },
+    {
+      "id": "reference-upload-ea3ed300-bb7b-4274-bc9a-6872740b9d57",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ea3ed300-bb7b-4274-bc9a-6872740b9d57.jpg",
+      "sourceFile": "대극천_1200_1200_02_17497183895256559574193168094493.png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 199,
+      "contentHash": "41428d9a7a98561f8fe6c5507a38b951ea15ef343dbe9f162513315837f5b3b7",
+      "uploadedAt": "2026-08-25T07:04:54.386Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-ea3ed300-bb7b-4274-bc9a-6872740b9d57",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:00.335Z"
+      }
+    },
+    {
+      "id": "reference-upload-1df1eef0-595d-43d9-a760-42b45a9df681",
+      "publicPath": "/creative-references/reference-copy/reference-upload-1df1eef0-595d-43d9-a760-42b45a9df681.jpg",
+      "sourceFile": "대극천_1200_1200_01_17497183712826855707511154189922.png",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 200,
+      "contentHash": "5d0fe38e44ef4578c78e8f3bba400de287ce5cbd049fd9fd927765c67cc10c07",
+      "uploadedAt": "2026-08-25T07:05:02.880Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-1df1eef0-595d-43d9-a760-42b45a9df681",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:01.159Z"
+      }
+    },
+    {
+      "id": "reference-upload-6e9e0373-d63a-4992-a580-a032cab0e632",
+      "publicPath": "/creative-references/reference-copy/reference-upload-6e9e0373-d63a-4992-a580-a032cab0e632.jpg",
+      "sourceFile": "1200x1200-(3)_17376135516084782041427582365551.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 201,
+      "contentHash": "09c9f74cecbc85fdf307e6dd80ab60c9bb8389c9452039dec6988629266d0cd0",
+      "uploadedAt": "2026-08-25T07:05:12.536Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-6e9e0373-d63a-4992-a580-a032cab0e632",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:04.844Z"
+      }
+    },
+    {
+      "id": "reference-upload-d0503688-9c28-432a-ae4d-54dbfc08a164",
+      "publicPath": "/creative-references/reference-copy/reference-upload-d0503688-9c28-432a-ae4d-54dbfc08a164.jpg",
+      "sourceFile": "1200X1200-(2)_17434951958434708700916091622706.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 202,
+      "contentHash": "7f5073aa0678608b602f375542ac1bc9cb98e27eb20098de27394e65554012c3",
+      "uploadedAt": "2026-08-25T07:05:20.370Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-d0503688-9c28-432a-ae4d-54dbfc08a164",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:04.776Z"
+      }
+    },
+    {
+      "id": "reference-upload-2523fedd-477e-47ee-97e6-57b5ff4478e0",
+      "publicPath": "/creative-references/reference-copy/reference-upload-2523fedd-477e-47ee-97e6-57b5ff4478e0.jpg",
+      "sourceFile": "1200x1200-(2)_173761355062514636289117371420207.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 203,
+      "contentHash": "eb134815f8cd65fcfa9d9787978c6b3532676ee2e3f693916202bc38e181a40e",
+      "uploadedAt": "2026-08-25T07:05:34.366Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-2523fedd-477e-47ee-97e6-57b5ff4478e0",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:04.639Z"
+      }
+    },
+    {
+      "id": "reference-upload-d39fc9af-87aa-4734-858f-f26a689e978b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-d39fc9af-87aa-4734-858f-f26a689e978b.jpg",
+      "sourceFile": "1200x1200-(1)_17376135131317882357555946436382.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 204,
+      "contentHash": "16433800ff5da404eeb382e4d71defedaf3cf3a37559a0573c405fbbb06127eb",
+      "uploadedAt": "2026-08-25T07:05:41.527Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-d39fc9af-87aa-4734-858f-f26a689e978b",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:10.118Z"
+      }
+    },
+    {
+      "id": "reference-upload-70a71819-9d70-4204-a563-9cd0ba3c86dc",
+      "publicPath": "/creative-references/reference-copy/reference-upload-70a71819-9d70-4204-a563-9cd0ba3c86dc.jpg",
+      "sourceFile": "1200X1200-(1)_(1)_174349521871612341668895067417989.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "produce",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 205,
+      "contentHash": "f62a908495d777a9f5d72cb1a7cab4ec60df7eee8290dde804ea95cc1263c1fa",
+      "uploadedAt": "2026-08-25T07:05:50.706Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-70a71819-9d70-4204-a563-9cd0ba3c86dc",
+        "rawText": "",
+        "rawLines": [],
+        "textRegions": [],
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": false,
+        "extractionSource": "unavailable",
+        "updatedAt": "2026-08-25T07:06:08.327Z"
+      }
     }
   ],
-  "updatedAt": "2026-08-23T15:33:47.544Z"
+  "updatedAt": "2026-08-25T07:06:10.118Z"
 }

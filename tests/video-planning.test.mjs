@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
-import { assignPlanningTimeline, hasVerifiedVideoBenefit, segmentRange, validateConceptDiversity, validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
+import { assignPlanningTimeline, hasVerifiedVideoBenefit, repairDetailedPlanningAudienceCopy, segmentRange, validateConceptDiversity, validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
 import { extractVideoTitleMetadata, normalizeVideoProductName } from "../app/lib/video-collaboration/productName.ts";
 import { createVideoMaterialCode } from "../app/lib/video-collaboration/workflow.ts";
 import { assertStructuredVideoPlanningResponse } from "../app/lib/video-collaboration/structuredSchema.ts";
@@ -198,6 +198,57 @@ test("SEO 원문과 추상 장면은 품질 검수에서 차단된다", () => {
   assert.equal(validation.valid, false);
   assert.equal(validation.checks.find((check) => check.key === "seo-title").passed, false);
   assert.equal(validation.checks.find((check) => check.key === "scene-specificity").passed, false);
+});
+
+test("새 AI 대본은 충분한 자막 분량을 요구하고 내부 기획 메모를 차단한다", () => {
+  const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
+  concept.conceptArchetype = "real-review";
+  const richerCaptions = [
+    "형님들 땀냄새 남았죠..?",
+    "샤워했는데 왜 또 찝찝함;;",
+    "이 루틴부터 한번 까볼게요",
+    "운동 끝나자마자 씻었는데도 금방 답답해지더라고요",
+    "향으로 덮는 방식 말고 씻는 순간의 사용감부터 봤어요",
+    "민트와 티트리가 들어간 이유가 여기서 딱 느껴집니다",
+    "손에 덜어보니 질감부터 평소 쓰던 것과 꽤 달랐고요",
+    "거품이 퍼지는 장면 보니까 괜히 손이 가는 게 아님ㅎㅎ",
+    "물로 씻어낼 때 남는 느낌까지 솔직하게 확인해봤어요",
+    "운동 가방 챙길 때 이 샤워 루틴이 먼저 생각나더라고요",
+    "땀 줄줄 흐르는 날엔 복잡한 설명보다 이 장면이면 됨",
+    "샤워 후에도 찝찝했던 분들은 이 사용감부터 보세요",
+    "향만 세게 남기는 방식이 부담이었다면 더 궁금할걸요",
+    "씻는 순간을 산뜻하게 바꾸고 싶은 형님들 여기입니다",
+    "다음 운동 뒤 샤워가 기다려지는 이유를 직접 봐주세요",
+    concept.cta,
+  ];
+  concept.cuts = concept.cuts.map((cut, index) => ({ ...cut, caption: richerCaptions[index] }));
+  let validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "natural-copy").passed, true);
+
+  concept.cuts[4].caption = "담당자: 확인부터요";
+  validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "natural-copy").passed, false);
+
+  concept.cuts[4].caption = "상세페이지 구성 표기는 250ml로 보입니다";
+  validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "natural-copy").passed, false);
+
+  concept.cuts[4].caption = "가격 보고 멈칫한 분들, 71% 할인 표기에요";
+  validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "natural-copy").passed, false);
+});
+
+test("상세페이지 검수 말투는 저장 전에 시청자용 자막으로 바꾼다", () => {
+  const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
+  concept.cuts[8].caption = "상세페이지 구성 표기는 250ml로 보입니다";
+  concept.cuts[9].caption = "가격 보고 멈칫한 분들, 71% 할인 표기에요";
+
+  const repaired = repairDetailedPlanningAudienceCopy(concept);
+
+  assert.doesNotMatch(repaired.cuts[8].caption, /상세페이지|표기|보입니다/);
+  assert.doesNotMatch(repaired.cuts[9].caption, /표기(?:예요|에요|입니다)/);
+  assert.match(repaired.cuts[8].caption, /250ml/);
+  assert.match(repaired.cuts[9].caption, /71%/);
 });
 
 test("세 기획안은 후킹·화자·문제·서사 방향이 달라야 한다", () => {
@@ -429,7 +480,7 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
 });
 
 test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한 안의 자막·장면안만 보여준다", async () => {
-  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource] = await Promise.all([readFile("app/components/AppFeatureNavigation.tsx", "utf8"), readFile("app/video-planning/page.tsx", "utf8"), readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"), readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"), readFile("app/lib/video-collaboration/types.ts", "utf8")]);
+  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource, generatorSource] = await Promise.all([readFile("app/components/AppFeatureNavigation.tsx", "utf8"), readFile("app/video-planning/page.tsx", "utf8"), readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"), readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"), readFile("app/lib/video-collaboration/types.ts", "utf8"), readFile("app/lib/video-collaboration/videoPlanningGenerator.server.ts", "utf8")]);
   assert.match(navigation, /VIDEO_PLANNING_FEATURE[\s\S]*label: "영상 기획"/);
   assert.match(navigation, /VIDEO CONTENT[\s\S]*영상 콘텐츠/);
   assert.match(
@@ -441,6 +492,14 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(newWorkspace, /4개 콘셉트 생성/);
   assert.match(newWorkspace, /planningMode: "four-concepts"/);
   assert.match(newWorkspace, /패러디 · 리얼 사용\/후기 · USP 집중 · 시크릿 혜택/);
+  assert.match(typesSource, /VIDEO_DESIGNER_OPTIONS = \["조이", "애니"\]/);
+  assert.match(newWorkspace, /VIDEO_DESIGNER_OPTIONS\.map/);
+  assert.match(newWorkspace, /aria-label="업체명"/);
+  assert.match(newWorkspace, /setAdvertiserName\(event\.target\.value\)/);
+  assert.match(newWorkspace, /if \(!advertiserName\.trim\(\)\)/);
+  assert.match(newWorkspace, /advertiserName: advertiserName\.trim\(\)/);
+  assert.match(newWorkspace, /disabled=\{busy \|\| !advertiserName\.trim\(\) \|\| !designerName\}/);
+  assert.match(detailWorkspace, /VIDEO_DESIGNER_OPTIONS\.map/);
   assert.doesNotMatch(newWorkspace, /VIDEO_CONCEPT_FORMAT_OPTIONS\.map|타깃 설정|목표 설정|플랫폼 설정/);
   assert.match(typesSource, /드라마·영화 패러디/);
   assert.match(typesSource, /게임·퀘스트 형식/);
@@ -450,6 +509,20 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(typesSource, /상품 USP 형식/);
   assert.match(typesSource, /클레이 애니메이션/);
   assert.match(detailWorkspace, /자막과 영상 장면안/);
+  assert.match(detailWorkspace, /콘셉트 요약/);
+  assert.match(detailWorkspace, /01 · 상황/);
+  assert.match(detailWorkspace, /02 · 상품 역할/);
+  assert.match(detailWorkspace, /03 · 마무리/);
+  assert.match(detailWorkspace, /<span>화자<\/span>/);
+  assert.match(detailWorkspace, /자막 말투/);
+  assert.match(detailWorkspace, /타깃 호명/);
+  assert.match(generatorSource, /광고 문장으로 순화하거나 일반화하지 않는다/);
+  assert.match(generatorSource, /ㅎㅎ, \.\.\., \.\.\?, ;;/);
+  assert.match(generatorSource, /copyVoiceDirection/);
+  assert.match(generatorSource, /targetCallout/);
+  assert.match(generatorSource, /땀 줄줄 흐르는 형님들/);
+  assert.match(generatorSource, /4번째부터 마지막 직전까지는 공백 제외 14~34자/);
+  assert.match(generatorSource, /‘담당자:’, ‘진행자:’, ‘정보 부족’/);
   assert.match(detailWorkspace, /scenePlanList/);
   assert.match(detailWorkspace, /이미지 생성 없음/);
   assert.match(detailWorkspace, /제작·검수 화면 열기/);

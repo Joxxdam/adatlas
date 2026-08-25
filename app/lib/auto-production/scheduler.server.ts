@@ -1,13 +1,13 @@
 import "server-only";
 import { autoProductionAdvertiserRepository } from "./advertiserConfig.server";
-import { recoverAutoProductionRuns, runAutoProductionForAdvertiser } from "./productionRunner.server";
+import { recoverAutoProductionRuns, scheduleAutoProductionForAdvertiser, startScheduledAutoProductionRun } from "./productionRunner.server";
 import { autoProductionRepository } from "./productionRepository.server";
 import { dueAdvertisers, seoulClock } from "./schedule";
 
-const legacySchedulerKeys = [Symbol.for("daywiz.auto-production.scheduler-v1")];
-const schedulerKey = Symbol.for("daywiz.auto-production.scheduler-v2-exact-window");
+const legacySchedulerKeys = [Symbol.for("daywiz.auto-production.scheduler-v1"), Symbol.for("daywiz.auto-production.scheduler-v2-exact-window")];
+const schedulerKey = Symbol.for("daywiz.auto-production.scheduler-v3-sequential-queue");
 const globalState = globalThis as typeof globalThis & Record<symbol, ReturnType<typeof setInterval> | undefined>;
-const activeRunStatuses = ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"] as const;
+const processingRunStatuses = ["selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"] as const;
 
 export function retireLegacyAutoProductionSchedulers() {
   let retired = 0;
@@ -25,13 +25,38 @@ export function retireLegacyAutoProductionSchedulers() {
 // 4장 팩토리를 호출하지 못하도록 즉시 폐기한다.
 retireLegacyAutoProductionSchedulers();
 
-async function availableAdvertiserSlots(globalConcurrency: number) {
-  const activeRuns = await autoProductionRepository.list({ statuses: [...activeRunStatuses], limit: 200 });
-  const activeAdvertisers = new Set(activeRuns.map((run) => run.advertiserId));
-  return {
-    activeAdvertisers,
-    available: Math.max(0, globalConcurrency - activeAdvertisers.size),
-  };
+async function startNextScheduledRun(configs: Awaited<ReturnType<typeof autoProductionAdvertiserRepository.list>>, now: Date) {
+  const processing = await autoProductionRepository.list({ statuses: [...processingRunStatuses], limit: 200 });
+  // 예약 자동제작은 몰 단위로 하나씩 끝까지 처리한다. 이미지 생성 API와
+  // 로컬 합성 자원을 서로 뺏지 않아 출근 전 결과의 안정성을 우선한다.
+  if (processing.length) return null;
+  const configOrder = new Map(configs.map((config, index) => [config.advertiserId, index]));
+  const scheduled = await autoProductionRepository.list({ statuses: ["scheduled"], limit: 200 });
+  const ordered = scheduled.sort((left, right) => {
+    const byDate = left.businessDate.localeCompare(right.businessDate);
+    if (byDate) return byDate;
+    const byCreatedAt = new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+    if (byCreatedAt) return byCreatedAt;
+    return (configOrder.get(left.advertiserId) ?? Number.MAX_SAFE_INTEGER) - (configOrder.get(right.advertiserId) ?? Number.MAX_SAFE_INTEGER);
+  });
+  const next = ordered.find((run) => configs.some((config) => config.advertiserId === run.advertiserId && config.enabled));
+  const unrunnable = ordered.filter((run) => !configs.some((config) => config.advertiserId === run.advertiserId && config.enabled));
+  for (const run of unrunnable) {
+    await autoProductionRepository.update(run.id, (current) =>
+      current.status === "scheduled"
+        ? {
+            ...current,
+            status: "skipped",
+            completedAt: now.toISOString(),
+            warnings: [...current.warnings, "예약 후 광고주 자동제작 설정이 비활성화되어 건너뛰었습니다."].slice(-20),
+          }
+        : current
+    );
+  }
+  if (!next) return null;
+  const config = configs.find((item) => item.advertiserId === next.advertiserId && item.enabled);
+  if (!config) return null;
+  return startScheduledAutoProductionRun(next.id, config, { now });
 }
 
 export async function tickAutoProductionScheduler(now = new Date()) {
@@ -39,16 +64,17 @@ export async function tickAutoProductionScheduler(now = new Date()) {
   if (settings.paused) return [];
   const configs = await autoProductionAdvertiserRepository.list();
   const keys = await autoProductionRepository.runKeysForDate(seoulClock(now).date);
-  const slots = await availableAdvertiserSlots(settings.globalConcurrency);
-  const due = dueAdvertisers(configs, keys, now)
-    .filter((config) => !slots.activeAdvertisers.has(config.advertiserId))
-    .slice(0, slots.available);
+  const due = dueAdvertisers(configs, keys, now);
   const runs = [];
+  // 시간 창 안에서는 실행 슬롯과 무관하게 모든 몰의 예약 레코드를 먼저 만든다.
+  // 이후 시간이 창을 지나도 이 대기열은 사라지지 않고 순차 실행된다.
   for (const config of due) {
-    const result = await runAutoProductionForAdvertiser(config, { trigger: "scheduled", now });
+    const result = await scheduleAutoProductionForAdvertiser(config, { trigger: "scheduled", now });
     if (result.run) runs.push(result.run);
   }
   await recoverAutoProductionRuns();
+  const started = await startNextScheduledRun(configs, now);
+  if (started?.run) runs.push(started.run);
   return runs;
 }
 
@@ -60,12 +86,18 @@ export async function runAutoProductionNow(input: { advertiserId?: string; trigg
   if (input.advertiserId && !active.length) throw new Error("실행할 활성 광고주 설정을 찾지 못했습니다.");
   const now = input.now || new Date();
   const due = input.trigger === "cli" && !input.force ? dueAdvertisers(active, await autoProductionRepository.runKeysForDate(seoulClock(now).date), now) : active;
-  const slots = await availableAdvertiserSlots(settings.globalConcurrency);
-  const selected = due.filter((config) => !slots.activeAdvertisers.has(config.advertiserId)).slice(0, slots.available);
   const runs = [];
-  for (const config of selected) {
-    const result = await runAutoProductionForAdvertiser(config, { trigger: input.trigger || "manual", now });
+  // 즉시 실행도 일부 몰만 잘라 실행하지 않는다. 선택된 몰을 모두 영속
+  // 대기열에 넣고, 이미 처리 중인 몰이 없을 때 첫 몰부터 순차 시작한다.
+  for (const config of due) {
+    const result = await scheduleAutoProductionForAdvertiser(config, { trigger: input.trigger || "manual", now });
     if (result.run) runs.push({ ...result, run: result.run });
+  }
+  await recoverAutoProductionRuns();
+  const started = await startNextScheduledRun(configs, now);
+  if (started?.run) {
+    const queued = runs.find((result) => result.run.id === started.run.id);
+    if (queued) queued.run = started.run;
   }
   return runs;
 }

@@ -26,13 +26,17 @@ export function resolveProductRenderingPolicy(job: GenerationJob): ProductRender
 }
 
 export function productRenderingPromptContract(job: GenerationJob, _result: GenerationResult) {
+  void _result;
   const policy = resolveProductRenderingPolicy(job);
   if (policy === "natural-meat-reference") {
     return `MEAT PRODUCT POLICY — NATURAL SCENE INTEGRATION
-- Treat the authoritative URL product photos as the visual truth for the sold cut, marbling distribution, fat-to-lean ratio, meat color, thickness, pack count and label.
-- Recreate that same meat naturally in the reference composition with coherent perspective, moisture, fibers, contact, shadows and food lighting. It must look photographed in the scene, never like a rectangular source photo or detached cutout pasted on top.
-- A raw-to-cooked or serving scene may be generated only when the hook needs it; keep the same identifiable cut and do not invent a different cut, grade, origin, quantity or package.
-- Avoid plastic texture, repeated cloned marbling, neon-red meat, impossible fibers, floating trays and unrelated steak photography.`;
+- Treat the highest-resolution authoritative URL product photos as the visual truth for the sold cut, muscle direction, irregular marbling boundaries, fat-to-lean ratio, meat color, thickness, surface moisture, pack count and label. Do not average these details into a generic steak or chicken image.
+- Recreate that same meat naturally in the reference composition with coherent perspective, contact, shadows and food lighting. It must look photographed in the scene, never like a rectangular source photo or detached cutout pasted on top.
+- Preserve fine physical microtexture: non-repeating muscle fibers, naturally uneven fat edges, small thickness variations, restrained moisture and believable pores. Raw meat is moist but not lacquered, glassy, rubbery or uniformly glossy.
+- For cooked meat, use physically plausible browning: irregular sear, rendered fat, small char variation and believable juices. Do not turn the surface into smooth orange glaze unless the authoritative product reference visibly confirms a sauce or glaze.
+- A raw-to-cooked or serving scene may be generated only when the hook needs it and the supplied references support it; keep the same identifiable cut and do not invent a different cut, grade, origin, quantity or package.
+- Match the reference photo's white balance and natural food color. Avoid neon red/orange saturation, cloned marbling, symmetrical fibers, melted-plastic highlights, waxy skin, floating trays and unrelated stock meat photography.
+- If the source evidence is insufficient for a convincing close-up, use a slightly wider credible cooking or serving composition instead of hallucinating macro texture.`;
   }
   if (policy === "ai-packaged-product-reference") {
     return `PACKAGED PRODUCT POLICY — FULL AI REFERENCE INTEGRATION

@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { VIDEO_CONCEPT_ARCHETYPE_OPTIONS, type VideoProject } from "../../lib/video-collaboration/types";
+import {
+  VIDEO_CONCEPT_ARCHETYPE_OPTIONS,
+  type VideoProject,
+} from "../../lib/video-collaboration/types";
+import { getVideoPlanningBlueprint } from "../../lib/video-collaboration/videoPlanningBlueprints";
 import { VIDEO_STATUS_LABELS } from "../../lib/video-collaboration/workflow";
 import styles from "./VideoPlanning.module.css";
 
 export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const [project, setProject] = useState<VideoProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -74,6 +80,30 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
     }
   }
 
+  async function deleteProject() {
+    if (!project) return;
+    if (
+      !window.confirm(
+        `“${project.projectName}” 영상 기획 전체를 삭제할까요?\n삭제한 기획과 프로젝트 전용 제작 파일은 복구할 수 없습니다.`
+      )
+    ) {
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/video-projects/${projectId}`, { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "영상 기획을 삭제하지 못했습니다.");
+      router.replace("/video-planning");
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "영상 기획 삭제 실패");
+      setBusy(false);
+    }
+  }
+
   if (loading)
     return (
       <main className={styles.page}>
@@ -100,14 +130,31 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         </div>
         <div className={styles.topActions}>
           <span className={styles.status}>{VIDEO_STATUS_LABELS[project.status]}</span>
-          {["production_requested", "in_production", "marketer_review", "revision_requested", "approved"].includes(project.status) ? (
-            <Link className={styles.secondaryButton} href={`/video-planning/${project.id}/production`}>
+          {[
+            "production_requested",
+            "in_production",
+            "marketer_review",
+            "revision_requested",
+            "approved",
+          ].includes(project.status) ? (
+            <Link
+              className={styles.secondaryButton}
+              href={`/video-planning/${project.id}/production`}
+            >
               제작·검수
             </Link>
           ) : null}
           <Link className={styles.primaryButton} href="/video-planning/new">
             새 영상 기획
           </Link>
+          <button
+            className={styles.dangerButton}
+            disabled={busy}
+            onClick={() => void deleteProject()}
+            type="button"
+          >
+            {busy ? "처리 중…" : "기획 삭제"}
+          </button>
         </div>
       </header>
 
@@ -130,11 +177,18 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
           <small>{project.advertiserName}</small>
         </div>
         <div className={styles.productFactChips}>
-          {[...project.productAnalysis.coreUsps, ...project.productAnalysis.keyFeatures].slice(0, 4).map((fact, index) => (
-            <span key={`${index}-${fact}`}>{fact}</span>
-          ))}
+          {[...project.productAnalysis.coreUsps, ...project.productAnalysis.keyFeatures]
+            .slice(0, 4)
+            .map((fact, index) => (
+              <span key={`${index}-${fact}`}>{fact}</span>
+            ))}
         </div>
-        <a className={styles.ghostButton} href={project.productUrl} rel="noreferrer" target="_blank">
+        <a
+          className={styles.ghostButton}
+          href={project.productUrl}
+          rel="noreferrer"
+          target="_blank"
+        >
           상세페이지 보기
         </a>
       </section>
@@ -143,7 +197,9 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         <div className={styles.sectionHead}>
           <div>
             <h2>서로 다른 영상 콘셉트 4안</h2>
-            <p>요약만 비교하고, 자세히 연 콘셉트에 대해서만 15개 이상의 자막·장면안을 생성합니다.</p>
+            <p>
+              요약만 비교하고, 자세히 연 콘셉트에 대해서만 15개 이상의 자막·장면안을 생성합니다.
+            </p>
           </div>
           {!project.concepts.length ? (
             <button className={styles.primaryButton} disabled={busy} onClick={generate}>
@@ -162,52 +218,94 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         ) : null}
         {project.concepts.length ? (
           <div className={styles.conceptGrid}>
-            {project.concepts.map((concept) => {
-              const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((option) => option.id === concept.conceptArchetype);
+            {project.concepts.map((concept, conceptIndex) => {
+              const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(
+                (option) => option.id === concept.conceptArchetype
+              );
+              const primaryBlueprint = getVideoPlanningBlueprint(
+                concept.blueprintSelection?.primaryId
+              );
+              const secondaryBlueprint = getVideoPlanningBlueprint(
+                concept.blueprintSelection?.secondaryId
+              );
               const selected = project.selectedConceptId === concept.id;
               return (
                 <article className={styles.conceptCard} data-selected={selected} key={concept.id}>
                   <div className={styles.conceptCardHead}>
-                    <span className={styles.status}>{archetype?.label || "영상 콘셉트"}</span>
+                    <div>
+                      <b>콘셉트 {String(conceptIndex + 1).padStart(2, "0")}</b>
+                      <span className={styles.status}>{archetype?.label || "영상 콘셉트"}</span>
+                    </div>
                     {selected ? <b>선택됨</b> : null}
                   </div>
                   <h3>{concept.title}</h3>
                   <blockquote>{concept.openingHook}</blockquote>
-                  <dl>
+                  <div className={styles.conceptSnapshot}>
                     <div>
-                      <dt>중심 사건</dt>
-                      <dd>{concept.centralIncident || concept.narrativeSummary}</dd>
+                      <span>핵심 사건</span>
+                      <strong>{concept.centralIncident || concept.narrativeSummary}</strong>
                     </div>
                     <div>
-                      <dt>화자·시점</dt>
-                      <dd>{concept.speakerPointOfView || concept.speaker}</dd>
+                      <span>화자</span>
+                      <strong>{concept.speakerPointOfView || concept.speaker}</strong>
                     </div>
                     <div>
-                      <dt>핵심 소구</dt>
-                      <dd>{concept.keyAppeal || concept.usp}</dd>
+                      <span>핵심 소구</span>
+                      <strong>{concept.keyAppeal || concept.usp}</strong>
                     </div>
-                    <div>
-                      <dt>추천 화면 스타일</dt>
-                      <dd>{concept.recommendedVisualStyle || archetype?.description}</dd>
+                  </div>
+                  {concept.benefitAvailability === "insufficient" ? (
+                    <div className={styles.benefitWarning}>
+                      확인 가능한 혜택 정보가 부족합니다. 가격·구성·배송 정보를 추가해 주세요.
                     </div>
-                    <div>
-                      <dt>보조 표현</dt>
-                      <dd>{concept.supportingDevices?.join(" · ") || "상품 근거 중심"}</dd>
-                    </div>
-                    <div>
-                      <dt>기존안과 차이</dt>
-                      <dd>{concept.differenceFromPrevious || "첫 사건과 화자 구성을 다르게 설계"}</dd>
-                    </div>
-                  </dl>
-                  {concept.benefitAvailability === "insufficient" ? <div className={styles.benefitWarning}>확인 가능한 혜택 정보가 부족합니다. 가격·구성·배송 정보를 추가해 주세요.</div> : null}
+                  ) : null}
                   <div className={styles.conceptActions}>
-                    <Link className={styles.primaryButton} href={`/video-planning/${project.id}/concept/${concept.id}`}>
-                      자세히 보기
+                    <Link
+                      className={styles.primaryButton}
+                      href={`/video-planning/${project.id}/concept/${concept.id}`}
+                    >
+                      기획안 자세히 보기
                     </Link>
-                    <button className={styles.secondaryButton} disabled={busy || selected} onClick={() => selectConcept(concept.id)}>
+                    <button
+                      className={styles.secondaryButton}
+                      disabled={busy || selected}
+                      onClick={() => selectConcept(concept.id)}
+                    >
                       {selected ? "선택 완료" : "이 콘셉트 선택"}
                     </button>
                   </div>
+                  <details className={styles.conceptCardDetails}>
+                    <summary>레퍼런스·기획 근거 보기</summary>
+                    <div className={styles.conceptDetailsBody}>
+                      {primaryBlueprint ? (
+                        <div className={styles.blueprintSummary}>
+                          <span>주 레퍼런스</span>
+                          <strong>{primaryBlueprint.title}</strong>
+                          <p>{concept.blueprintSelection?.reason}</p>
+                          <div>
+                            {primaryBlueprint.beats.map((beat) => (
+                              <small key={`${primaryBlueprint.id}-${beat.role}`}>{beat.role}</small>
+                            ))}
+                          </div>
+                          {secondaryBlueprint ? <em>보조: {secondaryBlueprint.title}</em> : null}
+                        </div>
+                      ) : null}
+                      <dl>
+                        <div>
+                          <dt>추천 화면 스타일</dt>
+                          <dd>{concept.recommendedVisualStyle || archetype?.description}</dd>
+                        </div>
+                        <div>
+                          <dt>보조 표현</dt>
+                          <dd>{concept.supportingDevices?.join(" · ") || "상품 근거 중심"}</dd>
+                        </div>
+                        <div>
+                          <dt>다른 안과의 차이</dt>
+                          <dd>{concept.differenceFromPrevious || "첫 사건과 화자 구성을 다르게 설계"}</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </details>
                 </article>
               );
             })}

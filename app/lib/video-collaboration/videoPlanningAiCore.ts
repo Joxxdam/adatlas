@@ -5,6 +5,7 @@ import { assertStructuredVideoPlanningResponse } from "./structuredSchema.ts";
 export type VideoPlanningProvider = "openai-api" | "codex-local";
 export type VideoPlanningAiPurpose = "analysis" | "concept" | "script" | "correction" | "segment";
 export type VideoPlanningReasoningEffort = "low" | "medium";
+export type VideoPlanningTextVerbosity = "low" | "medium" | "high";
 
 export type VideoPlanningAiInput = {
   stage: VideoGenerationStage;
@@ -113,21 +114,12 @@ function timeoutFromEnvironment(value: string | undefined, fallback: number, var
 }
 
 export function resolveVideoPlanningProvider(env: VideoPlanningEnvironment = process.env) {
-  const raw = env.VIDEO_PLANNING_PROVIDER?.trim() || "codex-local";
+  // Video planning is an explicit OpenAI API workload. Keep the local Codex
+  // runner only as an opt-in development escape hatch; never fall back to it
+  // after an API failure.
+  const raw = env.VIDEO_PLANNING_PROVIDER?.trim() || "openai-api";
   if (raw === "codex-local") return raw;
-  if (raw === "openai-api") {
-    if (env.ADATLAS_PAID_API_EXPLICIT_ENABLED?.trim().toLowerCase() !== "true") {
-      throw new VideoPlanningGenerationError({
-        stage: "product-analysis",
-        code: "VIDEO_PLANNING_PAID_API_DISABLED",
-        message: videoPlanningFailureMessage("VIDEO_PLANNING_PAID_API_DISABLED", raw),
-        retryable: false,
-        attempts: 0,
-        failedAt: new Date().toISOString(),
-      });
-    }
-    return raw;
-  }
+  if (raw === "openai-api") return raw;
   throw new VideoPlanningGenerationError({
     stage: "product-analysis",
     code: "VIDEO_PLANNING_MODEL_ERROR",
@@ -148,6 +140,7 @@ export function resolveVideoPlanningStageConfig(input: VideoPlanningAiInput, env
       purpose,
       model: analysisModel,
       effort: input.reasoningEffort || ("low" as VideoPlanningReasoningEffort),
+      verbosity: "low" as VideoPlanningTextVerbosity,
       timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS, 45_000, "VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS"),
     };
   }
@@ -156,6 +149,7 @@ export function resolveVideoPlanningStageConfig(input: VideoPlanningAiInput, env
       purpose,
       model: conceptModel,
       effort: input.reasoningEffort || ("low" as VideoPlanningReasoningEffort),
+      verbosity: "medium" as VideoPlanningTextVerbosity,
       timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_CONCEPT_TIMEOUT_MS, 60_000, "VIDEO_PLANNING_CONCEPT_TIMEOUT_MS"),
     };
   }
@@ -163,6 +157,7 @@ export function resolveVideoPlanningStageConfig(input: VideoPlanningAiInput, env
     purpose,
     model: scriptModel,
     effort: input.reasoningEffort || ((purpose === "script" ? "medium" : "low") as VideoPlanningReasoningEffort),
+    verbosity: "high" as VideoPlanningTextVerbosity,
     timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_SCRIPT_TIMEOUT_MS, 90_000, "VIDEO_PLANNING_SCRIPT_TIMEOUT_MS"),
   };
 }
@@ -272,6 +267,7 @@ export function createOpenAiVideoPlanningRunner(
             tools: [],
             reasoning: { effort: config.effort },
             text: {
+              verbosity: config.verbosity,
               format: {
                 type: "json_schema",
                 name: `video_planning_${input.stage.replace(/[^a-z0-9]+/gi, "_")}`.slice(0, 64),

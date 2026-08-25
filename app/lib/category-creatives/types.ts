@@ -11,6 +11,10 @@ export type CategoryCreativeSource = {
   originalFileName: string;
   mimeType: "image/jpeg" | "image/png" | "image/webp";
   fileName: string;
+  sourceType?: "upload" | "automatic";
+  imageSource?: "product-page" | "candidate-thumbnail";
+  productUrl?: string;
+  originalImageUrl?: string;
   createdAt: string;
 };
 

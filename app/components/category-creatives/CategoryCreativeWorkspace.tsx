@@ -23,6 +23,10 @@ export function CategoryCreativeWorkspace(props: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [representativeId, setRepresentativeId] = useState("");
   const [productName, setProductName] = useState("");
+  const [autoLoading, setAutoLoading] = useState(false);
+  const [autoWarnings, setAutoWarnings] = useState<string[]>([]);
+  const [autoImportedCount, setAutoImportedCount] = useState(0);
+  const [autoReloadKey, setAutoReloadKey] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [job, setJob] = useState<CategoryCreativeJob | null>(null);
@@ -30,6 +34,11 @@ export function CategoryCreativeWorkspace(props: Props) {
   const [message, setMessage] = useState("");
 
   const selectedAdvertiser = useMemo(() => advertisers.find((item) => item.id === advertiserId), [advertiserId, advertisers]);
+  const resolvedAdvertiserName = advertiserName || selectedAdvertiser?.name || "";
+  const selectedSources = useMemo(
+    () => selectedIds.map((id) => sources.find((source) => source.id === id)).filter((source): source is CategoryCreativeSource => Boolean(source)),
+    [selectedIds, sources],
+  );
 
   useEffect(() => {
     fetch("/api/ad-candidates/brands").then((response) => response.json()).then((payload) => {
@@ -38,22 +47,64 @@ export function CategoryCreativeWorkspace(props: Props) {
   }, []);
 
   useEffect(() => {
-    if (!advertiserId || !categoryId) { setSources([]); return; }
-    fetch(`/api/category-creatives/sources?advertiserId=${encodeURIComponent(advertiserId)}&categoryId=${encodeURIComponent(categoryId)}`).then((response) => response.json()).then((payload) => {
-      if (payload.ok) setSources(payload.sources || []);
-    }).catch(() => setMessage("등록된 원본 이미지를 불러오지 못했습니다."));
-  }, [advertiserId, categoryId]);
+    if (!advertiserId || !categoryId) {
+      return;
+    }
+    const controller = new AbortController();
+
+    async function prepareProducts() {
+      try {
+        const response = await fetch("/api/category-creatives/sources/auto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ advertiserId, advertiserName: resolvedAdvertiserName, categoryId }),
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || "상품 이미지를 자동으로 준비하지 못했습니다.");
+        const nextSources = (payload.sources || []) as CategoryCreativeSource[];
+        const nextIds = ((payload.selectedSourceIds || []) as string[]).slice(0, 5);
+        setSources(nextSources);
+        setSelectedIds(nextIds);
+        setRepresentativeId((current) => (nextIds.includes(current) ? current : nextIds[0] || ""));
+        setAutoWarnings(Array.isArray(payload.warnings) ? payload.warnings : []);
+        setAutoImportedCount(Number(payload.importedCount || 0));
+      } catch (reason) {
+        if (controller.signal.aborted) return;
+        setAutoWarnings([reason instanceof Error ? reason.message : "상품 이미지를 자동으로 준비하지 못했습니다."]);
+        try {
+          const response = await fetch(`/api/category-creatives/sources?advertiserId=${encodeURIComponent(advertiserId)}&categoryId=${encodeURIComponent(categoryId)}`, { signal: controller.signal });
+          const payload = await response.json();
+          if (payload.ok) setSources(payload.sources || []);
+        } catch {
+          // 직접 업로드 보조 옵션은 그대로 사용할 수 있습니다.
+        }
+      } finally {
+        if (!controller.signal.aborted) setAutoLoading(false);
+      }
+    }
+
+    queueMicrotask(() => {
+      if (controller.signal.aborted) return;
+      setAutoLoading(true);
+      setAutoWarnings([]);
+      setAutoImportedCount(0);
+      setMessage("");
+      void prepareProducts();
+    });
+    return () => controller.abort();
+  }, [advertiserId, autoReloadKey, categoryId, resolvedAdvertiserName]);
 
   function changeAdvertiser(nextId: string) {
     const match = advertisers.find((item) => item.id === nextId);
-    setAdvertiserId(nextId); setAdvertiserName(match?.name || ""); setSelectedIds([]); setRepresentativeId(""); setJob(null); setMessage("");
+    setAdvertiserId(nextId); setAdvertiserName(match?.name || ""); setSources([]); setSelectedIds([]); setRepresentativeId(""); setAutoWarnings([]); setJob(null); setMessage("");
     setCopy({ headline: `요즘 ${categoryName}, 이렇게 입어요`, subheadline: "서로 다른 무드를 한 장에서 비교해보세요", cta: "스타일 모아보기" });
   }
 
   function changeCategory(nextId: string) {
     const match = defaultFashionCategories.find((item) => item.id === nextId);
     const name = match?.name || "미분류";
-    setCategoryId(nextId); setCategoryName(name); setSelectedIds([]); setRepresentativeId(""); setJob(null); setMessage("");
+    setCategoryId(nextId); setCategoryName(name); setSources([]); setSelectedIds([]); setRepresentativeId(""); setAutoWarnings([]); setJob(null); setMessage("");
     setCopy({ headline: `요즘 ${name}, 이렇게 입어요`, subheadline: "서로 다른 무드를 한 장에서 비교해보세요", cta: "스타일 모아보기" });
   }
 
@@ -65,7 +116,7 @@ export function CategoryCreativeWorkspace(props: Props) {
       const uploaded: CategoryCreativeSource[] = [];
       for (const file of files) {
         const form = new FormData();
-        form.set("file", file); form.set("advertiserId", advertiserId); form.set("advertiserName", advertiserName || selectedAdvertiser?.name || ""); form.set("categoryId", categoryId); form.set("categoryName", categoryName); form.set("productName", productName || file.name.replace(/\.[^.]+$/, ""));
+        form.set("file", file); form.set("advertiserId", advertiserId); form.set("advertiserName", resolvedAdvertiserName); form.set("categoryId", categoryId); form.set("categoryName", categoryName); form.set("productName", productName || file.name.replace(/\.[^.]+$/, ""));
         const response = await fetch("/api/category-creatives/sources", { method: "POST", body: form });
         const payload = await response.json();
         if (!response.ok || !payload.ok) throw new Error(payload.error || "업로드 실패");
@@ -99,7 +150,7 @@ export function CategoryCreativeWorkspace(props: Props) {
   async function create() {
     setCreating(true); setMessage("");
     try {
-      const response = await fetch("/api/category-creatives/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ advertiserId, advertiserName: advertiserName || selectedAdvertiser?.name, categoryId, categoryName, style, sourceIds: selectedIds, representativeSourceId: representativeId, copy }) });
+      const response = await fetch("/api/category-creatives/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ advertiserId, advertiserName: resolvedAdvertiserName, categoryId, categoryName, style, sourceIds: selectedIds, representativeSourceId: representativeId, copy }) });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.error || payload.job?.error || "제작에 실패했습니다.");
       setJob(payload.job); setCopy(payload.job.copy); setMessage("정사각형과 세로형 이미지가 완성되었습니다.");
@@ -127,18 +178,39 @@ export function CategoryCreativeWorkspace(props: Props) {
         <div className={styles.fields}>
           <label><span>광고주</span><select value={advertiserId} onChange={(event) => changeAdvertiser(event.target.value)}><option value="">광고주 선택</option>{advertisers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label><span>카테고리</span><select value={categoryId} onChange={(event) => changeCategory(event.target.value)}>{defaultFashionCategories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label><span>스타일</span><select value={style} onChange={(event) => setStyle(event.target.value as CategoryCreativeStyle)}>{styleOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
         </div>
       </section>
       <section className={styles.setup}>
-        <div className={styles.step}><b>2</b><div><h2>실제 상품 이미지 3–5장</h2><p>상품 형태·색상·디테일을 보존합니다. 아래 패션 예시는 구도 참고일 뿐 상품 원본으로 사용하지 않습니다.</p></div></div>
-        <div className={styles.upload}><input placeholder="상품명(선택)" value={productName} onChange={(event) => setProductName(event.target.value)} /><label className={!advertiserId ? styles.disabled : ""}>{uploading ? "업로드 중…" : "원본 이미지 추가"}<input accept="image/jpeg,image/png,image/webp" disabled={!advertiserId || uploading} multiple onChange={upload} type="file" /></label></div>
-        {sources.length ? <div className={styles.sourceGrid}>{sources.map((source) => { const selectedIndex = selectedIds.indexOf(source.id); return <article className={selectedIndex >= 0 ? styles.selected : ""} key={source.id}><button onClick={() => toggleSource(source.id)} type="button"><img alt={source.productName} src={`/api/category-creatives/sources/${source.id}/image`} /><span>{selectedIndex >= 0 ? `${selectedIndex + 1}번째 선택` : "선택"}</span></button><strong>{source.productName}</strong>{selectedIndex >= 0 ? <div><button onClick={() => move(source.id, -1)} type="button">←</button><label><input checked={representativeId === source.id} name="representative" onChange={() => setRepresentativeId(source.id)} type="radio" /> 대표</label><button onClick={() => move(source.id, 1)} type="button">→</button></div> : null}</article>; })}</div> : <div className={styles.empty}>선택한 광고주·카테고리에 등록된 실제 상품 이미지가 없습니다. 먼저 3장 이상 업로드해 주세요.</div>}
+        <div className={styles.step}><b>2</b><div><h2>상품 자동 선정</h2><p>선택한 업체의 같은 카테고리 안에서 제작에 사용할 실제 상품과 대표 이미지를 자동으로 준비합니다.</p></div></div>
+        <div className={`${styles.autoStatus} ${autoLoading ? styles.loading : selectedSources.length >= 3 ? styles.ready : styles.needsHelp}`}>
+          <div>
+            <strong>{autoLoading ? "상품 후보와 이미지를 가져오는 중입니다" : selectedSources.length >= 3 ? `${selectedSources.length}개 상품이 준비되었습니다` : "자동으로 준비된 상품이 부족합니다"}</strong>
+            <span>{autoLoading ? "등록된 광고 후보를 먼저 확인하고, 필요할 때만 쇼핑몰을 탐색합니다." : autoImportedCount > 0 ? `이번에 ${autoImportedCount}개 상품을 새로 가져왔습니다.` : selectedSources.length >= 3 ? "기존에 준비된 실제 상품을 재사용합니다." : "아래 직접 변경 옵션에서 이미지를 추가할 수 있습니다."}</span>
+          </div>
+          {!autoLoading && selectedSources.length < 3 ? <button disabled={!advertiserId} onClick={() => setAutoReloadKey((current) => current + 1)} type="button">자동 준비 다시 시도</button> : null}
+        </div>
+        {autoWarnings.length ? <details className={styles.warning}><summary>자동 준비 안내 {autoWarnings.length}건</summary>{autoWarnings.map((warning, index) => <p key={`${warning}-${index}`}>{warning}</p>)}</details> : null}
+        {selectedSources.length ? <div className={`${styles.sourceGrid} ${styles.autoGrid}`}>{selectedSources.map((source, index) => <article className={styles.selected} key={source.id}><div className={styles.imageFrame}><img alt={source.productName} src={`/api/category-creatives/sources/${source.id}/image`} /><span>{index + 1}</span></div><strong title={source.productName}>{source.productName}</strong><small>{source.imageSource === "product-page" ? "상세페이지 자동 수집" : source.sourceType === "automatic" ? "후보 이미지 자동 수집" : "등록 상품"}</small>{source.productUrl ? <a href={source.productUrl} rel="noreferrer" target="_blank">상품 페이지 확인</a> : null}</article>)}</div> : !autoLoading ? <div className={styles.empty}>선택한 카테고리에서 실제 상품 이미지를 찾지 못했습니다.</div> : null}
+        <details className={styles.advanced}>
+          <summary>상품 직접 바꾸기·이미지 업로드 <span>선택 사항</span></summary>
+          <div className={styles.advancedBody}>
+            <p>자동 선정 결과를 바꾸고 싶을 때만 사용하세요. 3–5장을 선택하고 대표 상품과 순서를 정할 수 있습니다.</p>
+            <div className={styles.upload}><input placeholder="상품명(선택)" value={productName} onChange={(event) => setProductName(event.target.value)} /><label className={!advertiserId ? styles.disabled : ""}>{uploading ? "업로드 중…" : "원본 이미지 추가"}<input accept="image/jpeg,image/png,image/webp" disabled={!advertiserId || uploading} multiple onChange={upload} type="file" /></label></div>
+            {sources.length ? <div className={styles.sourceGrid}>{sources.map((source) => { const selectedIndex = selectedIds.indexOf(source.id); return <article className={selectedIndex >= 0 ? styles.selected : ""} key={source.id}><button onClick={() => toggleSource(source.id)} type="button"><img alt={source.productName} src={`/api/category-creatives/sources/${source.id}/image`} /><span>{selectedIndex >= 0 ? `${selectedIndex + 1}번째 선택` : "선택"}</span></button><strong>{source.productName}</strong>{selectedIndex >= 0 ? <div><button onClick={() => move(source.id, -1)} type="button">←</button><label><input checked={representativeId === source.id} name="representative" onChange={() => setRepresentativeId(source.id)} type="radio" /> 대표</label><button onClick={() => move(source.id, 1)} type="button">→</button></div> : null}</article>; })}</div> : <div className={styles.empty}>추가로 선택할 수 있는 상품 이미지가 없습니다.</div>}
+          </div>
+        </details>
       </section>
       <section className={styles.setup}>
-        <div className={styles.step}><b>3</b><div><h2>한 번만 쓰는 카테고리 문구</h2><p>가격·할인·성과 수치는 자동으로 만들지 않습니다.</p></div></div>
-        <div className={styles.copyFields}><label><span>메인 문구</span><input value={copy.headline} onChange={(event) => setCopy({ ...copy, headline: event.target.value })} /></label><label><span>보조 문구</span><input value={copy.subheadline} onChange={(event) => setCopy({ ...copy, subheadline: event.target.value })} /></label><label><span>CTA</span><input value={copy.cta} onChange={(event) => setCopy({ ...copy, cta: event.target.value })} /></label></div>
-        <button className={styles.create} disabled={!advertiserId || selectedIds.length < 3 || creating} onClick={create} type="button">{creating ? "두 규격 제작 중…" : `선택한 ${selectedIds.length}장으로 카테고리 이미지 만들기`}</button>
+        <div className={styles.step}><b>3</b><div><h2>카테고리 이미지 제작</h2><p>준비된 상품으로 정사각형과 세로형을 한 번에 만듭니다.</p></div></div>
+        <button className={styles.create} disabled={!advertiserId || selectedIds.length < 3 || autoLoading || creating} onClick={create} type="button">{creating ? "두 규격 제작 중…" : autoLoading ? "상품 준비 중…" : `${categoryName} 대표 이미지 제작하기`}</button>
+        <details className={styles.copyAdvanced}>
+          <summary>문구·스타일 세부 설정 <span>선택 사항</span></summary>
+          <div className={styles.copyAdvancedBody}>
+            <label><span>스타일</span><select value={style} onChange={(event) => setStyle(event.target.value as CategoryCreativeStyle)}>{styleOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+            <div className={styles.copyFields}><label><span>메인 문구</span><input value={copy.headline} onChange={(event) => setCopy({ ...copy, headline: event.target.value })} /></label><label><span>보조 문구</span><input value={copy.subheadline} onChange={(event) => setCopy({ ...copy, subheadline: event.target.value })} /></label><label><span>CTA</span><input value={copy.cta} onChange={(event) => setCopy({ ...copy, cta: event.target.value })} /></label></div>
+            <p>가격·할인·성과 수치는 근거 없이 자동으로 만들지 않습니다.</p>
+          </div>
+        </details>
         {message ? <p className={styles.message}>{message}</p> : null}
       </section>
       {job?.outputs ? <section className={styles.results}>
