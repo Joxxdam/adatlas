@@ -79,6 +79,36 @@
   border-color: #efb8b3;
   background: #fff7f6;
 }
+.pdfDownloadButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid #82a9d3;
+  border-radius: 12px;
+  padding: 0 18px;
+  color: #173d68;
+  background: #edf5ff;
+  font: inherit;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pdfDownloadButton::before {
+  content: "PDF";
+  margin-right: 8px;
+  border-radius: 5px;
+  padding: 2px 5px;
+  color: #fff;
+  background: #dc493f;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .02em;
+}
+.pdfDownloadButton:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .ghostButton:disabled,
@@ -515,6 +545,111 @@
 .pipelineProgress span[data-status="running"] {
   color: #125dbc;
   background: #edf6ff;
+}
+.pipelineProgress span[data-status="failed"] {
+  color: #a7392f;
+  background: #fff0ed;
+}
+.pipelineProgress span[data-status="warning"] {
+  color: #8c5b16;
+  background: #fff7df;
+}
+.generationRunningPanel {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  overflow: hidden;
+  margin: 24px 0;
+  border: 2px solid #68a9f4;
+  border-radius: 22px;
+  padding: 24px 26px 30px;
+  color: #123762;
+  background: linear-gradient(120deg, #eef7ff 0%, #f8fbff 52%, #e9f6ff 100%);
+  box-shadow: 0 18px 45px rgba(18, 104, 213, 0.16);
+}
+.generationSpinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid rgba(18, 104, 213, 0.18);
+  border-top-color: #1268d5;
+  border-radius: 50%;
+  animation: generationSpin 0.9s linear infinite;
+}
+.generationRunningCopy span {
+  color: #1268d5;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+.generationRunningCopy h2 {
+  margin: 4px 0 6px;
+  font-size: clamp(20px, 2vw, 27px);
+  letter-spacing: -0.035em;
+}
+.generationRunningCopy p {
+  margin: 0;
+  color: #536f91;
+  line-height: 1.55;
+}
+.generationRunningCount {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  white-space: nowrap;
+}
+.generationRunningCount strong {
+  color: #1268d5;
+  font-size: 17px;
+}
+.generationRunningCount span {
+  color: #6b819c;
+  font-size: 12px;
+  font-weight: 800;
+}
+.generationProgressTrack {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  background: rgba(18, 104, 213, 0.12);
+}
+.generationProgressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(90deg, #1268d5, #2aa6ea);
+  transition: width 0.35s ease;
+}
+.failureReason {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0 0;
+  border-top: 1px solid #efc3bf;
+  padding-top: 12px;
+  color: #85433d;
+  line-height: 1.55;
+}
+@keyframes generationSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 760px) {
+  .generationRunningPanel {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .generationRunningCount {
+    grid-column: 2;
+    justify-items: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .generationSpinner {
+    animation: none;
+  }
 }
 .score {
   color: #1268d5;

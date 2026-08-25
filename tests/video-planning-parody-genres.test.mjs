@@ -72,4 +72,11 @@ test("생성 결과가 선택된 장르와 다른 경우 서버가 판별할 수
     matchesVideoParodyGenre("판사가 증거를 확인하고 판결한다", "blind-test"),
     false,
   );
+  assert.equal(
+    matchesVideoParodyGenre(
+      "두 등심이 대결하고 심사위원이 마블링 심사 기준으로 우승 제품을 고른다",
+      "competition-judging",
+    ),
+    true,
+  );
 });

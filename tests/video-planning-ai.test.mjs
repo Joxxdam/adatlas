@@ -5,7 +5,7 @@ import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveV
 import { hasExactVideoConceptArchetypes, requestFourVideoConcepts } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "../app/lib/video-collaboration/videoPlanningCorrection.ts";
 import { compactPlanningCta, hasFinalPlanningCta, missingSceneSignals, repairDetailedPlanningCta, repairDetailedPlanningSceneDescriptions } from "../app/lib/video-collaboration/planningValidation.ts";
-import { hasReusableDetailedVideoPlan, withVideoPlanningGenerationLock } from "../app/lib/video-collaboration/videoPlanningRequestGuards.ts";
+import { failVideoPlanningPipeline, hasReusableDetailedVideoPlan, withVideoPlanningGenerationLock } from "../app/lib/video-collaboration/videoPlanningRequestGuards.ts";
 
 const simpleSchema = {
   type: "object",
@@ -13,6 +13,25 @@ const simpleSchema = {
   required: ["value"],
   properties: { value: { type: "string" } },
 };
+
+test("실패한 영상 기획 파이프라인은 생성 중으로 남지 않는다", () => {
+  const failedAt = "2026-08-25T10:48:44.393Z";
+  const progress = failVideoPlanningPipeline(
+    [
+      { stage: "productAnalysis", status: "complete", message: "완료", updatedAt: "before" },
+      { stage: "hookCandidates", status: "complete", message: "완료", updatedAt: "before" },
+      { stage: "conceptCandidates", status: "running", message: "생성 중", updatedAt: "before" },
+      { stage: "validation", status: "pending", message: "대기", updatedAt: "before" },
+    ],
+    "4안 차별성 검사 실패",
+    failedAt
+  );
+  assert.equal(progress[2].status, "failed");
+  assert.equal(progress[2].message, "4안 차별성 검사 실패");
+  assert.equal(progress[2].updatedAt, failedAt);
+  assert.equal(progress[3].status, "warning");
+  assert.equal(progress[3].message, "이전 단계 실패로 중단");
+});
 
 function successfulClient(calls) {
   return {

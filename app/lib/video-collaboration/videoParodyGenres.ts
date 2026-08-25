@@ -180,7 +180,31 @@ export function selectVideoParodyGenre(input: {
 }
 
 export function matchesVideoParodyGenre(value: VideoConcept | string, genre: VideoParodyGenre) {
-  return inferVideoParodyGenre(value) === genre;
+  const selected = getVideoParodyGenre(genre);
+  if (!selected) return false;
+  const text =
+    typeof value === "string"
+      ? value
+      : [
+          value.title,
+          value.openingHook,
+          value.centralIncident,
+          value.narrativeSummary,
+          value.narrativeStructure,
+          value.speaker,
+          value.speakerPointOfView,
+          value.recommendedVisualStyle,
+          value.fullScript,
+          ...value.cuts.map((cut) => `${cut.caption} ${cut.sceneDescription}`),
+        ].join(" ");
+  if (!selected.signals.test(text)) return false;
+
+  // Courtroom language is explicitly forbidden for every other genre. Other
+  // genres intentionally share words such as "심사위원" and "선택"; resolving
+  // those overlaps by declaration order incorrectly rejects valid 대결·심사
+  // concepts as 오디션·면접.
+  const courtroom = getVideoParodyGenre("courtroom");
+  return genre === "courtroom" || !courtroom?.signals.test(text);
 }
 
 export function videoParodyGenrePrompt(genre?: VideoParodyGenre, recentGenres: VideoParodyGenre[] = []) {

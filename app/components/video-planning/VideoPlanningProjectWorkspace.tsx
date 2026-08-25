@@ -17,13 +17,27 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
   const [project, setProject] = useState<VideoProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/video-projects/${projectId}`, { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "영상 기획을 불러오지 못했습니다.");
-    setProject(payload.project);
+    const nextProject = payload.project as VideoProject;
+    setProject(nextProject);
+    const generationRunning = nextProject.pipelineProgress?.some(
+      (item) => item.status === "running"
+    );
+    if (
+      !nextProject.concepts.length &&
+      !generationRunning &&
+      nextProject.generationFailure?.message
+    ) {
+      setError(nextProject.generationFailure.message);
+    } else {
+      setError("");
+    }
   }, [projectId]);
 
   useEffect(() => {
@@ -35,8 +49,22 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  useEffect(() => {
+    const generationRunning = project?.pipelineProgress?.some(
+      (item) => item.status === "running"
+    );
+    if (!project || project.concepts.length || !generationRunning) return;
+    const interval = window.setInterval(() => {
+      void load().catch((caught) =>
+        setError(caught instanceof Error ? caught.message : "진행 상태 조회 실패")
+      );
+    }, 3000);
+    return () => window.clearInterval(interval);
+  }, [load, project]);
+
   async function generate() {
     setBusy(true);
+    setGenerating(true);
     setError("");
     try {
       const response = await fetch(`/api/video-projects/${projectId}/concepts`, {
@@ -46,14 +74,16 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
       });
       const payload = await response.json();
       if (!response.ok && payload.failure?.code === "GENERATION_ALREADY_RUNNING") {
-        setError("같은 4개 콘셉트 생성이 이미 진행 중입니다. 완료 후 다시 확인해 주세요.");
+        await load();
         return;
       }
       if (!response.ok) throw new Error(payload.error || "영상 기획 생성에 실패했습니다.");
       setProject(payload.project);
+      setError("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "영상 기획 생성 실패");
     } finally {
+      setGenerating(false);
       setBusy(false);
     }
   }
@@ -118,6 +148,22 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
       </main>
     );
 
+  const storedGenerationRunning = Boolean(
+    project.pipelineProgress?.some((item) => item.status === "running")
+  );
+  const generationRunning = generating || storedGenerationRunning;
+  const completedGenerationStages =
+    project.pipelineProgress?.filter((item) => item.status === "complete").length || 0;
+  const runningGenerationStage = project.pipelineProgress?.find(
+    (item) => item.status === "running"
+  );
+  const generationFailureReason =
+    project.generationFailure?.code === "CONCEPTS_NOT_DISTINCT"
+      ? "필수 4개 유형 중 하나가 누락·중복됐거나, 기획안 사이의 첫 문장·사건·화자·소구·화면 스타일이 품질 기준보다 겹쳤습니다. 상품 분석이나 API 연결 실패는 아닙니다."
+      : project.generationFailure?.code === "PARODY_GENRE_MISMATCH"
+        ? "사건·상황극 기획이 자동 선택된 세부 장르의 인물·사건·화면 문법을 충분히 따르지 못했습니다."
+        : "API 응답 또는 생성 결과가 저장 전 품질검사를 통과하지 못했습니다.";
+
   return (
     <main className={styles.page}>
       <header className={styles.detailHero}>
@@ -159,10 +205,47 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
         </div>
       </header>
 
-      {error ? (
+      {generationRunning ? (
+        <section
+          aria-live="polite"
+          aria-label="영상 기획 생성 진행 상황"
+          className={styles.generationRunningPanel}
+          role="status"
+        >
+          <div className={styles.generationSpinner} aria-hidden="true" />
+          <div className={styles.generationRunningCopy}>
+            <span>AI VIDEO PLANNING</span>
+            <h2>영상 기획 4안을 생성하고 있습니다</h2>
+            <p>
+              {runningGenerationStage?.message ||
+                "요청을 전송했습니다. 상품 근거를 바탕으로 서로 다른 기획안을 구성하는 중입니다."}
+              <br />완료되면 이 화면에 자동으로 표시됩니다. 페이지를 닫지 않고 기다려 주세요.
+            </p>
+          </div>
+          <div className={styles.generationRunningCount}>
+            <strong>{completedGenerationStages}/4 단계</strong>
+            <span>자동 갱신 중</span>
+          </div>
+          <div className={styles.generationProgressTrack} aria-hidden="true">
+            <span
+              style={{
+                width: `${Math.max(8, (completedGenerationStages / 4) * 100)}%`,
+              }}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {error && !generationRunning ? (
         <div className={styles.error}>
           <strong>영상 기획을 만들지 못했습니다.</strong>
           {error}
+          {project.generationFailure ? (
+            <p className={styles.failureReason}>
+              <b>실패 원인</b>
+              {generationFailureReason}
+            </p>
+          ) : null}
           <div className={styles.errorActions}>
             <button className={styles.secondaryButton} disabled={busy} onClick={generate}>
               다시 시도
@@ -203,8 +286,12 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
             </p>
           </div>
           {!project.concepts.length ? (
-            <button className={styles.primaryButton} disabled={busy} onClick={generate}>
-              {busy ? "콘셉트 생성 중…" : "4개 콘셉트 다시 생성"}
+            <button
+              className={styles.primaryButton}
+              disabled={busy || generationRunning}
+              onClick={generate}
+            >
+              {generationRunning ? "4개 콘셉트 생성 중…" : "4개 콘셉트 다시 생성"}
             </button>
           ) : null}
         </div>

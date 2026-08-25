@@ -1,4 +1,9 @@
-import type { VideoConcept, VideoDuration, VideoGenerationStage } from "./types.ts";
+import type {
+  VideoConcept,
+  VideoDuration,
+  VideoGenerationStage,
+  VideoPipelineProgress,
+} from "./types.ts";
 import { segmentRange } from "./planningValidation.ts";
 import { VideoPlanningGenerationError } from "./videoPlanningAiCore.ts";
 
@@ -29,4 +34,27 @@ export async function withVideoPlanningGenerationLock<T>(input: { key: string; s
 
 export function hasReusableDetailedVideoPlan(concept: VideoConcept, duration: VideoDuration) {
   return concept.detailStatus === "ready" && concept.cuts.length >= segmentRange(duration).min && concept.validation?.valid === true;
+}
+
+export function failVideoPlanningPipeline(
+  progress: VideoPipelineProgress[],
+  message: string,
+  updatedAt = new Date().toISOString()
+) {
+  let failedStageFound = false;
+  return progress.map((item): VideoPipelineProgress => {
+    if (item.status === "running") {
+      failedStageFound = true;
+      return { ...item, status: "failed", message, updatedAt };
+    }
+    if (failedStageFound && item.status === "pending") {
+      return {
+        ...item,
+        status: "warning",
+        message: "이전 단계 실패로 중단",
+        updatedAt,
+      };
+    }
+    return item;
+  });
 }

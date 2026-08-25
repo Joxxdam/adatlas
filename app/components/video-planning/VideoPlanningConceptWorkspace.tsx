@@ -414,6 +414,18 @@ export function VideoPlanningConceptWorkspace({
           <button className={styles.primaryButton} onClick={copyPlan}>
             자막·장면안 복사
           </button>
+          {concept.cuts.length ? (
+            <a
+              className={styles.pdfDownloadButton}
+              href={`/api/video-projects/${projectId}/concepts/${conceptId}/pdf`}
+            >
+              PDF 다운로드
+            </a>
+          ) : (
+            <button className={styles.pdfDownloadButton} disabled type="button">
+              PDF 준비 중
+            </button>
+          )}
           <button
             className={styles.ghostButton}
             disabled={!concept.cuts.length}

@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { videoProjectRepository } from "../../../../lib/video-collaboration/repository.server";
 import { analyzeVideoReferencesAi, generateVideoConceptSummariesAi, generateVideoHookCandidatesAi } from "../../../../lib/video-collaboration/videoPlanningGenerator.server";
 import { VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "../../../../lib/video-collaboration/videoPlanningAi.server";
-import { videoPlanningGenerationKey, withVideoPlanningGenerationLock } from "../../../../lib/video-collaboration/videoPlanningRequestGuards";
+import {
+  failVideoPlanningPipeline,
+  videoPlanningGenerationKey,
+  withVideoPlanningGenerationLock,
+} from "../../../../lib/video-collaboration/videoPlanningRequestGuards";
 import type { VideoPipelineProgress } from "../../../../lib/video-collaboration/types";
 import { inferVideoParodyGenre } from "../../../../lib/video-collaboration/videoParodyGenres";
 
@@ -59,6 +63,12 @@ export async function POST(request: Request, context: { params: Promise<{ projec
         await videoProjectRepository.updatePipelineProgress(projectId, progress);
         const referenceAnalyses = project.referenceAssets.length && !project.referenceAnalyses?.length ? await analyzeVideoReferencesAi(project.referenceAssets) : project.referenceAnalyses || [];
         const hooks = project.hookCandidates && project.hookCandidates.length >= 7 ? project.hookCandidates : await generateVideoHookCandidatesAi(project.productAnalysis, project.brandGuideline, referenceAnalyses);
+        // Keep completed expensive analysis even if the following concept batch fails.
+        // A retry can then resume from concept generation instead of calling the API again.
+        await videoProjectRepository.savePlanningIntermediates(projectId, {
+          hookCandidates: hooks,
+          referenceAnalyses,
+        });
         progress[1] = {
           stage: "hookCandidates",
           status: "complete",
@@ -147,6 +157,15 @@ export async function POST(request: Request, context: { params: Promise<{ projec
             failedAt: new Date().toISOString(),
           };
     if (failure.code !== "GENERATION_ALREADY_RUNNING") {
+      const latest = await videoProjectRepository.get(projectId).catch(() => undefined);
+      if (latest?.pipelineProgress?.length) {
+        await videoProjectRepository
+          .updatePipelineProgress(
+            projectId,
+            failVideoPlanningPipeline(latest.pipelineProgress, failure.message, failure.failedAt)
+          )
+          .catch(() => undefined);
+      }
       await videoProjectRepository.saveGenerationFailure(projectId, failure, { conceptId }).catch(() => undefined);
     }
     return NextResponse.json({ ok: false, error: failure.message, failure }, { status: videoPlanningFailureHttpStatus(failure.code) });

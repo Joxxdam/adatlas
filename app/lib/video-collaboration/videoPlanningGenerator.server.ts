@@ -897,8 +897,8 @@ ${correction} JSON만 반환한다.`,
   const findInvalidArchetypes = (rows: AiConceptSummary[]) => {
     const invalid = new Set<VideoConceptArchetype>();
     for (const row of rows) {
-      if (!candidates.some((hook) => hook.id === row.hookId)) invalid.add(row.conceptArchetype);
-      if (row.evidenceIds.some((id) => !evidenceIds.has(id))) invalid.add(row.conceptArchetype);
+      // Unknown hook/evidence IDs are deterministically resolved or removed in
+      // toConcepts(). They must not discard an otherwise distinct, fact-safe set.
       if (
         row.conceptArchetype === "secret-benefit" &&
         !hasVerifiedBenefit &&

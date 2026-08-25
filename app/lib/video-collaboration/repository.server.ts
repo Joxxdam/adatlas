@@ -511,6 +511,19 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
       });
     },
 
+    async savePlanningIntermediates(
+      projectId: string,
+      options: {
+        hookCandidates?: VideoHookCandidate[];
+        referenceAnalyses?: ReferenceVideoAnalysis[];
+      }
+    ) {
+      return update(projectId, (project) => {
+        if (options.hookCandidates) project.hookCandidates = clone(options.hookCandidates);
+        if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
+      });
+    },
+
     async saveGenerationFailure(
       projectId: string,
       failure: VideoGenerationFailure,
