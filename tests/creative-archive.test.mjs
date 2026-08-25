@@ -245,6 +245,8 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   const workspace = await readFile("app/components/creative-archive/CreativeArchiveWorkspace.tsx", "utf8");
   const collectionRoute = await readFile("app/api/creative-archive/route.ts", "utf8");
   const entryRoute = await readFile("app/api/creative-archive/[entryId]/route.ts", "utf8");
+  const productZipRoute = await readFile("app/api/creative-archive/product-zip/route.ts", "utf8");
+  const productZipService = await readFile("app/lib/creative-archive/productZip.server.ts", "utf8");
   assert.match(navigation, /ARCHIVE_FEATURE[\s\S]*href: "\/archive"[\s\S]*label: "아카이브"/);
   assert.match(navigation, /ASSET LIBRARY/);
   assert.match(page, /CreativeArchiveWorkspace/);
@@ -255,6 +257,8 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /개별 삭제/);
   assert.match(workspace, /이 상품 전체 선택/);
   assert.match(workspace, /선택한 이미지 모두 삭제/);
+  assert.match(workspace, /상품 전체 ZIP/);
+  assert.match(workspace, /\/api\/creative-archive\/product-zip/);
   assert.match(workspace, /아카이브 이미지에 로고·AI 고지 적용/);
   assert.match(workspace, /업체를 선택하세요/);
   assert.match(workspace, /상품을 선택하세요/);
@@ -264,6 +268,11 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.doesNotMatch(workspace, /현재 목록 선택(?: 해제)?/);
   assert.match(collectionRoute, /export async function DELETE/);
   assert.match(entryRoute, /export async function DELETE/);
+  assert.match(productZipRoute, /createCreativeArchiveProductZip/);
+  assert.match(productZipRoute, /Content-Disposition/);
+  assert.match(productZipService, /resolveValidatedNativeDownload/);
+  assert.match(productZipService, /archive-manifest\.json/);
+  assert.match(productZipService, /실패-보고서\.txt/);
 });
 
 test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차이를 소재 조합 테스트로 표시한다", () => {

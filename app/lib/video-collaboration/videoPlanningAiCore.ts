@@ -80,6 +80,9 @@ export function videoPlanningFailureMessage(code: string, provider?: VideoPlanni
   if (code === "VIDEO_PLANNING_RATE_LIMITED") {
     return "영상 기획 요청이 일시적으로 많습니다. 잠시 후 다시 시도해 주세요.";
   }
+  if (code === "VIDEO_PLANNING_QUOTA_EXHAUSTED") {
+    return "영상 기획용 OpenAI API 크레딧 또는 사용 한도가 소진되었습니다. 결제·한도 설정을 확인하거나 로컬 Codex 방식으로 실행해 주세요.";
+  }
   if (code === "VIDEO_PLANNING_TIMEOUT") {
     return "영상 기획 응답 시간이 초과되었습니다. 입력 내용은 유지되었으니 다시 시도해 주세요.";
   }
@@ -114,9 +117,8 @@ function timeoutFromEnvironment(value: string | undefined, fallback: number, var
 }
 
 export function resolveVideoPlanningProvider(env: VideoPlanningEnvironment = process.env) {
-  // Video planning is an explicit OpenAI API workload. Keep the local Codex
-  // runner only as an opt-in development escape hatch; never fall back to it
-  // after an API failure.
+  // Video planning uses the configured OpenAI Responses API. Keep the local
+  // Codex runner available only when it is selected explicitly.
   const raw = env.VIDEO_PLANNING_PROVIDER?.trim() || "openai-api";
   if (raw === "codex-local") return raw;
   if (raw === "openai-api") return raw;
@@ -165,9 +167,17 @@ export function resolveVideoPlanningStageConfig(input: VideoPlanningAiInput, env
 function failureInfo(error: unknown) {
   const apiError = error instanceof APIError ? error : undefined;
   const status = apiError?.status || (typeof error === "object" && error && "status" in error && typeof error.status === "number" ? error.status : undefined);
-  const apiCode = apiError?.code || "";
+  const apiCode = apiError?.code || (typeof error === "object" && error && "code" in error && typeof error.code === "string" ? error.code : "");
+  const apiType = typeof error === "object" && error && "type" in error && typeof error.type === "string" ? error.type : "";
+  const errorDescriptor = `${apiCode} ${apiType} ${safeMessage(error)}`;
   if (error instanceof AuthenticationError || error instanceof PermissionDeniedError || status === 401 || status === 403) {
     return { code: "VIDEO_PLANNING_AUTH_ERROR", retryable: false };
+  }
+  if (
+    status === 429 &&
+    /credit_balance_exhausted|insufficient_quota|(?:organization|project)_(?:spend|usage)_limit_exceeded|no credits remaining/i.test(errorDescriptor)
+  ) {
+    return { code: "VIDEO_PLANNING_QUOTA_EXHAUSTED", retryable: false };
   }
   if (error instanceof RateLimitError || status === 429) {
     return { code: "VIDEO_PLANNING_RATE_LIMITED", retryable: true };
@@ -187,6 +197,39 @@ function failureInfo(error: unknown) {
   return { code: "VIDEO_PLANNING_MODEL_ERROR", retryable: false };
 }
 
+function headerValue(error: unknown, name: string) {
+  if (!error || typeof error !== "object" || !("headers" in error)) return "";
+  const headers = error.headers;
+  if (headers && typeof headers === "object" && "get" in headers && typeof headers.get === "function") {
+    const value = headers.get(name);
+    return typeof value === "string" ? value : "";
+  }
+  return "";
+}
+
+function upstreamErrorCode(error: unknown) {
+  if (!error || typeof error !== "object" || !("code" in error) || typeof error.code !== "string") return "";
+  return error.code.slice(0, 100);
+}
+
+function upstreamRequestId(error: unknown) {
+  if (error && typeof error === "object" && "request_id" in error && typeof error.request_id === "string") {
+    return error.request_id.slice(0, 120);
+  }
+  return headerValue(error, "x-request-id").slice(0, 120);
+}
+
+export function videoPlanningRateLimitDelayMs(error: unknown, attempt: number, random = Math.random) {
+  const retryAfter = headerValue(error, "retry-after").trim();
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.min(30_000, Math.ceil(seconds * 1000 + random() * 300));
+    const dateDelay = Date.parse(retryAfter) - Date.now();
+    if (Number.isFinite(dateDelay) && dateDelay > 0) return Math.min(30_000, Math.ceil(dateDelay + random() * 300));
+  }
+  return Math.min(30_000, 1000 * (2 ** Math.max(0, attempt - 1)) + Math.ceil(random() * 400));
+}
+
 function logCall(
   input: {
     stage: VideoGenerationStage;
@@ -202,6 +245,8 @@ function logCall(
     outputTokens?: number;
     totalTokens?: number;
     errorCode?: string;
+    upstreamCode?: string;
+    requestId?: string;
   },
   logger: (message: string) => void
 ) {
@@ -218,10 +263,14 @@ export function createOpenAiVideoPlanningRunner(
     env?: VideoPlanningEnvironment;
     client?: VideoPlanningResponsesClient;
     logger?: (message: string) => void;
+    sleep?: (milliseconds: number) => Promise<void>;
+    random?: () => number;
   } = {}
 ) {
   const env = options.env || process.env;
   const logger = options.logger || console.info;
+  const sleep = options.sleep || ((milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
+  const random = options.random || Math.random;
   let sharedClient = options.client;
   return async function runOpenAiVideoPlanning<T>(input: VideoPlanningAiInput): Promise<T> {
     const apiKey = env.OPENAI_API_KEY?.trim();
@@ -326,10 +375,15 @@ export function createOpenAiVideoPlanningRunner(
             attempt,
             success: false,
             errorCode: info.code,
+            upstreamCode: upstreamErrorCode(error) || undefined,
+            requestId: upstreamRequestId(error) || undefined,
           },
           logger
         );
         if (!info.retryable || attempt === 2) break;
+        if (info.code === "VIDEO_PLANNING_RATE_LIMITED") {
+          await sleep(videoPlanningRateLimitDelayMs(error, attempt, random));
+        }
       }
     }
     const info = failureInfo(lastError);
@@ -349,7 +403,7 @@ export function createOpenAiVideoPlanningRunner(
 
 export function videoPlanningFailureHttpStatus(code: string) {
   if (code === "GENERATION_ALREADY_RUNNING") return 409;
-  if (code === "VIDEO_PLANNING_RATE_LIMITED") return 429;
+  if (code === "VIDEO_PLANNING_RATE_LIMITED" || code === "VIDEO_PLANNING_QUOTA_EXHAUSTED") return 429;
   if (code === "VIDEO_PLANNING_TIMEOUT") return 504;
   if (code === "VIDEO_PLANNING_API_KEY_MISSING" || code === "VIDEO_PLANNING_AUTH_ERROR" || code === "VIDEO_PLANNING_PAID_API_DISABLED") return 503;
   if (code === "VIDEO_PLANNING_MODEL_ERROR") return 502;

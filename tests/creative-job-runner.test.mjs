@@ -205,8 +205,15 @@ test("11-1. 다른 메뉴에서도 백그라운드 제작 진행률을 전역으
   assert.match(indicator, /완성 결과 확인/);
   assert.match(indicator, /\?step=product&jobId=/);
   assert.match(indicator, /storedSummary\.generatedCount < storedSummary\.totalCount/);
+  assert.match(indicator, /\["pending", "running"\]\.includes\(storedSummary\.status\)/);
   assert.match(client, /globalStoredJobId/);
   assert.match(client, /restoringGlobalWithoutProduct/);
+  assert.match(client, />\s*진행 취소\s*</);
+  assert.match(client, /dismissedJobIds\.current\.add\(cancelledJobId\)/);
+  assert.match(client, /currentLocation\.searchParams\.delete\("jobId"\)/);
+  assert.match(client, /window\.localStorage\.removeItem\(ACTIVE_CREATIVE_JOB_STORAGE_KEY\)/);
+  const jobRoute = await read("app/api/creative-generation/jobs/[jobId]/route.ts");
+  assert.match(jobRoute, /cancelQueuedGenerationJob\(job\.id\)/);
   assert.match(css, /\.indicator \{[\s\S]*position: fixed/);
 });
 

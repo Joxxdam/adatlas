@@ -21,3 +21,11 @@ export function normalizeProductCategory(productName: string, definitions = defa
   const match = definitions.find((definition) => definition.keywords.some((keyword) => normalized.includes(keyword.toLowerCase())));
   return match || { id: "fashion.uncategorized", name: "미분류", keywords: [] };
 }
+
+export function resolveFashionCategorySelection(categoryId?: string, categoryName?: string, definitions = defaultFashionCategories) {
+  const byId = definitions.find((definition) => definition.id === String(categoryId || "").trim());
+  if (byId) return byId;
+  const normalizedName = String(categoryName || "").normalize("NFKC").trim().toLocaleLowerCase("ko-KR");
+  const byName = definitions.find((definition) => definition.name.normalize("NFKC").toLocaleLowerCase("ko-KR") === normalizedName);
+  return byName || definitions[0];
+}

@@ -82,6 +82,23 @@ export async function listCategoryCreativeJobs() {
   return jobs.filter((job): job is CategoryCreativeJob => Boolean(job)).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
+export async function deleteCategoryCreativeJob(id: string) {
+  const normalizedId = String(id || "").trim();
+  if (!normalizedId || normalizedId === "." || normalizedId === ".." || path.basename(normalizedId) !== normalizedId) return false;
+
+  const job = await getCategoryCreativeJob(normalizedId);
+  if (!job) return false;
+
+  const directory = categoryCreativeJobDirectory(normalizedId);
+  const relativeDirectory = path.relative(jobRoot, directory);
+  if (!relativeDirectory || relativeDirectory.startsWith(`..${path.sep}`) || path.isAbsolute(relativeDirectory)) {
+    throw new Error("삭제할 카테고리 이미지 작업 경로가 올바르지 않습니다.");
+  }
+
+  await fs.rm(directory, { recursive: true, force: true });
+  return true;
+}
+
 export async function readCategoryCreativeJobAsset(jobId: string, fileName: string) {
   return fs.readFile(path.join(categoryCreativeJobDirectory(jobId), path.basename(fileName)));
 }

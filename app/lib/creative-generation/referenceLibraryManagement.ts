@@ -36,6 +36,11 @@ export type NativeReferenceCompatibility = {
 export type ReferenceTextRegion = {
   id: string;
   role: "headline" | "support" | "proof" | "offer" | "cta" | "badge" | "other";
+  /** 다단·분산 배치에서도 재현 가능한 실제 시각 읽기 순서입니다. */
+  readingOrder?: number;
+  /** 광고 문구와 상품 라벨·브랜드·장식을 분리해 잘못 적응하지 않게 합니다. */
+  sourceType?: "ad-copy" | "source-brand" | "source-product-label" | "decorative" | "uncertain";
+  replacePolicy?: "adapt" | "remove" | "product-replacement" | "preserve" | "review";
   text: string;
   lines: string[];
   /** 0~1 비율 좌표입니다. OCR이 좌표를 확신하지 못하면 생략합니다. */
@@ -47,7 +52,20 @@ export type ReferenceTextRegion = {
   align?: "left" | "center" | "right" | "unknown";
   emphasis?: "none" | "light" | "strong";
   colorHint?: string;
+  backgroundHint?: string;
+  outlineHint?: string;
+  sizeClass?: "small" | "medium" | "large" | "hero";
+  characterBudget?: number;
+  reviewRequired?: boolean;
   confidence?: number;
+};
+
+export type ReferenceNativeCopyValidation = {
+  textCoverage: number;
+  regionCoverage: number;
+  passAgreement: number;
+  numericAgreement: number;
+  issues: string[];
 };
 
 /**
@@ -62,12 +80,30 @@ export type ReferenceNativeCopy = {
   textRegions: ReferenceTextRegion[];
   confidence?: number;
   ocrConfidence?: number;
+  analysisVersion?: string;
+  promptVersion?: string;
+  model?: string;
+  imageHash?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  analysisStatus?: "ready" | "needs-review" | "unavailable";
+  approvalStatus?: "auto-approved" | "manually-approved" | "needs-review" | "rejected";
+  approvedAt?: string;
+  validation?: ReferenceNativeCopyValidation;
+  analysisError?: string;
+  attemptCount?: number;
   manuallyCorrected: boolean;
   useForCopyAdaptation: boolean;
   extractionSource: "codex-local" | "manual" | "unavailable";
   extractedAt?: string;
   updatedAt: string;
 };
+
+export function isApprovedReferenceNativeCopy(copy: ReferenceNativeCopy | undefined) {
+  if (!copy?.rawLines?.some((line) => line.trim()) || copy.useForCopyAdaptation === false) return false;
+  if (copy.manuallyCorrected) return copy.approvalStatus === "manually-approved";
+  return copy.analysisStatus === "ready" && ["auto-approved", "manually-approved"].includes(copy.approvalStatus || "");
+}
 
 /**
  * OCR·수동 입력의 실제 행 순서와 중간 빈 줄을 보존합니다. 운영상 의미가 없는

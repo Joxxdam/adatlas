@@ -8,6 +8,7 @@ import {
   type VideoProject,
 } from "../../lib/video-collaboration/types";
 import { getVideoPlanningBlueprint } from "../../lib/video-collaboration/videoPlanningBlueprints";
+import { getVideoParodyGenre } from "../../lib/video-collaboration/videoParodyGenres";
 import { VIDEO_STATUS_LABELS } from "../../lib/video-collaboration/workflow";
 import styles from "./VideoPlanning.module.css";
 
@@ -222,6 +223,7 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
               const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(
                 (option) => option.id === concept.conceptArchetype
               );
+              const parodyGenre = getVideoParodyGenre(concept.parodyGenre);
               const primaryBlueprint = getVideoPlanningBlueprint(
                 concept.blueprintSelection?.primaryId
               );
@@ -234,7 +236,10 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
                   <div className={styles.conceptCardHead}>
                     <div>
                       <b>콘셉트 {String(conceptIndex + 1).padStart(2, "0")}</b>
-                      <span className={styles.status}>{archetype?.label || "영상 콘셉트"}</span>
+                      <span className={styles.status}>
+                        {archetype?.label || "영상 콘셉트"}
+                        {parodyGenre ? ` · ${parodyGenre.label}` : ""}
+                      </span>
                     </div>
                     {selected ? <b>선택됨</b> : null}
                   </div>

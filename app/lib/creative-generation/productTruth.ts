@@ -1,5 +1,6 @@
 import type { ProductInfoForPrompt, SourceImageCandidate } from "../mvp/types";
 import type { CreativeImageAsset, CreativeImageRole, FactVerification, ProductFact, ProductEvidenceType, ProductTruth } from "./types";
+import { isUnsafeProductCreativeSignal } from "./productSignalHygiene.ts";
 
 export const PRODUCT_TRUTH_VERSION = "product-truth-v2-structured";
 
@@ -49,9 +50,9 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
     .replace(/\s+/g, " ")
     .trim();
   const cleanProductName = cleanProductTitle(rawProductTitle, product.brandName || product.advertiserName || "");
-  const description = [product.extractedDescription, product.mainBenefit, ...(product.verifiedBenefits || [])].filter(Boolean).join(" · ");
-  const ingredientValues = compact(product.ingredients || []).filter((value) => !isOriginLike(value) && !isPromotionLike(value));
-  const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value));
+  const description = [product.extractedDescription, product.mainBenefit, ...(product.verifiedBenefits || [])].filter((value): value is string => Boolean(value) && !isUnsafeProductCreativeSignal(value)).join(" · ");
+  const ingredientValues = compact(product.ingredients || []).filter((value) => !isOriginLike(value) && !isPromotionLike(value) && !isUnsafeProductCreativeSignal(value));
+  const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value) && !isUnsafeProductCreativeSignal(value));
   const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg)/i);
   const salesUnit = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:봉지|개입|개|팩|병|박스|세트|종)(?!\s*(?:구성|세트))/i);
   const composition = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
@@ -73,7 +74,8 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
     .replace(/\s+/g, " ")
     .trim();
   const verifiedDescriptor = titleDescriptor || verifiedBenefits[0] || ingredientValues[0] || undefined;
-  const reviewEvidence = compact([...(product.reviewSources || []).map((review) => review.keySentence || review.sourceContext), ...(product.creativeContext?.reviewInsightSummaries || [])]).slice(0, 6);
+  const safeTargetCustomer = isUnsafeProductCreativeSignal(product.targetCustomer) ? undefined : product.targetCustomer || undefined;
+  const reviewEvidence = compact([...(product.reviewSources || []).map((review) => review.keySentence || review.sourceContext), ...(product.creativeContext?.reviewInsightSummaries || [])]).filter((value) => !isUnsafeProductCreativeSignal(value)).slice(0, 6);
   return {
     rawProductTitle,
     cleanProductName,
@@ -104,10 +106,10 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
     packageOrOption,
     uspCandidates: compact([...verifiedBenefits, ...ingredientValues]).slice(0, 8),
     reviewEvidence,
-    targetCustomer: product.targetCustomer || undefined,
-    target: product.targetCustomer || undefined,
-    usageOccasions: compact([product.targetCustomer, ...(product.verifiedBenefits || []).filter((value) => /(?:때|후|전|매일|운동|출근|퇴근|외출|여행|식사|샤워)/u.test(value))]).slice(0, 5),
-    useSituations: compact([product.targetCustomer, ...(product.verifiedBenefits || []).filter((value) => /(?:때|후|전|매일|운동|출근|퇴근|외출|여행|식사|샤워)/u.test(value))]).slice(0, 5),
+    targetCustomer: safeTargetCustomer,
+    target: safeTargetCustomer,
+    usageOccasions: compact([safeTargetCustomer, ...verifiedBenefits.filter((value) => /(?:때|후|전|매일|운동|출근|퇴근|외출|여행|식사|샤워)/u.test(value))]).slice(0, 5),
+    useSituations: compact([safeTargetCustomer, ...verifiedBenefits.filter((value) => /(?:때|후|전|매일|운동|출근|퇴근|외출|여행|식사|샤워)/u.test(value))]).slice(0, 5),
   };
 }
 
@@ -311,7 +313,7 @@ function fact(key: string, label: string, value: string | undefined, verificatio
 }
 
 function freeTextClaims(product: ProductInfoForPrompt) {
-  return compact([product.mainBenefit, ...(product.verifiedBenefits || []), ...(product.ingredients || []).filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient)).map((ingredient) => `${ingredient} 함유`)]);
+  return compact([product.mainBenefit, ...(product.verifiedBenefits || []), ...(product.ingredients || []).filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient)).map((ingredient) => `${ingredient} 함유`)]).filter((value) => !isUnsafeProductCreativeSignal(value));
 }
 
 export function buildProductTruth(input: { product: ProductInfoForPrompt; rawProductTitle?: string; productImagePaths?: string[]; selectedAdImages?: string[]; imageAssets?: CreativeImageAsset[]; source?: "landing-page" | "user-input" }): ProductTruth {
@@ -329,9 +331,9 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     fact("price", "판매가", product.price, verification, source, product.landingUrl),
     fact("original-price", "기존가", product.originalPrice || product.oldPrice, verification, source, product.landingUrl),
     fact("discount", "할인 정보", product.discountInfo, verification, source, product.landingUrl),
-    fact("main-benefit", "핵심 혜택", product.mainBenefit, verification, source, product.landingUrl),
-    fact("target", "추천 대상", product.targetCustomer, verification, source, product.landingUrl),
-    ...(product.verifiedBenefits || []).map((benefit, index) => fact(`verified-benefit-${index + 1}`, "상세페이지 혜택", benefit, verification, source, product.landingUrl)),
+    fact("main-benefit", "핵심 혜택", isUnsafeProductCreativeSignal(product.mainBenefit) ? undefined : product.mainBenefit, verification, source, product.landingUrl),
+    fact("target", "추천 대상", isUnsafeProductCreativeSignal(product.targetCustomer) ? undefined : product.targetCustomer, verification, source, product.landingUrl),
+    ...(product.verifiedBenefits || []).filter((benefit) => !isUnsafeProductCreativeSignal(benefit)).map((benefit, index) => fact(`verified-benefit-${index + 1}`, "상세페이지 혜택", benefit, verification, source, product.landingUrl)),
     ...normalizedTruth.ingredients.map((ingredient, index) => fact(`ingredient-${index + 1}`, "성분", ingredient, verification, source, product.landingUrl)),
     fact("origin", "원산지", normalizedTruth.origin, verification, source, product.landingUrl),
     fact("quantity", "판매 단위", normalizedTruth.quantity, verification, source, product.landingUrl),
@@ -339,9 +341,9 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     fact("season-event", "시즌·이벤트", normalizedTruth.seasonOrEvent, verification, source, product.landingUrl),
     ...(product.reviewSources || [])
       .map((review) => review.keySentence || review.sourceContext || "")
-      .filter(Boolean)
+      .filter((review) => Boolean(review) && !isUnsafeProductCreativeSignal(review))
       .map((review, index) => fact(`review-${index + 1}`, "확인된 후기", review, verification, source, product.landingUrl)),
-    ...(product.creativeContext?.reviewInsightSummaries || []).map((review, index) => fact(`review-insight-${index + 1}`, "후기 인사이트", review, verification, source, product.landingUrl)),
+    ...(product.creativeContext?.reviewInsightSummaries || []).filter((review) => !isUnsafeProductCreativeSignal(review)).map((review, index) => fact(`review-insight-${index + 1}`, "후기 인사이트", review, verification, source, product.landingUrl)),
     ...contentNotes.filter((note) => !note.prohibited && ["PRODUCT_USP", "REVIEW_INSIGHT", "TARGET_AUDIENCE", "PROMOTION"].includes(note.type)).map((note, index) => fact(note.type === "REVIEW_INSIGHT" ? `review-note-${index + 1}` : `content-note-${note.type.toLowerCase()}-${index + 1}`, note.title || note.type, note.content, "user-provided", "user-input")),
   ].filter((item): item is ProductFact => Boolean(item));
   const claims = freeTextClaims(product);

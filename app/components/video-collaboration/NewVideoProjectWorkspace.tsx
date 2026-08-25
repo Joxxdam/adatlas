@@ -167,7 +167,7 @@ export function NewVideoProjectWorkspace() {
           <Link href="/video-planning">← 영상 기획 목록</Link>
           <p className={styles.eyebrow}>NEW VIDEO PLAN</p>
           <h1>상품 하나로 콘셉트 4개 만들기</h1>
-          <p>유형 선택 없이 상품 사실을 바탕으로 패러디·리얼 후기·USP·혜택형을 각각 만듭니다.</p>
+          <p>유형 선택 없이 상품 사실을 바탕으로 사건·상황극·리얼 후기·USP·혜택형을 각각 만듭니다.</p>
         </div>
         <div className={styles.planningSteps}>
           <span data-active>1 상품 분석</span>
@@ -302,7 +302,7 @@ export function NewVideoProjectWorkspace() {
             </div>
             <div className={styles.stickyAction}>
               <div>
-                <strong>패러디 · 리얼 사용/후기 · USP 집중 · 시크릿 혜택</strong>
+                <strong>사건·상황극 · 리얼 사용/후기 · USP 집중 · 시크릿 혜택</strong>
                 <span>첫 자막, 사건, 화자, 소구, 결말이 서로 다르게 생성됩니다.</span>
               </div>
               <button className={styles.primaryButton} disabled={busy || !advertiserName.trim() || !designerName} onClick={createFourConcepts}>

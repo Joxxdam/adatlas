@@ -80,7 +80,7 @@ export function CreativeJobStatusIndicator() {
           try {
             const storedSummary = await fetchSummary(storedId);
             if (!mounted) return;
-            if (storedSummary.generatedCount < storedSummary.totalCount) {
+            if (["pending", "running"].includes(storedSummary.status) && storedSummary.generatedCount < storedSummary.totalCount) {
               lastActiveJob.current = storedSummary;
               setJob(storedSummary);
               setCompletedNotice(null);

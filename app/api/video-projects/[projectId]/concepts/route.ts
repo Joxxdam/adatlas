@@ -4,6 +4,7 @@ import { analyzeVideoReferencesAi, generateVideoConceptSummariesAi, generateVide
 import { VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "../../../../lib/video-collaboration/videoPlanningAi.server";
 import { videoPlanningGenerationKey, withVideoPlanningGenerationLock } from "../../../../lib/video-collaboration/videoPlanningRequestGuards";
 import type { VideoPipelineProgress } from "../../../../lib/video-collaboration/types";
+import { inferVideoParodyGenre } from "../../../../lib/video-collaboration/videoParodyGenres";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,6 +72,19 @@ export async function POST(request: Request, context: { params: Promise<{ projec
           updatedAt: new Date().toISOString(),
         };
         await videoProjectRepository.updatePipelineProgress(projectId, progress);
+        const storedRecentParodyGenres = await videoProjectRepository.recentParodyGenres({
+          excludeProjectId: project.id,
+          advertiserName: project.advertiserName,
+          limit: 5,
+        });
+        const currentParodyGenre = project.concepts
+          .filter((concept) => concept.conceptArchetype === "parody")
+          .map((concept) => inferVideoParodyGenre(concept))
+          .find((genre) => Boolean(genre));
+        const recentParodyGenres = [
+          ...(currentParodyGenre ? [currentParodyGenre] : []),
+          ...storedRecentParodyGenres,
+        ];
         const generated = await generateVideoConceptSummariesAi({
           advertiserName: project.advertiserName,
           analysis: project.productAnalysis,
@@ -85,6 +99,7 @@ export async function POST(request: Request, context: { params: Promise<{ projec
           requiredContent: project.requiredContent,
           excludedContent: project.excludedContent,
           requestedArchetype: previousConcept?.conceptArchetype,
+          recentParodyGenres,
         });
         progress[2] = {
           stage: "conceptCandidates",

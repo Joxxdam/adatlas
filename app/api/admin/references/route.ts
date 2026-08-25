@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
-import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, type ManagedNativeReferenceItem } from "../../../lib/creative-generation/referenceLibraryManagement";
+import { startReferenceOcrRun } from "../../../lib/creative-generation/referenceOcrRunner.server";
+import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,23 @@ function publicLibrary() {
   };
 }
 
+function reconcileManualRegions(regions: ReferenceTextRegion[] | undefined, rawLines: string[]) {
+  const editable = (regions || []).filter((region) => region.sourceType !== "source-product-label" && region.sourceType !== "decorative");
+  const visibleLines = rawLines.filter((line) => line.trim());
+  const expectedCount = editable.reduce((count, region) => count + Math.max(1, region.lines.filter((line) => line.trim()).length), 0);
+  if (!editable.length || expectedCount !== visibleLines.length) return { regions: regions || [], safe: false };
+  let cursor = 0;
+  const editableIds = new Set(editable.map((region) => region.id));
+  const next = (regions || []).map((region) => {
+    if (!editableIds.has(region.id)) return region;
+    const lineCount = Math.max(1, region.lines.filter((line) => line.trim()).length);
+    const lines = visibleLines.slice(cursor, cursor + lineCount);
+    cursor += lineCount;
+    return { ...region, text: lines.join("\n"), lines, confidence: 1, reviewRequired: false };
+  });
+  return { regions: next, safe: cursor === visibleLines.length };
+}
+
 export async function GET() {
   try {
     return NextResponse.json({ ok: true, library: publicLibrary() });
@@ -40,11 +58,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
     const result = await nativeReferenceLibraryRepository.add(files);
-    const nativeCopies = [];
-    for (let index = 0; index < result.added.length; index += 3) {
-      nativeCopies.push(...(await Promise.all(result.added.slice(index, index + 3).map((item) => nativeReferenceLibraryRepository.extractNativeCopy(item.id)))));
-    }
-    return NextResponse.json({ ok: true, added: result.added, nativeCopyAnalysis: { analyzedCount: nativeCopies.filter((copy) => copy.extractionSource === "codex-local").length, fallbackCount: nativeCopies.filter((copy) => copy.extractionSource !== "codex-local").length }, library: publicLibrary() });
+    const ocrStatus = await startReferenceOcrRun({ ids: result.added.map((item) => item.id) });
+    return NextResponse.json({ ok: true, added: result.added, nativeCopyAnalysis: { queuedCount: result.added.length }, ocrStatus, library: publicLibrary() }, { status: 202 });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 업로드에 실패했습니다." }, { status: 400 });
   }
@@ -71,15 +86,50 @@ export async function PATCH(request: Request) {
     for (const key of ["supportsPackagedProduct", "supportsNaturalFood", "supportsHumanModel", "supportsMultipleProducts"] as const) {
       if (typeof body[key] === "boolean") patch[key] = body[key];
     }
-    if (body.nativeCopy !== undefined) {
+    if (body.nativeCopyApproval !== undefined) {
+      const target = nativeReferenceLibraryRepository.list().items.find((item) => item.id === id);
+      if (!target) throw new Error("레퍼런스를 찾지 못했습니다.");
+      const action = String(body.nativeCopyApproval);
+      if (action === "approve") {
+        if (!target.nativeCopy?.rawLines?.some((line) => line.trim())) throw new Error("승인할 원문 문구가 없습니다.");
+        await nativeReferenceLibraryRepository.updateNativeCopy(id, {
+          approvalStatus: "manually-approved",
+          analysisStatus: "ready",
+          approvedAt: new Date().toISOString(),
+          analysisError: undefined,
+          useForCopyAdaptation: true,
+        });
+      } else if (action === "reject") {
+        await nativeReferenceLibraryRepository.updateNativeCopy(id, {
+          approvalStatus: "rejected",
+          analysisStatus: "needs-review",
+          approvedAt: undefined,
+          useForCopyAdaptation: false,
+        });
+      } else {
+        throw new Error("지원하지 않는 분석 승인 작업입니다.");
+      }
+    } else if (body.nativeCopy !== undefined) {
       const rawText = String(body.nativeCopy.rawText || "").replace(/\r/g, "");
+      const rawLines = normalizeReferenceRawLines(rawText.split("\n"));
+      const target = nativeReferenceLibraryRepository.list().items.find((item) => item.id === id);
+      if (!target) throw new Error("레퍼런스를 찾지 못했습니다.");
+      const reconciled = reconcileManualRegions(target.nativeCopy?.textRegions, rawLines);
+      const ready = Boolean(rawLines.some((line) => line.trim())) && reconciled.safe;
       await nativeReferenceLibraryRepository.updateNativeCopy(id, {
         ...body.nativeCopy,
-        rawText,
-        rawLines: rawText.split("\n"),
+        rawText: rawLines.join("\n"),
+        rawLines,
+        textRegions: reconciled.regions,
+        confidence: ready ? 1 : target.nativeCopy?.confidence,
+        ocrConfidence: target.nativeCopy?.ocrConfidence,
+        analysisStatus: ready ? "ready" : "needs-review",
+        approvalStatus: ready ? "manually-approved" : "needs-review",
+        approvedAt: ready ? new Date().toISOString() : undefined,
+        analysisError: ready ? undefined : "수정한 줄 수와 저장된 문구 영역이 달라 좌표 재분석이 필요합니다.",
         manuallyCorrected: true,
         extractionSource: "manual",
-        useForCopyAdaptation: body.nativeCopy.useForCopyAdaptation !== false,
+        useForCopyAdaptation: ready && body.nativeCopy.useForCopyAdaptation !== false,
       });
     } else {
       await nativeReferenceLibraryRepository.updateCompatibility(id, patch);
@@ -94,9 +144,15 @@ export async function PUT(request: Request) {
   try {
     assertTrustedMutation(request);
     const body = await request.json().catch(() => ({}));
+    if (Array.isArray(body.ids)) {
+      const ids: string[] = [...new Set<string>(body.ids.map((value: unknown) => String(value || "").trim()).filter((value: string) => Boolean(value)))].slice(0, 3);
+      if (!ids.length) throw new Error("정밀 분석할 레퍼런스 ID가 필요합니다.");
+      const nativeCopies = await Promise.all(ids.map((id) => nativeReferenceLibraryRepository.extractNativeCopy(id)));
+      return NextResponse.json({ ok: true, nativeCopies, library: publicLibrary() });
+    }
     const id = String(body.id || "").trim();
     if (!id) throw new Error("다시 분석할 레퍼런스 ID가 필요합니다.");
-    const nativeCopy = await nativeReferenceLibraryRepository.extractNativeCopy(id);
+    const nativeCopy = await nativeReferenceLibraryRepository.extractNativeCopy(id, { force: true });
     return NextResponse.json({ ok: true, nativeCopy, library: publicLibrary() });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 문구 재분석에 실패했습니다." }, { status: 400 });

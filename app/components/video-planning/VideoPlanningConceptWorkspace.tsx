@@ -10,6 +10,7 @@ import {
   type VideoProject,
 } from "../../lib/video-collaboration/types";
 import { getVideoPlanningBlueprint } from "../../lib/video-collaboration/videoPlanningBlueprints";
+import { getVideoParodyGenre } from "../../lib/video-collaboration/videoParodyGenres";
 import { VIDEO_HOOK_LABELS } from "../../lib/video-collaboration/workflow";
 import { assignPlanningTimeline } from "../../lib/video-collaboration/planningValidation";
 import styles from "./VideoPlanning.module.css";
@@ -387,6 +388,7 @@ export function VideoPlanningConceptWorkspace({
       </main>
     );
   const format = VIDEO_CONCEPT_FORMAT_OPTIONS.find((option) => option.id === concept.conceptFormat);
+  const parodyGenre = getVideoParodyGenre(concept.parodyGenre);
   const primaryBlueprint = getVideoPlanningBlueprint(concept.blueprintSelection?.primaryId);
   const secondaryBlueprint = getVideoPlanningBlueprint(concept.blueprintSelection?.secondaryId);
 
@@ -396,7 +398,7 @@ export function VideoPlanningConceptWorkspace({
         <div>
           <Link href={`/video-planning/${projectId}`}>← 영상 기획으로 돌아가기</Link>
           <p className={styles.eyebrow}>
-            {format?.title || VIDEO_HOOK_LABELS[concept.hookType]} · {project.duration}초
+            {parodyGenre?.label || format?.title || VIDEO_HOOK_LABELS[concept.hookType]} · {project.duration}초
           </p>
           <h1>{concept.title}</h1>
           <p>완성 영상이 아니라 제작자가 실행할 자막과 영상 장면 설명입니다.</p>
@@ -501,6 +503,12 @@ export function VideoPlanningConceptWorkspace({
             </strong>
             <span>전체 흐름</span>
             <strong>{concept.narrativeSummary || concept.narrativeStructure}</strong>
+            {parodyGenre ? (
+              <>
+                <span>상황극 장르</span>
+                <strong>{parodyGenre.label} · {parodyGenre.direction}</strong>
+              </>
+            ) : null}
           </div>
         </details>
       </section>

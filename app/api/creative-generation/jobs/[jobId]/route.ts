@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { creativeGenerationJobStore } from "../../../../lib/creative-generation/jobStore.server";
-import { enqueueGenerationJob, isGenerationJobRunnerActive, recoverGenerationJob } from "../../../../lib/creative-generation/jobRunner.server";
+import { cancelQueuedGenerationJob, enqueueGenerationJob, isGenerationJobRunnerActive, recoverGenerationJob } from "../../../../lib/creative-generation/jobRunner.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../../lib/creative-generation/localGenerationAccess.server";
 import { toGenerationJobSummary, toPublicGenerationError, toPublicGenerationJob } from "../../../../lib/creative-generation/publicJob.server";
 import { cancelGenerationJob, hasOrphanedRunningResult, isServerRunnableGenerationJob, resumeGenerationJob } from "../../../../lib/creative-generation/jobRunnerPolicy";
@@ -49,6 +49,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ jobId
       }
       return resumeGenerationJob(current, runnerWasActive);
     });
+    if (body.action === "cancel") cancelQueuedGenerationJob(job.id);
     if (body.action === "resume") enqueueGenerationJob(job.id);
     return NextResponse.json({
       ok: true,

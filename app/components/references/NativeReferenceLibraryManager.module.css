@@ -85,6 +85,17 @@
   cursor: wait;
   opacity: 0.6;
 }
+.uploader .uploaderActions {
+  display: flex;
+  grid-column: 2;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.uploader .analysisButton {
+  border: 1px solid #9fc7ef;
+  color: #155f9f;
+  background: #fff;
+}
 
 .status,
 .statusError {
@@ -270,6 +281,103 @@
   color: #6a7c91;
   font-size: 11px;
   line-height: 1.5;
+}
+.analysisMeta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.analysisMeta span {
+  display: grid;
+  gap: 2px;
+  border-radius: 7px;
+  padding: 6px;
+  color: #6a7c91;
+  background: #eef5fb;
+  font-size: 9px;
+  text-align: center;
+}
+.analysisMeta b {
+  color: #214b73;
+  font-size: 10px;
+}
+.analysisWarning {
+  margin-bottom: 8px;
+  border: 1px solid #f2d5a6;
+  border-radius: 8px;
+  padding: 7px 8px;
+  color: #8a5a0a;
+  background: #fff9ed;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.regionReview {
+  margin-bottom: 8px;
+  border: 1px solid #d6e5f3;
+  border-radius: 8px;
+  padding: 7px;
+  background: #fff;
+}
+.regionReview > summary {
+  color: #315b81;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.analysisPreview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #eef3f7;
+}
+.analysisPreview img {
+  object-fit: contain;
+}
+.regionBox {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: start;
+  min-width: 10px;
+  min-height: 10px;
+  border: 2px solid #1d86df;
+  color: #fff;
+  background: rgba(29, 134, 223, 0.12);
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+}
+.regionBoxWarning {
+  border-color: #e58b21;
+  background: rgba(229, 139, 33, 0.17);
+}
+.regionList {
+  display: grid;
+  gap: 6px;
+  max-height: 180px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  overflow: auto;
+}
+.regionList li {
+  color: #2d4f70;
+  font-size: 9px;
+}
+.regionList li span,
+.regionList li em {
+  display: block;
+  margin-top: 2px;
+  color: #71849a;
+  font-style: normal;
+  line-height: 1.35;
+}
+.regionList li em {
+  color: #263f59;
 }
 .nativeCopy textarea {
   width: 100%;

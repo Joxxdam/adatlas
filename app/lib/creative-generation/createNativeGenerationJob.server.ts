@@ -18,6 +18,7 @@ import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
 import { assertCurrentReferenceEditGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, CURRENT_REFERENCE_EDIT_WORKFLOW, REFERENCE_EDIT_STAGE_ORDER } from "./jobRunnerPolicy";
+import { isUnsafeProductCreativeSignal } from "./productSignalHygiene.ts";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -49,15 +50,22 @@ function conciseVerifiedBenefit(value: string) {
 }
 
 function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]) {
-  const cleanList = (values?: string[]) => (values || []).map((value) => value.trim()).filter((value) => value && !internalStrategyText.test(value));
+  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isUnsafeProductCreativeSignal(value)));
+  const cleanList = (values?: string[]) => (values || []).map((value) => value.trim()).filter((value) => value && !unsafe(value));
   const verifiedBenefits = cleanList(product.verifiedBenefits);
   const ingredients = cleanList(product.ingredients);
-  const mainBenefit = internalStrategyText.test(product.mainBenefit || "") ? conciseVerifiedBenefit(verifiedBenefits[0] || ingredients[0] || "") : product.mainBenefit;
+  const mainBenefit = unsafe(product.mainBenefit) ? conciseVerifiedBenefit(verifiedBenefits[0] || ingredients[0] || "") : product.mainBenefit;
+  const extractedDescription = (product.extractedDescription || "")
+    .split(/\s*[·•|]\s*|[.!?]\s+/)
+    .map((value) => value.trim())
+    .filter((value) => value && !unsafe(value))
+    .join(" · ");
   return {
     ...product,
     productName: cleanProductTitle(product.productName.replace(/\s*\(\d+\)\s*$/, "").trim(), product.brandName || product.advertiserName || ""),
     mainBenefit,
-    targetCustomer: internalStrategyText.test(product.targetCustomer || "") ? "" : product.targetCustomer,
+    targetCustomer: unsafe(product.targetCustomer) ? "" : product.targetCustomer,
+    extractedDescription,
     verifiedBenefits,
     ingredients,
   };

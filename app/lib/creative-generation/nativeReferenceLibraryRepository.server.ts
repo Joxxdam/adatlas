@@ -7,7 +7,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { classifyNativeReferenceImage } from "./nativeReferenceClassifier.server";
 import { normalizeNativeReferenceCategory, normalizeNativeReferenceCompatibility, removeManagedNativeReference, type ManagedNativeReferenceItem, type ManagedNativeReferenceManifest, type NativeReferenceCategoryGroup, type ReferenceNativeCopy } from "./referenceLibraryManagement";
-import { extractReferenceNativeCopy, normalizeReferenceNativeCopy } from "./referenceNativeCopy.server";
+import { extractReferenceNativeCopy, normalizeReferenceNativeCopy, REFERENCE_NATIVE_COPY_ANALYSIS_VERSION } from "./referenceNativeCopy.server";
 
 const manifestPath = path.resolve(process.cwd(), "data", "native-creative-reference-library.json");
 const publicRoot = path.resolve(process.cwd(), "public");
@@ -213,27 +213,32 @@ export const nativeReferenceLibraryRepository = {
     });
   },
 
-  async extractNativeCopy(id: string) {
+  async extractNativeCopy(id: string, options: { force?: boolean } = {}) {
     const manifest = readNativeReferenceManifestSync();
     const target = manifest.items.find((item) => item.id === id);
     if (!target) throw new Error("레퍼런스를 찾지 못했습니다.");
+    const imagePath = safeReferencePath(target.publicPath);
+    const imageHash = createHash("sha256").update(await fs.readFile(imagePath)).digest("hex");
+    if (!options.force && target.nativeCopy?.imageHash === imageHash && target.nativeCopy.analysisVersion === REFERENCE_NATIVE_COPY_ANALYSIS_VERSION) {
+      return target.nativeCopy;
+    }
     let nativeCopy: ReferenceNativeCopy;
     try {
-      nativeCopy = await extractReferenceNativeCopy(safeReferencePath(target.publicPath));
-    } catch {
-      nativeCopy = {
+      nativeCopy = await extractReferenceNativeCopy(imagePath, { previousAttemptCount: target.nativeCopy?.attemptCount });
+    } catch (error) {
+      nativeCopy = normalizeReferenceNativeCopy({
+        ...target.nativeCopy,
         referenceId: id,
-        rawText: target.nativeCopy?.rawText || "",
-        rawLines: target.nativeCopy?.rawLines || [],
-        textRegions: target.nativeCopy?.textRegions || [],
-        confidence: target.nativeCopy?.confidence,
-        ocrConfidence: target.nativeCopy?.ocrConfidence ?? target.nativeCopy?.confidence,
-        manuallyCorrected: Boolean(target.nativeCopy?.manuallyCorrected),
+        imageHash,
+        analysisVersion: REFERENCE_NATIVE_COPY_ANALYSIS_VERSION,
+        analysisStatus: target.nativeCopy?.rawLines?.some((line) => line.trim()) ? "needs-review" : "unavailable",
+        approvalStatus: target.nativeCopy?.approvalStatus === "manually-approved" ? "manually-approved" : "needs-review",
+        analysisError: error instanceof Error ? error.message : "정밀 문구 분석에 실패했습니다.",
+        attemptCount: (target.nativeCopy?.attemptCount || 0) + 1,
         useForCopyAdaptation: Boolean(target.nativeCopy?.rawLines?.length) && target.nativeCopy?.useForCopyAdaptation !== false,
         extractionSource: target.nativeCopy?.manuallyCorrected ? "manual" : "unavailable",
-        extractedAt: target.nativeCopy?.extractedAt,
         updatedAt: new Date().toISOString(),
-      };
+      })!;
     }
     nativeCopy.referenceId = id;
     await this.updateNativeCopy(id, nativeCopy);

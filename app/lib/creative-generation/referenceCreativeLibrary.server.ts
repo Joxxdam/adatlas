@@ -4,8 +4,8 @@ import path from "node:path";
 import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
 import { defaultCompositionTypes, pickCompatibleRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
-import { nativeReferenceLibraryRepository, readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import { normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
+import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
+import { isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
 export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
 
@@ -93,33 +93,12 @@ export function nativeAdReferenceFromManagedItem(item: ManagedNativeReferenceIte
 }
 
 /**
- * 예전에 등록되어 OCR 문구가 비어 있는 레퍼런스도 상품명 위주의 안전 문구로
- * 축약하지 않도록, 선택 직후 원문 문구를 분석해 같은 레퍼런스 객체에 결합한다.
- * 두 장씩만 분석해 로컬 Codex 세션이 과도하게 동시에 열리지 않게 한다.
+ * 생성 작업에서는 OCR을 실행하지 않습니다. 업로드·운영자 재분석에서 저장된
+ * 분석만 전달하고, 미분석 항목은 계획 단계의 원본 이미지 직접 판독 fallback을
+ * 사용합니다. 이 함수는 과거 호출부 호환을 위해 유지합니다.
  */
 export async function ensureNativeReferenceCopies(references: NativeAdReference[]) {
-  const hydrated = [...references];
-  const missingIndexes = references
-    .map((reference, index) => ({ reference, index }))
-    .filter(({ reference }) => reference.nativeCopy?.useForCopyAdaptation !== false && !reference.nativeCopy?.rawLines?.length);
-
-  for (let offset = 0; offset < missingIndexes.length; offset += 2) {
-    const batch = missingIndexes.slice(offset, offset + 2);
-    const copies = await Promise.all(
-      batch.map(async ({ reference }) => {
-        try {
-          return await nativeReferenceLibraryRepository.extractNativeCopy(reference.id);
-        } catch {
-          return reference.nativeCopy;
-        }
-      })
-    );
-    batch.forEach(({ reference, index }, batchIndex) => {
-      hydrated[index] = { ...reference, nativeCopy: copies[batchIndex] || reference.nativeCopy };
-    });
-  }
-
-  return hydrated;
+  return references;
 }
 
 function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
@@ -206,8 +185,11 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const profile = buildProductReferenceCompatibilityProfile(job);
   const categoryGroup = profile.categoryGroup;
   const categoryName = profile.foodSubcategory ? `${categoryLabel(categoryGroup)} > 과일/농산물` : categoryLabel(categoryGroup);
-  const referenceItems = readReferenceItems().filter((item) => item.nativeCopy?.useForCopyAdaptation !== false);
-  const copyReadyItems = referenceItems.filter((item) => Boolean(item.nativeCopy?.rawLines?.length));
+  // OCR 승인 여부는 제작 허가가 아닙니다. 호환되는 레퍼런스는 모두 시각
+  // 원본으로 사용할 수 있고, 저장 문구가 없거나 불확실하면 자동 fallback이
+  // ProductTruth 문구 계약을 만들어 사용자 승인 없이 제작을 계속합니다.
+  const referenceItems = readReferenceItems();
+  const copyReadyItems = referenceItems.filter((item) => isApprovedReferenceNativeCopy(item.nativeCopy));
   const freshItems = referenceItems.filter((item) => !recentReferenceIds.has(item.id));
   const freshCopyReadyItems = copyReadyItems.filter((item) => !recentReferenceIds.has(item.id));
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
@@ -229,8 +211,8 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */
 export function selectNativeAdReference(job: GenerationJob, result: GenerationResult): NativeAdReference {
-  const allReferenceItems = readReferenceItems().filter((item) => item.nativeCopy?.useForCopyAdaptation !== false);
-  const copyReadyItems = allReferenceItems.filter((item) => Boolean(item.nativeCopy?.rawLines?.length));
+  const allReferenceItems = readReferenceItems();
+  const copyReadyItems = allReferenceItems.filter((item) => isApprovedReferenceNativeCopy(item.nativeCopy));
   const profile = buildProductReferenceCompatibilityProfile(job);
   if (!allReferenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
   const compatibleIn = (items: typeof allReferenceItems) => items

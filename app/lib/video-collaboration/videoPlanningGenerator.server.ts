@@ -22,6 +22,7 @@ import {
   type ReferenceVideoAnalysis,
   type VideoConceptFormat,
   type VideoConceptArchetype,
+  type VideoParodyGenre,
 } from "./types.ts";
 import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } from "./workflow.ts";
 import {
@@ -50,6 +51,11 @@ import {
 } from "./videoPlanningBlueprints.ts";
 import { runWithSingleVideoPlanningCorrection } from "./videoPlanningCorrection.ts";
 import { analyzeReferenceAssets } from "./planningPipeline.ts";
+import {
+  matchesVideoParodyGenre,
+  selectVideoParodyGenre,
+  videoParodyGenrePrompt,
+} from "./videoParodyGenres.ts";
 
 const hookTypes = [...VIDEO_HOOK_TYPES];
 const hookTypeSchema = { type: "string", enum: hookTypes } as const;
@@ -680,6 +686,7 @@ export async function generateVideoConceptSummariesAi(input: {
   requiredContent?: string;
   excludedContent?: string;
   requestedArchetype?: VideoConceptArchetype;
+  recentParodyGenres?: VideoParodyGenre[];
 }) {
   const candidates = [...input.hooks]
     .filter((hook) => !hook.rejectionReasons.length)
@@ -704,6 +711,11 @@ export async function generateVideoConceptSummariesAi(input: {
     archetypes: input.requestedArchetype
       ? [input.requestedArchetype]
       : [...REQUIRED_VIDEO_CONCEPT_ARCHETYPES],
+  });
+  const selectedParodyGenre = selectVideoParodyGenre({
+    analysis: input.analysis,
+    recentGenres: input.recentParodyGenres,
+    seed: `${input.advertiserName}:${input.analysis.productName}`,
   });
   const request = async (archetypes: VideoConceptArchetype[] | undefined, correction = "") =>
     runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
@@ -747,6 +759,12 @@ ${JSON.stringify(referenceVoiceSignals(input.referenceAnalyses))}
 ${internetVoiceRules(input.analysis.category)}
 [분석 완료 영상 11개의 큐레이션 블루프린트]
 ${JSON.stringify((archetypes || []).map((archetype) => ({ archetype, blueprint: blueprintPrompt(blueprintSelections[archetype]) })))}
+${
+  archetypes?.includes("parody")
+    ? `[사건·상황극형의 자동 선택 세부 장르]
+${videoParodyGenrePrompt(selectedParodyGenre.id, input.recentParodyGenres)}`
+    : ""
+}
 [반드시 넣을 내용]
 ${clean(input.requiredContent, 1500) || "없음"}
 [제외할 내용]
@@ -754,7 +772,7 @@ ${clean(input.excludedContent, 1500) || "없음"}
 [이 프로젝트의 기존 기획안]
 ${JSON.stringify((input.existingConcepts || []).map((item) => ({ opening: item.openingHook, incident: item.centralIncident, speaker: item.speakerPointOfView || item.speaker, appeal: item.keyAppeal || item.usp })))}
 
-첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 멈춰 볼 센 사건이나 한마디로 시작한다. title은 ‘정체를 확인합니다’, ‘차이를 알아봅니다’ 같은 설명형 제목이 아니라 누가 어떤 상황에서 무슨 일을 겪는지 한눈에 보이는 사건형 제목으로 쓴다. 상품 사실은 바꾸지 않되 표현과 상황은 과감하게 창작한다. coreTarget은 분석용 고객 정의로 쓰고, targetCallout은 그 고객의 행동·불편·욕망을 찌르는 자극적인 직접 호명으로 별도 작성한다. targetCallout은 ‘운동하는 남성’ 같은 일반 명사가 아니라 ‘땀 줄줄 흐르는 형님들 잠깐;;’처럼 첫 3초 자막에 바로 쓸 수 있어야 한다. 첫 자막, 중심 사건, 화자 시점, 갈등 원인, 상품 등장 방식, 핵심 소구, 결말·CTA, 화면 스타일을 기존 기획안과 다르게 만든다. copyVoiceDirection에는 이 콘셉트에서 실제로 사용할 호칭·말끝·문장 파편·직설 강도를 구체적으로 적고 ‘친근한 말투’, ‘자연스러운 구어체’처럼 일반화하지 않는다. 각 콘셉트는 배정된 주 블루프린트의 전체 전개를 우선하고 보조 블루프린트에서는 훅 또는 CTA 장치 하나만 가져온다. 참고 영상은 사건 구조와 말투 장치를 현재 상품에 맞게 변환하되 원문 전체·특정 인물·상품 사실은 복제하지 않는다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓰고 확정 문구로 쓰지 않는다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다. 실제 이미지나 영상을 생성하지 않으며 상세 대본은 아직 만들지 않는다.
+첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 멈춰 볼 센 사건이나 한마디로 시작한다. title은 ‘정체를 확인합니다’, ‘차이를 알아봅니다’ 같은 설명형 제목이 아니라 누가 어떤 상황에서 무슨 일을 겪는지 한눈에 보이는 사건형 제목으로 쓴다. 상품 사실은 바꾸지 않되 표현과 상황은 과감하게 창작한다. coreTarget은 분석용 고객 정의로 쓰고, targetCallout은 그 고객의 행동·불편·욕망을 찌르는 자극적인 직접 호명으로 별도 작성한다. targetCallout은 ‘운동하는 남성’ 같은 일반 명사가 아니라 ‘땀 줄줄 흐르는 형님들 잠깐;;’처럼 첫 3초 자막에 바로 쓸 수 있어야 한다. 첫 자막, 중심 사건, 화자 시점, 갈등 원인, 상품 등장 방식, 핵심 소구, 결말·CTA, 화면 스타일을 기존 기획안과 다르게 만든다. copyVoiceDirection에는 이 콘셉트에서 실제로 사용할 호칭·말끝·문장 파편·직설 강도를 구체적으로 적고 ‘친근한 말투’, ‘자연스러운 구어체’처럼 일반화하지 않는다. 각 콘셉트는 배정된 주 블루프린트의 전체 전개를 우선하고 보조 블루프린트에서는 훅 또는 CTA 장치 하나만 가져온다. 사건·상황극형은 서버가 지정한 세부 장르를 블루프린트보다 우선하며 다른 장르로 바꾸거나 혼합하지 않는다. 참고 영상은 사건 구조와 말투 장치를 현재 상품에 맞게 변환하되 원문 전체·특정 인물·상품 사실은 복제하지 않는다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓰고 확정 문구로 쓰지 않는다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다. 실제 이미지나 영상을 생성하지 않으며 상세 대본은 아직 만들지 않는다.
 ${archetypes?.includes("secret-benefit") && !hasVerifiedBenefit ? "secret-benefit 기획안은 확인된 혜택이 없으므로 benefitAvailability를 insufficient로 두고, keyAppeal과 narrativeSummary에는 ‘확인 가능한 혜택 정보가 부족합니다’를 포함하며 가격·할인·배송·증정을 창작하지 않는다." : ""}
 ${correction} JSON만 반환한다.`,
     });
@@ -824,11 +842,51 @@ ${correction} JSON만 반환한다.`,
         targetCallout: clean(row.targetCallout, 100),
         benefitAvailability: row.benefitAvailability,
         blueprintSelection: blueprintSelections[row.conceptArchetype],
+        parodyGenre:
+          row.conceptArchetype === "parody" ? selectedParodyGenre.id : undefined,
       };
     });
   };
   if (input.requestedArchetype) {
-    const payload = await request([input.requestedArchetype]);
+    let payload = await request([input.requestedArchetype]);
+    if (
+      input.requestedArchetype === "parody" &&
+      !matchesVideoParodyGenre(
+        [
+          payload.concepts[0]?.title,
+          payload.concepts[0]?.openingHook,
+          payload.concepts[0]?.centralIncident,
+          payload.concepts[0]?.narrativeSummary,
+          payload.concepts[0]?.narrativeStructure,
+          payload.concepts[0]?.speaker,
+          payload.concepts[0]?.speakerPointOfView,
+          payload.concepts[0]?.recommendedVisualStyle,
+          ...(payload.concepts[0]?.supportingDevices || []),
+        ].join(" "),
+        selectedParodyGenre.id
+      )
+    ) {
+      payload = await request(
+        [input.requestedArchetype],
+        `이전 응답이 자동 선택 장르 '${selectedParodyGenre.label}'을 따르지 않았다. 법정 등 다른 장르를 섞지 말고 선택 장르의 사건·인물·화면 문법이 제목과 중심 사건에 명시적으로 드러나게 다시 작성한다.`
+      );
+    }
+    if (
+      input.requestedArchetype === "parody" &&
+      !matchesVideoParodyGenre(
+        payload.concepts.map((row) => [row.title, row.centralIncident, row.narrativeSummary, row.recommendedVisualStyle].join(" ")).join(" "),
+        selectedParodyGenre.id
+      )
+    ) {
+      throw new VideoPlanningGenerationError({
+        stage: "schema-validation",
+        code: "PARODY_GENRE_MISMATCH",
+        message: "사건·상황극 기획안이 자동 선택된 세부 장르를 따르지 않았습니다.",
+        retryable: true,
+        attempts: 2,
+        failedAt: new Date().toISOString(),
+      });
+    }
     return toConcepts(payload.concepts);
   }
   if (!fourConceptMode) {
@@ -847,6 +905,25 @@ ${correction} JSON만 반환한다.`,
         row.benefitAvailability !== "insufficient"
       ) {
         invalid.add(row.conceptArchetype);
+      }
+      if (
+        row.conceptArchetype === "parody" &&
+        !matchesVideoParodyGenre(
+          [
+            row.title,
+            row.openingHook,
+            row.centralIncident,
+            row.narrativeSummary,
+            row.narrativeStructure,
+            row.speaker,
+            row.speakerPointOfView,
+            row.recommendedVisualStyle,
+            ...row.supportingDevices,
+          ].join(" "),
+          selectedParodyGenre.id
+        )
+      ) {
+        invalid.add("parody");
       }
     }
     const fields = rows.map((row) => [
@@ -1028,6 +1105,7 @@ ${JSON.stringify({
   style: input.concept.creativeStyle,
   selectedConceptFormat: input.concept.conceptFormat,
   conceptArchetype: input.concept.conceptArchetype,
+  parodyGenre: input.concept.parodyGenre,
   narrative: input.concept.narrativeStructure,
   incident: input.concept.centralIncident,
   pointOfView: input.concept.speakerPointOfView,
@@ -1049,6 +1127,12 @@ ${
   input.concept.conceptArchetype
     ? `[중심 콘셉트 규칙]
 ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === input.concept.conceptArchetype)?.direction || "선택된 중심 유형의 사건과 시점을 끝까지 유지한다."}`
+    : ""
+}
+${
+  input.concept.conceptArchetype === "parody" && input.concept.parodyGenre
+    ? `[선택된 사건·상황극 세부 장르]
+${videoParodyGenrePrompt(input.concept.parodyGenre)}`
     : ""
 }
 [브랜드 기준]

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { BigQueryAdvertiser } from "../../lib/bigquery/types";
-import { defaultFashionCategories } from "../../lib/category-candidates/normalization";
+import { defaultFashionCategories, resolveFashionCategorySelection } from "../../lib/category-candidates/normalization";
 import type { CategoryCandidate, CategoryCandidateResponse } from "../../lib/category-candidates/types";
 import styles from "./CategoryCandidateWorkspace.module.css";
 
@@ -73,8 +73,9 @@ export function CategoryCandidateWorkspace() {
           <div className={styles.summary}><strong>{result.advertiser.name}</strong><span>{result.latestDataDate} 기준 · {result.candidates.length}개 카테고리</span></div>
           <div className={styles.grid}>
             {result.candidates.map((candidate: CategoryCandidate) => {
-              const productionCategoryId = categoryOverrides[candidate.id] || candidate.categoryId;
-              const productionCategoryName = defaultFashionCategories.find((category) => category.id === productionCategoryId)?.name || candidate.categoryName;
+              const productionCategory = resolveFashionCategorySelection(categoryOverrides[candidate.id] || candidate.categoryId, candidate.categoryName);
+              const productionCategoryId = productionCategory.id;
+              const productionCategoryName = productionCategory.name;
               return <article key={candidate.id}>
                 <div className={styles.cardTop}><span className={`${styles.status} ${styles[candidate.status]}`}>{candidate.statusLabel}</span><small>매출 비중 {Math.round(candidate.advertiserSalesShare * 100)}%</small></div>
                 <h3>{candidate.categoryName}</h3>

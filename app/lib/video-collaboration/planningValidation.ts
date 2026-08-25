@@ -1,5 +1,6 @@
 import type { ProductAnalysisSnapshot, VideoConcept, VideoCut, VideoDuration } from "./types.ts";
 import { containsRawSeoTitle } from "./productName.ts";
+import { getVideoParodyGenre, matchesVideoParodyGenre } from "./videoParodyGenres.ts";
 
 const ABSTRACT_SCENES = [/고객(?:이|의)?.*(?:문제|상황).*보여준다/i, /(?:제품|상품).*(?:USP|핵심|근거).*(?:클로즈업|제시|보여준다)/i, /사용\s*전후.*비교/i, /제품\s*전체.*CTA.*보여준다/i, /고객이\s*제품을\s*사용하는\s*장면/i];
 const GENERIC_COPY = [/상품을 소개합니다/i, /여름철 필수템/i, /프리미엄 퀄리티/i, /특별한 경험/i, /놀라운 효과/i, /지금 만나보세요/i, /당신을 위한 선택/i, /일상에 활력을/i, /처음 보는 제품 자세히 보기/i, /확인된 포인트를 설명합니다/i];
@@ -321,6 +322,19 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       key: "visual-changes",
       passed: new Set(firstThree.map((cut) => cut.sceneDescription)).size >= 2,
       message: "첫 3초에 서로 다른 시각적 변화가 2개 이상 필요합니다.",
+    },
+    {
+      key: "parody-genre-lock",
+      passed:
+        concept.conceptArchetype !== "parody" ||
+        Boolean(
+          concept.parodyGenre &&
+            matchesVideoParodyGenre(combined, concept.parodyGenre)
+        ),
+      message:
+        concept.conceptArchetype === "parody" && concept.parodyGenre
+          ? `사건·상황극은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 장르의 인물·사건·화면 문법을 상세 대본 끝까지 유지해야 합니다.`
+          : "사건·상황극은 자동 선택된 세부 장르를 상세 대본 끝까지 유지해야 합니다.",
     },
     {
       key: "timeline",

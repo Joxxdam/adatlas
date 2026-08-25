@@ -236,6 +236,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
   const [logoQuery, setLogoQuery] = useState("");
   const [includeAiDisclosure, setIncludeAiDisclosure] = useState(false);
   const [brandingApplying, setBrandingApplying] = useState(false);
+  const [downloadingProductKey, setDownloadingProductKey] = useState("");
 
   const advertisers = useMemo(() => unique(entries.map((entry) => entry.advertiserName)), [entries]);
   const products = useMemo(() => unique(entries.filter((entry) => !advertiser || entry.advertiserName === advertiser).map((entry) => entry.productName)), [advertiser, entries]);
@@ -431,6 +432,46 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       setNotice(error instanceof Error ? error.message : "아카이브를 새로고침하지 못했습니다.");
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function downloadProductZip(advertiserName: string, productName: string) {
+    const productKey = `${advertiserName}\u0000${productName}`;
+    if (downloadingProductKey) return;
+    const productEntries = entries.filter((entry) => entry.advertiserName === advertiserName && entry.productName === productName);
+    if (!productEntries.length) {
+      setNotice("ZIP으로 내려받을 상품 이미지가 없습니다.");
+      return;
+    }
+    setDownloadingProductKey(productKey);
+    setNotice(`${productName} 상품 ZIP을 준비하고 있습니다.`);
+    try {
+      const response = await fetch("/api/creative-archive/product-zip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryIds: productEntries.map((entry) => entry.id) }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(payload.error || "상품 ZIP을 만들지 못했습니다.");
+      }
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const encodedFileName = response.headers.get("X-AdAtlas-Archive-Filename") || "";
+      const fileName = encodedFileName ? decodeURIComponent(encodedFileName) : `${productName}-${productEntries.length}장.zip`;
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      const includedCount = Number(response.headers.get("X-AdAtlas-Included-Count") || productEntries.length);
+      const failedCount = Number(response.headers.get("X-AdAtlas-Failed-Count") || 0);
+      setNotice(`${productName} 이미지 ${includedCount}장 ZIP 다운로드를 시작했습니다.${failedCount ? ` 누락 ${failedCount}장은 ZIP의 실패 보고서에서 확인할 수 있습니다.` : ""}`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "상품 ZIP 다운로드에 실패했습니다.");
+    } finally {
+      setDownloadingProductKey("");
     }
   }
 
@@ -754,6 +795,9 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
                   <h2>{group.productName}</h2>
                 </div>
                 <div className={styles.groupActions}>
+                  <button className={styles.productZipButton} disabled={Boolean(downloadingProductKey)} onClick={() => void downloadProductZip(group.advertiserName, group.productName)} type="button">
+                    {downloadingProductKey === `${group.advertiserName}\u0000${group.productName}` ? "상품 ZIP 준비 중…" : "상품 전체 ZIP"}
+                  </button>
                   <label className={styles.groupBrandingSelect}>
                     <input checked={group.entries.filter((entry) => entry.brandingEligible).length > 0 && group.entries.filter((entry) => entry.brandingEligible).every((entry) => brandingIds.includes(entry.id))} disabled={!group.entries.some((entry) => entry.brandingEligible)} onChange={() => toggleBrandingScope(group.entries, group.productName)} type="checkbox" />
                     <span>로고·AI: 이 상품 전체</span>

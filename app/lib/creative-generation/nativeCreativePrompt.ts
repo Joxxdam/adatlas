@@ -4,7 +4,7 @@ import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerati
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
 import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v8-human-meat-realism";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v9-automatic-fallback-pack-lock";
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -140,7 +140,13 @@ export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job
   const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
   const copySlotContract = result.referenceAdaptedCopyPlan?.copySlots?.length
     ? result.referenceAdaptedCopyPlan.copySlots
-        .map((slot) => `${slot.index + 1}. [${slot.role}/${slot.emphasis}] ${slot.sourceText.trim() ? JSON.stringify(slot.sourceText) : "[read the visually corresponding source zone directly from the reference]"} → ${JSON.stringify(slot.targetText)}`)
+        .map((slot) => {
+          const location = slot.box
+            ? `box=${Math.round(slot.box.x * 100)},${Math.round(slot.box.y * 100)},${Math.round(slot.box.width * 100)},${Math.round(slot.box.height * 100)}%`
+            : "box=read-source-zone";
+          const visual = [slot.align ? `align=${slot.align}` : "", slot.sizeClass ? `size=${slot.sizeClass}` : "", slot.colorHint ? `color=${slot.colorHint}` : "", slot.backgroundHint ? `background=${slot.backgroundHint}` : "", slot.outlineHint ? `outline=${slot.outlineHint}` : "", slot.characterBudget ? `budget≈${slot.characterBudget}자` : ""].filter(Boolean).join(", ");
+          return `${slot.index + 1}. [${slot.role}/${slot.emphasis}/${slot.sourceType || "ad-copy"}/${slot.replacePolicy || "adapt"}; ${location}${visual ? `; ${visual}` : ""}] ${slot.sourceText.trim() ? JSON.stringify(slot.sourceText) : "[read the visually corresponding source zone directly from the reference]"} → ${JSON.stringify(slot.targetText)}`;
+        })
         .join("\n")
     : referenceRawLines.map((line, index) => `${index + 1}. [원본 역할 유지] ${JSON.stringify(line)} → ${JSON.stringify(adaptedLines[index] || "")}`).join("\n");
   const exactCopy = [

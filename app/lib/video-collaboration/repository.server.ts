@@ -15,9 +15,11 @@ import type {
   ProductLockedAsset,
   ReferenceVideoAnalysis,
   VideoGenerationFailure,
+  VideoParodyGenre,
 } from "./types.ts";
 import { normalizeVideoCut } from "./script.ts";
 import { validateConceptDiversity, validateDetailedPlanning } from "./planningValidation.ts";
+import { inferVideoParodyGenre } from "./videoParodyGenres.ts";
 import {
   assertVideoProjectTransition,
   createVideoMaterialCode,
@@ -72,6 +74,10 @@ function normalizeConcept(concept: VideoConcept): VideoConcept {
     evidenceIds: Array.isArray(concept.evidenceIds) ? concept.evidenceIds : [],
     supportingDevices: Array.isArray(concept.supportingDevices) ? concept.supportingDevices : [],
     blueprintSelection,
+    parodyGenre:
+      concept.conceptArchetype === "parody"
+        ? inferVideoParodyGenre(concept)
+        : undefined,
   };
 }
 
@@ -286,6 +292,30 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
       return project ? clone(project) : null;
     },
 
+    async recentParodyGenres(options: {
+      excludeProjectId?: string;
+      advertiserName?: string;
+      limit?: number;
+    } = {}) {
+      const advertiser = clean(options.advertiserName, 120).toLowerCase();
+      const store = await readStore();
+      const projects = [...store.projects]
+        .filter((project) => project.id !== options.excludeProjectId)
+        .sort((left, right) => {
+          const leftAdvertiser = advertiser && clean(left.advertiserName, 120).toLowerCase() === advertiser ? 1 : 0;
+          const rightAdvertiser = advertiser && clean(right.advertiserName, 120).toLowerCase() === advertiser ? 1 : 0;
+          return rightAdvertiser - leftAdvertiser || right.updatedAt.localeCompare(left.updatedAt);
+        });
+      const genres: VideoParodyGenre[] = [];
+      for (const project of projects) {
+        const parody = project.concepts.find((concept) => concept.conceptArchetype === "parody");
+        const genre = parody ? inferVideoParodyGenre(parody) : undefined;
+        if (genre) genres.push(genre);
+        if (genres.length >= Math.max(1, Math.min(10, options.limit || 5))) break;
+      }
+      return genres;
+    },
+
     async create(input: CreateVideoProjectInput) {
       validateCreateVideoProjectInput(input);
       return locked((store) => {
@@ -437,7 +467,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           !options.replaceConceptId &&
           (concepts.length !== 4 || !validateConceptDiversity(concepts).valid)
         ) {
-          throw new Error("패러디·리얼 사용·USP·시크릿 혜택의 서로 다른 기획안 4개가 필요합니다.");
+          throw new Error("사건·상황극·리얼 사용·USP·시크릿 혜택의 서로 다른 기획안 4개가 필요합니다.");
         }
         if (
           project.planningMode !== "four-concepts" &&

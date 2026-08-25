@@ -1194,8 +1194,11 @@ test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전�
   assert.match(jobFactory, /planReferenceAdaptedCopies/);
   assert.match(adaptedPlanner, /adaptedLines.*rawLines.*같은 개수·순서·빈 줄/);
   assert.match(adaptedPlanner, /replaceUnusablePlansWithTruthFallback/);
-  assert.match(adaptedPlanner, /ProductTruth 기반 안전 문구 슬롯으로 생성합니다/);
+  assert.match(adaptedPlanner, /automaticOfferLine/);
   assert.match(adaptedPlanner, /validateCopyAgainstTruth\(renderedCopy, truth\)\.valid/);
+  assert.match(adaptedPlanner, /reference-native-copy-adapter-v4-automatic-fallback/);
+  assert.match(adaptedPlanner, /signatures\.length !== new Set\(signatures\)\.size/);
+  assert.match(adaptedPlanner, /validationStatus: "valid"/);
   assert.match(nativeResultGenerator, /createTruthFallbackReferenceCopyPlan/);
   assert.match(nativeResultGenerator, /빈 문구 계획을 ProductTruth 안전 문구로 교체해 제작을 계속합니다/);
   assert.doesNotMatch(jobFactory, /planHooksWithCodexLocal|buildExplorationCreativePlan/);

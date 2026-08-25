@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, VideoPlanningGenerationError } from "../app/lib/video-collaboration/videoPlanningAiCore.ts";
+import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, videoPlanningRateLimitDelayMs, VideoPlanningGenerationError } from "../app/lib/video-collaboration/videoPlanningAiCore.ts";
 import { hasExactVideoConceptArchetypes, requestFourVideoConcepts } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "../app/lib/video-collaboration/videoPlanningCorrection.ts";
 import { compactPlanningCta, hasFinalPlanningCta, missingSceneSignals, repairDetailedPlanningCta, repairDetailedPlanningSceneDescriptions } from "../app/lib/video-collaboration/planningValidation.ts";
@@ -167,6 +167,84 @@ test("일시 오류 전송 재시도는 최초 포함 최대 2회다", async () 
     (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_TIMEOUT" && error.failure.attempts === 2
   );
   assert.equal(calls, 2);
+});
+
+test("API 크레딧 소진 429는 요청 폭주와 구분하고 재시도하지 않는다", async () => {
+  let calls = 0;
+  const run = createOpenAiVideoPlanningRunner({
+    env: { OPENAI_API_KEY: "test-key" },
+    client: {
+      responses: {
+        create: async () => {
+          calls += 1;
+          throw Object.assign(new Error("You have no credits remaining."), {
+            status: 429,
+            code: "credit_balance_exhausted",
+            type: "insufficient_quota",
+          });
+        },
+      },
+    },
+    logger: () => undefined,
+  });
+  await assert.rejects(
+    () => run({ stage: "product-analysis", prompt: "test", outputSchema: simpleSchema }),
+    (error) => error instanceof VideoPlanningGenerationError && error.failure.code === "VIDEO_PLANNING_QUOTA_EXHAUSTED" && error.failure.retryable === false && error.failure.attempts === 1
+  );
+  assert.equal(calls, 1);
+});
+
+test("일시적 429는 Retry-After를 지킨 뒤 한 번 재시도한다", async () => {
+  let calls = 0;
+  const waits = [];
+  const run = createOpenAiVideoPlanningRunner({
+    env: { OPENAI_API_KEY: "test-key" },
+    client: {
+      responses: {
+        create: async () => {
+          calls += 1;
+          if (calls === 1) {
+            throw Object.assign(new Error("rate limit reached"), {
+              status: 429,
+              code: "rate_limit_exceeded",
+              headers: new Headers({ "retry-after": "2" }),
+            });
+          }
+          return { status: "completed", output_text: JSON.stringify({ value: "ok" }) };
+        },
+      },
+    },
+    logger: () => undefined,
+    random: () => 0,
+    sleep: async (milliseconds) => { waits.push(milliseconds); },
+  });
+  assert.deepEqual(await run({ stage: "product-analysis", prompt: "test", outputSchema: simpleSchema }), { value: "ok" });
+  assert.equal(calls, 2);
+  assert.deepEqual(waits, [2000]);
+  assert.equal(videoPlanningRateLimitDelayMs({ headers: new Headers({ "retry-after": "3" }) }, 1, () => 0), 3000);
+});
+
+test("API 오류 로그는 상위 오류 코드와 요청 ID를 남기되 키나 원문을 남기지 않는다", async () => {
+  const logs = [];
+  const run = createOpenAiVideoPlanningRunner({
+    env: { OPENAI_API_KEY: "test-key" },
+    client: {
+      responses: {
+        create: async () => {
+          throw Object.assign(new Error("sensitive upstream detail"), {
+            status: 429,
+            code: "credit_balance_exhausted",
+            request_id: "req_safe_trace_id",
+          });
+        },
+      },
+    },
+    logger: (message) => logs.push(message),
+  });
+  await assert.rejects(() => run({ stage: "product-analysis", prompt: "test", outputSchema: simpleSchema }));
+  assert.match(logs.at(-1), /upstreamCode=credit_balance_exhausted/);
+  assert.match(logs.at(-1), /requestId=req_safe_trace_id/);
+  assert.doesNotMatch(logs.join("\n"), /sensitive upstream detail|test-key/);
 });
 
 const archetypes = ["parody", "real-review", "usp-focus", "secret-benefit"];

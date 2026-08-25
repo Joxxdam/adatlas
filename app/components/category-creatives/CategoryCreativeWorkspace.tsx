@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { BigQueryAdvertiser } from "../../lib/bigquery/types";
-import { defaultFashionCategories } from "../../lib/category-candidates/normalization";
+import { defaultFashionCategories, resolveFashionCategorySelection } from "../../lib/category-candidates/normalization";
 import type { CategoryCreativeCopy, CategoryCreativeJob, CategoryCreativeSource, CategoryCreativeStyle } from "../../lib/category-creatives/types";
 import styles from "./CategoryCreativeWorkspace.module.css";
 
@@ -13,11 +13,12 @@ const styleOptions: Array<{ value: CategoryCreativeStyle; label: string }> = [
 ];
 
 export function CategoryCreativeWorkspace(props: Props) {
+  const initialCategory = resolveFashionCategorySelection(props.initialCategoryId, props.initialCategoryName);
   const [advertisers, setAdvertisers] = useState<BigQueryAdvertiser[]>([]);
   const [advertiserId, setAdvertiserId] = useState(props.initialAdvertiserId || "");
   const [advertiserName, setAdvertiserName] = useState(props.initialAdvertiserName || "");
-  const [categoryId, setCategoryId] = useState(props.initialCategoryId || defaultFashionCategories[0].id);
-  const [categoryName, setCategoryName] = useState(props.initialCategoryName || defaultFashionCategories[0].name);
+  const [categoryId, setCategoryId] = useState(initialCategory.id);
+  const [categoryName, setCategoryName] = useState(initialCategory.name);
   const [style, setStyle] = useState<CategoryCreativeStyle>("auto");
   const [sources, setSources] = useState<CategoryCreativeSource[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

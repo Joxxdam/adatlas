@@ -25,8 +25,7 @@ export function resolveProductRenderingPolicy(job: GenerationJob): ProductRender
   return "standard-reference";
 }
 
-export function productRenderingPromptContract(job: GenerationJob, _result: GenerationResult) {
-  void _result;
+export function productRenderingPromptContract(job: GenerationJob, result: GenerationResult) {
   const policy = resolveProductRenderingPolicy(job);
   if (policy === "natural-meat-reference") {
     return `MEAT PRODUCT POLICY — NATURAL SCENE INTEGRATION
@@ -35,6 +34,8 @@ export function productRenderingPromptContract(job: GenerationJob, _result: Gene
 - Preserve fine physical microtexture: non-repeating muscle fibers, naturally uneven fat edges, small thickness variations, restrained moisture and believable pores. Raw meat is moist but not lacquered, glassy, rubbery or uniformly glossy.
 - For cooked meat, use physically plausible browning: irregular sear, rendered fat, small char variation and believable juices. Do not turn the surface into smooth orange glaze unless the authoritative product reference visibly confirms a sauce or glaze.
 - A raw-to-cooked or serving scene may be generated only when the hook needs it and the supplied references support it; keep the same identifiable cut and do not invent a different cut, grade, origin, quantity or package.
+- The assigned advertisement composition is ${result.nativeCreative?.adReference?.compositionType || "reference-defined"}. In a product-packshot or product-lineup composition, if the authoritative product reference shows the sold meat in separate vacuum packs, trays or labeled units, preserve that packaging format and visible unit count. Never unwrap and repack it into the source advertiser's gift box or tray.
+- In a genuine cooking or serving composition, show only a plausible portion unwrapped while keeping the verified sold unit truthful; do not imply a different bundle, tray count or gift-set package.
 - Match the reference photo's white balance and natural food color. Avoid neon red/orange saturation, cloned marbling, symmetrical fibers, melted-plastic highlights, waxy skin, floating trays and unrelated stock meat photography.
 - If the source evidence is insufficient for a convincing close-up, use a slightly wider credible cooking or serving composition instead of hallucinating macro texture.`;
   }

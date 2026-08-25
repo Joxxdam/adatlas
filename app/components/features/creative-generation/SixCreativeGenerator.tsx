@@ -130,6 +130,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const creatingJob = useRef(false);
   const restoreRequestVersion = useRef(0);
   const restoredReferenceCategoryJobId = useRef("");
+  const dismissedJobIds = useRef(new Set<string>());
   const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl);
   const previousAnalyzedProductUrl = useRef(currentProductUrl);
   const canGenerate = Boolean(props.product.productName.trim() && props.productImagePaths.length);
@@ -176,6 +177,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   }
 
   function commitFetchedJob(payload: { job: GenerationJob; runnerActive: boolean }) {
+    if (dismissedJobIds.current.has(payload.job.id)) return;
     setJob(payload.job);
     setRunnerActive(payload.runnerActive);
     if (restoredReferenceCategoryJobId.current !== payload.job.id) {
@@ -468,17 +470,45 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
 
   async function cancelJob() {
     if (!job) return;
+    const cancelledJobId = job.id;
+    const cancelledProductUrl = normalizeCreativeProductUrl(job.productTruth.product.landingUrl);
     setLoading(true);
-    const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "cancel" }),
-    });
-    const payload = (await response.json()) as { job?: GenerationJob; error?: string };
-    if (payload.job) setJob(payload.job);
-    setRunnerActive(false);
-    setMessage(payload.error || "작업을 취소했습니다. 완료된 결과는 유지되며, 이미 시작한 한 장은 마무리될 수 있습니다.");
-    setLoading(false);
+    try {
+      const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(cancelledJobId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const payload = (await response.json()) as { job?: GenerationJob; error?: string };
+      if (!response.ok || !payload.job) throw new Error(payload.error || "작업 취소에 실패했습니다.");
+
+      dismissedJobIds.current.add(cancelledJobId);
+      restoreRequestVersion.current += 1;
+      if (window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY) === cancelledJobId) {
+        window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
+      }
+      for (const productUrl of new Set([currentProductUrl, cancelledProductUrl].filter(Boolean))) {
+        const storageKey = activeCreativeProductJobStorageKey(productUrl);
+        if (window.localStorage.getItem(storageKey) === cancelledJobId) window.localStorage.removeItem(storageKey);
+      }
+      const currentLocation = new URL(window.location.href);
+      if (currentLocation.searchParams.get("jobId") === cancelledJobId) {
+        currentLocation.searchParams.delete("jobId");
+        window.history.replaceState(window.history.state, "", `${currentLocation.pathname}${currentLocation.search}${currentLocation.hash}`);
+      }
+
+      setJob(null);
+      setRunnerActive(false);
+      setFeedbacks({});
+      setCopyEdits({});
+      setLatestCompletedResultId(undefined);
+      restoredReferenceCategoryJobId.current = "";
+      setMessage("진행 중 작업을 취소했습니다. 완료된 결과는 아카이브에 유지되며, 지금 새 광고 제작을 시작할 수 있습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "작업 취소에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function resumeJob() {
@@ -671,6 +701,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const attentionResults = [...(job?.results || [])].filter((result) => failedGenerationResultStatuses.has(result.status)).sort((left, right) => left.order - right.order);
   const attentionResultsWithoutImage = attentionResults.filter((result) => !result.imagePath);
   const missingImageResults = [...(job?.results || [])].filter((result) => !result.imagePath);
+  const canCancelJob = Boolean(job && ["pending", "running"].includes(job.status) && missingImageResults.length > 0);
   const nextPendingResult = job?.results.filter((result) => result.status === "pending").sort((left, right) => left.order - right.order)[0];
   const currentOrder = activeResults[0]?.order || nextPendingResult?.order || Math.min(progress.completed + 1, progress.total);
   const allCreativesReady = Boolean(job && progress.total === 6 && completedResults.length === progress.total);
@@ -744,11 +775,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
             })}
           </ol>
           <p className="six-creative-runtime-help">다른 메뉴로 이동해도 백그라운드에서 계속 제작되며, 완성된 광고는 한 장씩 바로 표시됩니다.</p>
-          {generationInProgress || recoverable || (missingImageResults.length > 0 && ["cancelled", "partial", "failed"].includes(job.status)) ? (
+          {canCancelJob || recoverable || (missingImageResults.length > 0 && ["cancelled", "partial", "failed"].includes(job.status)) ? (
             <div className="simple-generation-controls">
-              {generationInProgress && !recoverable ? (
+              {canCancelJob ? (
                 <button disabled={loading} onClick={() => void cancelJob()} type="button">
-                  생성 취소
+                  진행 취소
                 </button>
               ) : null}
               {recoverable || (missingImageResults.length > 0 && ["cancelled", "partial", "failed"].includes(job.status)) ? (

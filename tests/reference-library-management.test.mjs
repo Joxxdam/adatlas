@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { inferNativeReferenceCategoryFromText, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
+import { inferNativeReferenceCategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -93,4 +93,56 @@ test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업�
   assert.match(manager, /food-produce/);
   assert.match(manager, /과일\/농산물 레퍼런스로도 사용/);
   assert.match(manager, /\/api\/admin\/references/);
+});
+
+test("승인되고 원문이 있는 정밀 분석만 제작 우선 풀 자격을 얻는다", () => {
+  const base = { referenceId: "r1", rawText: "광고 문구", rawLines: ["광고 문구"], textRegions: [], manuallyCorrected: false, useForCopyAdaptation: true, extractionSource: "codex-local", updatedAt: new Date(0).toISOString() };
+  assert.equal(isApprovedReferenceNativeCopy({ ...base, analysisStatus: "ready", approvalStatus: "auto-approved" }), true);
+  assert.equal(isApprovedReferenceNativeCopy({ ...base, analysisStatus: "needs-review", approvalStatus: "needs-review" }), false);
+  assert.equal(isApprovedReferenceNativeCopy({ ...base, manuallyCorrected: true, approvalStatus: "manually-approved" }), true);
+  assert.equal(isApprovedReferenceNativeCopy({ ...base, manuallyCorrected: true, approvalStatus: "needs-review" }), false);
+  assert.equal(isApprovedReferenceNativeCopy({ ...base, useForCopyAdaptation: false, approvalStatus: "auto-approved" }), false);
+});
+
+test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제작 중에는 저장본 또는 안전 최소 문구만 쓴다", async () => {
+  const analyzer = await read("app/lib/creative-generation/referenceNativeCopy.server.ts");
+  const repository = await read("app/lib/creative-generation/nativeReferenceLibraryRepository.server.ts");
+  const selector = await read("app/lib/creative-generation/referenceCreativeLibrary.server.ts");
+  const planner = await read("app/lib/creative-generation/referenceAdaptedPlanning.server.ts");
+  const runner = await read("app/lib/creative-generation/referenceOcrRunner.server.ts");
+  const route = await read("app/api/admin/references/route.ts");
+  const ocrRoute = await read("app/api/admin/references/ocr/route.ts");
+  const instrumentation = await read("instrumentation.ts");
+  assert.match(analyzer, /reference-native-copy-analysis-v2-two-pass/);
+  assert.match(analyzer, /prepareAnalysisFiles/);
+  assert.match(analyzer, /validatePasses/);
+  assert.match(analyzer, /modelReasoningEffort: "medium"/);
+  assert.match(analyzer, /codexCreativeGate\.run/);
+  assert.match(repository, /nativeCopy\?\.imageHash === imageHash/);
+  assert.match(repository, /options: \{ force\?: boolean \}/);
+  assert.match(route, /extractNativeCopy\(id, \{ force: true \}\)/);
+  assert.match(route, /startReferenceOcrRun/);
+  assert.match(ocrRoute, /getReferenceOcrStatus\(\{ resume: true \}\)/);
+  assert.match(instrumentation, /getReferenceOcrStatus\(\{ resume: true \}\)/);
+  assert.match(runner, /slice\(0, 3\)/);
+  assert.match(runner, /creativeGenerationJobStore\.active\(50\)/);
+  assert.match(runner, /waitForCreativeJobs\(runId\)/);
+  assert.match(runner, /completedIds/);
+  assert.match(runner, /isApprovedReferenceNativeCopy/);
+  assert.doesNotMatch(selector, /nativeReferenceLibraryRepository\.extractNativeCopy/);
+  assert.match(selector, /isApprovedReferenceNativeCopy/);
+  assert.match(planner, /제작 중 즉석 OCR은 실행하지 않았습니다/);
+  assert.doesNotMatch(planner, /imagePath 이미지를 직접 읽어 전사한다/);
+  assert.match(planner, /isApprovedReferenceNativeCopy\(reference\.nativeCopy\)/);
+});
+
+test("관리 화면은 정밀 분석 신뢰도·영역 좌표·승인 상태를 검수할 수 있다", async () => {
+  const manager = await read("app/components/references/NativeReferenceLibraryManager.tsx");
+  assert.match(manager, /문구 위치·교체 정책 검수/);
+  assert.match(manager, /region\.box\.x \* 100/);
+  assert.match(manager, /검수 승인/);
+  assert.match(manager, /문구 사용 제외/);
+  assert.match(manager, /analysisError/);
+  assert.match(manager, /\/api\/admin\/references\/ocr/);
+  assert.match(manager, /미분석 레퍼런스 전체의 정밀 OCR/);
 });

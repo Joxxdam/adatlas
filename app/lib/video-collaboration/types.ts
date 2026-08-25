@@ -65,6 +65,20 @@ export const VIDEO_CONCEPT_ARCHETYPES = [
 ] as const;
 export type VideoConceptArchetype = (typeof VIDEO_CONCEPT_ARCHETYPES)[number];
 
+export const VIDEO_PARODY_GENRES = [
+  "price-negotiation",
+  "audition-interview",
+  "news-report",
+  "quiz-show",
+  "blind-test",
+  "competition-judging",
+  "family-office-sitcom",
+  "mystery-investigation",
+  "live-auction",
+  "courtroom",
+] as const;
+export type VideoParodyGenre = (typeof VIDEO_PARODY_GENRES)[number];
+
 export const VIDEO_CONCEPT_ARCHETYPE_OPTIONS: Array<{
   id: VideoConceptArchetype;
   label: string;
@@ -73,10 +87,10 @@ export const VIDEO_CONCEPT_ARCHETYPE_OPTIONS: Array<{
 }> = [
   {
     id: "parody",
-    label: "패러디형",
-    description: "사건과 갈등으로 시작해 상품을 반전의 해결 장치로 등장시킵니다.",
+    label: "사건·상황극형",
+    description: "상품과 최근 제작 이력에 맞는 예능·상황극 장르를 골라 사건과 갈등으로 시작합니다.",
     direction:
-      "특정 작품·대사·인물은 복제하지 않고 뉴스, 재판, 협상, 오디션 같은 장르 문법만 활용한다.",
+      "특정 작품·대사·인물은 복제하지 않는다. 서버가 선택한 하나의 세부 장르만 사용하고 최근 사용한 장르를 반복하지 않는다.",
   },
   {
     id: "real-review",
@@ -474,6 +488,8 @@ export type VideoConcept = {
   targetCallout?: string;
   benefitAvailability?: "verified" | "insufficient";
   blueprintSelection?: VideoPlanningBlueprintSelection;
+  /** 사건·상황극형에서 자동 선택되어 요약과 상세 대본을 끝까지 고정하는 세부 장르. */
+  parodyGenre?: VideoParodyGenre;
 };
 
 export type VideoScriptRevision = {

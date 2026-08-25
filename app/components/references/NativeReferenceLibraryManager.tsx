@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { nativeReferenceCategoryGroups, nativeReferenceCategoryLabel, nativeReferenceFoodSubcategoryLabel, nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferencePhotographyTypes, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, type ManagedNativeReferenceItem, type NativeReferenceCategoryGroup, type NativeReferenceFoodSubcategory } from "../../lib/creative-generation/referenceLibraryManagement";
 import styles from "./NativeReferenceLibraryManager.module.css";
 
@@ -18,6 +18,20 @@ type Filter = "all" | NativeReferenceCategoryGroup | "food-produce";
 type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory"> & {
   foodSubcategory?: NativeReferenceFoodSubcategory | null;
 };
+type OcrStatusPayload = {
+  run: null | {
+    id: string;
+    status: "running" | "completed" | "partial" | "cancelled";
+    targetIds: string[];
+    completedIds: string[];
+    readyIds: string[];
+    reviewIds: string[];
+    failedIds: string[];
+    currentIds: string[];
+  };
+  counts: { totalCount: number; readyCount: number; reviewCount: number; unavailableCount: number; pendingCount: number };
+  codexGate: { activeCount: number; pendingCount: number };
+};
 
 async function parseResponse(response: Response) {
   const result = await response.json();
@@ -32,9 +46,56 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [copyDrafts, setCopyDrafts] = useState<Record<string, string>>({});
+  const [ocrStatus, setOcrStatus] = useState<OcrStatusPayload | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const ocrAutoStartRequested = useRef(false);
+  const ocrLibrarySignature = useRef("");
 
   const visibleItems = useMemo(() => library.items.filter((item) => filter === "all" || (filter === "food-produce" ? item.categoryGroup === "food" && item.foodSubcategory === "produce-agriculture" : item.categoryGroup === filter)).sort((left, right) => right.ordinal - left.ordinal), [filter, library.items]);
+  useEffect(() => {
+    let mounted = true;
+    let timer: number | undefined;
+    async function refreshLibrary() {
+      const response = await fetch("/api/admin/references", { cache: "no-store" });
+      const payload = await response.json();
+      if (response.ok && payload.ok && mounted) setLibrary(payload.library as LibraryPayload);
+    }
+    async function poll() {
+      try {
+        const response = await fetch("/api/admin/references/ocr", { cache: "no-store" });
+        const payload = await response.json() as OcrStatusPayload & { ok?: boolean; error?: string };
+        if (!response.ok || !payload.ok) throw new Error(payload.error || "OCR 상태를 확인하지 못했습니다.");
+        if (!mounted) return;
+        setOcrStatus(payload);
+        const signature = `${payload.counts.readyCount}:${payload.counts.reviewCount}:${payload.counts.unavailableCount}:${payload.counts.pendingCount}`;
+        if (ocrLibrarySignature.current && ocrLibrarySignature.current !== signature) void refreshLibrary();
+        ocrLibrarySignature.current = signature;
+        if (payload.counts.pendingCount > 0 && payload.run?.status !== "running" && !ocrAutoStartRequested.current) {
+          ocrAutoStartRequested.current = true;
+          const startResponse = await fetch("/api/admin/references/ocr", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "start" }),
+          });
+          const started = await startResponse.json() as OcrStatusPayload & { ok?: boolean; error?: string };
+          if (!startResponse.ok || !started.ok) throw new Error(started.error || "전체 OCR을 시작하지 못했습니다.");
+          if (mounted) {
+            setOcrStatus(started);
+            setMessage(`미분석 레퍼런스 ${started.run?.targetIds.length || payload.counts.pendingCount}장의 정밀 OCR을 자동 시작했습니다.`);
+          }
+        }
+      } catch (pollError) {
+        if (mounted) setError(pollError instanceof Error ? pollError.message : "OCR 상태를 확인하지 못했습니다.");
+      } finally {
+        if (mounted) timer = window.setTimeout(poll, 2500);
+      }
+    }
+    void poll();
+    return () => {
+      mounted = false;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, []);
 
   async function upload(files: File[]) {
     if (!files.length || busy) return;
@@ -51,7 +112,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
         })
       );
       setLibrary(result.library);
-      setMessage(`${result.added?.length || 0}장을 등록했습니다. 이후 새 수동·자동 제작부터 바로 사용합니다.`);
+      setMessage(`${result.added?.length || 0}장을 등록하고 정밀 OCR 대기열에 자동 추가했습니다.`);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "업로드에 실패했습니다.");
       setMessage("업로드를 완료하지 못했습니다.");
@@ -150,6 +211,70 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
     }
   }
 
+  async function setNativeCopyApproval(item: ManagedNativeReferenceItem, action: "approve" | "reject") {
+    setBusy(item.id);
+    setError("");
+    try {
+      const result = await parseResponse(
+        await fetch("/api/admin/references", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: item.id, nativeCopyApproval: action }),
+        })
+      );
+      setLibrary(result.library);
+      setMessage(`${item.sourceFile}: ${action === "approve" ? "정밀 분석을 승인해 제작 우선 풀에 반영했습니다." : "분석을 반려해 문구 적응 대상에서 제외했습니다."}`);
+    } catch (approvalError) {
+      setError(approvalError instanceof Error ? approvalError.message : "분석 승인 상태를 변경하지 못했습니다.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function startOcr(action: "start" | "retry-failed" = "start") {
+    if (busy) return;
+    setBusy("analysis-batch");
+    setError("");
+    setMessage(action === "retry-failed" ? "검수·실패 항목의 정밀 OCR을 다시 시작합니다." : "미분석 레퍼런스 전체의 정밀 OCR을 시작합니다.");
+    try {
+      const response = await fetch("/api/admin/references/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action }),
+        });
+      const result = await response.json() as OcrStatusPayload & { ok?: boolean; error?: string };
+      if (!response.ok || !result.ok) throw new Error(result.error || "정밀 OCR을 시작하지 못했습니다.");
+      setOcrStatus(result);
+      ocrAutoStartRequested.current = true;
+      setMessage(`정밀 OCR을 백그라운드에서 처리합니다. 완료 ${result.run?.completedIds.length || 0}/${result.run?.targetIds.length || 0}장입니다.`);
+    } catch (analysisError) {
+      setError(analysisError instanceof Error ? analysisError.message : "미분석 레퍼런스 정밀 분석에 실패했습니다.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function cancelOcr() {
+    if (busy) return;
+    setBusy("analysis-batch");
+    setError("");
+    try {
+      const response = await fetch("/api/admin/references/ocr", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      const result = await response.json() as OcrStatusPayload & { ok?: boolean; error?: string };
+      if (!response.ok || !result.ok) throw new Error(result.error || "정밀 OCR을 중단하지 못했습니다.");
+      setOcrStatus(result);
+      setMessage("정밀 OCR을 중단했습니다. 이미 저장된 분석 결과는 유지됩니다.");
+    } catch (cancelError) {
+      setError(cancelError instanceof Error ? cancelError.message : "정밀 OCR을 중단하지 못했습니다.");
+    } finally {
+      setBusy("");
+    }
+  }
+
   return (
     <section className={styles.library} aria-labelledby="native-reference-title">
       <div className={styles.summary}>
@@ -169,10 +294,33 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
           <span>JPEG·PNG·WebP, 장당 15MB 이하 · 한 번에 최대 12장</span>
         </div>
         <input accept="image/jpeg,image/png,image/webp" disabled={Boolean(busy)} multiple onChange={handleFiles} ref={fileInput} type="file" />
-        <button disabled={Boolean(busy)} onClick={() => fileInput.current?.click()} type="button">
-          {busy === "upload" ? "자동 분류 중…" : "이미지 업로드"}
-        </button>
+        <div className={styles.uploaderActions}>
+          <button disabled={Boolean(busy)} onClick={() => fileInput.current?.click()} type="button">
+            {busy === "upload" ? "자동 분류 중…" : "이미지 업로드"}
+          </button>
+          {ocrStatus?.run?.status === "running" ? (
+            <button className={styles.analysisButton} disabled={Boolean(busy)} onClick={() => void cancelOcr()} type="button">
+              {busy === "analysis-batch" ? "처리 중…" : "전체 OCR 중지"}
+            </button>
+          ) : (
+            <button
+              className={styles.analysisButton}
+              disabled={Boolean(busy) || (!ocrStatus?.counts.pendingCount && !ocrStatus?.run?.failedIds.length && !ocrStatus?.run?.reviewIds.length)}
+              onClick={() => void startOcr(ocrStatus?.run?.failedIds.length || ocrStatus?.run?.reviewIds.length ? "retry-failed" : "start")}
+              type="button"
+            >
+              {busy === "analysis-batch" ? "처리 중…" : ocrStatus?.run?.failedIds.length || ocrStatus?.run?.reviewIds.length ? "검수·실패 항목 다시 분석" : `미분석 전체 OCR (${ocrStatus?.counts.pendingCount || 0})`}
+            </button>
+          )}
+        </div>
       </div>
+
+      {ocrStatus ? (
+        <div className={styles.status} role="status">
+          정밀 OCR · 사용 가능 {ocrStatus.counts.readyCount}/{ocrStatus.counts.totalCount}장 · 검수 {ocrStatus.counts.reviewCount}장 · 실패 {ocrStatus.counts.unavailableCount}장 · 미분석 {ocrStatus.counts.pendingCount}장
+          {ocrStatus.run?.status === "running" ? ` · 이번 실행 ${ocrStatus.run.completedIds.length}/${ocrStatus.run.targetIds.length}장 완료 · 현재 ${ocrStatus.run.currentIds.length}장 처리 중` : ""}
+        </div>
+      ) : null}
 
       {error || message ? (
         <div className={error ? styles.statusError : styles.status} role={error ? "alert" : "status"}>
@@ -232,9 +380,48 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                     <details className={styles.nativeCopy} open={!item.nativeCopy?.rawText}>
                       <summary>
                         실제 광고 원문
-                        <small>{item.nativeCopy?.manuallyCorrected ? "수동 보정" : item.nativeCopy?.rawText ? "자동 추출" : "확인 필요"}</small>
+                        <small>
+                          {item.nativeCopy?.approvalStatus === "auto-approved" || item.nativeCopy?.approvalStatus === "manually-approved"
+                            ? "승인됨"
+                            : item.nativeCopy?.approvalStatus === "rejected"
+                              ? "제외됨"
+                              : "확인 필요"}
+                        </small>
                       </summary>
                       <p>이미지에 보이는 줄바꿈·기호·말투를 그대로 보관합니다. 생성할 때 이 원문에서 상품 관련 부분만 바꿉니다.</p>
+                      <div className={styles.analysisMeta}>
+                        <span>상태 <b>{item.nativeCopy?.analysisStatus === "ready" ? "사용 가능" : item.nativeCopy?.analysisStatus === "unavailable" ? "분석 불가" : "검수 필요"}</b></span>
+                        <span>신뢰도 <b>{typeof item.nativeCopy?.confidence === "number" ? `${Math.round(item.nativeCopy.confidence * 100)}%` : "-"}</b></span>
+                        <span>영역 <b>{item.nativeCopy?.textRegions?.length || 0}개</b></span>
+                      </div>
+                      {item.nativeCopy?.analysisError ? <div className={styles.analysisWarning}>{item.nativeCopy.analysisError}</div> : null}
+                      {item.nativeCopy?.textRegions?.some((region) => region.box) ? (
+                        <details className={styles.regionReview}>
+                          <summary>문구 위치·교체 정책 검수</summary>
+                          <div className={styles.analysisPreview}>
+                            <Image alt="문구 영역 검수용 레퍼런스" fill sizes="220px" src={item.publicPath} />
+                            {item.nativeCopy.textRegions.map((region, regionIndex) => region.box ? (
+                              <span
+                                className={`${styles.regionBox} ${region.reviewRequired ? styles.regionBoxWarning : ""}`.trim()}
+                                key={region.id}
+                                style={{ left: `${region.box.x * 100}%`, top: `${region.box.y * 100}%`, width: `${region.box.width * 100}%`, height: `${region.box.height * 100}%` }}
+                                title={`${region.role} · ${region.sourceType || "ad-copy"} · ${region.replacePolicy || "adapt"}: ${region.text}`}
+                              >
+                                {regionIndex + 1}
+                              </span>
+                            ) : null)}
+                          </div>
+                          <ol className={styles.regionList}>
+                            {item.nativeCopy.textRegions.map((region) => (
+                              <li key={region.id}>
+                                <b>{region.readingOrder ?? "-"}. {region.role}</b>
+                                <span>{region.sourceType || "ad-copy"} · {region.replacePolicy || "adapt"} · {typeof region.confidence === "number" ? `${Math.round(region.confidence * 100)}%` : "신뢰도 -"}</span>
+                                <em>{region.text || "(텍스트 없음)"}</em>
+                              </li>
+                            ))}
+                          </ol>
+                        </details>
+                      ) : null}
                       <textarea
                         disabled={Boolean(busy)}
                         onChange={(event) => setCopyDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
@@ -253,6 +440,8 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                       <div className={styles.nativeCopyActions}>
                         <button disabled={Boolean(busy)} onClick={() => void saveNativeCopy(item)} type="button">원문 저장</button>
                         <button disabled={Boolean(busy)} onClick={() => void reanalyzeNativeCopy(item)} type="button">이미지에서 다시 읽기</button>
+                        <button disabled={Boolean(busy) || !item.nativeCopy?.rawLines?.some((line) => line.trim())} onClick={() => void setNativeCopyApproval(item, "approve")} type="button">검수 승인</button>
+                        <button disabled={Boolean(busy)} onClick={() => void setNativeCopyApproval(item, "reject")} type="button">문구 사용 제외</button>
                       </div>
                     </details>
                     <details className={styles.advanced}>

@@ -491,7 +491,7 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(detailPage, /VideoPlanningConceptWorkspace/);
   assert.match(newWorkspace, /4개 콘셉트 생성/);
   assert.match(newWorkspace, /planningMode: "four-concepts"/);
-  assert.match(newWorkspace, /패러디 · 리얼 사용\/후기 · USP 집중 · 시크릿 혜택/);
+  assert.match(newWorkspace, /사건·상황극 · 리얼 사용\/후기 · USP 집중 · 시크릿 혜택/);
   assert.match(typesSource, /VIDEO_DESIGNER_OPTIONS = \["조이", "애니"\]/);
   assert.match(newWorkspace, /VIDEO_DESIGNER_OPTIONS\.map/);
   assert.match(newWorkspace, /aria-label="업체명"/);

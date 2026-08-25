@@ -67,10 +67,21 @@ export type ReferenceAdaptedCopyPlan = {
   /** 원본 문구 블록과 최종 문구 블록의 1:1 편집 계약입니다. */
   copySlots?: Array<{
     index: number;
+    regionId?: string;
+    readingOrder?: number;
     role: "headline" | "support" | "proof" | "offer" | "cta" | "badge" | "other";
+    sourceType?: "ad-copy" | "source-brand" | "source-product-label" | "decorative" | "uncertain";
+    replacePolicy?: "adapt" | "remove" | "product-replacement" | "preserve" | "review";
     sourceText: string;
     targetText: string;
     emphasis: "none" | "light" | "strong";
+    box?: { x: number; y: number; width: number; height: number };
+    align?: "left" | "center" | "right" | "unknown";
+    colorHint?: string;
+    backgroundHint?: string;
+    outlineHint?: string;
+    sizeClass?: "small" | "medium" | "large" | "hero";
+    characterBudget?: number;
   }>;
   headline: string;
   subCopy: string;

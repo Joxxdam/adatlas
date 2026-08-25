@@ -871,6 +871,12 @@
   cursor: pointer;
 }
 
+.groupActions .productZipButton {
+  border-color: #176bd1;
+  background: #176bd1;
+  color: #fff;
+}
+
 .groupActions button:disabled {
   cursor: not-allowed;
   opacity: 0.45;

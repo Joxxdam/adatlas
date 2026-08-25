@@ -1864,6 +1864,222 @@
       "note": "",
       "deletedAt": "2026-08-25T07:08:01.829Z",
       "updatedAt": "2026-08-25T07:08:01.829Z"
+    },
+    "asset:ce4c1c23-a2a0-4127-99fc-261abd8ee13a": {
+      "entryId": "asset:ce4c1c23-a2a0-4127-99fc-261abd8ee13a",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T07:13:58.469Z",
+      "updatedAt": "2026-08-25T07:13:58.469Z"
+    },
+    "asset:c84c0199-6ff9-4a19-a2a0-5decfff045ff": {
+      "entryId": "asset:c84c0199-6ff9-4a19-a2a0-5decfff045ff",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:16:24.320Z",
+      "updatedAt": "2026-08-25T10:16:24.320Z"
+    },
+    "asset:df61da5a-54de-4bb2-bde5-b7a447a7fb81": {
+      "entryId": "asset:df61da5a-54de-4bb2-bde5-b7a447a7fb81",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:16:26.323Z",
+      "updatedAt": "2026-08-25T10:16:26.323Z"
+    },
+    "asset:5467241a-fb48-4b09-91be-08b2a812815c": {
+      "entryId": "asset:5467241a-fb48-4b09-91be-08b2a812815c",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:16:36.776Z",
+      "updatedAt": "2026-08-25T10:16:36.776Z"
+    },
+    "asset:1509b5cc-5c08-4c39-b69e-ec85fa7785c4": {
+      "entryId": "asset:1509b5cc-5c08-4c39-b69e-ec85fa7785c4",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:4b9f6495-973d-4e92-bce3-37552810750d": {
+      "entryId": "asset:4b9f6495-973d-4e92-bce3-37552810750d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:0b204c0e-9e72-4603-8e11-a8e3ac6c7ca6": {
+      "entryId": "asset:0b204c0e-9e72-4603-8e11-a8e3ac6c7ca6",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:62d521e5-33d9-4132-b0fc-42f898acad37": {
+      "entryId": "asset:62d521e5-33d9-4132-b0fc-42f898acad37",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:680ddaeb-dbe2-4cfe-82e9-0efceef23084": {
+      "entryId": "asset:680ddaeb-dbe2-4cfe-82e9-0efceef23084",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:3ca5609a-ed4a-4d8e-b9c8-c17d31dece50": {
+      "entryId": "asset:3ca5609a-ed4a-4d8e-b9c8-c17d31dece50",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:e21c3b35-4b63-40f0-be0c-e7c3cb34adb2": {
+      "entryId": "asset:e21c3b35-4b63-40f0-be0c-e7c3cb34adb2",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:17:23.165Z",
+      "updatedAt": "2026-08-25T10:17:23.165Z"
+    },
+    "asset:9c5f0241-1e93-4dbd-9ee9-36a4fe38a53f": {
+      "entryId": "asset:9c5f0241-1e93-4dbd-9ee9-36a4fe38a53f",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:19:14.097Z",
+      "updatedAt": "2026-08-25T10:19:14.097Z"
+    },
+    "asset:a8b3f138-8d7a-4492-84fd-3426516d5ac9": {
+      "entryId": "asset:a8b3f138-8d7a-4492-84fd-3426516d5ac9",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:19:14.097Z",
+      "updatedAt": "2026-08-25T10:19:14.097Z"
+    },
+    "asset:872a8ebb-d091-49fa-89ab-394e81f5c9b7": {
+      "entryId": "asset:872a8ebb-d091-49fa-89ab-394e81f5c9b7",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:b563f119-22d4-44f3-bbbc-cdeb7dc54b97": {
+      "entryId": "asset:b563f119-22d4-44f3-bbbc-cdeb7dc54b97",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:39e15058-f3f3-49fc-a7da-69be20026235": {
+      "entryId": "asset:39e15058-f3f3-49fc-a7da-69be20026235",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:c7afb762-c73c-4d43-a712-a7ab92baba5e": {
+      "entryId": "asset:c7afb762-c73c-4d43-a712-a7ab92baba5e",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:88f243b8-bdac-4ac1-9661-cce9f34ff84c": {
+      "entryId": "asset:88f243b8-bdac-4ac1-9661-cce9f34ff84c",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:2daae19d-b501-472e-b8e4-9903594f5536": {
+      "entryId": "asset:2daae19d-b501-472e-b8e4-9903594f5536",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:2148e16e-2c57-46ed-bfb5-a4d4b836fbb5": {
+      "entryId": "asset:2148e16e-2c57-46ed-bfb5-a4d4b836fbb5",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:3ca2e343-d51f-463b-b01a-4452103d3bff": {
+      "entryId": "asset:3ca2e343-d51f-463b-b01a-4452103d3bff",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:19.840Z",
+      "updatedAt": "2026-08-25T10:22:19.840Z"
+    },
+    "asset:0e701d83-d91b-46b0-9558-d41bbfc791e1": {
+      "entryId": "asset:0e701d83-d91b-46b0-9558-d41bbfc791e1",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:46.162Z",
+      "updatedAt": "2026-08-25T10:22:46.162Z"
+    },
+    "asset:a175745f-c14d-4316-8d93-e4f240181163": {
+      "entryId": "asset:a175745f-c14d-4316-8d93-e4f240181163",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:46.162Z",
+      "updatedAt": "2026-08-25T10:22:46.162Z"
+    },
+    "asset:c570aa61-80ad-488d-a491-d1192496bcb9": {
+      "entryId": "asset:c570aa61-80ad-488d-a491-d1192496bcb9",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:46.162Z",
+      "updatedAt": "2026-08-25T10:22:46.162Z"
+    },
+    "asset:8e2d18c1-f4ce-4592-9557-d18c8895af79": {
+      "entryId": "asset:8e2d18c1-f4ce-4592-9557-d18c8895af79",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:46.162Z",
+      "updatedAt": "2026-08-25T10:22:46.162Z"
+    },
+    "asset:0a6db95b-7f97-4a44-8250-8ca256746d34": {
+      "entryId": "asset:0a6db95b-7f97-4a44-8250-8ca256746d34",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:46.162Z",
+      "updatedAt": "2026-08-25T10:22:46.162Z"
+    },
+    "asset:7e6cfc78-af66-4978-aaca-3935f8eb4aaa": {
+      "entryId": "asset:7e6cfc78-af66-4978-aaca-3935f8eb4aaa",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-25T10:22:46.162Z",
+      "updatedAt": "2026-08-25T10:22:46.162Z"
     }
   }
 }
