@@ -94,6 +94,18 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
   return [primary, ...supporting].slice(0, 5);
 }
 
+export function selectProtectedProductSource(job: GenerationJob): CreativeImageAsset | undefined {
+  const candidates = job.productTruth.imageAssets
+    .filter((asset) => asset.verified && asset.validationStatus !== "excluded")
+    .filter((asset) => ["product-cutout", "product-packshot"].includes(asset.role))
+    .filter((asset) => asset.role !== "ad-reference");
+  const score = (asset: CreativeImageAsset) =>
+    (asset.role === "product-cutout" ? 500 : 300) +
+    (asset.source === "known-product" ? 120 : asset.source === "product-page" ? 80 : 40) +
+    (asset.transparent ? 40 : 0);
+  return candidates.sort((left, right) => score(right) - score(left))[0];
+}
+
 export async function prepareNativeReferenceImages(job: GenerationJob) {
   const advertiserId = job.advertiserId || "unknown-advertiser";
   const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references");

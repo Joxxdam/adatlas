@@ -79,6 +79,102 @@
   border-radius: 16px;
   background: #fff;
 }
+.plannedMallSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 76px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  transition: background 160ms ease;
+}
+.plannedMallSummary::-webkit-details-marker {
+  display: none;
+}
+.plannedMallSummary:hover {
+  background: #f8fbff;
+}
+.plannedMallSummary:focus-visible {
+  outline: 3px solid rgba(40, 124, 227, 0.18);
+  outline-offset: -3px;
+}
+.plannedMall[open] .plannedMallSummary {
+  border-bottom: 1px solid #e5ebf4;
+  background: #f8fbff;
+}
+.plannedMallSummaryMain {
+  min-width: 0;
+}
+.plannedMallSummaryTitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.plannedMallSummaryTitle > strong {
+  color: #18263f;
+  font-size: 18px;
+}
+.plannedMallSummaryMain > small {
+  display: block;
+  overflow: hidden;
+  margin-top: 7px;
+  color: #6d7b92;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plannedMallEnabled,
+.plannedMallPaused,
+.plannedMallCount {
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.plannedMallEnabled {
+  background: #e9f8ef;
+  color: #13763e;
+}
+.plannedMallPaused {
+  background: #eff2f6;
+  color: #68748a;
+}
+.plannedMallCount {
+  background: #eaf3ff;
+  color: #1764d8;
+}
+.plannedMallDisclosure {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  color: #245b9f;
+  font-size: 12px;
+  font-weight: 800;
+}
+.plannedMallOpenLabel {
+  display: none;
+}
+.plannedMall[open] .plannedMallClosedLabel {
+  display: none;
+}
+.plannedMall[open] .plannedMallOpenLabel {
+  display: inline;
+}
+.plannedMallChevron {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 160ms ease;
+}
+.plannedMall[open] .plannedMallChevron {
+  transform: rotate(225deg) translate(-2px, -2px);
+}
 .plannedMallHeader,
 .plannedMallFooter {
   display: flex;
@@ -88,7 +184,7 @@
   padding: 14px 16px;
 }
 .plannedMallHeader {
-  border-bottom: 1px solid #e5ebf4;
+  background: #fff;
 }
 .plannedMallHeader h3 {
   margin: 0;
@@ -1099,6 +1195,15 @@
   }
   .plannedProductsHeader > span {
     align-self: flex-start;
+  }
+  .plannedMallSummary {
+    align-items: flex-start;
+  }
+  .plannedMallSummaryMain > small {
+    max-width: 62vw;
+  }
+  .plannedMallDisclosure {
+    margin-top: 4px;
   }
   .plannedRow {
     grid-template-columns: 26px 42px minmax(0, 1fr);

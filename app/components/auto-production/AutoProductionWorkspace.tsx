@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AutoProductionAdvertiserConfig, AutoProductionDashboardStatus, AutoProductionPreview, AutoProductionProductTask, AutoProductionRun } from "../../lib/auto-production/types";
-import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "../../lib/auto-production/policy";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "../../lib/auto-production/policy";
 import styles from "./AutoProductionWorkspace.module.css";
 
 type GlobalSettings = {
@@ -130,6 +130,10 @@ function validProductUrl(value: string) {
   }
 }
 
+function confirmedProductUrls(values: string[]) {
+  return values.map((value) => value.trim()).filter(Boolean);
+}
+
 function toForm(config: AutoProductionAdvertiserConfig): FormState {
   return {
     advertiserName: config.advertiserName,
@@ -247,9 +251,12 @@ export function AutoProductionWorkspace() {
   }, [runDateRange]);
 
   const hasActiveRun = useMemo(() => runs.some((run) => !terminalRunStatuses.has(run.status)), [runs]);
-  const allEnabledPlansConfirmed = useMemo(() => {
-    const enabledAdvertisers = advertisers.filter((advertiser) => advertiser.enabled);
-    return enabledAdvertisers.length > 0 && enabledAdvertisers.every((advertiser) => advertiser.adminProductUrls.length === AUTO_PRODUCTION_PRODUCTS_PER_MALL);
+  const hasEnabledConfirmedPlan = useMemo(() => {
+    return advertisers.some((advertiser) => {
+      if (!advertiser.enabled) return false;
+      const urls = confirmedProductUrls(advertiser.adminProductUrls);
+      return urls.length >= 1 && urls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && urls.every(validProductUrl) && new Set(urls).size === urls.length;
+    });
   }, [advertisers]);
   const latestRunByAdvertiser = useMemo(() => new Map(advertisers.map((advertiser) => [advertiser.advertiserId, runs.find((run) => run.advertiserId === advertiser.advertiserId)])), [advertisers, runs]);
 
@@ -283,7 +290,7 @@ export function AutoProductionWorkspace() {
       const next = { ...current };
       for (const advertiser of advertisers) {
         if (!next[advertiser.advertiserId]) {
-          next[advertiser.advertiserId] = Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => advertiser.adminProductUrls[index] || "");
+          next[advertiser.advertiserId] = Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => advertiser.adminProductUrls[index] || "");
         }
       }
       return next;
@@ -304,19 +311,20 @@ export function AutoProductionWorkspace() {
     }
   }
 
-  async function preview(advertiserId?: string) {
+  async function preview(advertiserId?: string, applyCandidates = false) {
     await runAction(`preview:${advertiserId || "all"}`, async () => {
       const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
         method: "POST",
         body: JSON.stringify({ advertiserId }),
       });
       setPreviews((current) => (advertiserId ? [...current.filter((item) => item.advertiserId !== advertiserId), ...payload.previews] : payload.previews));
+      if (!applyCandidates) return;
       setPlannedUrlDrafts((current) => {
         const next = { ...current };
         for (const previewItem of payload.previews) {
           const config = advertisers.find((item) => item.advertiserId === previewItem.advertiserId);
           const existing = next[previewItem.advertiserId] || [];
-          next[previewItem.advertiserId] = Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => config?.adminProductUrls[index] || existing[index] || previewItem.candidates[index]?.productUrl || "");
+          next[previewItem.advertiserId] = Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => config?.adminProductUrls[index] || existing[index] || previewItem.candidates[index]?.productUrl || "");
         }
         return next;
       });
@@ -335,16 +343,16 @@ export function AutoProductionWorkspace() {
   function updatePlannedUrl(advertiserId: string, index: number, value: string) {
     setSavedPlanId("");
     setPlannedUrlDrafts((current) => {
-      const urls = Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, itemIndex) => current[advertiserId]?.[itemIndex] || "");
+      const urls = Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, itemIndex) => current[advertiserId]?.[itemIndex] || "");
       urls[index] = value;
       return { ...current, [advertiserId]: urls };
     });
   }
 
   async function savePlannedProducts(advertiserId: string, runAfterSave = false) {
-    const urls = (plannedUrlDrafts[advertiserId] || []).map((value) => value.trim());
-    if (urls.length !== AUTO_PRODUCTION_PRODUCTS_PER_MALL || urls.some((value) => !validProductUrl(value)) || new Set(urls).size !== AUTO_PRODUCTION_PRODUCTS_PER_MALL) {
-      setError(`서로 다른 상품 상세페이지 URL ${AUTO_PRODUCTION_PRODUCTS_PER_MALL}개를 모두 올바르게 입력해주세요.`);
+    const urls = confirmedProductUrls(plannedUrlDrafts[advertiserId] || []);
+    if (urls.length < 1 || urls.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT || urls.some((value) => !validProductUrl(value)) || new Set(urls).size !== urls.length) {
+      setError(`서로 다른 상품 상세페이지 URL을 1개 이상 ${AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT}개 이하로 입력해주세요.`);
       return;
     }
     await runAction(`plan:${advertiserId}`, async () => {
@@ -378,7 +386,21 @@ export function AutoProductionWorkspace() {
       setPreviews((current) => [...current.filter((item) => item.advertiserId !== advertiserId), ...payload.previews]);
       setPlannedUrlDrafts((current) => ({
         ...current,
-        [advertiserId]: Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => nextPreview?.candidates[index]?.productUrl || ""),
+        [advertiserId]: Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => nextPreview?.candidates[index]?.productUrl || ""),
+      }));
+      setSavedPlanId("");
+    });
+  }
+
+  async function clearPlannedProducts(advertiserId: string) {
+    await runAction(`clear-plan:${advertiserId}`, async () => {
+      await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiserId)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ adminProductUrls: [] }),
+      });
+      setPlannedUrlDrafts((current) => ({
+        ...current,
+        [advertiserId]: Array(AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT).fill(""),
       }));
       setSavedPlanId("");
     });
@@ -403,17 +425,17 @@ export function AutoProductionWorkspace() {
         <div>
           <p className={styles.eyebrow}>DAILY CREATIVE OPERATIONS</p>
           <h1>자동 콘텐츠 제작</h1>
-          <p>매일 자정부터 몰별 상품 4개와 레퍼런스 기반 완성 광고 24장을 순차 제작합니다.</p>
+          <p>자동 후보는 몰별 4개, 수기 대기열은 최대 6개까지 확정한 상품만 순차 제작합니다.</p>
         </div>
         <div className={styles.actions}>
-          <button className={styles.buttonSecondary} disabled={Boolean(working)} onClick={() => void preview()} type="button">
+          <button className={styles.buttonSecondary} disabled={Boolean(working)} onClick={() => void preview(undefined, true)} type="button">
             예정 상품 새로 찾기
           </button>
           <button
             className={styles.button}
-            disabled={Boolean(working) || settings.paused || !allEnabledPlansConfirmed}
+            disabled={Boolean(working) || settings.paused || !hasEnabledConfirmedPlan}
             onClick={() => void run()}
-            title={allEnabledPlansConfirmed ? undefined : "사용 중인 모든 몰의 예정상품 4개를 먼저 확정해주세요."}
+            title={hasEnabledConfirmedPlan ? undefined : "예정상품 URL을 1~6개 확정한 사용 중 몰이 최소 1곳 필요합니다."}
             type="button"
           >
             확정 목록 전체 실행
@@ -426,44 +448,74 @@ export function AutoProductionWorkspace() {
           {error}
         </p>
       ) : null}
-      <p className={styles.notice}>서버가 켜져 있는 상태에서 매일 00:00~00:09에만 예약 제작을 시작합니다. 아래에서 몰별 예정 상품 4개를 확인하고 URL을 바꾸면 다음 실행에는 저장한 목록을 그대로 사용합니다.</p>
+      <p className={styles.notice}>서버가 켜져 있는 상태에서 매일 00:00~00:09에만 예약 제작을 시작합니다. 자동 후보를 확정하거나 수기 URL을 1~6개 저장한 몰만 입력된 상품 수만큼 제작하며, 확정 목록이 없는 몰은 그날 제작하지 않습니다. 후보 찾기와 화면 미리보기만으로는 예약되지 않습니다.</p>
 
       <section className={styles.plannedProducts} aria-labelledby="planned-products-title">
         <div className={styles.plannedProductsHeader}>
           <div>
             <p className={styles.eyebrow}>NEXT PRODUCTION</p>
             <h2 id="planned-products-title">몰별 다음 제작 예정 상품</h2>
-            <p>자동 추천된 상품을 먼저 보여드립니다. 다른 상품을 제작하려면 해당 행의 상세페이지 URL만 바꾸고 4개 상품을 확정해주세요.</p>
+            <p>자동 추천 4개를 그대로 확정하거나 상세페이지 URL을 1~6개 직접 입력할 수 있습니다. 저장한 URL만 제작하며, 모두 비우면 제작하지 않습니다.</p>
           </div>
           <span>상품 1개당 광고 {AUTO_PRODUCTION_CREATIVES_PER_PRODUCT}장</span>
         </div>
         <div className={styles.plannedMallList}>
           {advertisers.map((advertiser) => {
             const previewItem = previews.find((item) => item.advertiserId === advertiser.advertiserId);
-            const urls = plannedUrlDrafts[advertiser.advertiserId] || Array(AUTO_PRODUCTION_PRODUCTS_PER_MALL).fill("");
-            const validCount = urls.filter((url) => validProductUrl(url.trim())).length;
-            const planReady = validCount === AUTO_PRODUCTION_PRODUCTS_PER_MALL && new Set(urls.map((url) => url.trim())).size === AUTO_PRODUCTION_PRODUCTS_PER_MALL;
+            const urls = plannedUrlDrafts[advertiser.advertiserId] || Array(AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT).fill("");
+            const enteredUrls = confirmedProductUrls(urls);
+            const validCount = enteredUrls.filter(validProductUrl).length;
+            const planReady = enteredUrls.length >= 1 && enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length;
             const isSaved = savedPlanId === advertiser.advertiserId;
+            const hasManuallyChangedUrl = enteredUrls.some((url, index) => url !== previewItem?.candidates[index]?.productUrl);
+            const previewProductNames = previewItem?.candidates
+              .slice(0, AUTO_PRODUCTION_PRODUCTS_PER_MALL)
+              .map((candidate) => candidate.productName.trim())
+              .filter(Boolean);
+            const plannedProductSummary = hasManuallyChangedUrl
+              ? `직접 지정한 상품 URL ${enteredUrls.length}개`
+              : previewProductNames?.length
+                ? previewProductNames.join(" · ")
+                : enteredUrls.length
+                  ? `저장된 예정 상품 ${enteredUrls.length}개`
+                  : "예정 상품을 펼쳐 확인해주세요.";
             return (
-              <article className={styles.plannedMall} key={advertiser.advertiserId}>
+              <details className={styles.plannedMall} key={advertiser.advertiserId}>
+                <summary className={styles.plannedMallSummary}>
+                  <span className={styles.plannedMallSummaryMain}>
+                    <span className={styles.plannedMallSummaryTitle}>
+                      <strong>{advertiser.advertiserName}</strong>
+                      <span className={advertiser.enabled ? styles.plannedMallEnabled : styles.plannedMallPaused}>{advertiser.enabled ? `매일 ${advertiser.scheduleTime}` : "일시정지"}</span>
+                      <span className={styles.plannedMallCount}>
+                        {validCount}/{AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT}개 URL 준비
+                      </span>
+                    </span>
+                    <small>{plannedProductSummary}</small>
+                  </span>
+                  <span className={styles.plannedMallDisclosure}>
+                    <span className={styles.plannedMallClosedLabel}>상품 목록 보기</span>
+                    <span className={styles.plannedMallOpenLabel}>상품 목록 접기</span>
+                    <span className={styles.plannedMallChevron} aria-hidden="true" />
+                  </span>
+                </summary>
                 <header className={styles.plannedMallHeader}>
                   <div>
-                    <h3>{advertiser.advertiserName}</h3>
+                    <h3>다음 제작 예정 상품 상세</h3>
                     <p>
-                      {advertiser.enabled ? `매일 ${advertiser.scheduleTime} 자동제작` : "자동제작 일시정지"} · {validCount}/{AUTO_PRODUCTION_PRODUCTS_PER_MALL}개 URL 준비
+                      URL을 수정한 뒤 예정상품으로 확정하거나 바로 제작할 수 있습니다.
                     </p>
                   </div>
                   <button
                     className={styles.smallButton}
                     disabled={Boolean(working)}
-                    onClick={() => void (advertiser.adminProductUrls.length ? resetPlannedProducts(advertiser.advertiserId) : preview(advertiser.advertiserId))}
+                    onClick={() => void (advertiser.adminProductUrls.length ? resetPlannedProducts(advertiser.advertiserId) : preview(advertiser.advertiserId, true))}
                     type="button"
                   >
                     {working === `reset-plan:${advertiser.advertiserId}` ? "다시 선정 중…" : advertiser.adminProductUrls.length ? "자동 후보로 되돌리기" : "후보 다시 찾기"}
                   </button>
                 </header>
                 <div className={styles.plannedRows}>
-                  {Array.from({ length: AUTO_PRODUCTION_PRODUCTS_PER_MALL }, (_, index) => {
+                  {Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => {
                     const candidate = previewItem?.candidates[index];
                     const changed = Boolean(candidate?.productUrl && urls[index] && candidate.productUrl !== urls[index]);
                     return (
@@ -496,17 +548,25 @@ export function AutoProductionWorkspace() {
                   </p>
                 ))}
                 <footer className={styles.plannedMallFooter}>
-                  <span>{isSaved ? "다음 예약 상품으로 저장했습니다." : advertiser.adminProductUrls.length === AUTO_PRODUCTION_PRODUCTS_PER_MALL ? "저장된 확정 목록입니다." : "자동 추천 상태 · 확정하면 다음 예약에 고정됩니다."}</span>
+                  <span>{isSaved ? "다음 예약 상품으로 저장했습니다." : advertiser.adminProductUrls.length >= 1 ? `저장된 확정 목록 ${advertiser.adminProductUrls.length}개입니다.` : "자동 추천 상태 · 확정하면 다음 예약에 고정됩니다."}</span>
                   <div className={styles.actions}>
+                    <button
+                      className={styles.buttonSecondary}
+                      disabled={Boolean(working) || (!advertiser.adminProductUrls.length && !enteredUrls.length)}
+                      onClick={() => void clearPlannedProducts(advertiser.advertiserId)}
+                      type="button"
+                    >
+                      {working === `clear-plan:${advertiser.advertiserId}` ? "비우는 중…" : "대기열 비우기"}
+                    </button>
                     <button className={styles.buttonSecondary} disabled={Boolean(working) || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId)} type="button">
-                      {working === `plan:${advertiser.advertiserId}` ? "저장 중…" : "이 4개로 예정상품 확정"}
+                      {working === `plan:${advertiser.advertiserId}` ? "저장 중…" : `이 ${validCount}개로 예정상품 확정`}
                     </button>
                     <button className={styles.button} disabled={Boolean(working) || settings.paused || !advertiser.enabled || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId, true)} type="button">
                       저장하고 지금 제작
                     </button>
                   </div>
                 </footer>
-              </article>
+              </details>
             );
           })}
         </div>
@@ -683,8 +743,8 @@ export function AutoProductionWorkspace() {
                   ))}
                 </fieldset>
                 <div className={styles.standardPolicy}>
-                  <span>고정 제작 기준</span>
-                  <strong>상품 4개 × 상품별 광고 6장 = 몰당 24장</strong>
+                  <span>제작 기준</span>
+                  <strong>자동 후보 4개 · 수기 대기열 1~6개 × 상품별 광고 6장</strong>
                   <small>수동 제작과 동일하게 상품군별 ZIP 레퍼런스 6장을 배정한 뒤 상품과 문구를 교체합니다.</small>
                 </div>
                 <label>

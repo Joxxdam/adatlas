@@ -6,7 +6,7 @@ import sharp from "sharp";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 import { withNativeCreativeSession } from "./providers/CreativeGenerationProvider";
-import { nativeHookDirectory, nativeResultImageUrl, optimizeNativeFinalImage, prepareNativeReferenceImages, writeNativeManifest } from "./nativeCreativeStorage.server";
+import { nativeHookDirectory, nativeResultImageUrl, optimizeNativeFinalImage, prepareNativeReferenceImages, selectProtectedProductSource, writeNativeManifest } from "./nativeCreativeStorage.server";
 import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { createAssetFromGenerationResult } from "../creative-assets/fromGeneration.server";
 import { toCreativeAssetSnapshot } from "../creative-assets/types";
@@ -20,7 +20,8 @@ import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNa
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
 import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createTruthFallbackReferenceCopyPlan, hasExecutableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
 import { enforceExactRenderedCopyValidation } from "./nativeCreativeValidation";
-import { resolveProductRenderingPolicy } from "./productRenderingPolicy";
+import { resolveProductRenderingPolicy, resolveProtectedProductPlacement } from "./productRenderingPolicy";
+import { createIdentityLockedProductComposite } from "./protectedProductCompositor.server";
 
 type NativeResultInput = {
   jobId: string;
@@ -106,7 +107,7 @@ export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation,
   if (validation.standaloneLogoDetected) return true;
   if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
   if (isMeat && (validation.productIdentity < 82 || validation.foodAppetiteAppeal < 82)) return true;
-  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|이전\s*문구|출처\s*문구|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|source\s*(?:brand|copy|price)|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|marbling|meat\s*texture|thickness|fat-to-lean/i.test(failure));
+  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|원본\s*인물|같은\s*인물|인물\s*동일|얼굴\s*복제|이전\s*문구|출처\s*문구|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|source\s*(?:brand|copy|price|person)|same\s*(?:person|face)|face\s*cop|recognizable\s*(?:face|identity)|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|marbling|meat\s*texture|thickness|fat-to-lean/i.test(failure));
 }
 
 async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<CopyPlan>) {
@@ -393,6 +394,26 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const directory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, initial.hookPlan.hookCode);
   await mkdir(directory, { recursive: true });
   const runtime = resolveFastCreativeRuntime();
+  const productRenderingPolicy = resolveProductRenderingPolicy(job);
+  const protectedProductSource = productRenderingPolicy === "protected-packaged-product" ? selectProtectedProductSource(job) : undefined;
+  if (productRenderingPolicy === "protected-packaged-product" && !protectedProductSource) {
+    throw new Error("포장 상품 원본을 보호할 실제 상품 이미지가 없습니다. 현재 상품 URL의 패키지 원본을 다시 분석해 주세요.");
+  }
+  let protectedCompositeIndex = 0;
+  async function restoreProtectedProduct(scenePath: string) {
+    if (!protectedProductSource) return scenePath;
+    protectedCompositeIndex += 1;
+    const outputPath = path.join(directory, `protected-product-${protectedCompositeIndex}.png`);
+    await createIdentityLockedProductComposite({
+      scenePath,
+      productImagePath: protectedProductSource.path,
+      productTransparent: protectedProductSource.transparent,
+      placement: resolveProtectedProductPlacement(job.results.find((result) => result.id === input.resultId)!),
+      outputPath,
+    });
+    await validateGeneratedFinal(outputPath);
+    return outputPath;
+  }
   const provider = createCreativeGenerationProvider(job.engine || "codex_local", {
     explicitPaidApiAuthorization: hasExplicitPaidApiAuthorization(job.paidApiAuthorization),
   });
@@ -518,6 +539,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     }
 
     if (!generatedPath) throw new Error("ProductTruth 문구 교체 결과가 없습니다.");
+    if (action !== "revalidate") generatedPath = await restoreProtectedProduct(generatedPath);
     await validateGeneratedFinal(generatedPath);
 
     // 수정 요청은 기존 결과를 재검수하는 데서 끝내지 않고, 사용자의 지시를 반영한
@@ -526,7 +548,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       const repairedPath = path.join(directory, `04-qa-repair-user-${revisionCount}-${qaRepairPaths.length + 1}.png`);
       await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, input.feedback || "사용자 수정 요청을 반영해 상품·로고·가격·한국어를 포함한 광고 전체 래스터를 다시 완성해 주세요.");
       qaRepairPaths.push(repairedPath);
-      generatedPath = repairedPath;
+      generatedPath = await restoreProtectedProduct(repairedPath);
       job = await updateNativeProgress(job, input.resultId, "qa-repairing", (result) => ({
         nativeCreative: {
           ...result.nativeCreative!,
@@ -570,7 +592,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       const repairedPath = path.join(directory, `04-qa-repair-${attempt + 1}.png`);
       await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, [input.feedback, conciseQaFeedback(validation)].filter(Boolean).join("\n"));
       qaRepairPaths.push(repairedPath);
-      generatedPath = repairedPath;
+      generatedPath = await restoreProtectedProduct(repairedPath);
       job = await updateNativeProgress(job, input.resultId, "qa-repairing", (result) => ({
         nativeCreative: {
           ...result.nativeCreative!,
@@ -647,8 +669,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                   productSourcePaths: generationReferences,
                   sourceProductImageIds: job.productTruth.imageAssets.filter((asset) => generationReferences.includes(asset.path)).map((asset) => asset.id),
                   finalImageId: result.id,
-                  editableRegions: ["source-product", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
-                  lockedRegions: ["background", "people", "animals", "props", "camera", "composition", "text-box-position", "non-product-graphics"],
+                  editableRegions: ["source-product", "source-person-identity", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
+                  lockedRegions: ["background", "animals", "props", "camera", "composition", "text-box-position", "non-product-graphics", ...(productRenderingPolicy === "protected-packaged-product" ? ["immutable-current-product-raster"] : [])],
                   productReplacementSummary: "선택 레퍼런스의 상품 영역만 URL 상품 레퍼런스로 교체",
                   copyReplacementSummary: "원문 줄·문장부호·말투를 기준으로 ProductTruth 상품 관련 표현만 교체",
                   finalOutputPath: finalFile,

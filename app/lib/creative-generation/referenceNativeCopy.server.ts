@@ -9,7 +9,7 @@ import sharp from "sharp";
 import { codexCreativeGate } from "./asyncConcurrencyGate";
 import { resolveRuntimeTimeout } from "./fastCreativeRuntime";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
-import { normalizeReferenceRawLines, type ReferenceNativeCopy, type ReferenceTextRegion } from "./referenceLibraryManagement";
+import { normalizeReferenceRawLines, normalizeReferenceTextRegionBrandPolicy, type ReferenceNativeCopy, type ReferenceTextRegion } from "./referenceLibraryManagement";
 
 export const REFERENCE_NATIVE_COPY_ANALYSIS_VERSION = "reference-native-copy-analysis-v4-full-label-consensus";
 export const REFERENCE_NATIVE_COPY_PROMPT_VERSION = "reference-native-copy-ocr-v4-full-label-four-pass-contract";
@@ -100,7 +100,7 @@ export function normalizeReferenceNativeCopy(value: Partial<ReferenceNativeCopy>
     rawText,
     rawLines,
     textRegions: Array.isArray(value.textRegions)
-      ? value.textRegions.map((region, index) => ({
+      ? value.textRegions.map((region, index) => normalizeReferenceTextRegionBrandPolicy({
           id: String(region.id || `region-${index + 1}`),
           role: region.role || "other",
           readingOrder: Number.isFinite(region.readingOrder) ? Math.max(0, Math.round(region.readingOrder!)) : index,
@@ -162,6 +162,9 @@ export function buildReferenceNativeCopyOcrPrompt(imagePath: string) {
 - 실제 글자가 없는 그림·빈 영역은 textRegions에 만들지 않는다. 모든 textRegions는 비어 있지 않은 text와 양수 크기의 box를 가져야 한다.
 - sourceType은 광고 카피(ad-copy), 원본 광고주/로고(source-brand), 교체될 원본 상품 패키지 인쇄(source-product-label), 장식(decorative), 불확실(uncertain)로 구분한다.
 - replacePolicy는 adapt/remove/product-replacement/preserve/review 중 하나다. 패키지 라벨을 광고 카피로 적응하지 않는다.
+- 상품과 떨어져 독립적으로 배치된 로고·워드마크·상호·이니셜·인장·문장·엠블럼·도장형 마크는 크기가 작거나 상품명처럼 읽혀도 반드시 source-brand/remove다. 특히 짧은 글자가 2~3단으로 들어간 원형·방패형·양분색 배지를 일반 광고 badge/ad-copy로 분류하지 않는다.
+- 반대로 가격·할인·배송·증정·수량·기간·CTA·검증된 품질/원산지 문구가 적힌 프로모션 배지는 ad-copy/adapt다. 모양이 원형이라는 이유만으로 광고 문구를 source-brand로 제거하지 않는다.
+- 실제 목표 상품 패키지에 물리적으로 인쇄된 로고와 라벨은 source-product-label/product-replacement이며, 캔버스에 독립적으로 떠 있는 원본 광고주 마크와 구분한다.
 - 상품 패키지의 작은 라벨·용량·성분명·인증 마크 주변 문구도 원본 분석 대상이다. 판독 불가 같은 대체 문구를 쓰지 말고 확대 이미지로 실제 글자를 끝까지 확인한다.
 - 가격·할인율·수량·용량·기간처럼 숫자가 있는 문구는 한 글자도 추측하지 않는다. 불확실하면 reviewRequired=true로 둔다.
 - 각 영역의 정렬, 강조도, 글자 크기 등급, 전경·배경·외곽선 색상 힌트와 원문 글자 예산을 기록한다.

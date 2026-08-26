@@ -1,7 +1,7 @@
 import type { AutoProductionAdvertiserConfig, AutoProductionProductCandidate, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types.ts";
 import { candidateIdentityKeys, productFamilyKey } from "./productIdentity.ts";
-import { automaticImageCountForConfig } from "./policy.ts";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, confirmedAutoProductionProductCount } from "./policy.ts";
 
 export const autoProductionRoleLabels: Record<AutoProductionRole, string> = {
   "core-expansion": "꾸준히 잘 팔리는 주력상품",
@@ -87,8 +87,8 @@ export function selectAutoProductionCandidates(candidates: AutoProductionProduct
 
 export function plannedImageCount(configs: AutoProductionAdvertiserConfig[]) {
   return configs
-    .filter((config) => config.enabled)
+    .filter((config) => config.enabled && confirmedAutoProductionProductCount(config) > 0)
     .reduce((sum, config) => {
-      return sum + automaticImageCountForConfig(config);
+      return sum + confirmedAutoProductionProductCount(config) * AUTO_PRODUCTION_CREATIVES_PER_PRODUCT;
     }, 0);
 }

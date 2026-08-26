@@ -18,7 +18,7 @@ import type { AdBrief } from "../mvp/types";
 import type { CreativeBlueprintId, CreativePlan, HookPlan, ProductFact, ProductTruth, ReferenceAdaptedCopyPlan, ReferenceCopyProfile, ScenePlan } from "./types";
 
 export const REFERENCE_COPY_PROFILE_VERSION = "reference-copy-profile-v1";
-export const REFERENCE_ADAPTED_PLANNER_VERSION = "reference-native-copy-adapter-v10-clean-product-identity";
+export const REFERENCE_ADAPTED_PLANNER_VERSION = "reference-native-copy-adapter-v11-reference-flow-no-review-metadata";
 
 const NATURALNESS_PASS_SCORE = 85;
 const REFERENCE_FIT_PASS_SCORE = 75;
@@ -166,6 +166,7 @@ function factsForPlanning(truth: ProductTruth) {
   const seen = new Set<string>();
   return truth.facts
     .filter((fact) => fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked")
+    .filter((fact) => !isUnsafeProductCreativeSignal(fact.value))
     .filter((fact) => {
       const signature = comparableCopy(fact.value);
       if (!signature || seen.has(signature)) return false;
@@ -390,7 +391,7 @@ function buildNumberedReasonFallback(truth: ProductTruth, reference: NativeAdRef
 }
 
 function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number): ReferenceAdaptedCopyPlan {
-  const facts = truth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked");
+  const facts = truth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked" && !isUnsafeProductCreativeSignal(fact.value));
   const headlineCandidates = uniqueFacts(facts.filter((fact) => isCleanFallbackHeadlineFact(fact, truth, profile.headlineCharacterBudget)));
   const prioritizedHeadlineCandidates = uniqueFacts([
     ...headlineCandidates.filter((fact) => fact.key === "verified-descriptor"),
@@ -631,6 +632,7 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
   const flattenedTarget = comparableCopy(targetLines.join(" "));
   if (targetLines.length && normalizedHeadline && !flattenedTarget.includes(normalizedHeadline)) errors.push("최종 헤드라인이 줄별 편집 계약에 포함되지 않았습니다.");
   const copy = [...targetLines, plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" ");
+  if (isUnsafeProductCreativeSignal(copy)) errors.push("후기 작성 시각·작성자 또는 상세페이지 UI 메타데이터가 광고 문구에 포함됐습니다.");
   const bannedGenericPhrases = ["구매 조건 보기", "이 선택", "핵심 이유", "고를 이유", "한눈에", "새로운 사용 이유", "지금 확인하세요"];
   if (bannedGenericPhrases.some((phrase) => copy.includes(phrase))) errors.push("상품과 무관한 범용 광고 문구가 포함됐습니다.");
   if (plan.subCopy && Array.from(plan.subCopy.replace(/\s/g, "")).length > profile.supportCharacterBudget + 12) errors.push("레퍼런스 보조 문구 길이 예산을 초과했습니다.");
@@ -716,6 +718,9 @@ function planningPrompt(input: { truth: ProductTruth; references: NativeAdRefere
 - 원문의 헤드라인/서브/근거/혜택/CTA/배지 블록 수, 읽기 순서, 상대적 글자 분량을 유지한다. 전체 문구량을 원문의 절반 이하로 축약하지 않는다.
 - 원문에 채팅/댓글/밈 문법이 있을 때만 그 형식을 유지하고, 없으면 새로 추가하지 않는다.
 - ProductTruth는 사실 상한선이다. 제공된 fact 이외의 가격, 할인, 구성, 후기, 효능, 원산지, 수치를 만들지 않는다.
+- 후기 카드의 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터는 광고 사실이 아니다. ProductTruth에 실수로 남아 있더라도 문구로 옮기지 않는다.
+- 레퍼런스 문장의 관계가 작성의 골격이다. 문제→해결, 질문→대답, 비교→결론, 경험→추천처럼 여러 줄 사이의 수사 관계를 유지하고, 상품 사실을 나열한 상세페이지 요약문으로 바꾸지 않는다.
+- 같은 상품명·구성·중량 설명을 여러 블록에 반복하지 않는다. 원문에서 역할이 다른 블록은 현재 상품의 서로 다른 검증 사실이나 CTA로 그 역할을 유지한다.
 - headlineEligible은 헤드라인/보조 문구에, proofOnly는 근거에, offerOnly는 offer에만 쓴다. identityOnly는 상품 식별에만 쓴다.
 - 애매한 상투어보다 ProductTruth의 구체 사실을 우선하고, 확인된 사실 안에서는 판매형 말투를 충분히 강하게 유지한다.
 - CTA는 레퍼런스에 실제 CTA 역할이 있을 때만 짧게 작성한다.
@@ -743,13 +748,13 @@ function profilePrompt(references: NativeAdReference[]) {
 }
 
 function criticPrompt(input: { truth: ProductTruth; profiles: ReferenceCopyProfile[]; plans: ReferenceAdaptedCopyPlan[] }) {
-  return `아래 6개 한국 광고 문구를 한 번에 독립 검수한다. 새 문구를 만들지 말고 점수와 오류만 반환한다.\n검수 기준: 자연스러운 한국어, referenceRawCopy/referenceRawLines의 줄 수·기호·구어체와 수사 의도 보존, source-brand/remove를 제외한 원본 문구 블록과 정보 밀도 보존, 질문·반전·비교·문제 제기·긴급성 같은 헤드라인 판매 강도 보존, 상품 관련 표현만 ProductTruth로 교체했는지, ProductTruth 밖 수치·혜택·효능 금지, 장면과 문구의 일치, 여섯 결과의 의미 중복 억제. source-brand/remove 슬롯은 빈 targetText가 정답이며 현재 상품명·브랜드명으로 채우거나 새 로고 문구로 바꾸면 치명 오류다. 원문 어순을 기계적으로 유지하는 것보다 현재 상품 문장의 주어·서술어·조사·수식 관계·완결성이 우선이다. adaptedLines를 줄바꿈 없이 이어 읽어도 하나의 자연스러운 소비자 문장이 되어야 한다. 사람 주어를 추석·명절·가격·상품 같은 무생물 명사로 단순 치환하거나, 연결 조사·쉼표에서 문장이 끊기거나, 소비자가 의미를 추측해야 하면 naturalness 치명 오류다. ‘명절 메뉴 없더니...’처럼 상황과 주체가 빠진 문구, 계절 단어와 범용 판매어를 이어 붙인 문구도 naturalness 실패다. 처음 보는 소비자가 1초 안에 누가 어떤 상황에서 무엇을 말하는지 이해할 수 있어야 한다. ‘명절 갈비, 언제 손질해요...’, ‘명절 음식 언제 만들어요...’처럼 실제 질문·고민 장면으로 재구성한 문장은 좋은 방향이다. ‘먹어본 사람은 계속 달라고 졸라요’ 같은 반응·후기 문구는 ProductTruth에 후기 근거가 있을 때만 factualSafety를 통과시킨다. 강한 원문 헤드라인을 단순 상품명으로 바꾸거나, 근거 없는 가격·혜택 슬롯을 빈칸으로 지우거나, 전체 문구량을 과도하게 줄이면 referenceFit 실패다. 원문의 말투와 수사 의도를 자연스럽게 보존한 사실 자체는 오류가 아니다. valid는 naturalness ${NATURALNESS_PASS_SCORE}, referenceFit ${REFERENCE_FIT_PASS_SCORE}, factualSafety 90 이상이고 치명 오류가 없을 때만 true다.\nProductTruth: ${JSON.stringify(factsForPlanning(input.truth))}\nPlans: ${JSON.stringify(input.plans)}\nJSON 스키마만 반환한다.`;
+  return `아래 6개 한국 광고 문구를 한 번에 독립 검수한다. 새 문구를 만들지 말고 점수와 오류만 반환한다.\n검수 기준: 자연스러운 한국어, referenceRawCopy/referenceRawLines의 줄 수·기호·구어체와 수사 의도 보존, source-brand/remove를 제외한 원본 문구 블록과 정보 밀도 보존, 질문→대답·문제→해결·비교→결론·경험→추천 같은 줄 사이 관계 보존, 질문·반전·비교·문제 제기·긴급성 같은 헤드라인 판매 강도 보존, 상품 관련 표현만 ProductTruth로 교체했는지, ProductTruth 밖 수치·혜택·효능 금지, 후기 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터 금지, 장면과 문구의 일치, 여섯 결과의 의미 중복 억제. source-brand/remove 슬롯은 빈 targetText가 정답이며 현재 상품명·브랜드명으로 채우거나 새 로고 문구로 바꾸면 치명 오류다. 원문 어순을 기계적으로 유지하는 것보다 현재 상품 문장의 주어·서술어·조사·수식 관계·완결성이 우선이다. adaptedLines를 줄바꿈 없이 이어 읽어도 하나의 자연스러운 소비자 문장이 되어야 한다. 사람 주어를 추석·명절·가격·상품 같은 무생물 명사로 단순 치환하거나, 연결 조사·쉼표에서 문장이 끊기거나, 소비자가 의미를 추측해야 하면 naturalness 치명 오류다. ‘명절 메뉴 없더니...’처럼 상황과 주체가 빠진 문구, 계절 단어와 범용 판매어를 이어 붙인 문구도 naturalness 실패다. 처음 보는 소비자가 1초 안에 누가 어떤 상황에서 무엇을 말하는지 이해할 수 있어야 한다. ‘명절 갈비, 언제 손질해요...’, ‘명절 음식 언제 만들어요...’처럼 실제 질문·고민 장면으로 재구성한 문장은 좋은 방향이다. ‘먹어본 사람은 계속 달라고 졸라요’ 같은 반응·후기 문구는 ProductTruth에 후기 근거가 있을 때만 factualSafety를 통과시킨다. 강한 원문 헤드라인을 단순 상품명으로 바꾸거나, 레퍼런스 문장 관계를 버리고 상품 스펙 목록으로 바꾸거나, 동일 상품명·중량을 여러 블록에 반복하거나, 근거 없는 가격·혜택 슬롯을 빈칸으로 지우거나, 전체 문구량을 과도하게 줄이면 referenceFit 실패다. 원문의 말투와 수사 의도를 자연스럽게 보존한 사실 자체는 오류가 아니다. valid는 naturalness ${NATURALNESS_PASS_SCORE}, referenceFit ${REFERENCE_FIT_PASS_SCORE}, factualSafety 90 이상이고 치명 오류가 없을 때만 true다.\nProductTruth: ${JSON.stringify(factsForPlanning(input.truth))}\nPlans: ${JSON.stringify(input.plans)}\nJSON 스키마만 반환한다.`;
 }
 
 async function runCodexJson<T>(prompt: string, outputSchema: object) {
   if (!(await codexLocalAuthenticated())) throw new Error("로컬 Codex 로그인이 없습니다.");
   const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: resolveCodexLocalExecutable() });
-  const thread = codex.startThread({ workingDirectory: process.cwd(), sandboxMode: "read-only", approvalPolicy: "never", networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "low" });
+  const thread = codex.startThread({ workingDirectory: process.cwd(), sandboxMode: "read-only", approvalPolicy: "never", networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "medium" });
   const response = await thread.run(prompt, { outputSchema, signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_REFERENCE_COPY_TIMEOUT_MS, 180_000, 30_000)) });
   return JSON.parse(response.finalResponse) as T;
 }
@@ -829,13 +834,16 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
   const readyReferences = readyEntries.map(({ reference }) => reference);
   const readyProfiles = readyEntries.map(({ profile }) => profile);
   try {
+    const planningWarnings: string[] = [];
     const response = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, missingProfileIds: [] }));
     let readyPlans = readyEntries.map(({ reference, profile, index }) => normalizePlan(response.plans.find((plan) => plan.referenceId === reference.id), input.truth, reference, profile, index, "codex-local"));
     try {
       readyPlans = await reviewPlans({ truth: input.truth, profiles: readyProfiles, plans: readyPlans });
     } catch (error) {
       const message = error instanceof Error ? error.message : "일괄 문구 자연스러움 검수에 실패했습니다.";
-      readyPlans = readyPlans.map((plan) => ({ ...plan, validationStatus: "invalid" as const, validationErrors: [...plan.validationErrors, message] }));
+      // normalizePlan의 사실·길이·원문 구조 검증은 이미 통과했다. 보조 critic
+      // 호출 장애만으로 정상 레퍼런스 문구를 일반 fallback으로 덮어쓰지 않는다.
+      planningWarnings.push(`보조 문구 검수 호출 실패(결정적 검증 결과 유지): ${message}`);
     }
     const failed = readyPlans.filter((plan) => plan.validationStatus === "invalid");
     if (failed.length) {
@@ -853,7 +861,9 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
           readyPlans = readyPlans.map((plan) => reviewedByReference.get(plan.referenceId) || plan);
         } catch (error) {
           const message = error instanceof Error ? error.message : "보정 문구 재검수에 실패했습니다.";
-          readyPlans = readyPlans.map((plan) => repairedReferenceIds.has(plan.referenceId) ? { ...plan, validationStatus: "invalid" as const, validationErrors: [...plan.validationErrors, message] } : plan);
+          // 보정본도 normalizePlan의 결정적 검증을 통과했다면 그대로 유지한다.
+          // critic의 일시 실패는 품질 경고이지 안전한 계획을 폐기할 근거가 아니다.
+          planningWarnings.push(`보정 문구 보조 재검수 호출 실패(결정적 검증 결과 유지): ${message}`);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "문구 1회 보정에 실패했습니다.";
@@ -864,7 +874,7 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
     let plans = input.references.map((reference, index) => plannedByReference.get(reference.id) || fallbackPlans[index]);
     plans = applyReferenceCopyGroupRules(plans, input.truth);
     plans = replaceUnusablePlansWithTruthFallback({ truth: input.truth, references: input.references, profiles, plans });
-    return { profiles, plans, provider: "codex-local" as const, warnings: plans.flatMap((plan) => plan.validationErrors) };
+    return { profiles, plans, provider: "codex-local" as const, warnings: [...planningWarnings, ...plans.flatMap((plan) => plan.validationErrors)] };
   } catch (error) {
     const plans = replaceUnusablePlansWithTruthFallback({
       truth: input.truth,

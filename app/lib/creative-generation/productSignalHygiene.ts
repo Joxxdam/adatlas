@@ -13,6 +13,12 @@ const generatedAudienceBoilerplatePattern = /(?:상품\s*상세페이지에서\s
 
 const postalAddressPattern = /(?:[가-힣]{2,12}(?:도|특별시|광역시)\s+)?[가-힣]{1,12}(?:시|군|구)\s+[가-힣0-9-]{1,16}(?:읍|면|동|로|길)\s+\d{1,5}(?:-\d{1,5})?/u;
 
+// 후기 카드에서 본문과 함께 수집되는 작성 시각·작성자 꼬리표입니다. 날짜가
+// 실제 상품 정보에 포함되는 경우도 있으므로 연도만으로 차단하지 않고, 후기
+// UI에서 쓰는 날짜+시각 조합이나 문장 끝의 불완전한 메타데이터를 겨냥합니다.
+const reviewMetadataPattern = /(?:20\d{2}\s*[-./년]\s*\d{1,2}\s*[-./월]\s*\d{1,2}(?:\s*일)?(?:\s*[T ]?\s*\d{1,2}\s*:\s*\d{2}(?:\s*:\s*\d{2})?)?|(?:작성|등록|수정)\s*(?:일|일시|시간)\s*[:：]?\s*20\d{2}|(?:구매자|작성자|닉네임)\s*[:：])/iu;
+const danglingReviewSuffixPattern = /(?:\(|\[)?\s*20\d{2}[^)\]]{0,30}(?:에|작성|등록)?\s*(?:\)|\])?\s*$/u;
+
 export function isUnsafeProductCreativeSignal(value: string | undefined) {
   return Boolean(
     value &&
@@ -20,7 +26,9 @@ export function isUnsafeProductCreativeSignal(value: string | undefined) {
         accountShareOrBusinessUiPattern.test(value) ||
         recommendationUiPattern.test(value) ||
         generatedAudienceBoilerplatePattern.test(value) ||
-        postalAddressPattern.test(value))
+        postalAddressPattern.test(value) ||
+        reviewMetadataPattern.test(value) ||
+        danglingReviewSuffixPattern.test(value))
   );
 }
 

@@ -60,6 +60,38 @@ export type ReferenceTextRegion = {
   confidence?: number;
 };
 
+const standaloneBrandVisualHintPattern = /(?:logo|wordmark|brand\s*mark|emblem|crest|seal|monogram|로고|워드마크|브랜드\s*마크|상호|엠블럼|문장|인장)/i;
+const splitCircleBadgePattern = /(?:상단|위쪽).*(?:하단|아래쪽).*원형\s*배지|(?:two[ -]?tone|split).*(?:circle|round).*(?:badge|mark)/i;
+const ordinaryBadgeCopyPattern = /(?:\d|%|원|특가|할인|무료|배송|증정|구매|세트|팩|개|kg|g|ml|기간|오늘|마감|국내산|원산지|인증|등급|무항생제|유기농|비건|천연|보장|추천)/i;
+
+/**
+ * OCR이 독립 브랜드 마크를 일반 배지 문구로 잘못 분류해도 상품명으로
+ * 재창작하지 않도록 하는 보수적인 후처리입니다. 가격·혜택·CTA·인증처럼
+ * 광고 의미가 분명한 배지는 그대로 adapt하며, 명시적인 로고 시각 힌트나
+ * 짧은 2단 분할 원형 마크만 source-brand/remove로 승격합니다.
+ */
+export function normalizeReferenceTextRegionBrandPolicy(region: ReferenceTextRegion): ReferenceTextRegion {
+  if (region.sourceType === "source-product-label") return { ...region, replacePolicy: "product-replacement" };
+  if (region.sourceType === "source-brand" || region.replacePolicy === "remove") {
+    return { ...region, sourceType: "source-brand", replacePolicy: "remove" };
+  }
+  if (region.sourceType === "decorative") return region;
+
+  const lines = normalizeReferenceRawLines(region.lines?.length ? region.lines : String(region.text || "").split("\n")).filter((line) => line.trim());
+  const text = lines.join(" ");
+  const visualHints = [region.backgroundHint, region.outlineHint, region.id].filter(Boolean).join(" ");
+  const compactStackedMark = region.role === "badge"
+    && lines.length >= 2
+    && lines.length <= 3
+    && lines.every((line) => Array.from(line.replace(/\s/g, "")).length <= 5)
+    && splitCircleBadgePattern.test(visualHints);
+  const explicitBrandMark = ["badge", "other"].includes(region.role) && standaloneBrandVisualHintPattern.test(visualHints);
+  if ((compactStackedMark || explicitBrandMark) && !ordinaryBadgeCopyPattern.test(text)) {
+    return { ...region, sourceType: "source-brand", replacePolicy: "remove" };
+  }
+  return region;
+}
+
 export type ReferenceNativeCopyValidation = {
   textCoverage: number;
   regionCoverage: number;

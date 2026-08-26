@@ -91,6 +91,36 @@ function isAutomaticCutoutPath(value: string) {
   return /\/(?:processed-products|product-cutouts)\//i.test(value);
 }
 
+function normalizedImagePath(value: unknown) {
+  return String(value || "").trim();
+}
+
+/**
+ * 새 URL 분석 뒤에도 클라이언트의 이전 선택 배열이 잠깐 남을 수 있습니다.
+ * 서버에서는 현재 ProductInfo가 직접 소유한 경로만 상품 원본으로 승격해,
+ * 다른 상품의 이미지가 새 작업의 user-confirmed 자산으로 복사되지 않게 합니다.
+ */
+function currentProductImagePaths(input: CreateGenerationJobInput, product: CreateGenerationJobInput["product"]) {
+  const declared = [
+    product.extractedMainImage,
+    ...(product.productImagePaths || []),
+    product.productImagePath,
+    product.secondaryProductImagePath,
+    product.selectedSourceImagePath,
+    ...(product.extractedGalleryImages || []),
+    ...(product.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
+  ].map(normalizedImagePath).filter(Boolean);
+  const declaredSet = new Set(declared);
+  // 분석 결과가 아직 별도 필드로 승격되지 않은 업로드 흐름만 요청 경로를
+  // 기준으로 허용합니다. 현재 상품 경로가 하나라도 있으면 교집합만 받습니다.
+  const requested = (input.productImagePaths || []).map(normalizedImagePath).filter(Boolean);
+  const acceptedRequested = declaredSet.size ? requested.filter((imagePath) => declaredSet.has(imagePath)) : requested;
+  const acceptedSelected = (input.selectedAdImages || [])
+    .map(normalizedImagePath)
+    .filter((imagePath) => declaredSet.has(imagePath) || acceptedRequested.includes(imagePath));
+  return Array.from(new Set([...acceptedSelected, ...acceptedRequested, ...declared]));
+}
+
 function normalizeReferenceCategoryOverride(value: unknown): ReferenceCategoryOverride | undefined {
   return typeof value === "string" && referenceCategoryOverrides.has(value as ReferenceCategoryOverride) ? (value as ReferenceCategoryOverride) : undefined;
 }
@@ -109,18 +139,22 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   }
   const rawProductTitle = input.product.productName;
   const product = sanitizeProductForCreative(input.product);
-  const allPaths = Array.from(new Set([...(input.selectedAdImages || []).slice(0, 12), ...(input.productImagePaths || []).slice(0, 12), product.extractedMainImage, ...(product.productImagePaths || []), product.productImagePath, ...(product.extractedGalleryImages || [])].map((value) => String(value || "").trim()).filter(Boolean)));
+  const allPaths = currentProductImagePaths(input, product).slice(0, 20);
   const originals = allPaths.filter((value) => !isAutomaticCutoutPath(value));
   if (!originals.length) {
     throw new Error("광고 제작에는 자동 누끼가 아닌 상세페이지 원본 상품 이미지가 필요합니다.");
   }
-  const originalProductReferencePaths = originals.slice(0, 12);
+  const productReferencePaths = allPaths.slice(0, 12);
+  const allowedProductPaths = new Set(productReferencePaths);
+  const currentProductAssets = (input.imageAssets || []).filter((asset) =>
+    allowedProductPaths.has(normalizedImagePath(asset.path)) && asset.role !== "ad-reference"
+  );
   const rawTruth = buildProductTruth({
     product,
     rawProductTitle,
-    productImagePaths: originalProductReferencePaths,
+    productImagePaths: productReferencePaths,
     selectedAdImages: [],
-    imageAssets: input.imageAssets || [],
+    imageAssets: currentProductAssets,
     source: input.source === "landing-page" ? "landing-page" : "user-input",
   });
   const truth = await inspectProductTruthImages(rawTruth);
@@ -134,18 +168,8 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const advertiserName = product.advertiserName || advertiser.name;
   const planningFingerprint = buildCreativePlanFingerprint(truth);
   const referenceCategoryOverride = options.sourceType === "auto-production" ? undefined : normalizeReferenceCategoryOverride(input.referenceCategoryOverride);
-  const recentReferenceJobs = (await creativeGenerationJobStore.recentFor({ advertiserId, limit: 50 }))
-    .filter((previous) => !["cancelled", "failed"].includes(previous.status))
-    // 한 번의 기본 자동제작 묶음(상품 최대 4개) 안에서는 레퍼런스 반복을
-    // 피하되, 다음 묶음부터는 식품 전체 풀이 다시 순환할 수 있게 한다.
-    .slice(0, 4);
-  const recentReferenceIds = new Set(
-    recentReferenceJobs
-      .flatMap((previous) => previous.results.map((result) => result.nativeCreative?.adReference?.id))
-      .filter((id): id is string => Boolean(id))
-  );
   const selectedAdReferences = await ensureNativeReferenceCopies(
-    selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6, undefined, recentReferenceIds)
+    selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6)
   );
   const referencePlanning = await planReferenceAdaptedCopies({ truth, references: selectedAdReferences });
   const creativePlan = buildReferenceAdaptedCreativePlan({

@@ -29,7 +29,7 @@ export function directProductInfo(extracted: ExtractedProductInfo, productUrl: s
     advertiserName: config.advertiserName,
     brandName: extracted.brandName || config.advertiserName,
     mainBenefit: extracted.mainBenefit || extracted.extractedDescription || extracted.description || "",
-    targetCustomer: "",
+    targetCustomer: extracted.targetCustomer || "",
     landingUrl: extracted.landingUrl || productUrl,
     productImagePath: mainImage,
     secondaryProductImagePath: imagePaths[1] || "",
@@ -45,13 +45,19 @@ export function directProductInfo(extracted: ExtractedProductInfo, productUrl: s
     reviewSources: extracted.reviewSources || [],
     verifiedBenefits: extracted.verifiedBenefits || [],
     ingredients: extracted.ingredients || [],
+    vendorResearch: extracted.vendorResearch,
     creativeContext: {
       advertiserId: config.advertiserId,
       productId: `direct-${createHash("sha256").update(productUrl).digest("hex").slice(0, 16)}`,
       recommendedHookTypes: [],
       recommendedMessageAngles: extracted.verifiedBenefits || [],
-      dataEvidence: [],
-      dataSources: ["DIRECT_PRODUCT_URL"],
+      dataEvidence: extracted.vendorResearch
+        ? extracted.vendorResearch.facts
+            .filter((fact) => fact.copyEligibility !== "blocked")
+            .map((fact) => `${fact.label}: ${fact.value}`)
+            .slice(0, 12)
+        : [],
+      dataSources: extracted.vendorResearch ? ["DIRECT_PRODUCT_URL", "VENDOR_PROVIDED_RESEARCH"] : ["DIRECT_PRODUCT_URL"],
       analysisSource: "SITE_PUBLIC_DATA",
     },
   };

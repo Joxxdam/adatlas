@@ -1,0 +1,366 @@
+{
+  "version": 1,
+  "sourceType": "vendor-provided-research",
+  "sourceLabel": "오리지널 소스 5가지 제품 상세 조사 자료",
+  "extractedAt": "2026-08-26T20:40:00+09:00",
+  "extraction": {
+    "method": "xlsx-cell-extraction-with-embedded-media-review",
+    "textCellCount": 1293,
+    "embeddedMediaCount": 84,
+    "note": "셀 원문은 OCR보다 정확하게 직접 추출했고, 삽입 이미지는 셀 원문과 중복되는지 시각 검토했습니다."
+  },
+  "products": [
+    {
+      "id": "mint-tea-tree",
+      "productIds": ["65"],
+      "aliases": ["민트 티트리", "민트&티트리", "mint tea tree", "mint&tea tree", "7927"],
+      "mainBenefit": "민트와 티트리 향이 주는 강렬하고 상쾌한 샤워감",
+      "ingredients": ["민트", "멘톨", "티트리"],
+      "targetCustomer": "더운 날이나 운동 후 강렬하고 상쾌한 샤워감을 찾는 분",
+      "facts": [
+        {
+          "id": "mint-7927",
+          "label": "원료 함량 표현",
+          "value": "250ml 한 통에 민트 잎 7,927장 분량을 담았다고 소개됨",
+          "kind": "numeric-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": ["B321", "B322", "B477"]
+        },
+        {
+          "id": "mint-origin",
+          "label": "원료 산지 이야기",
+          "value": "히말라야 산맥 남쪽의 인도 민트 벨트에서 자란 민트 원료를 사용한다고 소개됨",
+          "kind": "vendor-narrative",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": ["B42", "B317"]
+        },
+        {
+          "id": "mint-scent",
+          "label": "향과 사용감",
+          "value": "민트의 짜릿하고 시원한 향과 티트리의 깨끗한 허브 향이 어우러진 구성",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": ["C24", "F415", "F417"]
+        },
+        {
+          "id": "mint-occasion",
+          "label": "사용 상황",
+          "value": "무더운 날, 운동 후, 퇴근 후 개운한 샤워가 필요한 순간에 어울리는 방향",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": ["C30", "B354", "B451"]
+        },
+        {
+          "id": "mint-vegan",
+          "label": "브랜드 가치",
+          "value": "영국 비건 소사이어티 인증 제품으로 소개됨",
+          "kind": "certification",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": ["B186", "B191"]
+        },
+        {
+          "id": "mint-natural-fragrance",
+          "label": "향료 정보",
+          "value": "100% 천연 향료 사용 제품으로 소개됨",
+          "kind": "ingredient-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": ["V236", "B324"]
+        }
+      ],
+      "blockedClaims": [
+        "체감 온도 -5도 또는 -8.9°C",
+        "항균·살균·염증 완화·피부 트러블 방지",
+        "피부 열을 실제로 내린다는 생리적 효능",
+        "한 번 샤워에 민트 잎 132장",
+        "탄소 발자국 감소량 또는 쿨링 지수"
+      ],
+      "sourceDocument": "1. 오리지널 소스 민트&티트리(MINT&TEA TREE) 상세 조사.xlsx",
+      "sourceTextCellCount": 259,
+      "embeddedMediaCount": 43
+    },
+    {
+      "id": "lemon-tea-tree",
+      "productIds": ["77"],
+      "aliases": ["레몬 티트리", "레몬&티트리", "lemon tea tree", "lemon & tea tree", "시칠리아 레몬"],
+      "mainBenefit": "시칠리아 레몬과 티트리의 산뜻한 시트러스·허브 향",
+      "ingredients": ["레몬", "레몬 오일", "티트리"],
+      "targetCustomer": "아침이나 운동 후 산뜻하고 개운한 시트러스 샤워를 원하는 분",
+      "facts": [
+        {
+          "id": "lemon-origin",
+          "label": "원료 산지 이야기",
+          "value": "시칠리아산 레몬을 사용한다고 소개됨",
+          "kind": "origin",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "5. 오리지널소스Lemon & Tea Tree 탄생 과정",
+          "sourceCells": ["B4"]
+        },
+        {
+          "id": "lemon-cold-press",
+          "label": "추출 방식",
+          "value": "레몬 껍질을 열 대신 물리적인 힘으로 눌러 오일을 얻는 냉압착 방식으로 소개됨",
+          "kind": "process",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "5. 오리지널소스Lemon & Tea Tree 탄생 과정",
+          "sourceCells": ["A8", "B9", "B11"]
+        },
+        {
+          "id": "lemon-scent",
+          "label": "향의 흐름",
+          "value": "처음에는 상큼한 레몬 껍질 향, 이어서 티트리의 깨끗한 허브 향이 느껴지는 구성",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "6. 향(Scent)",
+          "sourceCells": ["A34", "A49", "A63"]
+        },
+        {
+          "id": "lemon-texture",
+          "label": "제형과 거품",
+          "value": "노란빛 반투명 젤이 부드럽게 펴 발리고 물과 만나 미세하고 가벼운 거품을 내는 사용감",
+          "kind": "texture",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "7. 질감(Texture)",
+          "sourceCells": ["B7", "B9", "B21", "B25", "B36"]
+        },
+        {
+          "id": "lemon-finish",
+          "label": "마무리감",
+          "value": "무거운 보습막보다는 산뜻하고 개운한 마무리를 강조한 제품",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "7. 질감(Texture)",
+          "sourceCells": ["A41", "A43", "B45", "B47"]
+        },
+        {
+          "id": "lemon-occasion",
+          "label": "사용 상황",
+          "value": "상쾌한 아침 샤워나 운동 후 개운한 기분 전환에 어울리는 방향",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "1. 레몬&시트러스 계열 바디워시 시장조사",
+          "sourceCells": ["C32", "C34"]
+        }
+      ],
+      "blockedClaims": [
+        "미백·잡티·색소 침착 개선",
+        "항산화·면역력·콜라겐·상처 회복 효능",
+        "시장 점유율·판매 순위 추정",
+        "끈적임 0% 또는 잔향 100% 같은 절대 수치",
+        "합성 향료 0%처럼 성분표로 별도 확인되지 않은 표현"
+      ],
+      "sourceDocument": "2. 오리지널 소스 레몬&티트리(Lemon & Tea Tree) 상세 조사.xlsx",
+      "sourceTextCellCount": 485,
+      "embeddedMediaCount": 11
+    },
+    {
+      "id": "coconut-shea-butter",
+      "productIds": ["80"],
+      "aliases": ["코코넛 시어버터", "코코넛&시어버터", "coconut shea butter", "coconut&shea butter", "7872"],
+      "mainBenefit": "달콤하고 포근한 코코넛·시어버터 향과 매끄러운 보습 사용감",
+      "ingredients": ["코코넛", "코코넛 오일", "시어버터"],
+      "targetCustomer": "샤워 후 건조함과 당김이 신경 쓰이고 포근한 달콤한 향을 선호하는 분",
+      "facts": [
+        {
+          "id": "coconut-scent",
+          "label": "향의 특징",
+          "value": "코코넛의 달콤함에 시어버터의 은은한 너티함이 더해진 크리미하고 포근한 향",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "6. 향(Scent)&질감(Texture)",
+          "sourceCells": ["A23", "B25", "A33", "B35"]
+        },
+        {
+          "id": "coconut-texture",
+          "label": "제형",
+          "value": "불투명한 우유빛의 크리미한 젤 타입으로 소개됨",
+          "kind": "texture",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "6. 향(Scent)&질감(Texture)",
+          "sourceCells": ["A73", "B75", "B77"]
+        },
+        {
+          "id": "coconut-lather",
+          "label": "거품",
+          "value": "입자가 작고 촘촘한 생크림 같은 거품과 부드러운 쿠션감을 강조한 제품",
+          "kind": "texture",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "6. 향(Scent)&질감(Texture)",
+          "sourceCells": ["A79", "B81", "B83"]
+        },
+        {
+          "id": "coconut-finish",
+          "label": "마무리감",
+          "value": "헹군 뒤 뽀득함보다는 매끄럽고 포근한 보습막이 느껴지는 사용감",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "6. 향(Scent)&질감(Texture)",
+          "sourceCells": ["A85", "B87"]
+        },
+        {
+          "id": "coconut-origin-coconut",
+          "label": "코코넛 원료 이야기",
+          "value": "아시아의 뜨거운 태양 아래 자란 코코넛을 담은 원료 이야기로 소개됨",
+          "kind": "vendor-narrative",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "7.열대낙원(Tropical Paradise)으로의 초대",
+          "sourceCells": ["B45", "C47"]
+        },
+        {
+          "id": "coconut-origin-shea",
+          "label": "시어버터 원료 이야기",
+          "value": "아프리카의 거친 바람을 견뎌낸 ‘영생의 나무’ 시어트리에서 얻은 시어버터로 소개됨",
+          "kind": "vendor-narrative",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "7.열대낙원(Tropical Paradise)으로의 초대",
+          "sourceCells": ["B54", "C56"]
+        },
+        {
+          "id": "coconut-tropical",
+          "label": "감각적 장면",
+          "value": "달콤한 코코넛과 포근한 시어버터를 열대 휴양지의 따뜻한 무드로 표현할 수 있는 제품",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "7.열대낙원(Tropical Paradise)으로의 초대",
+          "sourceCells": ["A2", "B31", "C68", "D70"]
+        }
+      ],
+      "blockedClaims": [
+        "피부 속 깊은 곳까지 수분을 밀어 넣는다는 표현",
+        "수분 증발을 완벽히 차단한다는 절대 효능",
+        "보습 지속시간 또는 향 지속시간의 확정 수치",
+        "아로마테라피·심리 안정 효능",
+        "입자가 모공보다 작아 깊숙이 침투한다는 표현"
+      ],
+      "sourceDocument": "3. 오리지널소스 코코넛 시어버터(coconut&shea butter)상세 조사 .xlsx",
+      "sourceTextCellCount": 318,
+      "embeddedMediaCount": 16
+    },
+    {
+      "id": "zingy-lime",
+      "productIds": ["82"],
+      "aliases": ["징기 라임", "라임 생기", "zingy lime", "라임 샤워젤", "40 real lime"],
+      "mainBenefit": "라임 껍질을 깔 때처럼 짜릿하고 신선한 시트러스 향",
+      "ingredients": ["라임", "라임 오일", "오렌지 껍질 오일"],
+      "targetCustomer": "아침이나 운동 후 짜릿하고 산뜻한 시트러스 샤워를 원하는 분",
+      "facts": [
+        {
+          "id": "lime-scent",
+          "label": "향의 특징",
+          "value": "레몬보다 날카롭고 쌉싸름한 뉘앙스가 섞인 생동감 있는 라임 향",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "1. 라임",
+          "sourceCells": ["B23", "B25"]
+        },
+        {
+          "id": "lime-cold-press",
+          "label": "추출 방식",
+          "value": "라임과 오렌지 껍질 오일을 열을 가하지 않고 눌러 얻는 냉압착 방식으로 소개됨",
+          "kind": "process",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "2. 오리지널소스 Zingy Lime 탄생 과정",
+          "sourceCells": ["B6", "C10"]
+        },
+        {
+          "id": "lime-slices",
+          "label": "원료 함량 표현",
+          "value": "패키지의 ‘40’은 라임 40개가 아니라 40개의 리얼 라임 조각을 뜻한다고 정리됨",
+          "kind": "numeric-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "2. 오리지널소스 Zingy Lime 탄생 과정",
+          "sourceCells": ["Z107", "Z109", "Z110"]
+        },
+        {
+          "id": "lime-occasion",
+          "label": "사용 상황",
+          "value": "무거운 아침을 깨우거나 운동 후 산뜻한 기분 전환이 필요한 순간에 어울리는 방향",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "바디워시 시장에서 라임(Lime)계열 바디워시 입지",
+          "sourceCells": ["C9", "C11"]
+        },
+        {
+          "id": "lime-unisex",
+          "label": "향의 인상",
+          "value": "꽃향보다 중성적이고 산뜻한 시트러스 향을 선호하는 사람에게 어울리는 방향",
+          "kind": "target",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "바디워시 시장에서 라임(Lime)계열 바디워시 입지",
+          "sourceCells": ["C11"]
+        }
+      ],
+      "blockedClaims": [
+        "항균·항염·피부 진정 효능",
+        "라임 40개가 통째로 들어갔다는 표현",
+        "국내 판매 순위·채널 상위권 주장",
+        "멕시코산과 페루산을 특정 비율로 섞었다는 미확인 배합",
+        "향 지속시간 또는 영양 보존을 보장하는 표현"
+      ],
+      "sourceDocument": "4. 오리지널 소스 징기 라임(ZINGY LIME)상세 조사.xlsx",
+      "sourceTextCellCount": 129,
+      "embeddedMediaCount": 11
+    },
+    {
+      "id": "rhubarb-raspberry",
+      "productIds": ["84"],
+      "aliases": ["루바브 라즈베리", "루바브&라즈베리", "rhubarb raspberry", "rhubarb & raspberry"],
+      "mainBenefit": "루바브와 라즈베리가 어우러진 새콤달콤한 프루티 향",
+      "ingredients": ["루바브 줄기 추출물", "라즈베리 과일 추출물", "4가지 에센셜 오일"],
+      "targetCustomer": "달콤함 속에 산뜻한 산미가 느껴지는 프루티 향을 선호하는 분",
+      "facts": [
+        {
+          "id": "rhubarb-raspberry-scent",
+          "label": "향의 특징",
+          "value": "루바브의 새콤한 뉘앙스와 라즈베리의 달콤한 과일 향을 함께 떠올리는 프루티 구성",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "1. 루바브 / 2. 라즈베리",
+          "sourceCells": ["1. 루바브!D105", "2. 라즈베리!D86"]
+        },
+        {
+          "id": "rhubarb-raspberry-four-oils",
+          "label": "성분 표현",
+          "value": "4가지 에센셜 오일 함유 제품으로 소개됨",
+          "kind": "ingredient-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "3. 오리지널 소스 루바브 & 라즈베리",
+          "sourceCells": ["B34", "B36", "B38"]
+        },
+        {
+          "id": "rhubarb-raspberry-origin-unknown",
+          "label": "원산지 공개 범위",
+          "value": "루바브와 라즈베리 추출물의 구체적인 원산지는 공식 공개되지 않았음",
+          "kind": "disclosure-limit",
+          "copyEligibility": "blocked",
+          "sourceSheet": "3. 오리지널 소스 루바브 & 라즈베리",
+          "sourceCells": ["B4", "B6", "C11", "C24"]
+        },
+        {
+          "id": "rhubarb-raspberry-oils-unknown",
+          "label": "성분 공개 범위",
+          "value": "4가지 에센셜 오일의 개별 명칭은 공식 공개되지 않았음",
+          "kind": "disclosure-limit",
+          "copyEligibility": "blocked",
+          "sourceSheet": "3. 오리지널 소스 루바브 & 라즈베리",
+          "sourceCells": ["B36", "B38"]
+        }
+      ],
+      "blockedClaims": [
+        "루바브 또는 라즈베리 추출물의 특정 국가 원산지",
+        "라즈베리 씨드·제라늄·로즈·로즈우드 등 4가지 오일의 추정 명칭",
+        "항산화·항염·혈당·심혈관·노화 억제 효능",
+        "피부 톤 개선·자외선 손상 복구 효능",
+        "식품 원료의 영양 수치를 샤워젤 효능처럼 사용하는 표현"
+      ],
+      "sourceDocument": "5. 오리지널 소스 루바브&라즈베리 상세 조사 .xlsx",
+      "sourceTextCellCount": 102,
+      "embeddedMediaCount": 3
+    }
+  ]
+}

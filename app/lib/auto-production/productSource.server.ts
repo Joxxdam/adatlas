@@ -15,6 +15,7 @@ import { directProductCandidate, directProductInfo } from "./directProduct.serve
 import { runCandidateSourceFallback } from "./sourceFallback";
 import { canonicalProductUrl, productFamilyKey } from "./productIdentity";
 import { verifyAutoProductionProductImages } from "./productImageValidation";
+import { AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT } from "./policy";
 
 function verifiedCandidate(candidate: AutoProductionProductCandidate): AutoProductionProductCandidate {
   const verification = verifyAutoProductionProductImages(candidate.productName, candidate.productInfo);
@@ -279,11 +280,12 @@ async function fromExactProductUrl(config: AutoProductionAdvertiserConfig, produ
 }
 
 async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
-  const batches = await Promise.allSettled(config.adminProductUrls.slice(0, config.productsPerRun).map((url) => fromExactProductUrl(config, url)));
+  const plannedUrls = config.adminProductUrls.slice(0, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT);
+  const batches = await Promise.allSettled(plannedUrls.map((url) => fromExactProductUrl(config, url)));
   const candidates: AutoProductionProductCandidate[] = [];
   const warnings: string[] = [];
   batches.forEach((batch, index) => {
-    const plannedUrl = config.adminProductUrls[index];
+    const plannedUrl = plannedUrls[index];
     if (batch.status === "rejected") {
       warnings.push(`${index + 1}번 예정 상품을 불러오지 못했습니다: ${batch.reason instanceof Error ? batch.reason.message : "상품 페이지 확인 실패"}`);
       return;
@@ -309,7 +311,7 @@ async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
 export async function loadAutoProductionCandidates(config: AutoProductionAdvertiserConfig) {
   const attempts: Array<() => Promise<{ candidates: AutoProductionProductCandidate[]; source: AutoProductionProductCandidate["source"]; warnings?: string[] }>> = [];
   // 화면에서 확정한 URL은 단순 fallback이 아니라 다음 예약 실행의 고정 상품 목록이다.
-  // 네 URL을 한 번에 수집해야 첫 번째 URL의 탐색 결과만 쓰는 과거 동작을 피할 수 있다.
+  // 저장한 URL을 최대 6개까지 한 번에 수집해야 첫 번째 URL의 탐색 결과만 쓰는 과거 동작을 피할 수 있다.
   if (config.adminProductUrls.length) {
     attempts.push(() => fromPlannedProductUrls(config));
   } else if (config.productVisibilityMode === "admin-only" || config.dataSource === "admin") {

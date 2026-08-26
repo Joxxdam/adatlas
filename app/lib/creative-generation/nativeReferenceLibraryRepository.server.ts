@@ -18,8 +18,8 @@ const maximumFilesPerUpload = 12;
 const supportedFormats = new Set(["jpeg", "png", "webp"]);
 const lockKey = Symbol.for("daywiz.native-reference-library-lock-v1");
 const lockState = globalThis as typeof globalThis & { [lockKey]?: Promise<unknown> };
-const managedManifestVersion = "native-creative-reference-library-v8-food-category-random";
-const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용합니다. 대카테고리는 패션·식품·화장품 세 그룹으로 유지하며 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품의 과일/농산물은 운영자가 지정한 하위 태그로 관리하며, 과일·농산물 상품은 이 태그가 있는 식품 레퍼런스만 사용합니다. 고기와 일반 식품은 상품 형태·구도 점수로 상위 후보를 다시 제한하지 않고 과일/농산물 태그 항목을 포함한 식품 전체 풀에서 중복 없이 무작위 선택합니다. 다른 상품군으로 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
+const managedManifestVersion = "native-creative-reference-library-v9-category-wide-random";
+const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 대카테고리는 패션·식품·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 같은 대카테고리에 등록된 전체 풀을 OCR 상태·상품 형태·슬롯 수·인물 포함 여부·호환 점수·최근 사용 여부로 다시 제한하지 않고 중복 없이 순수 무작위 선택합니다. 다른 대카테고리로 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
 
 function normalizeManifest(value: ManagedNativeReferenceManifest): ManagedNativeReferenceManifest {
   return {

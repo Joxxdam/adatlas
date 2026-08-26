@@ -108,7 +108,10 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
     return { item, score: -100, reasons: ["자연 식품 장면 미지원"] };
   }
   if (!profile.allowsHumanModel && item.photographyType === "human-model") return { item, score: -100, reasons: ["사람 모델 전용 구성"] };
-  if (profile.productCount === 1 && (item.productSlotCount || 1) > 1 && item.supportsMultipleProducts) {
+  // 화장품 패키지는 같은 단품을 여러 각도·크기로 반복하거나 제품과 사용
+  // 장면을 함께 배치해도 실제 판매 수량을 바꾸지 않는다. 복수 슬롯이라는
+  // 이유만으로 레퍼런스를 버리지 않고 생성 단계에서 동일 상품만 반복한다.
+  if (profile.categoryGroup !== "beauty" && profile.productCount === 1 && (item.productSlotCount || 1) > 1 && item.supportsMultipleProducts) {
     return { item, score: -100, reasons: ["복수 상품 전용 구성"] };
   }
 
@@ -146,13 +149,17 @@ export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(
   if (profile.categoryGroup === "food" && !profile.foodSubcategory) {
     return pickUniqueRandomItems(compatible, count, nextIndex);
   }
-  const topScore = compatible[0]?.score || minimumScore;
-  const topBand = compatible.filter((candidate) => candidate.score >= Math.max(minimumScore, topScore - 12));
-  const pool = topBand.length >= count ? topBand : compatible;
-  return pickDiverseCompatibleReferences(pool, count, nextIndex);
+  // 점수는 비호환 항목을 거르는 안전선으로만 쓴다. 통과 후 다시 상위 12점
+  // 밴드로 줄이면 bottle 같은 특정 태그만 반복되어, 같은 화장품 레퍼런스가
+  // 계속 선택된다. 전체 통과 풀을 섞은 뒤 문구·구도 다양성을 우선한다.
+  return pickDiverseCompatibleReferences(compatible, count, nextIndex);
 }
 
-export function defaultCompositionTypes(profile: Pick<ProductReferenceCompatibilityProfile, "packagedProduct" | "naturalFood" | "productCount">): NativeReferenceCompositionType[] {
+export function defaultCompositionTypes(profile: Pick<ProductReferenceCompatibilityProfile, "categoryGroup" | "packagedProduct" | "naturalFood" | "productCount">): NativeReferenceCompositionType[] {
   const base: NativeReferenceCompositionType[] = profile.naturalFood ? [...safeNaturalCompositions] : profile.packagedProduct ? [...safePackagedCompositions] : ["product-packshot"];
-  return profile.productCount > 1 ? [...new Set([...base, "product-lineup" as const])] : base.filter((item) => item !== "product-lineup");
+  const categoryCompatible = profile.categoryGroup === "beauty" ? [...base, "human-use" as const, "comparison" as const] : base;
+  // 화장품 단품도 동일 패키지 반복 배치가 가능하므로 product-lineup을
+  // 유지한다. 실제 세트·수량으로 해석하지 않는 것은 생성 프롬프트가 맡는다.
+  if (profile.categoryGroup === "beauty") return [...new Set(categoryCompatible)];
+  return profile.productCount > 1 ? [...new Set([...categoryCompatible, "product-lineup" as const])] : categoryCompatible.filter((item) => item !== "product-lineup");
 }

@@ -1,6 +1,6 @@
-import type { GenerationJob, GenerationResult } from "./types";
+import type { GenerationJob, GenerationResult, PlacementBox } from "./types";
 
-export type ProductRenderingPolicy = "natural-meat-reference" | "ai-packaged-product-reference" | "standard-reference";
+export type ProductRenderingPolicy = "natural-meat-reference" | "protected-packaged-product" | "standard-reference";
 
 export function resolveProductRenderingPolicy(job: GenerationJob): ProductRenderingPolicy {
   const profile = job.creativePlan?.categoryCreativeProfile?.category;
@@ -20,9 +20,35 @@ export function resolveProductRenderingPolicy(job: GenerationJob): ProductRender
   const beautyOrHealth = override === "beauty" || ["beauty_cosmetics", "personal_care", "health"].includes(profile || "");
   const unmistakablyPackaged = /화장품|스킨케어|바디워시|샤워젤|샴푸|클렌저|세럼|앰플|크림|로션|에센스|향수|건강기능식품|건기식|영양제|비타민|유산균|홍삼|우유|음료|주스|커피|녹차|홍차|말차|보이차|유자차|생강차|차음료|티백|소스|보틀|캔|파우치|튜브|단지|bottle|can\b|pouch|tube|jar|milk|drink|juice|tea\b/i.test(packageText);
   if (beautyOrHealth || unmistakablyPackaged) {
-    return "ai-packaged-product-reference";
+    return "protected-packaged-product";
   }
   return "standard-reference";
+}
+
+function overlapArea(left: PlacementBox, right: PlacementBox) {
+  const width = Math.max(0, Math.min(left.x + left.width, right.x + right.width) - Math.max(left.x, right.x));
+  const height = Math.max(0, Math.min(left.y + left.height, right.y + right.height) - Math.max(left.y, right.y));
+  return width * height;
+}
+
+/** 레퍼런스의 OCR 문구 상자를 피하면서 포장 상품 원본층을 놓을 안정 영역입니다. */
+export function resolveProtectedProductPlacement(result: GenerationResult): PlacementBox {
+  const shape = result.nativeCreative?.adReference?.productSlotShape;
+  const size = shape === "wide" ? { width: 600, height: 430 } : shape === "square" ? { width: 520, height: 520 } : { width: 430, height: 650 };
+  const candidates: PlacementBox[] = [
+    { x: 690, y: 360, ...size },
+    { x: 80, y: 360, ...size },
+    { x: Math.round((1200 - size.width) / 2), y: 470, ...size },
+  ].map((box) => ({ ...box, x: Math.max(40, Math.min(1160 - box.width, box.x)), y: Math.max(120, Math.min(1160 - box.height, box.y)) }));
+  const copyBoxes = (result.referenceAdaptedCopyPlan?.copySlots || [])
+    .map((slot) => slot.box)
+    .filter((box): box is { x: number; y: number; width: number; height: number } => Boolean(box))
+    .map((box) => ({ x: box.x * 1200, y: box.y * 1200, width: box.width * 1200, height: box.height * 1200 }));
+  return candidates.reduce((best, candidate) => {
+    const score = copyBoxes.reduce((sum, box) => sum + overlapArea(candidate, box), 0);
+    const bestScore = copyBoxes.reduce((sum, box) => sum + overlapArea(best, box), 0);
+    return score < bestScore ? candidate : best;
+  }, candidates[0]);
 }
 
 export function productRenderingPromptContract(job: GenerationJob, result: GenerationResult) {
@@ -42,14 +68,16 @@ export function productRenderingPromptContract(job: GenerationJob, result: Gener
 - Use the source photos as visual evidence, not as pixels to paste: recreate the product coherently inside the selected advertisement layout and never crop, screen-capture, cut out or locally composite the seller photo.
 - If the source evidence is insufficient for a convincing close-up, use a slightly wider credible cooking or serving composition instead of hallucinating macro texture.`;
   }
-  if (policy === "ai-packaged-product-reference") {
-    return `PACKAGED PRODUCT POLICY — FULL AI REFERENCE INTEGRATION
-- The original URL product images are authoritative visual references only. Never extract, cut out or locally composite their pixels into the result.
-- Recreate the same container, cap, package geometry, dominant colors, label hierarchy, logo placement, printed volume and verified sales-unit count as part of one coherent AI-generated scene.
-- For a multi-variant lineup, identify every visible authoritative package separately and preserve each package's own color, cap, logo position, variant marker and printed volume. Never collapse the lineup into duplicated generic bottles or invent a sixth flavor/variant.
-- Keep the hero package large and unobstructed enough for the real brand mark and label hierarchy to remain recognizable on mobile. If tiny secondary label text cannot be reproduced reliably, preserve its visual hierarchy without inventing readable claims or random glyphs.
-- Match scene perspective, contact, reflections, surrounding light, water, foam, ingredients and hands naturally. The package must belong to the photographed environment and must never look like a floating or pasted cutout.
-- Do not synthesize a substitute brand, flavor, variant or package count. If identity fidelity is insufficient, regenerate the complete AI raster instead of restoring a local product layer.`;
+  if (policy === "protected-packaged-product") {
+    const placement = resolveProtectedProductPlacement(result);
+    return `PACKAGED PRODUCT POLICY — IMMUTABLE ORIGINAL PRODUCT RASTER
+- Cosmetics and every labeled bottle, can, pouch, tube, jar or box use the authoritative current-product raster as an immutable identity layer. Never redraw, relabel, recolor or synthesize a substitute package.
+- Preserve the source container silhouette, cap, package geometry, dominant colors, physical label, logo, printed volume and verified sales-unit count. The physical package pixels are restored after AI scene/copy editing, so reserve the assigned product region and never place copy over it.
+- For a multi-variant lineup, use only separately verified current-product rasters. Never duplicate one generic bottle into invented variants or imply a larger sales unit than ProductTruth.
+- Generate or edit the surrounding scene, contact surface, water, foam, ingredients, hands, reflections and shadows around the protected product region. Do not paint over the package to make the lighting match.
+- Keep at least one protected hero package large and unobstructed enough for its real label hierarchy to remain recognizable on mobile.
+- Reserve this exact 1200-grid product region for the immutable layer: x=${placement.x}, y=${placement.y}, width=${placement.width}, height=${placement.height}. Keep advertising copy and faces outside it.
+- A clean protected composite is intentional identity preservation, not permission to add a detached stock-product sticker. Ground it with coherent scale, occlusion-free placement and surrounding scene light while leaving the product RGB pixels unchanged.`;
   }
   return `STANDARD PRODUCT REFERENCE POLICY
 - Preserve the authoritative URL product's type, silhouette, proportions, package structure, dominant colors, count and recognizable details while integrating it naturally into the scene.`;

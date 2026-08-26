@@ -339,7 +339,15 @@ function buildImageAssets(input: { product: ProductInfoForPrompt; productImagePa
   };
 }
 
-function fact(key: string, label: string, value: string | undefined, verification: FactVerification, source: ProductFact["source"], sourceUrl?: string): ProductFact | null {
+function fact(
+  key: string,
+  label: string,
+  value: string | undefined,
+  verification: FactVerification,
+  source: ProductFact["source"],
+  sourceUrl?: string,
+  overrides: Partial<Pick<ProductFact, "copyEligibility" | "evidenceType" | "sourceDocument" | "sourceSheet" | "sourceCells">> = {}
+): ProductFact | null {
   const normalized = String(value || "")
     .replace(/\s+/g, " ")
     .trim();
@@ -369,9 +377,23 @@ function fact(key: string, label: string, value: string | undefined, verificatio
     numericTokens: extractNumericTokens(normalized),
     strength,
     specificity,
-    evidenceType,
-    copyEligibility,
+    evidenceType: overrides.evidenceType || evidenceType,
+    copyEligibility: overrides.copyEligibility || copyEligibility,
+    sourceDocument: overrides.sourceDocument,
+    sourceSheet: overrides.sourceSheet,
+    sourceCells: overrides.sourceCells,
   };
+}
+
+function vendorResearchEvidenceType(kind: string): ProductEvidenceType {
+  if (kind === "origin" || kind === "vendor-narrative") return "origin";
+  if (kind === "usage") return "usage";
+  if (kind === "target") return "target";
+  if (kind === "certification") return "certification";
+  if (kind === "ingredient-proof") return "ingredient";
+  if (kind === "numeric-proof") return "numeric";
+  if (kind === "sensory" || kind === "texture" || kind === "process") return "usp";
+  return "other";
 }
 
 function freeTextClaims(product: ProductInfoForPrompt) {
@@ -387,7 +409,20 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
   const verification: FactVerification = landingSource ? "source-backed" : "user-provided";
   const source: ProductFact["source"] = landingSource ? "landing-page" : "user-input";
   const titleClaims = titleBackedClaims(normalizedTruth.rawProductTitle);
+  const vendorFacts = (product.vendorResearch?.facts || [])
+    .filter((item) => item.copyEligibility !== "blocked")
+    .map((item) =>
+      fact(`vendor-${item.id}`, item.label, item.value, "user-provided", "vendor-research", undefined, {
+        copyEligibility: item.copyEligibility,
+        evidenceType: vendorResearchEvidenceType(item.kind),
+        sourceDocument: product.vendorResearch?.sourceDocument,
+        sourceSheet: item.sourceSheet,
+        sourceCells: item.sourceCells,
+      })
+    )
+    .filter((item): item is ProductFact => Boolean(item));
   const candidateFacts = [
+    ...vendorFacts,
     fact("base-product-name", "정제 상품명", normalizedTruth.baseProductName || normalizedTruth.cleanProductName, verification, source, product.landingUrl),
     fact("verified-descriptor", "확인된 상품 표현", normalizedTruth.verifiedDescriptor, verification, source, product.landingUrl),
     fact("brand-name", "브랜드", product.brandName || product.advertiserName, verification, source, product.landingUrl),
@@ -414,7 +449,13 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     ...(product.creativeContext?.reviewInsightSummaries || []).filter((review) => !isUnsafeProductCreativeSignal(review)).map((review, index) => fact(`review-insight-${index + 1}`, "후기 인사이트", review, verification, source, product.landingUrl)),
     ...contentNotes.filter((note) => !note.prohibited && ["PRODUCT_USP", "REVIEW_INSIGHT", "TARGET_AUDIENCE", "PROMOTION"].includes(note.type)).map((note, index) => fact(note.type === "REVIEW_INSIGHT" ? `review-note-${index + 1}` : `content-note-${note.type.toLowerCase()}-${index + 1}`, note.title || note.type, note.content, "user-provided", "user-input")),
   ].filter((item): item is ProductFact => Boolean(item));
-  const candidates = candidateFacts;
+  const seenFactValues = new Set<string>();
+  const candidates = candidateFacts.filter((item) => {
+    const key = comparableSignal(item.value);
+    if (!key || seenFactValues.has(key)) return false;
+    seenFactValues.add(key);
+    return true;
+  });
   const claims = freeTextClaims(product);
   const unverifiedClaims = claims.filter((claim) => !landingSource && extractNumericTokens(claim).length > 0);
   const verifiedClaims = claims.filter((claim) => !unverifiedClaims.includes(claim));
@@ -445,7 +486,7 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     verifiedClaims,
     unverifiedClaims,
     allowedNumericTokens,
-    blockedClaimPatterns: ["판매량", "매출", "재고", "마진", "roas", "회원 수", "구매 수", "의학적으로", "100% 효과", ...contentNotes.filter((note) => (note.prohibited && note.type !== "AVOIDED_HOOK") || note.type === "PROHIBITED_EXPRESSION").map((note) => note.content), ...unverifiedClaims],
+    blockedClaimPatterns: ["판매량", "매출", "재고", "마진", "roas", "회원 수", "구매 수", "의학적으로", "100% 효과", ...(product.vendorResearch?.blockedClaims || []), ...contentNotes.filter((note) => (note.prohibited && note.type !== "AVOIDED_HOOK") || note.type === "PROHIBITED_EXPRESSION").map((note) => note.content), ...unverifiedClaims],
     imageAssets: images.imageAssets,
     referenceImages: images.referenceImages,
     imagePaths,

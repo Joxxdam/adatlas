@@ -18,8 +18,11 @@ export type ProductFact = {
   label: string;
   value: string;
   verification: FactVerification;
-  source: "landing-page" | "structured-product" | "user-input" | "derived";
+  source: "landing-page" | "structured-product" | "vendor-research" | "user-input" | "derived";
   sourceUrl?: string;
+  sourceDocument?: string;
+  sourceSheet?: string;
+  sourceCells?: string[];
   usableInCopy: boolean;
   numericTokens: string[];
   strength?: number;

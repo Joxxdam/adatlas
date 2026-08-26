@@ -12,6 +12,10 @@ test("부정 후기와 상세페이지 UI 문구는 광고용 상품 사실이 �
   assert.equal(isUnsafeProductCreativeSignal("제조사: 경상남도 거창군 거창읍 개화2길 121-72"), true);
   assert.equal(isUnsafeProductCreativeSignal("회원가입이 완료되면 포인트 적립"), true);
   assert.equal(isUnsafeProductCreativeSignal("상품 상세페이지에서 확인된 정보를 비교하는 고객"), true);
+  assert.equal(isUnsafeProductCreativeSignal("2026-08-25 13:42:09"), true);
+  assert.equal(isUnsafeProductCreativeSignal("작성일시: 2026.08.25 13:42"), true);
+  assert.equal(isUnsafeProductCreativeSignal("구매자: min***"), true);
+  assert.equal(isUnsafeProductCreativeSignal("20일 숙성한 샤워젤"), false);
 });
 
 test("ProductTruth는 모든 입력 경로에서 후기·UI 노이즈를 차단한다", () => {
@@ -23,15 +27,15 @@ test("ProductTruth는 모든 입력 경로에서 후기·UI 노이즈를 차단�
       landingUrl: "https://example.com/products/mint",
       mainBenefit: "시원함 조차 없습니다",
       targetCustomer: "사용 후 실망했습니다",
-      extractedDescription: "상세정보 탭 메뉴 · 민트 쿨링 사용감",
-      verifiedBenefits: ["시원함 조차 없습니다", "민트 쿨링 사용감"],
+      extractedDescription: "상세정보 탭 메뉴 · 민트 쿨링 사용감 · 2026-08-25 13:42:09",
+      verifiedBenefits: ["시원함 조차 없습니다", "민트 쿨링 사용감", "작성일시: 2026.08.25 13:42"],
       ingredients: ["리뷰 작성자", "민트 추출물"],
       reviewSources: [{ keySentence: "효과가 없어요", sourceContext: "구매후기" }],
       creativeContext: { reviewInsightSummaries: ["재구매 안 합니다", "산뜻한 사용감"] },
     },
   });
   const copyFacts = truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.value).join(" ");
-  assert.doesNotMatch(copyFacts, /시원함 조차 없습니다|실망했습니다|리뷰 작성자|효과가 없어요|재구매 안 합니다/);
+  assert.doesNotMatch(copyFacts, /시원함 조차 없습니다|실망했습니다|리뷰 작성자|효과가 없어요|재구매 안 합니다|2026-08-25|작성일시/);
   assert.match(copyFacts, /민트 쿨링 사용감/);
   assert.deepEqual(truth.normalized.ingredients, ["민트 추출물"]);
 });

@@ -1571,6 +1571,8 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       reviewSources: replaceExtractedFields ? extracted.reviewSources || [] : current.reviewSources?.length ? current.reviewSources : extracted.reviewSources || [],
       verifiedBenefits: replaceExtractedFields ? extracted.verifiedBenefits || [] : current.verifiedBenefits?.length ? current.verifiedBenefits : extracted.verifiedBenefits || [],
       ingredients: replaceExtractedFields ? extracted.ingredients || [] : current.ingredients?.length ? current.ingredients : extracted.ingredients || [],
+      targetCustomer: replaceExtractedFields ? extracted.targetCustomer || "" : current.targetCustomer || extracted.targetCustomer || "",
+      vendorResearch: replaceExtractedFields ? extracted.vendorResearch : current.vendorResearch || extracted.vendorResearch,
     };
   }
 

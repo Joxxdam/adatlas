@@ -4,7 +4,7 @@ import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerati
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
 import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v10-no-generated-standalone-logo";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v12-human-and-repeatable-package-slots";
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -28,6 +28,7 @@ function humanReferenceIdentityContract() {
   return `HUMAN REFERENCE IDENTITY POLICY
 - When the selected advertisement reference contains a person, preserve only the person's compositional function: approximate position, body pose, gaze direction, action, framing, lighting and product interaction.
 - Replace that source person with a clearly different fictional adult. Change facial structure, eyes, nose, mouth, hairstyle, hair color or texture, wardrobe details and accessories together; a minor face retouch is not enough.
+- Remove the source person's recognizable identity completely before rebuilding the person. Never retain the original face and merely retouch, restyle or recolor it.
 - Never reproduce, identify or preserve the source person's recognizable face or biometric likeness. The result should feel like the same art direction photographed with a different model.
 - Keep anatomy, hands, product grip, occlusion, perspective and contact physically natural. Do not change the macro layout merely to change identity.
 - When the source reference has no person, do not add one unless the inherited composition and verified usage story clearly require it.`;
@@ -50,15 +51,16 @@ export function buildNativeFinalCreativePrompt(job: GenerationJob, result: Gener
   const humanContract = humanReferenceIdentityContract();
   const exactCopy = [`MAIN COPY: ${result.hookPlan.headline}`, result.hookPlan.body ? `SUB COPY: ${result.hookPlan.body}` : "", result.hookPlan.proof ? `PROOF: ${result.hookPlan.proof}` : "", result.hookPlan.offer ? `OFFER: ${result.hookPlan.offer}` : "", result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : ""].filter(Boolean).join("\n");
 
+  const protectedPackage = resolveProductRenderingPolicy(job) === "protected-packaged-product";
   return `Use the image generation skill to create ONE FINAL, COMPLETE, READY-TO-RUN Korean square performance advertisement.
 
 NON-NEGOTIABLE OUTPUT
 - Save exactly one raster image to: ${outputPath}
 - Square 1:1 composition for a final 1200 x 1200 export.
-- The generated raster itself must already contain the real product depiction, hook-specific scene, exact Korean advertising copy, typography, graphic emphasis and verified offer/CTA.
-- This is NOT a background plate. Do not reserve an empty product slot or copy-safe placeholder for later compositing.
-- No template renderer, SVG text layer, canvas text layer, product cutout or post-render copy panel will be added after generation.
-- URL product images are authoritative AI references only. No source-product pixels will be extracted, cut out, pasted or restored after generation.
+- The generated raster itself must contain the hook-specific scene, exact Korean advertising copy, typography, graphic emphasis and verified offer/CTA.
+- ${protectedPackage ? "The labeled package is the sole exception: reserve its assigned region for the immutable current-product raster restored after scene/copy editing." : "This is NOT a background plate. Do not reserve an empty product slot or copy-safe placeholder for later compositing."}
+- No template renderer, SVG text layer, canvas text layer or post-render copy panel will be added after generation.${protectedPackage ? " Only the verified physical product raster is identity-locked." : ""}
+- ${protectedPackage ? "Never redraw the physical package. URL product pixels are preserved only inside the assigned package layer." : "URL product images are authoritative AI references only. No source-product pixels will be extracted, cut out, pasted or restored after generation."}
 
 AUTHORITATIVE PRODUCT REFERENCE
 - The FIRST attached product-page image is the authoritative product identity and sales unit.
@@ -187,6 +189,11 @@ TASK
   }
 
   if (stage === "product-replacement") {
+    const protectedPackageTask = productPolicy === "protected-packaged-product"
+      ? `- Remove the source advertiser's product completely and reconstruct the surrounding scene inside the reserved product region. Do NOT draw, approximate or relabel the target package. The immutable current-product raster is composited into that exact region after copy editing.
+- Keep faces, hands, text and important props outside the reserved product region. Build coherent contact surface, surrounding light, water/foam/ingredients and shadow space around it without painting a substitute bottle or package.`
+      : `- Change the source product instances into ${productName} using the attached product references.
+- Preserve exact package geometry, material, dominant color, cap/container shape, label hierarchy, sales-unit count and recognizable product details.`;
     return `STAGE 2 OF 4 — REPLACE THE PRODUCT WITH AUTHORITATIVE PRODUCT REFERENCES
 ${shared}
 SOURCE ORDER
@@ -194,11 +201,13 @@ SOURCE ORDER
 - FOLLOWING attachments: authoritative product-page images. They define the real sales unit and product identity.
 
 TASK
-- Change the source product instances into ${productName} using the attached product references. When a source person is visible, regenerate that person as the clearly different fictional adult required by HUMAN REFERENCE IDENTITY POLICY in the same compositional role.
-- Preserve exact package geometry, material, dominant color, cap/container shape, label hierarchy, sales-unit count and recognizable product details. Preserve a real logo only in its physically printed package location; do not reproduce it as a separate logo elsewhere on the canvas.
+${protectedPackageTask}
+- When a source person is visible, regenerate that person as the clearly different fictional adult required by HUMAN REFERENCE IDENTITY POLICY in the same compositional role.
+- Preserve a real logo only in its physically printed package location; do not reproduce it as a separate logo elsewhere on the canvas.
 - Match the original reference product positions, count, perspective, scale, shadows, reflections, contact, depth and lighting so the replacement belongs in exactly the same design.
 - Treat the entire region outside the old product and visible source-person regions as locked pixels: do not change the background, typography, source wording, price, badges, colors, graphic shapes, borders, spacing or layout in this stage.
 - If the reference repeats one product visually, repeat the same verified target product cleanly without implying a bundle or changing the verified sales unit.
+- A multi-slot beauty reference may show the same verified package several times at different scales, angles or crops, or reserve non-product slots for foam, texture, verified ingredients or the regenerated use moment. It must never invent another scent, variant, package design or sales quantity.
 - Do not invent variants, flavors, package counts or labels. Do not add new marketing copy, price or offer yet.
 - LOCKED REGIONS: every pixel outside the old product region(s) and any visible source-person region(s), including all original copy, typography, background, unrelated props, graphic shapes, badges and spacing.
 - EDITABLE REGIONS: the old product region(s), plus visible source-person region(s) solely for replacing identity while preserving pose, action, scale, lighting and product interaction.
@@ -207,8 +216,8 @@ TASK
   }
 
   if (stage === "copy-replacement") {
-    const packagedCopyLock = productPolicy === "ai-packaged-product-reference"
-      ? "- Preserve the AI-integrated package created in stage 2. Do not repaint, recolor, move, cover or relabel it while changing copy; if it is damaged, regenerate this complete raster from the authoritative product references."
+    const packagedCopyLock = productPolicy === "protected-packaged-product"
+      ? "- Keep the reserved immutable-product region free of copy, badges, faces and props. Do not draw a package there; the verified current-product raster is restored after this stage."
       : "- Never regenerate, deform, recolor, move or relabel the target product in this stage.";
     return `STAGE 3 OF 4 — REPLACE ALL COPY WITH PRODUCTTRUTH-BACKED KOREAN COPY
 ${shared}
@@ -278,13 +287,14 @@ TASK
 - Inspect the complete canvas beyond those known boxes. Any newly created calligraphic brand/product name, standalone wordmark, initials, monogram, emblem, crest, seal, certification badge, signature or stamp outside the physical package is a critical error. Remove the complete invented mark and reconstruct only its immediate background; never replace it with another text mark.
 - Remove any hallucinated source brand, invented standalone target-brand logo, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price. Any number not present in AUTHORITATIVE COPY is a critical error.
 - Do not create a new unrelated concept and do not patch with a local overlay.
-- Repair product identity inside this complete AI raster. No product cutout or protected local layer will be restored afterward.
+- ${productPolicy === "protected-packaged-product" ? "Do not repaint the protected package. Repair only its surrounding scene and copy; the verified current-product raster is restored again after this repair." : "Repair product identity inside this complete AI raster. No protected local layer will be restored afterward."}
 ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass even when no prior validator feedback is supplied."}
 `;
 }
 
 export function buildNativeValidationPrompt(job: GenerationJob, result: GenerationResult) {
   const productContract = productRenderingPromptContract(job, result);
+  const protectedPackage = resolveProductRenderingPolicy(job) === "protected-packaged-product";
   const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
   const copySlots = result.referenceAdaptedCopyPlan?.copySlots || [];
   const sourceBrandRemovalSlots = copySlots
@@ -310,7 +320,7 @@ Check fidelity to the reference layout, product/package identity, exact Korean c
 If the selected advertisement reference contains a person, compare the reference and final advertisement: the compositional role, approximate pose and action should remain, but the final person must be a clearly different fictional adult with no recognizable source-person facial identity. For meat, compare directly with the authoritative seller photos: a generic or thicker substituted cut, altered width-to-thickness ratio, exaggerated marbling grade/density, repeated or mirrored vein map, spiderweb/worm-like fat, smooth plastic/waxy surface, neon color, impossible fibers or uniformly lacquered gloss is a critical foodAppetiteAppeal and productIdentity failure.
 
 ${productContract}
-For every packaged product—including cosmetics, wellness goods, drinks, milk, bottles, cans, pouches and boxes—compare each visible package separately. Any duplicated generic package, invented variant, changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure and requires a full-raster AI revision. At least one dominant package must remain recognizable at mobile size. A pasted product cutout is also a critical failure. For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;
+For every packaged product—including cosmetics, wellness goods, drinks, milk, bottles, cans, pouches and boxes—compare each visible package separately. Any duplicated generic package, invented variant, changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure. At least one dominant package must remain recognizable at mobile size. ${protectedPackage ? "The verified current-product raster inside its assigned region is required and must not be rejected merely because it is a protected composite; reject only visible halos, floating placement, wrong scale, obstruction or a duplicated AI package outside that region." : "A detached product cutout is also a critical failure."} For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;
 }
 
 export function buildNativeGroupValidationPrompt(job: GenerationJob) {

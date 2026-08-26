@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { nextScheduledAt } from "./schedule";
-import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "./policy";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "./policy";
 import type { AutoProductionAdvertiserConfig, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types";
 
@@ -79,7 +79,7 @@ export function normalizeAdvertiserConfig(input: Partial<AutoProductionAdvertise
     excludedProductIds: textList(input.excludedProductIds ?? current?.excludedProductIds),
     excludedCategories: textList(input.excludedCategories ?? current?.excludedCategories),
     requiredProductIds: textList(input.requiredProductIds ?? current?.requiredProductIds),
-    adminProductUrls: textList(input.adminProductUrls ?? current?.adminProductUrls),
+    adminProductUrls: textList(input.adminProductUrls ?? current?.adminProductUrls, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT),
     productVisibilityMode: input.productVisibilityMode || current?.productVisibilityMode || "site-visible-only",
     selectionPriorities: priorities.length ? Array.from(new Set(priorities)) : [...autoProductionRoles],
     adObjective: input.adObjective || current?.adObjective || "purchase",

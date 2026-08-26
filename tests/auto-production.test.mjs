@@ -12,7 +12,7 @@ import { runCandidateSourceFallback } from "../app/lib/auto-production/sourceFal
 import { createAutoProductionTaskId, normalizeAutoProductionTaskIds } from "../app/lib/auto-production/taskIdentity.ts";
 import { candidateIdentityKeys, normalizedProductFamilyName, productFamilyKey } from "../app/lib/auto-production/productIdentity.ts";
 import { verifyAutoProductionProductImages } from "../app/lib/auto-production/productImageValidation.ts";
-import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "../app/lib/auto-production/policy.ts";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL, confirmedAutoProductionProductCount, minimumDailyImageCapacity } from "../app/lib/auto-production/policy.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -214,11 +214,11 @@ test("자동제작은 관리 도구 경로로 분리되고 기존 경로는 redi
   assert.match(adminPage, /AutoProductionWorkspace/);
 });
 
-test("기본 광고주 3곳은 매일 자정, 상품 4개 × 광고 6장으로 설정된다", async () => {
+test("기본 광고주 4곳은 매일 자정, 자동 후보 상품 4개 × 광고 6장으로 설정된다", async () => {
   const seeds = JSON.parse(await read("data/auto-production/advertiser-seed.json"));
   assert.deepEqual(
     seeds.map((item) => item.advertiserName),
-    ["국대한우", "대한한우", "힘내라농가"]
+    ["국대한우", "대한한우", "힘내라농가", "오리지널소스"]
   );
   for (const item of seeds) {
     assert.equal(item.scheduleTime, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME);
@@ -227,6 +227,7 @@ test("기본 광고주 3곳은 매일 자정, 상품 4개 × 광고 6장으로 �
     assert.equal(item.creativesPerProduct, AUTO_PRODUCTION_CREATIVES_PER_PRODUCT);
     assert.equal(item.maxImagesPerRun, AUTO_PRODUCTION_IMAGES_PER_MALL);
   }
+  assert.equal(seeds.find((item) => item.advertiserName === "오리지널소스")?.enabled, false);
 });
 
 test("동일 상품군의 용량·수량·옵션 변형은 실행당 한 번만 선정된다", () => {
@@ -419,8 +420,11 @@ test("핫리로드는 구형 스케줄러를 폐기하고 영속 순차 대기�
 });
 
 test("16. 하루 기본 용량은 활성 3개 몰의 4×6, 총 72장이며 추가 제작과 분리된다", async () => {
-  const advertisers = [config({ advertiserId: "a" }), config({ advertiserId: "b" }), config({ advertiserId: "c" })];
+  const plannedUrls = Array.from({ length: 4 }, (_, index) => `https://example.com/products/${index + 1}`);
+  const advertisers = [config({ advertiserId: "a", adminProductUrls: plannedUrls }), config({ advertiserId: "b", adminProductUrls: plannedUrls }), config({ advertiserId: "c", adminProductUrls: plannedUrls })];
   assert.equal(plannedImageCount(advertisers), 72);
+  assert.equal(confirmedAutoProductionProductCount(config({ adminProductUrls: [] })), 0);
+  assert.equal(confirmedAutoProductionProductCount(config({ adminProductUrls: plannedUrls })), 4);
   assert.equal(minimumDailyImageCapacity(advertisers), 72);
   const repository = await read("app/lib/auto-production/productionRepository.server.ts");
   assert.match(repository, /automaticExpectedImages \?\? run\.expectedImages/);
@@ -558,7 +562,7 @@ test("27. 공개 자동제작 응답은 원본 분석 후보와 로컬 비공개
 
 test("28. UI는 날짜별 실행 내역과 자동제작 이미지를 한 화면에서 보여준다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
-  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "몰별 다음 제작 예정 상품", "이 4개로 예정상품 확정", "자동제작 설정", "최근 자동 제작 결과", "어제", "최근 7일", "기간 선택", "전체 {productionRun.completedImages}장 ZIP 다운로드", "상품 {downloadableCount}장 ZIP", "다운로드"]) {
+  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "몰별 다음 제작 예정 상품", "예정상품 확정", "자동제작 설정", "최근 자동 제작 결과", "어제", "최근 7일", "기간 선택", "전체 {productionRun.completedImages}장 ZIP 다운로드", "상품 {downloadableCount}장 ZIP", "다운로드"]) {
     assert.match(workspace, new RegExp(label));
   }
   assert.match(workspace, /settingsPanel/);
@@ -600,6 +604,9 @@ test("30. 자정 예약은 모든 몰을 먼저 저장하고 기존 작업이 �
   assert.doesNotMatch(scheduler.slice(scheduler.indexOf("export async function tickAutoProductionScheduler"), scheduler.indexOf("export async function runAutoProductionNow")), /slice\(0, slots\.available\)/);
   assert.doesNotMatch(scheduler, /availableAdvertiserSlots/);
   assert.match(scheduler, /for \(const config of due\)/);
+  assert.match(scheduler, /configs\.filter\(hasConfirmedProductPlan\)/);
+  assert.match(scheduler, /config\.enabled && hasConfirmedProductPlan\(config\)/);
+  assert.match(scheduler, /예정 상품 URL이 확정되지 않아 자동제작을 건너뛰었습니다/);
   assert.match(scheduler, /예약 후 광고주 자동제작 설정이 비활성화되어 건너뛰었습니다/);
   assert.match(runner, /if \(run\.status !== "scheduled"\) return run/);
   assert.match(runner, /startedAt: now\.toISOString\(\)/);
@@ -617,6 +624,10 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(workspace, /plannedUrlDrafts/);
   assert.match(workspace, /adminProductUrls: urls/);
   assert.match(workspace, /저장하고 지금 제작/);
+  assert.match(workspace, /확정 목록이 없는 몰은 그날 제작하지 않습니다/);
+  assert.match(workspace, /후보 찾기와 화면 미리보기만으로는 예약되지 않습니다/);
+  assert.match(workspace, /수기 URL을 1~6개 저장한 몰만/);
+  assert.match(workspace, /AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
   assert.doesNotMatch(workspace, /상품 URL 직접 제작/);
   assert.match(workspace, /result\.imageUrl/);
   assert.match(route, /body\.productUrl/);
@@ -624,7 +635,10 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(route, /runAutoProductionForProduct/);
   assert.match(runner, /createNativeGenerationJob/);
   assert.match(runner, /config\.adminProductUrls\.length/);
+  assert.match(runner, /plannedRunQuota/);
+  assert.match(runner, /AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
   assert.match(source, /fromPlannedProductUrls/);
+  assert.match(source, /slice\(0, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT\)/);
   assert.match(source, /자동제작 화면에서 확정한 다음 제작 예정 상품 URL/);
   assert.match(source, /fromExactProductUrl/);
   assert.match(source, /extractProduct/);
@@ -637,7 +651,19 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(packaging, /Boolean\(result\.nativeCreative\?\.finalPath\)/);
 });
 
-test("32. 자동제작 실행 내역은 중복 안내 문구와 레거시 ID에도 고유한 React key를 사용한다", async () => {
+test("32. 수기 예정상품은 1~6개만 저장하고 입력한 수만큼 제작한다", async () => {
+  const [policy, configRepository, scheduler] = await Promise.all([
+    read("app/lib/auto-production/policy.ts"),
+    read("app/lib/auto-production/advertiserConfig.server.ts"),
+    read("app/lib/auto-production/scheduler.server.ts"),
+  ]);
+  assert.equal(AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, 6);
+  assert.match(policy, /AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT = 6/);
+  assert.match(configRepository, /textList\(input\.adminProductUrls \?\? current\?\.adminProductUrls, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT\)/);
+  assert.match(scheduler, /confirmedAutoProductionProductCount\(config\) > 0/);
+});
+
+test("33. 자동제작 실행 내역은 중복 안내 문구와 레거시 ID에도 고유한 React key를 사용한다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
   assert.match(workspace, /key=\{`\$\{productionRun\.id\}:warning:\$\{warningIndex\}`\}/);
   assert.match(workspace, /key=\{`\$\{productionRun\.id\}:task:\$\{task\.id\}:\$\{taskIndex\}`\}/);

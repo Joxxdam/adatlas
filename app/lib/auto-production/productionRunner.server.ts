@@ -8,7 +8,7 @@ import type { GenerationJob, HookMessageCode } from "../creative-generation/type
 import { autoProductionAdvertiserRepository } from "./advertiserConfig.server";
 import { recentTasks } from "./duplicateGuard";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "./hookSelector";
-import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "./policy";
+import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT } from "./policy";
 import { loadAutoProductionCandidates } from "./productSource.server";
 import { selectAutoProductionCandidates } from "./productSelector";
 import { autoProductionRepository } from "./productionRepository.server";
@@ -123,7 +123,7 @@ export async function previewAutoProduction(config: AutoProductionAdvertiserConf
   // 사용자가 화면에서 확정한 예정 상품은 입력 순서와 구성을 그대로 유지한다.
   // 확정 목록이 없을 때만 성과·중복 방지 정책으로 자동 후보를 선정한다.
   const candidates = config.adminProductUrls.length
-    ? source.candidates.slice(0, AUTO_PRODUCTION_PRODUCTS_PER_MALL)
+    ? source.candidates.slice(0, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT)
     : selectAutoProductionCandidates(source.candidates, config, recentIds);
   const imageWarnings = source.candidates.filter((candidate) => candidate.imageVerificationStatus && candidate.imageVerificationStatus !== "verified").map((candidate) => `${candidate.productName}: 상품 이미지 확인 필요 · ${candidate.imageVerificationReasons?.[0] || "정확한 판매 구성 이미지를 확인하지 못했습니다."}`);
   const expectedImages = candidates.length * AUTO_PRODUCTION_CREATIVES_PER_PRODUCT;
@@ -133,7 +133,7 @@ export async function previewAutoProduction(config: AutoProductionAdvertiserConf
     source: candidates[0]?.source || "none",
     fallbackUsed: source.fallbackUsed,
     fallbackReason: source.fallbackReason,
-    expectedImages: Math.min(config.maxImagesPerRun, expectedImages),
+    expectedImages: config.adminProductUrls.length ? expectedImages : Math.min(config.maxImagesPerRun, expectedImages),
     candidates,
     warnings: [...source.warnings, ...imageWarnings],
   };
@@ -332,7 +332,10 @@ export async function startScheduledAutoProductionRun(runId: string, config: Aut
       return { run: skipped, started: true };
     }
     const preview = await previewAutoProduction(config, now);
-    const runQuota = Math.min(remainingDaily, config.maxImagesPerRun);
+    const plannedRunQuota = config.adminProductUrls.length
+      ? Math.min(config.adminProductUrls.length, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT) * AUTO_PRODUCTION_CREATIVES_PER_PRODUCT
+      : config.maxImagesPerRun;
+    const runQuota = Math.min(remainingDaily, plannedRunQuota);
     let selectedExpectedImages = 0;
     const selected = preview.candidates.filter(() => {
       const count = AUTO_PRODUCTION_CREATIVES_PER_PRODUCT;

@@ -3,9 +3,9 @@ import { randomInt } from "node:crypto";
 import path from "node:path";
 import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
-import { defaultCompositionTypes, pickCompatibleRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
+import { defaultCompositionTypes, pickUniqueRandomItems, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import { isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
+import { normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
 export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
 
@@ -168,7 +168,9 @@ export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectio
     productCount: resolveProductCount(job),
     packagedProduct,
     naturalFood,
-    allowsHumanModel: categoryGroup === "fashion",
+    // 화장품 레퍼런스의 인물은 동일 인물을 복사하지 않고, 같은 역할·구도에
+    // 맞는 전혀 다른 가상 성인으로 다시 생성한다.
+    allowsHumanModel: categoryGroup !== "food",
     compatibleCompositionTypes: [],
   };
   profile.compatibleCompositionTypes = defaultCompositionTypes(profile);
@@ -176,55 +178,38 @@ export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectio
 }
 
 /**
- * 새 작업을 만들 때 상품군·형태·구도·슬롯이 호환되는 ZIP 후보에서
- * 중복 없이 무작위 레퍼런스를 뽑는다.
+ * 새 작업을 만들 때 운영자가 등록해 둔 같은 대분류 전체 풀에서 중복 없이
+ * 무작위 레퍼런스를 뽑는다. 등록 여부 자체가 운영자의 품질 승인이다.
  * 선택 결과는 GenerationJob에 저장되므로 새로고침·재시도·서버 복구 시에는
  * 다시 추첨하지 않고 같은 디자인을 이어서 편집한다.
  */
 export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, count = 6, nextIndex: (maxExclusive: number) => number = randomInt, recentReferenceIds: ReadonlySet<string> = new Set()): NativeAdReference[] {
   const profile = buildProductReferenceCompatibilityProfile(job);
   const categoryGroup = profile.categoryGroup;
-  const categoryName = profile.foodSubcategory ? `${categoryLabel(categoryGroup)} > 과일/농산물` : categoryLabel(categoryGroup);
-  // OCR 승인 여부는 제작 허가가 아닙니다. 호환되는 레퍼런스는 모두 시각
-  // 원본으로 사용할 수 있고, 저장 문구가 없거나 불확실하면 자동 fallback이
-  // ProductTruth 문구 계약을 만들어 사용자 승인 없이 제작을 계속합니다.
+  const categoryName = categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
-  const copyReadyItems = referenceItems.filter((item) => isApprovedReferenceNativeCopy(item.nativeCopy));
-  const freshItems = referenceItems.filter((item) => !recentReferenceIds.has(item.id));
-  const freshCopyReadyItems = copyReadyItems.filter((item) => !recentReferenceIds.has(item.id));
-  const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
-  let selected;
-  let lastError: unknown;
-  // 원문 OCR이 준비된 레퍼런스를 항상 우선한다. 기존 라이브러리 마이그레이션
-  // 중에는 제작을 막지 않기 위해 원문 미분석 항목까지 단계적으로 넓힌다.
-  for (const pool of [freshCopyReadyItems, copyReadyItems, freshItems, referenceItems]) {
-    try {
-      selected = pickCompatibleRandomItems(pool, count, profile, nextIndex);
-      break;
-    } catch (error) {
-      lastError = error;
-    }
+  const categoryItems = referenceItems.filter((item) => item.categoryGroup === categoryGroup);
+  // OCR 준비 상태, 상품 형태, 슬롯 수, 인물 포함 여부, 호환 점수와 최근 사용
+  // 여부로 다시 거르지 않는다. 문구가 없으면 ProductTruth fallback을 사용하고,
+  // 인물·상품 슬롯은 생성 단계의 교체 계약으로 안전하게 적응한다.
+  void recentReferenceIds;
+  if (categoryItems.length < count) {
+    throw new Error(`${categoryName}에 등록된 광고 레퍼런스가 부족합니다. 필요 ${count}장, 등록 ${categoryItems.length}장입니다.`);
   }
-  if (!selected) throw lastError instanceof Error ? lastError : new Error("호환되는 광고 레퍼런스가 부족합니다.");
-  return selected.map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${categoryName} · ${profile.productForm} 호환 후보에서 ${index + 1}번째 레퍼런스로 무작위 선택했습니다(호환 점수 ${candidate.score}: ${candidate.reasons.join(", ")}). 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
+  const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
+  const selected = pickUniqueRandomItems(categoryItems, count, nextIndex);
+  return selected.map((item, index) => toNativeAdReference(item, `${selectionMode} · ${categoryName} 등록 풀 전체에서 ${index + 1}번째 레퍼런스로 순수 무작위 선택했습니다. OCR·형태·슬롯·인물·점수·최근 사용 여부는 선택 제한으로 사용하지 않습니다. 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */
 export function selectNativeAdReference(job: GenerationJob, result: GenerationResult): NativeAdReference {
   const allReferenceItems = readReferenceItems();
-  const copyReadyItems = allReferenceItems.filter((item) => isApprovedReferenceNativeCopy(item.nativeCopy));
   const profile = buildProductReferenceCompatibilityProfile(job);
   if (!allReferenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
-  const compatibleIn = (items: typeof allReferenceItems) => items
-      .map((item) => scoreReferenceCompatibility(profile, item))
-      .filter((candidate) => candidate.score >= 60)
-      .sort((left, right) => right.score - left.score);
-  const copyReadyCompatible = compatibleIn(copyReadyItems);
-  const compatible = copyReadyCompatible.length ? copyReadyCompatible : compatibleIn(allReferenceItems);
-  if (!compatible.length) {
-    const categoryName = profile.foodSubcategory ? `${categoryLabel(profile.categoryGroup)} > 과일/농산물` : categoryLabel(profile.categoryGroup);
-    throw new Error(`${categoryName} · ${profile.productForm} 상품과 호환되는 복구용 레퍼런스가 없습니다.`);
+  const categoryItems = allReferenceItems.filter((item) => item.categoryGroup === profile.categoryGroup);
+  if (!categoryItems.length) {
+    throw new Error(`${categoryLabel(profile.categoryGroup)}에 등록된 복구용 레퍼런스가 없습니다.`);
   }
-  const selected = compatible[stableHash(`${job.id}:${job.productTruth.productId}:${result.id}`) % compatible.length];
-  return toNativeAdReference(selected.item, `과거 작업 복구를 위해 ${profile.foodSubcategory ? `${categoryLabel(profile.categoryGroup)} > 과일/농산물` : categoryLabel(profile.categoryGroup)} · ${profile.productForm} 호환 풀에서 결정적으로 선택했습니다(호환 점수 ${selected.score}).`);
+  const selected = categoryItems[stableHash(`${job.id}:${job.productTruth.productId}:${result.id}`) % categoryItems.length];
+  return toNativeAdReference(selected, `과거 작업 복구를 위해 ${categoryLabel(profile.categoryGroup)} 등록 풀 전체에서 결정적으로 선택했습니다.`);
 }

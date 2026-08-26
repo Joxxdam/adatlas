@@ -6,6 +6,7 @@ import { analyzeReviewSourceCandidates, type ReviewRawCandidate } from "../../..
 import { reviewCandidateContextScore } from "../../../lib/mvp/reviewCreative";
 import { isUnsafeProductCreativeSignal } from "../../../lib/creative-generation/productSignalHygiene.ts";
 import { normalizeCafe24BundlePricingClaims, resolveCafe24RequiredBundlePricing } from "../../../lib/store-analysis/extractors/cafe24Pricing";
+import { applyOriginalSourceVendorResearch } from "../../../lib/product-research/originalSourceResearch";
 
 function countHangul(value: string) {
   return (value.match(/[가-힣]/g) ?? []).length;
@@ -1052,7 +1053,7 @@ export async function POST(request: Request) {
     const mainImage = sourceImageCandidates[0]?.imagePath || fallbackSelectedImage;
     const galleryImages = mergeImageUrls([...sourceImageCandidates.map((candidate) => candidate.imagePath), ...mergedGalleryCandidates]).slice(0, maxGalleryImages);
     const detailImages = galleryImages.filter((image) => image && image !== mainImage).slice(0, maxDetailImages);
-    const extractedProductInfo: ExtractedProductInfo = {
+    const baseExtractedProductInfo: ExtractedProductInfo = {
       productName,
       category: normalizedCategory,
       price,
@@ -1077,6 +1078,7 @@ export async function POST(request: Request) {
       verifiedBenefits: structuredSignals.verifiedBenefits,
       ingredients: structuredSignals.ingredients,
     };
+    const extractedProductInfo = applyOriginalSourceVendorResearch(baseExtractedProductInfo, url.toString());
 
     // AI-native 제작은 상세페이지의 실제 제품·사용·질감 이미지를 그대로
     // 참조한다. 과거 템플릿 합성용 등록 누끼로 대표 이미지를 교체하지 않는다.

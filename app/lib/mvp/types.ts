@@ -1,5 +1,6 @@
 import type { CreativeAsset } from "../creative-assets/types";
 import type { CreativeOpportunityContext } from "../creative-content-notes/types";
+import type { VendorProductResearchContext } from "../product-research/types";
 
 export type MvpBrand = {
   id: string;
@@ -104,6 +105,7 @@ export type ProductInfoForPrompt = {
   productCutoutAvailable?: boolean;
   productRepresentation?: ProductRepresentation;
   reviewSources?: ReviewSourceCandidate[];
+  vendorResearch?: VendorProductResearchContext;
   creativeContext?: CreativeOpportunityContext;
 };
 
@@ -655,6 +657,7 @@ export type ExtractedProductInfo = {
   description: string;
   extractedDescription?: string;
   mainBenefit?: string;
+  targetCustomer?: string;
   landingUrl: string;
   heroImage?: string;
   detailImages?: string[];
@@ -664,6 +667,7 @@ export type ExtractedProductInfo = {
   reviewSources?: ReviewSourceCandidate[];
   verifiedBenefits?: string[];
   ingredients?: string[];
+  vendorResearch?: VendorProductResearchContext;
 };
 
 export type CopySlotKey = "headline" | "bodyCopy" | "highlightCopy" | "bottomBarCopy" | "cta" | "price";

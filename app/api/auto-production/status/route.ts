@@ -7,6 +7,7 @@ import { autoProductionRepository } from "../../../lib/auto-production/productio
 import { recoverAutoProductionRuns, syncAutoProductionRun } from "../../../lib/auto-production/productionRunner.server";
 import { publicAutoProductionError } from "../../../lib/auto-production/publicAutoProduction.server";
 import { seoulClock } from "../../../lib/auto-production/schedule";
+import { confirmedAutoProductionProductCount } from "../../../lib/auto-production/policy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,8 +26,9 @@ export async function GET(request: Request) {
     }
     const validRuns = synced.filter((run): run is NonNullable<typeof run> => Boolean(run));
     const active = validRuns.filter((run) => ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"].includes(run.status));
-    const nextRunAt = advertisers
-      .filter((config) => config.enabled && config.nextRunAt)
+    const eligibleAdvertisers = advertisers.filter((config) => config.enabled && confirmedAutoProductionProductCount(config) > 0);
+    const nextRunAt = eligibleAdvertisers
+      .filter((config) => config.nextRunAt)
       .map((config) => config.nextRunAt)
       .sort()[0];
     const plannedImages = Math.min(settings.maxImagesPerDay, plannedImageCount(advertisers));
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
         ok: true,
         status: {
           nextRunAt,
-          activeAdvertiserCount: advertisers.filter((config) => config.enabled).length,
+          activeAdvertiserCount: eligibleAdvertisers.length,
           plannedImageCount: plannedImages,
           selectedProductCount: validRuns.reduce((sum, run) => sum + run.tasks.length, 0),
           plannedProductCount: plannedImages,
