@@ -2,19 +2,34 @@ import type { ProductInfoForPrompt, SourceImageCandidate } from "../mvp/types";
 import type { CreativeImageAsset, CreativeImageRole, FactVerification, ProductFact, ProductEvidenceType, ProductTruth } from "./types";
 import { isUnsafeProductCreativeSignal } from "./productSignalHygiene.ts";
 
-export const PRODUCT_TRUTH_VERSION = "product-truth-v2-structured";
+export const PRODUCT_TRUTH_VERSION = "product-truth-v3-clean-product-identity";
 
 function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
 }
 
-const titleNoisePattern = /(?:\[[^\]]{0,40}(?:특가|한정|무료배송|이벤트|증정|쿠폰)[^\]]*\]|[★☆◆◇♥♡●■▶▷✔✓🔥🚨]|(?:^|\s)(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량)(?:\s|$))/giu;
+const titleNoisePattern = /(?:\[[^\]]{0,50}(?:특가|한정|무료배송|이벤트|증정|쿠폰|사전예약|추석|명절)[^\]]*\]|\*[^*]{0,40}(?:특가|한정|무료배송|이벤트|증정|쿠폰|사전예약|추석|명절|맞이)[^*]*\*|★[^★]{0,25}(?:특가|한정|팩|도매|예약)[^★]*★|💥[^💥]{0,25}(?:특가|한정|도매|예약)[^💥]*💥|[★☆◆◇♥♡●■▶▷✔✓🔥🚨💥]|(?:^|\s)(?:오늘만|지금만|초특가|추석특가|추석사전예약|추석맞이(?:특가)?|명절맞이(?:특가)?|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량|왕도매가격|도매가격|파격특가|당일생산)(?=[!?,.~\s-]|$))/giu;
 
 export function cleanProductTitle(rawTitle: string, brandName = "") {
   let value = String(rawTitle || "")
     .normalize("NFKC")
     .replace(/<[^>]*>/g, " ")
+    // 상품명 뒤에 붙은 운영·제작 메모는 판매 상품의 정체성이 아니다.
+    // 이 꼬리말을 먼저 제거해야 하이픈 뒤의 `당일생산`을 상품명 본체로
+    // 오인해 다운로드 파일명과 광고 문구에 사용하는 일을 막을 수 있다.
+    .replace(/\s*[-–—]\s*당일\s*(?:생산|제작)(?:\s*\([^)]*\))?\s*$/giu, " ")
     .replace(titleNoisePattern, " ")
+    // 상세페이지 SEO 제목에서 상품 앞에 붙는 캠페인형 수식어다. 숙성 방식은
+    // 아래 titleBackedClaims에서 별도 사실로 보존하고 상품명에서는 분리한다.
+    .replace(/^\s*(?:\d+\s*일\s*)?(?:(?:추석|설날?|명절)\s*맞이\s*)?(?:웻\s*에이징\s*)?숙성한\s*(?:(?:미친\s*맛|왕\s*도매\s*가격)\s*)?[-:–—!]?\s*/iu, " ")
+    .replace(/[★☆*✅⚡💥]+/gu, " ")
+    .replace(/\s*[&＆]\s*/g, " · ")
+    .replace(/(?:오르기\s*전\s*가격에|가격\s*오르기\s*전|추석\s*사전\s*예약\s*가능|후기\s*1등|왕\s*도매\s*가격|파격\s*특가|당일\s*생산)/giu, " ")
+    .replace(/\([^)]*(?:실속\s*도매팩|사전\s*예약|후기\s*1등|선별\s*숙성|당일\s*생산)[^)]*\)/giu, " ")
+    .replace(/(?:지방\s*손질\s*[·&＆/+]?\s*로스\s*제거|대한\s*선별|\d+중\s*선별한?|하이\s*마블\s*특|실속\s*도매팩|선별\s*상품|왕\s*도매\s*가격|프리미엄)/giu, " ")
+    .replace(/(?:^|\s)\d[\d,.]*\s*원(?:\s|$)/g, " ")
+    .replace(/\s*[!?,]+\s*/g, " ")
+    .replace(/(?:^|\s)-(?=\s|$)/g, " ")
     .replace(/(?:^|\s)\d+\s*\+\s*\d+(?:\s|$)/g, " ")
     .replace(/(?:^|\s)\d{1,3}\s*%\s*(?:할인|OFF)?(?:\s|$)/gi, " ")
     .replace(/(?:^|\s)\d[\d,.]*\s*원(?:\s|$)/g, " ")
@@ -23,12 +38,53 @@ export function cleanProductTitle(rawTitle: string, brandName = "") {
     const escaped = brandName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     value = value.replace(new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`, "giu"), " ");
   }
+  if (/웻\s*에이징/iu.test(value)) value = value.replace(/숙성한(?=\s|$)/giu, " ");
   return (
-    value.replace(/\s+/g, " ").trim() ||
+    value.replace(/^\s*[-:–—]+|[-:–—]+\s*$/gu, " ").replace(/\s+/g, " ").trim() ||
     String(rawTitle || "")
       .replace(/\s+/g, " ")
       .trim()
   );
+}
+
+function comparableSignal(value: string | undefined) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}]/gu, "")
+    .toLowerCase();
+}
+
+export function isPlausibleTargetCustomer(value: string | undefined, comparisons: Array<string | undefined> = []) {
+  const target = String(value || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+  if (!target || target.length > 72 || isUnsafeProductCreativeSignal(target)) return false;
+  if (/(?:특가|할인|쿠폰|가격|오르기\s*전|쏩니다|판매|당일\s*생산|무료\s*배송|[★☆✅]|!!)/iu.test(target)) return false;
+  if (!/(?:고객|분들?|사람|가정|가족|부모|아이|직장인|주부|학생|캠핑|여행|선물|혼밥|자취|식사|저녁|아침|명절\s*준비)/u.test(target)) return false;
+  const signature = comparableSignal(target);
+  if (comparisons.some((candidate) => {
+    const other = comparableSignal(candidate);
+    return other && (signature === other || signature.includes(other) || other.includes(signature));
+  })) return false;
+  return true;
+}
+
+function titleBackedClaims(rawTitle: string) {
+  const value = String(rawTitle || "").normalize("NFKC");
+  const claims: string[] = [];
+  if (/지방\s*손질\s*(?:[&＆·/+]|및)?\s*로스\s*제거/iu.test(value)) {
+    claims.push("지방을 손질하고 로스를 제거한 구성");
+  } else if (/지방\s*손질/iu.test(value)) {
+    claims.push("지방을 손질한 구성");
+  } else if (/로스\s*제거/iu.test(value)) {
+    claims.push("로스를 제거한 구성");
+  }
+  if (/감칠맛\s*비법\s*숙성/iu.test(value)) claims.push("감칠맛을 살린 비법 숙성");
+  if (/웻\s*에이징/iu.test(value)) claims.push("웻에이징 숙성");
+  const selection = value.match(/(\d+)중\s*선별/iu)?.[1];
+  if (selection) claims.push(`${selection}중 선별`);
+  if (/하이\s*마블/iu.test(value)) claims.push("하이마블 구성");
+  const pack = value.match(/(\d[\d,.]*\s*(?:g|kg|ml|l))\s*[x×]\s*(\d+)\s*팩/iu);
+  const composition = pack ? `${pack[1].replace(/\s+/g, "")} × ${pack[2]}팩` : undefined;
+  return { claims, composition };
 }
 
 function firstMatch(value: string, pattern: RegExp) {
@@ -38,43 +94,49 @@ function firstMatch(value: string, pattern: RegExp) {
 }
 
 function isOriginLike(value: string) {
-  return /(?:원산지|산지|국내산|국산|[가-힣]{2,12}산(?:\s|$))/u.test(String(value || ""));
+  return /(?:원산지|산지|국내산|국산|호주산|미국산|뉴질랜드산|캐나다산|제주산)(?:\s|$|[:：,·/])/u.test(`${String(value || "")} `);
 }
 
-function isPromotionLike(value: string) {
-  return /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%|할인|쿠폰|증정|특가|무료\s*배송|한정\s*판매)/iu.test(String(value || ""));
+export function isPromotionLike(value: string) {
+  return /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%|할인|쿠폰|증정|특가|무료\s*배송|한정\s*판매|도매\s*(?:원가|가격|가)|소값\s*(?:가격)?|가격\s*오르기\s*전|오르기\s*전|파격|쏩니다|빠른\s*구매)/iu.test(String(value || ""));
 }
 
 function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string) {
   const rawProductTitle = String(rawTitle || product.productName || "")
     .replace(/\s+/g, " ")
     .trim();
-  const cleanProductName = cleanProductTitle(rawProductTitle, product.brandName || product.advertiserName || "");
+  // rawProductTitle은 구성·프로모션 근거 추출에만 보존한다. 이미 한 번 정제된
+  // productName이 있으면 광고에서 보이는 상품 정체성은 그 값을 우선한다.
+  const cleanProductName = cleanProductTitle(product.productName || rawProductTitle, product.brandName || product.advertiserName || "");
   const description = [product.extractedDescription, product.mainBenefit, ...(product.verifiedBenefits || [])].filter((value): value is string => Boolean(value) && !isUnsafeProductCreativeSignal(value)).join(" · ");
   const ingredientValues = compact(product.ingredients || []).filter((value) => !isOriginLike(value) && !isPromotionLike(value) && !isUnsafeProductCreativeSignal(value));
   const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value) && !isUnsafeProductCreativeSignal(value));
   const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg)/i);
-  const salesUnit = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:봉지|개입|개|팩|병|박스|세트|종)(?!\s*(?:구성|세트))/i);
-  const composition = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
+  const salesUnit = firstMatch(`${cleanProductName} ${description}`, /(?:\d[\d,.]*\s*(?:봉지|개입|개|팩|병|박스|세트|종)|\d+\s*[~-]\s*\d+\s*인분)(?!\s*(?:구성|세트))/i);
+  const backedByTitle = titleBackedClaims(rawProductTitle);
+  const composition = backedByTitle.composition || firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
   const shipping = firstMatch(`${rawProductTitle} ${description}`, /(?:무료\s*배송|당일\s*출고|오늘\s*출발|새벽\s*배송)/i);
   const promotion = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%\s*할인|쿠폰|증정|한정\s*(?:특가|판매)|무료\s*배송)/i);
-  const origin = firstMatch(`${description} ${(product.ingredients || []).join(" ")}`, /(?:원산지\s*[:：]?\s*)?(?:국내산|국산|[가-힣]{2,12}산)(?=\s|[,·/]|$)/u);
+  const origin = firstMatch(`${rawProductTitle} ${description} ${(product.ingredients || []).join(" ")}`, /(?:원산지\s*[:：]?\s*[가-힣]{2,12}산|국내산|국산|호주산|미국산|뉴질랜드산|캐나다산|제주산)(?=\s|[,·/]|$)/u);
   const seasonOrEvent = firstMatch(`${rawProductTitle} ${description}`, /(?:봄|여름|가을|겨울|명절|설날|추석|크리스마스|신상품|시즌|\d{1,2}일\s*한정|한정\s*판매)/u);
-  const packageOrOption = product.packageType || composition || firstMatch(`${rawProductTitle} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
+  const packageOrOption = product.packageType || composition || firstMatch(`${cleanProductName} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
   const promotionalTokens = compact(rawProductTitle.match(/(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량|반란|\d{1,3}\s*%\s*(?:할인|OFF)?|\d+\s*\+\s*\d+)/giu) || []);
   const offerTokens = compact([product.price, product.originalPrice || product.oldPrice, product.discountInfo, shipping, promotion]);
   const selectionTokens = compact(rawProductTitle.match(/(?:택\s*\d+|옵션\s*\d+|골라\s*담기|선택\s*구성|\d+종\s*선택)/giu) || []);
   const volumeTokens = compact([quantity, salesUnit, composition]);
   const titleDescriptor = firstMatch(cleanProductName, /(?:바삭달콤|상큼한|달콤한|고소한|쫄깃한|부드러운|촉촉한|산뜻한|시원한|진한|담백한|매콤한)/u);
-  const removableTitleTokens = [quantity, salesUnit, composition, titleDescriptor, ...promotionalTokens]
+  const removablePackageToken = packageOrOption && /(?:\d|택\s*\d+|옵션\s*\d+|구성|×|x)/iu.test(packageOrOption) ? packageOrOption : undefined;
+  const removableTitleTokens = [quantity, salesUnit, composition, removablePackageToken, titleDescriptor, ...promotionalTokens]
     .filter((token): token is string => Boolean(token));
   const baseProductName = removableTitleTokens
-    .reduce<string>((value, token) => value.replace(token, " "), cleanProductName)
+    .reduce<string>((value, token) => value.replace(token, " "), cleanProductName.replace(/\(\s*\d[\d,.]*\s*(?:g|kg|ml|l)\s*[x×]\s*\d+\s*팩\s*\)/giu, " "))
+    .replace(/(?:^|\s)(?:국내산|국산|부드러운|고급|선별)(?=\s|$)/gu, " ")
+    .replace(/(?:^|\s)(?:박스|팩)(?=\s|$)/gu, " ")
     .replace(/(?:^|\s)(?:건강간식|간편식|인기간식|추천상품)(?:\s|$)/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
   const verifiedDescriptor = titleDescriptor || verifiedBenefits[0] || ingredientValues[0] || undefined;
-  const safeTargetCustomer = isUnsafeProductCreativeSignal(product.targetCustomer) ? undefined : product.targetCustomer || undefined;
+  const safeTargetCustomer = isPlausibleTargetCustomer(product.targetCustomer, [product.mainBenefit, ...verifiedBenefits]) ? product.targetCustomer : undefined;
   const reviewEvidence = compact([...(product.reviewSources || []).map((review) => review.keySentence || review.sourceContext), ...(product.creativeContext?.reviewInsightSummaries || [])]).filter((value) => !isUnsafeProductCreativeSignal(value)).slice(0, 6);
   return {
     rawProductTitle,
@@ -313,7 +375,8 @@ function fact(key: string, label: string, value: string | undefined, verificatio
 }
 
 function freeTextClaims(product: ProductInfoForPrompt) {
-  return compact([product.mainBenefit, ...(product.verifiedBenefits || []), ...(product.ingredients || []).filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient)).map((ingredient) => `${ingredient} 함유`)]).filter((value) => !isUnsafeProductCreativeSignal(value));
+  return compact([product.mainBenefit, ...(product.verifiedBenefits || []), ...(product.ingredients || []).filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient)).map((ingredient) => `${ingredient} 함유`)])
+    .filter((value) => !isPromotionLike(value) && !isUnsafeProductCreativeSignal(value));
 }
 
 export function buildProductTruth(input: { product: ProductInfoForPrompt; rawProductTitle?: string; productImagePaths?: string[]; selectedAdImages?: string[]; imageAssets?: CreativeImageAsset[]; source?: "landing-page" | "user-input" }): ProductTruth {
@@ -323,7 +386,8 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
   const landingSource = input.source === "landing-page" && Boolean(product.landingUrl);
   const verification: FactVerification = landingSource ? "source-backed" : "user-provided";
   const source: ProductFact["source"] = landingSource ? "landing-page" : "user-input";
-  const candidates = [
+  const titleClaims = titleBackedClaims(normalizedTruth.rawProductTitle);
+  const candidateFacts = [
     fact("base-product-name", "정제 상품명", normalizedTruth.baseProductName || normalizedTruth.cleanProductName, verification, source, product.landingUrl),
     fact("verified-descriptor", "확인된 상품 표현", normalizedTruth.verifiedDescriptor, verification, source, product.landingUrl),
     fact("brand-name", "브랜드", product.brandName || product.advertiserName, verification, source, product.landingUrl),
@@ -331,9 +395,13 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     fact("price", "판매가", product.price, verification, source, product.landingUrl),
     fact("original-price", "기존가", product.originalPrice || product.oldPrice, verification, source, product.landingUrl),
     fact("discount", "할인 정보", product.discountInfo, verification, source, product.landingUrl),
-    fact("main-benefit", "핵심 혜택", isUnsafeProductCreativeSignal(product.mainBenefit) ? undefined : product.mainBenefit, verification, source, product.landingUrl),
-    fact("target", "추천 대상", isUnsafeProductCreativeSignal(product.targetCustomer) ? undefined : product.targetCustomer, verification, source, product.landingUrl),
-    ...(product.verifiedBenefits || []).filter((benefit) => !isUnsafeProductCreativeSignal(benefit)).map((benefit, index) => fact(`verified-benefit-${index + 1}`, "상세페이지 혜택", benefit, verification, source, product.landingUrl)),
+    fact("main-benefit", "핵심 혜택", normalizedTruth.verifiedBenefits[0], verification, source, product.landingUrl),
+    fact("target", "추천 대상", normalizedTruth.targetCustomer, verification, source, product.landingUrl),
+    ...titleClaims.claims.map((claim, index) => fact(`title-benefit-${index + 1}`, "상품명에서 확인된 특징", claim, verification, source, product.landingUrl)),
+    fact("title-composition", "상품명에서 확인된 구성", titleClaims.composition, verification, source, product.landingUrl),
+    ...normalizedTruth.verifiedBenefits
+      .filter((benefit) => comparableSignal(benefit) !== comparableSignal(normalizedTruth.verifiedBenefits[0]))
+      .map((benefit, index) => fact(`verified-benefit-${index + 1}`, "상세페이지 혜택", benefit, verification, source, product.landingUrl)),
     ...normalizedTruth.ingredients.map((ingredient, index) => fact(`ingredient-${index + 1}`, "성분", ingredient, verification, source, product.landingUrl)),
     fact("origin", "원산지", normalizedTruth.origin, verification, source, product.landingUrl),
     fact("quantity", "판매 단위", normalizedTruth.quantity, verification, source, product.landingUrl),
@@ -346,6 +414,7 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     ...(product.creativeContext?.reviewInsightSummaries || []).filter((review) => !isUnsafeProductCreativeSignal(review)).map((review, index) => fact(`review-insight-${index + 1}`, "후기 인사이트", review, verification, source, product.landingUrl)),
     ...contentNotes.filter((note) => !note.prohibited && ["PRODUCT_USP", "REVIEW_INSIGHT", "TARGET_AUDIENCE", "PROMOTION"].includes(note.type)).map((note, index) => fact(note.type === "REVIEW_INSIGHT" ? `review-note-${index + 1}` : `content-note-${note.type.toLowerCase()}-${index + 1}`, note.title || note.type, note.content, "user-provided", "user-input")),
   ].filter((item): item is ProductFact => Boolean(item));
+  const candidates = candidateFacts;
   const claims = freeTextClaims(product);
   const unverifiedClaims = claims.filter((claim) => !landingSource && extractNumericTokens(claim).length > 0);
   const verifiedClaims = claims.filter((claim) => !unverifiedClaims.includes(claim));
@@ -389,7 +458,9 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
 }
 
 export function validateCopyAgainstTruth(copy: string, truth: ProductTruth) {
-  const numericTokens = extractNumericTokens(copy);
+  // 레퍼런스의 `1. 2. 3.` 같은 목록 순번은 상품 수치 주장이 아니다.
+  const copyWithoutListOrdinals = String(copy || "").replace(/(^|\n)\s*\d{1,2}\s*[.)]\s*/g, "$1");
+  const numericTokens = extractNumericTokens(copyWithoutListOrdinals);
   const unauthorizedNumericTokens = numericTokens.filter((token) => !truth.allowedNumericTokens.includes(token));
   const lowerCopy = copy.toLowerCase();
   const blockedClaims = truth.blockedClaimPatterns.filter((pattern) => pattern && lowerCopy.includes(pattern.toLowerCase()));

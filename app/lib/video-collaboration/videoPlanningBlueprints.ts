@@ -1,6 +1,7 @@
 import type {
   ProductAnalysisSnapshot,
   VideoConceptArchetype,
+  VideoParodyGenre,
   VideoPlanningBlueprintSelection,
 } from "./types.ts";
 
@@ -555,6 +556,22 @@ function categoryScore(
   return 1;
 }
 
+const PRICE_NEGOTIATION_BLUEPRINTS = new Set(["produce-price-negotiation", "food-bargaining-parody"]);
+
+function parodyGenreScore(blueprint: VideoPlanningBlueprint, genre?: VideoParodyGenre) {
+  if (!genre) return 0;
+  const isPriceNegotiation = PRICE_NEGOTIATION_BLUEPRINTS.has(blueprint.id);
+  if (genre === "price-negotiation") return isPriceNegotiation ? 12 : -2;
+  if (isPriceNegotiation) return -12;
+  if (["blind-test", "competition-judging"].includes(genre)) {
+    const evidenceScore = blueprint.archetypes.some((item) => item === "real-review" || item === "usp-focus") ? 5 : -3;
+    return evidenceScore - (blueprint.archetypes.includes("parody") ? 6 : 0);
+  }
+  if (genre === "family-office-sitcom") return blueprint.archetypes.includes("real-review") ? 4 : 0;
+  const evidenceScore = blueprint.archetypes.some((item) => item === "real-review" || item === "usp-focus") ? 2 : 0;
+  return evidenceScore - (blueprint.archetypes.includes("parody") ? 6 : 0);
+}
+
 export function getVideoPlanningBlueprint(id?: string) {
   return VIDEO_PLANNING_BLUEPRINTS.find((item) => item.id === id);
 }
@@ -562,6 +579,7 @@ export function getVideoPlanningBlueprint(id?: string) {
 export function selectVideoPlanningBlueprints(input: {
   analysis: ProductAnalysisSnapshot;
   archetypes: VideoConceptArchetype[];
+  parodyGenre?: VideoParodyGenre;
 }): Partial<Record<VideoConceptArchetype, VideoPlanningBlueprintSelection>> {
   const expected = preferredCategory(input.analysis);
   const used = new Set<string>();
@@ -573,17 +591,24 @@ export function selectVideoPlanningBlueprints(input: {
         categoryScore(expected, blueprint.sourceCategory) +
         (blueprint.archetypes.includes(archetype) ? 6 : 0) -
         (used.has(blueprint.id) ? 2 : 0) -
-        index / 100,
+        index / 100 +
+        (archetype === "parody" ? parodyGenreScore(blueprint, input.parodyGenre) : 0),
     })).sort((left, right) => right.score - left.score);
     const primary = ranked[0].blueprint;
     used.add(primary.id);
     const secondary = ranked.find(
-      ({ blueprint }) => blueprint.id !== primary.id && blueprint.archetypes.includes(archetype)
+      ({ blueprint }) =>
+        blueprint.id !== primary.id &&
+        (blueprint.archetypes.includes(archetype) || (archetype === "parody" && input.parodyGenre !== "price-negotiation" && blueprint.archetypes.some((item) => item === "real-review" || item === "usp-focus"))) &&
+        !(archetype === "parody" && input.parodyGenre !== "price-negotiation" && PRICE_NEGOTIATION_BLUEPRINTS.has(blueprint.id))
     )?.blueprint;
+    const hasDirectGenreReference = archetype !== "parody" || !input.parodyGenre || (input.parodyGenre === "price-negotiation" && PRICE_NEGOTIATION_BLUEPRINTS.has(primary.id));
     result[archetype] = {
       primaryId: primary.id,
       secondaryId: secondary?.id,
-      reason: `${primary.format}의 전개가 ${archetype} 콘셉트와 맞고, ${expected === primary.sourceCategory ? "상품군의 사용·증거 장면까지 직접 참고할 수 있습니다." : "카테고리는 달라도 훅·증거·CTA 구조를 안전하게 전용할 수 있습니다."}`,
+      reason: hasDirectGenreReference
+        ? `${primary.format}의 전개가 ${archetype} 콘셉트와 맞고, ${expected === primary.sourceCategory ? "상품군의 사용·증거 장면까지 직접 참고할 수 있습니다." : "카테고리는 달라도 훅·증거·CTA 구조를 안전하게 전용할 수 있습니다."}`
+        : `분석된 11개 영상에 '${input.parodyGenre}' 장르와 직접 일치하는 원본이 없어 가격 흥정 문법은 사용하지 않습니다. ${primary.format}에서 상품군의 증거·자막 리듬만 가져오고 선택 장르의 사건 문법은 별도로 적용합니다.`,
       transferableRules: primary.transferableRules.slice(0, 4),
     };
   }

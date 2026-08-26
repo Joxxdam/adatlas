@@ -99,7 +99,7 @@ export type AutoHookHypothesis = {
 export const autoProductionRunStatuses = ["scheduled", "selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives", "completed", "partial", "failed", "cancelled", "skipped"] as const;
 export type AutoProductionRunStatus = (typeof autoProductionRunStatuses)[number];
 
-export const autoProductionProductStatuses = ["selected", "analyzing", "hooks-ready", "queued", "generating", "completed", "failed", "skipped-duplicate", "skipped-insufficient-data", "skipped-unavailable"] as const;
+export const autoProductionProductStatuses = ["selected", "analyzing", "hooks-ready", "queued", "generating", "completed", "failed", "cancelled", "skipped-duplicate", "skipped-insufficient-data", "skipped-unavailable"] as const;
 export type AutoProductionProductStatus = (typeof autoProductionProductStatuses)[number];
 
 export type AutoProductionResult = {

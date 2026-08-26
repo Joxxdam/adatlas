@@ -12,6 +12,7 @@ import { buildGenerationSummary } from "../../../lib/creative-generation/generat
 import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
 import { failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
+import { numberedProductImageFileName, productDownloadStem } from "../../../lib/creative-generation/downloadNaming";
 
 type Props = {
   analysisRevision: number;
@@ -608,7 +609,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
 
   async function downloadAll(requireAllResults = false) {
     if (!job) return;
-    const completedResults = job.results.filter((result) => Boolean(result.imagePath && result.nativeCreative?.finalPath));
+    // finalPath는 서버 로컬 경로라 공개 작업 응답에서 의도적으로 제거됩니다.
+    // 클라이언트는 공개 이미지 URL만 확인하고, 실제 원본 파일 검증은 다운로드 API가 담당합니다.
+    const completedResults = job.results.filter((result) => Boolean(result.imagePath));
     if (!completedResults.length || (requireAllResults && completedResults.length !== job.results.length)) return;
     setDownloading(true);
     try {
@@ -620,11 +623,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       };
       const zip = new JSZip();
       await Promise.all(
-        successes.map(async (result) => {
+        successes.map(async (result, index) => {
           const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/results/${encodeURIComponent(result.id)}/download`);
           if (!response.ok) throw new Error(`${result.blueprintLabel} 다운로드 실패`);
           if (!result.creativeAsset) throw new Error(`${result.blueprintLabel} 소재코드가 없습니다.`);
-          zip.file(result.creativeAsset.fileName, await response.blob());
+          zip.file(numberedProductImageFileName(job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName, index + 1), await response.blob());
           await markCreativeAssetExported(result.creativeAsset.assetCode);
         })
       );
@@ -640,8 +643,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
             productUrl: job.productTruth.product.landingUrl,
             productName: job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName,
             exportedAt: new Date().toISOString(),
-            files: successes.map((result) => ({
-              fileName: result.creativeAsset?.fileName,
+            files: successes.map((result, index) => ({
+              fileName: numberedProductImageFileName(job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName, index + 1),
               creativeCode: result.creativeAsset?.assetCode,
               hookCode: result.hookPlan.hookCode,
               mainHook: result.hookPlan.headline,
@@ -673,7 +676,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `daywiz-${job.creativePlan.testCode}-${requireAllResults ? `all-${job.results.length}` : "generated"}-${job.id}.zip`;
+      anchor.download = `${productDownloadStem(job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName)}.zip`;
       anchor.click();
       URL.revokeObjectURL(url);
       window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
@@ -696,7 +699,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       ? `${storedReference.categoryLabel}${storedReference.foodSubcategory ? " · 과일/농산물" : ""} (자동)`
       : undefined;
   const activeResults = [...(job?.results || [])].filter((result) => result.status === "running").sort((left, right) => left.order - right.order);
-  const completedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath && result.nativeCreative?.finalPath)).sort((left, right) => left.order - right.order);
+  const completedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);
   const visibleGeneratedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);
   const attentionResults = [...(job?.results || [])].filter((result) => failedGenerationResultStatuses.has(result.status)).sort((left, right) => left.order - right.order);
   const attentionResultsWithoutImage = attentionResults.filter((result) => !result.imagePath);

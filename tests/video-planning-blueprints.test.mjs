@@ -79,6 +79,19 @@ test("육류 상품은 육류·식품 전개를 우선하되 과일·농산물�
   assert.ok(categories.includes("meat"));
 });
 
+test("블라인드 테스트는 가격 흥정 레퍼런스를 주 블루프린트로 선택하지 않는다", () => {
+  const selected = selectVideoPlanningBlueprints({
+    analysis: analysis({ productName: "국내산 선별 등심 1kg", category: "식품·육류", coreUsps: ["마블링과 식감을 비교할 수 있는 등심"] }),
+    archetypes: ["parody"],
+    parodyGenre: "blind-test",
+  });
+  const primary = getVideoPlanningBlueprint(selected.parody?.primaryId);
+  assert.ok(primary);
+  assert.equal(primary.sourceCategory, "meat");
+  assert.doesNotMatch(primary.format, /협상|흥정/);
+  assert.match(selected.parody.reason, /직접 일치하는 원본이 없어 가격 흥정 문법은 사용하지 않습니다/);
+});
+
 test("프롬프트는 주 레퍼런스와 보조 레퍼런스의 역할 및 복제 금지를 명시한다", () => {
   const selected = selectVideoPlanningBlueprints({ analysis: analysis(), archetypes: ["parody"] });
   const prompt = blueprintPrompt(selected.parody);

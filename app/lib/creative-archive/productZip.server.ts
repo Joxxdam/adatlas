@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { readCreativeRasterAsset } from "../creative-generation/assets.server";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { resolveValidatedNativeDownload } from "../creative-generation/nativeCreativeStorage.server";
+import { numberedProductImageFileName, productDownloadStem } from "../creative-generation/downloadNaming";
 import { resolveCreativeArchiveDeliveryFile } from "./branding.server";
 import { listCreativeArchiveEntries } from "./service.server";
 import type { CreativeArchiveEntry } from "./types";
@@ -17,21 +18,6 @@ type ProductArchiveFailure = {
   materialCode: string;
   reason: string;
 };
-
-function safeSegment(value: string, fallback: string) {
-  const cleaned = String(value || "")
-    .normalize("NFKC")
-    .replace(/[\u0000-\u001f\u007f/\\:*?"<>|]+/g, "-")
-    .replace(/\s+/g, " ")
-    .replace(/^\.+|\.+$/g, "")
-    .trim()
-    .slice(0, 80);
-  return cleaned || fallback;
-}
-
-function materialLabel(entry: CreativeArchiveEntry, index: number) {
-  return safeSegment(entry.materialCode || entry.assetCode || entry.hookCode, `creative-${String(index + 1).padStart(2, "0")}`);
-}
 
 async function rasterExtension(data: Buffer) {
   const metadata = await sharp(data).metadata();
@@ -84,13 +70,14 @@ export async function createCreativeArchiveProductZip(entryIds: string[]) {
   const included: Array<{ entryId: string; fileName: string; materialCode: string; status: string; createdAt: string }> = [];
   const failures: ProductArchiveFailure[] = missingIds.map((entryId) => ({ entryId, materialCode: "", reason: "아카이브에서 삭제되었거나 찾을 수 없습니다." }));
   const usedNames = new Set<string>();
+  const productStem = productDownloadStem(first.productName);
 
   for (let index = 0; index < orderedEntries.length; index += 1) {
     const entry = orderedEntries[index];
     try {
       const data = await readActiveArchiveImage(entry);
       const extension = await rasterExtension(data);
-      const base = `${String(index + 1).padStart(2, "0")}-${materialLabel(entry, index)}`;
+      const base = numberedProductImageFileName(productStem, index + 1, extension).replace(/\.[a-z0-9]+$/i, "");
       let fileName = `${base}.${extension}`;
       let duplicate = 2;
       while (usedNames.has(fileName)) fileName = `${base}-${duplicate++}.${extension}`;
@@ -143,7 +130,7 @@ export async function createCreativeArchiveProductZip(entryIds: string[]) {
   const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
   return {
     buffer,
-    fileName: `${safeSegment(first.productName, "product")}-${included.length}장.zip`,
+    fileName: `${productStem}.zip`,
     includedCount: included.length,
     failedCount: failures.length,
   };

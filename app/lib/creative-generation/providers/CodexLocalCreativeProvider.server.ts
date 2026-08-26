@@ -36,7 +36,7 @@ async function waitForStableGeneratedOutput(file: string) {
 const validationSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "failures", "recommendation"],
+  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "failures", "recommendation"],
   properties: {
     hookAlignment: { type: "integer", minimum: 0, maximum: 100 },
     productIdentity: { type: "integer", minimum: 0, maximum: 100 },
@@ -54,6 +54,8 @@ const validationSchema = {
     sensoryExpression: { type: "integer", minimum: 0, maximum: 100 },
     mobileReadability: { type: "integer", minimum: 0, maximum: 100 },
     observedKoreanText: { type: "array", items: { type: "string" } },
+    standaloneLogoDetected: { type: "boolean" },
+    standaloneLogoFindings: { type: "array", items: { type: "string" } },
     failures: { type: "array", items: { type: "string" } },
     recommendation: { type: "string", enum: ["approve", "revise", "manual-review"] },
   },

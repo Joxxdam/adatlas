@@ -18,7 +18,7 @@ import type {
   VideoParodyGenre,
 } from "./types.ts";
 import { normalizeVideoCut } from "./script.ts";
-import { validateConceptDiversity, validateDetailedPlanning } from "./planningValidation.ts";
+import { segmentRange, validateConceptDiversity, validateDetailedPlanning } from "./planningValidation.ts";
 import { inferVideoParodyGenre } from "./videoParodyGenres.ts";
 import {
   assertVideoProjectTransition,
@@ -50,7 +50,7 @@ function clean(value: unknown, max = 4000) {
     .slice(0, max);
 }
 
-function normalizeConcept(concept: VideoConcept): VideoConcept {
+function normalizeConcept(concept: VideoConcept, duration?: VideoProject["duration"]): VideoConcept {
   const cuts = Array.isArray(concept.cuts)
     ? concept.cuts.map((cut, index) => normalizeVideoCut(cut, index))
     : [];
@@ -70,7 +70,11 @@ function normalizeConcept(concept: VideoConcept): VideoConcept {
   return {
     ...concept,
     cuts,
-    detailStatus: concept.detailStatus || (cuts.length >= 15 ? "ready" : "not-generated"),
+    detailStatus:
+      concept.detailStatus ||
+      (cuts.length >= (duration ? segmentRange(duration).min : segmentRange(15).min)
+        ? "ready"
+        : "not-generated"),
     evidenceIds: Array.isArray(concept.evidenceIds) ? concept.evidenceIds : [],
     supportingDevices: Array.isArray(concept.supportingDevices) ? concept.supportingDevices : [],
     blueprintSelection,
@@ -104,16 +108,16 @@ function normalizeProject(project: VideoProject): VideoProject {
     productionNotes: clean(project.productionNotes, 5000),
     deadline: clean(project.deadline, 40),
     concepts: Array.isArray(project.concepts)
-      ? project.concepts.map((concept) => normalizeConcept(concept))
+      ? project.concepts.map((concept) => normalizeConcept(concept, project.duration))
       : [],
     hookCandidates: Array.isArray(project.hookCandidates) ? project.hookCandidates : [],
     pipelineProgress: Array.isArray(project.pipelineProgress) ? project.pipelineProgress : [],
     referenceAnalyses: Array.isArray(project.referenceAnalyses) ? project.referenceAnalyses : [],
-    finalScript: project.finalScript ? normalizeConcept(project.finalScript) : undefined,
+    finalScript: project.finalScript ? normalizeConcept(project.finalScript, project.duration) : undefined,
     scriptRevisions: Array.isArray(project.scriptRevisions)
       ? project.scriptRevisions.map((revision) => ({
           ...revision,
-          snapshot: normalizeConcept(revision.snapshot),
+          snapshot: normalizeConcept(revision.snapshot, project.duration),
         }))
       : [],
     versions: Array.isArray(project.versions) ? project.versions : [],
@@ -674,8 +678,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           revision: current.revision + 1,
           createdAt: current.createdAt,
           updatedAt: new Date().toISOString(),
-        });
-        if (normalized.cuts.length >= 15) {
+        }, project.duration);
+        if (normalized.cuts.length >= segmentRange(project.duration).min) {
           normalized.validation = validateDetailedPlanning(
             normalized,
             project.productAnalysis,
@@ -742,7 +746,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           revision: current.revision + 1,
           createdAt: current.createdAt,
           updatedAt: new Date().toISOString(),
-        });
+        }, project.duration);
         validateConceptForProject(project, restored);
         project.scriptRevisions.push({
           id: crypto.randomUUID(),
@@ -787,13 +791,14 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         }
         const concept = project.concepts.find((item) => item.id === input.conceptId);
         if (!concept) throw new Error("확정할 기획안을 선택해 주세요.");
+        const minimumSegments = segmentRange(project.duration).min;
         const validation =
-          concept.cuts.length >= 15
+          concept.cuts.length >= minimumSegments
             ? validateDetailedPlanning(concept, project.productAnalysis, project.duration)
             : undefined;
         concept.validation = validation;
-        if (concept.cuts.length < 15 || !validation?.valid) {
-          throw new Error("자동 품질 검수를 통과한 최소 15개 구간의 상세 대본이 필요합니다.");
+        if (concept.cuts.length < minimumSegments || !validation?.valid) {
+          throw new Error(`자동 품질 검수를 통과한 ${project.duration}초 기준 최소 ${minimumSegments}개 구간의 상세 대본이 필요합니다.`);
         }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(clean(input.deadline)))
           throw new Error("올바른 제작 마감일을 입력해 주세요.");

@@ -79,8 +79,21 @@ test("이미지 생성 전 pending 결과도 광고문구의 대표 후킹으로
   assert.equal(id, "r1");
 });
 
-test("대표 후킹과 연결된 자연스러운 5~8줄 문구를 통과시킨다", () => {
+test("대표 후킹과 연결된 자연스러운 3~5줄 문구를 통과시킨다", () => {
   assert.equal(validateAdCopyAgainstTruth({ primaryText: validCopy, truth: truth(), hookHeadline: "저녁 메뉴 고민, 팬 하나면 끝" }).passed, true);
+});
+
+test("긴 설명문·반복 문장·어색한 SEO 판매 문구를 자동 검수에서 차단한다", () => {
+  const repeated = "저녁 메뉴 고민, 팬 하나면 끝?!\n한우 불고기 250g 한 팩\n한우 불고기 250g 한 팩";
+  assert.match(validateAdCopyAgainstTruth({ primaryText: repeated, truth: truth(), hookHeadline: "저녁 메뉴 고민" }).failures.join(" "), /반복/);
+  const awkward = "소값 가격 오르기 전?!\n한우 불고기 250g 한 팩\n팬에 바로 익혀보세요";
+  assert.match(validateAdCopyAgainstTruth({ primaryText: awkward, truth: truth(), hookHeadline: "한우 불고기" }).failures.join(" "), /문맥/);
+  const seoUrgency = "소값 오르기 전 챙겨두세요?!\n설꽃등심 500g\n추석 식탁에 구워보세요";
+  assert.match(validateAdCopyAgainstTruth({ primaryText: seoUrgency, truth: truth(), hookHeadline: "설꽃등심" }).failures.join(" "), /문맥|긴급성/);
+  const awkwardParticle = "손질된 등심이 필요했다고요?!\n500g씩 두 팩, 총 1kg로 구성했어요\n추석 식탁에 구워보세요";
+  assert.match(validateAdCopyAgainstTruth({ primaryText: awkwardParticle, truth: truth(), hookHeadline: "등심" }).failures.join(" "), /조사/);
+  const tooMany = `${validCopy}\n한 줄 더 추가\n또 한 줄 더 추가`;
+  assert.match(validateAdCopyAgainstTruth({ primaryText: tooMany, truth: truth(), hookHeadline: "저녁 메뉴 고민" }).failures.join(" "), /3~5개/);
 });
 
 test("가격 정보가 없으면 가격을 쓰지 않은 문구는 통과할 수 있다", () => {
@@ -178,7 +191,7 @@ test("이미지 제작과 동시에 상품당 한 번 설명 문구를 먼저 �
   assert.match(adCopyPanel, /이미지와 별도로 광고 문구·제목을 먼저 만들고 있습니다/);
   assert.match(adCopyPanel, /광고 제목/);
   const prompt = await read("app/lib/ad-copy/adCopyPromptBuilder.server.ts");
-  assert.match(prompt, /meta-primary-copy-v3-product-truth-first/);
+  assert.match(prompt, /meta-primary-copy-v4-compact-context/);
   assert.match(prompt, /SNS 게시글처럼 직접적이고 리듬감/);
   assert.match(prompt, /primaryText, adTitle, languageTraits/);
   assert.match(autoRunner, /createNativeGenerationJob/);

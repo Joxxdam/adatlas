@@ -10,6 +10,7 @@ const EVIDENCE_AUDIT_COPY = [
   /(?:구성|가격|할인|수치|중량|용량)\s*표기(?:예요|에요|입니다|로|가|는)/i,
   /(?:확인된|확인되는|기재된)\s*(?:표기|수치|정보|내용|조건)/i,
   /(?:표기|기재)(?:상|로는|에는|가|는)?\s*(?:보입니다|확인됩니다|되어\s*있습니다)/i,
+  /(?:확인된|검증된)\s*(?:혜택|가격|할인|구성|배송)(?:은|는|이|가)?/i,
   /확인\s*결과(?:로|는|가|입니다)?/i,
   /근거(?:상|에\s*따르면)/i,
 ];
@@ -22,9 +23,55 @@ const INTERNAL_PLANNING_COPY = [
   /(?:도장|태블릿)\s*(?:화면|항목|정보)?|표\s*(?:화면|항목|정보|자료|카드)/i,
   /\b(?:USP|CTA|B-?ROLL)\b/i,
 ];
+const STAGE_DIRECTION_COPY = [
+  /^(?:한\s*사람(?:씩)?|인물(?:이|은)|손(?:이|은)|카메라(?:가|는)|화면(?:에|이|은)).*(?:집습니다|보여줍니다|비춥니다|등장합니다|전환됩니다|확대됩니다|놓습니다|있습니다)$/i,
+  /(?:가림|가격|정보)\s*카드.*(?:있어요|보여요|나옵니다|등장합니다)$/i,
+  /화면으로\s*(?:먼저\s*)?(?:보이|확인)/i,
+  /(?:장면|화면|표면\s*색).*(?:바뀜|보임|전환|확대)$/i,
+];
+const AWKWARD_AUDIENCE_COPY = [
+  /(?:고르는|갈리는|찾는|준비하는)\s*집들/i,
+  /(?:누구의|어떤)\s*(?:불편|반응|구매\s*이유)/i,
+];
+const DELIVERY_AUDIENCE_COPY = [
+  /(?:무료\s*)?배송(?:비|료|조건|지|지역|일정|기간|안내|가능|불가|추가|제외|문의)?/i,
+  /(?:제주|도서\s*산간|산간\s*지역).*(?:추가|비용|요금|배송)/i,
+  /(?:택배|착불)\s*(?:비|비용|요금|안내)/i,
+];
+const CTA_ACTION = /(?:확인(?:해|하세요|하기|해요)|살펴(?:봐|보세요|보기)|비교(?:해|하세요|하기)|구매(?:해|하세요|하기)|주문(?:해|하세요|하기)|예약(?:해|하세요|하기)|신청(?:해|하세요|하기)|담아(?:봐|보세요)|눌러(?:봐|보세요)|챙겨(?:가|가세요|두세요)|쟁여(?:둬|두세요)|선택(?:해|하세요|하기)|만나(?:봐|보세요))/i;
+const OPENING_RHYTHM_MARKERS = ["잠깐", "진짜", "설마", "왜", "여러분", "형님들"];
+
+function containsDeliveryDetail(value: unknown) {
+  return DELIVERY_AUDIENCE_COPY.some((pattern) => pattern.test(String(value || "")));
+}
 
 function visibleCaptionLength(value: string) {
   return value.replace(/\s/g, "").length;
+}
+
+function captionDuration(cut: VideoCut) {
+  return Math.max(0.1, cut.endSecond - cut.startSecond);
+}
+
+export function captionCharactersPerSecond(cut: VideoCut) {
+  return visibleCaptionLength(cut.caption) / captionDuration(cut);
+}
+
+function captionReadingLimit(cut: VideoCut, isFinal: boolean) {
+  if (cut.startSecond < 3) return 11;
+  if (isFinal) return 10;
+  return 10.5;
+}
+
+export function detailedCaptionReadingIssues(cuts: VideoCut[]) {
+  const finalId = [...cuts].sort((left, right) => left.startSecond - right.startSecond).at(-1)?.id;
+  return cuts
+    .map((cut) => {
+      const speed = captionCharactersPerSecond(cut);
+      const limit = captionReadingLimit(cut, cut.id === finalId);
+      return { cutNumber: cut.cutNumber, speed, limit };
+    })
+    .filter((item) => item.speed > item.limit + 0.01);
 }
 
 function hasDetailedCaptionDensity(concept: VideoConcept, cuts: VideoCut[]) {
@@ -32,40 +79,44 @@ function hasDetailedCaptionDensity(concept: VideoConcept, cuts: VideoCut[]) {
   // Apply the richer density contract only to the new four-concept AI path.
   if (!concept.conceptArchetype) return cuts.every((cut) => cut.caption.length > 0 && cut.caption.length <= 46);
   const finalCut = cuts.at(-1);
-  const bodyCuts = cuts.filter((cut) => cut.id !== finalCut?.id && cut.startSecond >= 3);
   const lengthsAreValid = cuts.every((cut) => {
     const length = visibleCaptionLength(cut.caption);
     if (cut.caption.length > 46) return false;
     if (cut.id === finalCut?.id) return length >= 4;
-    return length >= (cut.startSecond < 3 ? 8 : 11);
+    return length >= (cut.startSecond < 3 ? 4 : 5);
   });
-  if (!lengthsAreValid || bodyCuts.length === 0) return lengthsAreValid;
-  const averageBodyLength = bodyCuts.reduce((sum, cut) => sum + visibleCaptionLength(cut.caption), 0) / bodyCuts.length;
-  return averageBodyLength >= 14;
+  return lengthsAreValid;
 }
 
 export function segmentRange(duration: VideoDuration) {
-  if (duration === 15) return { min: 15, max: 16, preferred: 15 };
-  if (duration === 20) return { min: 15, max: 18, preferred: 16 };
-  if (duration === 30) return { min: 18, max: 24, preferred: 20 };
-  if (duration === 45) return { min: 22, max: 30, preferred: 24 };
-  return { min: 22, max: 34, preferred: 26 };
+  if (duration === 15) return { min: 8, max: 11, preferred: 9 };
+  if (duration === 20) return { min: 10, max: 13, preferred: 11 };
+  if (duration === 30) return { min: 14, max: 17, preferred: 15 };
+  if (duration === 45) return { min: 18, max: 23, preferred: 20 };
+  return { min: 22, max: 28, preferred: 24 };
 }
 
 export function hasVerifiedVideoBenefit(analysis: ProductAnalysisSnapshot) {
-  return Boolean(analysis.discountInfo || analysis.promotion || analysis.originalPrice || analysis.minimumOrderQuantity || analysis.shippingConditions?.length || analysis.composition?.length || (analysis.verifiedFacts || []).some((fact) => /가격|할인|혜택|배송|증정|구성|쿠폰/i.test(`${fact.label} ${fact.value}`)));
+  const saleFacts = [analysis.discountInfo, analysis.promotion, analysis.originalPrice, analysis.minimumOrderQuantity];
+  return Boolean(
+    saleFacts.some((value) => String(value || "").trim() && !containsDeliveryDetail(value)) ||
+      (analysis.composition || []).some((value) => !containsDeliveryDetail(value)) ||
+      (analysis.verifiedFacts || []).some((fact) => !containsDeliveryDetail(`${fact.label} ${fact.value}`) && /가격|할인|혜택|증정|구성|쿠폰/i.test(`${fact.label} ${fact.value}`))
+  );
 }
 
 export function assignPlanningTimeline<T extends { caption: string; narration?: string; sceneDescription: string }>(rows: T[], duration: VideoDuration): Array<T & { startSecond: number; endSecond: number }> {
   if (rows.length < 3) throw new Error("첫 3초를 구성할 대본 구간이 부족합니다.");
-  const remainingCount = rows.length - 3;
+  const bodyCount = Math.max(0, rows.length - 4);
+  const ctaDuration = duration >= 45 ? 3 : duration >= 30 ? 2.4 : duration >= 20 ? 2 : 1.5;
+  const bodyDuration = Math.max(0, duration - 3 - ctaDuration);
   let previous = 0;
   return rows.map((row, index) => {
     const startSecond = previous;
     let endSecond: number;
     if (index < 3) endSecond = index + 1;
     else if (index === rows.length - 1) endSecond = duration;
-    else endSecond = Number((3 + ((duration - 3) * (index - 2)) / remainingCount).toFixed(2));
+    else endSecond = Number((3 + (bodyDuration * (index - 2)) / Math.max(1, bodyCount)).toFixed(2));
     previous = endSecond;
     return { ...row, startSecond, endSecond };
   });
@@ -147,6 +198,30 @@ function normalizePlanningCopy(value: string | undefined) {
     .trim();
 }
 
+function hasReadableKoreanSpacing(value: string) {
+  const normalized = normalizePlanningCopy(value);
+  const visible = normalized.replace(/[^0-9a-z가-힣]/gi, "");
+  if (visible.length < 8 || /\s/.test(normalized)) return true;
+  // 가격·용량처럼 하나의 짧은 값 자체가 자막인 경우는 붙여 쓸 수 있다.
+  if (/^\d[\d,.]*(?:%|원|kg|g|mg|ml|l|개|팩|세트|박스)?[?!.;~]*$/i.test(normalized)) return true;
+  return false;
+}
+
+function isIncompleteAudienceCaption(value: string) {
+  const normalized = normalizePlanningCopy(value).replace(/[?!.;~]+$/g, "");
+  return /(?:될\s*수|할\s*수|하면|인데|이고|이며|해서|하며|라서|라고|라는|처럼|보다|위해|대한|관한)$/i.test(normalized);
+}
+
+function naturalizePlanningCta(value: string) {
+  return normalizePlanningCopy(value)
+    .replace(/^(?:확인된|검증된)\s*(?:혜택|할인)(?:은|는|이|가)?\s*(\d[\d,.]*%)\s*/i, "$1 할인, ")
+    .replace(/^(?:확인된|검증된)\s*(?:가격|구성|배송)(?:은|는|이|가)?\s*/i, "")
+    .replace(/\s+,/g, ",")
+    .replace(/,\s*,+/g, ", ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function fallbackPlanningCta(concept: VideoConcept) {
   if (concept.objective === "retargeting") return "상품 정보를 다시 확인하세요";
   if (concept.objective === "usp") return "제품의 차이를 상세페이지에서 확인하세요";
@@ -159,17 +234,24 @@ function fallbackPlanningCta(concept: VideoConcept) {
 }
 
 /** 자막 최대 길이 안에서 CTA를 단어 중간이 잘리지 않도록 줄인다. */
-export function compactPlanningCta(value: string, fallback: string) {
-  const normalized = normalizePlanningCopy(value) || normalizePlanningCopy(fallback);
-  if (normalized.length <= 34) return normalized;
-  const words = normalized.split(" ");
-  let result = "";
-  for (const word of words) {
-    const candidate = result ? `${result} ${word}` : word;
-    if (candidate.length > 34) break;
-    result = candidate;
+export function compactPlanningCta(value: string, fallback: string, maxLength = 34) {
+  const safeLimit = Math.max(12, Math.min(34, Math.floor(maxLength)));
+  const fallbackCopy = normalizePlanningCopy(fallback) || "상품 정보를 지금 확인하세요";
+  let normalized = naturalizePlanningCta(value) || fallbackCopy;
+  if (normalized.length <= safeLimit && CTA_ACTION.test(normalized)) return normalized;
+  const matchedAction = normalized.match(/(?:지금\s*)?(?:직접\s*)?(?:확인(?:해\s*보세요|해보세요|하세요)|살펴보세요|비교하세요|구매하세요|주문하세요|예약하세요|신청하세요|눌러보세요|챙겨두세요|쟁여두세요|선택하세요|만나보세요)[.!?]*$/i)?.[0];
+  const action = normalizePlanningCopy(matchedAction) || "지금 확인하세요";
+  const subject = normalizePlanningCopy(matchedAction ? normalized.slice(0, -matchedAction.length) : normalized).replace(/[,.·/|\-]+$/g, "").trim();
+  const subjectLimit = Math.max(0, safeLimit - action.length - 1);
+  let compactSubject = "";
+  for (const word of subject.split(" ").filter(Boolean)) {
+    const candidate = compactSubject ? `${compactSubject} ${word}` : word;
+    if (candidate.length > subjectLimit) break;
+    compactSubject = candidate;
   }
-  return result || normalized.slice(0, 34);
+  normalized = compactSubject ? `${compactSubject} ${action}` : action;
+  if (normalized.length <= safeLimit) return normalized;
+  return CTA_ACTION.test(fallbackCopy) && fallbackCopy.length <= safeLimit ? fallbackCopy : "지금 확인하세요";
 }
 
 export function hasFinalPlanningCta(concept: VideoConcept) {
@@ -185,10 +267,11 @@ export function hasFinalPlanningCta(concept: VideoConcept) {
  */
 export function repairDetailedPlanningCta(concept: VideoConcept) {
   if (!concept.cuts.length) return concept;
-  const cta = compactPlanningCta(concept.cta, fallbackPlanningCta(concept));
   const finalCut = [...concept.cuts].sort((left, right) => left.startSecond - right.startSecond).at(-1);
   if (!finalCut) return concept;
-  const alreadyValid = normalizePlanningCopy(concept.cta) === cta && normalizePlanningCopy(finalCut.caption).includes(cta) && finalCut.caption.length <= 34;
+  const readableLimit = Math.max(12, Math.floor(captionDuration(finalCut) * 10));
+  const cta = compactPlanningCta(concept.cta, fallbackPlanningCta(concept), readableLimit);
+  const alreadyValid = normalizePlanningCopy(concept.cta) === cta && normalizePlanningCopy(finalCut.caption).includes(cta) && finalCut.caption.length <= readableLimit;
   if (alreadyValid) return concept;
   const cuts = concept.cuts.map((cut) => (cut.id === finalCut.id ? { ...cut, caption: cta } : cut));
   const fullScript = normalizePlanningCopy(concept.fullScript);
@@ -209,6 +292,7 @@ function naturalizeEvidenceAuditCaption(value: string, isOpening: boolean) {
     .replace(/상세페이지(?:에서)?\s*확인(?:된|되는|한)\s*(?:구성|가격|할인|수치|중량|용량|정보|표기|내용)?/gi, " ")
     .replace(/(?:구성|가격|할인|수치|중량|용량)\s*표기(?:예요|에요|입니다|로|가|는)?/gi, (match) => match.replace(/\s*표기.*$/i, ""))
     .replace(/(?:확인된|확인되는|기재된)\s*(?:표기|수치|정보|내용|조건)/gi, " ")
+    .replace(/(?:확인된|검증된)\s*(?:혜택|가격|할인|구성|배송)(?:은|는|이|가)?/gi, " ")
     .replace(/(?:표기|기재)(?:상|로는|에는|가|는)?\s*(?:보입니다|확인됩니다|되어\s*있습니다)/gi, " ")
     .replace(/확인\s*결과(?:로|는|가|입니다)?/gi, " ")
     .replace(/근거(?:상|에\s*따르면)/gi, " ")
@@ -302,6 +386,19 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
   const unknownNumbers = normalizedNumbers(audienceCopy).filter((value) => !allowed.has(value));
   const sceneSignalFailures = cuts.map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut) })).filter((item) => item.missing.length > 0);
   const abstract = cuts.filter((cut) => cut.sceneDescription.length < 75 || (ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription)) && missingSceneSignals(cut).length >= 2));
+  const readingIssues = concept.conceptArchetype ? detailedCaptionReadingIssues(cuts) : [];
+  const spacingFailures = concept.conceptArchetype ? cuts.filter((cut) => !hasReadableKoreanSpacing(cut.caption)) : [];
+  const incompleteCaptions = concept.conceptArchetype ? cuts.filter((cut) => isIncompleteAudienceCaption(cut.caption)) : [];
+  const stageDirectionCuts = concept.conceptArchetype ? cuts.filter((cut) => [...STAGE_DIRECTION_COPY, ...AWKWARD_AUDIENCE_COPY].some((pattern) => pattern.test(cut.caption))) : [];
+  const deliveryCopyCuts = concept.conceptArchetype ? cuts.filter((cut) => DELIVERY_AUDIENCE_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))) : [];
+  const openingMarkerRepeats = OPENING_RHYTHM_MARKERS.filter((marker) => firstThree.filter((cut) => cut.caption.includes(marker)).length > 1);
+  const earlyWindow = Math.min(8, Math.max(5, duration * 0.3));
+  const earlyCopy = cuts.filter((cut) => cut.startSecond < earlyWindow).map((cut) => `${cut.caption} ${cut.narration}`).join(" ").replace(/\s+/g, "").toLowerCase();
+  const commercialTokens = [analysis.price, analysis.originalPrice, analysis.discountInfo, analysis.promotion, analysis.volumeOrOption, ...(analysis.composition || [])]
+    .filter((value) => !containsDeliveryDetail(value))
+    .map((value) => String(value || "").replace(/\s+/g, "").toLowerCase())
+    .filter((value) => value.length >= 2);
+  const hasEarlyCommercialSignal = commercialTokens.some((token) => earlyCopy.includes(token));
   const checks: PlanningQualityCheck[] = [
     {
       key: "segment-count",
@@ -352,6 +449,11 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       message: "같은 자막 문장을 반복하지 않아야 합니다.",
     },
     {
+      key: "opening-copy-repetition",
+      passed: !concept.conceptArchetype || openingMarkerRepeats.length === 0,
+      message: openingMarkerRepeats.length ? `첫 3초에 같은 후킹 표현을 반복했습니다: ${openingMarkerRepeats.join(", ")}.` : "첫 3초의 후킹 표현이 반복되지 않습니다.",
+    },
+    {
       key: "product-repetition",
       passed: !analysis.productName || combined.split(analysis.productName).length - 1 <= 3,
       message: "상품명을 3회보다 많이 반복하지 않아야 합니다.",
@@ -363,6 +465,36 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
         !GENERIC_COPY.some((pattern) => pattern.test(audienceCopy)) &&
         !cuts.some((cut) => INTERNAL_PLANNING_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))),
       message: "자막은 시청자에게 직접 말하는 충분한 구어체여야 하며 내부 기획 용어·범용 광고 문구를 사용하지 않아야 합니다.",
+    },
+    {
+      key: "caption-readability",
+      passed: readingIssues.length === 0,
+      message: readingIssues.length ? `읽기 속도가 빠른 자막: ${readingIssues.map((item) => `${item.cutNumber}번 ${item.speed.toFixed(1)}자/초`).join(" · ")}. 자막을 줄이거나 노출 시간을 늘려 주세요.` : "모든 자막이 노출 시간 안에 읽을 수 있는 길이입니다.",
+    },
+    {
+      key: "caption-spacing",
+      passed: spacingFailures.length === 0,
+      message: spacingFailures.length ? `띄어쓰기가 없어 읽기 어려운 자막: ${spacingFailures.map((cut) => `${cut.cutNumber}번`).join(", ")}. 숫자·단위를 제외한 한국어 문장은 자연스럽게 띄어 써 주세요.` : "한국어 자막의 띄어쓰기가 자연스럽습니다.",
+    },
+    {
+      key: "sentence-completion",
+      passed: incompleteCaptions.length === 0,
+      message: incompleteCaptions.length ? `문장이 중간에 끊긴 자막: ${incompleteCaptions.map((cut) => `${cut.cutNumber}번`).join(", ")}. ‘~될 수’, ‘~하면’ 같은 연결 표현 뒤까지 완결해 주세요.` : "모든 자막이 화면 안에서 의미가 완결됩니다.",
+    },
+    {
+      key: "audience-value-copy",
+      passed: stageDirectionCuts.length === 0,
+      message: stageDirectionCuts.length ? `광고 문구 대신 촬영 지시·부자연스러운 표현이 들어간 자막: ${stageDirectionCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}. 구매 이유·증거·반응 문장으로 바꿔 주세요.` : "자막이 촬영 지시가 아니라 시청자용 광고 문장으로 작성되었습니다.",
+    },
+    {
+      key: "delivery-copy",
+      passed: deliveryCopyCuts.length === 0,
+      message: deliveryCopyCuts.length ? `영상의 목적과 무관한 배송·배송비 안내가 들어간 자막: ${deliveryCopyCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}. 배송 정보는 자막과 내레이션에서 완전히 제외해 주세요.` : "자막과 내레이션에 배송·배송비 안내가 없습니다.",
+    },
+    {
+      key: "early-commercial-signal",
+      passed: !concept.conceptArchetype || !hasVerifiedVideoBenefit(analysis) || hasEarlyCommercialSignal,
+      message: hasEarlyCommercialSignal ? `${earlyWindow.toFixed(0)}초 안에 확인된 가격·할인·구성 중 하나가 노출됩니다.` : `${earlyWindow.toFixed(0)}초 안에 확인된 가격·할인·구성 중 하나를 노출해 상품 광고임을 알려 주세요. 상황극의 정체 공개는 뒤에 유지해도 됩니다.`,
     },
     {
       key: "scene-specificity",
@@ -383,6 +515,11 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       key: "cta",
       passed: hasFinalPlanningCta(concept),
       message: "앞의 구매 이유와 연결되는 CTA가 마지막 구간에 필요합니다.",
+    },
+    {
+      key: "cta-action",
+      passed: !concept.conceptArchetype || CTA_ACTION.test(normalizePlanningCopy(concept.cta)),
+      message: "마지막 CTA에는 확인·구매·예약처럼 시청자가 바로 실행할 행동 동사가 필요합니다.",
     },
   ];
   return {

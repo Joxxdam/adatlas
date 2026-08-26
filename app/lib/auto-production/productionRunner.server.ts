@@ -23,7 +23,35 @@ const globalState = globalThis as typeof globalThis & { [monitorKey]?: Map<strin
 const monitors = globalState[monitorKey] ?? new Map<string, Promise<void>>();
 globalState[monitorKey] = monitors;
 const processingStatuses = ["selecting-products", "analyzing-products", "generating-hooks", "queued", "generating-creatives"];
-const terminalProductStatuses = new Set(["completed", "failed", "skipped-duplicate", "skipped-insufficient-data", "skipped-unavailable"]);
+const terminalProductStatuses = new Set(["completed", "failed", "cancelled", "skipped-duplicate", "skipped-insufficient-data", "skipped-unavailable"]);
+
+class AutoProductionRunCancelledError extends Error {
+  constructor() {
+    super("자동 제작 실행이 취소되었습니다.");
+    this.name = "AutoProductionRunCancelledError";
+  }
+}
+
+function isCancellationError(error: unknown) {
+  return error instanceof AutoProductionRunCancelledError;
+}
+
+async function ensureRunActive(runId: string) {
+  const current = await autoProductionRepository.get(runId);
+  if (!current || current.status === "cancelled") throw new AutoProductionRunCancelledError();
+  return current;
+}
+
+async function cancelPreparedGenerationJob(jobId: string) {
+  await creativeGenerationJobStore.update(jobId, (job) => ({
+    ...job,
+    status: "cancelled",
+    cancelledAt: new Date().toISOString(),
+    results: job.results.map((result) =>
+      ["pending", "running"].includes(result.status) ? { ...result, status: "cancelled" as const, error: undefined } : result
+    ),
+  })).catch(() => undefined);
+}
 
 function wait(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -145,7 +173,13 @@ function directRunRecord(config: AutoProductionAdvertiserConfig, now: Date): Aut
 }
 
 async function prepareTask(run: AutoProductionRun, config: AutoProductionAdvertiserConfig, task: AutoProductionProductTask) {
-  await autoProductionRepository.update(run.id, (current) => ({ ...current, status: "generating-hooks", tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: "analyzing", updatedAt: new Date().toISOString() } : item)) }));
+  await ensureRunActive(run.id);
+  const analyzingRun = await autoProductionRepository.update(run.id, (current) =>
+    current.status === "cancelled"
+      ? current
+      : { ...current, status: "generating-hooks", tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: "analyzing", updatedAt: new Date().toISOString() } : item)) }
+  );
+  if (analyzingRun.status === "cancelled") throw new AutoProductionRunCancelledError();
   const job = await createNativeGenerationJob(
     {
       product: task.candidate.productInfo,
@@ -162,6 +196,12 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       autoProductionTaskId: task.id,
     }
   );
+  try {
+    await ensureRunActive(run.id);
+  } catch (error) {
+    await cancelPreparedGenerationJob(job.id);
+    throw error;
+  }
   const hooks = hookHypothesesFromJob(job);
   const executionResultIds = job.results.map((result) => result.id);
   const assignedReferences = job.results.map((result) => result.nativeCreative?.adReference?.id).filter(Boolean);
@@ -184,22 +224,37 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
   if (!isCurrentAutoProductionGenerationJob(queuedJob)) {
     throw new Error("자동제작 작업의 공통 레퍼런스 편집·6장 실행 계약 검증에 실패했습니다.");
   }
-  await autoProductionRepository.update(run.id, (current) => ({
-    ...current,
-    status: "queued",
-    tasks: current.tasks.map((item) =>
-      item.id === task.id
-        ? {
-            ...item,
-            status: "queued",
-            hookHypotheses: hooks,
-            generationJobId: queuedJob.id,
-            results: resultsFromJob(queuedJob),
-            updatedAt: new Date().toISOString(),
-          }
-        : item
-    ),
-  }));
+  let registered = false;
+  await autoProductionRepository.update(run.id, (current) => {
+    if (current.status === "cancelled") return current;
+    registered = true;
+    return {
+      ...current,
+      status: "queued",
+      tasks: current.tasks.map((item) =>
+        item.id === task.id
+          ? {
+              ...item,
+              status: "queued",
+              hookHypotheses: hooks,
+              generationJobId: queuedJob.id,
+              results: resultsFromJob(queuedJob),
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      ),
+    };
+  });
+  if (!registered) {
+    await cancelPreparedGenerationJob(queuedJob.id);
+    throw new AutoProductionRunCancelledError();
+  }
+  try {
+    await ensureRunActive(run.id);
+  } catch (error) {
+    await cancelPreparedGenerationJob(queuedJob.id);
+    throw error;
+  }
   enqueueGenerationJob(queuedJob.id);
 }
 
@@ -221,11 +276,16 @@ export async function runAutoProductionForProduct(config: AutoProductionAdvertis
     await prepareTask(run, config, task);
     run = await autoProductionRepository.update(initial.id, (current) => ({
       ...current,
-      status: "generating-creatives",
+      status: current.status === "cancelled" ? "cancelled" : "generating-creatives",
     }));
+    if (run.status === "cancelled") return { run, created: true };
     ensureAutoProductionRunMonitor(run.id);
     return { run, created: true };
   } catch (error) {
+    if (isCancellationError(error)) {
+      const cancelled = await autoProductionRepository.get(initial.id);
+      return { run: cancelled ?? initial, created: true };
+    }
     const message = safeMessage(error, "상품 광고 준비에 실패했습니다.");
     const failed = await autoProductionRepository.update(initial.id, (current) => ({
       ...current,
@@ -240,7 +300,18 @@ export async function runAutoProductionForProduct(config: AutoProductionAdvertis
 
 export async function scheduleAutoProductionForAdvertiser(config: AutoProductionAdvertiserConfig, options: { trigger?: AutoProductionRun["trigger"]; now?: Date } = {}) {
   const now = options.now || new Date();
-  return autoProductionRepository.createUnique(runRecord(config, options.trigger || "scheduled", now));
+  const initial = runRecord(config, options.trigger || "scheduled", now);
+  const created = await autoProductionRepository.createUnique(initial);
+  // 사용자가 명시한 수동 재실행은 같은 날 취소된 예약의 runKey에 막히지 않는다.
+  // 완료·진행 중 실행은 그대로 중복 방지하고, 취소 기록만 보존한 채 새 대기열을 만든다.
+  if (options.trigger === "manual" && !created.created && created.run?.status === "cancelled") {
+    return autoProductionRepository.createUnique({
+      ...initial,
+      id: `auto-run-${randomUUID()}`,
+      runKey: `${initial.runKey}:manual-retry:${randomUUID()}`,
+    });
+  }
+  return created;
 }
 
 export async function startScheduledAutoProductionRun(runId: string, config: AutoProductionAdvertiserConfig, options: { now?: Date } = {}) {
@@ -285,9 +356,12 @@ export async function startScheduledAutoProductionRun(runId: string, config: Aut
     }));
     if (!selected.length) return { run, started: true };
     for (const task of tasks) {
+      const current = await autoProductionRepository.get(run.id);
+      if (!current || current.status === "cancelled") break;
       try {
         await prepareTask(run, config, task);
       } catch (error) {
+        if (isCancellationError(error)) break;
         const message = safeMessage(error, "상품 광고 준비에 실패했습니다.");
         await autoProductionRepository.update(run.id, (current) => ({
           ...current,
@@ -298,13 +372,17 @@ export async function startScheduledAutoProductionRun(runId: string, config: Aut
     }
     run = await autoProductionRepository.update(run.id, (current) => ({
       ...current,
-      status: current.tasks.some((task) => task.generationJobId) ? "generating-creatives" : current.tasks.some((task) => task.status === "failed") ? "failed" : "skipped",
-      completedAt: current.tasks.some((task) => task.generationJobId) ? undefined : new Date().toISOString(),
+      status: current.status === "cancelled" ? "cancelled" : current.tasks.some((task) => task.generationJobId) ? "generating-creatives" : current.tasks.some((task) => task.status === "failed") ? "failed" : "skipped",
+      completedAt: current.status === "cancelled" ? current.completedAt : current.tasks.some((task) => task.generationJobId) ? undefined : new Date().toISOString(),
     }));
     await autoProductionAdvertiserRepository.update(config.advertiserId, { lastRunAt: now.toISOString(), nextRunAt: nextScheduledAt(config, now) });
     if (run.status === "generating-creatives") ensureAutoProductionRunMonitor(run.id);
     return { run, started: true };
   } catch (error) {
+    if (isCancellationError(error)) {
+      const cancelled = await autoProductionRepository.get(initial.id);
+      return { run: cancelled ?? initial, started: true };
+    }
     const message = safeMessage(error, "자동 제작 실행에 실패했습니다.");
     const failed = await autoProductionRepository.update(initial.id, (run) => ({ ...run, status: "failed", errors: [...run.errors, message], completedAt: new Date().toISOString() }));
     return { run: failed, started: true };
@@ -322,11 +400,24 @@ export async function runAutoProductionForAdvertiser(config: AutoProductionAdver
 export async function syncAutoProductionRun(runId: string) {
   const run = await autoProductionRepository.get(runId);
   if (!run) return null;
+  // 취소된 실행은 연결된 작업의 늦은 완료/동기화 결과로 되살리지 않습니다.
+  // 취소 직전에 running이던 결과가 남아 있어도 run 상태가 사용자 의도보다 우선합니다.
+  if (run.status === "cancelled") return run;
   const tasks = await Promise.all(
     run.tasks.map(async (task) => {
       if (!task.generationJobId || (terminalProductStatuses.has(task.status) && task.adCopy && task.adCopy.status !== "generating")) return task;
       const job = await creativeGenerationJobStore.get(task.generationJobId);
       if (!job) return { ...task, status: "failed" as const, error: "연결된 광고 생성 작업을 찾지 못했습니다.", updatedAt: new Date().toISOString() };
+      if (job.status === "cancelled") {
+        return {
+          ...task,
+          status: "cancelled" as const,
+          results: resultsFromJob(job),
+          adCopy: job.adCopy,
+          error: undefined,
+          updatedAt: new Date().toISOString(),
+        };
+      }
       const scoped = executionResults(job);
       const generated = scoped.filter((result) => Boolean(result.imagePath)).length;
       const failed = scoped.filter((result) => result.status === "failed" && !result.imagePath).length;
@@ -474,7 +565,22 @@ export async function cancelAutoProductionRun(runId: string) {
   if (!run) throw new Error("자동 제작 실행 기록을 찾지 못했습니다.");
   for (const task of run.tasks) {
     if (!task.generationJobId) continue;
-    await creativeGenerationJobStore.update(task.generationJobId, (job) => ({ ...job, status: "cancelled", cancelledAt: new Date().toISOString(), results: job.results.map((result) => (result.status === "pending" ? { ...result, status: "cancelled" } : result)) })).catch(() => undefined);
+    await creativeGenerationJobStore.update(task.generationJobId, (job) => ({
+      ...job,
+      status: "cancelled",
+      cancelledAt: new Date().toISOString(),
+      results: job.results.map((result) => (["pending", "running"].includes(result.status) ? { ...result, status: "cancelled", error: undefined } : result)),
+    })).catch(() => undefined);
   }
-  return autoProductionRepository.update(runId, (current) => ({ ...current, status: "cancelled", completedAt: new Date().toISOString() }));
+  return autoProductionRepository.update(runId, (current) => ({
+    ...current,
+    status: "cancelled",
+    completedAt: new Date().toISOString(),
+    tasks: current.tasks.map((task) => ({
+      ...task,
+      status: terminalProductStatuses.has(task.status) ? task.status : "cancelled",
+      results: task.results.map((result) => (["pending", "running"].includes(result.status) ? { ...result, status: "cancelled" as const } : result)),
+      updatedAt: new Date().toISOString(),
+    })),
+  }));
 }

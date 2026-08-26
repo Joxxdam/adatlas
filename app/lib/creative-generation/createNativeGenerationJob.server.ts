@@ -1,7 +1,7 @@
 import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createGenerationJob } from "./planner";
-import { buildProductTruth, cleanProductTitle } from "./productTruth";
+import { buildProductTruth, cleanProductTitle, isPlausibleTargetCustomer, isPromotionLike } from "./productTruth";
 import { assertNativeProductReferenceReady, inspectProductTruthImages } from "./productImages.server";
 import { analyzeProductReferences } from "./referenceAnalyzer.server";
 import { hasExplicitPaidApiAuthorization, type CreateGenerationJobInput, type GenerationJob, type ReferenceCategoryOverride } from "./types";
@@ -44,27 +44,43 @@ function resolveAdBrief(value: Partial<AdBrief> | undefined): AdBrief {
 }
 
 function conciseVerifiedBenefit(value: string) {
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = value
+    .normalize("NFKC")
+    .replace(/[★☆*✅⚡💥]+/gu, " ")
+    .replace(/마블링\s*적당해요\s*\(\s*육이\s*숙성되어\s*감칠맛\s*2배\s*\)/giu, "적당한 마블링과 숙성으로 살린 감칠맛")
+    .replace(/설록우\s*\(\s*찰진\s*등심\s*\)/giu, "설록우 찰진등심")
+    .replace(/국내산\s*\/\s*/giu, "국내산 ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/^(?:마블링|향|식감|구성)\s*(?:정도|정보)$/u.test(normalized)) return "";
   const cue = normalized.match(/(?:쿨링감|보습감|사용감|세정력|흡수력|지속력|휴대성|식감|향|구성)(?:으로|로|이|가|은|는)?[^,.!?]{0,34}/u)?.[0];
-  return (cue || normalized.split(/[,\n]/)[0] || normalized).trim();
+  const segment = normalized
+    .split(/\s*[·•|]\s*|[.!?]+\s*|\s*[★☆*]\s*/u)
+    .map((candidate) => candidate.trim())
+    .find((candidate) => Array.from(candidate.replace(/\s/g, "")).length >= 4 && Array.from(candidate.replace(/\s/g, "")).length <= 62);
+  return (cue || segment || (Array.from(normalized.replace(/\s/g, "")).length <= 62 ? normalized : "")).trim();
 }
 
 function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]) {
-  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isUnsafeProductCreativeSignal(value)));
+  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isUnsafeProductCreativeSignal(value) || isPromotionLike(value)));
   const cleanList = (values?: string[]) => (values || []).map((value) => value.trim()).filter((value) => value && !unsafe(value));
-  const verifiedBenefits = cleanList(product.verifiedBenefits);
   const ingredients = cleanList(product.ingredients);
-  const mainBenefit = unsafe(product.mainBenefit) ? conciseVerifiedBenefit(verifiedBenefits[0] || ingredients[0] || "") : product.mainBenefit;
+  const verifiedBenefits = Array.from(new Set(cleanList(product.verifiedBenefits).map(conciseVerifiedBenefit).filter(Boolean)));
+  const mainBenefitCandidate = unsafe(product.mainBenefit) ? verifiedBenefits[0] || ingredients[0] || "" : product.mainBenefit || "";
+  const mainBenefit = conciseVerifiedBenefit(mainBenefitCandidate);
   const extractedDescription = (product.extractedDescription || "")
     .split(/\s*[·•|]\s*|[.!?]\s+/)
     .map((value) => value.trim())
     .filter((value) => value && !unsafe(value))
+    .map(conciseVerifiedBenefit)
+    .filter(Boolean)
+    .slice(0, 6)
     .join(" · ");
   return {
     ...product,
     productName: cleanProductTitle(product.productName.replace(/\s*\(\d+\)\s*$/, "").trim(), product.brandName || product.advertiserName || ""),
     mainBenefit,
-    targetCustomer: unsafe(product.targetCustomer) ? "" : product.targetCustomer,
+    targetCustomer: !unsafe(product.targetCustomer) && isPlausibleTargetCustomer(product.targetCustomer, [mainBenefit, ...verifiedBenefits]) ? product.targetCustomer : "",
     extractedDescription,
     verifiedBenefits,
     ingredients,
@@ -118,8 +134,13 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const advertiserName = product.advertiserName || advertiser.name;
   const planningFingerprint = buildCreativePlanFingerprint(truth);
   const referenceCategoryOverride = options.sourceType === "auto-production" ? undefined : normalizeReferenceCategoryOverride(input.referenceCategoryOverride);
+  const recentReferenceJobs = (await creativeGenerationJobStore.recentFor({ advertiserId, limit: 50 }))
+    .filter((previous) => !["cancelled", "failed"].includes(previous.status))
+    // 한 번의 기본 자동제작 묶음(상품 최대 4개) 안에서는 레퍼런스 반복을
+    // 피하되, 다음 묶음부터는 식품 전체 풀이 다시 순환할 수 있게 한다.
+    .slice(0, 4);
   const recentReferenceIds = new Set(
-    (await creativeGenerationJobStore.recentFor({ advertiserId, limit: 12 }))
+    recentReferenceJobs
       .flatMap((previous) => previous.results.map((result) => result.nativeCreative?.adReference?.id))
       .filter((id): id is string => Boolean(id))
   );

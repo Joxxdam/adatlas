@@ -37,6 +37,21 @@ function won(value?: number) {
   return value ? `${Math.round(value).toLocaleString("ko-KR")}원` : "";
 }
 
+function comparableBenefit(value: string) {
+  return value.normalize("NFKC").toLowerCase().replace(/[^0-9a-z가-힣]+/g, "");
+}
+
+function verifiedBenefitsForProduct(product: SiteAdCandidate["product"]) {
+  const productName = comparableBenefit(product.productName);
+  return Array.from(
+    new Set(
+      [...product.uspCandidates, ...product.benefits]
+        .map((value) => value.trim())
+        .filter((value) => value && comparableBenefit(value) !== productName)
+    )
+  ).slice(0, 12);
+}
+
 function sourceImages(candidate: SiteAdCandidate): SourceImageCandidate[] {
   const product = candidate.product;
   return [product.representativeImage, ...product.additionalImages]
@@ -73,6 +88,7 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
   const images = [product.representativeImage, ...product.additionalImages].filter((image): image is string => Boolean(image));
   const prioritizedHook = TYPE_TO_HOOK[candidate.primaryRecommendationType];
   const recommendedHookTypes = [prioritizedHook, ...UNIVERSAL_HOOKS.filter((hook) => hook !== prioritizedHook)];
+  const verifiedBenefits = verifiedBenefitsForProduct(product);
   return {
     productName: product.productName,
     category: product.category || "기타",
@@ -81,7 +97,9 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
     oldPrice: won(product.regularPrice),
     advertiserName: product.brandName,
     brandName: product.brandName,
-    discountInfo: product.benefits.join(" · "),
+    // 수동 제작과 동일하게 할인 필드에는 할인율만 둔다. 무료배송·쿠폰·구성은
+    // 검증 혜택으로 분리해 가격 카피에 상품명이나 배송 문구가 섞이지 않게 한다.
+    discountInfo: product.discountRate ? `${product.discountRate}% 할인` : "",
     mainBenefit: product.uspCandidates.slice(0, 3).join(" · "),
     targetCustomer: product.targetSignals.slice(0, 3).join(" · ") || product.usageContexts.slice(0, 2).join(" · ") || "상품 상세페이지에서 확인된 정보를 비교하는 고객",
     landingUrl: product.productUrl,
@@ -98,7 +116,7 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
     selectedSourceImageId: images.length ? `site-${product.id}-1` : "",
     selectedSourceImagePath: product.representativeImage || "",
     ingredients: product.ingredients,
-    verifiedBenefits: product.uspCandidates,
+    verifiedBenefits,
     creativeContext: {
       advertiserId: product.brandName || new URL(product.productUrl).hostname,
       productId: product.id,

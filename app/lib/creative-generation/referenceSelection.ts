@@ -92,6 +92,17 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
     return { item, score: -100, reasons: ["식품 하위 선택 풀 불일치"] };
   }
   if (item.compatibilityConfidence === "low") return { item, score: -100, reasons: ["호환 태그 신뢰도 낮음"] };
+  // 일반 식품과 육류는 관리자가 식품으로 분류한 광고 디자인 전체를 하나의
+  // 선택 풀로 사용한다. 상품 형태 태그는 제작 단계의 교체 가이드로 남기되,
+  // 병·파우치·복수 상품 같은 원본 형태 때문에 선택 자체를 막지는 않는다.
+  // 과일/농산물은 운영자가 지정한 전용 하위 풀을 계속 엄격하게 유지한다.
+  if (profile.categoryGroup === "food" && !profile.foodSubcategory) {
+    return {
+      item,
+      score: 60,
+      reasons: ["식품 상품군 일치", "식품 카테고리 전체 무작위 풀"],
+    };
+  }
   if (profile.packagedProduct && !item.supportsPackagedProduct) return { item, score: -100, reasons: ["패키지 상품 미지원"] };
   if (profile.naturalFood && !item.supportsNaturalFood && !profile.foodSubcategory) {
     return { item, score: -100, reasons: ["자연 식품 장면 미지원"] };
@@ -122,7 +133,7 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
   return { item, score, reasons };
 }
 
-/** 점수 기준을 통과한 상위 호환 후보군 안에서만 중복 없이 무작위 선택한다. */
+/** 카테고리·호환 기준을 통과한 후보군 안에서만 중복 없이 무작위 선택한다. */
 export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(items: readonly T[], count: number, profile: ProductReferenceCompatibilityProfile, nextIndex: (maxExclusive: number) => number, minimumScore = 60): ScoredCompatibleReference<T>[] {
   const compatible = items
     .map((item) => scoreReferenceCompatibility(profile, item))
@@ -131,6 +142,9 @@ export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(
   if (compatible.length < count) {
     const categoryPath = profile.foodSubcategory ? `${profile.categoryGroup} > 과일/농산물` : profile.categoryGroup;
     throw new Error(`호환되는 광고 레퍼런스가 부족합니다. ${categoryPath} · ${profile.productForm} 상품에 필요 ${count}장, 사용 가능 ${compatible.length}장입니다. 레퍼런스 관리에서 상품군과 호환 태그를 보완해 주세요.`);
+  }
+  if (profile.categoryGroup === "food" && !profile.foodSubcategory) {
+    return pickUniqueRandomItems(compatible, count, nextIndex);
   }
   const topScore = compatible[0]?.score || minimumScore;
   const topBand = compatible.filter((candidate) => candidate.score >= Math.max(minimumScore, topScore - 12));

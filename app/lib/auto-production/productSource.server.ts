@@ -1,4 +1,5 @@
 import "server-only";
+import { POST as extractProduct } from "../../api/extract/product/route";
 import { getBigQueryCandidates, listBigQueryAdvertisers } from "../bigquery/candidateService.server";
 import { bigQueryCandidateToProductInfo } from "../bigquery/handoff.server";
 import type { BigQueryAdCandidate } from "../bigquery/types";
@@ -8,8 +9,9 @@ import { discoverSiteCandidates } from "../site-candidates/crawler.server";
 import { siteCandidateToProductInfo } from "../site-candidates/handoff.server";
 import { analyzeDiscoveredSite, cacheSiteDiscovery } from "../site-candidates/service.server";
 import type { SiteAdCandidate } from "../site-candidates/types";
-import type { ProductInfoForPrompt } from "../mvp/types";
+import type { ExtractedProductInfo, ProductInfoForPrompt } from "../mvp/types";
 import type { AutoProductionAdvertiserConfig, AutoProductionProductCandidate, AutoProductionRole } from "./types";
+import { directProductCandidate, directProductInfo } from "./directProduct.server";
 import { runCandidateSourceFallback } from "./sourceFallback";
 import { canonicalProductUrl, productFamilyKey } from "./productIdentity";
 import { verifyAutoProductionProductImages } from "./productImageValidation";
@@ -250,12 +252,34 @@ async function fromSite(config: AutoProductionAdvertiserConfig, url = config.sit
   return { candidates: analysis.candidates.map((candidate) => siteCandidate(config, candidate, source)), warnings: analysis.warnings };
 }
 
-function sameProductUrl(left: string, right: string) {
-  return Boolean(left && right && canonicalProductUrl(left) === canonicalProductUrl(right));
+/**
+ * 관리 화면에서 확정한 상품 URL은 수동 제작과 같은 단일 상품 추출기를 쓴다.
+ * 사이트 후보 탐색 결과를 다시 고르는 경로를 거치면 같은 URL이어도 SEO 제목,
+ * 추천 타깃과 후보 분석 문장이 productInfo에 섞일 수 있기 때문이다.
+ */
+async function fromExactProductUrl(config: AutoProductionAdvertiserConfig, productUrl: string) {
+  const response = await extractProduct(
+    new Request("http://localhost/api/extract/product", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ productUrl }),
+    })
+  );
+  const payload = (await response.json()) as { productInfo?: ExtractedProductInfo; error?: string };
+  if (!response.ok || !payload.productInfo) {
+    throw new Error(payload.error || "상품 상세정보를 불러오지 못했습니다.");
+  }
+  const product = directProductInfo(payload.productInfo, productUrl, config);
+  return {
+    ...directProductCandidate(config, product, productUrl),
+    source: "admin" as const,
+    sourceReason: "자동제작 화면에서 확정한 상품 URL을 수동 제작과 같은 단일 상품 추출기로 분석",
+    recommendationReason: "사용자가 몰별 다음 제작 예정 상품으로 확정했습니다.",
+  };
 }
 
 async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
-  const batches = await Promise.allSettled(config.adminProductUrls.slice(0, config.productsPerRun).map((url) => fromSite(config, url, "admin")));
+  const batches = await Promise.allSettled(config.adminProductUrls.slice(0, config.productsPerRun).map((url) => fromExactProductUrl(config, url)));
   const candidates: AutoProductionProductCandidate[] = [];
   const warnings: string[] = [];
   batches.forEach((batch, index) => {
@@ -264,12 +288,7 @@ async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
       warnings.push(`${index + 1}번 예정 상품을 불러오지 못했습니다: ${batch.reason instanceof Error ? batch.reason.message : "상품 페이지 확인 실패"}`);
       return;
     }
-    const exact = batch.value.candidates.find((candidate) => sameProductUrl(candidate.productUrl, plannedUrl));
-    const selected = exact || batch.value.candidates[0];
-    if (!selected) {
-      warnings.push(`${index + 1}번 예정 상품에서 제작할 상품정보를 찾지 못했습니다.`);
-      return;
-    }
+    const selected = batch.value;
     candidates.push({
       ...selected,
       productUrl: plannedUrl,
@@ -282,7 +301,6 @@ async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
         landingUrl: plannedUrl,
       },
     });
-    warnings.push(...batch.value.warnings);
   });
   if (!candidates.length) throw new Error("저장한 예정 상품 URL에서 제작할 상품정보를 찾지 못했습니다.");
   return { candidates, source: "admin" as const, warnings: Array.from(new Set(warnings)) };

@@ -70,6 +70,8 @@ export async function validateAdaptiveNativeCreative(input: {
     sensoryExpression: input.result.hookPlan.primaryTag === "sensory-experience" ? 74 : 62,
     mobileReadability: input.composition.minHeadlineFontSize >= 52 ? 94 : 50,
     observedKoreanText: observed,
+    standaloneLogoDetected: false,
+    standaloneLogoFindings: [],
     failures,
     // 사람·손·음식 질감의 자연스러움은 로컬 규격 검사로 확정하지 않는다.
     recommendation: structuralPass ? "manual-review" : "revise",

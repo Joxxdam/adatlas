@@ -23,7 +23,7 @@ const generationSchema = {
   additionalProperties: false,
   required: ["primaryText", "adTitle", "languageTraits"],
   properties: {
-    primaryText: { type: "string", minLength: 20, maxLength: 600 },
+    primaryText: { type: "string", minLength: 20, maxLength: 320 },
     adTitle: { type: "string", minLength: 4, maxLength: 40 },
     languageTraits: { type: "array", minItems: 2, maxItems: 10, items: { type: "string" } },
   },

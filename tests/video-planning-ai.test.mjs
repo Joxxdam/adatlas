@@ -433,6 +433,13 @@ test("긴 CTA는 단어를 자르지 않고 자막 길이에 맞춘다", () => {
   const cta = compactPlanningCta("지금 상세페이지에서 추석 선물 가격과 배송 조건을 빠짐없이 직접 확인해 보세요", "구매 조건을 확인하세요");
   assert.ok(cta.length <= 34);
   assert.doesNotMatch(cta, /빠짐없$/);
+  assert.match(cta, /확인|구매|주문|예약/);
+});
+
+test("행동이 없는 CTA는 읽을 수 있는 길이의 완결된 행동 문장으로 보완한다", () => {
+  const cta = compactPlanningCta("기름파도 담백파도 멈췄다면 추석 사전예약 찰진등심 1kg", "상품 정보를 지금 확인하세요", 24);
+  assert.ok(cta.length <= 24);
+  assert.match(cta, /확인하세요|구매하세요|예약하세요/);
 });
 
 test("동일 상세 생성 요청은 서버 in-flight lock에서 한 번만 실행된다", async () => {

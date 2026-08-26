@@ -264,7 +264,8 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /상품을 선택하세요/);
   assert.match(workspace, /로고·AI: 이 상품 전체/);
   assert.match(workspace, /visibleLogos\.map/);
-  assert.match(workspace, /선택한 \$\{brandingIds\.length\}장에만 적용/);
+  assert.match(workspace, /선택한 \$\{brandingIds\.length\}장에 저장 적용/);
+  assert.match(workspace, /다운로드로 적용한 로고와 AI 고지는 파일에만 들어가고 화면과 AI 고지 선택은 자동으로 원본 상태로 돌아옵니다/);
   assert.doesNotMatch(workspace, /현재 목록 선택(?: 해제)?/);
   assert.match(collectionRoute, /export async function DELETE/);
   assert.match(entryRoute, /export async function DELETE/);
@@ -273,6 +274,8 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(productZipService, /resolveValidatedNativeDownload/);
   assert.match(productZipService, /archive-manifest\.json/);
   assert.match(productZipService, /실패-보고서\.txt/);
+  assert.match(productZipService, /numberedProductImageFileName\(productStem, index \+ 1, extension\)/);
+  assert.match(productZipService, /fileName: `\$\{productStem\}\.zip`/);
 });
 
 test("아카이브 성과 선택은 같은 상품만 허용하고 디자인 차이를 소재 조합 테스트로 표시한다", () => {

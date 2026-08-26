@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
-import { assignPlanningTimeline, hasVerifiedVideoBenefit, repairDetailedPlanningAudienceCopy, segmentRange, validateConceptDiversity, validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
+import { assignPlanningTimeline, compactPlanningCta, hasVerifiedVideoBenefit, repairDetailedPlanningAudienceCopy, segmentRange, validateConceptDiversity, validateDetailedPlanning } from "../app/lib/video-collaboration/planningValidation.ts";
 import { extractVideoTitleMetadata, normalizeVideoProductName } from "../app/lib/video-collaboration/productName.ts";
 import { createVideoMaterialCode } from "../app/lib/video-collaboration/workflow.ts";
 import { assertStructuredVideoPlanningResponse } from "../app/lib/video-collaboration/structuredSchema.ts";
@@ -166,9 +166,9 @@ test("SEO 광고 문구를 정식 상품명과 혜택으로 분리한다", () =>
 
 test("영상 길이별 구간 수와 빈틈없는 시간이 정확하다", () => {
   for (const [duration, expected] of [
-    [15, 15],
-    [20, 16],
-    [30, 20],
+    [15, 9],
+    [20, 11],
+    [30, 15],
   ]) {
     const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, duration, expected);
     assert.equal(concept.cuts.length, expected);
@@ -221,7 +221,10 @@ test("새 AI 대본은 충분한 자막 분량을 요구하고 내부 기획 메
     "다음 운동 뒤 샤워가 기다려지는 이유를 직접 봐주세요",
     concept.cta,
   ];
-  concept.cuts = concept.cuts.map((cut, index) => ({ ...cut, caption: richerCaptions[index] }));
+  concept.cuts = concept.cuts.map((cut, index) => ({
+    ...cut,
+    caption: index === concept.cuts.length - 1 ? concept.cta : richerCaptions[index],
+  }));
   let validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
   assert.equal(validation.checks.find((check) => check.key === "natural-copy").passed, true);
 
@@ -434,7 +437,7 @@ test("내부 제작 주의사항은 광고 금지 문구의 공개 카피 검사
       conceptId: detailed.id,
     });
     assert.equal(saved.concepts[0].productionCautions[0], caution);
-    assert.equal(saved.concepts[0].cuts.length, 16);
+    assert.equal(saved.concepts[0].cuts.length, 11);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -472,7 +475,7 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
     });
     assert.equal(requested.status, "production_requested");
     assert.equal(requested.productionRequest.designerName, "김디자이너");
-    assert.equal(requested.finalScript.cuts.length, 16);
+    assert.equal(requested.finalScript.cuts.length, 11);
     assert.equal(requested.designerAssignmentHistory.at(-1).nextDesigner, "김디자이너");
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -516,18 +519,75 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(detailWorkspace, /<span>화자<\/span>/);
   assert.match(detailWorkspace, /자막 말투/);
   assert.match(detailWorkspace, /타깃 호명/);
-  assert.match(generatorSource, /광고 문장으로 순화하거나 일반화하지 않는다/);
+  assert.match(generatorSource, /인터넷 유행어를 억지로 흉내 내지 않는다/);
   assert.match(generatorSource, /ㅎㅎ, \.\.\., \.\.\?, ;;/);
   assert.match(generatorSource, /copyVoiceDirection/);
   assert.match(generatorSource, /targetCallout/);
   assert.match(generatorSource, /땀 줄줄 흐르는 형님들/);
-  assert.match(generatorSource, /4번째부터 마지막 직전까지는 공백 제외 14~34자/);
+  assert.match(generatorSource, /고기 사러 마장동까지 가는 분들/);
+  assert.match(generatorSource, /정육점 가도 이것보다 싼 거 없어요/);
+  assert.match(generatorSource, /생활 비교를 막연한 ‘합리적인 가격’으로 일반화하지/);
+  assert.match(generatorSource, /배송·배송비·도서산간·배송지 안내는 자막과 내레이션에서 완전히 제외/);
+  assert.match(generatorSource, /체크리스트가 아니다/);
+  assert.match(generatorSource, /4번째부터 마지막 직전까지는 공백 제외 7~\$\{bodyCaptionMax\}자/);
+  assert.match(generatorSource, /마지막 CTA는 약 \$\{ctaDuration\}초/);
+  assert.match(detailWorkspace, /광고 집행 품질검사/);
   assert.match(generatorSource, /‘담당자:’, ‘진행자:’, ‘정보 부족’/);
   assert.match(detailWorkspace, /scenePlanList/);
   assert.match(detailWorkspace, /이미지 생성 없음/);
   assert.match(detailWorkspace, /제작·검수 화면 열기/);
   assert.match(productionPage, /VideoProjectWorkspace/);
   assert.doesNotMatch(detailWorkspace, /이미지 프롬프트|장면 이미지|visualBible|productLockedAsset|coreTarget|customerProblem|recommendationReason/);
+});
+
+test("광고 집행 품질검사는 과속 자막·촬영 지시문·행동 없는 CTA를 차단한다", () => {
+  const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
+  concept.conceptArchetype = "real-review";
+  concept.cuts[0].caption = "형님들 씻었는데도 왜 이렇게 계속 찝찝한 건가요";
+  concept.cuts[4].caption = "한 사람이 제품을 집습니다";
+  concept.cuts[5].caption = "250ml 12,000원 먼저 공개";
+  concept.cta = "민트 티트리 샤워젤 250ml";
+  concept.cuts.at(-1).caption = concept.cta;
+  const validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "caption-readability").passed, false);
+  assert.equal(validation.checks.find((check) => check.key === "audience-value-copy").passed, false);
+  assert.equal(validation.checks.find((check) => check.key === "cta-action").passed, false);
+});
+
+test("광고 집행 품질검사는 붙여 쓴 자막과 중간에 끊긴 문장을 차단한다", () => {
+  const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
+  concept.conceptArchetype = "real-review";
+  concept.cuts[4].caption = "국내산설록우등심";
+  concept.cuts[5].caption = "제주도는 추가비 안내될 수";
+  const validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "caption-spacing").passed, false);
+  assert.equal(validation.checks.find((check) => check.key === "sentence-completion").passed, false);
+});
+
+test("배송 정보는 영상 자막에서 제외하고 배송만으로 판매 혜택을 충족하지 않는다", () => {
+  const shippingOnly = {
+    ...beautyAnalysis,
+    price: "",
+    originalPrice: "",
+    discountInfo: "무료배송",
+    promotion: "무료배송",
+    composition: [],
+    shippingConditions: ["제주 및 도서산간 추가 배송비"],
+    verifiedFacts: [
+      { id: "fact-shipping", label: "배송", value: "제주 추가 배송비", source: "상품 상세", bucket: "verified" },
+    ],
+  };
+  assert.equal(hasVerifiedVideoBenefit(shippingOnly), false);
+
+  const concept = makeDetailed(makeSummary(foodAnalysis, 0, "problem-solution"), foodAnalysis, 20);
+  concept.conceptArchetype = "real-review";
+  concept.cuts[4].caption = "제주 배송은 추가 비용이 있어요";
+  const validation = validateDetailedPlanning(concept, foodAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "delivery-copy").passed, false);
+});
+
+test("내부 검수 말투 CTA는 소비자가 바로 이해하는 행동 문장으로 바꾼다", () => {
+  assert.equal(compactPlanningCta("확인된 혜택은 66% 지금 확인하세요", "상품 정보를 확인하세요"), "66% 할인, 지금 확인하세요");
 });
 
 test("육류와 바디케어 상품 모두 같은 품질 규칙을 통과한다", () => {
@@ -537,9 +597,9 @@ test("육류와 바디케어 상품 모두 같은 품질 규칙을 통과한다"
   assert.equal(food.validation.valid, true);
 });
 
-test("45초와 60초 대본은 최소 22개 행을 요구한다", () => {
-  assert.deepEqual(segmentRange(45), { min: 22, max: 30, preferred: 24 });
-  assert.deepEqual(segmentRange(60), { min: 22, max: 34, preferred: 26 });
+test("45초와 60초 대본도 읽기 시간을 확보한 구간 수를 사용한다", () => {
+  assert.deepEqual(segmentRange(45), { min: 18, max: 23, preferred: 20 });
+  assert.deepEqual(segmentRange(60), { min: 22, max: 28, preferred: 24 });
 });
 
 test("네 콘셉트는 고정 유형과 서로 다른 사건·화자·화면 스타일을 가져야 한다", () => {
@@ -556,7 +616,7 @@ test("네 콘셉트는 고정 유형과 서로 다른 사건·화자·화면 스
   assert.equal(validateConceptDiversity(concepts).valid, true);
 });
 
-test("확인된 가격·구성·배송이 없는 상품은 시크릿 혜택 근거가 없다", () => {
+test("확인된 가격·구성 혜택이 없는 상품은 시크릿 혜택 근거가 없다", () => {
   const noBenefit = { ...beautyAnalysis, price: "", originalPrice: "", discountInfo: "", promotion: "", verifiedFacts: beautyAnalysis.verifiedFacts.filter((fact) => fact.label !== "가격") };
   assert.equal(hasVerifiedVideoBenefit(noBenefit), false);
   assert.equal(hasVerifiedVideoBenefit(beautyAnalysis), true);

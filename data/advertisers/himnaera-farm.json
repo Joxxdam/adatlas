@@ -14,7 +14,9 @@
   "scenePreferences": ["agriculture-farm-fresh", "agriculture-harvest", "agriculture-direct-value", "agriculture-clean-commerce"],
   "defaultTextStylePreset": "honest-farm-direct",
   "defaultSceneProfile": "agriculture-farm-fresh",
-  "logoAssets": [],
+  "logoAssets": [
+    { "kind": "wordmark", "path": "/brand-logos/advertisers/himnaera-farm.png", "variant": "dark", "exact": true }
+  ],
   "preferredBlueprints": ["editorial-story", "product-hero-lifestyle", "proof-data", "chat-ugc", "problem-solution-split", "comparison-versus"],
   "defaultLogoPosition": "top-left",
   "logoMinSize": 120,

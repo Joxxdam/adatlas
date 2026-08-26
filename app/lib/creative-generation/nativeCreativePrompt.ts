@@ -4,7 +4,7 @@ import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerati
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
 import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v9-automatic-fallback-pack-lock";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v10-no-generated-standalone-logo";
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -62,7 +62,7 @@ NON-NEGOTIABLE OUTPUT
 
 AUTHORITATIVE PRODUCT REFERENCE
 - The FIRST attached product-page image is the authoritative product identity and sales unit.
-- Faithfully preserve the product's package geometry, dominant colors, label hierarchy, logo placement, material, count and recognizable silhouette.
+- Faithfully preserve the product's package geometry, dominant colors, label hierarchy, material, count and recognizable silhouette. Preserve a real logo only where it is physically printed on the authoritative product/package; never extract it into a separate canvas logo.
 - Integrate the product naturally into the hook-specific scene with coherent perspective, contact shadow, lighting and scale. It must not look like a floating cutout pasted over a stock background.
 - Additional attached product-page images are evidence for texture, use, ingredients, context and alternate views. They are not ads to copy.
 - The selected reference advertisement's composition and non-product/non-copy pixels are locked. Its source product and source advertiser identity must be replaced, not retained.
@@ -119,6 +119,7 @@ ABSOLUTE EXCLUSIONS
 - No locally composited-looking product, detached drop shadow, duplicated label, fake packaging, deformed logo or changed sales unit.
 - No huge white copy sheet covering the central product/scene, no receipt roll unless the verified hook specifically requires a price-receipt visual, and no prior-ad fragments.
 - No unsupported scientific dashboard, thermal image, review screenshot, chat identity or rating graphic.
+- No newly generated standalone logo, wordmark, calligraphic brand name, initials, monogram, emblem, crest, seal, certification badge, signature or stamp anywhere outside the physical target product/package. When the exact ad copy contains a brand or product name, render it only as ordinary copy in its assigned text zone, never as a logo-like mark. Optional advertiser branding is a separate user-selected delivery post-process and must not be created in this raster.
 
 ${feedback ? `REVISION DIRECTION\n${feedback}\nRegenerate the ENTIRE final advertisement. Do not patch only the background or overlay only the copy.` : ""}`;
 }
@@ -145,7 +146,8 @@ export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job
             ? `box=${Math.round(slot.box.x * 100)},${Math.round(slot.box.y * 100)},${Math.round(slot.box.width * 100)},${Math.round(slot.box.height * 100)}%`
             : "box=read-source-zone";
           const visual = [slot.align ? `align=${slot.align}` : "", slot.sizeClass ? `size=${slot.sizeClass}` : "", slot.colorHint ? `color=${slot.colorHint}` : "", slot.backgroundHint ? `background=${slot.backgroundHint}` : "", slot.outlineHint ? `outline=${slot.outlineHint}` : "", slot.characterBudget ? `budget≈${slot.characterBudget}자` : ""].filter(Boolean).join(", ");
-          return `${slot.index + 1}. [${slot.role}/${slot.emphasis}/${slot.sourceType || "ad-copy"}/${slot.replacePolicy || "adapt"}; ${location}${visual ? `; ${visual}` : ""}] ${slot.sourceText.trim() ? JSON.stringify(slot.sourceText) : "[read the visually corresponding source zone directly from the reference]"} → ${JSON.stringify(slot.targetText)}`;
+          const eraseSourceBrand = slot.sourceType === "source-brand" || slot.replacePolicy === "remove";
+          return `${slot.index + 1}. [${slot.role}/${slot.emphasis}/${slot.sourceType || "ad-copy"}/${slot.replacePolicy || "adapt"}; ${location}${visual ? `; ${visual}` : ""}] ${slot.sourceText.trim() ? JSON.stringify(slot.sourceText) : "[read the visually corresponding source zone directly from the reference]"} → ${eraseSourceBrand ? "[ERASE COMPLETELY; reconstruct only the immediate surrounding background; render no text, emblem, monogram or logo]" : JSON.stringify(slot.targetText)}`;
         })
         .join("\n")
     : referenceRawLines.map((line, index) => `${index + 1}. [원본 역할 유지] ${JSON.stringify(line)} → ${JSON.stringify(adaptedLines[index] || "")}`).join("\n");
@@ -164,6 +166,7 @@ OUTPUT CONTRACT
 - Final composition target is a Korean performance advertisement for ${productName}, exported later as 1200x1200 JPEG.
 - Never invent price, discount, origin, grade, quantity, review, efficacy, certification or urgency. Verified facts: ${facts.length ? facts.join("; ") : "none beyond the supplied copy and visible product identity"}.
 - Keep all important content inside a generous square safe area. No clipping, broken anatomy, fake UI, illegible Hangul or accidental overlaps.
+- Preserve a real logo only when it is physically printed on the authoritative target product/package. Everywhere else, never generate a standalone logo, wordmark, calligraphic brand/product name, initials, monogram, emblem, crest, seal, certification badge, signature or stamp. A brand/product name required by the exact copy is ordinary ad typography only. User-selected advertiser branding is applied later as a separate delivery post-process, not in this raster.
 - ${materialLabel(result)} uses its own randomly assigned ZIP reference. H01-H06 is only an internal ordering code; do not invent or impose a separate hook concept.
 
 ${productContract}
@@ -192,13 +195,14 @@ SOURCE ORDER
 
 TASK
 - Change the source product instances into ${productName} using the attached product references. When a source person is visible, regenerate that person as the clearly different fictional adult required by HUMAN REFERENCE IDENTITY POLICY in the same compositional role.
-- Preserve exact package geometry, material, dominant color, cap/container shape, label hierarchy, brand/logo placement, sales-unit count and recognizable product details.
+- Preserve exact package geometry, material, dominant color, cap/container shape, label hierarchy, sales-unit count and recognizable product details. Preserve a real logo only in its physically printed package location; do not reproduce it as a separate logo elsewhere on the canvas.
 - Match the original reference product positions, count, perspective, scale, shadows, reflections, contact, depth and lighting so the replacement belongs in exactly the same design.
 - Treat the entire region outside the old product and visible source-person regions as locked pixels: do not change the background, typography, source wording, price, badges, colors, graphic shapes, borders, spacing or layout in this stage.
 - If the reference repeats one product visually, repeat the same verified target product cleanly without implying a bundle or changing the verified sales unit.
 - Do not invent variants, flavors, package counts or labels. Do not add new marketing copy, price or offer yet.
 - LOCKED REGIONS: every pixel outside the old product region(s) and any visible source-person region(s), including all original copy, typography, background, unrelated props, graphic shapes, badges and spacing.
 - EDITABLE REGIONS: the old product region(s), plus visible source-person region(s) solely for replacing identity while preserving pose, action, scale, lighting and product interaction.
+- Do not add any target-brand wordmark, emblem, seal, stamp or logo outside the physical product/package during product replacement.
 `;
   }
 
@@ -232,8 +236,11 @@ TASK
 - EDITABLE REGIONS: only the source copy, source price/offer, source advertiser logo and source-specific text badges.
 - Change ONLY the source advertisement's copy, price/offer text, advertiser logo and source-specific text badges inside those editable regions. Preserve the stage-2 product pixels and every unrelated design pixel.
 - Remove every source-ad phrase, old price, old logo, unsupported badge and stray glyph so no prior advertiser identity survives.
+- For every source-brand/remove slot, erase the complete old wordmark inside that slot's OCR box and reconstruct only the immediate surrounding background. Render no replacement text, initials, emblem, stamp, badge or logo in that box. Never turn the current product or brand name into a newly invented standalone logo.
+- Apply that prohibition to the ENTIRE canvas, not only the known removal boxes: do not create a logo-like handwritten/calligraphic product name, signature, seal, crest, monogram, certification badge or decorative wordmark in any corner, margin, headline area or empty space. If the exact target copy contains the product or brand name, it must remain ordinary advertising typography inside its assigned copy zone.
+- A real logo printed on the locked target product/package remains part of the product identity. Any separate advertiser logo is applied only later from an explicitly selected transparent source file; do not invent it during image generation.
 - Render the exact Korean strings above without paraphrasing, duplication or unsupported additions.
-- Replace every visible source text block one-for-one according to the slot contract. Keep the same number of headline, support, proof, offer/label, CTA and badge zones, the same reading order and approximately the same visual text mass. Do not delete a source callout merely because its old price or offer is unsupported; render its assigned verified target line in that zone without preserving the old offer meaning.
+- Replace every visible source text block one-for-one according to the slot contract, except source-brand/remove slots which must remain text-free after background reconstruction. Keep the same number of headline, support, proof, offer/label, CTA and badge zones outside those removal slots, the same reading order and approximately the same visual text mass. Do not delete a non-brand source callout merely because its old price or offer is unsupported; render its assigned verified target line in that zone without preserving the old offer meaning.
 - When a slot's source text says to read the corresponding zone directly, OCR that visible reference zone yourself and replace it with the assigned target. It is never permission to erase the zone or leave an empty panel.
 - Preserve rhetorical force as well as typography. If the source headline is a question, reversal, comparison, objection, urgency or numeric-emphasis hook, the target headline must remain equally dominant and must never collapse into a plain product-name label.
 - Keep the reference raw copy's word order, line count, punctuation, emoji and colloquial endings such as ㅋㅋ, ;;, .. or 겨 when they exist. Do not add chat/comment/meme language when the source lacks it.
@@ -262,10 +269,14 @@ ${referenceRawCopy || "Read it directly from the original reference attachment."
 
 TASK
 - Inspect the entire advertisement for: reference preservation outside editable product/copy regions, real product/package identity, product count, logo/label fidelity, verified price and offer, exact Korean copy, one-for-one preservation of every source copy slot and its visual weight, preservation of the reference's headline strength, line order/punctuation/slang and information density, scene-copy alignment, Hangul spelling, mobile readability, clipping, collisions, natural shadows/perspective and coherent commercial finish.
+- Inspect Korean at 200–400% character level. Transcribe only the glyphs actually visible; never infer the intended word from sentence context. If a syllable block has fused, missing or malformed strokes, record it as [깨짐:판독불가] and repair it. Repeated-syllable words such as 넉넉, 촉촉 and 쫀득 must show each complete Hangul block independently, with no merged or mutated letterforms.
+- For a packaged lineup, compare every visible bottle/package independently against the authoritative references. Repair duplicated generic packages, wrong cap/container colors, invented variants, changed printed volume, malformed brand marks and random readable label glyphs. Keep at least one dominant package large and unobstructed enough for mobile identity recognition.
 - If the original advertisement reference contains a person, confirm that the finished ad uses a visibly different fictional adult while retaining the intended pose, action, framing and product interaction. Repair recognizable source-person identity, face copying or unnatural anatomy.
-- For meat products, inspect the actual cut, fiber direction, irregular marbling/fat boundaries, surface moisture, raw/cooked state, browning and color against the authoritative product references. Repair plastic, waxy, rubbery, cloned, neon-red/orange or uniformly glossy meat texture.
+- For meat products, inspect the actual cut, width-to-thickness ratio, fat-cap thickness, fiber direction, irregular marbling frequency/density/fat boundaries, surface moisture, raw/cooked state, browning and color against the authoritative product references. Repair thickened or rounded generic steak shapes, exaggerated premium marbling, white spiderweb/worm-like fat, cloned vein maps, plastic, waxy, rubbery, neon-red/orange or uniformly glossy meat texture.
 - Repair every discovered issue inside the full raster with image generation. Preserve the randomly selected reference's composition and the established product placement and correct text wherever possible.
-- Remove any hallucinated source brand, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price. Any number not present in AUTHORITATIVE COPY is a critical error.
+- Source-brand/remove OCR boxes must contain no standalone text, emblem, monogram, stamp or invented target-brand logo after their immediate background is reconstructed. Preserve only a real mark that is physically printed on the locked target product/package.
+- Inspect the complete canvas beyond those known boxes. Any newly created calligraphic brand/product name, standalone wordmark, initials, monogram, emblem, crest, seal, certification badge, signature or stamp outside the physical package is a critical error. Remove the complete invented mark and reconstruct only its immediate background; never replace it with another text mark.
+- Remove any hallucinated source brand, invented standalone target-brand logo, unsupported claim, malformed logo, stray glyph, duplicate word or mismatched price. Any number not present in AUTHORITATIVE COPY is a critical error.
 - Do not create a new unrelated concept and do not patch with a local overlay.
 - Repair product identity inside this complete AI raster. No product cutout or protected local layer will be restored afterward.
 ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass even when no prior validator feedback is supplied."}
@@ -275,7 +286,13 @@ ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass e
 export function buildNativeValidationPrompt(job: GenerationJob, result: GenerationResult) {
   const productContract = productRenderingPromptContract(job, result);
   const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
-  const sourceSlotCount = result.referenceAdaptedCopyPlan?.copySlots?.filter((slot) => slot.sourceText.trim()).length || result.referenceAdaptedCopyPlan?.referenceRawLines?.filter((line) => line.trim()).length || 0;
+  const copySlots = result.referenceAdaptedCopyPlan?.copySlots || [];
+  const sourceBrandRemovalSlots = copySlots
+    .filter((slot) => slot.sourceType === "source-brand" || slot.replacePolicy === "remove")
+    .map((slot) => ({ index: slot.index, sourceText: slot.sourceText, box: slot.box }));
+  const sourceSlotCount = copySlots.length
+    ? copySlots.filter((slot) => slot.sourceText.trim() && slot.sourceType !== "source-brand" && slot.replacePolicy !== "remove").length
+    : result.referenceAdaptedCopyPlan?.referenceRawLines?.filter((line) => line.trim()).length || 0;
   return `Inspect the attached COMPLETE Korean performance advertisement.
 Attachment order after the finished advertisement: first the randomly selected ZIP advertisement reference for composition fidelity when present, then authoritative URL product reference images.
 Product: ${job.productTruth.normalized.cleanProductName || job.productTruth.product.productName}
@@ -284,15 +301,16 @@ Required sub copy: ${result.hookPlan.body}
 Required offer: ${result.hookPlan.offer || "none"}
 Required CTA: ${result.hookPlan.cta || "none"}
 Required target lines in order: ${JSON.stringify(adaptedLines)}
-Required visible source-copy slot count to preserve: ${sourceSlotCount || "read from the reference image"}
+Required visible source-copy slot count to preserve: ${copySlots.length ? sourceSlotCount : sourceSlotCount || "read from the reference image"}
+Source-brand/remove slots that must be text-free background after removal: ${JSON.stringify(sourceBrandRemovalSlots)}
 This is a reference-driven replacement workflow. Judge the selected reference's composition and design grammar; do not require a separate scene concept that conflicts with that reference.
 The inspected attachment has already been locally normalized and decoded as a 1200x1200 JPEG under 800KB. Set exportCompliance to 100 and never request a visual remake for file format, dimensions or byte size.
-Check fidelity to the reference layout, product/package identity, exact Korean copy, one-for-one copy-block count, headline rhetorical strength, information density, factual safety, mobile readability, natural anatomy/food texture, and whether this is one coherent finished ad rather than a background plus pasted product/text panel. The final image must keep the reference's design grammar but contain no source product, source wording, source price or source advertiser identity. A detached cutout, plain product-name headline replacing a strong source hook, missing source copy zones, any number absent from the required target lines, fake label, broken Hangul, invented claim, large layout drift or surviving source identity requires revise. Scores must use the 0–100 scale. Return the configured JSON schema.
+Check fidelity to the reference layout, product/package identity, exact Korean copy, one-for-one copy-block count outside removal slots, headline rhetorical strength, information density, factual safety, mobile readability, natural anatomy/food texture, and whether this is one coherent finished ad rather than a background plus pasted product/text panel. Inspect the final image at 200–400% and transcribe only the glyphs literally visible into observedKoreanText; do not autocorrect or infer intended words from Required target lines. Mark fused, missing or malformed Hangul strokes as [깨짐:판독불가]. Repeated-syllable words such as 넉넉, 촉촉 and 쫀득 require two separately complete syllable blocks. Also read the Korean target lines as consumer-facing sentences: subject and predicate, particles, modifiers and sentence endings must be natural when adjacent lines are joined. A grammatically broken slot substitution, non-human subject performing a human action, dangling connective ending or incomplete comma is a Korean-copy and commercial-quality failure even when every Hangul glyph was rendered exactly. The final image must keep the reference's design grammar but contain no source product, source wording, source price or source advertiser identity. Every listed source-brand/remove box must contain only reconstructed surrounding background: any standalone replacement brand text, stylized initials, emblem, stamp or invented logo in those boxes requires revise. Separately inspect the entire canvas for a newly generated standalone logo-like mark outside the physical target product/package. A calligraphic or handwritten brand/product name, standalone wordmark, initials, monogram, emblem, crest, seal, certification badge, signature or stamp counts as a generated logo even when its letters are spelled correctly or resemble required copy. Ordinary ad copy in an assigned text zone is not a logo. Set standaloneLogoDetected=true, describe each finding in standaloneLogoFindings and require revise whenever any such generated mark exists; only a real logo physically printed on the authoritative product/package is exempt. A detached cutout, plain product-name headline replacing a strong source hook, missing non-brand source copy zones, any number absent from the required target lines, fake label, broken Hangul, invented claim, large layout drift or surviving source identity requires revise. Scores must use the 0–100 scale. Return the configured JSON schema including standaloneLogoDetected and standaloneLogoFindings.
 
-If the selected advertisement reference contains a person, compare the reference and final advertisement: the compositional role, approximate pose and action should remain, but the final person must be a clearly different fictional adult with no recognizable source-person facial identity. For meat, a generic substituted cut, smooth plastic/waxy surface, repeated marbling, neon color, impossible fibers or uniformly lacquered gloss is a critical foodAppetiteAppeal and productIdentity failure.
+If the selected advertisement reference contains a person, compare the reference and final advertisement: the compositional role, approximate pose and action should remain, but the final person must be a clearly different fictional adult with no recognizable source-person facial identity. For meat, compare directly with the authoritative seller photos: a generic or thicker substituted cut, altered width-to-thickness ratio, exaggerated marbling grade/density, repeated or mirrored vein map, spiderweb/worm-like fat, smooth plastic/waxy surface, neon color, impossible fibers or uniformly lacquered gloss is a critical foodAppetiteAppeal and productIdentity failure.
 
 ${productContract}
-For every packaged product—including cosmetics, wellness goods, drinks, milk, bottles, cans, pouches and boxes—any changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure and requires a full-raster AI revision. A pasted product cutout is also a critical failure. For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;
+For every packaged product—including cosmetics, wellness goods, drinks, milk, bottles, cans, pouches and boxes—compare each visible package separately. Any duplicated generic package, invented variant, changed container, cap, label, logo, printed text, volume, color or sales unit is a critical failure and requires a full-raster AI revision. At least one dominant package must remain recognizable at mobile size. A pasted product cutout is also a critical failure. For meat, judge whether the original cut and marbling evidence were translated into natural, appetizing, physically coherent food photography rather than pasted or replaced with a different cut.`;
 }
 
 export function buildNativeGroupValidationPrompt(job: GenerationJob) {

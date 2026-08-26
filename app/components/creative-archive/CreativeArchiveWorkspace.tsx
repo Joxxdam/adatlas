@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { CreativeArchiveEntry, CreativeArchiveResponse } from "../../lib/creative-archive/types";
-import { AI_GENERATED_IMAGE_DISCLOSURE, advertiserLogos, findAdvertiserLogo } from "../../lib/creative-generation/deliveryBranding";
+import { advertiserLogoNeedsWhiteOutline, AI_GENERATED_IMAGE_DISCLOSURE, advertiserLogos, findAdvertiserLogo } from "../../lib/creative-generation/deliveryBranding";
 import { isArchivePerformanceEligible, prepareArchivePerformanceSelection } from "../../lib/meta/archivePerformanceSelection";
+import { numberedProductImageFileName, productDownloadStem } from "../../lib/creative-generation/downloadNaming";
 import styles from "./CreativeArchiveWorkspace.module.css";
 
 const statusLabels: Record<string, string> = {
@@ -54,15 +55,19 @@ function dateLabel(value: string) {
   }).format(new Date(value));
 }
 
-function downloadFileName(entry: CreativeArchiveEntry) {
-  return entry.fileName || `${entry.productName}-${entry.hookCode}.jpg`;
+function downloadFileName(entry: CreativeArchiveEntry, sequence: number, contentType = "") {
+  const storedName = numberedProductImageFileName(entry.productName, sequence, contentType.toLowerCase().includes("image/jpeg") ? "jpg" : entry.fileName.split(".").pop() || "jpg");
+  if (contentType.toLowerCase().includes("image/jpeg")) {
+    return `${storedName.replace(/\.[a-z0-9]+$/i, "")}.jpg`;
+  }
+  return storedName;
 }
 
 function displayMaterialCode(entry: CreativeArchiveEntry) {
   return entry.materialCode || (entry.copyPlanMode === "reference-adapted" ? `M${entry.hookCode.replace(/^H/i, "").padStart(2, "0")}` : entry.hookCode);
 }
 
-function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSelect, onToggleDeletion, onToggleBranding, onDelete, onUpdate, onNotice }: { entry: CreativeArchiveEntry; selected: boolean; deletionSelected: boolean; brandingSelected: boolean; onSelect: (entry: CreativeArchiveEntry) => void; onToggleDeletion: (entry: CreativeArchiveEntry) => void; onToggleBranding: (entry: CreativeArchiveEntry) => void; onDelete: (entry: CreativeArchiveEntry) => void; onUpdate: (entry: CreativeArchiveEntry) => void; onNotice: (message: string) => void }) {
+function ArchiveCard({ entry, downloadSequence, selected, deletionSelected, brandingSelected, previewLogo, previewAiDisclosure, onSelect, onToggleDeletion, onToggleBranding, onPrepareDownload, onReleaseTemporaryBranding, onDelete, onUpdate, onNotice }: { entry: CreativeArchiveEntry; downloadSequence: number; selected: boolean; deletionSelected: boolean; brandingSelected: boolean; previewLogo?: ReturnType<typeof findAdvertiserLogo>; previewAiDisclosure: boolean; onSelect: (entry: CreativeArchiveEntry) => void; onToggleDeletion: (entry: CreativeArchiveEntry) => void; onToggleBranding: (entry: CreativeArchiveEntry) => void; onPrepareDownload: (entry: CreativeArchiveEntry) => Promise<{ entry: CreativeArchiveEntry; temporaryBrandingIds: string[] }>; onReleaseTemporaryBranding: (entryIds: string[]) => Promise<void>; onDelete: (entry: CreativeArchiveEntry) => void; onUpdate: (entry: CreativeArchiveEntry) => void; onNotice: (message: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(entry.note);
@@ -93,13 +98,17 @@ function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSe
 
   async function download() {
     setBusy(true);
+    let temporaryBrandingIds: string[] = [];
     try {
-      const response = await fetch(entry.downloadUrl || entry.imageUrl);
+      const prepared = await onPrepareDownload(entry);
+      const activeEntry = prepared.entry;
+      temporaryBrandingIds = prepared.temporaryBrandingIds;
+      const response = await fetch(activeEntry.downloadUrl || activeEntry.imageUrl);
       if (!response.ok) throw new Error("이미지 파일을 불러오지 못했습니다.");
       const objectUrl = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
-      anchor.download = downloadFileName(entry);
+      anchor.download = downloadFileName(activeEntry, downloadSequence, response.headers.get("Content-Type") || "");
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -108,6 +117,11 @@ function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSe
     } catch (error) {
       onNotice(error instanceof Error ? error.message : "다운로드에 실패했습니다.");
     } finally {
+      if (temporaryBrandingIds.length) {
+        await onReleaseTemporaryBranding(temporaryBrandingIds).catch((error) => {
+          onNotice(error instanceof Error ? `다운로드는 완료됐지만 원본 화면 복귀에 실패했습니다: ${error.message}` : "다운로드는 완료됐지만 원본 화면 복귀에 실패했습니다.");
+        });
+      }
       setBusy(false);
     }
   }
@@ -118,6 +132,24 @@ function ArchiveCard({ entry, selected, deletionSelected, brandingSelected, onSe
         {/* Runtime-generated local files intentionally bypass Next image optimization. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img alt={`${entry.productName} ${displayMaterialCode(entry)} 광고 콘텐츠`} loading="lazy" src={entry.imageUrl} />
+        {brandingSelected && (previewLogo || previewAiDisclosure) ? (
+          <div aria-label="선택한 로고와 AI 고지 적용 미리보기" className={styles.brandingLivePreview}>
+            <span className={styles.brandingPreviewState}>적용 미리보기</span>
+            {previewLogo ? (
+              <span
+                className={styles.brandingPreviewLogo}
+                style={{
+                  width: `${previewLogo.frameWidthPercent || 12}%`,
+                  height: `${previewLogo.frameHeightPercent || 7}%`,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt="" className={advertiserLogoNeedsWhiteOutline(previewLogo.id) ? styles.brandingPreviewLogoOutlined : undefined} src={previewLogo.imagePath} />
+              </span>
+            ) : null}
+            {previewAiDisclosure ? <span className={styles.brandingPreviewDisclosure}>{AI_GENERATED_IMAGE_DISCLOSURE}</span> : null}
+          </div>
+        ) : null}
         <div className={styles.mediaBadges}>
           <span>{entry.copyPlanMode === "reference-adapted" ? `소재 ${displayMaterialCode(entry).replace(/^M/i, "")}` : entry.hookCode || "과거 후킹"}</span>
           {entry.qaScore !== undefined ? <span>QA {entry.qaScore}</span> : null}
@@ -354,6 +386,52 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
     }
   }
 
+  async function persistPendingBranding(entryIds: string[]) {
+    const targetIds = entryIds.filter((id) => brandingIds.includes(id));
+    if (!targetIds.length || (!selectedDeliveryLogoId && !includeAiDisclosure)) return { entries, appliedIds: [] as string[] };
+    const response = await fetch("/api/creative-archive/delivery-branding", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        entryIds: targetIds,
+        logoId: selectedDeliveryLogoId || undefined,
+        aiDisclosure: includeAiDisclosure,
+      }),
+    });
+    const payload = (await response.json()) as Partial<CreativeArchiveResponse> & { appliedCount?: number; error?: string };
+    if (!response.ok || !payload.entries || !payload.appliedCount) {
+      throw new Error(payload.error || "다운로드용 로고·AI 고지 적용에 실패했습니다.");
+    }
+    setEntries(payload.entries);
+    setBrandingIds((current) => current.filter((id) => !targetIds.includes(id)));
+    return { entries: payload.entries, appliedIds: targetIds };
+  }
+
+  async function releaseTemporaryBranding(entryIds: string[]) {
+    if (!entryIds.length) return;
+    const response = await fetch("/api/creative-archive/delivery-branding", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryIds, clear: true }),
+    });
+    const payload = (await response.json()) as Partial<CreativeArchiveResponse> & { appliedCount?: number; error?: string };
+    if (!response.ok || !payload.entries || !payload.appliedCount) {
+      throw new Error(payload.error || "다운로드 후 원본 상태로 돌아가지 못했습니다.");
+    }
+    setEntries(payload.entries);
+    // 다운로드용 AI 고지는 일회성 후처리입니다. 원본 복귀와 함께 체크값도
+    // 비워 다음 이미지를 선택했을 때 이전 고지가 다시 미리보이지 않게 합니다.
+    setIncludeAiDisclosure(false);
+  }
+
+  async function prepareEntryForDownload(entry: CreativeArchiveEntry) {
+    const prepared = await persistPendingBranding([entry.id]);
+    return {
+      entry: prepared.entries.find((candidate) => candidate.id === entry.id) || entry,
+      temporaryBrandingIds: prepared.appliedIds,
+    };
+  }
+
   function toggleGroupDeletionSelection(groupEntries: CreativeArchiveEntry[]) {
     const ids = groupEntries.map((entry) => entry.id);
     const allSelected = ids.every((id) => deletionIds.includes(id));
@@ -445,7 +523,10 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
     }
     setDownloadingProductKey(productKey);
     setNotice(`${productName} 상품 ZIP을 준비하고 있습니다.`);
+    let temporaryBrandingIds: string[] = [];
     try {
+      const prepared = await persistPendingBranding(productEntries.map((entry) => entry.id));
+      temporaryBrandingIds = prepared.appliedIds;
       const response = await fetch("/api/creative-archive/product-zip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -457,7 +538,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       }
       const objectUrl = URL.createObjectURL(await response.blob());
       const encodedFileName = response.headers.get("X-AdAtlas-Archive-Filename") || "";
-      const fileName = encodedFileName ? decodeURIComponent(encodedFileName) : `${productName}-${productEntries.length}장.zip`;
+      const fileName = encodedFileName ? decodeURIComponent(encodedFileName) : `${productDownloadStem(productName)}.zip`;
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
       anchor.download = fileName;
@@ -471,6 +552,11 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "상품 ZIP 다운로드에 실패했습니다.");
     } finally {
+      if (temporaryBrandingIds.length) {
+        await releaseTemporaryBranding(temporaryBrandingIds).catch((error) => {
+          setNotice(error instanceof Error ? `ZIP은 준비됐지만 원본 화면 복귀에 실패했습니다: ${error.message}` : "ZIP은 준비됐지만 원본 화면 복귀에 실패했습니다.");
+        });
+      }
       setDownloadingProductKey("");
     }
   }
@@ -515,7 +601,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         <div className={styles.brandingIntro}>
           <span>선택 후처리</span>
           <strong>아카이브 이미지에 로고·AI 고지 적용</strong>
-          <small>업체·상품·개별 이미지를 먼저 선택하면 로고와 AI 고지 설정이 열립니다. 원본은 보존되며 언제든 되돌릴 수 있습니다.</small>
+          <small>업체·상품·개별 이미지를 먼저 선택하면 설정이 열립니다. 다운로드로 적용한 로고와 AI 고지는 파일에만 들어가고 화면과 AI 고지 선택은 자동으로 원본 상태로 돌아옵니다.</small>
         </div>
 
         <div className={styles.brandingTargets}>
@@ -592,8 +678,8 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
             <div className={styles.logoCatalog}>
               <div className={styles.logoCatalogHeader}>
                 <div>
-                  <strong>2. 우측 상단 업체 로고 선택</strong>
-                  <small>선택한 이미지에 적용할 로고를 고르세요.</small>
+                  <strong>2. 왼쪽 중간 아래 업체 로고 선택</strong>
+                  <small>미리보기와 다운로드 파일에 같은 크기와 위치로 적용됩니다.</small>
                 </div>
                 <label>
                   <span>로고 검색</span>
@@ -633,7 +719,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
                   <strong>적용 안 함</strong>
                 )}
               </div>
-              <label className={styles.disclosureOption}>
+              <label className={`${styles.disclosureOption}${includeAiDisclosure ? ` ${styles.disclosureOptionSelected}` : ""}`}>
                 <input checked={includeAiDisclosure} onChange={(event) => setIncludeAiDisclosure(event.target.checked)} type="checkbox" />
                 <span>
                   <strong>AI 생성 이미지 고지 추가</strong>
@@ -666,7 +752,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         {brandingIds.length ? (
           <div className={styles.brandingActions}>
             <button disabled={brandingApplying || !brandingIds.length || (!selectedDeliveryLogoId && !includeAiDisclosure)} onClick={() => void applyArchiveBranding(false)} type="button">
-              {brandingApplying ? "적용 중…" : `선택한 ${brandingIds.length}장에만 적용`}
+              {brandingApplying ? "적용 중…" : `선택한 ${brandingIds.length}장에 저장 적용`}
             </button>
             <button disabled={brandingApplying || !brandingIds.length || !brandedSelectedCount} onClick={() => void applyArchiveBranding(true)} type="button">
               선택 이미지 원본으로
@@ -822,8 +908,8 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
                 </div>
               </header>
               <div className={styles.grid}>
-                {group.entries.map((entry) => (
-                  <ArchiveCard entry={entry} key={entry.id} brandingSelected={brandingIds.includes(entry.id)} deletionSelected={deletionIds.includes(entry.id)} onDelete={(target) => void deleteEntries([target.id], target.productName)} onNotice={setNotice} onSelect={togglePerformanceSelection} onToggleDeletion={toggleDeletionSelection} onToggleBranding={toggleBrandingSelection} onUpdate={updateEntry} selected={selectedIds.includes(entry.id)} />
+                {group.entries.map((entry, index) => (
+                  <ArchiveCard entry={entry} downloadSequence={index + 1} key={entry.id} brandingSelected={brandingIds.includes(entry.id)} deletionSelected={deletionIds.includes(entry.id)} onDelete={(target) => void deleteEntries([target.id], target.productName)} onNotice={setNotice} onPrepareDownload={prepareEntryForDownload} onReleaseTemporaryBranding={releaseTemporaryBranding} onSelect={togglePerformanceSelection} onToggleDeletion={toggleDeletionSelection} onToggleBranding={toggleBrandingSelection} onUpdate={updateEntry} previewAiDisclosure={includeAiDisclosure} previewLogo={selectedDeliveryLogo} selected={selectedIds.includes(entry.id)} />
                 ))}
               </div>
             </section>

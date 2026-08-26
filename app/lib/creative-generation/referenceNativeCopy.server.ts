@@ -11,8 +11,8 @@ import { resolveRuntimeTimeout } from "./fastCreativeRuntime";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
 import { normalizeReferenceRawLines, type ReferenceNativeCopy, type ReferenceTextRegion } from "./referenceLibraryManagement";
 
-export const REFERENCE_NATIVE_COPY_ANALYSIS_VERSION = "reference-native-copy-analysis-v2-two-pass";
-export const REFERENCE_NATIVE_COPY_PROMPT_VERSION = "reference-native-copy-ocr-v2-region-contract";
+export const REFERENCE_NATIVE_COPY_ANALYSIS_VERSION = "reference-native-copy-analysis-v4-full-label-consensus";
+export const REFERENCE_NATIVE_COPY_PROMPT_VERSION = "reference-native-copy-ocr-v4-full-label-four-pass-contract";
 
 type OcrPayload = {
   rawText: string;
@@ -159,8 +159,10 @@ export function buildReferenceNativeCopyOcrPrompt(imagePath: string) {
 - 다단·말풍선·배지는 단순 좌표가 아니라 사람이 광고를 읽는 순서를 따른다.
 - rawText는 rawLines를 줄바꿈으로 연결한 값이다.
 - textRegions에는 headline/support/proof/offer/cta/badge/other 역할과 0~1 비율 좌표를 기록한다.
+- 실제 글자가 없는 그림·빈 영역은 textRegions에 만들지 않는다. 모든 textRegions는 비어 있지 않은 text와 양수 크기의 box를 가져야 한다.
 - sourceType은 광고 카피(ad-copy), 원본 광고주/로고(source-brand), 교체될 원본 상품 패키지 인쇄(source-product-label), 장식(decorative), 불확실(uncertain)로 구분한다.
 - replacePolicy는 adapt/remove/product-replacement/preserve/review 중 하나다. 패키지 라벨을 광고 카피로 적응하지 않는다.
+- 상품 패키지의 작은 라벨·용량·성분명·인증 마크 주변 문구도 원본 분석 대상이다. 판독 불가 같은 대체 문구를 쓰지 말고 확대 이미지로 실제 글자를 끝까지 확인한다.
 - 가격·할인율·수량·용량·기간처럼 숫자가 있는 문구는 한 글자도 추측하지 않는다. 불확실하면 reviewRequired=true로 둔다.
 - 각 영역의 정렬, 강조도, 글자 크기 등급, 전경·배경·외곽선 색상 힌트와 원문 글자 예산을 기록한다.
 - 광고 이미지의 상품명·가격·CTA·로고 텍스트도 보이는 대로 포함하되 sourceType으로 정확히 분리한다.
@@ -184,6 +186,18 @@ function numericTokens(value: string) {
   return [...value.matchAll(/(?:~|-)?\d[\d,.]*(?:\s*(?:%|원|개|병|팩|세트|g|kg|ml|l|명|주|일))?/gi)].map((match) => comparable(match[0]));
 }
 
+function allTextualRegions(payload: OcrPayload) {
+  return payload.textRegions.filter((region) => region.sourceType !== "decorative");
+}
+
+function fullTextForConsensus(payload: OcrPayload) {
+  return allTextualRegions(payload)
+    .filter((region) => region.text.trim())
+    .sort((left, right) => left.readingOrder - right.readingOrder)
+    .map((region) => `${region.sourceType}:${region.text}`)
+    .join("\n");
+}
+
 function validatePasses(first: OcrPayload, verified: OcrPayload) {
   const rawText = normalizeReferenceRawLines(verified.rawLines).join("\n");
   const regionText = verified.textRegions
@@ -193,10 +207,13 @@ function validatePasses(first: OcrPayload, verified: OcrPayload) {
     .join("\n");
   const passAgreement = agreement(first.rawText || first.rawLines.join("\n"), rawText);
   const textCoverage = Math.min(1, comparable(regionText).length / Math.max(1, comparable(rawText).length));
-  const usableRegions = verified.textRegions.filter((region) => region.text.trim() && region.box && region.box.width > 0 && region.box.height > 0);
-  const regionCoverage = verified.textRegions.length ? usableRegions.length / verified.textRegions.length : 0;
-  const firstNumbers = numericTokens(first.rawText || first.rawLines.join("\n"));
-  const verifiedNumbers = numericTokens(rawText);
+  // 광고 문구뿐 아니라 상품 패키지의 작은 라벨도 원본 분석의 승인 대상입니다.
+  // 순수 장식만 제외하고 모든 실제 텍스트에 좌표·역할·신뢰도를 요구합니다.
+  const textualRegions = allTextualRegions(verified);
+  const usableRegions = textualRegions.filter((region) => region.text.trim() && region.box && region.box.width > 0 && region.box.height > 0);
+  const regionCoverage = textualRegions.length ? usableRegions.length / textualRegions.length : 0;
+  const firstNumbers = numericTokens(`${first.rawText || first.rawLines.join("\n")}\n${fullTextForConsensus(first)}`);
+  const verifiedNumbers = numericTokens(`${rawText}\n${fullTextForConsensus(verified)}`);
   const numericAgreement = JSON.stringify(firstNumbers) === JSON.stringify(verifiedNumbers) ? 1 : 0;
   const issues: string[] = [];
   if (!rawText.trim()) issues.push("이미지에서 사용할 광고 원문을 확인하지 못했습니다.");
@@ -204,8 +221,29 @@ function validatePasses(first: OcrPayload, verified: OcrPayload) {
   if (numericAgreement < 1) issues.push("가격·할인·수량 등 숫자 판독 결과가 서로 다릅니다.");
   if (textCoverage < 0.92) issues.push("전체 원문과 영역별 문구의 문자 커버리지가 부족합니다.");
   if (regionCoverage < 0.95) issues.push("좌표 또는 역할이 없는 문구 영역이 있습니다.");
-  if (verified.textRegions.some((region) => region.reviewRequired || (region.confidence ?? 0) < 0.86)) issues.push("사람 확인이 필요한 저신뢰 문구 영역이 있습니다.");
+  if (textualRegions.some((region) => region.reviewRequired || (region.confidence ?? 0) < 0.9)) issues.push("작은 패키지 라벨을 포함해 사람 확인이 필요한 저신뢰 문구 영역이 있습니다.");
   return { textCoverage, regionCoverage, passAgreement, numericAgreement, issues };
+}
+
+function validateConsensus(priors: OcrPayload[], candidate: OcrPayload) {
+  const validation = validatePasses(priors[priors.length - 1], candidate);
+  const candidateText = `${candidate.rawText || candidate.rawLines.join("\n")}\n${fullTextForConsensus(candidate)}`;
+  const agreements = priors.map((prior) => agreement(`${prior.rawText || prior.rawLines.join("\n")}\n${fullTextForConsensus(prior)}`, candidateText));
+  const candidateNumbers = JSON.stringify(numericTokens(candidateText));
+  const numericAgreement = priors.some((prior) => JSON.stringify(numericTokens(`${prior.rawText || prior.rawLines.join("\n")}\n${fullTextForConsensus(prior)}`)) === candidateNumbers) ? 1 : 0;
+  const passAgreement = Math.max(validation.passAgreement, ...agreements);
+  const issues = validation.issues.filter((issue) => {
+    if (issue === "1차·확대 검수의 문자 판독 결과가 충분히 일치하지 않습니다.") return passAgreement < 0.94;
+    if (issue === "가격·할인·수량 등 숫자 판독 결과가 서로 다릅니다.") return numericAgreement < 1;
+    return true;
+  });
+  return { ...validation, passAgreement, numericAgreement, issues };
+}
+
+function criticalConfidence(payload: OcrPayload) {
+  const critical = allTextualRegions(payload);
+  const regionConfidence = critical.length ? critical.reduce((sum, region) => sum + (region.confidence ?? 0), 0) / critical.length : payload.confidence ?? 0;
+  return Math.min(payload.confidence ?? 0, regionConfidence);
 }
 
 async function prepareAnalysisFiles(imagePath: string, regions: OcrPayload["textRegions"] = []) {
@@ -221,7 +259,18 @@ async function prepareAnalysisFiles(imagePath: string, regions: OcrPayload["text
   const width = metadata.width || 1;
   const height = metadata.height || 1;
   const cropPaths: string[] = [];
-  for (const [index, region] of regions.slice(0, 16).entries()) {
+  const cropRegions = regions
+    .filter((region) => region.sourceType !== "decorative" && region.box)
+    .sort((left, right) => {
+      const leftPriority = (left.reviewRequired ? 2 : 0) + ((left.confidence ?? 0) < 0.9 ? 1 : 0);
+      const rightPriority = (right.reviewRequired ? 2 : 0) + ((right.confidence ?? 0) < 0.9 ? 1 : 0);
+      if (leftPriority !== rightPriority) return rightPriority - leftPriority;
+      const leftArea = (left.box?.width || 1) * (left.box?.height || 1);
+      const rightArea = (right.box?.width || 1) * (right.box?.height || 1);
+      return leftArea - rightArea;
+    })
+    .slice(0, 48);
+  for (const [index, region] of cropRegions.entries()) {
     const box = region.box;
     if (!box) continue;
     const paddingX = Math.max(8, Math.round(box.width * width * 0.08));
@@ -232,19 +281,39 @@ async function prepareAnalysisFiles(imagePath: string, regions: OcrPayload["text
     const bottom = Math.min(height, Math.ceil((box.y + box.height) * height) + paddingY);
     if (right - left < 8 || bottom - top < 8) continue;
     const cropPath = path.join(directory, `region-${String(index + 1).padStart(2, "0")}.png`);
-    await sharp(fullBuffer).extract({ left, top, width: right - left, height: bottom - top }).resize({ width: 1800, fit: "inside", withoutEnlargement: false }).png().toFile(cropPath);
+    await sharp(fullBuffer).extract({ left, top, width: right - left, height: bottom - top }).resize({ width: 2400, fit: "inside", withoutEnlargement: false }).sharpen().png().toFile(cropPath);
     cropPaths.push(cropPath);
   }
   return { directory, fullPath, cropPaths, imageHash, imageWidth: sourceMetadata.width || width, imageHeight: sourceMetadata.height || height };
 }
 
 async function runOcrPass(thread: ReturnType<Codex["startThread"]>, prompt: string) {
-  const response = await codexCreativeGate.run(() =>
-    thread.run(prompt, {
+  const timeoutMs = resolveRuntimeTimeout(process.env.ADATLAS_CODEX_REFERENCE_OCR_TIMEOUT_MS, 180_000, 30_000);
+  const response = await codexCreativeGate.run(async () => {
+    const operation = thread.run(prompt, {
       outputSchema: ocrSchema,
-      signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_REFERENCE_OCR_TIMEOUT_MS, 180_000, 30_000)),
-    })
-  );
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        operation,
+        new Promise<never>((_, reject) => {
+          // 일부 Codex SDK 실행은 AbortSignal 이후에도 자식 프로세스 종료를
+          // 기다리며 Promise가 남을 수 있습니다. 한 장이 전체 OCR 대기열을
+          // 영구 점유하지 않도록 약간의 정리 유예 뒤 게이트를 강제로 풉니다.
+          watchdog = setTimeout(() => {
+            const error = new Error(`레퍼런스 OCR이 ${Math.round(timeoutMs / 1000)}초 제한을 넘겨 중단됐습니다.`);
+            error.name = "TimeoutError";
+            reject(error);
+          }, timeoutMs + 15_000);
+          watchdog.unref?.();
+        }),
+      ]);
+    } finally {
+      if (watchdog) clearTimeout(watchdog);
+    }
+  });
   return JSON.parse(response.finalResponse) as OcrPayload;
 }
 
@@ -268,12 +337,29 @@ export async function extractReferenceNativeCopy(imagePath: string, options: { p
     const first = await runOcrPass(thread, buildReferenceNativeCopyOcrPrompt(firstFiles.fullPath));
     const verificationFiles = await prepareAnalysisFiles(imagePath, first.textRegions);
     try {
-      const verified = await runOcrPass(thread, `${buildReferenceNativeCopyOcrPrompt(verificationFiles.fullPath)}\n\n이것은 독립 확대 검수 단계다. 다음 1차 결과를 그대로 신뢰하지 말고 원본과 영역별 확대 이미지에서 모든 글자·숫자·좌표·역할을 다시 확인해 오류를 교정한다.\n1차 결과: ${JSON.stringify(first)}\n영역별 확대 이미지 경로: ${JSON.stringify(verificationFiles.cropPaths)}\n원본에 보이지 않는 문구를 추가하지 말고 최종 JSON만 반환한다.`);
-      const validation = validatePasses(first, verified);
-      const confidence = Math.min(verified.confidence ?? 0, verified.textRegions.length ? verified.textRegions.reduce((sum, region) => sum + (region.confidence ?? 0), 0) / verified.textRegions.length : 0);
-      const ready = Boolean(verified.rawLines?.some((line) => line.trim())) && confidence >= 0.9 && validation.issues.length === 0;
+      const verified = await runOcrPass(thread, `${buildReferenceNativeCopyOcrPrompt(verificationFiles.fullPath)}\n\n이것은 확대 검수 단계다. 다음 1차 결과를 그대로 신뢰하지 말고 원본과 영역별 확대 이미지에서 모든 글자·숫자·좌표·역할을 다시 확인해 오류를 교정한다.\n1차 결과: ${JSON.stringify(first)}\n영역별 확대 이미지 경로: ${JSON.stringify(verificationFiles.cropPaths)}\n원본에 보이지 않는 문구를 추가하지 말고 최종 JSON만 반환한다.`);
+      const passes: OcrPayload[] = [first, verified];
+      let finalPayload = verified;
+      let validation = validateConsensus([first], verified);
+
+      // 불일치·좌표 누락·저신뢰 광고 카피만 최대 두 차례 더 확대 판독해
+      // 첫 판독을 맹신하거나 곧바로 사람 검수로 넘기지 않습니다.
+      for (let repairAttempt = 0; repairAttempt < 2 && validation.issues.length; repairAttempt += 1) {
+        const repairFiles = await prepareAnalysisFiles(imagePath, finalPayload.textRegions);
+        try {
+          const repaired = await runOcrPass(thread, `${buildReferenceNativeCopyOcrPrompt(repairFiles.fullPath)}\n\n이것은 ${repairAttempt + 3}차 자동 합의 검수다. 앞선 판독 사이의 불일치와 아래 검증 오류를 원본 및 확대 이미지로 직접 해결한다. 상품 패키지 라벨·순수 장식과 실제 교체할 광고 카피를 반드시 분리하고, 빈 글자 영역은 제거한다.\n검증 오류: ${JSON.stringify(validation.issues)}\n앞선 판독: ${JSON.stringify(passes)}\n영역별 확대 이미지 경로: ${JSON.stringify(repairFiles.cropPaths)}\n보이지 않는 글자나 숫자를 추측하지 말고 최종 JSON만 반환한다.`);
+          finalPayload = repaired;
+          validation = validateConsensus(passes, repaired);
+          passes.push(repaired);
+        } finally {
+          await fs.rm(repairFiles.directory, { recursive: true, force: true }).catch(() => undefined);
+        }
+      }
+
+      const confidence = criticalConfidence(finalPayload);
+      const ready = Boolean(finalPayload.rawLines?.some((line) => line.trim())) && confidence >= 0.9 && validation.issues.length === 0;
       return normalizeReferenceNativeCopy({
-        ...verified,
+        ...finalPayload,
         confidence,
         ocrConfidence: confidence,
         analysisVersion: REFERENCE_NATIVE_COPY_ANALYSIS_VERSION,

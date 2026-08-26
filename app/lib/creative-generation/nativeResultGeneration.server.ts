@@ -19,6 +19,8 @@ import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNativeAdReference, type NativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
 import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createTruthFallbackReferenceCopyPlan, hasExecutableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
+import { enforceExactRenderedCopyValidation } from "./nativeCreativeValidation";
+import { resolveProductRenderingPolicy } from "./productRenderingPolicy";
 
 type NativeResultInput = {
   jobId: string;
@@ -87,6 +89,8 @@ function manualReviewValidation(message: string): NativeCreativeValidation {
     sensoryExpression: 65,
     mobileReadability: 0,
     observedKoreanText: [],
+    standaloneLogoDetected: false,
+    standaloneLogoFindings: [],
     failures: [message],
     recommendation: "manual-review",
     checkedAt: new Date().toISOString(),
@@ -98,9 +102,11 @@ function conciseQaFeedback(validation: NativeCreativeValidation) {
   return `AI quality review requested a complete remake. ${failures || "Improve product identity, exact Korean text, hierarchy and coherent hook-specific composition."}`;
 }
 
-export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation) {
+export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation, isMeat = false) {
+  if (validation.standaloneLogoDetected) return true;
   if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
-  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|이전\s*문구|출처\s*문구|가격|할인|수량|용량|한글|한국어|오탈자|깨진\s*글자|잘림|가림|충돌|source\s*(?:brand|copy|price)|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap/i.test(failure));
+  if (isMeat && (validation.productIdentity < 82 || validation.foodAppetiteAppeal < 82)) return true;
+  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|이전\s*문구|출처\s*문구|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|source\s*(?:brand|copy|price)|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|marbling|meat\s*texture|thickness|fat-to-lean/i.test(failure));
 }
 
 async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<CopyPlan>) {
@@ -435,7 +441,15 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   }
 
   return withNativeCreativeSession(provider, async (session) => {
+    async function requireActiveJob() {
+      const activeJob = await creativeGenerationJobStore.get(input.jobId);
+      if (!activeJob) throw new Error("작업을 찾지 못했습니다.");
+      if (activeJob.status === "cancelled") throw new Error("취소된 작업입니다.");
+      job = activeJob;
+    }
+
     async function runStage(stage: "product-replacement" | "copy-replacement" | "qa-repair", generationStage: "product-replacing" | "copy-replacing" | "qa-repairing", outputPath: string, sourceImagePath: string, feedback?: string) {
+      await requireActiveJob();
       job = await updateNativeProgress(job, input.resultId, generationStage);
       const generationStarted = Date.now();
       await session.generate({
@@ -450,6 +464,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
         stage,
       });
       generationMs += Date.now() - generationStarted;
+      // Provider 호출은 즉시 중단할 수 없지만, 취소가 들어오면 그 결과를 다음
+      // 문구 교체·QA 단계로 넘기지 않고 현재 생성 호출 경계에서 종료한다.
+      await requireActiveJob();
       await validateGeneratedFinal(outputPath);
       return outputPath;
     }
@@ -541,11 +558,14 @@ async function runNativeResultGeneration(input: NativeResultInput) {
           adReferencePath: selectedAdReference.path,
           exportComplianceVerified: true,
         });
+        const currentResult = job.results.find((result) => result.id === input.resultId)!;
+        const requiredLines = currentResult.referenceAdaptedCopyPlan?.adaptedLines || [currentResult.hookPlan.headline, currentResult.hookPlan.body, currentResult.hookPlan.proof, currentResult.hookPlan.offer, currentResult.hookPlan.cta].filter(Boolean);
+        validation = enforceExactRenderedCopyValidation(validation, requiredLines);
       } catch {
         validation = manualReviewValidation("AI 완성 광고 검수 응답을 받지 못해 사람 검수가 필요합니다.");
       }
       validationMs += Date.now() - validationStarted;
-      const criticalFailure = hasCriticalNativeQaFailure(validation);
+      const criticalFailure = hasCriticalNativeQaFailure(validation, resolveProductRenderingPolicy(job) === "natural-meat-reference");
       if (validation.recommendation !== "revise" || !criticalFailure || action === "revalidate" || attempt >= Math.min(1, runtime.autoRevisionLimit)) break;
       const repairedPath = path.join(directory, `04-qa-repair-${attempt + 1}.png`);
       await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, [input.feedback, conciseQaFeedback(validation)].filter(Boolean).join("\n"));
@@ -634,10 +654,10 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                   finalOutputPath: finalFile,
                   productQa: { status: validation.productIdentity >= 75 ? "passed" : "manual-review", score: validation.productIdentity },
                   referencePreservationDetails: { status: validation.composition >= 75 ? "passed" : "manual-review", score: validation.composition },
-                  copyQaDetails: { status: validation.factualAccuracy >= 75 && validation.koreanTextAccuracy >= 75 ? "passed" : "manual-review", factualAccuracy: validation.factualAccuracy, koreanTextAccuracy: validation.koreanTextAccuracy },
+                  copyQaDetails: { status: validation.factualAccuracy >= 75 && validation.koreanTextAccuracy >= 75 && validation.commercialQuality >= 75 ? "passed" : "manual-review", factualAccuracy: validation.factualAccuracy, koreanTextAccuracy: validation.koreanTextAccuracy },
                   sceneCopyAlignmentDetails: { status: validation.hookAlignment >= 70 ? "passed" : "manual-review", score: validation.hookAlignment },
                   referencePreservationQa: validation.recommendation === "approve" ? "passed" : "manual-review",
-                  copyQa: validation.factualAccuracy >= 75 && validation.koreanTextAccuracy >= 75 ? "passed" : "manual-review",
+                  copyQa: validation.factualAccuracy >= 75 && validation.koreanTextAccuracy >= 75 && validation.commercialQuality >= 75 ? "passed" : "manual-review",
                   sceneCopyAlignmentQa: validation.hookAlignment >= 70 ? "passed" : "manual-review",
                   groupDiversityQa: current.groupValidation?.recommendation === "approve" ? "passed" : "manual-review",
                 },

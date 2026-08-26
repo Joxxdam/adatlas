@@ -4,6 +4,8 @@ export type AdvertiserLogo = {
   id: string;
   label: string;
   imagePath: string;
+  frameWidthPercent?: number;
+  frameHeightPercent?: number;
 };
 
 export type DeliveryBrandingSelection = {
@@ -41,8 +43,32 @@ export const advertiserLogos: AdvertiserLogo[] = [
     id: "gukdae-hanwoo",
     label: "국대한우",
     imagePath: "/brand-logos/advertisers/gukdae-hanwoo.png",
+    frameWidthPercent: 12,
+    frameHeightPercent: 8,
+  },
+  {
+    id: "daehan-hanwoo",
+    label: "대한한우",
+    imagePath: "/brand-logos/advertisers/daehan-hanwoo.png",
+    // 가로형 워드마크는 공통 박스에서 실제 글자 높이가 지나치게 작아지므로
+    // 세로형 국대한우와 비슷한 인지 크기로 보정합니다.
+    frameWidthPercent: 20,
+    frameHeightPercent: 8,
+  },
+  {
+    id: "himnaera-farm",
+    label: "힘내라농가",
+    imagePath: "/brand-logos/advertisers/himnaera-farm.png",
+    frameWidthPercent: 20,
+    frameHeightPercent: 8,
   },
 ];
+
+const whiteOutlinedLogoIds = new Set(["gukdae-hanwoo", "daehan-hanwoo", "himnaera-farm"]);
+
+export function advertiserLogoNeedsWhiteOutline(logoId: string | undefined) {
+  return Boolean(logoId && whiteOutlinedLogoIds.has(logoId));
+}
 
 export function findAdvertiserLogo(logoId: string | undefined) {
   return advertiserLogos.find((logo) => logo.id === logoId);

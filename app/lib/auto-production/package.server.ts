@@ -7,6 +7,7 @@ import { buildAdCopyCsv } from "../ad-copy/adCopyValidator";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { executionResults } from "../creative-generation/jobRunnerPolicy";
 import { resolveValidatedNativeDownload } from "../creative-generation/nativeCreativeStorage.server";
+import { numberedProductImageFileName, productDownloadStem } from "../creative-generation/downloadNaming";
 import { autoProductionRepository } from "./productionRepository.server";
 
 const packagesDirectory = path.join(process.cwd(), "data", "auto-production", "runtime", "packages");
@@ -65,8 +66,9 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
 
   const fingerprint = packageFingerprint(packageFingerprintKeys);
   const taskName = taskId ? `-${safeName(selectedTasks[0].candidate.productName)}` : "";
-  const fileName = `auto-production-${run.businessDate}-${safeName(run.advertiserName)}${taskName}-${fingerprint}.zip`;
-  const packagePath = path.join(packagesDirectory, fileName);
+  const storedFileName = `auto-production-${run.businessDate}-${safeName(run.advertiserName)}${taskName}-${fingerprint}.zip`;
+  const fileName = taskId ? `${productDownloadStem(selectedTasks[0].candidate.productName)}.zip` : storedFileName;
+  const packagePath = path.join(packagesDirectory, storedFileName);
   try {
     await fs.access(packagePath);
     return {
@@ -104,10 +106,11 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
   ]);
 
   for (const { task, job, results } of prepared) {
-    const folder = zip.folder(safeName(task.candidate.productName));
-    for (const result of results) {
+    const productStem = productDownloadStem(job.productTruth.normalized?.cleanProductName || task.candidate.productName);
+    const folder = zip.folder(productStem);
+    for (const [index, result] of results.entries()) {
       const hookCode = result.hookPlan.hookCode;
-      const imageName = result.creativeAsset?.fileName || `${safeName(task.candidate.productName)}-${hookCode}.jpg`;
+      const imageName = numberedProductImageFileName(productStem, index + 1);
       try {
         folder?.file(imageName, await fs.readFile(resolveValidatedNativeDownload(job, result.id)));
       } catch {

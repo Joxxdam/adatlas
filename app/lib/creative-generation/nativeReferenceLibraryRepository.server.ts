@@ -18,8 +18,8 @@ const maximumFilesPerUpload = 12;
 const supportedFormats = new Set(["jpeg", "png", "webp"]);
 const lockKey = Symbol.for("daywiz.native-reference-library-lock-v1");
 const lockState = globalThis as typeof globalThis & { [lockKey]?: Promise<unknown> };
-const managedManifestVersion = "native-creative-reference-library-v7-food-produce";
-const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용합니다. 대카테고리는 패션·식품·화장품 세 그룹으로 유지하며 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품의 과일/농산물은 운영자가 지정한 하위 태그로 관리하며, 과일·농산물 상품은 이 태그가 있는 식품 레퍼런스만 사용합니다. 고기와 일반 식품은 과일/농산물 태그 항목을 포함한 식품 전체 풀을 사용합니다. 상품 형태·구도·슬롯 호환 점수를 통과한 후보만 무작위 선택하며, 다른 상품군이나 비호환 레퍼런스로 보충하지 않습니다. 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
+const managedManifestVersion = "native-creative-reference-library-v8-food-category-random";
+const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용합니다. 대카테고리는 패션·식품·화장품 세 그룹으로 유지하며 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품의 과일/농산물은 운영자가 지정한 하위 태그로 관리하며, 과일·농산물 상품은 이 태그가 있는 식품 레퍼런스만 사용합니다. 고기와 일반 식품은 상품 형태·구도 점수로 상위 후보를 다시 제한하지 않고 과일/농산물 태그 항목을 포함한 식품 전체 풀에서 중복 없이 무작위 선택합니다. 다른 상품군으로 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
 
 function normalizeManifest(value: ManagedNativeReferenceManifest): ManagedNativeReferenceManifest {
   return {
@@ -224,7 +224,9 @@ export const nativeReferenceLibraryRepository = {
     }
     let nativeCopy: ReferenceNativeCopy;
     try {
-      nativeCopy = await extractReferenceNativeCopy(imagePath, { previousAttemptCount: target.nativeCopy?.attemptCount });
+      nativeCopy = await extractReferenceNativeCopy(imagePath, {
+        previousAttemptCount: target.nativeCopy?.analysisVersion === REFERENCE_NATIVE_COPY_ANALYSIS_VERSION ? target.nativeCopy?.attemptCount : 0,
+      });
     } catch (error) {
       nativeCopy = normalizeReferenceNativeCopy({
         ...target.nativeCopy,
@@ -234,7 +236,7 @@ export const nativeReferenceLibraryRepository = {
         analysisStatus: target.nativeCopy?.rawLines?.some((line) => line.trim()) ? "needs-review" : "unavailable",
         approvalStatus: target.nativeCopy?.approvalStatus === "manually-approved" ? "manually-approved" : "needs-review",
         analysisError: error instanceof Error ? error.message : "정밀 문구 분석에 실패했습니다.",
-        attemptCount: (target.nativeCopy?.attemptCount || 0) + 1,
+        attemptCount: (target.nativeCopy?.analysisVersion === REFERENCE_NATIVE_COPY_ANALYSIS_VERSION ? target.nativeCopy?.attemptCount || 0 : 0) + 1,
         useForCopyAdaptation: Boolean(target.nativeCopy?.rawLines?.length) && target.nativeCopy?.useForCopyAdaptation !== false,
         extractionSource: target.nativeCopy?.manuallyCorrected ? "manual" : "unavailable",
         updatedAt: new Date().toISOString(),

@@ -397,6 +397,16 @@ const presetBrandLogos = [
     imagePath: "/brand-logos/gukdae-hanwoo-logo-exact.png",
   },
   {
+    id: "daehan-hanwoo",
+    label: "대한한우 로고",
+    imagePath: "/brand-logos/advertisers/daehan-hanwoo.png",
+  },
+  {
+    id: "himnaera-farm",
+    label: "힘내라농가 로고",
+    imagePath: "/brand-logos/advertisers/himnaera-farm.png",
+  },
+  {
     id: "original-source",
     label: "오리지널소스 로고",
     imagePath: "/brand-logos/original-source-logo.png",

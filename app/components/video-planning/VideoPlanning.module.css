@@ -1054,6 +1054,36 @@
   color: #52766f;
   font-size: 12px;
 }
+.qualityNotice {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+  border: 1px solid #efc3a7;
+  border-radius: 16px;
+  padding: 15px 17px;
+  color: #7a4319;
+  background: #fff8ef;
+}
+.qualityNotice[data-valid="true"] {
+  border-color: #a9dcd2;
+  color: #145d54;
+  background: #effbf8;
+}
+.qualityNotice p {
+  margin: 3px 0 0;
+  color: #766454;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.qualityNotice[data-valid="true"] p { color: #52766f; }
+.qualityNotice ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .loadingDot {
   width: 13px;
   height: 13px;

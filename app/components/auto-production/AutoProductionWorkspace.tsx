@@ -85,6 +85,7 @@ const productStatusLabels: Record<AutoProductionProductTask["status"], string> =
   "skipped-duplicate": "중복 제외",
   "skipped-insufficient-data": "상품 정보 부족",
   "skipped-unavailable": "상품 이용 불가",
+  cancelled: "취소",
 };
 
 const sourceLabels: Record<AutoProductionProductTask["candidate"]["source"], string> = {

@@ -2,6 +2,7 @@ import type { DiscoveredProductLink, ProductDetailAnalysis, StoreProductSummary 
 import { absoluteHttpUrl, cleanText, discountRateFromPrices, extractImageUrls, extractJsonLdNodes, firstRecord, jsonLdTypeIncludes, metaContent, normalizeCategoryName, numberFromUnknown, stableId, stringValue, titleContent, uniqueStrings } from "./htmlUtils";
 import { analyzeReviewTexts } from "./reviewAnalyzer";
 import { analyzeDetailPageQuality } from "./detailPageAnalyzer";
+import { normalizeCafe24BundlePricingClaims, resolveCafe24RequiredBundlePricing } from "./extractors/cafe24Pricing";
 
 function productJsonLd(html: string) {
   return extractJsonLdNodes(html).find((node) => jsonLdTypeIncludes(node, "product")) || {};
@@ -90,11 +91,15 @@ function extractUspCandidates(html: string, description: string, specifications:
 export function extractProductSummaryFromHtml(url: string, html: string, discovered?: DiscoveredProductLink): StoreProductSummary {
   const product = productJsonLd(html);
   const offers = firstRecord(product.offers);
-  const salePrice = numberFromUnknown(offers.price) || numberFromUnknown(offers.lowPrice) || numberFromUnknown(offers.highPrice) || fallbackPrice(html);
-  const originalPrice = fallbackOriginalPrice(html, salePrice);
+  const name = stringValue(product.name) || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html) || discovered?.label || "상품명 확인 필요";
+  // 예약 자동제작의 사이트 후보 분석도 수동 상품 추출과 같은 Cafe24
+  // 필수 묶음 옵션 가격 판정을 사용한다. 단품 표시가보다 실제 구매 총액을
+  // ProductTruth로 넘기되, 판정이 모호하면 기존 추출값으로 계속한다.
+  const cafe24BundlePricing = resolveCafe24RequiredBundlePricing(html, name);
+  const salePrice = numberFromUnknown(cafe24BundlePricing?.price) || numberFromUnknown(offers.price) || numberFromUnknown(offers.lowPrice) || numberFromUnknown(offers.highPrice) || fallbackPrice(html);
+  const originalPrice = numberFromUnknown(cafe24BundlePricing?.originalPrice) || fallbackOriginalPrice(html, salePrice);
   const discountRate = discountRateFromPrices(originalPrice, salePrice);
   const reviews = reviewSignals(product, html);
-  const name = stringValue(product.name) || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html) || discovered?.label || "상품명 확인 필요";
   const availability = stringValue(offers.availability);
   const pageSignals = cleanText(html.slice(0, 600_000), 60_000);
   const jsonImages = arrayImageValues(product.image, url);
@@ -126,7 +131,9 @@ export function extractProductSummaryFromHtml(url: string, html: string, discove
 
 export function extractProductDetailFromHtml(url: string, html: string, summary: StoreProductSummary, shouldAnalyzeReviews: boolean): ProductDetailAnalysis {
   const product = productJsonLd(html);
-  const description = stringValue(product.description) || metaContent(html, "og:description") || metaContent(html, "description");
+  const rawDescription = stringValue(product.description) || metaContent(html, "og:description") || metaContent(html, "description");
+  const cafe24BundlePricing = resolveCafe24RequiredBundlePricing(html, summary.name);
+  const description = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawDescription, cafe24BundlePricing) : rawDescription;
   const specifications = extractSpecifications(html);
   const imageUrls = uniqueStrings([...arrayImageValues(product.image, url), ...extractImageUrls(html, url, 40)], 40);
   const detailImageUrls = imageUrls.filter((image) => image !== summary.imageUrl).slice(0, 24);

@@ -3,8 +3,8 @@ import type { ProductTruth } from "../creative-generation/types";
 export const BANNED_GENERIC_AD_COPY = ["지금 만나보세요", "새로운 경험", "일상을 바꾸는", "특별한 선택", "당신을 위한", "프리미엄 라이프", "더 나은 내일", "스마트한 선택"] as const;
 
 const unsupportedClaimPattern = /(?:무조건|완벽(?:히|한)?|100%\s*(?:효과|해결|제거)|즉시\s*(?:치료|개선|제거)|임상(?:적으로)?\s*입증|체감온도|체취.{0,8}(?:지우|제거|없애)|체취\s*-?\d+%)/iu;
-const urgencyPattern = /(?:지금만|오늘만|마감\s*임박|선착순|한정\s*수량|품절\s*임박|단\s*\d+일)/iu;
-const evidenceRequiredPattern = /(?:도축현장|도매가|도매특가|최저가|판매량\s*(?:1위|1등)|(?:국내|영국)\s*(?:1위|1등)|괜히\s*1등|무료\s*배송|잡내\s*(?:1도|0|제로|없))/giu;
+const urgencyPattern = /(?:지금만|오늘만|마감\s*임박|선착순|한정\s*수량|품절\s*임박|단\s*\d+일|(?:가격\s*)?오르기\s*전)/iu;
+const evidenceRequiredPattern = /(?:도축현장|도매\s*(?:원가|가격|가|특가)|최저가|판매량\s*(?:1위|1등)|(?:국내|영국)\s*(?:1위|1등)|괜히\s*1등|무료\s*배송|잡내\s*(?:1도|0|제로|없))/giu;
 const numericPattern = /(?:₩|￦)?\s*\d[\d,.]*(?:\s*(?:원|%|kg|g|mg|ml|l|개|입|팩|장|점))?/giu;
 
 function normalize(value: string) {
@@ -23,7 +23,17 @@ export function extractEmojiCount(value: string) {
 }
 
 export function verifiedFactText(truth: ProductTruth) {
-  return [truth.product.productName, truth.product.price, truth.product.originalPrice, truth.product.oldPrice, truth.product.discountInfo, truth.product.mainBenefit, truth.product.targetCustomer, ...(truth.product.verifiedBenefits || []), ...(truth.product.ingredients || []), ...truth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").flatMap((fact) => [fact.label, fact.value])].filter(Boolean).join(" ");
+  const productIdentity = truth.normalized?.baseProductName || truth.normalized?.cleanProductName || truth.product.productName;
+  return [
+    productIdentity,
+    truth.product.price,
+    truth.product.originalPrice,
+    truth.product.oldPrice,
+    truth.product.discountInfo,
+    ...truth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").flatMap((fact) => [fact.label, fact.value]),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function validateAdCopyAgainstTruth(input: { primaryText: string; adTitle?: string; truth: ProductTruth; hookHeadline: string; approvedCopies?: string[] }) {
@@ -37,8 +47,13 @@ export function validateAdCopyAgainstTruth(input: { primaryText: string; adTitle
   const normalizedPrimaryText = normalize(primaryText);
   const normalizedCopy = normalize(combinedCopy);
 
-  if (copyLines.length < 5 || copyLines.length > 8) failures.push("Meta 기본 문구는 5~8개의 읽기 쉬운 문장 줄이어야 합니다.");
-  if (primaryText.length > 520) failures.push("Meta 기본 문구가 너무 깁니다.");
+  if (copyLines.length < 3 || copyLines.length > 5) failures.push("Meta 기본 문구는 3~5개의 읽기 쉬운 문장 줄이어야 합니다.");
+  if (primaryText.length > 260) failures.push("Meta 기본 문구가 260자를 넘어 너무 깁니다.");
+  if (copyLines.some((line) => line.length > 68)) failures.push("Meta 기본 문구에 68자를 넘는 긴 문장 줄이 있습니다.");
+  const lineSignatures = copyLines.map(normalize).filter(Boolean);
+  if (new Set(lineSignatures).size !== lineSignatures.length) failures.push("Meta 기본 문구에 같은 문장이 반복됩니다.");
+  if (/(?:소값|가격\s*오르기\s*전.{0,24}가격\s*오르기\s*전|([가-힣]{4,})\s+\1)/u.test(combinedCopy)) failures.push("상품 문맥에 맞지 않거나 같은 표현이 어색하게 반복됩니다.");
+  if (/\d[\d,.]*\s*(?:kg|g|ml|l)로(?:\s|$)/iu.test(combinedCopy)) failures.push("중량 단위 뒤 조사가 어색합니다. 'kg으로'처럼 자연스럽게 써야 합니다.");
   if (adTitle && (adTitle.length < 4 || adTitle.length > 40 || /[\r\n]/.test(adTitle))) failures.push("광고 제목은 4~40자의 한 줄이어야 합니다.");
   for (const phrase of BANNED_GENERIC_AD_COPY) if (combinedCopy.includes(phrase)) failures.push(`일반적인 AI 문구를 사용할 수 없습니다: ${phrase}`);
   if (unsupportedClaimPattern.test(combinedCopy)) failures.push("확인되지 않은 효과·임상·수치 표현이 포함되었습니다.");
@@ -53,7 +68,7 @@ export function validateAdCopyAgainstTruth(input: { primaryText: string; adTitle
     if (!normalizedFacts.includes(token)) failures.push(`확인되지 않은 숫자·가격·구성 표현이 포함되었습니다: ${token}`);
   }
   const emojiCount = extractEmojiCount(primaryText);
-  if (emojiCount === 1 || emojiCount > 6) failures.push("이모지는 사용하지 않거나 2~6개만 자연스럽게 사용해야 합니다.");
+  if (emojiCount > 3) failures.push("이모지는 최대 3개만 자연스럽게 사용해야 합니다.");
   if (input.hookHeadline.trim()) {
     const hookWords = input.hookHeadline
       .replace(/[^\p{L}\p{N}\s]/gu, " ")

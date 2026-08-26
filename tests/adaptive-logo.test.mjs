@@ -7,7 +7,8 @@ import sharp from "sharp";
 import { detectLogoSurfaceTone, makeLightLogoVariant, normalizeTransparentLogo, prepareLogoForSurface } from "../app/lib/mvp/adaptiveLogo.server.ts";
 
 const root = process.cwd();
-const logoPaths = ["public/brand-logos/gukdae-hanwoo-logo-exact.png", "public/brand-logos/original-source-logo.png", "public/brand-logos/ririnco-logo.png"];
+const lightVariantLogoPaths = ["public/brand-logos/gukdae-hanwoo-logo-exact.png", "public/brand-logos/original-source-logo.png", "public/brand-logos/ririnco-logo.png"];
+const transparentLogoPaths = [...lightVariantLogoPaths, "public/brand-logos/advertisers/daehan-hanwoo.png", "public/brand-logos/advertisers/himnaera-farm.png"];
 
 async function pixelStats(buffer) {
   const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -31,7 +32,7 @@ async function pixelStats(buffer) {
 }
 
 test("registered advertiser logos keep a real transparent background", async () => {
-  for (const relativePath of logoPaths) {
+  for (const relativePath of transparentLogoPaths) {
     const source = await readFile(path.join(root, relativePath));
     const normalized = await normalizeTransparentLogo(source);
     const stats = await pixelStats(normalized);
@@ -41,7 +42,7 @@ test("registered advertiser logos keep a real transparent background", async () 
 });
 
 test("dark surfaces receive readable light logo variants without adding a tile", async () => {
-  for (const relativePath of logoPaths) {
+  for (const relativePath of lightVariantLogoPaths) {
     const source = await readFile(path.join(root, relativePath));
     const variant = await makeLightLogoVariant(source);
     const stats = await pixelStats(variant);
@@ -64,7 +65,7 @@ test("surface luminance selects a contrasting logo variant", async () => {
   assert.equal(await detectLogoSurfaceTone(darkSurface), "dark");
   assert.equal(await detectLogoSurfaceTone(lightSurface), "light");
 
-  const source = await readFile(path.join(root, logoPaths[1]));
+  const source = await readFile(path.join(root, lightVariantLogoPaths[1]));
   const darkPrepared = await prepareLogoForSurface({
     logoBuffer: source,
     surfaceBuffer: darkSurface,

@@ -19,6 +19,13 @@ test("사이트 후보 분석 캐시는 TTL·원본 URL·분석·선택 결과�
   assert.match(source, /renameSync/);
 });
 
+test("예약 자동제작 handoff는 할인율과 무료배송·구성 혜택을 분리한다", async () => {
+  const source = await readFile(new URL("../app/lib/site-candidates/handoff.server.ts", import.meta.url), "utf8");
+  assert.match(source, /discountInfo:\s*product\.discountRate\s*\?\s*`\$\{product\.discountRate\}% 할인`\s*:\s*""/);
+  assert.match(source, /verifiedBenefitsForProduct\(product\)/);
+  assert.match(source, /comparableBenefit\(value\) !== productName/);
+});
+
 const PRODUCT_HTML = `
 <!doctype html>
 <html lang="ko">

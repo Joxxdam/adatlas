@@ -8,11 +8,12 @@ import { CURRENT_REFERENCE_EDIT_JOB_VERSION, executionResults, isServerRunnableG
 import { selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
+import { AD_COPY_PROMPT_VERSION } from "../ad-copy/adCopyPromptBuilder.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v8-fixed-reference-edit-contract");
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v10-ad-copy-version-refresh");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;
@@ -114,21 +115,38 @@ export async function recoverGenerationJob(jobId: string, ignoreRunner = false):
 
 async function markResultFailed(jobId: string, resultId: string, error: unknown) {
   const message = runnerErrorMessage(error);
-  const failed = await creativeGenerationJobStore.update(jobId, (job) => ({
-    ...job,
-    errors: [...job.errors, message].slice(-20),
-    results: job.results.map((result) =>
-      result.id === resultId
-        ? {
-            ...result,
-            status: "failed",
-            generationStage: result.generationStage || "planned",
-            error: message,
-            completedAt: new Date().toISOString(),
-          }
-        : result
-    ),
-  }));
+  const failed = await creativeGenerationJobStore.update(jobId, (job) => {
+    if (job.status === "cancelled") {
+      return {
+        ...job,
+        results: job.results.map((result) =>
+          result.id === resultId && result.status === "running"
+            ? {
+                ...result,
+                status: "cancelled",
+                error: undefined,
+                completedAt: new Date().toISOString(),
+              }
+            : result
+        ),
+      };
+    }
+    return {
+      ...job,
+      errors: [...job.errors, message].slice(-20),
+      results: job.results.map((result) =>
+        result.id === resultId
+          ? {
+              ...result,
+              status: "failed",
+              generationStage: result.generationStage || "planned",
+              error: message,
+              completedAt: new Date().toISOString(),
+            }
+          : result
+      ),
+    };
+  });
   if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
 }
 
@@ -219,7 +237,10 @@ async function runSafely(jobId: string) {
     // 상품당 한 번 만드는 Meta 기본 문구·광고 제목은 완성 이미지를 기다리지
     // 않는다. ProductTruth와 이미 준비된 대표 후킹으로 즉시 시작하고, 이미지
     // 6장 서버 작업과 병렬로 저장한다.
-    const copyTask = !recovered.adCopy || recovered.adCopy.status === "generating" ? ensureProductAdCopy(jobId) : Promise.resolve(recovered);
+    const copyTask =
+      !recovered.adCopy || recovered.adCopy.status === "generating" || recovered.adCopy.promptVersion !== AD_COPY_PROMPT_VERSION
+        ? ensureProductAdCopy(jobId)
+        : Promise.resolve(recovered);
     const generationTask = runGenerationJob(jobId);
     const [copyOutcome, generationOutcome] = await Promise.allSettled([copyTask, generationTask]);
     if (copyOutcome.status === "rejected") {

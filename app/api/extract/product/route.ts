@@ -5,6 +5,7 @@ import { inferProductRepresentation } from "../../../lib/mvp/productImagePipelin
 import { analyzeReviewSourceCandidates, type ReviewRawCandidate } from "../../../lib/mvp/reviewImageAnalysis.server";
 import { reviewCandidateContextScore } from "../../../lib/mvp/reviewCreative";
 import { isUnsafeProductCreativeSignal } from "../../../lib/creative-generation/productSignalHygiene.ts";
+import { normalizeCafe24BundlePricingClaims, resolveCafe24RequiredBundlePricing } from "../../../lib/store-analysis/extractors/cafe24Pricing";
 
 function countHangul(value: string) {
   return (value.match(/[가-힣]/g) ?? []).length;
@@ -700,7 +701,7 @@ function indexInRanges(index: number, ranges: Array<[number, number]>) {
 const productUspTextPattern = /(원산지|국내산|한우|등급|부위|등심|안심|채끝|갈비|마블링|선별|숙성|냉장|냉동|산지|직송|구성|중량|용량|식감|육즙|풍미|고소|부드|신선|원재료|함량|무첨가|저자극|향|세정|쿨링|보습|선물|캠핑|가족|실속|프리미엄|특마블|도매팩|사과|청사과|아오리|과일|제철|수확|한정|아삭|새콤달콤|청량|과즙|품종)/i;
 const productUspBoilerplatePattern = /(로그인|회원가입|장바구니|마이페이지|고객센터|상품문의|구매후기|리뷰쓰기|교환|반품|환불|배송안내|개인정보|이용약관|추천상품|관련상품|최근 본 상품|전체\s*리뷰|리뷰\s*목록|step\s*\d+|구성\s*선택|copyright|all rights reserved)/i;
 function isNoisyProductSignal(value: string) {
-  return isUnsafeProductCreativeSignal(value) || /너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
+  return isUnsafeProductCreativeSignal(value) || /[ㄱ-ㅎㅏ-ㅣ]|너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
 }
 
 function productDetailText(html: string) {
@@ -768,6 +769,7 @@ function selectMainBenefit(benefits: string[], description: string, productName:
       if (/\d[\d,.]*\s*(?:kg|g|ml|l|개|팩|병|원|%)/i.test(value)) score += 18;
       if (/(특가|마진\s*없이|구성|실속)/i.test(value)) score += 12;
       if (/(?:^|\s)1등(?:\s|$)|특가.*특가|★|!!/i.test(value)) score -= 72;
+      if ([...value.replace(/\s+/g, "")].length > 48) score -= 24;
       score += Math.max(0, 18 - Math.abs([...value].length - 24));
       return { value, score, index };
     })
@@ -949,11 +951,16 @@ export async function POST(request: Request) {
     }
 
     const jsonLd = extractJsonLd(html, url.toString());
-    const price = extractPrice(html, jsonLd.price);
-    const originalPrice = extractOriginalPrice(html, price);
     const productName = jsonLd.name || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html);
-    const baseDescription = jsonLd.description || metaContent(html, "og:description") || metaContent(html, "description") || metaContent(html, "twitter:description");
-    const extractedDescription = extractProductUspDescription(html, baseDescription, productName);
+    const fallbackPrice = extractPrice(html, jsonLd.price);
+    const fallbackOriginalPrice = extractOriginalPrice(html, fallbackPrice);
+    const cafe24BundlePricing = resolveCafe24RequiredBundlePricing(html, productName);
+    const price = cafe24BundlePricing?.price || fallbackPrice;
+    const originalPrice = cafe24BundlePricing?.originalPrice || fallbackOriginalPrice;
+    const rawBaseDescription = jsonLd.description || metaContent(html, "og:description") || metaContent(html, "description") || metaContent(html, "twitter:description");
+    const baseDescription = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawBaseDescription, cafe24BundlePricing) : rawBaseDescription;
+    const rawExtractedDescription = extractProductUspDescription(html, baseDescription, productName);
+    const extractedDescription = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawExtractedDescription, cafe24BundlePricing) : rawExtractedDescription;
     const structuredSignals = extractStructuredProductSignals(extractedDescription);
     const mainBenefit = selectMainBenefit(structuredSignals.verifiedBenefits, extractedDescription, productName);
     const fallbackMainImage = jsonLd.image || absoluteUrl(metaContent(html, "og:image") || metaContent(html, "twitter:image"), url.toString());
@@ -1051,7 +1058,7 @@ export async function POST(request: Request) {
       price,
       originalPrice,
       oldPrice: originalPrice,
-      discountInfo: extractDiscountInfo(html, price, originalPrice),
+      discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(html, price, originalPrice),
       brandName: jsonLd.brandName,
       detectedProductType: detected.type,
       categoryKeywords: detected.keywords,

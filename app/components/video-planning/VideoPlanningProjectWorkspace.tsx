@@ -282,7 +282,7 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
           <div>
             <h2>서로 다른 영상 콘셉트 4안</h2>
             <p>
-              요약만 비교하고, 자세히 연 콘셉트에 대해서만 15개 이상의 자막·장면안을 생성합니다.
+              요약을 먼저 비교하고, 자세히 연 콘셉트에는 영상 길이에 맞춘 읽기 쉬운 자막·장면안을 생성합니다.
             </p>
           </div>
           {!project.concepts.length ? (

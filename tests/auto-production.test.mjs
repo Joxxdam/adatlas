@@ -442,6 +442,18 @@ test("17. 한 상품 실패가 다음 상품 작업을 막지 않는다", async 
   assert.deepEqual(seen, ["failed-product", "next-product"]);
 });
 
+test("17-1. 취소된 자동제작은 느린 상품 분석 뒤 새 작업을 등록하거나 다음 상품으로 진행하지 않는다", async () => {
+  const runner = await read("app/lib/auto-production/productionRunner.server.ts");
+  const prepareBlock = runner.slice(runner.indexOf("async function prepareTask"), runner.indexOf("export async function runAutoProductionForProduct"));
+  const scheduledBlock = runner.slice(runner.indexOf("export async function startScheduledAutoProductionRun"), runner.indexOf("export async function runAutoProductionForAdvertiser"));
+  assert.match(prepareBlock, /await ensureRunActive\(run\.id\)/);
+  assert.match(prepareBlock, /await cancelPreparedGenerationJob\(job\.id\)/);
+  assert.match(prepareBlock, /if \(!registered\)/);
+  assert.match(prepareBlock, /await cancelPreparedGenerationJob\(queuedJob\.id\)/);
+  assert.match(scheduledBlock, /current\.status === "cancelled"/);
+  assert.match(scheduledBlock, /if \(isCancellationError\(error\)\) break/);
+});
+
 test("18. 후킹별 단일 세션을 분리하고 한 상품에서 최대 3장을 병렬 처리한다", async () => {
   const [generation, provider, runner] = await Promise.all([read("app/lib/creative-generation/nativeResultGeneration.server.ts"), read("app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts"), read("app/lib/creative-generation/jobRunner.server.ts")]);
   assert.doesNotMatch(generation, /codexProductThreadKey|resumeThread|saveAdvertiserThread/);
@@ -614,6 +626,13 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(runner, /config\.adminProductUrls\.length/);
   assert.match(source, /fromPlannedProductUrls/);
   assert.match(source, /자동제작 화면에서 확정한 다음 제작 예정 상품 URL/);
+  assert.match(source, /fromExactProductUrl/);
+  assert.match(source, /extractProduct/);
+  assert.match(source, /directProductInfo/);
+  assert.match(source, /directProductCandidate/);
+  const plannedSource = source.slice(source.indexOf("async function fromPlannedProductUrls"), source.indexOf("export async function loadAutoProductionCandidates"));
+  assert.match(plannedSource, /fromExactProductUrl/);
+  assert.doesNotMatch(plannedSource, /fromSite\(/);
   assert.match(runner, /Boolean\(result\.imageUrl\)/);
   assert.match(packaging, /Boolean\(result\.nativeCreative\?\.finalPath\)/);
 });

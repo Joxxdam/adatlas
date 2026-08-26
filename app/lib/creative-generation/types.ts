@@ -512,6 +512,9 @@ export type NativeCreativeValidation = {
   sensoryExpression: number;
   mobileReadability: number;
   observedKoreanText: string[];
+  /** 실제 상품 패키지 밖에 AI가 새로 만든 독립 로고·워드마크가 있는지에 대한 시각 QA 결과입니다. */
+  standaloneLogoDetected: boolean;
+  standaloneLogoFindings: string[];
   failures: string[];
   recommendation: "approve" | "revise" | "manual-review";
   checkedAt: string;

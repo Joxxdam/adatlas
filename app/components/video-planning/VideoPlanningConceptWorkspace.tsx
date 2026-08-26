@@ -12,7 +12,7 @@ import {
 import { getVideoPlanningBlueprint } from "../../lib/video-collaboration/videoPlanningBlueprints";
 import { getVideoParodyGenre } from "../../lib/video-collaboration/videoParodyGenres";
 import { VIDEO_HOOK_LABELS } from "../../lib/video-collaboration/workflow";
-import { assignPlanningTimeline } from "../../lib/video-collaboration/planningValidation";
+import { assignPlanningTimeline, segmentRange } from "../../lib/video-collaboration/planningValidation";
 import styles from "./VideoPlanning.module.css";
 
 function formatTime(value: number) {
@@ -155,7 +155,7 @@ export function VideoPlanningConceptWorkspace({
           const reusable =
             loaded.concept.detailStatus === "ready" &&
             loaded.concept.validation?.valid === true &&
-            loaded.concept.cuts.length >= 15;
+            loaded.concept.cuts.length >= segmentRange(loaded.project.duration).min;
           if (!reusable && !generationStarted.current) {
             generationStarted.current = true;
             void generateDetail("generate-detail", loaded.project.marketerName || "마케터");
@@ -391,6 +391,8 @@ export function VideoPlanningConceptWorkspace({
   const parodyGenre = getVideoParodyGenre(concept.parodyGenre);
   const primaryBlueprint = getVideoPlanningBlueprint(concept.blueprintSelection?.primaryId);
   const secondaryBlueprint = getVideoPlanningBlueprint(concept.blueprintSelection?.secondaryId);
+  const hasExecutionQualityChecks = Boolean(concept.validation?.checks.some((check) => check.key === "caption-readability"));
+  const failedQualityChecks = concept.validation?.checks.filter((check) => !check.passed) || [];
 
   return (
     <main className={styles.page}>
@@ -471,6 +473,19 @@ export function VideoPlanningConceptWorkspace({
             <strong>자막과 영상 장면안을 작성하고 있습니다.</strong>
             <p>보통 45~90초가 걸립니다. 누락된 촬영 요소는 장면별로 즉시 자동 보완합니다.</p>
           </div>
+        </div>
+      ) : null}
+      {concept.cuts.length && concept.validation ? (
+        <div className={styles.qualityNotice} data-valid={hasExecutionQualityChecks && concept.validation.valid}>
+          <div>
+            <strong>{hasExecutionQualityChecks ? "광고 집행 품질검사" : "기존 형식 검수"} · {concept.validation.score}점</strong>
+            <p>{hasExecutionQualityChecks ? (concept.validation.valid ? "읽기 속도·초반 혜택·시청자용 문장·CTA까지 자동검사를 통과했습니다." : "집행 전에 아래 자막 문제를 수정해야 합니다. 전체 다시 만들기를 누르면 자동 보정합니다.") : "이 대본은 새 집행 품질검사 적용 전에 생성됐습니다. 전체 다시 만들면 강화된 기준으로 다시 검사합니다."}</p>
+          </div>
+          {failedQualityChecks.length ? (
+            <ul>
+              {failedQualityChecks.slice(0, 5).map((check) => <li key={check.key}>{check.message}</li>)}
+            </ul>
+          ) : null}
         </div>
       ) : null}
 

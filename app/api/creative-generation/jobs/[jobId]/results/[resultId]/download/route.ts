@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { creativeGenerationJobStore } from "../../../../../../../lib/creative-generation/jobStore.server";
 import { resolveValidatedNativeDownload, MAX_FINAL_BYTES } from "../../../../../../../lib/creative-generation/nativeCreativeStorage.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError } from "../../../../../../../lib/creative-generation/publicJob.server";
+import { numberedProductImageFileName } from "../../../../../../../lib/creative-generation/downloadNaming";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +22,8 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
     const data = await readFile(file);
     const metadata = await sharp(data).metadata();
     if (metadata.format !== "jpeg" || metadata.width !== 1200 || metadata.height !== 1200 || data.length > MAX_FINAL_BYTES) return NextResponse.json({ ok: false, error: "내보내기 규격 검증에 실패했습니다." }, { status: 422 });
-    return new NextResponse(data, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(data.length), "Content-Disposition": `attachment; filename="${path.basename(result.downloadName || file).replace(/[^a-zA-Z0-9._-]/g, "-")}"`, "Cache-Control": "private, no-store" } });
+    const downloadName = numberedProductImageFileName(job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName, result.order);
+    return new NextResponse(data, { headers: { "Content-Type": "image/jpeg", "Content-Length": String(data.length), "Content-Disposition": `attachment; filename="product-${result.order}.jpg"; filename*=UTF-8''${encodeURIComponent(downloadName)}`, "Cache-Control": "private, no-store" } });
   } catch (error) {
     return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "다운로드 실패") }, { status: localAccessError(error) ? 403 : 400 });
   }

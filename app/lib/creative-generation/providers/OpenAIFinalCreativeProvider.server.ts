@@ -96,7 +96,7 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
             content: [
               {
                 type: "input_text",
-                text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,failures,recommendation}. recommendation은 approve, revise, manual-review 중 하나다.`,
+                text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. recommendation은 approve, revise, manual-review 중 하나다.`,
               },
               { type: "input_image", image_url: await imageUrl(input.imagePath), detail: "high" },
               ...(await Promise.all(
@@ -144,6 +144,8 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         sensoryExpression: score(parsed.sensoryExpression),
         mobileReadability: score(parsed.mobileReadability),
         observedKoreanText: Array.isArray(parsed.observedKoreanText) ? parsed.observedKoreanText.map(String).slice(0, 30) : [],
+        standaloneLogoDetected: parsed.standaloneLogoDetected === true,
+        standaloneLogoFindings: Array.isArray(parsed.standaloneLogoFindings) ? parsed.standaloneLogoFindings.map(String).slice(0, 10) : [],
         failures: Array.isArray(parsed.failures) ? parsed.failures.map(String).slice(0, 20) : [],
         recommendation: ["approve", "revise", "manual-review"].includes(parsed.recommendation) ? parsed.recommendation : "manual-review",
         checkedAt: new Date().toISOString(),

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { getHookLabel } from "../../../lib/creative-assets/code";
 import type { CreativeAsset, CreativeAssetSnapshot } from "../../../lib/creative-assets/types";
 import type { CreativeContentNoteScope } from "../../../lib/creative-content-notes/types";
+import { downloadSequenceFromCodes, numberedProductImageFileName } from "../../../lib/creative-generation/downloadNaming";
 
 type DisplayAsset = CreativeAsset | CreativeAssetSnapshot;
 
@@ -52,7 +53,8 @@ export function CreativeAssetActions({ asset, compact = false, landingUrl, onMes
   const [promotionId, setPromotionId] = useState("");
   const trackedLandingUrl = buildTrackedLandingUrl(landingUrl, asset.utmContent);
   const hookLabel = getHookLabel(asset.hookCode || asset.hookType);
-  const deliveryText = [`후킹: ${asset.hookCode} · ${hookLabel}${asset.mainMessage ? ` · ${asset.mainMessage}` : ""}`, `소재코드: ${asset.assetCode}`, `권장 광고명: ${asset.recommendedAdName}`, `UTM: ${asset.utmContent}`, trackedLandingUrl ? `최종 랜딩 URL: ${trackedLandingUrl}` : "", `파일명: ${asset.fileName}`].filter(Boolean).join("\n");
+  const exportedFileName = numberedProductImageFileName(asset.productName, downloadSequenceFromCodes([asset.hookCode, asset.materialCode, asset.assetCode]));
+  const deliveryText = [`후킹: ${asset.hookCode} · ${hookLabel}${asset.mainMessage ? ` · ${asset.mainMessage}` : ""}`, `소재코드: ${asset.assetCode}`, `권장 광고명: ${asset.recommendedAdName}`, `UTM: ${asset.utmContent}`, trackedLandingUrl ? `최종 랜딩 URL: ${trackedLandingUrl}` : "", `파일명: ${exportedFileName}`].filter(Boolean).join("\n");
 
   function announce(next: string) {
     setMessage(next);
@@ -77,7 +79,7 @@ export function CreativeAssetActions({ asset, compact = false, landingUrl, onMes
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = asset.fileName;
+      anchor.download = exportedFileName;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
