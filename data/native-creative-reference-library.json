@@ -1,8 +1,8 @@
 {
-  "version": "native-creative-reference-library-v11-food-snack-semantic-props",
+  "version": "native-creative-reference-library-v12-shared-selection-pools",
   "importedAt": "2026-08-23T05:38:53.931Z",
   "sourceLabel": "레퍼런스 관리 화면에서 운영하는 제작용 이미지 라이브러리",
-  "selectionPolicy": "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 대카테고리는 패션·음식·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 일반 음식 상품은 간식 태그 항목까지 포함한 음식 전체 풀에서, 간식 상품은 음식 > 간식 하위 풀에서만 중복 없이 순수 무작위 선택합니다. 간식 풀 안에서는 원본 상품 형태나 조리 소품으로 추가 제외하지 않습니다. 원상품의 용기·조리도구·식재료·상차림은 현재 상품과 맞지 않으면 같은 생성 단계에서 상품에 맞는 의미 소품과 장면으로 다시 구성합니다. OCR 상태·상품 형태·슬롯 수·인물 포함 여부·호환 점수·최근 사용 여부는 추가 선택 제한으로 사용하지 않습니다. 다른 대카테고리나 일반 음식 풀로 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.",
+  "selectionPolicy": "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 기본 대카테고리는 패션·음식·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 기본 분류는 바꾸지 않은 채 운영자가 추가 제작 풀을 지정해 같은 레퍼런스를 여러 상품군에서 함께 사용할 수 있습니다. 일반 음식 상품은 간식 추가 풀 항목까지 포함한 음식 전체 풀에서, 간식 상품은 기본 음식 > 간식 또는 추가 간식 풀에서 중복 없이 순수 무작위 선택합니다. 간식 풀 안에서는 원본 상품 형태나 조리 소품으로 추가 제외하지 않습니다. 원상품의 용기·조리도구·식재료·상차림은 현재 상품과 맞지 않으면 같은 생성 단계에서 상품에 맞는 의미 소품과 장면으로 다시 구성합니다. OCR 상태·상품 형태·슬롯 수·인물 포함 여부·호환 점수·최근 사용 여부는 추가 선택 제한으로 사용하지 않습니다. 미지정 대카테고리로 임의 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.",
   "usagePolicy": "선택 결과를 작업에 저장하고 원본을 01-structure로 무손실 복사한 뒤 URL 상품과 ProductTruth 문구로 단계별 교체합니다. 재시도·복구·문구 수정은 같은 레퍼런스를 재사용하며 사용자가 6장 전체 새로 만들기를 실행할 때만 다시 추첨합니다.",
   "items": [
     {
@@ -10278,465 +10278,6 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-25T13:35:12.756Z",
         "updatedAt": "2026-08-25T13:36:40.422Z"
-      }
-    },
-    {
-      "id": "reference-copy-037",
-      "publicPath": "/creative-references/reference-copy/reference-037.jpg",
-      "sourceFile": "34.jpg",
-      "layoutFamily": "problem-objection",
-      "categoryGroup": "beauty",
-      "ordinal": 37,
-      "productForm": "universal-packshot",
-      "compositionType": "product-packshot",
-      "productSlotCount": 1,
-      "productSlotShape": "flexible",
-      "photographyType": "packshot",
-      "textDensity": "medium",
-      "supportsPackagedProduct": true,
-      "supportsNaturalFood": false,
-      "supportsHumanModel": false,
-      "supportsMultipleProducts": false,
-      "compatibilityConfidence": "medium",
-      "nativeCopy": {
-        "referenceId": "reference-copy-037",
-        "rawText": "헬스장 암내\n싹\n잡는 샤워젤\n#영국 1위 #비건 바디워시 #체취 삭제\n만원대 곧 종료",
-        "rawLines": [
-          "헬스장 암내",
-          "싹",
-          "잡는 샤워젤",
-          "#영국 1위 #비건 바디워시 #체취 삭제",
-          "만원대 곧 종료"
-        ],
-        "textRegions": [
-          {
-            "id": "region-01",
-            "role": "headline",
-            "readingOrder": 1,
-            "sourceType": "ad-copy",
-            "replacePolicy": "adapt",
-            "text": "헬스장 암내",
-            "lines": [
-              "헬스장 암내"
-            ],
-            "box": {
-              "x": 0.061,
-              "y": 0.066,
-              "width": 0.438,
-              "height": 0.093
-            },
-            "x": 0.061,
-            "y": 0.066,
-            "width": 0.438,
-            "height": 0.093,
-            "align": "left",
-            "emphasis": "strong",
-            "colorHint": "흰색",
-            "backgroundHint": "검정",
-            "outlineHint": "없음",
-            "sizeClass": "large",
-            "characterBudget": 6,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-02",
-            "role": "headline",
-            "readingOrder": 2,
-            "sourceType": "ad-copy",
-            "replacePolicy": "adapt",
-            "text": "싹",
-            "lines": [
-              "싹"
-            ],
-            "box": {
-              "x": 0.073,
-              "y": 0.195,
-              "width": 0.422,
-              "height": 0.385
-            },
-            "x": 0.073,
-            "y": 0.195,
-            "width": 0.422,
-            "height": 0.385,
-            "align": "center",
-            "emphasis": "strong",
-            "colorHint": "밝은 민트색",
-            "backgroundHint": "검정",
-            "outlineHint": "검정·짙은 청록색 입체 그림자",
-            "sizeClass": "hero",
-            "characterBudget": 1,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-03",
-            "role": "support",
-            "readingOrder": 3,
-            "sourceType": "ad-copy",
-            "replacePolicy": "adapt",
-            "text": "잡는 샤워젤",
-            "lines": [
-              "잡는 샤워젤"
-            ],
-            "box": {
-              "x": 0.067,
-              "y": 0.606,
-              "width": 0.48,
-              "height": 0.094
-            },
-            "x": 0.067,
-            "y": 0.606,
-            "width": 0.48,
-            "height": 0.094,
-            "align": "left",
-            "emphasis": "strong",
-            "colorHint": "흰색",
-            "backgroundHint": "검정",
-            "outlineHint": "없음",
-            "sizeClass": "large",
-            "characterBudget": 6,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-04",
-            "role": "proof",
-            "readingOrder": 4,
-            "sourceType": "ad-copy",
-            "replacePolicy": "adapt",
-            "text": "#영국 1위 #비건 바디워시 #체취 삭제",
-            "lines": [
-              "#영국 1위 #비건 바디워시 #체취 삭제"
-            ],
-            "box": {
-              "x": 0.061,
-              "y": 0.755,
-              "width": 0.455,
-              "height": 0.055
-            },
-            "x": 0.061,
-            "y": 0.755,
-            "width": 0.455,
-            "height": 0.055,
-            "align": "center",
-            "emphasis": "light",
-            "colorHint": "흰색",
-            "backgroundHint": "검정",
-            "outlineHint": "민트색 직사각형 테두리",
-            "sizeClass": "small",
-            "characterBudget": 22,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-05",
-            "role": "offer",
-            "readingOrder": 5,
-            "sourceType": "ad-copy",
-            "replacePolicy": "adapt",
-            "text": "만원대 곧 종료",
-            "lines": [
-              "만원대 곧 종료"
-            ],
-            "box": {
-              "x": 0.127,
-              "y": 0.816,
-              "width": 0.331,
-              "height": 0.067
-            },
-            "x": 0.127,
-            "y": 0.816,
-            "width": 0.331,
-            "height": 0.067,
-            "align": "center",
-            "emphasis": "strong",
-            "colorHint": "밝은 민트색",
-            "backgroundHint": "검정",
-            "outlineHint": "민트색 직사각형 테두리",
-            "sizeClass": "medium",
-            "characterBudget": 8,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-06",
-            "role": "badge",
-            "readingOrder": 6,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "I'M 30%\nRECYCLED\nPLASTIC BOTTLE\nEXCLUDING CAP",
-            "lines": [
-              "I'M 30%",
-              "RECYCLED",
-              "PLASTIC BOTTLE",
-              "EXCLUDING CAP"
-            ],
-            "box": {
-              "x": 0.802,
-              "y": 0.097,
-              "width": 0.084,
-              "height": 0.09
-            },
-            "x": 0.802,
-            "y": 0.097,
-            "width": 0.084,
-            "height": 0.09,
-            "align": "center",
-            "emphasis": "strong",
-            "colorHint": "검정",
-            "backgroundHint": "흰색 원형 스티커",
-            "outlineHint": "없음",
-            "sizeClass": "small",
-            "characterBudget": 45,
-            "reviewRequired": false,
-            "confidence": 0.96
-          },
-          {
-            "id": "region-07",
-            "role": "other",
-            "readingOrder": 7,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "TINGLY\nMINT &\nTEA TREE",
-            "lines": [
-              "TINGLY",
-              "MINT &",
-              "TEA TREE"
-            ],
-            "box": {
-              "x": 0.679,
-              "y": 0.197,
-              "width": 0.172,
-              "height": 0.146
-            },
-            "x": 0.679,
-            "y": 0.197,
-            "width": 0.172,
-            "height": 0.146,
-            "align": "center",
-            "emphasis": "strong",
-            "colorHint": "연한 민트색",
-            "backgroundHint": "짙은 남색 물방울 형태",
-            "outlineHint": "없음",
-            "sizeClass": "medium",
-            "characterBudget": 22,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-08",
-            "role": "proof",
-            "readingOrder": 8,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "100%\nNATURAL\nFRAGRANCE",
-            "lines": [
-              "100%",
-              "NATURAL",
-              "FRAGRANCE"
-            ],
-            "box": {
-              "x": 0.773,
-              "y": 0.347,
-              "width": 0.113,
-              "height": 0.09
-            },
-            "x": 0.773,
-            "y": 0.347,
-            "width": 0.113,
-            "height": 0.09,
-            "align": "center",
-            "emphasis": "strong",
-            "colorHint": "흰색",
-            "backgroundHint": "검정 잎사귀 형태",
-            "outlineHint": "없음",
-            "sizeClass": "small",
-            "characterBudget": 22,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-09",
-            "role": "badge",
-            "readingOrder": 9,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "Vegan",
-            "lines": [
-              "Vegan"
-            ],
-            "box": {
-              "x": 0.664,
-              "y": 0.407,
-              "width": 0.066,
-              "height": 0.055
-            },
-            "x": 0.664,
-            "y": 0.407,
-            "width": 0.066,
-            "height": 0.055,
-            "align": "center",
-            "emphasis": "light",
-            "colorHint": "흰색",
-            "backgroundHint": "검정 잎사귀 형태",
-            "outlineHint": "흰색 비건 인증 심볼",
-            "sizeClass": "small",
-            "characterBudget": 5,
-            "reviewRequired": false,
-            "confidence": 0.95
-          },
-          {
-            "id": "region-10",
-            "role": "other",
-            "readingOrder": 10,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "ORIGINAL\nSOURCE",
-            "lines": [
-              "ORIGINAL",
-              "SOURCE"
-            ],
-            "box": {
-              "x": 0.654,
-              "y": 0.493,
-              "width": 0.229,
-              "height": 0.145
-            },
-            "x": 0.654,
-            "y": 0.493,
-            "width": 0.229,
-            "height": 0.145,
-            "align": "center",
-            "emphasis": "strong",
-            "colorHint": "검정",
-            "backgroundHint": "아주 연한 민트색 직사각형",
-            "outlineHint": "검정 상·하단 가로선",
-            "sizeClass": "large",
-            "characterBudget": 15,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-11",
-            "role": "proof",
-            "readingOrder": 11,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "7.927\nREAL MINT\nLEAVES IN\nEVERY BOTTLE",
-            "lines": [
-              "7.927",
-              "REAL MINT",
-              "LEAVES IN",
-              "EVERY BOTTLE"
-            ],
-            "box": {
-              "x": 0.661,
-              "y": 0.648,
-              "width": 0.112,
-              "height": 0.099
-            },
-            "x": 0.661,
-            "y": 0.648,
-            "width": 0.112,
-            "height": 0.099,
-            "align": "left",
-            "emphasis": "strong",
-            "colorHint": "검정",
-            "backgroundHint": "민트색 패키지",
-            "outlineHint": "없음",
-            "sizeClass": "small",
-            "characterBudget": 38,
-            "reviewRequired": false,
-            "confidence": 0.99
-          },
-          {
-            "id": "region-12",
-            "role": "badge",
-            "readingOrder": 12,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "PETA\nAPPROVED\nGlobal Animal Test Policy",
-            "lines": [
-              "PETA",
-              "APPROVED",
-              "Global Animal Test Policy"
-            ],
-            "box": {
-              "x": 0.772,
-              "y": 0.65,
-              "width": 0.112,
-              "height": 0.087
-            },
-            "x": 0.772,
-            "y": 0.65,
-            "width": 0.112,
-            "height": 0.087,
-            "align": "center",
-            "emphasis": "light",
-            "colorHint": "검정",
-            "backgroundHint": "민트색 패키지",
-            "outlineHint": "검정 하트·토끼 인증 심볼과 가로선",
-            "sizeClass": "small",
-            "characterBudget": 39,
-            "reviewRequired": false,
-            "confidence": 0.97
-          },
-          {
-            "id": "region-13",
-            "role": "other",
-            "readingOrder": 13,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "SHOWER 250mL℮",
-            "lines": [
-              "SHOWER 250mL℮"
-            ],
-            "box": {
-              "x": 0.645,
-              "y": 0.748,
-              "width": 0.244,
-              "height": 0.043
-            },
-            "x": 0.645,
-            "y": 0.748,
-            "width": 0.244,
-            "height": 0.043,
-            "align": "left",
-            "emphasis": "strong",
-            "colorHint": "아주 연한 민트색",
-            "backgroundHint": "민트색 패키지",
-            "outlineHint": "없음",
-            "sizeClass": "medium",
-            "characterBudget": 13,
-            "reviewRequired": false,
-            "confidence": 0.99
-          }
-        ],
-        "confidence": 0.98,
-        "ocrConfidence": 0.98,
-        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
-        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
-        "model": "gpt-5.6-sol",
-        "imageHash": "1120a82ded298dc992e05f02642593f41f2a14f14bc78225de09daa0889a8557",
-        "imageWidth": 1200,
-        "imageHeight": 1200,
-        "analysisStatus": "ready",
-        "approvalStatus": "auto-approved",
-        "approvedAt": "2026-08-25T16:15:30.693Z",
-        "validation": {
-          "textCoverage": 1,
-          "regionCoverage": 1,
-          "passAgreement": 1,
-          "numericAgreement": 1,
-          "issues": []
-        },
-        "attemptCount": 1,
-        "manuallyCorrected": false,
-        "useForCopyAdaptation": true,
-        "extractionSource": "codex-local",
-        "extractedAt": "2026-08-25T16:15:30.693Z",
-        "updatedAt": "2026-08-25T16:19:13.922Z"
       }
     },
     {
@@ -48517,7 +48058,7 @@
       "categoryGroup": "beauty",
       "productForm": "universal-packshot",
       "compositionType": "comparison",
-      "productSlotCount": 1,
+      "productSlotCount": 2,
       "productSlotShape": "tall",
       "photographyType": "human-model",
       "textDensity": "dense",
@@ -55593,7 +55134,7 @@
       "categoryGroup": "food",
       "productForm": "pouch",
       "compositionType": "comparison",
-      "productSlotCount": 1,
+      "productSlotCount": 2,
       "productSlotShape": "tall",
       "photographyType": "lifestyle",
       "textDensity": "dense",
@@ -60559,8 +60100,8 @@
       "layoutFamily": "managed-reference",
       "categoryGroup": "beauty",
       "productForm": "bottle",
-      "compositionType": "human-use",
-      "productSlotCount": 1,
+      "compositionType": "comparison",
+      "productSlotCount": 2,
       "productSlotShape": "tall",
       "photographyType": "human-model",
       "textDensity": "dense",
@@ -64443,7 +63984,7 @@
       "categoryGroup": "beauty",
       "productForm": "box",
       "compositionType": "comparison",
-      "productSlotCount": 1,
+      "productSlotCount": 2,
       "productSlotShape": "tall",
       "photographyType": "packshot",
       "textDensity": "dense",
@@ -64455,7 +63996,7 @@
       "ordinal": 184,
       "contentHash": "37b76c3e493b28abfef174397143b16342e28488d2572d64ca95b0a0a6f13e56",
       "uploadedAt": "2026-08-24T10:10:26.417Z",
-      "classificationMethod": "codex-local",
+      "classificationMethod": "manual",
       "nativeCopy": {
         "referenceId": "reference-upload-88c0c189-346a-4ae3-bfad-debdf3c424b9",
         "rawText": "오늘이면 끝이에요..\n🚨 5만원 ➡️ 2만원대\n(진짜예요 ㅠㅠ)\n유담상담\n오늘밤 12시이후로 가격 인상 예정입니다\n할인 광고들 모두 내려주세요.\n네!\n마지막 최저가\n할인코드 secret\n5일 -5kg 안되면 환불해드려요",
@@ -65100,7 +64641,10 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-25T20:35:29.844Z",
         "updatedAt": "2026-08-25T20:43:15.283Z"
-      }
+      },
+      "additionalSelectionPools": [
+        "food-snack"
+      ]
     },
     {
       "id": "reference-upload-158de1d2-b84d-453e-9991-29ab08c52c88",
@@ -67062,7 +66606,7 @@
       "categoryGroup": "food",
       "productForm": "natural-food",
       "compositionType": "comparison",
-      "productSlotCount": 1,
+      "productSlotCount": 2,
       "productSlotShape": "square",
       "photographyType": "natural-food",
       "textDensity": "dense",
@@ -76254,7 +75798,7 @@
       "ordinal": 221,
       "contentHash": "06846f36eb1e76f0e1a841fc3cd2fd4b196b058849fa2b12e03de3a0895430d5",
       "uploadedAt": "2026-08-26T09:45:23.217Z",
-      "classificationMethod": "codex-local",
+      "classificationMethod": "manual",
       "nativeCopy": {
         "referenceId": "reference-upload-93ed16df-1eb5-496e-829f-4fdc1c7f9fba",
         "rawText": "🔥 샤워젤 사러 왔다가 득템 🔥\n두개 골랐는데 한개 더\n본품 250ml 2개 고르면 50ml 1개 더\nORIGINAL SOURCE",
@@ -77071,7 +76615,10 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-26T10:28:09.862Z",
         "updatedAt": "2026-08-26T10:34:43.541Z"
-      }
+      },
+      "additionalSelectionPools": [
+        "food-snack"
+      ]
     },
     {
       "id": "reference-upload-5ce57477-3b85-48ee-a2d2-f3ec6520ff0b",
@@ -79029,7 +78576,7 @@
       "ordinal": 228,
       "contentHash": "db7e3e7d3364a2f0cd5e0470e606004a53f8ce106ed0c4e9ce8bd02afbd3551c",
       "uploadedAt": "2026-08-26T10:04:24.909Z",
-      "classificationMethod": "codex-local",
+      "classificationMethod": "manual",
       "nativeCopy": {
         "referenceId": "reference-upload-2f55d519-b809-4d11-b79e-8886cf462f08",
         "rawText": "단 3일! 62% OFF\n부모님 선물로 딱이에요!\n퍼시논 바디워시로\n냄새 고민 끝!\n156,000원\n59,000원\n승배네\nPICK\n[1+1+1 한정수량] 여름 필수템 품절임박 🏖️",
@@ -79436,7 +78983,10 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-26T11:31:31.276Z",
         "updatedAt": "2026-08-26T11:37:24.059Z"
-      }
+      },
+      "additionalSelectionPools": [
+        "food-snack"
+      ]
     },
     {
       "id": "reference-upload-5c1063b9-97e2-45ac-b123-eb5f83679adc",
@@ -84208,7 +83758,7 @@
       "categoryGroup": "food",
       "productForm": "meat-cut",
       "compositionType": "comparison",
-      "productSlotCount": 1,
+      "productSlotCount": 2,
       "productSlotShape": "square",
       "photographyType": "natural-food",
       "textDensity": "dense",
@@ -84899,8 +84449,8 @@
       "layoutFamily": "managed-reference",
       "categoryGroup": "food",
       "productForm": "tray",
-      "compositionType": "price-card",
-      "productSlotCount": 1,
+      "compositionType": "comparison",
+      "productSlotCount": 2,
       "productSlotShape": "tall",
       "photographyType": "natural-food",
       "textDensity": "dense",
@@ -102341,7 +101891,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-29T13:57:07.003Z",
         "updatedAt": "2026-08-29T13:58:48.434Z"
-      }
+      },
+      "foodSubcategory": "snack"
     },
     {
       "id": "reference-upload-189ad86e-e717-49ca-9b0d-120d8c9abc99",
@@ -102893,7 +102444,7 @@
       "ordinal": 295,
       "contentHash": "95fbca3a7d65062f8c0caf9451c38dcd3b2f18dad7597eb8dadde009b6c8813c",
       "uploadedAt": "2026-08-29T13:50:38.947Z",
-      "classificationMethod": "codex-local",
+      "classificationMethod": "manual",
       "nativeCopy": {
         "referenceId": "reference-upload-28949ba4-0373-4030-a46c-653d45013993",
         "rawText": "아메리카노가... 15칼로리나 된다고...?!\n이건 8칼로리야!\n달달한데 당류는 0.3g ??\n대박 이걸로 입터짐 방지한다네!!!!\n헤이즐넛맛으로 간식 생각 바로 삭제!",
@@ -103326,7 +102877,10 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-29T16:31:58.979Z",
         "updatedAt": "2026-08-29T16:41:30.160Z"
-      }
+      },
+      "additionalSelectionPools": [
+        "food-snack"
+      ]
     },
     {
       "id": "reference-upload-dd9759fe-f12d-4e1c-b350-376fdc5ae8ff",
@@ -103975,7 +103529,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-29T14:04:56.804Z",
         "updatedAt": "2026-08-29T14:06:40.398Z"
-      }
+      },
+      "foodSubcategory": "snack"
     },
     {
       "id": "reference-upload-d4d0465a-879e-4ceb-a1e4-dfc89d093da4",
@@ -106409,7 +105964,7 @@
       "ordinal": 307,
       "contentHash": "e29fa1258f448618f7c1ae7dc4853bdf09ea475b4c31495ba5a577e77e970df3",
       "uploadedAt": "2026-08-29T13:59:26.704Z",
-      "classificationMethod": "codex-local",
+      "classificationMethod": "manual",
       "nativeCopy": {
         "referenceId": "reference-upload-72667a9e-8bc2-473b-ba66-e1fa79db881b",
         "rawText": "가짜배고픔삭✂제\n오레오맛 쉐이크\n🔐 히든링크 🔐 여기서만~43% 할인 중 >>",
@@ -106659,7 +106214,10 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-08-29T16:41:31.440Z",
         "updatedAt": "2026-08-29T16:46:06.616Z"
-      }
+      },
+      "additionalSelectionPools": [
+        "food-snack"
+      ]
     },
     {
       "id": "reference-upload-58645fdf-9a87-40c8-95ce-30955445813b",
@@ -111170,7 +110728,2515 @@
         "updatedAt": "2026-08-29T16:28:12.706Z"
       },
       "foodSubcategory": "snack"
+    },
+    {
+      "id": "reference-upload-74b15057-490d-411d-a36f-3869f7804bb1",
+      "publicPath": "/creative-references/reference-copy/reference-upload-74b15057-490d-411d-a36f-3869f7804bb1.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-47-01.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 322,
+      "contentHash": "377ff89bf40e91b6abd461e4406225ab1b29eca2e5b64949731847b748bdb364",
+      "uploadedAt": "2026-08-30T10:49:51.434Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-74b15057-490d-411d-a36f-3869f7804bb1",
+        "rawText": "AI를 활용한 콘텐츠\n넣자마자 살살 녹는 국내산 설록우 등심\n역대급 도매가\n1KG 49,800원\n지금 구매하기",
+        "rawLines": [
+          "AI를 활용한 콘텐츠",
+          "넣자마자 살살 녹는 국내산 설록우 등심",
+          "역대급 도매가",
+          "1KG 49,800원",
+          "지금 구매하기"
+        ],
+        "textRegions": [
+          {
+            "id": "region-01",
+            "role": "other",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "preserve",
+            "text": "AI를 활용한 콘텐츠",
+            "lines": [
+              "AI를 활용한 콘텐츠"
+            ],
+            "box": {
+              "x": 0.075,
+              "y": 0.029,
+              "width": 0.184,
+              "height": 0.032
+            },
+            "x": 0.075,
+            "y": 0.029,
+            "width": 0.184,
+            "height": 0.032,
+            "align": "left",
+            "emphasis": "light",
+            "colorHint": "흰색",
+            "backgroundHint": "빨간색",
+            "outlineHint": "옅은 짙은 빨간색 그림자",
+            "sizeClass": "small",
+            "characterBudget": 11,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-02",
+            "role": "support",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "넣자마자 살살 녹는 국내산 설록우 등심",
+            "lines": [
+              "넣자마자 살살 녹는 국내산 설록우 등심"
+            ],
+            "box": {
+              "x": 0.19,
+              "y": 0.557,
+              "width": 0.622,
+              "height": 0.059
+            },
+            "x": 0.19,
+            "y": 0.557,
+            "width": 0.622,
+            "height": 0.059,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "‘넣자마자 살살 녹는’은 검정색, ‘국내산 설록우 등심’은 진한 빨간색",
+            "backgroundHint": "흰색 직사각형",
+            "outlineHint": "검정색 테두리와 옅은 그림자",
+            "sizeClass": "medium",
+            "characterBudget": 21,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-03",
+            "role": "headline",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "역대급 도매가",
+            "lines": [
+              "역대급 도매가"
+            ],
+            "box": {
+              "x": 0.168,
+              "y": 0.64,
+              "width": 0.676,
+              "height": 0.113
+            },
+            "x": 0.168,
+            "y": 0.64,
+            "width": 0.676,
+            "height": 0.113,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색",
+            "backgroundHint": "빨간색",
+            "outlineHint": "짙은 빨간색 그림자",
+            "sizeClass": "hero",
+            "characterBudget": 7,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-04",
+            "role": "offer",
+            "readingOrder": 4,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "1KG 49,800원",
+            "lines": [
+              "1KG 49,800원"
+            ],
+            "box": {
+              "x": 0.127,
+              "y": 0.766,
+              "width": 0.757,
+              "height": 0.113
+            },
+            "x": 0.127,
+            "y": 0.766,
+            "width": 0.757,
+            "height": 0.113,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "‘1KG’는 흰색, ‘49,800원’은 노란색",
+            "backgroundHint": "빨간색",
+            "outlineHint": "짙은 빨간색 그림자",
+            "sizeClass": "hero",
+            "characterBudget": 11,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-05",
+            "role": "cta",
+            "readingOrder": 5,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "지금 구매하기",
+            "lines": [
+              "지금 구매하기"
+            ],
+            "box": {
+              "x": 0.087,
+              "y": 0.932,
+              "width": 0.19,
+              "height": 0.035
+            },
+            "x": 0.087,
+            "y": 0.932,
+            "width": 0.19,
+            "height": 0.035,
+            "align": "left",
+            "emphasis": "light",
+            "colorHint": "흰색",
+            "backgroundHint": "밝은 빨간색 하단 바",
+            "outlineHint": "옅은 짙은 빨간색 그림자",
+            "sizeClass": "medium",
+            "characterBudget": 7,
+            "reviewRequired": false,
+            "confidence": 1
+          }
+        ],
+        "confidence": 1,
+        "ocrConfidence": 1,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "377ff89bf40e91b6abd461e4406225ab1b29eca2e5b64949731847b748bdb364",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T10:57:28.316Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T10:57:28.316Z",
+        "updatedAt": "2026-08-30T10:58:51.740Z"
+      }
+    },
+    {
+      "id": "reference-upload-e11db0dc-eec0-4fec-9612-524141e50f90",
+      "publicPath": "/creative-references/reference-copy/reference-upload-e11db0dc-eec0-4fec-9612-524141e50f90.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-45-08.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 323,
+      "contentHash": "e646b0643a7b66fe2380b9e8e026f835527dd183126bda17436eca8a89afcce7",
+      "uploadedAt": "2026-08-30T10:50:00.295Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-e11db0dc-eec0-4fec-9612-524141e50f90",
+        "rawText": "와 진심 미쳤다\n캠핑용 고기로 샀어요..입에서 살살 녹고\n양도 많은데 가격이 진짜 말도 안 됩니다\n설록우 등심 4만원대로 온가족이서 배터지게 먹었네요\n잡내 없이 부드러운 설록우 찰진 등심 도매가 판매",
+        "rawLines": [
+          "와 진심 미쳤다",
+          "캠핑용 고기로 샀어요..입에서 살살 녹고",
+          "양도 많은데 가격이 진짜 말도 안 됩니다",
+          "설록우 등심 4만원대로 온가족이서 배터지게 먹었네요",
+          "잡내 없이 부드러운 설록우 찰진 등심 도매가 판매"
+        ],
+        "textRegions": [
+          {
+            "id": "text-01",
+            "role": "headline",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "와 진심 미쳤다",
+            "lines": [
+              "와 진심 미쳤다"
+            ],
+            "box": {
+              "x": 0.116,
+              "y": 0.043,
+              "width": 0.751,
+              "height": 0.116
+            },
+            "x": 0.116,
+            "y": 0.043,
+            "width": 0.751,
+            "height": 0.116,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "선명한 빨간색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 8,
+            "reviewRequired": false,
+            "confidence": 0.999
+          },
+          {
+            "id": "text-02",
+            "role": "support",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "캠핑용 고기로 샀어요..입에서 살살 녹고\n양도 많은데 가격이 진짜 말도 안 됩니다",
+            "lines": [
+              "캠핑용 고기로 샀어요..입에서 살살 녹고",
+              "양도 많은데 가격이 진짜 말도 안 됩니다"
+            ],
+            "box": {
+              "x": 0.167,
+              "y": 0.202,
+              "width": 0.68,
+              "height": 0.108
+            },
+            "x": 0.167,
+            "y": 0.202,
+            "width": 0.68,
+            "height": 0.108,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 45,
+            "reviewRequired": false,
+            "confidence": 0.999
+          },
+          {
+            "id": "text-03",
+            "role": "offer",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "설록우 등심 4만원대로 온가족이서 배터지게 먹었네요",
+            "lines": [
+              "설록우 등심 4만원대로 온가족이서 배터지게 먹었네요"
+            ],
+            "box": {
+              "x": 0.032,
+              "y": 0.335,
+              "width": 0.95,
+              "height": 0.054
+            },
+            "x": 0.032,
+            "y": 0.335,
+            "width": 0.95,
+            "height": 0.054,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검은색",
+            "backgroundHint": "형광 노란색 직사각형 강조 띠",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 28,
+            "reviewRequired": false,
+            "confidence": 0.999
+          },
+          {
+            "id": "text-04",
+            "role": "proof",
+            "readingOrder": 4,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "잡내 없이 부드러운 설록우 찰진 등심 도매가 판매",
+            "lines": [
+              "잡내 없이 부드러운 설록우 찰진 등심 도매가 판매"
+            ],
+            "box": {
+              "x": 0.128,
+              "y": 0.94,
+              "width": 0.737,
+              "height": 0.044
+            },
+            "x": 0.128,
+            "y": 0.94,
+            "width": 0.737,
+            "height": 0.044,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색",
+            "backgroundHint": "선명한 빨간색 하단 가로 배너",
+            "outlineHint": "옅은 회색 그림자",
+            "sizeClass": "large",
+            "characterBudget": 27,
+            "reviewRequired": false,
+            "confidence": 0.999
+          }
+        ],
+        "confidence": 0.999,
+        "ocrConfidence": 0.999,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "e646b0643a7b66fe2380b9e8e026f835527dd183126bda17436eca8a89afcce7",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T10:57:28.317Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T10:57:28.317Z",
+        "updatedAt": "2026-08-30T10:59:03.217Z"
+      }
+    },
+    {
+      "id": "reference-upload-84a74575-2fda-45d9-a49a-de16d5825762",
+      "publicPath": "/creative-references/reference-copy/reference-upload-84a74575-2fda-45d9-a49a-de16d5825762.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-44-59.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 324,
+      "contentHash": "6f59425f3df9ee12ff3c948638acbf65a2de61b9ae652d64102b1aba38acc6fe",
+      "uploadedAt": "2026-08-30T10:50:08.725Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-84a74575-2fda-45d9-a49a-de16d5825762",
+        "rawText": "와..말도 안 돼!\n입에서 살살 녹는\n국내산 프리미엄 설록우 도매가 특가!\n설록우 찰진 등심 1KG 148,000원 → 49,800원",
+        "rawLines": [
+          "와..말도 안 돼!",
+          "입에서 살살 녹는",
+          "국내산 프리미엄 설록우 도매가 특가!",
+          "설록우 찰진 등심 1KG 148,000원 → 49,800원"
+        ],
+        "textRegions": [
+          {
+            "id": "headline-01",
+            "role": "headline",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "와..말도 안 돼!",
+            "lines": [
+              "와..말도 안 돼!"
+            ],
+            "box": {
+              "x": 0.137,
+              "y": 0.039,
+              "width": 0.729,
+              "height": 0.13
+            },
+            "x": 0.137,
+            "y": 0.039,
+            "width": 0.729,
+            "height": 0.13,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "선명한 빨간색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 10,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "support-01",
+            "role": "support",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "입에서 살살 녹는",
+            "lines": [
+              "입에서 살살 녹는"
+            ],
+            "box": {
+              "x": 0.323,
+              "y": 0.197,
+              "width": 0.359,
+              "height": 0.058
+            },
+            "x": 0.323,
+            "y": 0.197,
+            "width": 0.359,
+            "height": 0.058,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 9,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "offer-01",
+            "role": "offer",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "국내산 프리미엄 설록우 도매가 특가!",
+            "lines": [
+              "국내산 프리미엄 설록우 도매가 특가!"
+            ],
+            "box": {
+              "x": 0.112,
+              "y": 0.261,
+              "width": 0.774,
+              "height": 0.077
+            },
+            "x": 0.112,
+            "y": 0.261,
+            "width": 0.774,
+            "height": 0.077,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색",
+            "backgroundHint": "선명한 빨간색 직사각형 배너",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 20,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "offer-02",
+            "role": "offer",
+            "readingOrder": 4,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "설록우 찰진 등심 1KG 148,000원 → 49,800원",
+            "lines": [
+              "설록우 찰진 등심 1KG 148,000원 → 49,800원"
+            ],
+            "box": {
+              "x": 0.04,
+              "y": 0.907,
+              "width": 0.928,
+              "height": 0.072
+            },
+            "x": 0.04,
+            "y": 0.907,
+            "width": 0.928,
+            "height": 0.072,
+            "align": "left",
+            "emphasis": "strong",
+            "colorHint": "설록우 찰진 등심 1KG와 화살표는 흰색, 148,000원은 연한 회색, 49,800원은 노란색",
+            "backgroundHint": "화면 하단 전체 폭의 선명한 빨간색 띠",
+            "outlineHint": "148,000원에 흰색 가로 취소선, 49,800원에 옅은 어두운 그림자",
+            "sizeClass": "large",
+            "characterBudget": 32,
+            "reviewRequired": false,
+            "confidence": 1
+          }
+        ],
+        "confidence": 1,
+        "ocrConfidence": 1,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "6f59425f3df9ee12ff3c948638acbf65a2de61b9ae652d64102b1aba38acc6fe",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T10:57:28.318Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T10:57:28.318Z",
+        "updatedAt": "2026-08-30T10:58:43.983Z"
+      }
+    },
+    {
+      "id": "reference-upload-7408472b-a755-44b5-a20d-2129b6eca219",
+      "publicPath": "/creative-references/reference-copy/reference-upload-7408472b-a755-44b5-a20d-2129b6eca219.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-44-51.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "compositionType": "comparison",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 325,
+      "contentHash": "9c74e8d024d6fa3b0cc392333facaf38600d8824936f978b1f311804368ca95c",
+      "uploadedAt": "2026-08-30T10:50:20.682Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-7408472b-a755-44b5-a20d-2129b6eca219",
+        "rawText": "등갈비사러 정육점 안 가요^^\n1. 살밥 통통한 최고 품질 등갈비\n2. 1년에 100톤넘게 팔림;;\n3.너무 부드러워서 뼈가 쏙!! 잘 빠짐",
+        "rawLines": [
+          "등갈비사러 정육점 안 가요^^",
+          "1. 살밥 통통한 최고 품질 등갈비",
+          "2. 1년에 100톤넘게 팔림;;",
+          "3.너무 부드러워서 뼈가 쏙!! 잘 빠짐"
+        ],
+        "textRegions": [
+          {
+            "id": "region-01",
+            "role": "headline",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "등갈비사러 정육점 안 가요^^",
+            "lines": [
+              "등갈비사러 정육점 안 가요^^"
+            ],
+            "box": {
+              "x": 0.043,
+              "y": 0.601,
+              "width": 0.916,
+              "height": 0.114
+            },
+            "x": 0.043,
+            "y": 0.601,
+            "width": 0.916,
+            "height": 0.114,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "빨간색(등갈비사러), 검은색(정육점 안 가요^^)",
+            "backgroundHint": "흰색 직사각형",
+            "outlineHint": "빨간색 직사각형 테두리",
+            "sizeClass": "hero",
+            "characterBudget": 16,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-02",
+            "role": "proof",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "1. 살밥 통통한 최고 품질 등갈비",
+            "lines": [
+              "1. 살밥 통통한 최고 품질 등갈비"
+            ],
+            "box": {
+              "x": 0.171,
+              "y": 0.745,
+              "width": 0.66,
+              "height": 0.065
+            },
+            "x": 0.171,
+            "y": 0.745,
+            "width": 0.66,
+            "height": 0.065,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검은색(1. 살밥 통통한), 빨간색(최고 품질 등갈비)",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 19,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-03",
+            "role": "proof",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "2. 1년에 100톤넘게 팔림;;",
+            "lines": [
+              "2. 1년에 100톤넘게 팔림;;"
+            ],
+            "box": {
+              "x": 0.235,
+              "y": 0.828,
+              "width": 0.575,
+              "height": 0.066
+            },
+            "x": 0.235,
+            "y": 0.828,
+            "width": 0.575,
+            "height": 0.066,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검은색(2. 1년에), 빨간색(100톤넘게 팔림;;)",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 18,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-04",
+            "role": "support",
+            "readingOrder": 4,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "3.너무 부드러워서 뼈가 쏙!! 잘 빠짐",
+            "lines": [
+              "3.너무 부드러워서 뼈가 쏙!! 잘 빠짐"
+            ],
+            "box": {
+              "x": 0.148,
+              "y": 0.91,
+              "width": 0.727,
+              "height": 0.066
+            },
+            "x": 0.148,
+            "y": 0.91,
+            "width": 0.727,
+            "height": 0.066,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검은색(3.), 빨간색(너무 부드러워서 뼈가 쏙!! 잘 빠짐)",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 22,
+            "reviewRequired": false,
+            "confidence": 1
+          }
+        ],
+        "confidence": 1,
+        "ocrConfidence": 1,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "9c74e8d024d6fa3b0cc392333facaf38600d8824936f978b1f311804368ca95c",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T10:59:06.413Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T10:59:06.413Z",
+        "updatedAt": "2026-08-30T11:00:23.022Z"
+      }
+    },
+    {
+      "id": "reference-upload-20f3c754-3bf9-4539-a402-bcffef3009e0",
+      "publicPath": "/creative-references/reference-copy/reference-upload-20f3c754-3bf9-4539-a402-bcffef3009e0.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-44-43 004.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "universal-packshot",
+      "compositionType": "comparison",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "medium",
+      "ordinal": 326,
+      "contentHash": "cafedc189750a05e74806c64c8eb1a233e12cb74351586fcf11df4e592dec557",
+      "uploadedAt": "2026-08-30T10:50:31.945Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-20f3c754-3bf9-4539-a402-bcffef3009e0",
+        "rawText": "\"와.. 제가 셰프여도 이거 쓸 수 밖에..\"\n유명 레스토랑\n식기 광택 비결템\n사용 전\n사용 후",
+        "rawLines": [
+          "\"와.. 제가 셰프여도 이거 쓸 수 밖에..\"",
+          "유명 레스토랑",
+          "식기 광택 비결템",
+          "사용 전",
+          "사용 후"
+        ],
+        "textRegions": [
+          {
+            "id": "region-01",
+            "role": "support",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "\"와.. 제가 셰프여도 이거 쓸 수 밖에..\"",
+            "lines": [
+              "\"와.. 제가 셰프여도 이거 쓸 수 밖에..\""
+            ],
+            "box": {
+              "x": 0.1508,
+              "y": 0.0354,
+              "width": 0.6996,
+              "height": 0.0638
+            },
+            "x": 0.1508,
+            "y": 0.0354,
+            "width": 0.6996,
+            "height": 0.0638,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "black",
+            "backgroundHint": "white",
+            "outlineHint": "none",
+            "sizeClass": "medium",
+            "characterBudget": 25,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-02",
+            "role": "headline",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "유명 레스토랑",
+            "lines": [
+              "유명 레스토랑"
+            ],
+            "box": {
+              "x": 0.2217,
+              "y": 0.1304,
+              "width": 0.5608,
+              "height": 0.0896
+            },
+            "x": 0.2217,
+            "y": 0.1304,
+            "width": 0.5608,
+            "height": 0.0896,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "black",
+            "backgroundHint": "white",
+            "outlineHint": "none",
+            "sizeClass": "hero",
+            "characterBudget": 7,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-03",
+            "role": "headline",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "식기 광택 비결템",
+            "lines": [
+              "식기 광택 비결템"
+            ],
+            "box": {
+              "x": 0.1671,
+              "y": 0.2438,
+              "width": 0.6667,
+              "height": 0.0879
+            },
+            "x": 0.1671,
+            "y": 0.2438,
+            "width": 0.6667,
+            "height": 0.0879,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "bright orange",
+            "backgroundHint": "white",
+            "outlineHint": "none",
+            "sizeClass": "hero",
+            "characterBudget": 9,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-04",
+            "role": "badge",
+            "readingOrder": 4,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "사용 전",
+            "lines": [
+              "사용 전"
+            ],
+            "box": {
+              "x": 0.2371,
+              "y": 0.9096,
+              "width": 0.1546,
+              "height": 0.0529
+            },
+            "x": 0.2371,
+            "y": 0.9096,
+            "width": 0.1546,
+            "height": 0.0529,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "white",
+            "backgroundHint": "black rectangular badge",
+            "outlineHint": "none",
+            "sizeClass": "medium",
+            "characterBudget": 4,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-05",
+            "role": "badge",
+            "readingOrder": 5,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "사용 후",
+            "lines": [
+              "사용 후"
+            ],
+            "box": {
+              "x": 0.6004,
+              "y": 0.91,
+              "width": 0.1529,
+              "height": 0.0521
+            },
+            "x": 0.6004,
+            "y": 0.91,
+            "width": 0.1529,
+            "height": 0.0521,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "white",
+            "backgroundHint": "bright orange rectangular badge",
+            "outlineHint": "none",
+            "sizeClass": "medium",
+            "characterBudget": 4,
+            "reviewRequired": false,
+            "confidence": 1
+          }
+        ],
+        "confidence": 0.998,
+        "ocrConfidence": 0.998,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "cafedc189750a05e74806c64c8eb1a233e12cb74351586fcf11df4e592dec557",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T10:59:06.410Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T10:59:06.410Z",
+        "updatedAt": "2026-08-30T11:01:03.059Z"
+      }
+    },
+    {
+      "id": "reference-upload-90eddc9f-591f-4c8b-9f21-1bbb26e20e25",
+      "publicPath": "/creative-references/reference-copy/reference-upload-90eddc9f-591f-4c8b-9f21-1bbb26e20e25.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-44-43 003.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "low",
+      "ordinal": 327,
+      "contentHash": "7ca9e3ed2fb2a401eadbc0024924053be3d0ab0d72c70aee2f59a774c8ebba45",
+      "uploadedAt": "2026-08-30T10:50:42.382Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-90eddc9f-591f-4c8b-9f21-1bbb26e20e25",
+        "rawText": "유명 레스토랑에서 쓰는 이것\n하루 105원으로?\n전 세계 유일 녹 흡수 특허\n독일 샤크탱크 베스트 셀러",
+        "rawLines": [
+          "유명 레스토랑에서 쓰는 이것",
+          "하루 105원으로?",
+          "전 세계 유일 녹 흡수 특허",
+          "독일 샤크탱크 베스트 셀러"
+        ],
+        "textRegions": [
+          {
+            "id": "headline-main",
+            "role": "headline",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "유명 레스토랑에서 쓰는 이것\n하루 105원으로?",
+            "lines": [
+              "유명 레스토랑에서 쓰는 이것",
+              "하루 105원으로?"
+            ],
+            "box": {
+              "x": 0.025,
+              "y": 0.686,
+              "width": 0.945,
+              "height": 0.194
+            },
+            "x": 0.025,
+            "y": 0.686,
+            "width": 0.945,
+            "height": 0.194,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색, ‘이것’과 ‘하루 105원’은 노란색",
+            "backgroundHint": "검정색",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 27,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "proof-patent",
+            "role": "proof",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "전 세계 유일 녹 흡수 특허",
+            "lines": [
+              "전 세계 유일 녹 흡수 특허"
+            ],
+            "box": {
+              "x": 0.035,
+              "y": 0.902,
+              "width": 0.448,
+              "height": 0.062
+            },
+            "x": 0.035,
+            "y": 0.902,
+            "width": 0.448,
+            "height": 0.062,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검정색, ‘녹 흡수 특허’는 빨간색",
+            "backgroundHint": "흰색 직사각형",
+            "outlineHint": "없음",
+            "sizeClass": "medium",
+            "characterBudget": 15,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "proof-shark-tank",
+            "role": "proof",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "독일 샤크탱크 베스트 셀러",
+            "lines": [
+              "독일 샤크탱크 베스트 셀러"
+            ],
+            "box": {
+              "x": 0.522,
+              "y": 0.902,
+              "width": 0.443,
+              "height": 0.062
+            },
+            "x": 0.522,
+            "y": 0.902,
+            "width": 0.443,
+            "height": 0.062,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "‘독일 샤크탱크’는 빨간색, ‘베스트 셀러’는 검정색",
+            "backgroundHint": "흰색 직사각형",
+            "outlineHint": "없음",
+            "sizeClass": "medium",
+            "characterBudget": 14,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "product-cylinder-label",
+            "role": "other",
+            "readingOrder": 4,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "RUST-BE-GONE",
+            "lines": [
+              "RUST-BE-GONE"
+            ],
+            "box": {
+              "x": 0.478,
+              "y": 0.207,
+              "width": 0.038,
+              "height": 0.292
+            },
+            "x": 0.478,
+            "y": 0.207,
+            "width": 0.038,
+            "height": 0.292,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "흰색",
+            "backgroundHint": "은색 금속 원통",
+            "outlineHint": "옅은 회색 그림자",
+            "sizeClass": "medium",
+            "characterBudget": 12,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "package-top-side-instructions",
+            "role": "support",
+            "readingOrder": 5,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "JUST DROP IT\nIN YOUR DISHWASHER\nRUST BE GONE!",
+            "lines": [
+              "JUST DROP IT",
+              "IN YOUR DISHWASHER",
+              "RUST BE GONE!"
+            ],
+            "box": {
+              "x": 0.862,
+              "y": 0.046,
+              "width": 0.116,
+              "height": 0.074
+            },
+            "x": 0.862,
+            "y": 0.046,
+            "width": 0.116,
+            "height": 0.074,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "노란색",
+            "backgroundHint": "갈색에 가까운 짙은 상품 상자 측면",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 45,
+            "reviewRequired": false,
+            "confidence": 0.96
+          },
+          {
+            "id": "package-top-name",
+            "role": "other",
+            "readingOrder": 6,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "RUST\nBE GONE",
+            "lines": [
+              "RUST",
+              "BE GONE"
+            ],
+            "box": {
+              "x": 0.499,
+              "y": 0,
+              "width": 0.239,
+              "height": 0.203
+            },
+            "x": 0.499,
+            "y": 0,
+            "width": 0.239,
+            "height": 0.203,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색",
+            "backgroundHint": "짙은 남색 상품 상자",
+            "outlineHint": "짙은 그림자",
+            "sizeClass": "hero",
+            "characterBudget": 12,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "package-tilted-name",
+            "role": "other",
+            "readingOrder": 7,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROKITTA'S\nRUST\nBE GONE",
+            "lines": [
+              "ROKITTA'S",
+              "RUST",
+              "BE GONE"
+            ],
+            "box": {
+              "x": 0.884,
+              "y": 0.201,
+              "width": 0.111,
+              "height": 0.093
+            },
+            "x": 0.884,
+            "y": 0.201,
+            "width": 0.111,
+            "height": 0.093,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색",
+            "backgroundHint": "검정에 가까운 짙은 남색 상품 상자",
+            "outlineHint": "짙은 그림자",
+            "sizeClass": "small",
+            "characterBudget": 22,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "package-right-usage",
+            "role": "support",
+            "readingOrder": 8,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "INVENTED IN GERMANY\nFOR DISHWASHER",
+            "lines": [
+              "INVENTED IN GERMANY",
+              "FOR DISHWASHER"
+            ],
+            "box": {
+              "x": 0.793,
+              "y": 0.298,
+              "width": 0.151,
+              "height": 0.107
+            },
+            "x": 0.793,
+            "y": 0.298,
+            "width": 0.151,
+            "height": 0.107,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "노란색, 중앙에 검정·빨강·노랑 가로선",
+            "backgroundHint": "짙은 남색 상품 상자",
+            "outlineHint": "짙은 그림자",
+            "sizeClass": "small",
+            "characterBudget": 34,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "package-right-name",
+            "role": "other",
+            "readingOrder": 9,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROKITTA'S\nRUST\nBE GONE",
+            "lines": [
+              "ROKITTA'S",
+              "RUST",
+              "BE GONE"
+            ],
+            "box": {
+              "x": 0.742,
+              "y": 0.438,
+              "width": 0.244,
+              "height": 0.224
+            },
+            "x": 0.742,
+            "y": 0.438,
+            "width": 0.244,
+            "height": 0.224,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색",
+            "backgroundHint": "짙은 남색 상품 상자",
+            "outlineHint": "짙은 그림자",
+            "sizeClass": "large",
+            "characterBudget": 22,
+            "reviewRequired": false,
+            "confidence": 1
+          }
+        ],
+        "confidence": 0.99,
+        "ocrConfidence": 0.99,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "7ca9e3ed2fb2a401eadbc0024924053be3d0ab0d72c70aee2f59a774c8ebba45",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T11:04:20.598Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 2,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T11:04:20.598Z",
+        "updatedAt": "2026-08-30T11:08:52.503Z"
+      }
+    },
+    {
+      "id": "reference-upload-b3ae1013-51ae-4e36-bd9f-7d67811f2091",
+      "publicPath": "/creative-references/reference-copy/reference-upload-b3ae1013-51ae-4e36-bd9f-7d67811f2091.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-44-43 002.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "low",
+      "ordinal": 328,
+      "contentHash": "373cee03e88c296ff2b51981995586a4a6937a04999c99556f35a910668eb3da",
+      "uploadedAt": "2026-08-30T10:50:51.530Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-b3ae1013-51ae-4e36-bd9f-7d67811f2091",
+        "rawText": "이렇게 좋아하실 줄 몰랐어요...\n유럽에서 난리난 ‘녹 흡수’ 특허 세탁볼\n한국 상륙한 지 얼마 안돼서 품절사태...!!\n드디어! 재입고 완료했습니다\n1회 105원 꼴로 말도 안되는 가격에 드리니\n이번에는 놓치지 마세요...😍",
+        "rawLines": [
+          "이렇게 좋아하실 줄 몰랐어요...",
+          "유럽에서 난리난 ‘녹 흡수’ 특허 세탁볼",
+          "한국 상륙한 지 얼마 안돼서 품절사태...!!",
+          "드디어! 재입고 완료했습니다",
+          "1회 105원 꼴로 말도 안되는 가격에 드리니",
+          "이번에는 놓치지 마세요...😍"
+        ],
+        "textRegions": [
+          {
+            "id": "region-01",
+            "role": "headline",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "이렇게 좋아하실 줄 몰랐어요...",
+            "lines": [
+              "이렇게 좋아하실 줄 몰랐어요..."
+            ],
+            "box": {
+              "x": 0.06,
+              "y": 0.067,
+              "width": 0.875,
+              "height": 0.094
+            },
+            "x": 0.06,
+            "y": 0.067,
+            "width": 0.875,
+            "height": 0.094,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "빨강",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 18,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-02",
+            "role": "proof",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "유럽에서 난리난 ‘녹 흡수’ 특허 세탁볼\n한국 상륙한 지 얼마 안돼서 품절사태...!!",
+            "lines": [
+              "유럽에서 난리난 ‘녹 흡수’ 특허 세탁볼",
+              "한국 상륙한 지 얼마 안돼서 품절사태...!!"
+            ],
+            "box": {
+              "x": 0.214,
+              "y": 0.237,
+              "width": 0.577,
+              "height": 0.093
+            },
+            "x": 0.214,
+            "y": 0.237,
+            "width": 0.577,
+            "height": 0.093,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검정, ‘녹 흡수’ 특허 세탁볼은 빨강",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 48,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-03",
+            "role": "offer",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "드디어! 재입고 완료했습니다",
+            "lines": [
+              "드디어! 재입고 완료했습니다"
+            ],
+            "box": {
+              "x": 0.289,
+              "y": 0.38,
+              "width": 0.425,
+              "height": 0.038
+            },
+            "x": 0.289,
+            "y": 0.38,
+            "width": 0.425,
+            "height": 0.038,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "검정, 재입고 완료는 굵은 검정",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 15,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-04",
+            "role": "offer",
+            "readingOrder": 4,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "1회 105원 꼴로 말도 안되는 가격에 드리니",
+            "lines": [
+              "1회 105원 꼴로 말도 안되는 가격에 드리니"
+            ],
+            "box": {
+              "x": 0.188,
+              "y": 0.437,
+              "width": 0.624,
+              "height": 0.038
+            },
+            "x": 0.188,
+            "y": 0.437,
+            "width": 0.624,
+            "height": 0.038,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "1회 105원 꼴로 말도 안되는 가격은 빨강, 에 드리니는 검정",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 25,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-05",
+            "role": "cta",
+            "readingOrder": 5,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "이번에는 놓치지 마세요...😍",
+            "lines": [
+              "이번에는 놓치지 마세요...😍"
+            ],
+            "box": {
+              "x": 0.299,
+              "y": 0.493,
+              "width": 0.416,
+              "height": 0.039
+            },
+            "x": 0.299,
+            "y": 0.493,
+            "width": 0.416,
+            "height": 0.039,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "검정, 노랑·빨강·파랑 하트눈 이모지",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 16,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-06",
+            "role": "other",
+            "readingOrder": 6,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "INVENTED IN GERMANY",
+            "lines": [
+              "INVENTED IN GERMANY"
+            ],
+            "box": {
+              "x": 0.334,
+              "y": 0.681,
+              "width": 0.064,
+              "height": 0.011
+            },
+            "x": 0.334,
+            "y": 0.681,
+            "width": 0.064,
+            "height": 0.011,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "연두색",
+            "backgroundHint": "진한 남색 패키지",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 19,
+            "reviewRequired": false,
+            "confidence": 0.96
+          },
+          {
+            "id": "region-07",
+            "role": "other",
+            "readingOrder": 7,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "FOR LAUNDRY",
+            "lines": [
+              "FOR LAUNDRY"
+            ],
+            "box": {
+              "x": 0.319,
+              "y": 0.71,
+              "width": 0.099,
+              "height": 0.022
+            },
+            "x": 0.319,
+            "y": 0.71,
+            "width": 0.099,
+            "height": 0.022,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "연두색",
+            "backgroundHint": "진한 남색 패키지",
+            "outlineHint": "미세한 어두운 그림자",
+            "sizeClass": "small",
+            "characterBudget": 11,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-08",
+            "role": "other",
+            "readingOrder": 8,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROKITTA'S",
+            "lines": [
+              "ROKITTA'S"
+            ],
+            "box": {
+              "x": 0.334,
+              "y": 0.84,
+              "width": 0.061,
+              "height": 0.019
+            },
+            "x": 0.334,
+            "y": 0.84,
+            "width": 0.061,
+            "height": 0.019,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "노랑",
+            "backgroundHint": "진한 남색 패키지",
+            "outlineHint": "미세한 어두운 그림자",
+            "sizeClass": "small",
+            "characterBudget": 9,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-09",
+            "role": "other",
+            "readingOrder": 9,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "RUST",
+            "lines": [
+              "RUST"
+            ],
+            "box": {
+              "x": 0.279,
+              "y": 0.86,
+              "width": 0.168,
+              "height": 0.096
+            },
+            "x": 0.279,
+            "y": 0.86,
+            "width": 0.168,
+            "height": 0.096,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노랑",
+            "backgroundHint": "진한 남색 패키지",
+            "outlineHint": "미세한 어두운 그림자",
+            "sizeClass": "large",
+            "characterBudget": 4,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-10",
+            "role": "other",
+            "readingOrder": 10,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "BEGONE",
+            "lines": [
+              "BEGONE"
+            ],
+            "box": {
+              "x": 0.536,
+              "y": 0.881,
+              "width": 0.207,
+              "height": 0.073
+            },
+            "x": 0.536,
+            "y": 0.881,
+            "width": 0.207,
+            "height": 0.073,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노랑",
+            "backgroundHint": "진한 남색 패키지",
+            "outlineHint": "미세한 어두운 그림자",
+            "sizeClass": "large",
+            "characterBudget": 6,
+            "reviewRequired": false,
+            "confidence": 0.99
+          }
+        ],
+        "confidence": 0.9870000000000001,
+        "ocrConfidence": 0.9870000000000001,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "373cee03e88c296ff2b51981995586a4a6937a04999c99556f35a910668eb3da",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T11:04:20.596Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T11:04:20.596Z",
+        "updatedAt": "2026-08-30T11:06:23.775Z"
+      }
+    },
+    {
+      "id": "reference-upload-250baa48-cf61-4a62-b35b-920b272db2f9",
+      "publicPath": "/creative-references/reference-copy/reference-upload-250baa48-cf61-4a62-b35b-920b272db2f9.jpg",
+      "sourceFile": "KakaoTalk_Photo_2026-08-30-19-44-43 001.jpeg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "medium",
+      "ordinal": 329,
+      "contentHash": "c00d6793a022830c026524727e07a5de36bcda7b97840f293d4a3b3ba969b818",
+      "uploadedAt": "2026-08-30T10:51:03.286Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-250baa48-cf61-4a62-b35b-920b272db2f9",
+        "rawText": "눈에 보이지 않는 미세녹이\n피부 트러블의 원인일 수도 있다는 사실\n알고 계신가요?\n세탁기 속 녹 문제를 차단하세요\n[녹 흡착 99.9%] 하루 단 105원으로 세탁기 녹 방지하러가기 >",
+        "rawLines": [
+          "눈에 보이지 않는 미세녹이",
+          "피부 트러블의 원인일 수도 있다는 사실",
+          "알고 계신가요?",
+          "세탁기 속 녹 문제를 차단하세요",
+          "[녹 흡착 99.9%] 하루 단 105원으로 세탁기 녹 방지하러가기 >"
+        ],
+        "textRegions": [
+          {
+            "id": "region-01",
+            "role": "support",
+            "readingOrder": 1,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "눈에 보이지 않는 미세녹이\n피부 트러블의 원인일 수도 있다는 사실\n알고 계신가요?",
+            "lines": [
+              "눈에 보이지 않는 미세녹이",
+              "피부 트러블의 원인일 수도 있다는 사실",
+              "알고 계신가요?"
+            ],
+            "box": {
+              "x": 0.127,
+              "y": 0.037,
+              "width": 0.751,
+              "height": 0.184
+            },
+            "x": 0.127,
+            "y": 0.037,
+            "width": 0.751,
+            "height": 0.184,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색; ‘미세녹이’, ‘피부 트러블의 원인’은 노란색",
+            "backgroundHint": "검정·짙은 남색 상품 패키지 사진",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 45,
+            "reviewRequired": false,
+            "confidence": 0.998
+          },
+          {
+            "id": "region-02",
+            "role": "headline",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "세탁기 속 녹 문제를 차단하세요",
+            "lines": [
+              "세탁기 속 녹 문제를 차단하세요"
+            ],
+            "box": {
+              "x": 0.041,
+              "y": 0.256,
+              "width": 0.918,
+              "height": 0.103
+            },
+            "x": 0.041,
+            "y": 0.256,
+            "width": 0.918,
+            "height": 0.103,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색",
+            "backgroundHint": "빨간색 직사각형 띠",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 17,
+            "reviewRequired": false,
+            "confidence": 0.999
+          },
+          {
+            "id": "region-03",
+            "role": "other",
+            "readingOrder": 3,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROKITTA'S\nRUST",
+            "lines": [
+              "ROKITTA'S",
+              "RUST"
+            ],
+            "box": {
+              "x": 0.154,
+              "y": 0.012,
+              "width": 0.629,
+              "height": 0.256
+            },
+            "x": 0.154,
+            "y": 0.012,
+            "width": 0.629,
+            "height": 0.256,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "탁한 노란색",
+            "backgroundHint": "짙은 남색 패키지",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 14,
+            "reviewRequired": false,
+            "confidence": 0.91
+          },
+          {
+            "id": "region-04",
+            "role": "other",
+            "readingOrder": 4,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "INVENTED IN GERMANY\nFOR LAUNDRY\nROKITTA'S\nRUST",
+            "lines": [
+              "INVENTED IN GERMANY",
+              "FOR LAUNDRY",
+              "ROKITTA'S",
+              "RUST"
+            ],
+            "box": {
+              "x": 0.053,
+              "y": 0.184,
+              "width": 0.234,
+              "height": 0.434
+            },
+            "x": 0.053,
+            "y": 0.184,
+            "width": 0.234,
+            "height": 0.434,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색; 빨간색·노란색 막대",
+            "backgroundHint": "짙은 남색 패키지",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 46,
+            "reviewRequired": false,
+            "confidence": 0.94
+          },
+          {
+            "id": "region-05",
+            "role": "other",
+            "readingOrder": 5,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "FOR LAUNDRY\nROKITTA'S\nRUST",
+            "lines": [
+              "FOR LAUNDRY",
+              "ROKITTA'S",
+              "RUST"
+            ],
+            "box": {
+              "x": 0.365,
+              "y": 0.352,
+              "width": 0.255,
+              "height": 0.39
+            },
+            "x": 0.365,
+            "y": 0.352,
+            "width": 0.255,
+            "height": 0.39,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색",
+            "backgroundHint": "짙은 남색 패키지",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 26,
+            "reviewRequired": false,
+            "confidence": 0.97
+          },
+          {
+            "id": "region-06",
+            "role": "other",
+            "readingOrder": 6,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "CHEMICALS\nINVENTED IN GERMANY\nFOR LAUNDRY\nROKITTA'S\nRUST",
+            "lines": [
+              "CHEMICALS",
+              "INVENTED IN GERMANY",
+              "FOR LAUNDRY",
+              "ROKITTA'S",
+              "RUST"
+            ],
+            "box": {
+              "x": 0.706,
+              "y": 0.202,
+              "width": 0.252,
+              "height": 0.624
+            },
+            "x": 0.706,
+            "y": 0.202,
+            "width": 0.252,
+            "height": 0.624,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색; 빨간색·노란색 막대",
+            "backgroundHint": "짙은 남색 패키지와 노란색 원형 띠",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 56,
+            "reviewRequired": false,
+            "confidence": 0.95
+          },
+          {
+            "id": "region-07",
+            "role": "other",
+            "readingOrder": 7,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROKITTA'S\nRUST",
+            "lines": [
+              "ROKITTA'S",
+              "RUST"
+            ],
+            "box": {
+              "x": 0.887,
+              "y": 0.182,
+              "width": 0.113,
+              "height": 0.271
+            },
+            "x": 0.887,
+            "y": 0.182,
+            "width": 0.113,
+            "height": 0.271,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "노란색",
+            "backgroundHint": "짙은 남색 패키지",
+            "outlineHint": "없음",
+            "sizeClass": "large",
+            "characterBudget": 14,
+            "reviewRequired": false,
+            "confidence": 0.92
+          },
+          {
+            "id": "region-08",
+            "role": "other",
+            "readingOrder": 8,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "RUST-BE-",
+            "lines": [
+              "RUST-BE-"
+            ],
+            "box": {
+              "x": 0.194,
+              "y": 0.508,
+              "width": 0.025,
+              "height": 0.156
+            },
+            "x": 0.194,
+            "y": 0.508,
+            "width": 0.025,
+            "height": 0.156,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "흰색",
+            "backgroundHint": "은색 원통형 상품 표면",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 8,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-09",
+            "role": "other",
+            "readingOrder": 9,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "RUST-BE-",
+            "lines": [
+              "RUST-BE-"
+            ],
+            "box": {
+              "x": 0.658,
+              "y": 0.51,
+              "width": 0.024,
+              "height": 0.145
+            },
+            "x": 0.658,
+            "y": 0.51,
+            "width": 0.024,
+            "height": 0.145,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "흰색",
+            "backgroundHint": "은색 원통형 상품 표면",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 8,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-10",
+            "role": "other",
+            "readingOrder": 10,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROSTSCHRECK",
+            "lines": [
+              "ROSTSCHRECK"
+            ],
+            "box": {
+              "x": 0.084,
+              "y": 0.728,
+              "width": 0.126,
+              "height": 0.036
+            },
+            "x": 0.084,
+            "y": 0.728,
+            "width": 0.126,
+            "height": 0.036,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "연한 청회색 음각",
+            "backgroundHint": "파란색 구형 상품의 띠",
+            "outlineHint": "음각 효과",
+            "sizeClass": "small",
+            "characterBudget": 11,
+            "reviewRequired": false,
+            "confidence": 0.96
+          },
+          {
+            "id": "region-11",
+            "role": "other",
+            "readingOrder": 11,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROSTSCHRECK",
+            "lines": [
+              "ROSTSCHRECK"
+            ],
+            "box": {
+              "x": 0.461,
+              "y": 0.735,
+              "width": 0.139,
+              "height": 0.034
+            },
+            "x": 0.461,
+            "y": 0.735,
+            "width": 0.139,
+            "height": 0.034,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "연한 청회색 음각",
+            "backgroundHint": "파란색 구형 상품의 띠",
+            "outlineHint": "음각 효과",
+            "sizeClass": "small",
+            "characterBudget": 11,
+            "reviewRequired": false,
+            "confidence": 0.97
+          },
+          {
+            "id": "region-12",
+            "role": "other",
+            "readingOrder": 12,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "ROSTSCHRECK",
+            "lines": [
+              "ROSTSCHRECK"
+            ],
+            "box": {
+              "x": 0.849,
+              "y": 0.73,
+              "width": 0.137,
+              "height": 0.035
+            },
+            "x": 0.849,
+            "y": 0.73,
+            "width": 0.137,
+            "height": 0.035,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "연한 청회색 음각",
+            "backgroundHint": "파란색 구형 상품의 띠",
+            "outlineHint": "음각 효과",
+            "sizeClass": "small",
+            "characterBudget": 11,
+            "reviewRequired": false,
+            "confidence": 0.96
+          },
+          {
+            "id": "region-13",
+            "role": "cta",
+            "readingOrder": 13,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "[녹 흡착 99.9%] 하루 단 105원으로 세탁기 녹 방지하러가기 >",
+            "lines": [
+              "[녹 흡착 99.9%] 하루 단 105원으로 세탁기 녹 방지하러가기 >"
+            ],
+            "box": {
+              "x": 0.081,
+              "y": 0.927,
+              "width": 0.842,
+              "height": 0.049
+            },
+            "x": 0.081,
+            "y": 0.927,
+            "width": 0.842,
+            "height": 0.049,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "흰색; ‘하루 단 105원’은 노란색",
+            "backgroundHint": "검정색 하단 띠",
+            "outlineHint": "없음",
+            "sizeClass": "medium",
+            "characterBudget": 42,
+            "reviewRequired": false,
+            "confidence": 0.999
+          }
+        ],
+        "confidence": 0.9658461538461538,
+        "ocrConfidence": 0.9658461538461538,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "c00d6793a022830c026524727e07a5de36bcda7b97840f293d4a3b3ba969b818",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T11:04:20.598Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 1,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T11:04:20.598Z",
+        "updatedAt": "2026-08-30T11:10:33.991Z"
+      }
+    },
+    {
+      "id": "reference-upload-4685e387-5766-4ad3-8f75-d79c122a9e8a",
+      "publicPath": "/creative-references/reference-copy/reference-upload-4685e387-5766-4ad3-8f75-d79c122a9e8a.jpg",
+      "sourceFile": "쿠션1.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "compositionType": "review-card",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 330,
+      "contentHash": "978d5660d8927b240a75cec4fe847d3e961e3d0309c90287b8c031577743d696",
+      "uploadedAt": "2026-08-30T10:51:12.109Z",
+      "classificationMethod": "codex-local",
+      "nativeCopy": {
+        "referenceId": "reference-upload-4685e387-5766-4ad3-8f75-d79c122a9e8a",
+        "rawText": "자유게시판>\n아침부터 저녁까지 유지된다는\n쿠션 드디어 쟁였어요^^\n브아쥬코덕\n2025. 11. 26. 11:13 조회 6,584\n출근할 때 바르고 퇴근할 때 거울을 딱 봤는데\n이럴 수가 있나요??? 주름 끼임, 들뜸, 묻어남이 아예 없어요...!!!\n입소문만 듣고 반신반의 했었는데 이거 쓰고 쿠션 바로 정착했습니다\n사진 만큼 몇개 더 쟁였어요!!!",
+        "rawLines": [
+          "자유게시판>",
+          "아침부터 저녁까지 유지된다는",
+          "쿠션 드디어 쟁였어요^^",
+          "브아쥬코덕",
+          "2025. 11. 26. 11:13 조회 6,584",
+          "출근할 때 바르고 퇴근할 때 거울을 딱 봤는데",
+          "이럴 수가 있나요??? 주름 끼임, 들뜸, 묻어남이 아예 없어요...!!!",
+          "입소문만 듣고 반신반의 했었는데 이거 쓰고 쿠션 바로 정착했습니다",
+          "사진 만큼 몇개 더 쟁였어요!!!"
+        ],
+        "textRegions": [
+          {
+            "id": "region-01",
+            "role": "other",
+            "readingOrder": 1,
+            "sourceType": "source-brand",
+            "replacePolicy": "remove",
+            "text": "자유게시판>",
+            "lines": [
+              "자유게시판>"
+            ],
+            "box": {
+              "x": 0.061,
+              "y": 0.027,
+              "width": 0.142,
+              "height": 0.034
+            },
+            "x": 0.061,
+            "y": 0.027,
+            "width": 0.142,
+            "height": 0.034,
+            "align": "left",
+            "emphasis": "light",
+            "colorHint": "초록색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 6,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-02",
+            "role": "headline",
+            "readingOrder": 2,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "아침부터 저녁까지 유지된다는",
+            "lines": [
+              "아침부터 저녁까지 유지된다는"
+            ],
+            "box": {
+              "x": 0.026,
+              "y": 0.068,
+              "width": 0.78,
+              "height": 0.082
+            },
+            "x": 0.026,
+            "y": 0.068,
+            "width": 0.78,
+            "height": 0.082,
+            "align": "left",
+            "emphasis": "strong",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "빨간색 직사각형 외곽선",
+            "sizeClass": "hero",
+            "characterBudget": 15,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-03",
+            "role": "headline",
+            "readingOrder": 3,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "쿠션 드디어 쟁였어요^^",
+            "lines": [
+              "쿠션 드디어 쟁였어요^^"
+            ],
+            "box": {
+              "x": 0.032,
+              "y": 0.154,
+              "width": 0.574,
+              "height": 0.059
+            },
+            "x": 0.032,
+            "y": 0.154,
+            "width": 0.574,
+            "height": 0.059,
+            "align": "left",
+            "emphasis": "strong",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "hero",
+            "characterBudget": 13,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-04",
+            "role": "other",
+            "readingOrder": 4,
+            "sourceType": "source-brand",
+            "replacePolicy": "remove",
+            "text": "브아쥬코덕",
+            "lines": [
+              "브아쥬코덕"
+            ],
+            "box": {
+              "x": 0.132,
+              "y": 0.243,
+              "width": 0.116,
+              "height": 0.031
+            },
+            "x": 0.132,
+            "y": 0.243,
+            "width": 0.116,
+            "height": 0.031,
+            "align": "left",
+            "emphasis": "none",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 5,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-05",
+            "role": "other",
+            "readingOrder": 5,
+            "sourceType": "source-brand",
+            "replacePolicy": "remove",
+            "text": "2025. 11. 26. 11:13 조회 6,584",
+            "lines": [
+              "2025. 11. 26. 11:13 조회 6,584"
+            ],
+            "box": {
+              "x": 0.132,
+              "y": 0.279,
+              "width": 0.313,
+              "height": 0.028
+            },
+            "x": 0.132,
+            "y": 0.279,
+            "width": 0.313,
+            "height": 0.028,
+            "align": "left",
+            "emphasis": "none",
+            "colorHint": "연한 회색",
+            "backgroundHint": "흰색",
+            "outlineHint": "‘조회’와 ‘6,584’ 사이에 연한 회색 세로 구분선",
+            "sizeClass": "small",
+            "characterBudget": 28,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-06",
+            "role": "other",
+            "readingOrder": 6,
+            "sourceType": "decorative",
+            "replacePolicy": "preserve",
+            "text": "⋮",
+            "lines": [
+              "⋮"
+            ],
+            "box": {
+              "x": 0.951,
+              "y": 0.078,
+              "width": 0.011,
+              "height": 0.057
+            },
+            "x": 0.951,
+            "y": 0.078,
+            "width": 0.011,
+            "height": 0.057,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "회색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 1,
+            "reviewRequired": false,
+            "confidence": 0.99
+          },
+          {
+            "id": "region-07",
+            "role": "proof",
+            "readingOrder": 7,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "출근할 때 바르고 퇴근할 때 거울을 딱 봤는데",
+            "lines": [
+              "출근할 때 바르고 퇴근할 때 거울을 딱 봤는데"
+            ],
+            "box": {
+              "x": 0.041,
+              "y": 0.352,
+              "width": 0.574,
+              "height": 0.039
+            },
+            "x": 0.041,
+            "y": 0.352,
+            "width": 0.574,
+            "height": 0.039,
+            "align": "left",
+            "emphasis": "none",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "medium",
+            "characterBudget": 25,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-08",
+            "role": "proof",
+            "readingOrder": 8,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "이럴 수가 있나요??? 주름 끼임, 들뜸, 묻어남이 아예 없어요...!!!",
+            "lines": [
+              "이럴 수가 있나요??? 주름 끼임, 들뜸, 묻어남이 아예 없어요...!!!"
+            ],
+            "box": {
+              "x": 0.041,
+              "y": 0.398,
+              "width": 0.809,
+              "height": 0.044
+            },
+            "x": 0.041,
+            "y": 0.398,
+            "width": 0.809,
+            "height": 0.044,
+            "align": "left",
+            "emphasis": "strong",
+            "colorHint": "검은색",
+            "backgroundHint": "‘이럴 수가 있나요???’ 뒤는 흰색, ‘주름 끼임, 들뜸, 묻어남이 아예 없어요...!!!’ 뒤는 노란색 형광 강조",
+            "outlineHint": "없음",
+            "sizeClass": "medium",
+            "characterBudget": 41,
+            "reviewRequired": false,
+            "confidence": 1
+          },
+          {
+            "id": "region-09",
+            "role": "other",
+            "readingOrder": 9,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "SISTER ANN",
+            "lines": [
+              "SISTER ANN"
+            ],
+            "box": {
+              "x": 0.19,
+              "y": 0.705,
+              "width": 0.098,
+              "height": 0.019
+            },
+            "x": 0.19,
+            "y": 0.705,
+            "width": 0.098,
+            "height": 0.019,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "옅은 로즈 골드색",
+            "backgroundHint": "짙은 브라운 유광 상품 용기",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 10,
+            "reviewRequired": false,
+            "confidence": 0.97
+          },
+          {
+            "id": "region-10",
+            "role": "other",
+            "readingOrder": 10,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "SISTER ANN",
+            "lines": [
+              "SISTER ANN"
+            ],
+            "box": {
+              "x": 0.205,
+              "y": 0.794,
+              "width": 0.096,
+              "height": 0.019
+            },
+            "x": 0.205,
+            "y": 0.794,
+            "width": 0.096,
+            "height": 0.019,
+            "align": "center",
+            "emphasis": "light",
+            "colorHint": "옅은 로즈 골드색",
+            "backgroundHint": "짙은 브라운 유광 상품 용기",
+            "outlineHint": "없음",
+            "sizeClass": "small",
+            "characterBudget": 10,
+            "reviewRequired": false,
+            "confidence": 0.97
+          },
+          {
+            "id": "region-11",
+            "role": "proof",
+            "readingOrder": 11,
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "입소문만 듣고 반신반의 했었는데 이거 쓰고 쿠션 바로 정착했습니다\n사진 만큼 몇개 더 쟁였어요!!!",
+            "lines": [
+              "입소문만 듣고 반신반의 했었는데 이거 쓰고 쿠션 바로 정착했습니다",
+              "사진 만큼 몇개 더 쟁였어요!!!"
+            ],
+            "box": {
+              "x": 0.038,
+              "y": 0.901,
+              "width": 0.803,
+              "height": 0.077
+            },
+            "x": 0.038,
+            "y": 0.901,
+            "width": 0.803,
+            "height": 0.077,
+            "align": "left",
+            "emphasis": "none",
+            "colorHint": "검은색",
+            "backgroundHint": "흰색",
+            "outlineHint": "없음",
+            "sizeClass": "medium",
+            "characterBudget": 55,
+            "reviewRequired": false,
+            "confidence": 1
+          }
+        ],
+        "confidence": 0.99,
+        "ocrConfidence": 0.99,
+        "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
+        "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
+        "model": "gpt-5.6-sol",
+        "imageHash": "978d5660d8927b240a75cec4fe847d3e961e3d0309c90287b8c031577743d696",
+        "imageWidth": 1200,
+        "imageHeight": 1200,
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-08-30T11:42:32.204Z",
+        "validation": {
+          "textCoverage": 1,
+          "regionCoverage": 1,
+          "passAgreement": 1,
+          "numericAgreement": 1,
+          "issues": []
+        },
+        "attemptCount": 3,
+        "manuallyCorrected": false,
+        "useForCopyAdaptation": true,
+        "extractionSource": "codex-local",
+        "extractedAt": "2026-08-30T11:42:32.204Z",
+        "updatedAt": "2026-08-30T11:45:36.096Z"
+      }
     }
   ],
-  "updatedAt": "2026-08-30T05:00:42.220Z"
+  "updatedAt": "2026-08-30T11:45:36.096Z"
 }

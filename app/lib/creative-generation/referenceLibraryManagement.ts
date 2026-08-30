@@ -1,9 +1,18 @@
+import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
+
 export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty"] as const;
 
 export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups)[number];
 
 export const nativeReferenceFoodSubcategories = ["snack"] as const;
 export type NativeReferenceFoodSubcategory = (typeof nativeReferenceFoodSubcategories)[number];
+
+/**
+ * 기본 분류를 바꾸지 않고 같은 레퍼런스를 다른 제작 후보군에서도 함께
+ * 활용하기 위한 추가 풀입니다. food-snack은 음식 전체 풀에도 포함됩니다.
+ */
+export const nativeReferenceSelectionPools = ["fashion", "food", "food-snack", "beauty"] as const;
+export type NativeReferenceSelectionPool = (typeof nativeReferenceSelectionPools)[number];
 
 export const nativeReferenceProductForms = ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] as const;
 export type NativeReferenceProductForm = (typeof nativeReferenceProductForms)[number];
@@ -157,6 +166,8 @@ export type ManagedNativeReferenceItem = {
   categoryGroup: NativeReferenceCategoryGroup;
   /** 식품 대카테고리 안에서 운영자가 직접 지정하는 선택 풀입니다. */
   foodSubcategory?: NativeReferenceFoodSubcategory;
+  /** 기본 categoryGroup을 유지한 채 함께 사용할 수동 추가 제작 풀입니다. */
+  additionalSelectionPools?: NativeReferenceSelectionPool[];
   ordinal: number;
   contentHash?: string;
   uploadedAt?: string;
@@ -216,7 +227,8 @@ export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferen
   const isPackagedFood = Boolean(packagedFoodProfile);
   const isNaturalFood = item.categoryGroup === "food" && !isPackagedFood;
   const inferredForm: NativeReferenceProductForm = item.categoryGroup === "fashion" ? "fashion-item" : isNaturalFood ? "meat-cut" : isPackagedFood ? packagedFoodProfile!.productForm : "universal-packshot";
-  const inferredComposition = packagedFoodProfile?.compositionType || (isNaturalFood ? (item.layoutFamily === "sensory-editorial" || item.layoutFamily === "situation-story" ? ("natural-food-scene" as const) : compositionFromLayout(item.layoutFamily)) : compositionFromLayout(item.layoutFamily));
+  const semanticComparison = referenceRequiresComparisonSemantics(item);
+  const inferredComposition = semanticComparison ? ("comparison" as const) : packagedFoodProfile?.compositionType || (isNaturalFood ? (item.layoutFamily === "sensory-editorial" || item.layoutFamily === "situation-story" ? ("natural-food-scene" as const) : compositionFromLayout(item.layoutFamily)) : compositionFromLayout(item.layoutFamily));
   const inferredCount = packagedFoodProfile?.productSlotCount || (/(?:2\s*\+\s*1|세트|묶음|라인업)/i.test(item.sourceFile) ? 2 : 1);
   const inferredFoodSubcategory = item.categoryGroup === "food"
     ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) || inferNativeReferenceFoodSubcategoryFromText([
@@ -225,14 +237,22 @@ export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferen
         ...(item.nativeCopy?.rawLines || []),
       ].filter(Boolean).join(" "))
     : undefined;
+  const redundantPools = new Set<NativeReferenceSelectionPool>([
+    item.categoryGroup,
+    ...(item.categoryGroup === "food" && inferredFoodSubcategory === "snack" ? (["food-snack"] as const) : []),
+  ]);
+  const additionalSelectionPools = normalizeNativeReferenceSelectionPools(item.additionalSelectionPools).filter((pool) => !redundantPools.has(pool));
   return {
     ...item,
     // 과거 등록분에 하위 태그가 비어 있어도 저장 OCR과 파일명에 명백한
     // 간식 신호가 있으면 읽는 시점에 간식 풀로 복구한다. 수동 태그는 우선한다.
     foodSubcategory: inferredFoodSubcategory,
+    additionalSelectionPools: additionalSelectionPools.length ? additionalSelectionPools : undefined,
     productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm) ? (item.productForm as NativeReferenceProductForm) : inferredForm,
-    compositionType: nativeReferenceCompositionTypes.includes(item.compositionType as NativeReferenceCompositionType) ? (item.compositionType as NativeReferenceCompositionType) : inferredComposition,
-    productSlotCount: Math.max(1, Math.min(6, Math.round(Number(item.productSlotCount) || inferredCount))),
+    compositionType: semanticComparison ? "comparison" : nativeReferenceCompositionTypes.includes(item.compositionType as NativeReferenceCompositionType) ? (item.compositionType as NativeReferenceCompositionType) : inferredComposition,
+    // VS 구도는 판매 상품이 하나여도 불리한 대안과 현재 상품이라는 서로 다른
+    // 시각 역할 두 개를 가진다. 복수 구성 상품으로 해석하지는 않는다.
+    productSlotCount: semanticComparison ? Math.max(2, Math.min(6, Math.round(Number(item.productSlotCount) || 2))) : Math.max(1, Math.min(6, Math.round(Number(item.productSlotCount) || inferredCount))),
     productSlotShape: nativeReferenceSlotShapes.includes(item.productSlotShape as NativeReferenceSlotShape) ? (item.productSlotShape as NativeReferenceSlotShape) : isNaturalFood ? "wide" : item.categoryGroup === "fashion" ? "tall" : "flexible",
     photographyType: nativeReferencePhotographyTypes.includes(item.photographyType as NativeReferencePhotographyType) ? (item.photographyType as NativeReferencePhotographyType) : isNaturalFood ? "natural-food" : inferredComposition === "lifestyle-scene" ? "lifestyle" : "packshot",
     textDensity: nativeReferenceTextDensities.includes(item.textDensity as NativeReferenceTextDensity) ? (item.textDensity as NativeReferenceTextDensity) : ["price-offer", "usp-evidence", "social-proof"].includes(item.layoutFamily) ? "dense" : "medium",
@@ -264,6 +284,34 @@ export function normalizeNativeReferenceFoodSubcategory(value: unknown): NativeR
 export function nativeReferenceFoodSubcategoryLabel(value: NativeReferenceFoodSubcategory) {
   if (value === "snack") return "간식";
   return value;
+}
+
+export function normalizeNativeReferenceSelectionPools(value: unknown): NativeReferenceSelectionPool[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((pool): pool is NativeReferenceSelectionPool => nativeReferenceSelectionPools.includes(pool as NativeReferenceSelectionPool)))];
+}
+
+export function nativeReferenceSelectionPoolLabel(value: NativeReferenceSelectionPool) {
+  if (value === "fashion") return "패션";
+  if (value === "food") return "음식";
+  if (value === "food-snack") return "간식";
+  return "화장품";
+}
+
+/** 기본 분류와 운영자가 체크한 추가 풀을 하나의 선택 멤버십으로 해석합니다. */
+export function referenceBelongsToSelectionPool(
+  item: Pick<ManagedNativeReferenceItem, "categoryGroup" | "foodSubcategory" | "additionalSelectionPools">,
+  categoryGroup: NativeReferenceCategoryGroup,
+  foodSubcategory?: NativeReferenceFoodSubcategory
+) {
+  const additional = new Set(normalizeNativeReferenceSelectionPools(item.additionalSelectionPools));
+  if (categoryGroup === "food" && foodSubcategory === "snack") {
+    return (item.categoryGroup === "food" && item.foodSubcategory === "snack") || additional.has("food-snack");
+  }
+  if (categoryGroup === "food") {
+    return item.categoryGroup === "food" || additional.has("food") || additional.has("food-snack");
+  }
+  return item.categoryGroup === categoryGroup || additional.has(categoryGroup);
 }
 
 export function inferNativeReferenceFoodSubcategoryFromText(value: string): NativeReferenceFoodSubcategory | undefined {

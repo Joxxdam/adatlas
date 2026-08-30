@@ -13,6 +13,7 @@ import type { NativeAdReference } from "./referenceCreativeLibrary.server";
 import { applyReferenceCopyGroupRules } from "./referenceCopyDiversity";
 import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "./referenceCopyNaturalness";
 import { isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
+import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 import { isApprovedReferenceNativeCopy, normalizeReferenceRawLines, type ReferenceTextRegion } from "./referenceLibraryManagement";
 import { loadCopyGuideForProduct, type LoadedCopyGuide } from "../mvp/copyGuideLoader";
 import type { AdBrief } from "../mvp/types";
@@ -994,6 +995,7 @@ ${sheetClaimPolicy(input.truth)}
 - ProductTruth는 사실 상한선이다. 제공된 fact 이외의 가격, 할인, 구성, 후기, 효능, 원산지, 수치를 만들지 않는다.
 - 후기 카드의 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터는 광고 사실이 아니다. ProductTruth에 실수로 남아 있더라도 문구로 옮기지 않는다.
 - 레퍼런스 문장의 관계가 작성의 골격이다. 문제→해결, 질문→대답, 비교→결론, 경험→추천처럼 여러 줄 사이의 수사 관계를 유지하고, 상품 사실을 나열한 상세페이지 요약문으로 바꾸지 않는다.
+- semanticComparison=true인 VS 레퍼런스는 좌측/문제 문구와 우측/해결 문구의 역할을 절대 합치지 않는다. 불리한 쪽은 현재 상품과 같은 카테고리의 익명·일반 대안이 양이 적거나 만족감·가성비가 아쉬운 구체적 선택 상황을 말하고, 유리한 쪽은 현재 상품의 검증된 구성·식감·가격·사용 이점으로 답한다. 불리한 쪽에 고기·채소·화장품처럼 다른 상품군을 넣거나, 양쪽 모두 현재 상품을 칭찬하거나, 이름 있는 경쟁사를 비방하거나, 근거 없는 비교 수치를 만들지 않는다.
 - 같은 상품명·구성·중량 설명을 여러 블록에 반복하지 않는다. 원문에서 역할이 다른 블록은 현재 상품의 서로 다른 검증 사실이나 CTA로 그 역할을 유지한다.
 - headlineEligible은 헤드라인/보조 문구에, proofOnly는 근거에, offerOnly는 offer에만 쓴다. identityOnly는 상품 식별에만 쓴다.
 - 애매한 상투어보다 ProductTruth의 구체 사실을 우선하고, 확인된 사실 안에서는 판매형 말투를 충분히 강하게 유지한다.
@@ -1007,7 +1009,7 @@ ${sheetClaimPolicy(input.truth)}
 ${JSON.stringify({ productName: shortProductIdentity(input.truth), facts: factsForPlanning(input.truth), productConstraints: input.truth.productCopyConstraints || [] }, null, 2)}
 
 레퍼런스:
-${JSON.stringify(input.references.map((reference, index) => ({ resultCode: `H${String(index + 1).padStart(2, "0")}`, referenceId: reference.id, layoutFamily: reference.layoutFamily, textDensity: reference.textDensity, compositionType: reference.compositionType, productSlotCount: reference.productSlotCount, rawText: reference.nativeCopy?.useForCopyAdaptation === false ? "" : reference.nativeCopy?.rawText || "", rawLines: reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.rawLines || [], textRegions: reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.textRegions || [] })), null, 2)}
+${JSON.stringify(input.references.map((reference, index) => ({ resultCode: `H${String(index + 1).padStart(2, "0")}`, referenceId: reference.id, layoutFamily: reference.layoutFamily, textDensity: reference.textDensity, compositionType: reference.compositionType, productSlotCount: reference.productSlotCount, semanticComparison: referenceRequiresComparisonSemantics(reference), rawText: reference.nativeCopy?.useForCopyAdaptation === false ? "" : reference.nativeCopy?.rawText || "", rawLines: reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.rawLines || [], textRegions: reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.textRegions || [] })), null, 2)}
 
 이미 분석된 프로필:
 ${JSON.stringify(input.profiles.filter((profile) => !input.missingProfileIds.includes(profile.referenceId)), null, 2)}

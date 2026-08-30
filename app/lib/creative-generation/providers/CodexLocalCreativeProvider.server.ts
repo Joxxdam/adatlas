@@ -2,7 +2,7 @@ import "server-only";
 import { readFile, stat } from "node:fs/promises";
 import { Codex, type Input, type Thread, type TurnOptions } from "@openai/codex-sdk";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "../codexLocalRuntime.server.ts";
-import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresHumanReplacement } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
 import { resolveFastCreativeRuntime } from "../fastCreativeRuntime";
@@ -99,7 +99,7 @@ async function waitForStableGeneratedOutput(file: string) {
 const validationSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "sourcePersonDetected", "sourcePersonReplaced", "humanCompositionChanged", "targetAudienceFit", "humanReplacementFindings", "humanCopyAligned", "humanCopyAlignmentFindings", "sceneProductInteractionAligned", "sceneProductInteractionFindings", "unrelatedFoodOrIngredientDetected", "unrelatedFoodOrIngredientFindings", "failures", "recommendation"],
+  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "sourcePersonDetected", "sourcePersonReplaced", "humanCompositionChanged", "humanSceneBackgroundRebuilt", "humanSceneBackgroundFindings", "targetAudienceFit", "humanReplacementFindings", "humanCopyAligned", "humanCopyAlignmentFindings", "sourceAnimalDetected", "sourceAnimalReplaced", "animalReplacementFindings", "sourceContextualBackgroundDetected", "contextualBackgroundRebuilt", "contextualBackgroundFindings", "sceneProductInteractionAligned", "sceneProductInteractionFindings", "unrelatedFoodOrIngredientDetected", "unrelatedFoodOrIngredientFindings", "sourceBrandRegionCleared", "sourceBrandRegionFindings", "comparisonSemanticAligned", "comparisonSemanticFindings", "failures", "recommendation"],
   properties: {
     hookAlignment: { type: "integer", minimum: 0, maximum: 100 },
     productIdentity: { type: "integer", minimum: 0, maximum: 100 },
@@ -122,14 +122,26 @@ const validationSchema = {
     sourcePersonDetected: { type: "boolean" },
     sourcePersonReplaced: { type: "boolean" },
     humanCompositionChanged: { type: "boolean" },
+    humanSceneBackgroundRebuilt: { type: "boolean" },
+    humanSceneBackgroundFindings: { type: "array", items: { type: "string" } },
     targetAudienceFit: { type: "integer", minimum: 0, maximum: 100 },
     humanReplacementFindings: { type: "array", items: { type: "string" } },
     humanCopyAligned: { type: "boolean" },
     humanCopyAlignmentFindings: { type: "array", items: { type: "string" } },
+    sourceAnimalDetected: { type: "boolean" },
+    sourceAnimalReplaced: { type: "boolean" },
+    animalReplacementFindings: { type: "array", items: { type: "string" } },
+    sourceContextualBackgroundDetected: { type: "boolean" },
+    contextualBackgroundRebuilt: { type: "boolean" },
+    contextualBackgroundFindings: { type: "array", items: { type: "string" } },
     sceneProductInteractionAligned: { type: "boolean" },
     sceneProductInteractionFindings: { type: "array", items: { type: "string" } },
     unrelatedFoodOrIngredientDetected: { type: "boolean" },
     unrelatedFoodOrIngredientFindings: { type: "array", items: { type: "string" } },
+    sourceBrandRegionCleared: { type: "boolean" },
+    sourceBrandRegionFindings: { type: "array", items: { type: "string" } },
+    comparisonSemanticAligned: { type: "boolean" },
+    comparisonSemanticFindings: { type: "array", items: { type: "string" } },
     failures: { type: "array", items: { type: "string" } },
     recommendation: { type: "string", enum: ["approve", "revise", "manual-review"] },
   },
@@ -247,6 +259,9 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
           category: input.job.creativePlan.categoryCreativeProfile?.category || "general",
           exportComplianceVerified: input.exportComplianceVerified,
           requiresHumanReplacement: nativeReferenceRequiresHumanReplacement(input.result),
+          requiresHumanSceneBackgroundRebuild: nativeReferenceRequiresHumanReplacement(input.result),
+          requiresSourceBrandRegionClear: nativeReferenceRequiresSourceBrandRegionClear(input.result),
+          requiresComparisonSemanticAlignment: nativeReferenceRequiresComparisonSemantics(input.result),
         }
       );
     };

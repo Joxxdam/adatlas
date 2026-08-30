@@ -60,7 +60,8 @@ export async function classifyNativeReferenceImage(input: { imagePath: string; s
 - fashion: 의류, 신발, 가방, 패션 잡화
 - food: 일반 음식, 음료, 농수축산물, 간식
 - beauty: 화장품, 스킨케어, 헤어·바디·퍼스널케어, 건강·웰니스·건강기능식품
-foodSubcategory는 끼니·반찬·요리·조리식품이면 none, 과일·건과·과자·디저트·빵·떡·견과처럼 식사 사이에 먹는 상품이면 snack이다. 프라이팬·냄비·김치통·고기 불판 같은 식사 장면은 snack으로 분류하지 않는다. food가 아닌 상품도 none이다. productSlotCount는 실제 교체 대상 상품 자리 수다. 포장 상품, 자연 식품, 사람 모델, 복수 상품 지원 여부를 보수적으로 판단하고 신뢰도가 낮으면 compatibilityConfidence=low로 둔다. JSON만 반환한다.`,
+foodSubcategory는 끼니·반찬·요리·조리식품이면 none, 과일·건과·과자·디저트·빵·떡·견과처럼 식사 사이에 먹는 상품이면 snack이다. 프라이팬·냄비·김치통·고기 불판 같은 식사 장면은 snack으로 분류하지 않는다. food가 아닌 상품도 none이다.
+중앙 VS, 좌우 대조, 불만족 대안→우수한 판매 상품처럼 두 편을 비교하는 광고는 가격 영역이 커도 compositionType=comparison이다. 이때 productSlotCount는 좌우 의미 상품 자리까지 포함해 최소 2이며, supportsMultipleProducts는 실제 세트·여러 판매 상품을 뜻할 때만 true다. productSlotCount는 실제 교체 대상 또는 비교 역할 상품 자리 수다. 포장 상품, 자연 식품, 사람 모델, 복수 상품 지원 여부를 보수적으로 판단하고 신뢰도가 낮으면 compatibilityConfidence=low로 둔다. JSON만 반환한다.`,
         },
         { type: "local_image" as const, path: input.imagePath },
       ],

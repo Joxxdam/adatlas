@@ -2,7 +2,7 @@ import "server-only";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { editImageFromSource } from "../../mvp/openaiImageClient.ts";
-import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresHumanReplacement } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import { readBrandMemory } from "../codexRegistry.server.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput } from "./CreativeGenerationProvider.ts";
@@ -96,7 +96,7 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
             content: [
               {
                 type: "input_text",
-                text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,sourcePersonDetected,sourcePersonReplaced,humanCompositionChanged,targetAudienceFit,humanReplacementFindings,humanCopyAligned,humanCopyAlignmentFindings,sceneProductInteractionAligned,sceneProductInteractionFindings,unrelatedFoodOrIngredientDetected,unrelatedFoodOrIngredientFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. 식품에서 현재 상품·확인된 재료 외 먹거리가 하나라도 보이면 unrelatedFoodOrIngredientDetected=true다. recommendation은 approve, revise, manual-review 중 하나다.`,
+                text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,sourcePersonDetected,sourcePersonReplaced,humanCompositionChanged,humanSceneBackgroundRebuilt,humanSceneBackgroundFindings,targetAudienceFit,humanReplacementFindings,humanCopyAligned,humanCopyAlignmentFindings,sourceAnimalDetected,sourceAnimalReplaced,animalReplacementFindings,sourceContextualBackgroundDetected,contextualBackgroundRebuilt,contextualBackgroundFindings,sceneProductInteractionAligned,sceneProductInteractionFindings,unrelatedFoodOrIngredientDetected,unrelatedFoodOrIngredientFindings,sourceBrandRegionCleared,sourceBrandRegionFindings,comparisonSemanticAligned,comparisonSemanticFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. 레퍼런스에 실제·일러스트 동물이 있으면 sourceAnimalDetected=true이며 상품 관련 다른 동물로 교체됐을 때만 sourceAnimalReplaced=true다. 실제 장소·생활 소품 맥락의 배경이 있으면 sourceContextualBackgroundDetected=true이며 새 상품 장면으로 재구성됐을 때만 contextualBackgroundRebuilt=true다. 식품에서 현재 상품·확인된 재료 외 먹거리가 하나라도 보이면 unrelatedFoodOrIngredientDetected=true다. sourceBrandRegionCleared는 원본 브랜드 글자와 그 빈 배지 컨테이너가 모두 사라졌을 때만 true다. recommendation은 approve, revise, manual-review 중 하나다.`,
               },
               { type: "input_image", image_url: await imageUrl(input.imagePath), detail: "high" },
               ...(await Promise.all(
@@ -149,14 +149,26 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         sourcePersonDetected: parsed.sourcePersonDetected === true,
         sourcePersonReplaced: parsed.sourcePersonReplaced === true,
         humanCompositionChanged: parsed.humanCompositionChanged === true,
+        humanSceneBackgroundRebuilt: parsed.humanSceneBackgroundRebuilt === true,
+        humanSceneBackgroundFindings: Array.isArray(parsed.humanSceneBackgroundFindings) ? parsed.humanSceneBackgroundFindings.map(String).slice(0, 10) : [],
         targetAudienceFit: score(parsed.targetAudienceFit),
         humanReplacementFindings: Array.isArray(parsed.humanReplacementFindings) ? parsed.humanReplacementFindings.map(String).slice(0, 10) : [],
         humanCopyAligned: parsed.humanCopyAligned !== false,
         humanCopyAlignmentFindings: Array.isArray(parsed.humanCopyAlignmentFindings) ? parsed.humanCopyAlignmentFindings.map(String).slice(0, 10) : [],
+        sourceAnimalDetected: parsed.sourceAnimalDetected === true,
+        sourceAnimalReplaced: parsed.sourceAnimalReplaced === true,
+        animalReplacementFindings: Array.isArray(parsed.animalReplacementFindings) ? parsed.animalReplacementFindings.map(String).slice(0, 10) : [],
+        sourceContextualBackgroundDetected: parsed.sourceContextualBackgroundDetected === true,
+        contextualBackgroundRebuilt: parsed.contextualBackgroundRebuilt === true,
+        contextualBackgroundFindings: Array.isArray(parsed.contextualBackgroundFindings) ? parsed.contextualBackgroundFindings.map(String).slice(0, 10) : [],
         sceneProductInteractionAligned: parsed.sceneProductInteractionAligned !== false,
         sceneProductInteractionFindings: Array.isArray(parsed.sceneProductInteractionFindings) ? parsed.sceneProductInteractionFindings.map(String).slice(0, 10) : [],
         unrelatedFoodOrIngredientDetected: parsed.unrelatedFoodOrIngredientDetected === true,
         unrelatedFoodOrIngredientFindings: Array.isArray(parsed.unrelatedFoodOrIngredientFindings) ? parsed.unrelatedFoodOrIngredientFindings.map(String).slice(0, 10) : [],
+        sourceBrandRegionCleared: parsed.sourceBrandRegionCleared === true,
+        sourceBrandRegionFindings: Array.isArray(parsed.sourceBrandRegionFindings) ? parsed.sourceBrandRegionFindings.map(String).slice(0, 10) : [],
+        comparisonSemanticAligned: parsed.comparisonSemanticAligned === true,
+        comparisonSemanticFindings: Array.isArray(parsed.comparisonSemanticFindings) ? parsed.comparisonSemanticFindings.map(String).slice(0, 10) : [],
         failures: Array.isArray(parsed.failures) ? parsed.failures.map(String).slice(0, 20) : [],
         recommendation: ["approve", "revise", "manual-review"].includes(parsed.recommendation) ? parsed.recommendation : "manual-review",
         checkedAt: new Date().toISOString(),
@@ -165,6 +177,9 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         category: input.job.creativePlan.categoryCreativeProfile?.category || "general",
         exportComplianceVerified: input.exportComplianceVerified,
         requiresHumanReplacement: nativeReferenceRequiresHumanReplacement(input.result),
+        requiresHumanSceneBackgroundRebuild: nativeReferenceRequiresHumanReplacement(input.result),
+        requiresSourceBrandRegionClear: nativeReferenceRequiresSourceBrandRegionClear(input.result),
+        requiresComparisonSemanticAlignment: nativeReferenceRequiresComparisonSemantics(input.result),
       }
     );
   }

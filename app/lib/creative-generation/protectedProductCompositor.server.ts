@@ -1,8 +1,6 @@
 import sharp, { type OverlayOptions } from "sharp";
 import { removeBackgroundToPng } from "../mvp/imageEffects.ts";
 import { readCreativeRasterAsset } from "./assets.server.ts";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
 import type { MasterSceneSpec, PlacementBox } from "./types.ts";
 
 function integerBox(box: PlacementBox) {
@@ -91,52 +89,4 @@ export async function createProtectedProductComposite(input: { backgroundPath: s
     estimatedProductAreaRatio: Number(((target.width * target.height * 0.63) / (1200 * 1200)).toFixed(4)),
     repairs: ["실제 상품 픽셀 유지", ...(angle ? ["장면 방향에 맞춘 미세 원근·각도 보정"] : []), "장면 색온도·노출 보정", "주변광·림라이트 적용", "접촉 그림자와 약한 반사광 적용", "투명 경계 feathering과 halo 정리"],
   };
-}
-
-/**
- * Native reference-edit 경로의 포장 상품 전용 마지막 보호층입니다.
- * AI는 장면과 문구만 완성하고 실제 상품 RGB는 이 단계에서 한 번만 올립니다.
- * 상품 자체에는 색·선명도·라벨 보정을 하지 않습니다.
- */
-export async function createIdentityLockedProductComposite(input: {
-  scenePath: string;
-  productImagePath: string;
-  productTransparent?: boolean;
-  placement: PlacementBox;
-  outputPath: string;
-}) {
-  const scene = await readCreativeRasterAsset(input.scenePath);
-  const source = await readCreativeRasterAsset(input.productImagePath);
-  const target = integerBox(input.placement);
-  const sourceMetadata = await sharp(source).metadata();
-  const hasAlpha = Boolean(input.productTransparent || sourceMetadata.hasAlpha);
-  const isolated = hasAlpha
-    ? source
-    : await removeBackgroundToPng(source, { extractionScope: "sales-unit", featherRadius: 0.55 });
-  const trimmed = await sharp(isolated)
-    .rotate()
-    .ensureAlpha()
-    .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .png()
-    .toBuffer();
-  const product = await sharp(trimmed)
-    .resize(target.width, target.height, {
-      fit: "contain",
-      position: "centre",
-      withoutEnlargement: false,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-  const shadow = await alphaSilhouette(product, 82, 12);
-  const base = await sharp(scene).rotate().resize(1200, 1200, { fit: "cover", position: "centre" }).png().toBuffer();
-  await mkdir(path.dirname(input.outputPath), { recursive: true });
-  await sharp(base)
-    .composite([
-      { input: shadow, left: Math.min(1199, target.x + 10), top: Math.min(1199, target.y + 14), blend: "multiply" },
-      { input: product, left: target.x, top: target.y },
-    ])
-    .png({ compressionLevel: 9 })
-    .toFile(input.outputPath);
-  return { file: input.outputPath, productBounds: target };
 }

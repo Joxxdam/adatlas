@@ -82,10 +82,10 @@ export async function createCreativeArchiveProductZip(entryIds: string[]) {
       let duplicate = 2;
       while (usedNames.has(fileName)) fileName = `${base}-${duplicate++}.${extension}`;
       usedNames.add(fileName);
-      zip.file(`images/${fileName}`, data);
+      zip.file(fileName, data);
       included.push({
         entryId: entry.id,
-        fileName: `images/${fileName}`,
+        fileName,
         materialCode: entry.materialCode || entry.assetCode || entry.hookCode,
         status: entry.status,
         createdAt: entry.createdAt,
@@ -100,32 +100,6 @@ export async function createCreativeArchiveProductZip(entryIds: string[]) {
   }
 
   if (!included.length) throw new Error(failures[0]?.reason || "ZIP으로 내려받을 완성 이미지가 없습니다.");
-
-  const generatedAt = new Date().toISOString();
-  zip.file(
-    "archive-manifest.json",
-    `${JSON.stringify(
-      {
-        version: "creative-archive-product-zip-v1",
-        advertiserName: first.advertiserName,
-        productName: first.productName,
-        generatedAt,
-        requestedCount: requestedIds.length,
-        includedCount: included.length,
-        failedCount: failures.length,
-        included,
-        failures,
-      },
-      null,
-      2
-    )}\n`
-  );
-  if (failures.length) {
-    zip.file(
-      "실패-보고서.txt",
-      [`상품: ${first.productName}`, `정상 포함: ${included.length}장`, `누락: ${failures.length}장`, "", ...failures.map((failure, index) => `${index + 1}. ${failure.materialCode || failure.entryId}: ${failure.reason}`)].join("\n")
-    );
-  }
 
   const buffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE", compressionOptions: { level: 6 } });
   return {

@@ -43,6 +43,9 @@ export function normalizeNativeCreativeValidation(
     category?: CategoryCreativeProfileId;
     exportComplianceVerified?: boolean;
     requiresHumanReplacement?: boolean;
+    requiresHumanSceneBackgroundRebuild?: boolean;
+    requiresSourceBrandRegionClear?: boolean;
+    requiresComparisonSemanticAlignment?: boolean;
   } = {}
 ): NativeCreativeValidation {
   const normalized = { ...validation };
@@ -57,14 +60,26 @@ export function normalizeNativeCreativeValidation(
   normalized.sourcePersonDetected = options.requiresHumanReplacement === true || validation.sourcePersonDetected === true;
   normalized.sourcePersonReplaced = validation.sourcePersonReplaced === true;
   normalized.humanCompositionChanged = validation.humanCompositionChanged === true;
+  normalized.humanSceneBackgroundRebuilt = options.requiresHumanSceneBackgroundRebuild ? validation.humanSceneBackgroundRebuilt === true : validation.humanSceneBackgroundRebuilt !== false;
+  normalized.humanSceneBackgroundFindings = Array.isArray(validation.humanSceneBackgroundFindings) ? validation.humanSceneBackgroundFindings.map(String).slice(0, 10) : [];
   normalized.targetAudienceFit = Math.max(0, Math.min(100, Math.round(Number(validation.targetAudienceFit) || (normalized.sourcePersonDetected ? 0 : 100))));
   normalized.humanReplacementFindings = Array.isArray(validation.humanReplacementFindings) ? validation.humanReplacementFindings.map(String).slice(0, 10) : [];
   normalized.humanCopyAligned = validation.humanCopyAligned !== false;
   normalized.humanCopyAlignmentFindings = Array.isArray(validation.humanCopyAlignmentFindings) ? validation.humanCopyAlignmentFindings.map(String).slice(0, 10) : [];
+  normalized.sourceAnimalDetected = validation.sourceAnimalDetected === true;
+  normalized.sourceAnimalReplaced = validation.sourceAnimalReplaced === true;
+  normalized.animalReplacementFindings = Array.isArray(validation.animalReplacementFindings) ? validation.animalReplacementFindings.map(String).slice(0, 10) : [];
+  normalized.sourceContextualBackgroundDetected = validation.sourceContextualBackgroundDetected === true;
+  normalized.contextualBackgroundRebuilt = validation.contextualBackgroundRebuilt === true;
+  normalized.contextualBackgroundFindings = Array.isArray(validation.contextualBackgroundFindings) ? validation.contextualBackgroundFindings.map(String).slice(0, 10) : [];
   normalized.sceneProductInteractionAligned = validation.sceneProductInteractionAligned !== false;
   normalized.sceneProductInteractionFindings = Array.isArray(validation.sceneProductInteractionFindings) ? validation.sceneProductInteractionFindings.map(String).slice(0, 10) : [];
   normalized.unrelatedFoodOrIngredientDetected = validation.unrelatedFoodOrIngredientDetected === true;
   normalized.unrelatedFoodOrIngredientFindings = Array.isArray(validation.unrelatedFoodOrIngredientFindings) ? validation.unrelatedFoodOrIngredientFindings.map(String).slice(0, 10) : [];
+  normalized.sourceBrandRegionCleared = options.requiresSourceBrandRegionClear ? validation.sourceBrandRegionCleared === true : validation.sourceBrandRegionCleared !== false;
+  normalized.sourceBrandRegionFindings = Array.isArray(validation.sourceBrandRegionFindings) ? validation.sourceBrandRegionFindings.map(String).slice(0, 10) : [];
+  normalized.comparisonSemanticAligned = options.requiresComparisonSemanticAlignment ? validation.comparisonSemanticAligned === true : validation.comparisonSemanticAligned !== false;
+  normalized.comparisonSemanticFindings = Array.isArray(validation.comparisonSemanticFindings) ? validation.comparisonSemanticFindings.map(String).slice(0, 10) : [];
   normalized.failures = (Array.isArray(validation.failures) ? validation.failures : [])
     .map(String)
     .filter((failure) => !options.exportComplianceVerified || !/(?:JPEG|JPG|1200\s*[×xX]\s*1200|800\s*KB|내보내기|납품\s*규격|exportCompliance)/i.test(failure))
@@ -86,6 +101,16 @@ export function normalizeNativeCreativeValidation(
     normalized.composition = Math.min(normalized.composition, 60);
     normalized.categoryFit = Math.min(normalized.categoryFit, 60);
   }
+  const humanSceneBackgroundFailed = options.requiresHumanSceneBackgroundRebuild === true && normalized.humanSceneBackgroundRebuilt !== true;
+  if (humanSceneBackgroundFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `인물 레퍼런스의 원본 장소·배경 랜드마크가 남아 인물과 전체 배경을 하나의 새 장면으로 재구성하지 못했습니다${normalized.humanSceneBackgroundFindings.length ? `: ${normalized.humanSceneBackgroundFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.composition = Math.min(normalized.composition, 40);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 50);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 50);
+  }
   const humanCopyAlignmentFailed = normalized.sourcePersonDetected && normalized.humanCopyAligned === false;
   if (humanCopyAlignmentFailed) {
     normalized.failures = [...new Set([
@@ -95,6 +120,26 @@ export function normalizeNativeCreativeValidation(
     normalized.hookAlignment = Math.min(normalized.hookAlignment, 40);
     normalized.humanNaturalness = Math.min(normalized.humanNaturalness, 60);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 50);
+  }
+  const animalReplacementFailed = normalized.sourceAnimalDetected && !normalized.sourceAnimalReplaced;
+  if (animalReplacementFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `원본 동물·동물 캐릭터를 레퍼런스 구도 역할은 유지하면서 현재 상품에 맞는 다른 동물로 교체하지 못했습니다${normalized.animalReplacementFindings.length ? `: ${normalized.animalReplacementFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.composition = Math.min(normalized.composition, 55);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 40);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
+  }
+  const contextualBackgroundFailed = normalized.sourceContextualBackgroundDetected && !normalized.contextualBackgroundRebuilt;
+  if (contextualBackgroundFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `의미 있는 원본 장소·생활 소품 배경을 현재 상품과 문구에 맞는 새 장면으로 재구성하지 못했습니다${normalized.contextualBackgroundFindings.length ? `: ${normalized.contextualBackgroundFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.composition = Math.min(normalized.composition, 45);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 40);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
   }
   const sceneProductInteractionFailed = normalized.sceneProductInteractionAligned === false;
   if (sceneProductInteractionFailed) {
@@ -115,11 +160,31 @@ export function normalizeNativeCreativeValidation(
     normalized.categoryFit = Math.min(normalized.categoryFit, 40);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
   }
+  const sourceBrandRegionFailed = options.requiresSourceBrandRegionClear === true && normalized.sourceBrandRegionCleared !== true;
+  if (sourceBrandRegionFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `원본 브랜드 문구를 지운 자리에 빈 배지·캡슐·리본·버튼 또는 색상 패널이 남았습니다${normalized.sourceBrandRegionFindings.length ? `: ${normalized.sourceBrandRegionFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.composition = Math.min(normalized.composition, 55);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
+  }
+  const comparisonSemanticFailed = options.requiresComparisonSemanticAlignment === true && normalized.comparisonSemanticAligned !== true;
+  if (comparisonSemanticFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `VS 비교 구도의 불리한 동일 카테고리 대안과 현재 상품 해결 관계가 맞지 않습니다${normalized.comparisonSemanticFindings.length ? `: ${normalized.comparisonSemanticFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.hookAlignment = Math.min(normalized.hookAlignment, 35);
+    normalized.productIdentity = Math.min(normalized.productIdentity, 55);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 45);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
+  }
   const passed = passesNativeCreativeValidation(normalized, options.category || "general");
   // Vision이 failures에 실제 문구·상품 오류를 기록하고도 점수만 높게 주는
   // 응답이 있습니다. 발견된 실패가 하나라도 있으면 approve로 정규화하지 않습니다.
   const reportedFailure = normalized.failures.length > 0;
-  normalized.recommendation = normalized.standaloneLogoDetected || humanReplacementFailed || humanCopyAlignmentFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
+  normalized.recommendation = normalized.standaloneLogoDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
   return normalized;
 }
 

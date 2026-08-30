@@ -13,7 +13,7 @@ import { createCreativeGenerationProvider } from "./providers/providerFactory.se
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v13-always-render-copy");
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v15-living-subject-background-v27");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;

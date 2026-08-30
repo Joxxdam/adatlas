@@ -548,8 +548,10 @@ test("23-1. 완료 실행은 출근 전 이미지 전용 ZIP을 미리 준비한
   const source = await read("app/lib/auto-production/package.server.ts");
   const productRoute = await read("app/api/auto-production/runs/[runId]/products/[taskId]/download/route.ts");
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
-  assert.match(source, /images-only-v1/);
+  assert.match(source, /images-only-flat-v2/);
   assert.doesNotMatch(source, /meta-ad-settings\.csv|ad-setup\.(?:json|txt)|failures\.(?:json|txt)|manifest\.json|README\.txt/);
+  assert.doesNotMatch(source, /zip\.folder\(/);
+  assert.match(source, /zip\.file\(imageName,/);
   assert.match(source, /buildAutoProductionProductPackage/);
   assert.match(productRoute, /buildAutoProductionProductPackage/);
   assert.match(runner, /buildAutoProductionPackage/);

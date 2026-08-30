@@ -548,7 +548,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       URL.revokeObjectURL(objectUrl);
       const includedCount = Number(response.headers.get("X-AdAtlas-Included-Count") || productEntries.length);
       const failedCount = Number(response.headers.get("X-AdAtlas-Failed-Count") || 0);
-      setNotice(`${productName} 이미지 ${includedCount}장 ZIP 다운로드를 시작했습니다.${failedCount ? ` 누락 ${failedCount}장은 ZIP의 실패 보고서에서 확인할 수 있습니다.` : ""}`);
+      setNotice(`${productName} 이미지 ${includedCount}장 ZIP 다운로드를 시작했습니다.${failedCount ? ` 읽지 못한 ${failedCount}장은 제외했습니다.` : ""}`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "상품 ZIP 다운로드에 실패했습니다.");
     } finally {

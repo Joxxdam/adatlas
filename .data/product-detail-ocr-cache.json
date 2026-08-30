@@ -156,5 +156,1436 @@
       "warnings": []
     },
     "createdAt": "2026-08-30T04:18:22.711Z"
+  },
+  {
+    "key": "1c63845a693e09b460dee53523766c0772e9b41f5ae7c27c3a7bc6921b6bd43f",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T10:03:05.727Z"
+  },
+  {
+    "key": "59c960545771636cba7222804d8b5fdefe6dc82a80acfd300cd5a8cf4d11af6e",
+    "insight": {
+      "id": "detail-ocr-563c15eb99dd",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/18f859f2eb4fda68bf7e73e969807b43.jpg",
+      "contentHash": "563c15eb99dde49ff05c872bcf7bc04a47b3cc0dd9623782068492474b326b72",
+      "ocrText": "RECYCLED\n1M 30%\nTINGLY\nMINTG\nTEA TREE\n0100%\nNATURAL\n\"\nFRAGRANCE\nORIGINAL\nSOURCE\n7.927\nO PCTA\nREAL MINT\nLEAVES IN\nEVERY BOTTLE\nClosal aimat Tot Putic\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8777777784400516,
+      "copyFacts": [
+        "SHOWER 250mle"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "1M 30%",
+        "0100%",
+        "7.927"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T10:03:05.755Z"
+  },
+  {
+    "key": "ce1a4f969871a50d171b8d266f7b94b500912154d9aff6c5d23ea9b35be13a55",
+    "insight": {
+      "id": "detail-ocr-9ec7c957c6b2",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/6dfae35a092f2bbbdbfbf2f3a93fb66d.jpg",
+      "contentHash": "9ec7c957c6b2a54556a8b6e388f2fff2fab36aaaa50b3c42ff4519d3e175b4d9",
+      "ocrText": "땀찌든 날\n냄새 싹 쿨하게\nRECYCLED\nTINGIY\nMINTG\nI TEA TREE\n9100%\nFRABRANCE\nKATURAL\nORIGINAL\nSOURCE\n7.927\nREAL MINT\nLEAVES IN\nEB ATROVED\nPPeTA\nSHOWER 250ml (3\n{VERY BOTTLE\n©",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7526315795747858,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [
+        "9100%",
+        "7.927",
+        "SHOWER 250ml (3"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T10:03:06.639Z"
+  },
+  {
+    "key": "442d84e6bfa97a2e87060e3b086ba70fc406ade3d42e897335e8fbf7c33d4768",
+    "insight": {
+      "id": "detail-ocr-d9527004be7d",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/a23175eb5076a970cd505377e899fe99.jpg",
+      "contentHash": "d9527004be7def48ad1b775847837bf25f90cd4a450b2e0e260ea08f33d32c48",
+      "ocrText": "IM 30%\nRECYCLED\nTINGLY\nMINTG\n『TEA TREE\n100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\n1927\n) PCTA\nREAL MINT\nLEAVES IN\nAPPROVBD\nEVERY BOTTLE\n0fOOnEANImIGE LeSE POHC\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8611111111111112,
+      "copyFacts": [
+        "SHOWER 250mle"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "IM 30%",
+        "1927",
+        "0fOOnEANImIGE LeSE POHC"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T10:03:06.640Z"
+  },
+  {
+    "key": "777be7c60828fac763f0be6b759bc329d93a07b6a38ed9705b0cc76348dfa49e",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T10:34:45.134Z"
+  },
+  {
+    "key": "a38c2090a1a39ceedcc718b66989e832b7a4e8f1a52b6123335e05a076acb434",
+    "insight": {
+      "id": "detail-ocr-9c2edadd023d",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202607/c091f1a84a5e28a8f51d5348618019d8.jpg",
+      "contentHash": "9c2edadd023d1e0831176cd5f894f8ef3f13da84012c009f8c2b8d4f600e9c58",
+      "ocrText": "2+1 꼴라담아 세트\n원하는 향으로 선택 가능\nPECTCLES\n1 30%\nRECICLED\n430%\nTINGLY\nZESTY\nMINTG\nLEMON\nTEA TREE\n&TEATREE\nTROPICA\n2100%\n2100%\nCOCONUT\nFRAGRANCE\nMATURAL\nFRAGRANCE\nNATURAL\n&SHEA BUTTER\nKAIURAI\n100%\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\n+\nORIGINAL\nSOURCE\n7.927\nREAL MINT\nV PCTA\n10REA\nV PCTA\nSHOWER\nTVERT EOTTE\nTEAVES IN\nEVERY BOTTLE\nLMONS 0\nRO AFIROVED\n50mle\nSHOWER 250mle\nSHOWER 250mle\n250ml x 2개\n50ml 증정",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8478260869565217,
+      "copyFacts": [
+        "2+1 꼴라담아 세트",
+        "원하는 향으로 선택 가능",
+        "SHOWER 250mle"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "2100%",
+        "7.927",
+        "10REA",
+        "LMONS 0",
+        "50mle",
+        "250ml x 2개",
+        "50ml 증정"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T10:34:45.567Z"
+  },
+  {
+    "key": "dbcf3ed72bf2a0fe8989790af5fc1442518aa5d6b389e98360db3f3f75d328c3",
+    "insight": {
+      "id": "detail-ocr-1655f0e76e2e",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026020402262640996799a91215-8094-4045-a9e3-fdbae30a8d12.jpg",
+      "contentHash": "1655f0e76e2e92a00b3765abbaa4382807c50a77bfe273660dcaa3974d036723",
+      "ocrText": "햇/살/가/득",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:43.663Z"
+  },
+  {
+    "key": "a8e4921b05749c1261a11cfabf4a7c68c7a696e6d0791a2ee616919695a6e268",
+    "insight": {
+      "id": "detail-ocr-1ab0777b97e0",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20250115060904232997b9f7c4eb-5f16-43a7-ba35-812ad29d6872.jpg",
+      "contentHash": "1ab0777b97e0bcf37c300b080222f5f65c2012df2bd6567551880be13f2c4eae",
+      "ocrText": "전통 감자전\n강원도 감자 85.6%\n매콤 감자전\n강원도 감자 83.6%\n청양고추(국내산)\n부추 감자전\n강원도 감자 49.3%\n국내산 부추 18%, 양파, 당근(국내산)\n김치 감자전\n강원도 감자 23.5%\n국내산 김치 46%\n영 녹두 감자전\n강원도 감자 39.5%\n녹두 39.4%, 숙주나물 10%\nPoint!\n감자 약간에 밀가루 비율을 높여 만든\n이름만 감자전이 아닙니다.\n밀가루는 최소화하고 주재료인 감자와 녹두,부추,김치를\n팍팍 넣은 강원도식 진짜 감자전입니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7368421052631579,
+      "copyFacts": [
+        "청양고추(국내산)"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "강원도 감자 85.6%",
+        "강원도 감자 83.6%",
+        "강원도 감자 49.3%",
+        "국내산 부추 18%, 양파, 당근(국내산)",
+        "강원도 감자 23.5%",
+        "국내산 김치 46%",
+        "강원도 감자 39.5%",
+        "녹두 39.4%, 숙주나물 10%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.079Z"
+  },
+  {
+    "key": "9ee17c52436dc9132abb2e65bf2a920c034213a22b1a2f8694d376da949c3191",
+    "insight": {
+      "id": "detail-ocr-6a2e2a3e2f85",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607161125333687280ac48798-07d3-4c47-b510-8d21385d284a.jpg",
+      "contentHash": "6a2e2a3e2f850855837b24641df2afee51dcaa92101a4e0a1e8316b7898dd40f",
+      "ocrText": "전라도식 김치_\n양념!\n아직한 식감!\n젓갈과 양념을 듬뿍 넣어\n깊고 진한 감칠맛을 살린 김치예요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "전라도식 김치",
+        "아직한 식감!",
+        "깊고 진한 감칠맛을 살린 김치예요"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.152Z"
+  },
+  {
+    "key": "768ecbd73e46d6e492ee3e769da76f43a443d4dc0a7c93c714b8b8e005460223",
+    "insight": {
+      "id": "detail-ocr-98141ded4f6d",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607161125325873614ffe7d1f-dfe5-4e63-816a-9d41b0681d7a.jpg",
+      "contentHash": "98141ded4f6d3410ace85c366f7558c150e39acc9d0cb70be941ab357d2574bf",
+      "ocrText": "저렴한 가격에 깊은 맛\n비결은 공정에 있어요\n직접 고른 배추를\n사람 손으로 정성껏 손질합니다",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.875,
+      "copyFacts": [
+        "저렴한 가격에 깊은 맛",
+        "비결은 공정에 있어요"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.228Z"
+  },
+  {
+    "key": "a6f760ce6faae2077b89440ee3a4c81a9821343d3afe67983b0c207ce697750e",
+    "insight": {
+      "id": "detail-ocr-ffac5161ab8e",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608030236462729127f6f282e-cd8c-4374-b0ff-f10079162200.jpg",
+      "contentHash": "ffac5161ab8e84bf04c40db21c72715c31a73f610a46e490fa82476b44ad3567",
+      "ocrText": "부산에서만 먹을 수 있는\n여름 전통음식 밀면!\n밀면은 부산에 놀러 온 여행객들이 꼭 맛봐야하는\n부산을 상징하는 대표음식이에요!\n올 여름, 부산의 맛을 집에서도 시원하게 즐겨보세요\n오늘도 치열한 하루 보내며\n열이 잔뜩 쌓인 내 몸...\n가야밀면 한 그릇으로\n시원한 위로를 전해보아요!\n가야밀면\n어떤 점이 특별한가요?\nPoint 1\n쫄깃하고 부드러운 밀면 면발\nPoint 2\n특유의 감칠맛 나는 진한 육수",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9,
+      "copyFacts": [
+        "여름 전통음식 밀면!",
+        "쫄깃하고 부드러운 밀면 면발",
+        "특유의 감칠맛 나는 진한 육수"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "밀면은 부산에 놀러 온 여행객들이 꼭 맛봐야하는",
+        "올 여름, 부산의 맛을 집에서도 시원하게 즐겨보세요",
+        "Point 1",
+        "Point 2"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.288Z"
+  },
+  {
+    "key": "f41f25ef58c8d5fe78fe69607701b34dee78a268811f36f57ae2825e75c2cbd1",
+    "insight": {
+      "id": "detail-ocr-9a87b8018991",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202604150221448471779807bd2a-5627-4831-846e-d216eac713b8.jpg",
+      "contentHash": "9a87b80189911a6fb7b53579070137552ee6b8f55615244d6d76b504cc50f532",
+      "ocrText": "갈비탕 직접 끓여보면\n©\n손질 번거롭고\n시간 오래 걸리고\n결과는 매번 다름\n그래서 진짜 갈비탕으로\n준비했습니다",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6857142874172756,
+      "copyFacts": [
+        "갈비탕 직접 끓여보면"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.293Z"
+  },
+  {
+    "key": "c6fbb5f4dc9dea06dee03f2bc7a502cb466a882ad3aec6cc7569701611c6f325",
+    "insight": {
+      "id": "detail-ocr-8e92cf3e64a2",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20250115060903889197602b722a-4408-40c9-bfdc-0eea49c7745d.jpg",
+      "contentHash": "8e92cf3e64a2ade0ea53e4d5e55b433e3b3b8aad3f7a6d73c36a1577b9eba758",
+      "ocrText": "강원도 감자 함량을 꼭! 확인하세요\n진짜 강원도 감자전!\n원재료 및 함량 을\n자신 있게 공개해 드립니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.875,
+      "copyFacts": [
+        "강원도 감자 함량을 꼭! 확인하세요",
+        "원재료 및 함량 을"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.319Z"
+  },
+  {
+    "key": "ef080b8b3d0432cc6867b24cbc5dc7d0b5abaa6b3d54f6b0607ad3bc185e5f3c",
+    "insight": {
+      "id": "detail-ocr-50faabcd56b5",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260415022144065812d2b38d68-b52f-4a32-befb-aaa7756b07e7.jpg",
+      "contentHash": "50faabcd56b5ee75f279371d4f96c849805ac51a7cb0525f49f1ed5c0b958597",
+      "ocrText": "저렴한 가격에 깊은 맛\n비결은 공정에 있어요\n(직접 고른 소 뼈를\n사람 손으로 정성껏 손절합니다\n그 결과, 깔끔하고\n담백한 국물 맛을 자랑해요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8333333333333334,
+      "copyFacts": [
+        "저렴한 가격에 깊은 맛",
+        "비결은 공정에 있어요",
+        "담백한 국물 맛을 자랑해요"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.326Z"
+  },
+  {
+    "key": "7888e4f6e7451049b992163d2c142e690c2b27cc94d9f5b468a9a322ec8aa6cb",
+    "insight": {
+      "id": "detail-ocr-385bbabfa899",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260803023646804240702113fe-5544-47a2-89ee-66cd7466e672.jpg",
+      "contentHash": "385bbabfa899b775bf6f12d5acc36a1fc139dc1a1fe4d0c337559e080688b6bb",
+      "ocrText": "숙성된 옥수수 전분과 밀가루를\n황금비율로 섞어 반죽하여\n씹을수록 식감이 살아있는\n쫄깃탱탱 밀면 면발\n진하게 우려낸 사골 국물에\n밀면 육수 특유의 감칠맛을\n살리는 비법을 더해 만든\n밀면 전통 비법육수",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6875,
+      "copyFacts": [
+        "숙성된 옥수수 전분과 밀가루를",
+        "씹을수록 식감이 살아있는",
+        "쫄깃탱탱 밀면 면발",
+        "밀면 육수 특유의 감칠맛을",
+        "밀면 전통 비법육수"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:45.334Z"
+  },
+  {
+    "key": "0b867495ebb3e62800344be0b56539cbd71f488f8ba4a2b868909912b7e2a6d5",
+    "insight": {
+      "id": "detail-ocr-119c5dc3b248",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260128022953668734ea1d7f1c-2435-4a34-9331-7d288b611eba.jpg",
+      "contentHash": "119c5dc3b2484d30073cc254baaa21fdec2f11005b7338bb3175c9f83b9b4cdd",
+      "ocrText": "호두로 속을 채운 고품격 영양간식\n호두말이곶감\n선물세트\n햇/상/가/득\n햇/살/가/득\n남녀노소 모두가 좋아하는 호두말이곶감세트\n소중한 분께 마음을 전달해보세요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6428571428571429,
+      "copyFacts": [
+        "호두로 속을 채운 고품격 영양간식",
+        "선물세트"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:52.212Z"
+  },
+  {
+    "key": "efc5c561ac3809181250c23925ee77360761da5ec4573a945c533dd0fe1775b9",
+    "insight": {
+      "id": "detail-ocr-08b1c41b42b7",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608030236473043140018c779-f4a1-4692-be42-18132c85eb53.jpg",
+      "contentHash": "08b1c41b42b7c5ac136fb11ab3ec69db7f6fd4dd488bdba886c520374ae1d1b6",
+      "ocrText": "물밀면? 비빔밀면?\n어떻게 먹어도 맛있다!\n시원한 육수, 매콤한 양념장과\n쫄깃한 면발의 조화를 맛보세요!\n시원한 밀면 한 그릇에\n아삭한 무김치 곁들이면\n식감도 풍미도 2배!\n추가 구성에서\n구매할 수 있어요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "어떻게 먹어도 맛있다!",
+        "시원한 육수, 매콤한 양념장과",
+        "쫄깃한 면발의 조화를 맛보세요!",
+        "시원한 밀면 한 그릇에",
+        "아삭한 무김치 곁들이면",
+        "추가 구성에서"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "식감도 풍미도 2배!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.513Z"
+  },
+  {
+    "key": "b80d018f39cee85474b67b4d20fc7aa8dcc5a0de5a87ca61ab192392443e1bba",
+    "insight": {
+      "id": "detail-ocr-506c3f0726eb",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20250115061035309371a1e3b65d-5020-4de7-9708-341bd4ac693c.jpg",
+      "contentHash": "506c3f0726eb90fab131c82b47b4343027ffe1ad7ee1efa189b5318c05af15e5",
+      "ocrText": "32cm\n세이브밀 수제\n강원도감자 모듬감자전\n10장\n세이바일 수제 강원도 감자 오듬감자전\n식품의 8별| 서류가공품 (기업하여 섭취하는 냉동식품]\n3업회사법인 내추첨 주식회사\n주식회사 제이크 일\n반품및교환 수경과장중 변강된 제품은 구입에서 고분해 드립니다) 소비자상담일 070-44003446 [포장과일 폴리전)\n30cm\n강원도감자 모듬감자전 맛있는 조리법 TE의 2NK SOUReSTE 4t 2nM CAL\n프라이크 조속\n강원도 감자 모듬감자전 800g 포장상태",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6538461538461539,
+      "copyFacts": [
+        "세이브밀 수제",
+        "세이바일 수제 강원도 감자 오듬감자전"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "32cm",
+        "식품의 8별| 서류가공품 (기업하여 섭취하는 냉동식품]",
+        "3업회사법인 내추첨 주식회사",
+        "반품및교환 수경과장중 변강된 제품은 구입에서 고분해 드립니다) 소비자상담일 070-44003446 [포장과일 폴리전)",
+        "30cm",
+        "강원도감자 모듬감자전 맛있는 조리법 TE의 2NK SOUReSTE 4t 2nM CAL",
+        "강원도 감자 모듬감자전 800g 포장상태"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.599Z"
+  },
+  {
+    "key": "0f4950ea341450ad91aaadba66f68a6225342d68a2e7aed653ffb67f26ab3fad",
+    "insight": {
+      "id": "detail-ocr-5212c13477fe",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608030236478512729bc7db52-e761-475b-9df3-11ddfe9d7d22.jpg",
+      "contentHash": "5212c13477fe3e09f795a3d895d20b99076f8c752402ff57fc9a489dcb917c6a",
+      "ocrText": "가야밀면\n조리방법\nSTEP 01\n끓는 물에 면을 넣어\n1분간 삶아주세요\n물이 끓어넘치면,\n찬물을 부어주세요\nSTEP 02\n삶아진 면을\n찬물에 비벼빨듯\n헹궈주세요\n체에 받쳐 잠시\n물기를 빼주세요\nSTEP 03\n삶아놓은 면을\n그릇에 담고\n살짝 얼려 둔\n시원한 육수를\n그릇에 부어주세요\nSTEP 04\n삶은 계란,\n오이, 무김치 등\n취향에 따라\n다양한 재료를\n곁들여드세요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.68,
+      "copyFacts": [
+        "조리방법",
+        "취향에 따라",
+        "곁들여드세요"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "STEP 01",
+        "1분간 삶아주세요",
+        "STEP 02",
+        "STEP 03",
+        "STEP 04"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.682Z"
+  },
+  {
+    "key": "551ae0ebbc7cc6abba99c45f69d91ca6a96c92a6339cb40da3862cc130d791df",
+    "insight": {
+      "id": "detail-ocr-943c91f10d42",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260415022145362879f560ce63-e22d-4a65-abe3-dc32b44d7406.jpg",
+      "contentHash": "943c91f10d42c9751e1a41fa6961bbf0a96d1f777748024ad73954ae51a7d3c3",
+      "ocrText": "이건\n( 평범한 갈비탕'이\n아닙니다)\n실패 없는 기본에 충실한 국물!!\n가마솥 방식으로 기본을\n제대로 만든 갈비탕",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "( 평범한 갈비탕'이",
+        "제대로 만든 갈비탕"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.755Z"
+  },
+  {
+    "key": "8f3928821feb798ed6d2f98262518eb50b4ffd4601bb3ffe26b5f6720b2d035a",
+    "insight": {
+      "id": "detail-ocr-429e45f60227",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260415022145769190a96904b9-855e-4033-9ece-e8b3a46a7c93.jpg",
+      "contentHash": "429e45f60227050f4bb3c3586d465ef99febfd503379a02be172386fd0931b3e",
+      "ocrText": "불 앞에 오래 서 있을 필요\n없습니다\n해동 후 냄비에 붓고\n5~6분 풍이면 끝",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.625,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [
+        "5~6분 풍이면 끝"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.758Z"
+  },
+  {
+    "key": "16103bf0b8ef94ca4be6a19ec018389276bf4f2b8b30be7ce78b6c7255e237dc",
+    "insight": {
+      "id": "detail-ocr-a033f6e552ae",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260128022954465727f87ce9c3-8801-4ffb-a5b1-ba0555a9a035.jpg",
+      "contentHash": "a033f6e552ae2b509ffad0c11f71793eaca4594fe973c90cc95f6be307d85b99",
+      "ocrText": "집에서 즐기는 달콤짭득 영양간식\n호두말이곶감",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "집에서 즐기는 달콤짭득 영양간식"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.763Z"
+  },
+  {
+    "key": "0aa1a61c31cb70310a13dfdb2c199b16fa7e6f8731b996fa9ed8ff58007bb008",
+    "insight": {
+      "id": "detail-ocr-44e04478f0c7",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607161125339000573f39cb1d-332d-4d43-b52a-cd0b75700e83.jpg",
+      "contentHash": "44e04478f0c73c298bf94c3766b931042ad2f214d7aa4145ff0817aaf84ab4dd",
+      "ocrText": "전라도 김치의 핵심3가지\n(씹을수록 감칠맛이 살아나는\n전라도식 배추김치\n다른지역 김치보다\nPOINT 1\n양념이 넉넉해 배추가 밋밋하지 않고\nPOINT 2\n속재료가 풍부해 맛이 단순하지 않으며\nPOINT 3\n숙성될수록 감칠맛이 더 깊어져요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "(씹을수록 감칠맛이 살아나는",
+        "전라도식 배추김치",
+        "속재료가 풍부해 맛이 단순하지 않으며",
+        "숙성될수록 감칠맛이 더 깊어져요"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "전라도 김치의 핵심3가지",
+        "POINT 1",
+        "POINT 2",
+        "POINT 3"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.767Z"
+  },
+  {
+    "key": "78f56c45aa3dfa71372781dd43a8a8e57bcb99f15314874608f8285d76b93223",
+    "insight": {
+      "id": "detail-ocr-efbac612ed90",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607161125344782680867df55-1656-4d29-a954-b8927a25e0e7.jpg",
+      "contentHash": "efbac612ed908858acb84c33646b63fcaa1ae6e537fe8f394e0a7ef6dae99c05",
+      "ocrText": "멸치액젓과\n새우젓을 사용해서\n부담스런 젓갈 향은 줄이고\n멸치액젓의 감칠맛은 그대로",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.625,
+      "copyFacts": [
+        "부담스런 젓갈 향은 줄이고",
+        "멸치액젓의 감칠맛은 그대로"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.776Z"
+  },
+  {
+    "key": "f83bb9798875222b5cf48bc491a642225e8654773835e6bce89a63b3d6770968",
+    "insight": {
+      "id": "detail-ocr-d8f913f0f459",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2025011506103494994133a82cc8-a287-49ab-92a2-2ee0333227e4.jpg",
+      "contentHash": "d8f913f0f459e1933133bcd1f631835bc89118da9867b680fba505b940039e23",
+      "ocrText": "1팩에 감자전 10장\n남은 양은 위생적으로\n보관 가능한 지퍼백 포장\n대용량 먹다 남은 거 보관하는 게 고민이셨다면\n걱정하지 마세요. 지퍼백 포장 제품으로\n따로 옮겨 담을 필요 없이 위생적으로 보관 가능합니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [
+        "보관 가능한 지퍼백 포장",
+        "대용량 먹다 남은 거 보관하는 게 고민이셨다면",
+        "걱정하지 마세요. 지퍼백 포장 제품으로",
+        "따로 옮겨 담을 필요 없이 위생적으로 보관 가능합니다."
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "1팩에 감자전 10장"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:53.783Z"
+  },
+  {
+    "key": "2d0b202e1fcb579f70a6f07884f7a6c7d28034aeedfa55cb21667b136a5acbef",
+    "insight": {
+      "id": "detail-ocr-8e4e6779d0a3",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202601280229549345477d4234ae-c3f7-46a8-8789-f6b39cf8d460.jpg",
+      "contentHash": "8e4e6779d0a321fbb712bfea9fcf32accc320dcfdcdb31d82c2faa83ded8cf09",
+      "ocrText": "전국 최저가\n20개 세트 29,900원\n57,000원\n57,000원\n56,900원\n49,900원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [
+        "20개 세트 29,900원",
+        "57,000원",
+        "56,900원",
+        "49,900원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:55.789Z"
+  },
+  {
+    "key": "1cc469bd5d980a8ef84bdf0b776be49c7385a495b4cfb4fb5b6fa0c00c9680a8",
+    "insight": {
+      "id": "detail-ocr-0e1886c81f15",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumbpc/202606250125171498870659f00a-09c0-48e4-abd2-1e8c403c4da6.jpg",
+      "contentHash": "0e1886c81f15107d1aed145684bcd9817257c5850e5ab3d19acc24247e02521a",
+      "ocrText": "불량 CS접수시\n꼭 확인하셔야될 사항\n접수 시 해당 내용이 아닐 경우 원활한 CS처리를\n도와드리기 어려운 점 양해 부탁드립니다.\n택배 송장이 잘보이는\n박스 전체 사진\ncid\n2T32- 1m\n구매 상품이 보이는\n박스 전체 사진\n불량 제품 사진\n불량 제품을 일렬로 세워 사진을 찍어주세요\n파손 문의시엔\n파손된 박스 이미지\n※박스가 파손되었을 시 꼭 필요해요\n위 필수 이미지들을 촬영하신 후\n첨부하여 고객센터 채널톡 으로 문의를 넣어주세요.\n수령일부터 2일이내(당일-익일)에 사진을\n제품을 수령하셔도 2일 이내(당일-익일)에 접수해\n공휴일 / 주말 등 상담 업무를 진행하지 않는 날에\n주셔야 순차적으로 확인하여 답변이 가능합니다.\n톡상담 특성상 뒷 순서로 밀릴 수 있습니다.\n답변을 드리기 전 채널톡을 계속 보내시면\n일부 불량의 경우 부분 환불로 처리됩니다.\n※ 이런 상황에는 교환 및 반품이 불가합니다\n가정용/못난이 상품의 경우 상세페이지에 안내 된\n사유로 인하여 교환 및 환불은 불가합니다.\n식품의 경우 재판매가불가능한 제품으로 특성상 단순 변심과\n개인적인 입맛 차이로 인한 반품 및 교환은 불가합니다.\n기재 오류로 인해 연락 부재로 발생한 배송사고에 대해서는\n고객의 과실로 고객정보나, 부재 시 보관 장소에 대한\n책임을 지지 않습니다.\n협의되지 않은 임의 폐기 및 반송 처리에\n대한 교환 및 환불은 불가합니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8823529411764706,
+      "copyFacts": [
+        "고객의 과실로 고객정보나, 부재 시 보관 장소에 대한"
+      ],
+      "productConstraints": [
+        "가정용/못난이 상품의 경우 상세페이지에 안내 된"
+      ],
+      "discardedNotices": [
+        "불량 CS접수시",
+        "접수 시 해당 내용이 아닐 경우 원활한 CS처리를",
+        "도와드리기 어려운 점 양해 부탁드립니다.",
+        "택배 송장이 잘보이는",
+        "2T32- 1m",
+        "불량 제품 사진",
+        "불량 제품을 일렬로 세워 사진을 찍어주세요",
+        "파손 문의시엔",
+        "파손된 박스 이미지",
+        "박스가 파손되었을 시 꼭 필요해요",
+        "첨부하여 고객센터 채널톡 으로 문의를 넣어주세요.",
+        "수령일부터 2일이내(당일-익일)에 사진을",
+        "제품을 수령하셔도 2일 이내(당일-익일)에 접수해",
+        "일부 불량의 경우 부분 환불로 처리됩니다.",
+        "이런 상황에는 교환 및 반품이 불가합니다",
+        "사유로 인하여 교환 및 환불은 불가합니다.",
+        "개인적인 입맛 차이로 인한 반품 및 교환은 불가합니다.",
+        "기재 오류로 인해 연락 부재로 발생한 배송사고에 대해서는",
+        "대한 교환 및 환불은 불가합니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:15:59.778Z"
+  },
+  {
+    "key": "e60bcbf6e1d5df34f24bb6a33ce8a32ef97893044344b863abf5d73e91baf3d9",
+    "insight": {
+      "id": "detail-ocr-bf26997a4e20",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260803023654258478711db1ce-ae08-4a1a-a9e1-4e94e4f62838.png",
+      "contentHash": "bf26997a4e2008355aacfbb30efadaa0bdf11f9b09cfda69f5d44fb285c48db4",
+      "ocrText": "제품명\n참도깨비 부산 가야밀면\n식품의 유형\n숙면(가열하여 섭취하는 냉동식품)\n내용량\n2kg (4,989kcal)\n품목보고번호\n2024056357911\n보관방법\n냉동보관 (-18°C 이하)\n제조원\n세영푸드 / 경기도 화성시 만세구 장안면 황골길 102\n유통전문판매원\n(주)에브리데이뉴 / 부산 기장군 장안읍 명례산단3로 13-17\n판매원 및 교환장소\n참도깨비 / 부산광역시 기장군 장안읍 명례산단3로 13-17\n원재료명\n밀가루(밀:미국산, 호주산), 옥수수전분(옥수수:러시아, 헝가리, 세르비아),\n정제소금, 면류첨가알갈리제[분말냉소다(탄산나트륨, 탄산갈륨)]\n밀 함유\n포장재질\n폴리에틸렌(내면)\n반품 및 교환\n구입처\n소비기한\n별도표기일까지\n반품/교환 문의\n구입처 또는 판매원\n영양정보\n총 내용량 2,000g\n주의사항\n100g당 249.63kcal\n• 개봉 후에는 빠른 시간안에 드시고 이후 재냉동\n나트륨 257.34mg\n12.9%\n탄수화물 54.34g\n16.5%\n시키지 마십시요.\n• 본 제품은 메일, 대두, 밀, 쇠고기를 사용한 제품과\n당류 1.06g\n1%\n트랜스지방 0g\n같은 제조시설에서 제조하고 있습니다.\n포화지방 0.34g\n2.3%\n콜레스테롤 0mg\n0%\n• 이미 냉동된 바 있으니 해동 후 재냉동 하지 마십시요.\n• 부정• 불량식품 신고는 국번없이 1399\n단백질 6.02g\n10%\n지방 0.91g\n1.8%\n• 직사광선을 피하여 서늘한 곳에 보관하시고, 우리가\n1일 영양성분 기준치에 대한 비율(%)은 2,000kcal 기준으로 개인의 필요 열량에 따라 다를 수 있습니다.\n익은 제품은 교환 또는 보상 받을 수 있습니다.\n• 본 제품은 공정거래위원회 고시 소비자 분쟁해결기준에 의거\nOTHER\n교환 또는 보상 받을 수 있습니다.\n• 기타 문의사항은 판매원 및 구입처에 문의하여 주시기 바랍니다.\n8 809323",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7786885245901639,
+      "copyFacts": [
+        "숙면(가열하여 섭취하는 냉동식품)",
+        "보관방법",
+        "원재료명",
+        "밀가루(밀:미국산, 호주산), 옥수수전분(옥수수:러시아, 헝가리, 세르비아),",
+        "포장재질",
+        "개봉 후에는 빠른 시간안에 드시고 이후 재냉동",
+        "같은 제조시설에서 제조하고 있습니다.",
+        "이미 냉동된 바 있으니 해동 후 재냉동 하지 마십시요.",
+        "직사광선을 피하여 서늘한 곳에 보관하시고, 우리가",
+        "본 제품은 공정거래위원회 고시 소비자 분쟁해결기준에 의거"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "참도깨비 부산 가야밀면",
+        "2kg (4,989kcal)",
+        "2024056357911",
+        "냉동보관 (-18°C 이하)",
+        "세영푸드 / 경기도 화성시 만세구 장안면 황골길 102",
+        "유통전문판매원",
+        "(주)에브리데이뉴 / 부산 기장군 장안읍 명례산단3로 13-17",
+        "판매원 및 교환장소",
+        "참도깨비 / 부산광역시 기장군 장안읍 명례산단3로 13-17",
+        "반품 및 교환",
+        "반품/교환 문의",
+        "구입처 또는 판매원",
+        "총 내용량 2,000g",
+        "100g당 249.63kcal",
+        "나트륨 257.34mg",
+        "탄수화물 54.34g",
+        "당류 1.06g",
+        "트랜스지방 0g",
+        "포화지방 0.34g",
+        "콜레스테롤 0mg",
+        "부정• 불량식품 신고는 국번없이 1399",
+        "단백질 6.02g",
+        "지방 0.91g",
+        "1일 영양성분 기준치에 대한 비율(%)은 2,000kcal 기준으로 개인의 필요 열량에 따라 다를 수 있습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.432Z"
+  },
+  {
+    "key": "5f4a540ff2c806585854197cab0f55b0c03af9b188275e11ae8fb3680d7cedb5",
+    "insight": {
+      "id": "detail-ocr-a35acf845ed4",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260716112535540933151cfe95-72a1-46ff-a8de-dfb72c6ea67a.jpg",
+      "contentHash": "a35acf845ed43ac31e9a87ce676a038ce0ce1cb8e22cae958682a652761fd386",
+      "ocrText": "아낌없이 들어갔어요\n마늘, 양파, 생각,물,찹쌀품 등등\n마늘\n양파\n생강\n무\n부추\n파",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5625,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.456Z"
+  },
+  {
+    "key": "b803cdcde3072b21567ff403ddab0c460d907ba08a560be096769220c12bf330",
+    "insight": {
+      "id": "detail-ocr-6beb01e73551",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260415022146675575ac5f9089-f653-428a-ae96-863cff554653.jpg",
+      "contentHash": "6beb01e73551bdd97f40a55373429fde8e9195314bcf04f7d188e39df2c03419",
+      "ocrText": "자극 없이 매일\n먹어도 부담 없는 맛\n마지\n않아요!\n느끼하지 않습니다!\n가마솥에서 우러난 깊은 맛",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "먹어도 부담 없는 맛",
+        "가마솥에서 우러난 깊은 맛"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.539Z"
+  },
+  {
+    "key": "1e3a99730c4a3aca80584f466fc6aa674cd8823a77b0855d3cdeb2aff9cd5d2e",
+    "insight": {
+      "id": "detail-ocr-1413e7c7fe4b",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260716112534962718ba75b35b-12a3-4609-be56-d37d47895948.jpg",
+      "contentHash": "1413e7c7fe4bd911daf3d0d017cd73545c58ade3f7dbb23f2a73d2a64004e8a2",
+      "ocrText": "배추 잎 사이사이가\n양념으로 딱!한\n전라도식 김치!!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "배추 잎 사이사이가",
+        "전라도식 김치!!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.583Z"
+  },
+  {
+    "key": "e74dfee627e970738cb571ed09cd7403fb93a952185839135a232e249ee47dcb",
+    "insight": {
+      "id": "detail-ocr-e8ed5b05663e",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026041502214622238379d1cc5a-4f0a-4b62-9217-58f1b34da399.jpg",
+      "contentHash": "e8ed5b05663e6eed004d6c29395394205672f38833a346f9a9ef0b238f48f843",
+      "ocrText": "냄비 조리를\n추천드리는 이유\n센 불로 끓이면 가마솥\n국물 농도와 고기 식감이\n그대로 살아나요!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7,
+      "copyFacts": [
+        "냄비 조리를",
+        "국물 농도와 고기 식감이"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.586Z"
+  },
+  {
+    "key": "a90d7481c19a243a5c4c4284305e8943be7fcd42a70f2c40aaa4e96dc480a6cf",
+    "insight": {
+      "id": "detail-ocr-964f9eb706b6",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260128022955872190e59c6fcf-ab56-4ac5-abb3-37cb66aa04dd.jpg",
+      "contentHash": "964f9eb706b67506bcf754d57349b232de40a7cb21106ce6239b16907d63cc1a",
+      "ocrText": "보기 좋고 양도 넉넉한\n호두말이곶감 선물세트\n*황금보시기 증정!!\n무리 10만 간 이상\n명절선물로 최고 인기 주문폭주!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7,
+      "copyFacts": [
+        "호두말이곶감 선물세트",
+        "명절선물로 최고 인기 주문폭주!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "무리 10만 간 이상"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.589Z"
+  },
+  {
+    "key": "e1ca32d907b0ae14752500534424ba941944edc052a33fa27f66c8f8e2be0d33",
+    "insight": {
+      "id": "detail-ocr-1a5454b24bc0",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260803023648351347876aecdc-8e20-46f8-9218-6adb340e1bbe.jpg",
+      "contentHash": "1a5454b24bc0182e10b46a53ac95b40838197a9eb3640a1998dbbdc9fa7ee95b",
+      "ocrText": "부드러운 밀면 면발에\n밀면육수 특유의 감칠맛\n뽀얗고 부드러운 부산밀면의 면발,\n한 번 맛보면 절대 잊을 수 없을거에요!\n단짠단짠 자극적이고 진한 비법육수,\n살얼음 동동\n가야밀면으로\n*\n지친 하루\n*\n힐링하세요!\n*",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5833333333333334,
+      "copyFacts": [
+        "부드러운 밀면 면발에",
+        "밀면육수 특유의 감칠맛",
+        "한 번 맛보면 절대 잊을 수 없을거에요!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "뽀얗고 부드러운 부산밀면의 면발,"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.592Z"
+  },
+  {
+    "key": "86d28890bdc579412bed8a7402623361fb0d88642d193215df91555679ffcb37",
+    "insight": {
+      "id": "detail-ocr-2a44a8a6c0a6",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumbpc/20230714045935179661844b195c-0071-4a4a-8099-726f316db8bd.jpg",
+      "contentHash": "2a44a8a6c0a6da2c1a6fd1ca12e0bc7fd43b3df9091a07151d4f850a2890a707",
+      "ocrText": "구매 전 꼭 확인 해 주세요!\n배송안내\n• 배송은 입금 확인 후 주문 순차에 따라 출고됩니다.\n(주말 및 공휴일 휴무)\n• 수령일은 출고 후 주말 및 공휴일 제외 약 1~3일 후로\n예상되지만 날씨나 택배 물랑, 생산업체 사정에 따라\n지연될 수 있습니다.\n• 도서 산간지역 / 제주도의 경우 배송일이 3~4일 소요되며\n배송비가 추가되거나 배송이 제한될 수 있습니다.\n• 선물하시는 경우 받는 분께서 아실 수 있게 배송메세지에\n구매자님의 정보나 메세지를 적어주세요!\n취소•교환•반품 안내\n• 배송정보 변경을 원하시는 경우 주문 당일 오전 10시\n이전에 고객센터에 문의 해 주세요.\n이미 발송된 경우 변경이 불가합니다.\n• 송장이 입력되어 있지 않아도 이미 상품이 출고된 경우\n취소요청이 안될수도 있습니다.\n• 상품 수령 후 이상이 있을 시 식품은 24시간 이내,\n일반상품은 3일 이내 바로 상품 사진(전체박스 내부와\n배송텍 부분)찍어 보내주셔야 CS 처리가 가능합니다.\n• 반품시 농장마다 수거 주소지가 다르기 때문에 임의로\n반송하지 마시고 상담원과 상담 후 처리 해 주세요.\n• 신선식품의 경우 재판매가 불가능하므로 단순변심 혹은\n개인적인 입맛 차이로 인한 교환 및 반품이 불가합니다.\n• 주소/연락처 오기재, 수령지 부재, 연락 부재로 인해\n발생한 배송사고는 교환 및 반품이 불가합니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9038461538461539,
+      "copyFacts": [
+        "신선식품의 경우 재판매가 불가능하므로 단순변심 혹은"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "배송안내",
+        "배송은 입금 확인 후 주문 순차에 따라 출고됩니다.",
+        "수령일은 출고 후 주말 및 공휴일 제외 약 1~3일 후로",
+        "예상되지만 날씨나 택배 물랑, 생산업체 사정에 따라",
+        "도서 산간지역 / 제주도의 경우 배송일이 3~4일 소요되며",
+        "배송비가 추가되거나 배송이 제한될 수 있습니다.",
+        "선물하시는 경우 받는 분께서 아실 수 있게 배송메세지에",
+        "취소•교환•반품 안내",
+        "배송정보 변경을 원하시는 경우 주문 당일 오전 10시",
+        "이전에 고객센터에 문의 해 주세요.",
+        "이미 발송된 경우 변경이 불가합니다.",
+        "송장이 입력되어 있지 않아도 이미 상품이 출고된 경우",
+        "취소요청이 안될수도 있습니다.",
+        "상품 수령 후 이상이 있을 시 식품은 24시간 이내,",
+        "일반상품은 3일 이내 바로 상품 사진(전체박스 내부와",
+        "배송텍 부분)찍어 보내주셔야 CS 처리가 가능합니다.",
+        "반품시 농장마다 수거 주소지가 다르기 때문에 임의로",
+        "개인적인 입맛 차이로 인한 교환 및 반품이 불가합니다.",
+        "주소/연락처 오기재, 수령지 부재, 연락 부재로 인해",
+        "발생한 배송사고는 교환 및 반품이 불가합니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.597Z"
+  },
+  {
+    "key": "07cddad1f588f82c17f35a74e6294de59f85dc40fd92efd14f77fc8ebac0b4ff",
+    "insight": {
+      "id": "detail-ocr-7a43efc83333",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260128022956294123550fb6d5-5240-44d7-85d6-915d7bce0bf5.jpg",
+      "contentHash": "7a43efc83333711aba9d00e7328099f4663dd3bbefefe6c9eddeca2691bb28e0",
+      "ocrText": "호두말이곶감 세트\n<20개입 구성>\n<30개입 구성>\n20개 29, 900원\n추천! 가성비 넘치는 구성",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7,
+      "copyFacts": [
+        "호두말이곶감 세트",
+        "추천! 가성비 넘치는 구성"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "<20개입 구성>",
+        "<30개입 구성>",
+        "20개 29, 900원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:01.602Z"
+  },
+  {
+    "key": "45b8a4823f2eabb099c7f9704dd6e4a75c79e3b28c7e1657affc394fc0ae1308",
+    "insight": {
+      "id": "detail-ocr-3fb18c323978",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumbpc/20250502094324904173fe861185-2c40-4a17-a1c6-9af2c14f4f37.jpg",
+      "contentHash": "3fb18c323978ecacf70723d2289be033acf24f718afcdf6d5167112d33f1ed85",
+      "ocrText": "카톡 상담하기",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:03.424Z"
+  },
+  {
+    "key": "c53c940113838a4283e609fa2cebbb8851dd894a64c84f2926ac62fbb69f4ad1",
+    "insight": {
+      "id": "detail-ocr-8b05bbe3c25d",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026071611253629104407d71668-dbb6-40bb-b9d2-35b4cb0acc2b.jpg",
+      "contentHash": "8b05bbe3c25d0e8db8267e991f8a6bb2b2c66121d4c752c5a9b51986a497ce97",
+      "ocrText": "결대로 잘리는\n싱싱한 베충의!!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:03.766Z"
+  },
+  {
+    "key": "044e95b15692266754b3d1913236f3042dbef95aa33fae93beb9f4164a859f05",
+    "insight": {
+      "id": "detail-ocr-dde9c54394eb",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumbpc/202605150318088668743138ab6b-c75a-409d-a0ac-44f332f7a725.jpg",
+      "contentHash": "dde9c54394eb626a2cbdb613d1a026970f4903416905ad14b31b9a20594ceb7d",
+      "ocrText": "힘내라 농가 고객 만족 센터\n평일\n09:00 ~ 17:00\n점심\n12:00~ 13:00\n휴일\n주말 및 공휴일\n*현재 문의량 증가로 상담 인원이 제한적으로 운영되고 있어,\n전화 상담이 원활하지 않을 수 있습니다.\n보다 빠른 상담은 카카오톡 채팅상담으로 문의 부탁드립니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [
+        "09:00 ~ 17:00",
+        "12:00~ 13:00",
+        "현재 문의량 증가로 상담 인원이 제한적으로 운영되고 있어,",
+        "보다 빠른 상담은 카카오톡 채팅상담으로 문의 부탁드립니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:06.178Z"
+  },
+  {
+    "key": "43e43fc332db362f3dfe595cc54bdd29367907eaed638ff2c8c5e1a97583ea27",
+    "insight": {
+      "id": "detail-ocr-b4a84d162724",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260803023654899200fcd10793-5507-4248-8802-5c49baf80f38.jpg",
+      "contentHash": "b4a84d16272488c666415d100410d94446ee5bc569ff5dbe6fb6d76e5548027d",
+      "ocrText": "제품명\n부산일면육수\n식품의유형\n소스류\n내용량\n3408\n제조원\n대성식품 / 경상남도 양산시 대석1길 64\n소비기한\n제조일로부터 12개월 / 상시제조상품으로 정확한 제조연월일은 판매자 문의\n제조연월일\n소비자 주문서 접수일을 기준으로 9개월 이내 제조된 상품만을 판매\n보관방법\n직사광선을 피하여 실온보관\n소비자상담실\n1588-1829\n원재료명 및 함량\n정제수95%, 사골엑기스{사골(호주산),소고기엑기스{소고기(호주산)}, 치킨엑기스{닭고기(국\n내산)}, 동치미맛엑기스, 고기추출물(꿩고기(국내산), 겨자분말, 김치분말, 간장분말, 구연산,\nDL-사과산, L-탐산나트륨(향미증진제), 5-이노신산이나트륨, 식초, 설탕\n**대두, 밀, 쇠고기, 닭고기 함유",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6428571428571429,
+      "copyFacts": [
+        "제조연월일",
+        "보관방법",
+        "직사광선을 피하여 실온보관",
+        "원재료명 및 함량",
+        "내산)}, 동치미맛엑기스, 고기추출물(꿩고기(국내산), 겨자분말, 김치분말, 간장분말, 구연산,"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "3408",
+        "대성식품 / 경상남도 양산시 대석1길 64",
+        "제조일로부터 12개월 / 상시제조상품으로 정확한 제조연월일은 판매자 문의",
+        "소비자 주문서 접수일을 기준으로 9개월 이내 제조된 상품만을 판매",
+        "1588-1829",
+        "정제수95%, 사골엑기스{사골(호주산),소고기엑기스{소고기(호주산)}, 치킨엑기스{닭고기(국",
+        "DL-사과산, L-탐산나트륨(향미증진제), 5-이노신산이나트륨, 식초, 설탕"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:08.181Z"
+  },
+  {
+    "key": "6a7d52e826c491c89fd5155ac510538c487a3e418fc1f2bbc7e003f80ffad7e2",
+    "insight": {
+      "id": "detail-ocr-448bb072ab34",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607161125367911196353d9b2-fe16-4343-acca-895978b3a6b2.jpg",
+      "contentHash": "448bb072ab34607824c5fee036f170d19732132e24883b8ec6d3478e7beaca76",
+      "ocrText": "처음엔 양념이 진하고\n익을수록, 젓갈이 녹아들어\n깊고 구수한\n감칠맛으로 완성",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.625,
+      "copyFacts": [
+        "감칠맛으로 완성"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:08.270Z"
+  },
+  {
+    "key": "9d884cc6fa676a381575153953a8652571e958297c256d197e0d302ac2a29533",
+    "insight": {
+      "id": "detail-ocr-f07daac501c9",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026041502214726941389928278-a5ba-472c-879b-ce8c094373c4.jpg",
+      "contentHash": "f07daac501c9abbbd1734e074533fe41b2fcf987427346567060d00d03d12ab2",
+      "ocrText": "소갈비가 들어간\n국물+ 고기 구성\n간단하지만\n한 끼는 충분합니다",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "국물+ 고기 구성"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:08.337Z"
+  },
+  {
+    "key": "b9ce3af6a0ff6bf3b78c2708d9194043fa6f0d809abf62bfb2c725708d5ed176",
+    "insight": {
+      "id": "detail-ocr-dc35cc6690ab",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260128022957356780d5284aee-b8cc-4cb2-9969-78b319caa550.jpg",
+      "contentHash": "dc35cc6690abf3185f8367ebe22a60ed22e35063890b293d47764bddafaa307c",
+      "ocrText": "곶감 최적의 산지 영동산\n수제로 만든 씨 있는 곶감말이",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [
+        "곶감 최적의 산지 영동산"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:08.431Z"
+  },
+  {
+    "key": "ceca6c365f2048be161f3caa2cef31f431a3a96faeaa748c839cc27f094f0804",
+    "insight": {
+      "id": "detail-ocr-f88b0cc8ff78",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202604150221476757249fde7b37-5dbf-4f3d-9370-86028f941712.jpg",
+      "contentHash": "f88b0cc8ff7806ffb80678de7d16706ddfdf6df16cee09bb43d6848dc1a91f07",
+      "ocrText": "500g한 팩!\nNO\n인위적\n혼밥에도\n집밥에도\n딱 좋은 양",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5833333333333334,
+      "copyFacts": [
+        "500g한 팩!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:08.434Z"
+  },
+  {
+    "key": "5fd499fdca7c73bce78c366511a62d7c2316e75e18f7623474ef5dda5bb628f4",
+    "insight": {
+      "id": "detail-ocr-0e1886c81f15",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumbpc/202606250125171498870659f00a-09c0-48e4-abd2-1e8c403c4da6.jpg",
+      "contentHash": "0e1886c81f15107d1aed145684bcd9817257c5850e5ab3d19acc24247e02521a",
+      "ocrText": "불량 CS접수시\n꼭 확인하셔야될 사항\n접수 시 해당 내용이 아닐 경우 원활한 CS처리를\n도와드리기 어려운 점 양해 부탁드립니다.\n택배 송장이 잘보이는\n박스 전체 사진\ncid\n2T32- 1m\n구매 상품이 보이는\n박스 전체 사진\n불량 제품 사진\n불량 제품을 일렬로 세워 사진을 찍어주세요\n파손 문의시엔\n파손된 박스 이미지\n※박스가 파손되었을 시 꼭 필요해요\n위 필수 이미지들을 촬영하신 후\n첨부하여 고객센터 채널톡 으로 문의를 넣어주세요.\n수령일부터 2일이내(당일-익일)에 사진을\n제품을 수령하셔도 2일 이내(당일-익일)에 접수해\n공휴일 / 주말 등 상담 업무를 진행하지 않는 날에\n주셔야 순차적으로 확인하여 답변이 가능합니다.\n톡상담 특성상 뒷 순서로 밀릴 수 있습니다.\n답변을 드리기 전 채널톡을 계속 보내시면\n일부 불량의 경우 부분 환불로 처리됩니다.\n※ 이런 상황에는 교환 및 반품이 불가합니다\n가정용/못난이 상품의 경우 상세페이지에 안내 된\n사유로 인하여 교환 및 환불은 불가합니다.\n식품의 경우 재판매가불가능한 제품으로 특성상 단순 변심과\n개인적인 입맛 차이로 인한 반품 및 교환은 불가합니다.\n기재 오류로 인해 연락 부재로 발생한 배송사고에 대해서는\n고객의 과실로 고객정보나, 부재 시 보관 장소에 대한\n책임을 지지 않습니다.\n협의되지 않은 임의 폐기 및 반송 처리에\n대한 교환 및 환불은 불가합니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8823529411764706,
+      "copyFacts": [
+        "고객의 과실로 고객정보나, 부재 시 보관 장소에 대한"
+      ],
+      "productConstraints": [
+        "가정용/못난이 상품의 경우 상세페이지에 안내 된"
+      ],
+      "discardedNotices": [
+        "불량 CS접수시",
+        "접수 시 해당 내용이 아닐 경우 원활한 CS처리를",
+        "도와드리기 어려운 점 양해 부탁드립니다.",
+        "택배 송장이 잘보이는",
+        "2T32- 1m",
+        "불량 제품 사진",
+        "불량 제품을 일렬로 세워 사진을 찍어주세요",
+        "파손 문의시엔",
+        "파손된 박스 이미지",
+        "박스가 파손되었을 시 꼭 필요해요",
+        "첨부하여 고객센터 채널톡 으로 문의를 넣어주세요.",
+        "수령일부터 2일이내(당일-익일)에 사진을",
+        "제품을 수령하셔도 2일 이내(당일-익일)에 접수해",
+        "일부 불량의 경우 부분 환불로 처리됩니다.",
+        "이런 상황에는 교환 및 반품이 불가합니다",
+        "사유로 인하여 교환 및 환불은 불가합니다.",
+        "개인적인 입맛 차이로 인한 반품 및 교환은 불가합니다.",
+        "기재 오류로 인해 연락 부재로 발생한 배송사고에 대해서는",
+        "대한 교환 및 환불은 불가합니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:16:08.453Z"
+  },
+  {
+    "key": "faaf85d7828eabc90f706ff580f55b2e619ef6fcb323085dab75127af6074bee",
+    "insight": {
+      "id": "detail-ocr-a5a448924a84",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522064905855583ba6bc0ec-bab1-4789-a678-87e8987b7419.jpg",
+      "contentHash": "a5a448924a840cccca749dbb1fcaa5536ee652d0738ac2ab0522f86e4a0ff4c6",
+      "ocrText": "쭈글쥬스용 혼합과 안내\n쭈글하거나 외관이 고르지 않은\n사과가 포함된 쥬스용 혼합과 입니다.\n외형보다는 가공용 활용에 적합한 상품으로,\n쥬스용으로 권장드립니다.\n※ 상품 특성상 외관에 따른 교환 및 환불은 어려운 점 양해 부탁드립니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8333333333333334,
+      "copyFacts": [],
+      "productConstraints": [
+        "사과가 포함된 쥬스용 혼합과 입니다.",
+        "외형보다는 가공용 활용에 적합한 상품으로,"
+      ],
+      "discardedNotices": [
+        "쭈글쥬스용 혼합과 안내",
+        "쭈글하거나 외관이 고르지 않은",
+        "상품 특성상 외관에 따른 교환 및 환불은 어려운 점 양해 부탁드립니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:35.406Z"
+  },
+  {
+    "key": "7f7a32ab6ef70a09a88f2d514b00b06d0d564cdbb9c06b02e51f513253d1d441",
+    "insight": {
+      "id": "detail-ocr-6fd6f205ef64",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202606010122231855111afae973-1d8c-476e-85a5-c85661aae033.jpg",
+      "contentHash": "6fd6f205ef644f528c4f63431c0cf9a93ab07964b06878a49b43c48e16e4ac9b",
+      "ocrText": "초기7900원\n이탈거나 처리해?!\n힘내라농가 전국 최저가에 도전합니다!!\n지금이 딱 제철!! 황궁부사\n지금 아니면 못사는 이가격!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7,
+      "copyFacts": [
+        "힘내라농가 전국 최저가에 도전합니다!!",
+        "지금이 딱 제철!! 황궁부사"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "초기7900원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:35.422Z"
+  },
+  {
+    "key": "d00c4a6f2d77c11cf6bad1e86ff10ff940f002df9f291040d489ebd6ee1587a6",
+    "insight": {
+      "id": "detail-ocr-bc30d7fe217e",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608060951164677294f049abf-30af-4714-b8ec-d5e66be42e73.jpg",
+      "contentHash": "bc30d7fe217e619f5b6e827e2432eaa0f93b9218c6cb498e4c2a93dd4bfca2fd",
+      "ocrText": "경북에서 왔어요~\n100% 국내산으로\n안심하고 드세요~!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [
+        "100% 국내산으로"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:35.476Z"
+  },
+  {
+    "key": "11ca681aff04bd92e8d775ea0f712c009c01e9a83e25ae2d929e3fce7b038423",
+    "insight": {
+      "id": "detail-ocr-e63a01c8c22c",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608060951160457903d23793d-1bdf-4971-9a1c-25927792592b.jpg",
+      "contentHash": "e63a01c8c22cc337b62ad0bd2742cb4bf44174a852b6331be519e770304c360b",
+      "ocrText": "고급 프리미엄 과일\n샤인머스켓\n0,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "샤인머스켓"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "0,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:35.531Z"
+  },
+  {
+    "key": "1efbe7e1c95d6eae64eb94d18941afa1be73f4674a39acdb2b75e8ec17fd02e5",
+    "insight": {
+      "id": "detail-ocr-2e72d42ec499",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260806095118139852d6ef34d9-3327-4512-8f7b-28e5f129039f.jpg",
+      "contentHash": "2e72d42ec499bc5f44db048c223e5c42b2d2b7cb173e9c1fae27f10e79c8692b",
+      "ocrText": "남다른 풍길의 사인머스켓을 경향해보세요!\n프리미엄에 프리미엄을 더한\n고당도 샤인머스켓",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "남다른 풍길의 사인머스켓을 경향해보세요!",
+        "고당도 샤인머스켓"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:37.467Z"
+  },
+  {
+    "key": "6fbaa6502bcdcce559406f0c44dbd5c0a40be9c54d50e424335fe7830fdfe5f0",
+    "insight": {
+      "id": "detail-ocr-62156b6323fb",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026080609511895247465664050-d086-48b5-8e8f-3c82dabfc0d6.jpg",
+      "contentHash": "62156b6323fb7b4cd4ef97051193a7d3b44a9c89162d57e1453f66127f0a5b43",
+      "ocrText": "아삭아삭한 식감,\n향긋한 머스켓 향!\n달콤함이 가득~!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "아삭아삭한 식감,",
+        "향긋한 머스켓 향!",
+        "달콤함이 가득~!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:37.508Z"
+  },
+  {
+    "key": "f47320b54d423c1bac7fce6d1cda13a073d6d953aa9ee6384292d6fdb6f57e94",
+    "insight": {
+      "id": "detail-ocr-14911e2f3174",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522064918091776d47c9017-f18c-46a8-bb79-31581585d72f.jpg",
+      "contentHash": "14911e2f3174188740fc956a366b955f724ef69a7780f883c34c7c4a14055659",
+      "ocrText": "쥬스용(혼합과)반품 불가 안내\n해당 상품의 쥬스용 혼합과는\n반품이 불가한 상품 으로\n구매에 참고하시길 바랍니다\n※ 조금만 기다려주시면 맛 좋은 상품으로\n빠르게 배송드릴 수 있도록 하겠습니다!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8333333333333334,
+      "copyFacts": [
+        "조금만 기다려주시면 맛 좋은 상품으로"
+      ],
+      "productConstraints": [
+        "해당 상품의 쥬스용 혼합과는"
+      ],
+      "discardedNotices": [
+        "쥬스용(혼합과)반품 불가 안내",
+        "반품이 불가한 상품 으로",
+        "빠르게 배송드릴 수 있도록 하겠습니다!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:37.607Z"
+  },
+  {
+    "key": "171db9f82ca6653d955877ef75368b5ccef54ef2104cb3120eeb2a1d9e9a10f6",
+    "insight": {
+      "id": "detail-ocr-f51e5c903e47",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522095742139475b653b24e-d678-4e4e-96fa-ce842bda3b49.jpg",
+      "contentHash": "f51e5c903e4731fde99d81dd934bc5ba746f63cf58584553b818e0ebd61ab2ab",
+      "ocrText": "가정용 얼음을 사과\n구매 전 확인해주세요!\n해당 사과는 정품 사과가 아닌 가정용 사과 입니다.\n가정용 얼음골사과는 맛은 정품과 동일하지만\n외관상의 이유(다양한 모양, 자라면서 생긴 흠집,\n균일하지 않은 컬러 등)로 정품과가 되지못한 사과입니다.\n맛과 저렴한 가격을 동시에 잡을 수 있는 제품입니다.\n벌어짐\n점박이\n다양한 모양, 미색\n기스\n정품사과와는 다른 가정용 사과이니 예시를 꼭 참고해주세요.\n외관상의 문제,맛이 없다는 이유로 교환/환불이\n어려운 점 양해부탁드립니다",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7857142857142857,
+      "copyFacts": [
+        "가정용 얼음을 사과",
+        "해당 사과는 정품 사과가 아닌 가정용 사과 입니다.",
+        "가정용 얼음골사과는 맛은 정품과 동일하지만",
+        "맛과 저렴한 가격을 동시에 잡을 수 있는 제품입니다."
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "구매 전 확인해주세요!",
+        "외관상의 이유(다양한 모양, 자라면서 생긴 흠집,",
+        "정품사과와는 다른 가정용 사과이니 예시를 꼭 참고해주세요.",
+        "외관상의 문제,맛이 없다는 이유로 교환/환불이",
+        "어려운 점 양해부탁드립니다"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:39.887Z"
+  },
+  {
+    "key": "944796b59ccb8203106869dab1e918c50d0504abbe3271fd5cdfc04f4c2e16a2",
+    "insight": {
+      "id": "detail-ocr-c2bd4242cfb7",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260806095119874486e38ff19c-96d1-4a0f-b8a4-3008eef07aed.jpg",
+      "contentHash": "c2bd4242cfb79f16d044916ffafb2e73e24ebc8c6e74bf61bffac6dcacd18798",
+      "ocrText": "7 아삭\n상큼달콤\n프리미엄 과일",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "상큼달콤"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:41.070Z"
+  },
+  {
+    "key": "e5dc430a25704423ffef2b380865c87c371515fe628b1c50e09f300c2952b8d7",
+    "insight": {
+      "id": "detail-ocr-919b4f220424",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522095802267474b1631ea9-64d7-4bbb-8e53-15b0da5edefd.jpg",
+      "contentHash": "919b4f220424ece396ded6b0b0a03598fd33c5f00efb2791e8d748f231b544b3",
+      "ocrText": "가정용\n풍부한 과즙과 아삭한 맛\n황궁얼음골사과\n과즙이 줄줄~\n100%\n국내산",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5833333333333334,
+      "copyFacts": [
+        "풍부한 과즙과 아삭한 맛",
+        "과즙이 줄줄"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:41.094Z"
+  },
+  {
+    "key": "a1f67e026852bdacd3d073d22446ff19543c1c8c7fa9f27c999e39cec81b18ae",
+    "insight": {
+      "id": "detail-ocr-95c8ceb55811",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20250612035955756684488e3ca6-fad9-4de4-9e26-87ca7ae9e179.jpg",
+      "contentHash": "95c8ceb55811998e032d2fe908c9bdcefc623097ba3001e42077536177e13d31",
+      "ocrText": "좋은 품질의 고기를 합리적인 가격에 고객님께\n보내드리기 위해 항상 노력하고 있어요.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:41.212Z"
+  },
+  {
+    "key": "11a7b8b1185b968fefa2e8281352cbf3b5d239865c676c07d37fb74c065fb4e3",
+    "insight": {
+      "id": "detail-ocr-1c2477000494",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522095803564541c833740b-f682-43f7-9a9e-ed1f7c994ed0.jpg",
+      "contentHash": "1c247700049436097f9c881b937578974685ae362e8e7332a6d032465debc113",
+      "ocrText": "아삭!\n달달~",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:42.617Z"
+  },
+  {
+    "key": "8e6f3335b5a61cce5eeeb6786b5705f29b2f63a1d410da6a52dc67adebb7b1d6",
+    "insight": {
+      "id": "detail-ocr-9eb18b6e9096",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608060951214997285a26a822-858a-448c-884d-34584d306523.jpg",
+      "contentHash": "9eb18b6e90966339e22b3cade0c162e7ab91489783164163c59d65d5ce7d029c",
+      "ocrText": "후숙 과일 샤인머스켓\n샤인머스켓은 후숙과일로, 받아보시고\n1주일가량 노란 빛깔로 변할때까지\n충분히 후숙해 드시면 더욱 달콤한\n샤인머스켓을 즐기실 수 있습니다.\n※ 샤인머스켓은 후숙 전엔 초록빛을 보이지만\n후숙될수록 노란색으로 변해갑니다.\n노란빛으로\n꽉 찬속!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6111111111111112,
+      "copyFacts": [
+        "후숙 과일 샤인머스켓",
+        "충분히 후숙해 드시면 더욱 달콤한"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "1주일가량 노란 빛깔로 변할때까지"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:42.879Z"
+  },
+  {
+    "key": "4c7a5082f73eab769803e66479d049c308df7609102a50fcd94399683cb0856d",
+    "insight": {
+      "id": "detail-ocr-59576b6ebad8",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026080609512223421286754225-3cb1-434a-9d0b-a6d6cea1fc6d.jpg",
+      "contentHash": "59576b6ebad8383997f7fac5b9aff278634f00ea405556345e6fa4059443d6cd",
+      "ocrText": "왕 큰 사이즈의\n샤인머스켓!\n2079\n500\n500원 동전과 비슷한 크기!\n(3~4수 기준)",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "샤인머스켓!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "2079",
+        "500원 동전과 비슷한 크기!",
+        "(3~4수 기준)"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:43.283Z"
+  },
+  {
+    "key": "d450438d9280543702306bd66e17bb3c7b7abf1b006916442059f319af7829fe",
+    "insight": {
+      "id": "detail-ocr-95cdfa5829d6",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2025061204154630449510f70701-9328-41af-bbe9-c03294be784c.jpg",
+      "contentHash": "95cdfa5829d6c76d272b03a8fbea311275fc2192b44bd151e9fe144b0e088db2",
+      "ocrText": "'축산물이력제' 사이트에서(aunit.mtrace.go.kr)\n제품 뒷면의 이력번호를 조회하시면\n고기의 모든 정보를 확인하실 수 있습니다.\n이력 (묶음) 번호를 띄어쓰기 없이 입력해 주세요\nQ\n축산물이력제란?\n축산물의 도축부터 판매에 이르기까지의 정보를\n기록, 관리하여 위생, 안전의 문제를 사전에 방지하고,\n문제가 발생할 경우에 그 이력을 추적하여\n신속하게 대처하기 위해 시행되고 있는 제도입니다.\n위생 및 식품안전에 대한 투명성을 확보할 수 있으며\n원산지 허위 표시 등을 사전 예방하며\n소비자가 안심하고 구매할 수 있습니다.\n당일배송\n신선식품\n5의 당일배송\n신선식품!\n신선식품\n선식품.\n당일배송\n신선식품\n담담%;\n선식품 4급주의 당일배송\n배송\n신선식품 취급주의 당일배송\n신선식품 3급주\n신선식품 1\n신선식품 374입 당일물증\n신선식품\n신선식품\n신선식품 취금주의 당일\n• 85배 7615g\n매일 하루에 3000건~10000여건 판매되고 있습니다.\n압도적인 판매수량을 매주 갱신하고 있습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7000000003506156,
+      "copyFacts": [
+        "신선식품",
+        "신선식품 취금주의 당일"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "기록, 관리하여 위생, 안전의 문제를 사전에 방지하고,",
+        "문제가 발생할 경우에 그 이력을 추적하여",
+        "원산지 허위 표시 등을 사전 예방하며",
+        "당일배송",
+        "5의 당일배송",
+        "선식품 4급주의 당일배송",
+        "신선식품 취급주의 당일배송",
+        "신선식품 3급주",
+        "신선식품 1",
+        "신선식품 374입 당일물증",
+        "85배 7615g",
+        "매일 하루에 3000건~10000여건 판매되고 있습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:43.487Z"
+  },
+  {
+    "key": "3cafb336c9a518c69eb95561a0cc47017303e3d0034234fc7c1c6bc9b4d05e80",
+    "insight": {
+      "id": "detail-ocr-938bd82eb6ba",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026052209580389271559572435-6d10-462a-83b2-c6d9dcc5f4fe.jpg",
+      "contentHash": "938bd82eb6ba98c6e92b0b374e34f4f39bda71998924c27e38aea9c1d1ea5ee2",
+      "ocrText": "아삭아삭 맛있는 꿀사과!\n100% 국내산이에요!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "아삭아삭 맛있는 꿀사과!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "100% 국내산이에요!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T11:23:44.745Z"
+  },
+  {
+    "key": "0e1d272c3baf390d0114e4620802f094cad4dfba548d4805cf15133aca0aa3a6",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T12:30:13.564Z"
+  },
+  {
+    "key": "c4cfc474a92f75f779117fa83daac1a482bc1480196e67886f372057344fb71c",
+    "insight": {
+      "id": "detail-ocr-195232af51f1",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202608/30f0ca5176ce2e8b2d397aa73b740b77.png",
+      "contentHash": "195232af51f10e035d0aa00cd442d855256b72951b6d89d185c93f275d6bb2fd",
+      "ocrText": "1M 30%\nRECYCLED\nZESTY\nLEMON\nGTEATREE\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nTOREAN\nOPETA\nEVERY BOTTLE\nN LEMONS IN\nBE APPROVED\nCloluet Aeimat Teat Poticy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [
+        "SHOWER 250mle"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "1M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T12:30:13.571Z"
+  },
+  {
+    "key": "6c90aec7530a3c1c85c23b2e4df6641db7c417111d31a4d5e3764e6e5f201221",
+    "insight": {
+      "id": "detail-ocr-2a74b0838e20",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/38b8580f2d9a8b22373ccbc4cdb6d1cf.jpg",
+      "contentHash": "2a74b0838e2059ede85fac4ab4d93d6453f2a973df02fedf039a398428338ba6",
+      "ocrText": "RECYCLED\n1130%\nZESTY\nLEMON\nSTEATREE\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nAPPROVED\nGlobal Amimat Tist Plicy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9,
+      "copyFacts": [
+        "SHOWER 250mle"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "1130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T12:30:14.618Z"
+  },
+  {
+    "key": "99a259d439c2375dd4b5be9976cde5595d4420de62710c51324ebe974b28cb9b",
+    "insight": {
+      "id": "detail-ocr-174cc3c4a5a3",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/5772ac7855e3a5fc2ea6a59fda161e9a.jpg",
+      "contentHash": "174cc3c4a5a32707c5530a833840d3f2e9aaf9e162a8a970ef23d1dd0c8d5452",
+      "ocrText": "답답한 날\n시원 상쾌하게\nRECYCIED\n4430%\nZESTY\nLEMON\nGTEATREE\n9100%\nFRACRANCE)\nNATURAT\nORIGINAL\nSOURCE\nNATURAL\nLESTY LEMON O\n{EVERY BOTTL\nVPCTA\nSHOWER 250mle\nCoet tana Toins\nCON ARTEONTO",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7894736842105263,
+      "copyFacts": [
+        "SHOWER 250mle"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "4430%",
+        "9100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T12:30:14.652Z"
   }
 ]

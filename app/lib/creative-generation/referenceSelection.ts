@@ -1,4 +1,4 @@
-import type { ManagedNativeReferenceItem, NativeReferenceCategoryGroup, NativeReferenceCompositionType, NativeReferenceFoodSubcategory, NativeReferenceProductForm } from "./referenceLibraryManagement.ts";
+import { referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceCategoryGroup, type NativeReferenceCompositionType, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement.ts";
 
 export function pickUniqueRandomItems<T>(items: readonly T[], count: number, nextIndex: (maxExclusive: number) => number) {
   if (!Number.isInteger(count) || count < 0) {
@@ -78,7 +78,7 @@ function productFormScore(product: ProductReferenceCompatibilityProfile, item: M
   if (item.productForm === product.productForm) return 28;
   // 간식은 운영자가 실제 디자인을 보고 직접 지정한 풀을 신뢰한다.
   // 과거 자동 형태 태그가 달라도 간식 하위 태그가 일치하면 사용할 수 있어야 한다.
-  if (product.foodSubcategory && item.foodSubcategory === product.foodSubcategory) return 22;
+  if (product.foodSubcategory && referenceBelongsToSelectionPool(item, product.categoryGroup, product.foodSubcategory)) return 22;
   if (item.productForm === "universal-packshot") return 20;
   if (product.packagedProduct && item.productForm && packagedForms.has(item.productForm)) return 12;
   if (product.naturalFood && ["natural-food", "meat-cut", "produce"].includes(item.productForm || "")) return 14;
@@ -87,10 +87,7 @@ function productFormScore(product: ProductReferenceCompatibilityProfile, item: M
 
 export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem>(profile: ProductReferenceCompatibilityProfile, item: T): ScoredCompatibleReference<T> {
   const reasons: string[] = [];
-  if (item.categoryGroup !== profile.categoryGroup) return { item, score: -100, reasons: ["상품군 불일치"] };
-  if (profile.foodSubcategory && item.foodSubcategory !== profile.foodSubcategory) {
-    return { item, score: -100, reasons: ["식품 하위 선택 풀 불일치"] };
-  }
+  if (!referenceBelongsToSelectionPool(item, profile.categoryGroup, profile.foodSubcategory)) return { item, score: -100, reasons: ["상품군·추가 제작 풀 불일치"] };
   if (item.compatibilityConfidence === "low") return { item, score: -100, reasons: ["호환 태그 신뢰도 낮음"] };
   // 일반 음식은 관리자가 음식으로 분류한 광고 디자인 전체를 하나의 선택
   // 풀로 사용한다. 간식은 별도 하위 풀을 사용하되, 그 안에서는 원본 상품
@@ -124,7 +121,7 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
   if (formScore < 0) return { item, score: -100, reasons: [...reasons, "상품 형태 불일치"] };
   score += formScore;
   reasons.push(item.productForm === profile.productForm ? "상품 형태 일치" : "안전한 패키지 형태 호환");
-  if (profile.compatibleCompositionTypes.includes(item.compositionType || "product-packshot")) {
+  if (profile.compatibleCompositionTypes.includes(item.compositionType || "product-packshot") || (profile.foodSubcategory && item.compositionType === "comparison")) {
     score += 18;
     reasons.push("광고 구성 호환");
   } else {

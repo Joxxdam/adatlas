@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
+import { inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, referenceBelongsToSelectionPool, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -34,6 +34,50 @@ test("간식은 새 대카테고리가 아니라 음식에만 붙는 수동 하�
   assert.equal(beauty.foodSubcategory, undefined);
 });
 
+test("저장된 OCR이 VS 좌우 역할을 가지면 오래된 price-card 태그도 비교 구도로 복구한다", () => {
+  const reference = normalizeNativeReferenceCompatibility({
+    id: "legacy-vs-reference",
+    publicPath: "/legacy-vs-reference.jpg",
+    sourceFile: "과거 화장품 VS 광고.jpg",
+    layoutFamily: "price-offer",
+    categoryGroup: "food",
+    foodSubcategory: "snack",
+    ordinal: 202,
+    compositionType: "price-card",
+    productSlotCount: 1,
+    nativeCopy: {
+      rawText: "비싸기만 한 간식 VS 한가득 담은 간식",
+      rawLines: ["비싸기만 한 간식", "VS", "한가득 담은 간식"],
+      textRegions: [
+        { id: "problem-copy-left", text: "비싸기만 한 간식" },
+        { id: "versus-decoration", text: "VS" },
+        { id: "benefit-headline-right", text: "한가득 담은 간식" },
+      ],
+    },
+  });
+  assert.equal(reference.compositionType, "comparison");
+  assert.equal(reference.productSlotCount, 2);
+  assert.equal(reference.supportsMultipleProducts, false);
+});
+
+test("화장품 기본 분류를 유지하면서 간식 제작 풀에도 동시에 포함할 수 있다", () => {
+  const shared = normalizeNativeReferenceCompatibility({
+    id: "beauty-shared-with-snack",
+    publicPath: "/beauty-shared-with-snack.jpg",
+    sourceFile: "화장품 구도 레퍼런스.jpg",
+    layoutFamily: "price-offer",
+    categoryGroup: "beauty",
+    additionalSelectionPools: ["food-snack", "food-snack", "beauty"],
+    ordinal: 203,
+  });
+  assert.equal(shared.categoryGroup, "beauty");
+  assert.deepEqual(shared.additionalSelectionPools, ["food-snack"]);
+  assert.equal(referenceBelongsToSelectionPool(shared, "beauty"), true);
+  assert.equal(referenceBelongsToSelectionPool(shared, "food", "snack"), true);
+  assert.equal(referenceBelongsToSelectionPool(shared, "food"), true);
+  assert.equal(referenceBelongsToSelectionPool(shared, "fashion"), false);
+});
+
 test("신규 음식 레퍼런스는 상품의 섭취 맥락으로 간식 여부를 분류한다", () => {
   assert.equal(inferNativeReferenceFoodSubcategoryFromText("반건조 무화과 간식 광고.jpg"), "snack");
   assert.equal(inferNativeReferenceFoodSubcategoryFromText("과일12.jpg"), "snack");
@@ -55,7 +99,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(factory, /job\.referenceCategoryOverride\s*=/);
   assert.ok(factory.indexOf("const referenceCategoryOverride =") < factory.indexOf("selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }"));
   assert.match(selector, /job\.referenceCategoryOverride === "food-snack"/);
-  assert.match(selector, /item\.foodSubcategory === profile\.foodSubcategory/);
+  assert.match(selector, /referenceBelongsToSelectionPool/);
   assert.match(selector, /사용자 수동 지정/);
 });
 
@@ -101,7 +145,10 @@ test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업�
   assert.match(manager, /고급 호환 태그/);
   assert.match(manager, /productForm/);
   assert.match(manager, /food-snack/);
-  assert.match(manager, /간식 레퍼런스로도 사용/);
+  assert.match(manager, /간식 제작에도 사용/);
+  assert.match(manager, /간식 제작에도 추가 사용/);
+  assert.match(manager, /현재.*유지/);
+  assert.match(manager, /additionalSelectionPools/);
   assert.match(manager, /\/api\/admin\/references/);
 });
 

@@ -526,17 +526,36 @@ export type NativeCreativeValidation = {
   sourcePersonReplaced?: boolean;
   /** 포즈·시선·카메라·크롭·위치 중 최소 두 요소가 달라졌는지 여부입니다. */
   humanCompositionChanged?: boolean;
+  /** 인물만 덧대지 않고 원본 장소·배경 랜드마크까지 새 장면으로 교체했는지 여부입니다. */
+  humanSceneBackgroundRebuilt?: boolean;
+  humanSceneBackgroundFindings?: string[];
   targetAudienceFit?: number;
   humanReplacementFindings?: string[];
   /** 새 인물의 행동·표정·상황이 최종 광고 문구의 의미를 직접 뒷받침하는지 여부입니다. */
   humanCopyAligned?: boolean;
   humanCopyAlignmentFindings?: string[];
+  /** 레퍼런스에 실제 동물·동물 캐릭터·마스코트가 포함됐는지에 대한 시각 QA 결과입니다. */
+  sourceAnimalDetected?: boolean;
+  /** 원본 동물의 구도적 역할을 유지하면서 상품 관련성이 있는 다른 동물로 교체했는지 여부입니다. */
+  sourceAnimalReplaced?: boolean;
+  animalReplacementFindings?: string[];
+  /** 단순 무지/그래픽이 아닌 실제 장소·생활 소품 맥락의 배경이 레퍼런스에 있는지 여부입니다. */
+  sourceContextualBackgroundDetected?: boolean;
+  /** 의미 있는 원본 배경을 상품·문구에 맞는 새 장면으로 재구성했는지 여부입니다. */
+  contextualBackgroundRebuilt?: boolean;
+  contextualBackgroundFindings?: string[];
   /** 장면과 인물 행동이 원본 카테고리가 아니라 현재 상품의 사용·섭취 맥락을 보여주는지 여부입니다. */
   sceneProductInteractionAligned?: boolean;
   sceneProductInteractionFindings?: string[];
   /** 식품 결과에 현재 상품·확인된 재료가 아닌 다른 먹거리나 재료가 보이는지 여부입니다. */
   unrelatedFoodOrIngredientDetected?: boolean;
   unrelatedFoodOrIngredientFindings?: string[];
+  /** source-brand/remove 영역의 글자뿐 아니라 빈 배지·캡슐·리본까지 완전히 제거했는지 여부입니다. */
+  sourceBrandRegionCleared?: boolean;
+  sourceBrandRegionFindings?: string[];
+  /** VS 레퍼런스의 불리한 동일 카테고리 대안 → 현재 상품 해결 관계가 유지됐는지 여부입니다. */
+  comparisonSemanticAligned?: boolean;
+  comparisonSemanticFindings?: string[];
   failures: string[];
   recommendation: "approve" | "revise" | "manual-review";
   checkedAt: string;

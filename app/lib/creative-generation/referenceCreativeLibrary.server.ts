@@ -5,7 +5,7 @@ import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
 import { defaultCompositionTypes, pickUniqueRandomItems, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import { inferNativeReferenceFoodSubcategoryFromText, normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
+import { inferNativeReferenceFoodSubcategoryFromText, normalizeNativeReferenceCompatibility, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
 export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
 
@@ -198,10 +198,7 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const categoryGroup = profile.categoryGroup;
   const categoryName = categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
-  const categoryItems = referenceItems.filter((item) => item.categoryGroup === categoryGroup);
-  const eligibleItems = profile.foodSubcategory
-    ? categoryItems.filter((item) => item.foodSubcategory === profile.foodSubcategory)
-    : categoryItems;
+  const eligibleItems = referenceItems.filter((item) => referenceBelongsToSelectionPool(item, categoryGroup, profile.foodSubcategory));
   // OCR 준비 상태, 상품 형태, 슬롯 수, 인물 포함 여부, 호환 점수와 최근 사용
   // 여부로 다시 거르지 않는다. 단, 간식 상품은 음식 전체가 아니라 간식으로
   // 직접 지정된 하위 풀만 사용한다. 일반 음식은 간식 항목까지 포함한 전체다.
@@ -221,9 +218,7 @@ export function selectNativeAdReference(job: GenerationJob, result: GenerationRe
   const allReferenceItems = readReferenceItems();
   const profile = buildProductReferenceCompatibilityProfile(job);
   if (!allReferenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
-  const categoryItems = allReferenceItems.filter((item) =>
-    item.categoryGroup === profile.categoryGroup && (!profile.foodSubcategory || item.foodSubcategory === profile.foodSubcategory)
-  );
+  const categoryItems = allReferenceItems.filter((item) => referenceBelongsToSelectionPool(item, profile.categoryGroup, profile.foodSubcategory));
   if (!categoryItems.length) {
     throw new Error(`${categoryLabel(profile.categoryGroup)}에 등록된 복구용 레퍼런스가 없습니다.`);
   }

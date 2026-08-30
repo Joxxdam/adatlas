@@ -10,7 +10,7 @@ import { numberedProductImageFileName, productDownloadStem } from "../creative-g
 import { autoProductionRepository } from "./productionRepository.server";
 
 const packagesDirectory = path.join(process.cwd(), "data", "auto-production", "runtime", "packages");
-const packageContentVersion = "images-only-v1";
+const packageContentVersion = "images-only-flat-v2";
 
 function safeName(value: string) {
   return (
@@ -83,14 +83,20 @@ async function buildPackage(runId: string, taskId?: string): Promise<AutoProduct
 
   const zip = new JSZip();
   let imageCount = 0;
+  const usedImageNames = new Set<string>();
 
   for (const { task, job, results } of prepared) {
     const productStem = productDownloadStem(job.productTruth.normalized?.cleanProductName || task.candidate.productName);
-    const folder = zip.folder(productStem);
     for (const [index, result] of results.entries()) {
-      const imageName = numberedProductImageFileName(productStem, index + 1);
+      const numberedName = numberedProductImageFileName(productStem, index + 1);
+      const nameWithoutExtension = numberedName.replace(/\.[a-z0-9]+$/i, "");
+      const extension = numberedName.match(/\.([a-z0-9]+)$/i)?.[1] || "jpg";
+      let imageName = `${nameWithoutExtension}.${extension}`;
+      let duplicate = 2;
+      while (usedImageNames.has(imageName)) imageName = `${nameWithoutExtension}-${duplicate++}.${extension}`;
       try {
-        folder?.file(imageName, await fs.readFile(resolveValidatedNativeDownload(job, result.id)));
+        zip.file(imageName, await fs.readFile(resolveValidatedNativeDownload(job, result.id)));
+        usedImageNames.add(imageName);
         imageCount += 1;
       } catch {
         continue;

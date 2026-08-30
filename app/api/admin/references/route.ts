@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
 import { startReferenceOcrRun } from "../../../lib/creative-generation/referenceOcrRunner.server";
-import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
+import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ function publicLibrary() {
     updatedAt: manifest.updatedAt || manifest.importedAt,
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [category, manifest.items.filter((item) => item.categoryGroup === category).length])),
-    foodSnackCount: manifest.items.filter((item) => item.categoryGroup === "food" && item.foodSubcategory === "snack").length,
+    foodSnackCount: manifest.items.filter((item) => referenceBelongsToSelectionPool(item, "food", "snack")).length,
   };
 }
 
@@ -75,6 +75,9 @@ export async function PATCH(request: Request) {
     if (body.categoryGroup !== undefined) patch.categoryGroup = normalizeNativeReferenceCategory(body.categoryGroup);
     if (Object.prototype.hasOwnProperty.call(body, "foodSubcategory")) {
       patch.foodSubcategory = normalizeNativeReferenceFoodSubcategory(body.foodSubcategory);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "additionalSelectionPools")) {
+      patch.additionalSelectionPools = normalizeNativeReferenceSelectionPools(body.additionalSelectionPools);
     }
     if (nativeReferenceProductForms.includes(body.productForm)) patch.productForm = body.productForm;
     if (nativeReferenceCompositionTypes.includes(body.compositionType)) patch.compositionType = body.compositionType;

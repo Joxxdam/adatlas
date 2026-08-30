@@ -3968,6 +3968,894 @@
       "note": "",
       "deletedAt": "2026-08-30T05:00:34.022Z",
       "updatedAt": "2026-08-30T05:00:34.022Z"
+    },
+    "asset:0be8db3a-d3f2-4804-b1bf-9c0189da3434": {
+      "entryId": "asset:0be8db3a-d3f2-4804-b1bf-9c0189da3434",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:a8b0c139-c24f-41d9-aaf8-85b03b398a27": {
+      "entryId": "asset:a8b0c139-c24f-41d9-aaf8-85b03b398a27",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:39ffdb0a-6244-4c9c-8e20-c15a9b2a8752": {
+      "entryId": "asset:39ffdb0a-6244-4c9c-8e20-c15a9b2a8752",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:f7328add-37fb-45a6-88b6-434640c72daf": {
+      "entryId": "asset:f7328add-37fb-45a6-88b6-434640c72daf",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:59e76bf7-52a3-4e25-b4ce-2a6451cfa667": {
+      "entryId": "asset:59e76bf7-52a3-4e25-b4ce-2a6451cfa667",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:ee488086-622c-4c31-94eb-446fa6436536": {
+      "entryId": "asset:ee488086-622c-4c31-94eb-446fa6436536",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:a6ee19a7-3b20-49aa-9eba-8d8d7481081c": {
+      "entryId": "asset:a6ee19a7-3b20-49aa-9eba-8d8d7481081c",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:112114bf-3f3c-4014-92fb-b6cf9b42f706": {
+      "entryId": "asset:112114bf-3f3c-4014-92fb-b6cf9b42f706",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:2f2af72d-750c-44fb-b04b-b737a8974b48": {
+      "entryId": "asset:2f2af72d-750c-44fb-b04b-b737a8974b48",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:280222be-c60b-41bf-8a9f-3bd828a448b2": {
+      "entryId": "asset:280222be-c60b-41bf-8a9f-3bd828a448b2",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:cc1b11b5-1fbe-4e99-a5ea-0c136be28458": {
+      "entryId": "asset:cc1b11b5-1fbe-4e99-a5ea-0c136be28458",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:4b526673-033f-4887-9ce6-43ed08beb111": {
+      "entryId": "asset:4b526673-033f-4887-9ce6-43ed08beb111",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:7f2ade1d-db01-4dbc-b9e4-e9ce8a891b1a": {
+      "entryId": "asset:7f2ade1d-db01-4dbc-b9e4-e9ce8a891b1a",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:e84c1951-101e-4fbd-8892-a8f0a67e8438": {
+      "entryId": "asset:e84c1951-101e-4fbd-8892-a8f0a67e8438",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:a2f53aaa-3598-47a6-b27b-887dc4b6cbdb": {
+      "entryId": "asset:a2f53aaa-3598-47a6-b27b-887dc4b6cbdb",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:cf98e109-d8da-4c9b-b8db-9158d6f66008": {
+      "entryId": "asset:cf98e109-d8da-4c9b-b8db-9158d6f66008",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:e84a06c4-8764-4bef-8c73-a80620773500": {
+      "entryId": "asset:e84a06c4-8764-4bef-8c73-a80620773500",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:96cd1f6d-fe2d-4199-acfc-98559589c6cb": {
+      "entryId": "asset:96cd1f6d-fe2d-4199-acfc-98559589c6cb",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:adad82f7-3170-42bf-8682-0668abf3a8b9": {
+      "entryId": "asset:adad82f7-3170-42bf-8682-0668abf3a8b9",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:08945e11-fc28-425d-99a6-5a4b2f9b328d": {
+      "entryId": "asset:08945e11-fc28-425d-99a6-5a4b2f9b328d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:a625eb11-19ea-4cdc-a078-43a044ab89cb": {
+      "entryId": "asset:a625eb11-19ea-4cdc-a078-43a044ab89cb",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:6d8e8e48-7f69-4d75-a343-343574571b2a": {
+      "entryId": "asset:6d8e8e48-7f69-4d75-a343-343574571b2a",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt44mzjm-0-8aj9ws:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt44mzjm-0-8aj9ws:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt44mzjm-0-8aj9ws:result-H01-proof-data": {
+      "entryId": "result:creative-job-mt44mzjm-0-8aj9ws:result-H01-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:e793dea0-dba7-4b69-88b7-15c799aeefa5": {
+      "entryId": "asset:e793dea0-dba7-4b69-88b7-15c799aeefa5",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt3n91un-0-aqvowl:result-H05-proof-data": {
+      "entryId": "result:creative-job-mt3n91un-0-aqvowl:result-H05-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt3n91un-0-aqvowl:result-H04-editorial-story": {
+      "entryId": "result:creative-job-mt3n91un-0-aqvowl:result-H04-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt3n91un-0-aqvowl:result-H01-proof-data": {
+      "entryId": "result:creative-job-mt3n91un-0-aqvowl:result-H01-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt3n91un-0-aqvowl:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt3n91un-0-aqvowl:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "result:creative-job-mt3n91un-0-aqvowl:result-H03-problem-solution-split": {
+      "entryId": "result:creative-job-mt3n91un-0-aqvowl:result-H03-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:24:32.070Z",
+      "updatedAt": "2026-08-30T10:24:32.070Z"
+    },
+    "asset:b9c76850-da02-47b3-b298-1a3eeaaab0bc": {
+      "entryId": "asset:b9c76850-da02-47b3-b298-1a3eeaaab0bc",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:25:24.064Z",
+      "updatedAt": "2026-08-30T10:25:24.064Z"
+    },
+    "asset:59a97fee-c2ca-4415-a611-43eeb8932f82": {
+      "entryId": "asset:59a97fee-c2ca-4415-a611-43eeb8932f82",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:25:24.064Z",
+      "updatedAt": "2026-08-30T10:25:24.064Z"
+    },
+    "asset:2437ab4c-f0cd-43b2-a8bc-2d4be5abc0e3": {
+      "entryId": "asset:2437ab4c-f0cd-43b2-a8bc-2d4be5abc0e3",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:b1f864f3-ea38-46fa-8cf5-d1fbc995a4e3": {
+      "entryId": "asset:b1f864f3-ea38-46fa-8cf5-d1fbc995a4e3",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:eb95e055-241b-4041-8505-e11a32047aea": {
+      "entryId": "asset:eb95e055-241b-4041-8505-e11a32047aea",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:866d825c-a699-4c0e-880f-0e5731193354": {
+      "entryId": "asset:866d825c-a699-4c0e-880f-0e5731193354",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:c2346437-f99b-4447-a800-9791874c54ce": {
+      "entryId": "asset:c2346437-f99b-4447-a800-9791874c54ce",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:13c830d2-3bdc-4cbb-86f8-459773ca9276": {
+      "entryId": "asset:13c830d2-3bdc-4cbb-86f8-459773ca9276",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:e2936c90-8664-4946-a0bb-6dc13a0c99cb": {
+      "entryId": "asset:e2936c90-8664-4946-a0bb-6dc13a0c99cb",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:cb8c6736-d75d-466d-9a27-77a5211b5271": {
+      "entryId": "asset:cb8c6736-d75d-466d-9a27-77a5211b5271",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:14c83e83-8ea8-4d06-921e-a042760c2a2d": {
+      "entryId": "asset:14c83e83-8ea8-4d06-921e-a042760c2a2d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:53:41.324Z",
+      "updatedAt": "2026-08-30T10:53:41.324Z"
+    },
+    "asset:7f761a07-f8bd-4da9-8a35-9a6d11e69ef9": {
+      "entryId": "asset:7f761a07-f8bd-4da9-8a35-9a6d11e69ef9",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T10:59:39.640Z",
+      "updatedAt": "2026-08-30T10:59:39.640Z"
+    },
+    "asset:a486dcad-a6f3-4b90-855a-6c3a466b1725": {
+      "entryId": "asset:a486dcad-a6f3-4b90-855a-6c3a466b1725",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:02:34.236Z",
+      "updatedAt": "2026-08-30T11:02:34.236Z"
+    },
+    "asset:323d7953-a28f-4555-9de8-0ad9f085935c": {
+      "entryId": "asset:323d7953-a28f-4555-9de8-0ad9f085935c",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:13:00.001Z",
+      "updatedAt": "2026-08-30T11:13:00.001Z"
+    },
+    "asset:58cdfbe2-8aa3-4a50-b2cf-4bce350d3a19": {
+      "entryId": "asset:58cdfbe2-8aa3-4a50-b2cf-4bce350d3a19",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:13:00.001Z",
+      "updatedAt": "2026-08-30T11:13:00.001Z"
+    },
+    "asset:8a6ef8cb-67a8-4aae-bd73-38d306a50ad8": {
+      "entryId": "asset:8a6ef8cb-67a8-4aae-bd73-38d306a50ad8",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:13:00.001Z",
+      "updatedAt": "2026-08-30T11:13:00.001Z"
+    },
+    "asset:7a89aaca-1bde-44f3-84ec-3c5b3d0de1c9": {
+      "entryId": "asset:7a89aaca-1bde-44f3-84ec-3c5b3d0de1c9",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:13:00.001Z",
+      "updatedAt": "2026-08-30T11:13:00.001Z"
+    },
+    "asset:25045cf5-70a5-40c5-9e5f-277e360778bd": {
+      "entryId": "asset:25045cf5-70a5-40c5-9e5f-277e360778bd",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:13:00.001Z",
+      "updatedAt": "2026-08-30T11:13:00.001Z"
+    },
+    "asset:bea16c50-ea69-48f4-9daa-75a19b1f6c45": {
+      "entryId": "asset:bea16c50-ea69-48f4-9daa-75a19b1f6c45",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:13:00.001Z",
+      "updatedAt": "2026-08-30T11:13:00.001Z"
+    },
+    "asset:d44ef3ff-a7e7-4b9a-b9db-c1373120adc2": {
+      "entryId": "asset:d44ef3ff-a7e7-4b9a-b9db-c1373120adc2",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:8229d1af-c498-4d84-a669-eb9a17774b70": {
+      "entryId": "asset:8229d1af-c498-4d84-a669-eb9a17774b70",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:c5607b46-0ded-4b3b-bb4c-b4bf358371fb": {
+      "entryId": "asset:c5607b46-0ded-4b3b-bb4c-b4bf358371fb",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:834b8bd8-8422-49b6-b759-3ce72793c99f": {
+      "entryId": "asset:834b8bd8-8422-49b6-b759-3ce72793c99f",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:187f8959-1993-45e6-b80c-9f4e4273ab7c": {
+      "entryId": "asset:187f8959-1993-45e6-b80c-9f4e4273ab7c",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:9588a556-268f-4115-ad06-a55ff7185aeb": {
+      "entryId": "asset:9588a556-268f-4115-ad06-a55ff7185aeb",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:51a948d0-35f4-43f5-9b31-06d0d497768c": {
+      "entryId": "asset:51a948d0-35f4-43f5-9b31-06d0d497768c",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:dfde7c71-9198-4889-826c-eae865206478": {
+      "entryId": "asset:dfde7c71-9198-4889-826c-eae865206478",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:e61457bc-c679-4cdf-88f1-2e2a6a9bfcc0": {
+      "entryId": "asset:e61457bc-c679-4cdf-88f1-2e2a6a9bfcc0",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:7f271287-61bd-466d-b495-31f468efc6b1": {
+      "entryId": "asset:7f271287-61bd-466d-b495-31f468efc6b1",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:73d0c590-0ff1-4cab-bfde-359eadc3b33a": {
+      "entryId": "asset:73d0c590-0ff1-4cab-bfde-359eadc3b33a",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:cf90ff7e-3af2-4b74-8f98-d2e4028d5d1d": {
+      "entryId": "asset:cf90ff7e-3af2-4b74-8f98-d2e4028d5d1d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:79d3bef9-6ead-4a4f-b6ce-dfa71082234d": {
+      "entryId": "asset:79d3bef9-6ead-4a4f-b6ce-dfa71082234d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T11:22:49.087Z",
+      "updatedAt": "2026-08-30T11:22:49.087Z"
+    },
+    "asset:65fc61d1-f028-4d0a-9893-15e16a87b5ad": {
+      "entryId": "asset:65fc61d1-f028-4d0a-9893-15e16a87b5ad",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:05:01.295Z",
+      "updatedAt": "2026-08-30T12:05:01.295Z"
+    },
+    "asset:36866129-67f9-4fe7-9378-f210577bc2a3": {
+      "entryId": "asset:36866129-67f9-4fe7-9378-f210577bc2a3",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:05:29.724Z",
+      "updatedAt": "2026-08-30T12:05:29.724Z"
+    },
+    "asset:ea71bbcd-4a30-49c3-9bd6-65930b3b9e56": {
+      "entryId": "asset:ea71bbcd-4a30-49c3-9bd6-65930b3b9e56",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:05:38.710Z",
+      "updatedAt": "2026-08-30T12:05:38.710Z"
+    },
+    "asset:46a6eec5-dd6d-48db-ac37-dadb429abf5b": {
+      "entryId": "asset:46a6eec5-dd6d-48db-ac37-dadb429abf5b",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:06:07.167Z",
+      "updatedAt": "2026-08-30T12:06:07.167Z"
+    },
+    "asset:cb802ea5-6143-479b-95fe-05c9c70796a3": {
+      "entryId": "asset:cb802ea5-6143-479b-95fe-05c9c70796a3",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:06:07.167Z",
+      "updatedAt": "2026-08-30T12:06:07.167Z"
+    },
+    "asset:f855daed-79b1-48e3-b7b5-36ff167f50da": {
+      "entryId": "asset:f855daed-79b1-48e3-b7b5-36ff167f50da",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:06:07.167Z",
+      "updatedAt": "2026-08-30T12:06:07.167Z"
+    },
+    "asset:7451b820-0ddc-4b1c-b6dd-452fabc6a8ae": {
+      "entryId": "asset:7451b820-0ddc-4b1c-b6dd-452fabc6a8ae",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:06:07.167Z",
+      "updatedAt": "2026-08-30T12:06:07.167Z"
+    },
+    "asset:e37e711e-df10-431b-a389-c0c95a3b5fef": {
+      "entryId": "asset:e37e711e-df10-431b-a389-c0c95a3b5fef",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:06:27.936Z",
+      "updatedAt": "2026-08-30T12:06:27.936Z"
+    },
+    "result:creative-job-mt5lnmz2-0-snrfq8:result-H06-problem-solution-split": {
+      "entryId": "result:creative-job-mt5lnmz2-0-snrfq8:result-H06-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:06.480Z",
+      "updatedAt": "2026-08-30T12:08:06.480Z"
+    },
+    "result:creative-job-mt5lnmz2-0-snrfq8:result-H04-proof-data": {
+      "entryId": "result:creative-job-mt5lnmz2-0-snrfq8:result-H04-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:06.480Z",
+      "updatedAt": "2026-08-30T12:08:06.480Z"
+    },
+    "result:creative-job-mt5lnmz2-0-snrfq8:result-H05-problem-solution-split": {
+      "entryId": "result:creative-job-mt5lnmz2-0-snrfq8:result-H05-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:06.480Z",
+      "updatedAt": "2026-08-30T12:08:06.480Z"
+    },
+    "result:creative-job-mt5lnmz2-0-snrfq8:result-H02-problem-solution-split": {
+      "entryId": "result:creative-job-mt5lnmz2-0-snrfq8:result-H02-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:06.480Z",
+      "updatedAt": "2026-08-30T12:08:06.480Z"
+    },
+    "result:creative-job-mt5lnmz2-0-snrfq8:result-H01-editorial-story": {
+      "entryId": "result:creative-job-mt5lnmz2-0-snrfq8:result-H01-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:06.480Z",
+      "updatedAt": "2026-08-30T12:08:06.480Z"
+    },
+    "result:creative-job-mt5lnmz2-0-snrfq8:result-H03-proof-data": {
+      "entryId": "result:creative-job-mt5lnmz2-0-snrfq8:result-H03-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:06.480Z",
+      "updatedAt": "2026-08-30T12:08:06.480Z"
+    },
+    "result:creative-job-mt5qfxnz-0-1vayyg:result-H05-problem-solution-split": {
+      "entryId": "result:creative-job-mt5qfxnz-0-1vayyg:result-H05-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:21.682Z",
+      "updatedAt": "2026-08-30T12:08:21.682Z"
+    },
+    "result:creative-job-mt5qfxnz-0-1vayyg:result-H06-problem-solution-split": {
+      "entryId": "result:creative-job-mt5qfxnz-0-1vayyg:result-H06-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:21.682Z",
+      "updatedAt": "2026-08-30T12:08:21.682Z"
+    },
+    "result:creative-job-mt5qfxnz-0-1vayyg:result-H04-problem-solution-split": {
+      "entryId": "result:creative-job-mt5qfxnz-0-1vayyg:result-H04-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:21.682Z",
+      "updatedAt": "2026-08-30T12:08:21.682Z"
+    },
+    "result:creative-job-mt5qfxnz-0-1vayyg:result-H02-proof-data": {
+      "entryId": "result:creative-job-mt5qfxnz-0-1vayyg:result-H02-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:21.682Z",
+      "updatedAt": "2026-08-30T12:08:21.682Z"
+    },
+    "result:creative-job-mt5qfxnz-0-1vayyg:result-H01-problem-solution-split": {
+      "entryId": "result:creative-job-mt5qfxnz-0-1vayyg:result-H01-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:21.682Z",
+      "updatedAt": "2026-08-30T12:08:21.682Z"
+    },
+    "result:creative-job-mt5qfxnz-0-1vayyg:result-H03-proof-data": {
+      "entryId": "result:creative-job-mt5qfxnz-0-1vayyg:result-H03-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:21.682Z",
+      "updatedAt": "2026-08-30T12:08:21.682Z"
+    },
+    "result:creative-job-mt5puuyk-0-4czj5r:result-H04-chat-ugc": {
+      "entryId": "result:creative-job-mt5puuyk-0-4czj5r:result-H04-chat-ugc",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:29.359Z",
+      "updatedAt": "2026-08-30T12:08:29.359Z"
+    },
+    "result:creative-job-mt5puuyk-0-4czj5r:result-H01-proof-data": {
+      "entryId": "result:creative-job-mt5puuyk-0-4czj5r:result-H01-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:29.359Z",
+      "updatedAt": "2026-08-30T12:08:29.359Z"
+    },
+    "result:creative-job-mt5puuyk-0-4czj5r:result-H02-comparison-versus": {
+      "entryId": "result:creative-job-mt5puuyk-0-4czj5r:result-H02-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:29.359Z",
+      "updatedAt": "2026-08-30T12:08:29.359Z"
+    },
+    "result:creative-job-mt5puuyk-0-4czj5r:result-H03-problem-solution-split": {
+      "entryId": "result:creative-job-mt5puuyk-0-4czj5r:result-H03-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:29.359Z",
+      "updatedAt": "2026-08-30T12:08:29.359Z"
+    },
+    "result:creative-job-mt5puupf-0-f6k2u3:result-H04-proof-data": {
+      "entryId": "result:creative-job-mt5puupf-0-f6k2u3:result-H04-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:34.423Z",
+      "updatedAt": "2026-08-30T12:08:34.423Z"
+    },
+    "result:creative-job-mt5puupf-0-f6k2u3:result-H03-proof-data": {
+      "entryId": "result:creative-job-mt5puupf-0-f6k2u3:result-H03-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:34.423Z",
+      "updatedAt": "2026-08-30T12:08:34.423Z"
+    },
+    "result:creative-job-mt5puupf-0-f6k2u3:result-H02-problem-solution-split": {
+      "entryId": "result:creative-job-mt5puupf-0-f6k2u3:result-H02-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:34.423Z",
+      "updatedAt": "2026-08-30T12:08:34.423Z"
+    },
+    "result:creative-job-mt5puupf-0-f6k2u3:result-H01-problem-solution-split": {
+      "entryId": "result:creative-job-mt5puupf-0-f6k2u3:result-H01-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:34.423Z",
+      "updatedAt": "2026-08-30T12:08:34.423Z"
+    },
+    "result:creative-job-mt5pso9k-0-zw4557:result-H04-proof-data": {
+      "entryId": "result:creative-job-mt5pso9k-0-zw4557:result-H04-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:39.017Z",
+      "updatedAt": "2026-08-30T12:08:39.017Z"
+    },
+    "result:creative-job-mt5pso9k-0-zw4557:result-H03-comparison-versus": {
+      "entryId": "result:creative-job-mt5pso9k-0-zw4557:result-H03-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:39.017Z",
+      "updatedAt": "2026-08-30T12:08:39.017Z"
+    },
+    "result:creative-job-mt5pso9k-0-zw4557:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt5pso9k-0-zw4557:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:39.017Z",
+      "updatedAt": "2026-08-30T12:08:39.017Z"
+    },
+    "result:creative-job-mt5pso9k-0-zw4557:result-H01-editorial-story": {
+      "entryId": "result:creative-job-mt5pso9k-0-zw4557:result-H01-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:08:39.017Z",
+      "updatedAt": "2026-08-30T12:08:39.017Z"
+    },
+    "asset:4bf8a317-dff6-4d6e-b0e6-c19690b8a9f6": {
+      "entryId": "asset:4bf8a317-dff6-4d6e-b0e6-c19690b8a9f6",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "asset:874dd005-3f97-436d-bd83-e2ef2e9fcf7d": {
+      "entryId": "asset:874dd005-3f97-436d-bd83-e2ef2e9fcf7d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "asset:d8d65862-5ee8-4eba-ab90-9031c188beaf": {
+      "entryId": "asset:d8d65862-5ee8-4eba-ab90-9031c188beaf",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "asset:dc91e247-053c-4a11-a830-d405eb83d20e": {
+      "entryId": "asset:dc91e247-053c-4a11-a830-d405eb83d20e",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "asset:c6f1527d-8df2-431c-a0c8-91d7586244ed": {
+      "entryId": "asset:c6f1527d-8df2-431c-a0c8-91d7586244ed",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5drudf-0-b5tst2:result-H05-comparison-versus": {
+      "entryId": "result:creative-job-mt5drudf-0-b5tst2:result-H05-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "asset:c0705669-a4cb-4a14-bb1d-476ef77d6fdc": {
+      "entryId": "asset:c0705669-a4cb-4a14-bb1d-476ef77d6fdc",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "asset:34ab0ecc-081a-4a7a-80b2-f2249e5b0194": {
+      "entryId": "asset:34ab0ecc-081a-4a7a-80b2-f2249e5b0194",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5drudf-0-b5tst2:result-H03-proof-data": {
+      "entryId": "result:creative-job-mt5drudf-0-b5tst2:result-H03-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5drudf-0-b5tst2:result-H04-chat-ugc": {
+      "entryId": "result:creative-job-mt5drudf-0-b5tst2:result-H04-chat-ugc",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5dp61l-0-9kuajj:result-H01-comparison-versus": {
+      "entryId": "result:creative-job-mt5dp61l-0-9kuajj:result-H01-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5drudf-0-b5tst2:result-H01-comparison-versus": {
+      "entryId": "result:creative-job-mt5drudf-0-b5tst2:result-H01-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5drudf-0-b5tst2:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt5drudf-0-b5tst2:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5dp61l-0-9kuajj:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt5dp61l-0-9kuajj:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5d9ljw-0-15lqay:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt5d9ljw-0-15lqay:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt5d9ljw-0-15lqay:result-H01-comparison-versus": {
+      "entryId": "result:creative-job-mt5d9ljw-0-15lqay:result-H01-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
+    },
+    "result:creative-job-mt58z40n-0-3q1l8z:result-H01-comparison-versus": {
+      "entryId": "result:creative-job-mt58z40n-0-3q1l8z:result-H01-comparison-versus",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-08-30T12:55:39.935Z",
+      "updatedAt": "2026-08-30T12:55:39.935Z"
     }
   }
 }

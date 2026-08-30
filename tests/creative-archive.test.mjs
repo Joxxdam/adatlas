@@ -272,8 +272,10 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(productZipRoute, /createCreativeArchiveProductZip/);
   assert.match(productZipRoute, /Content-Disposition/);
   assert.match(productZipService, /resolveValidatedNativeDownload/);
-  assert.match(productZipService, /archive-manifest\.json/);
-  assert.match(productZipService, /실패-보고서\.txt/);
+  assert.doesNotMatch(productZipService, /archive-manifest\.json/);
+  assert.doesNotMatch(productZipService, /실패-보고서\.txt/);
+  assert.doesNotMatch(productZipService, /zip\.file\(`images\//);
+  assert.match(productZipService, /zip\.file\(fileName, data\)/);
   assert.match(productZipService, /numberedProductImageFileName\(productStem, index \+ 1, extension\)/);
   assert.match(productZipService, /fileName: `\$\{productStem\}\.zip`/);
 });
