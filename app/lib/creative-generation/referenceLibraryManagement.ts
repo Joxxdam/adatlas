@@ -2,7 +2,7 @@ export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty"] as co
 
 export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups)[number];
 
-export const nativeReferenceFoodSubcategories = ["produce-agriculture"] as const;
+export const nativeReferenceFoodSubcategories = ["snack"] as const;
 export type NativeReferenceFoodSubcategory = (typeof nativeReferenceFoodSubcategories)[number];
 
 export const nativeReferenceProductForms = ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] as const;
@@ -218,9 +218,18 @@ export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferen
   const inferredForm: NativeReferenceProductForm = item.categoryGroup === "fashion" ? "fashion-item" : isNaturalFood ? "meat-cut" : isPackagedFood ? packagedFoodProfile!.productForm : "universal-packshot";
   const inferredComposition = packagedFoodProfile?.compositionType || (isNaturalFood ? (item.layoutFamily === "sensory-editorial" || item.layoutFamily === "situation-story" ? ("natural-food-scene" as const) : compositionFromLayout(item.layoutFamily)) : compositionFromLayout(item.layoutFamily));
   const inferredCount = packagedFoodProfile?.productSlotCount || (/(?:2\s*\+\s*1|세트|묶음|라인업)/i.test(item.sourceFile) ? 2 : 1);
+  const inferredFoodSubcategory = item.categoryGroup === "food"
+    ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) || inferNativeReferenceFoodSubcategoryFromText([
+        item.sourceFile,
+        item.nativeCopy?.rawText,
+        ...(item.nativeCopy?.rawLines || []),
+      ].filter(Boolean).join(" "))
+    : undefined;
   return {
     ...item,
-    foodSubcategory: item.categoryGroup === "food" ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) : undefined,
+    // 과거 등록분에 하위 태그가 비어 있어도 저장 OCR과 파일명에 명백한
+    // 간식 신호가 있으면 읽는 시점에 간식 풀로 복구한다. 수동 태그는 우선한다.
+    foodSubcategory: inferredFoodSubcategory,
     productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm) ? (item.productForm as NativeReferenceProductForm) : inferredForm,
     compositionType: nativeReferenceCompositionTypes.includes(item.compositionType as NativeReferenceCompositionType) ? (item.compositionType as NativeReferenceCompositionType) : inferredComposition,
     productSlotCount: Math.max(1, Math.min(6, Math.round(Number(item.productSlotCount) || inferredCount))),
@@ -241,17 +250,26 @@ export function normalizeNativeReferenceCategory(value: unknown): NativeReferenc
 
 export function nativeReferenceCategoryLabel(value: NativeReferenceCategoryGroup) {
   if (value === "fashion") return "패션";
-  if (value === "food") return "식품";
+  if (value === "food") return "음식";
   return "화장품";
 }
 
 export function normalizeNativeReferenceFoodSubcategory(value: unknown): NativeReferenceFoodSubcategory | undefined {
+  // 기존 과일/농산물 전용 풀은 간식 전용 풀로 이관한다. 저장된 과거 manifest를
+  // 읽거나 진행 중인 개발 서버가 이전 값을 보내도 같은 간식 풀로 복구한다.
+  if (value === "produce-agriculture") return "snack";
   return nativeReferenceFoodSubcategories.includes(value as NativeReferenceFoodSubcategory) ? (value as NativeReferenceFoodSubcategory) : undefined;
 }
 
 export function nativeReferenceFoodSubcategoryLabel(value: NativeReferenceFoodSubcategory) {
-  if (value === "produce-agriculture") return "과일/농산물";
+  if (value === "snack") return "간식";
   return value;
+}
+
+export function inferNativeReferenceFoodSubcategoryFromText(value: string): NativeReferenceFoodSubcategory | undefined {
+  const normalized = String(value || "").normalize("NFC").toLowerCase();
+  if (/떡갈비|갈비|육류|고기|한우|소고기|돼지고기|닭고기|김치|반찬|찌개|국(?:\s|[._-]|$)|탕(?:\s|[._-]|$)|전골|밀키트|간편식|즉석식|식사|meal|meat|beef|pork|chicken|kimchi|soup/u.test(normalized)) return undefined;
+  return /간식|스낵|과자|전병|쿠키|비스킷|초콜릿|캔디|사탕|젤리|견과|건과|말랭이|건조|반건조|곶감|무화과|약과|한과|떡(?!갈비)|빵|베이커리|도넛|디저트|아이스크림|과일|사과|복숭아|자두|포도|수박|감귤|오렌지|딸기|멜론|참외|snack|dessert|fruit/u.test(normalized) ? "snack" : undefined;
 }
 
 export function inferNativeReferenceCategoryFromText(value: string): NativeReferenceCategoryGroup {

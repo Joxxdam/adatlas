@@ -71,9 +71,45 @@
           "copyEligibility": "proofOnly",
           "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
           "sourceCells": ["V236", "B324"]
+        },
+        {
+          "id": "mint-cooling-temperature",
+          "label": "쿨링 체감 수치",
+          "value": "샤워 직후 체감 온도 -8.9°C로 소개된 강력한 쿨링감",
+          "kind": "numeric-proof",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": []
+        },
+        {
+          "id": "mint-heat-relief",
+          "label": "쿨링 진정 사용감",
+          "value": "민트와 멘톨의 즉각적인 쿨링감으로 달아오른 피부 열감을 빠르게 식혀주는 사용감",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": []
+        },
+        {
+          "id": "mint-per-shower-leaves",
+          "label": "샤워 1회 원료 환산",
+          "value": "한 번 샤워에 민트 잎 약 132장 분량을 사용하는 셈으로 소개됨",
+          "kind": "numeric-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": []
+        },
+        {
+          "id": "mint-tea-tree-care",
+          "label": "티트리 케어",
+          "value": "티트리를 땀 냄새 유발균과 피부 트러블을 관리하는 샤워 성분으로 소개",
+          "kind": "ingredient-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "오리지널 소스 민트티트리 홈페이지 방향성",
+          "sourceCells": []
         }
       ],
-      "blockedClaims": [
+      "researchCautions": [
         "체감 온도 -5도 또는 -8.9°C",
         "항균·살균·염증 완화·피부 트러블 방지",
         "피부 열을 실제로 내린다는 생리적 효능",
@@ -145,9 +181,27 @@
           "copyEligibility": "headlineEligible",
           "sourceSheet": "1. 레몬&시트러스 계열 바디워시 시장조사",
           "sourceCells": ["C32", "C34"]
+        },
+        {
+          "id": "lemon-brightening-context",
+          "label": "레몬 생기 케어",
+          "value": "레몬 원료의 밝고 생기 있는 이미지를 피부 톤과 잡티가 신경 쓰이는 샤워 상황에 연결",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "레몬 원료 효능 및 광고 방향",
+          "sourceCells": []
+        },
+        {
+          "id": "lemon-antioxidant-context",
+          "label": "항산화 원료 이야기",
+          "value": "레몬 원료의 항산화 이미지를 상쾌하고 생기 있는 샤워 콘셉트로 활용",
+          "kind": "vendor-narrative",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "레몬 원료 효능 및 광고 방향",
+          "sourceCells": []
         }
       ],
-      "blockedClaims": [
+      "researchCautions": [
         "미백·잡티·색소 침착 개선",
         "항산화·면역력·콜라겐·상처 회복 효능",
         "시장 점유율·판매 순위 추정",
@@ -228,9 +282,36 @@
           "copyEligibility": "headlineEligible",
           "sourceSheet": "7.열대낙원(Tropical Paradise)으로의 초대",
           "sourceCells": ["A2", "B31", "C68", "D70"]
+        },
+        {
+          "id": "coconut-deep-moisture",
+          "label": "집중 보습 사용감",
+          "value": "샤워할 때 피부 깊숙이 수분을 채우고 수분 증발을 막아주는 듯한 진한 보습 사용감",
+          "kind": "sensory",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "코코넛·시어버터 보습 효능 및 광고 방향",
+          "sourceCells": []
+        },
+        {
+          "id": "coconut-comfort-ritual",
+          "label": "편안한 샤워 무드",
+          "value": "달콤하고 포근한 향을 아로마테라피처럼 편안한 샤워 무드로 연결",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "코코넛·시어버터 보습 효능 및 광고 방향",
+          "sourceCells": []
+        },
+        {
+          "id": "coconut-fine-lather",
+          "label": "미세 거품 밀착감",
+          "value": "모공보다 작게 느껴질 만큼 촘촘한 거품이 피부 결 사이까지 부드럽게 닿는 사용감",
+          "kind": "texture",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "6. 향(Scent)&질감(Texture)",
+          "sourceCells": []
         }
       ],
-      "blockedClaims": [
+      "researchCautions": [
         "피부 속 깊은 곳까지 수분을 밀어 넣는다는 표현",
         "수분 증발을 완벽히 차단한다는 절대 효능",
         "보습 지속시간 또는 향 지속시간의 확정 수치",
@@ -293,9 +374,18 @@
           "copyEligibility": "headlineEligible",
           "sourceSheet": "바디워시 시장에서 라임(Lime)계열 바디워시 입지",
           "sourceCells": ["C11"]
+        },
+        {
+          "id": "lime-skin-care-context",
+          "label": "라임 피부 케어",
+          "value": "라임과 오렌지 껍질 오일을 산뜻한 항균·항염·피부 진정 샤워 콘셉트로 활용",
+          "kind": "ingredient-proof",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "라임 원료 효능 및 광고 방향",
+          "sourceCells": []
         }
       ],
-      "blockedClaims": [
+      "researchCautions": [
         "항균·항염·피부 진정 효능",
         "라임 40개가 통째로 들어갔다는 표현",
         "국내 판매 순위·채널 상위권 주장",
@@ -333,11 +423,29 @@
           "sourceCells": ["B34", "B36", "B38"]
         },
         {
+          "id": "rhubarb-antioxidant-context",
+          "label": "프루티 항산화 콘셉트",
+          "value": "루바브와 라즈베리 원료의 항산화 이미지를 생기 있는 프루티 샤워 콘셉트로 활용",
+          "kind": "vendor-narrative",
+          "copyEligibility": "proofOnly",
+          "sourceSheet": "루바브·라즈베리 원료 효능 및 광고 방향",
+          "sourceCells": []
+        },
+        {
+          "id": "rhubarb-skin-tone-context",
+          "label": "피부 생기 콘셉트",
+          "value": "칙칙한 피부 톤과 자외선 노출 후 생기 케어가 필요한 샤워 상황에 연결",
+          "kind": "usage",
+          "copyEligibility": "headlineEligible",
+          "sourceSheet": "루바브·라즈베리 원료 효능 및 광고 방향",
+          "sourceCells": []
+        },
+        {
           "id": "rhubarb-raspberry-origin-unknown",
           "label": "원산지 공개 범위",
           "value": "루바브와 라즈베리 추출물의 구체적인 원산지는 공식 공개되지 않았음",
           "kind": "disclosure-limit",
-          "copyEligibility": "blocked",
+          "copyEligibility": "researchOnly",
           "sourceSheet": "3. 오리지널 소스 루바브 & 라즈베리",
           "sourceCells": ["B4", "B6", "C11", "C24"]
         },
@@ -346,12 +454,12 @@
           "label": "성분 공개 범위",
           "value": "4가지 에센셜 오일의 개별 명칭은 공식 공개되지 않았음",
           "kind": "disclosure-limit",
-          "copyEligibility": "blocked",
+          "copyEligibility": "researchOnly",
           "sourceSheet": "3. 오리지널 소스 루바브 & 라즈베리",
           "sourceCells": ["B36", "B38"]
         }
       ],
-      "blockedClaims": [
+      "researchCautions": [
         "루바브 또는 라즈베리 추출물의 특정 국가 원산지",
         "라즈베리 씨드·제라늄·로즈·로즈우드 등 4가지 오일의 추정 명칭",
         "항산화·항염·혈당·심혈관·노화 억제 효능",

@@ -16,10 +16,13 @@ const runtimeGlobal = globalThis as typeof globalThis & { [cacheKey]?: RuntimeCa
 const cache = runtimeGlobal[cacheKey] ?? {};
 runtimeGlobal[cacheKey] = cache;
 
-const paidApiEnvironmentKeys = new Set(["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY", "OPENAI_BASE_URL", "AZURE_OPENAI_ENDPOINT", "OPENAI_ORGANIZATION", "OPENAI_PROJECT"]);
+const nonInteractiveAuthEnvironmentKeys = new Set(["OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN", "AZURE_OPENAI_API_KEY", "OPENAI_BASE_URL", "AZURE_OPENAI_ENDPOINT", "OPENAI_ORGANIZATION", "OPENAI_PROJECT"]);
+const secretEnvironmentName = /(?:^|_)(?:API_?KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS?)(?:_|$)/i;
 
-export function codexLocalEnvironment() {
-  return Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !paidApiEnvironmentKeys.has(key))) as Record<string, string>;
+export function codexLocalEnvironment(env: NodeJS.ProcessEnv = process.env) {
+  return Object.fromEntries(
+    Object.entries(env).filter(([key, value]) => value !== undefined && !nonInteractiveAuthEnvironmentKeys.has(key) && !secretEnvironmentName.test(key))
+  ) as Record<string, string>;
 }
 
 export function resolveCodexLocalExecutable() {
@@ -34,10 +37,13 @@ export function resolveCodexLocalExecutable() {
 
 export async function codexLocalAuthenticated(options: { force?: boolean } = {}) {
   const ttl = Math.max(30_000, Number(process.env.ADATLAS_CODEX_STATUS_TTL_MS || 5 * 60_000));
+  // A logout/login or account switch can happen while the Next.js process is
+  // alive. Forced checks must bypass the cached boolean, but concurrent checks
+  // should still share the same `codex login status` process.
+  if (cache.pending) return cache.pending;
   if (!options.force && typeof cache.authenticated === "boolean" && cache.checkedAt && Date.now() - cache.checkedAt < ttl) {
     return cache.authenticated;
   }
-  if (!options.force && cache.pending) return cache.pending;
   const pending = (async () => {
     try {
       const executable = resolveCodexLocalExecutable();
@@ -62,4 +68,13 @@ export async function codexLocalAuthenticated(options: { force?: boolean } = {})
   } finally {
     if (cache.pending === pending) cache.pending = undefined;
   }
+}
+
+export async function requireFreshCodexLocalChatGptLogin() {
+  const executable = resolveCodexLocalExecutable();
+  if (!executable) throw new Error("로컬 Codex 실행 파일을 찾지 못했습니다.");
+  if (!(await codexLocalAuthenticated({ force: true }))) {
+    throw new Error("현재 Codex CLI의 ChatGPT 로그인이 필요합니다. 계정을 변경했다면 codex logout 후 codex login을 완료해 주세요.");
+  }
+  return executable;
 }

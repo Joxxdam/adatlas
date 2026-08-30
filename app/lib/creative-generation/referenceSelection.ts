@@ -76,8 +76,8 @@ const safeNaturalCompositions = new Set<NativeReferenceCompositionType>(["produc
 
 function productFormScore(product: ProductReferenceCompatibilityProfile, item: ManagedNativeReferenceItem) {
   if (item.productForm === product.productForm) return 28;
-  // 과일/농산물은 운영자가 실제 디자인을 보고 직접 지정한 풀을 신뢰한다.
-  // 과거 자동 태그가 meat-cut 등으로 남아 있어도 이 체크 하나로 사용할 수 있어야 한다.
+  // 간식은 운영자가 실제 디자인을 보고 직접 지정한 풀을 신뢰한다.
+  // 과거 자동 형태 태그가 달라도 간식 하위 태그가 일치하면 사용할 수 있어야 한다.
   if (product.foodSubcategory && item.foodSubcategory === product.foodSubcategory) return 22;
   if (item.productForm === "universal-packshot") return 20;
   if (product.packagedProduct && item.productForm && packagedForms.has(item.productForm)) return 12;
@@ -92,15 +92,14 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
     return { item, score: -100, reasons: ["식품 하위 선택 풀 불일치"] };
   }
   if (item.compatibilityConfidence === "low") return { item, score: -100, reasons: ["호환 태그 신뢰도 낮음"] };
-  // 일반 식품과 육류는 관리자가 식품으로 분류한 광고 디자인 전체를 하나의
-  // 선택 풀로 사용한다. 상품 형태 태그는 제작 단계의 교체 가이드로 남기되,
-  // 병·파우치·복수 상품 같은 원본 형태 때문에 선택 자체를 막지는 않는다.
-  // 과일/농산물은 운영자가 지정한 전용 하위 풀을 계속 엄격하게 유지한다.
+  // 일반 음식은 관리자가 음식으로 분류한 광고 디자인 전체를 하나의 선택
+  // 풀로 사용한다. 간식은 별도 하위 풀을 사용하되, 그 안에서는 원본 상품
+  // 형태나 조리 소품 때문에 추가로 제외하지 않는다.
   if (profile.categoryGroup === "food" && !profile.foodSubcategory) {
     return {
       item,
       score: 60,
-      reasons: ["식품 상품군 일치", "식품 카테고리 전체 무작위 풀"],
+      reasons: ["음식 상품군 일치", "음식 카테고리 전체 무작위 풀"],
     };
   }
   if (profile.packagedProduct && !item.supportsPackagedProduct) return { item, score: -100, reasons: ["패키지 상품 미지원"] };
@@ -119,7 +118,7 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
   reasons.push("상품군 일치");
   if (profile.foodSubcategory) {
     score += 12;
-    reasons.push("과일/농산물 수동 태그 일치");
+    reasons.push("간식 수동 태그 일치");
   }
   const formScore = productFormScore(profile, item);
   if (formScore < 0) return { item, score: -100, reasons: [...reasons, "상품 형태 불일치"] };
@@ -143,7 +142,7 @@ export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(
     .filter((candidate) => candidate.score >= minimumScore)
     .sort((left, right) => right.score - left.score);
   if (compatible.length < count) {
-    const categoryPath = profile.foodSubcategory ? `${profile.categoryGroup} > 과일/농산물` : profile.categoryGroup;
+    const categoryPath = profile.foodSubcategory ? `${profile.categoryGroup} > 간식` : profile.categoryGroup;
     throw new Error(`호환되는 광고 레퍼런스가 부족합니다. ${categoryPath} · ${profile.productForm} 상품에 필요 ${count}장, 사용 가능 ${compatible.length}장입니다. 레퍼런스 관리에서 상품군과 호환 태그를 보완해 주세요.`);
   }
   if (profile.categoryGroup === "food" && !profile.foodSubcategory) {

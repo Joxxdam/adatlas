@@ -81,10 +81,13 @@ function isWithinRoot(root: string, candidate: string) {
 function resolveLocalRasterFile(value: string) {
   if (!path.isAbsolute(value)) return resolvePublicFile(value);
   const resolved = path.resolve(value);
-  if (!isWithinRoot(publicRoot, resolved) && !isWithinRoot(generatedRoot, resolved)) {
-    throw new Error("허용되지 않은 로컬 이미지 경로입니다.");
-  }
-  return resolved;
+  if (isWithinRoot(publicRoot, resolved) || isWithinRoot(generatedRoot, resolved)) return resolved;
+
+  // Browser-facing public paths (for example `/background-library/foo.webp`)
+  // are absolute from the URL's point of view, not from the host filesystem's.
+  // Resolve them under public/ while keeping the existing traversal guard.
+  if (value.startsWith("/") && !value.startsWith("//")) return resolvePublicFile(value);
+  throw new Error("허용되지 않은 로컬 이미지 경로입니다.");
 }
 
 async function readLocalRasterFile(value: string) {

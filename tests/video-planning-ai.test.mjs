@@ -4,7 +4,7 @@ import test from "node:test";
 import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, videoPlanningRateLimitDelayMs, VideoPlanningGenerationError } from "../app/lib/video-collaboration/videoPlanningAiCore.ts";
 import { hasExactVideoConceptArchetypes, requestFourVideoConcepts } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "../app/lib/video-collaboration/videoPlanningCorrection.ts";
-import { compactPlanningCta, hasFinalPlanningCta, missingSceneSignals, repairDetailedPlanningCta, repairDetailedPlanningSceneDescriptions } from "../app/lib/video-collaboration/planningValidation.ts";
+import { compactPlanningCta, hasFinalPlanningCta, hasStrongDetailedPlanningOpening, missingSceneSignals, repairDetailedPlanningCommercialRestraint, repairDetailedPlanningCta, repairDetailedPlanningOpeningHook, repairDetailedPlanningSceneDescriptions } from "../app/lib/video-collaboration/planningValidation.ts";
 import { failVideoPlanningPipeline, hasReusableDetailedVideoPlan, withVideoPlanningGenerationLock } from "../app/lib/video-collaboration/videoPlanningRequestGuards.ts";
 
 const simpleSchema = {
@@ -13,6 +13,44 @@ const simpleSchema = {
   required: ["value"],
   properties: { value: { type: "string" } },
 };
+
+test("정상 자막이 특정 후킹 단어를 빠뜨려도 전체 생성을 실패시키지 않는다", () => {
+  const concept = {
+    conceptArchetype: "usp-focus",
+    fullScript: "마블링을 먼저 봅니다 이름보다 고기부터 봅니다",
+    cuts: [
+      { id: "cut-1", startSecond: 0, endSecond: 1.2, caption: "마블링을 먼저 봅니다", narration: "" },
+      { id: "cut-2", startSecond: 1.2, endSecond: 3, caption: "이름보다 고기부터 봅니다", narration: "" },
+    ],
+  };
+  assert.equal(hasStrongDetailedPlanningOpening(concept), false);
+  const repaired = repairDetailedPlanningOpeningHook(concept);
+  assert.equal(hasStrongDetailedPlanningOpening(repaired), true);
+  assert.match(repaired.cuts[1].caption, /!$/);
+  assert.equal(repaired.cuts[0].caption, concept.cuts[0].caption);
+  assert.match(repaired.fullScript, /이름보다 고기부터 봅니다!/);
+});
+
+test("15개 자막에서 가격·할인·구성 수치는 최대 두 장면에만 비연속으로 남긴다", () => {
+  const analysis = { price: "49,800원", originalPrice: "148,000원", discountInfo: "66% 할인", volumeOrOption: "1kg 박스", composition: [] };
+  const concept = {
+    conceptArchetype: "usp-focus",
+    fullScript: "",
+    cuts: [
+      { id: "cut-1", cutNumber: 1, startSecond: 0, endSecond: 1.2, caption: "왜 마블링부터 볼까요?", narration: "" },
+      { id: "cut-2", cutNumber: 2, startSecond: 1.2, endSecond: 3, caption: "1kg 박스를 열어봐요", narration: "" },
+      { id: "cut-3", cutNumber: 3, startSecond: 3, endSecond: 5, caption: "49,800원에 66% 할인", narration: "지금 1kg 박스는 49,800원, 66% 할인으로 볼 수 있습니다." },
+      { id: "cut-4", cutNumber: 4, startSecond: 5, endSecond: 7, caption: "66% 할인도 확인했어요", narration: "" },
+      { id: "cut-5", cutNumber: 5, startSecond: 7, endSecond: 9, caption: "1kg 박스를 확인하세요", narration: "" },
+    ],
+  };
+  const repaired = repairDetailedPlanningCommercialRestraint(concept, analysis);
+  const exactCommercialCuts = repaired.cuts.filter((cut) => /49,800원|148,000원|66%\s*할인|1kg\s*박스/.test(`${cut.caption} ${cut.narration}`));
+  assert.deepEqual(exactCommercialCuts.map((cut) => cut.cutNumber), [2, 5]);
+  assert.equal(repaired.cuts[2].caption, "가격·할인 조건을 확인해요");
+  assert.equal(repaired.cuts[2].narration, "상품 구성과 가격·할인 조건을 함께 확인해보세요.");
+  assert.match(repaired.cuts[3].caption, /할인 조건/);
+});
 
 test("실패한 영상 기획 파이프라인은 생성 중으로 남지 않는다", () => {
   const failedAt = "2026-08-25T10:48:44.393Z";
@@ -159,6 +197,32 @@ test("단계별 모델·reasoning·timeout과 Responses API 보안 옵션을 적
   assert.equal(calls[0].body.text.format.strict, true);
   assert.equal(calls[0].body.text.verbosity, "medium");
   assert.equal(calls[0].options.timeout, 60_000);
+});
+
+test("정지 광고 레퍼런스는 Responses API의 실제 이미지 입력으로 전달한다", async () => {
+  const calls = [];
+  const run = createOpenAiVideoPlanningRunner({
+    env: { OPENAI_API_KEY: "test-key" },
+    client: successfulClient(calls),
+    logger: () => undefined,
+  });
+  const imageDataUrl = "data:image/jpeg;base64,dGVzdA==";
+  await run({
+    stage: "reference-analysis",
+    purpose: "analysis",
+    prompt: "레퍼런스를 분석하세요",
+    imageDataUrls: [imageDataUrl],
+    outputSchema: simpleSchema,
+  });
+  assert.deepEqual(calls[0].body.input, [
+    {
+      role: "user",
+      content: [
+        { type: "input_text", text: "레퍼런스를 분석하세요" },
+        { type: "input_image", image_url: imageDataUrl, detail: "high" },
+      ],
+    },
+  ]);
 });
 
 test("일시 오류 전송 재시도는 최초 포함 최대 2회다", async () => {
@@ -337,7 +401,7 @@ test("상세 대본 자동 보정은 검증 실패 때 최대 한 번만 요청�
   assert.equal(result.value.valid, false);
 });
 
-test("장면별 누락 신호는 전체 AI 재생성 없이 제품 맥락에 맞게 보완한다", () => {
+test("관찰 반응만 빠진 구체 장면에는 체크리스트 문장을 강제로 덧붙이지 않는다", () => {
   const analysis = {
     productName: "마블링 한우 선물세트",
     brandName: "테스트",
@@ -377,9 +441,8 @@ test("장면별 누락 신호는 전체 AI 재생성 없이 제품 맥락에 맞
   };
   assert.deepEqual(missingSceneSignals(concept.cuts[0]), ["reaction"]);
   const repaired = repairDetailedPlanningSceneDescriptions(concept, analysis);
-  assert.deepEqual(missingSceneSignals(repaired.cuts[0]), []);
-  assert.match(repaired.cuts[0].sceneDescription, /윤기.*색감|색감.*윤기/);
-  assert.match(repaired.cuts[0].sceneDescription, /반응/);
+  assert.equal(repaired, concept);
+  assert.deepEqual(missingSceneSignals(repaired.cuts[0]), ["reaction"]);
 });
 
 test("이미 구체적인 장면은 자동 보완기가 변경하지 않는다", () => {

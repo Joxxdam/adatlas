@@ -1,4 +1,4 @@
-export type VendorResearchCopyEligibility = "headlineEligible" | "proofOnly" | "blocked";
+export type VendorResearchCopyEligibility = "headlineEligible" | "proofOnly" | "researchOnly" | "blocked";
 
 export type VendorResearchFactKind =
   | "sensory"
@@ -32,5 +32,8 @@ export type VendorProductResearchContext = {
   matchReason: string;
   facts: VendorResearchFact[];
   blockedClaims: string[];
+  /** 사용자가 제공한 원본 시트의 표현을 해당 업체에 한해 광고 근거로 허용합니다. */
+  allowSheetClaimsInCopy?: boolean;
+  /** 원본 조사에서 검토 대상으로 표시했던 항목. 런타임 차단에는 사용하지 않습니다. */
+  researchCautions?: string[];
 };
-

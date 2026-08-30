@@ -10,11 +10,11 @@ type LibraryPayload = {
   updatedAt: string;
   items: ManagedNativeReferenceItem[];
   counts: Record<NativeReferenceCategoryGroup, number>;
-  foodProduceCount: number;
+  foodSnackCount: number;
 };
 
 type Props = { initialLibrary: LibraryPayload };
-type Filter = "all" | NativeReferenceCategoryGroup | "food-produce";
+type Filter = "all" | NativeReferenceCategoryGroup | "food-snack";
 type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory"> & {
   foodSubcategory?: NativeReferenceFoodSubcategory | null;
 };
@@ -51,7 +51,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
   const ocrAutoStartRequested = useRef(false);
   const ocrLibrarySignature = useRef("");
 
-  const visibleItems = useMemo(() => library.items.filter((item) => filter === "all" || (filter === "food-produce" ? item.categoryGroup === "food" && item.foodSubcategory === "produce-agriculture" : item.categoryGroup === filter)).sort((left, right) => right.ordinal - left.ordinal), [filter, library.items]);
+  const visibleItems = useMemo(() => library.items.filter((item) => filter === "all" || (filter === "food-snack" ? item.categoryGroup === "food" && item.foodSubcategory === "snack" : item.categoryGroup === filter)).sort((left, right) => right.ordinal - left.ordinal), [filter, library.items]);
   useEffect(() => {
     let mounted = true;
     let timer: number | undefined;
@@ -337,8 +337,8 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
             {nativeReferenceCategoryLabel(categoryGroup)} <b>{library.counts[categoryGroup] || 0}</b>
           </button>
         ))}
-        <button className={`${filter === "food-produce" ? styles.active : ""} ${styles.produceFilter}`.trim()} onClick={() => setFilter("food-produce")} type="button">
-          ↳ 과일/농산물 <b>{library.foodProduceCount || 0}</b>
+        <button className={`${filter === "food-snack" ? styles.active : ""} ${styles.produceFilter}`.trim()} onClick={() => setFilter("food-snack")} type="button">
+          ↳ 간식 <b>{library.foodSnackCount || 0}</b>
         </button>
       </div>
 
@@ -373,8 +373,8 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                     </label>
                     {item.categoryGroup === "food" ? (
                       <label className={styles.produceToggle}>
-                        <input checked={item.foodSubcategory === "produce-agriculture"} disabled={Boolean(busy)} onChange={(event) => void updateMetadata(item, { foodSubcategory: event.target.checked ? "produce-agriculture" : null }, event.target.checked ? "과일/농산물 전용 선택 풀에도 추가했습니다." : "과일/농산물 전용 선택 풀에서 제외했습니다.")} type="checkbox" />
-                        <span>과일/농산물 레퍼런스로도 사용</span>
+                        <input checked={item.foodSubcategory === "snack"} disabled={Boolean(busy)} onChange={(event) => void updateMetadata(item, { foodSubcategory: event.target.checked ? "snack" : null }, event.target.checked ? "간식 전용 선택 풀에도 추가했습니다." : "간식 전용 선택 풀에서 제외했습니다.")} type="checkbox" />
+                        <span>간식 레퍼런스로도 사용</span>
                       </label>
                     ) : null}
                     <details className={styles.nativeCopy} open={!item.nativeCopy?.rawText}>

@@ -31,7 +31,7 @@ export type ReviewRawCandidate = {
   manuallyUploaded?: boolean;
 };
 
-type OcrResult = {
+export type ImageOcrResult = {
   provider: ReviewSourceCandidate["ocrProvider"];
   lines: ReviewImageRegion[];
   faces: ReviewImageRegion[];
@@ -127,7 +127,7 @@ function jsonFromText(value: string) {
   return JSON.parse(source) as AppleVisionOutput;
 }
 
-async function openAiOcr(buffer: Buffer): Promise<OcrResult | null> {
+async function openAiOcr(buffer: Buffer): Promise<ImageOcrResult | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) return null;
   const controller = new AbortController();
@@ -187,7 +187,7 @@ function swiftExecutable() {
   return xcodeSwift;
 }
 
-async function appleVisionOcr(buffer: Buffer): Promise<OcrResult | null> {
+async function appleVisionOcr(buffer: Buffer): Promise<ImageOcrResult | null> {
   if (process.platform !== "darwin") return null;
   const scriptPath = path.join(process.cwd(), "scripts", "review-ocr.swift");
   const taskId = crypto.randomBytes(8).toString("hex");
@@ -237,16 +237,34 @@ async function appleVisionOcr(buffer: Buffer): Promise<OcrResult | null> {
   }
 }
 
-async function runOcr(buffer: Buffer): Promise<OcrResult> {
-  const openAi = await openAiOcr(buffer);
-  if (openAi) return openAi;
-  const apple = await appleVisionOcr(buffer);
-  if (apple?.lines.length) return apple;
+async function runOcr(buffer: Buffer, localFirst = false): Promise<ImageOcrResult> {
+  const first = localFirst ? await appleVisionOcr(buffer) : await openAiOcr(buffer);
+  if (first?.lines.length) return first;
+  const second = localFirst ? await openAiOcr(buffer) : await appleVisionOcr(buffer);
+  if (second?.lines.length) return second;
   return {
     provider: "unavailable",
     lines: [],
     faces: [],
-    warning: apple?.warning || "사용 가능한 OCR provider가 없습니다. 후기 유형·크롭·핵심 문장을 직접 입력해주세요.",
+    warning: first?.warning || second?.warning || "사용 가능한 OCR provider가 없습니다.",
+  };
+}
+
+/**
+ * 후기와 일반 상세 이미지가 같은 OCR 구현을 공유하도록 만든 서버 전용 경계입니다.
+ * 상세페이지 분석은 계정이나 유료 API 상태에 덜 의존하도록 로컬 OCR을 우선합니다.
+ */
+export async function ocrRasterImage(imagePath: string, options: { localFirst?: boolean } = {}) {
+  const prepared = await normalizedReviewBuffer(imagePath);
+  const contentHash = crypto.createHash("sha256").update(prepared.source).digest("hex");
+  const ocr = await runOcr(prepared.buffer, options.localFirst);
+  return {
+    ...ocr,
+    contentHash,
+    width: prepared.width,
+    height: prepared.height,
+    ocrText: ocr.lines.map((line) => line.text).filter(Boolean).join("\n"),
+    ocrConfidence: averageConfidence(ocr.lines),
   };
 }
 

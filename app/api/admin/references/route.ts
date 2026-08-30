@@ -23,7 +23,7 @@ function publicLibrary() {
     updatedAt: manifest.updatedAt || manifest.importedAt,
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [category, manifest.items.filter((item) => item.categoryGroup === category).length])),
-    foodProduceCount: manifest.items.filter((item) => item.categoryGroup === "food" && item.foodSubcategory === "produce-agriculture").length,
+    foodSnackCount: manifest.items.filter((item) => item.categoryGroup === "food" && item.foodSubcategory === "snack").length,
   };
 }
 

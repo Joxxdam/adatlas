@@ -1,0 +1,160 @@
+[
+  {
+    "key": "112aa702d3247c7f53e24f4189ae4f83f9dee0ce3450d64ce8d43ba96c2af34e",
+    "insight": {
+      "id": "detail-ocr-1e9174dfbf60",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014611635_2024090202582403386107c94465-2103-4863-a97c-602f491b1fee.jpg",
+      "contentHash": "1e9174dfbf6025c3fbd4e999f2a1b843cd14da029ba5c68f438510dd6a670ca5",
+      "ocrText": "바삭하게~\n추억의 맛 그대로\n익숙한맛\n가족 다같이\n커피나차에\n더 맛있게\n먹기 좋은\n곁들이기",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5625,
+      "copyFacts": [
+        "추억의 맛 그대로",
+        "익숙한맛",
+        "가족 다같이",
+        "더 맛있게",
+        "곁들이기"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:17.795Z"
+  },
+  {
+    "key": "fa76f3bd8707207f6021c90e81428d0dea0e82aba57bfa7aaeea39922b4eeb00",
+    "insight": {
+      "id": "detail-ocr-9a728d437a16",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014591268_202409020258236431780cc814c4-f647-4f32-aefa-388ffb34c1bc.jpg",
+      "contentHash": "9a728d437a16bfc34a20abbdf75ed40033e5da84f54525053fea60fc2cde5ddf",
+      "ocrText": "전통 그대로 온가족 간식\n한가득 종합전병",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "전통 그대로 온가족 간식",
+        "한가득 종합전병"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:17.804Z"
+  },
+  {
+    "key": "c5c67fad2cd0a530c85110766d43cf02dcc63b2f473ab2ae3de58d63686123dc",
+    "insight": {
+      "id": "detail-ocr-311dc4a5a44a",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014648282_2024090202582478397381694e69-1336-4845-9904-1e45b994d011.jpg",
+      "contentHash": "311dc4a5a44a8cdbd52a7008f32afd74f27265a748d9b6222efe288fbab489f4",
+      "ocrText": "명절마다 주문폭주 인기품목\n600g 가득 담은 괴물 용량\n무로배송\n부담없이 넉넉하게\n언제든 간식으로 맛있게!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8,
+      "copyFacts": [
+        "600g 가득 담은 괴물 용량",
+        "언제든 간식으로 맛있게!"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [
+        "무로배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:19.416Z"
+  },
+  {
+    "key": "6007d866f52f0143002df25fd2ea1cacc35ce3b1854aec4b17822a6f2eb2fdda",
+    "insight": {
+      "id": "detail-ocr-8a4e565320f8",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014630936_202409020258243932906111b3b7-380b-4930-a848-773c0438cead.jpg",
+      "contentHash": "8a4e565320f86f940f6fac2b19f986b9c62c92658b19af35d7c69904dc9e67cd",
+      "ocrText": "- 명• 절•대•비\n온과족 간식으로 딱좋은\n한가득 종합전병",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4333333373069763,
+      "copyFacts": [
+        "온과족 간식으로 딱좋은",
+        "한가득 종합전병"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:19.423Z"
+  },
+  {
+    "key": "72a32bb5b288e90a77a670157d37d3667038325d776164a875f8453282bce3bc",
+    "insight": {
+      "id": "detail-ocr-8a39c452264d",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014703361_20240902025825549714ad350db8-c4fc-416a-a43d-727024d4b2ad.jpg",
+      "contentHash": "8a39c452264d771a8830060ead36c4b59f7aeeaba37742f7952739c32d5bfeaa",
+      "ocrText": "너무 달지 않고\n부담없이 바삭한 전병",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "부담없이 바삭한 전병"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:21.119Z"
+  },
+  {
+    "key": "6365f669dd859e76233054e340445dc34d0da995b573ef34e57b67385a310e5d",
+    "insight": {
+      "id": "detail-ocr-70b32ec37512",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014670267_20240902025825127774af10fc96-5da4-48cb-b467-49903947e817.jpg",
+      "contentHash": "70b32ec37512b6c0f7522d987e2a8579198cdf0b38450f89a5e961538e6ecff6",
+      "ocrText": "부채전병\n파래가 듬뿍 들어가\n질리지 않는 담백함과\n바삭함이 일품입니다.\n생강전병\n달달함 사이로 알싸한\n생강향이 퍼져요.\n질리지 않는 조화!\n땅콩전병\n땅콩이 콕콕 박혀있어\n고소한 풍미가 더\n강한 전병입니다.\n김말이전병\n달고 고소한 맛과\n풍부한 파래향의 조화.\n한입에 먹기 좋아요!\n오란다강정\n깊고 달달한 조청맛과\n바삭쫀득한 맛 사이로\n호박씨가 콕콕!\n바삭함 가득!\n가장 맛있는 구성으로",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6590909090909091,
+      "copyFacts": [
+        "생강향이 퍼져요.",
+        "고소한 풍미가 더",
+        "달고 고소한 맛과",
+        "풍부한 파래향의 조화.",
+        "깊고 달달한 조청맛과",
+        "바삭쫀득한 맛 사이로",
+        "바삭함 가득!",
+        "가장 맛있는 구성으로"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:21.125Z"
+  },
+  {
+    "key": "c32faf7b3a801df327a31f9f417b68c9337d7afb6c59c2f23a79488bbd3925ce",
+    "insight": {
+      "id": "detail-ocr-53a168a37fe8",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014725239_202409020258259247693ad7defd-c4a7-4c7f-9338-d613d9584754.jpg",
+      "contentHash": "53a168a37fe898678b7ad6fe5faf6b00596cde61206f433875d8d8b386bca2f7",
+      "ocrText": "좋은 재료로 정성들이굽는\n종합전병",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "종합전병"
+      ],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:22.707Z"
+  },
+  {
+    "key": "a477bc656ec37ed8bc750796edf5c31820a6cc3a9aab07bbf385a8de30e34e0f",
+    "insight": {
+      "id": "detail-ocr-5d41ae3680c5",
+      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014745844_20240902025826299824125ae27e-544f-4854-b827-405160823ef1.jpg",
+      "contentHash": "5d41ae3680c5254e4a4b90333e6cb4dc61b273d34b6d81ab8b9d743fc2318ff4",
+      "ocrText": "커피, 차등\n이러음료와함까",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T04:18:22.711Z"
+  }
+]

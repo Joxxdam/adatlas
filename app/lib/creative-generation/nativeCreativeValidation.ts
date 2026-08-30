@@ -1,4 +1,6 @@
-import type { CategoryCreativeProfileId, NativeCreativeValidation, NativeGroupValidation } from "./types.ts";
+import type { ProductInfoForPrompt } from "../mvp/types.ts";
+import { isDomesticOriginCreativeSignal, isMeatProductContext, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal } from "./productSignalHygiene.ts";
+import type { CategoryCreativeProfileId, NativeCreativeValidation, NativeGroupValidation, ReferenceAdaptedCopyPlan } from "./types.ts";
 
 type NativeCreativeQaScores = {
   hookAlignment: number;
@@ -40,6 +42,7 @@ export function normalizeNativeCreativeValidation(
   options: {
     category?: CategoryCreativeProfileId;
     exportComplianceVerified?: boolean;
+    requiresHumanReplacement?: boolean;
   } = {}
 ): NativeCreativeValidation {
   const normalized = { ...validation };
@@ -51,6 +54,17 @@ export function normalizeNativeCreativeValidation(
   normalized.observedKoreanText = Array.isArray(validation.observedKoreanText) ? validation.observedKoreanText.map(String).slice(0, 30) : [];
   normalized.standaloneLogoDetected = validation.standaloneLogoDetected === true;
   normalized.standaloneLogoFindings = Array.isArray(validation.standaloneLogoFindings) ? validation.standaloneLogoFindings.map(String).slice(0, 10) : [];
+  normalized.sourcePersonDetected = options.requiresHumanReplacement === true || validation.sourcePersonDetected === true;
+  normalized.sourcePersonReplaced = validation.sourcePersonReplaced === true;
+  normalized.humanCompositionChanged = validation.humanCompositionChanged === true;
+  normalized.targetAudienceFit = Math.max(0, Math.min(100, Math.round(Number(validation.targetAudienceFit) || (normalized.sourcePersonDetected ? 0 : 100))));
+  normalized.humanReplacementFindings = Array.isArray(validation.humanReplacementFindings) ? validation.humanReplacementFindings.map(String).slice(0, 10) : [];
+  normalized.humanCopyAligned = validation.humanCopyAligned !== false;
+  normalized.humanCopyAlignmentFindings = Array.isArray(validation.humanCopyAlignmentFindings) ? validation.humanCopyAlignmentFindings.map(String).slice(0, 10) : [];
+  normalized.sceneProductInteractionAligned = validation.sceneProductInteractionAligned !== false;
+  normalized.sceneProductInteractionFindings = Array.isArray(validation.sceneProductInteractionFindings) ? validation.sceneProductInteractionFindings.map(String).slice(0, 10) : [];
+  normalized.unrelatedFoodOrIngredientDetected = validation.unrelatedFoodOrIngredientDetected === true;
+  normalized.unrelatedFoodOrIngredientFindings = Array.isArray(validation.unrelatedFoodOrIngredientFindings) ? validation.unrelatedFoodOrIngredientFindings.map(String).slice(0, 10) : [];
   normalized.failures = (Array.isArray(validation.failures) ? validation.failures : [])
     .map(String)
     .filter((failure) => !options.exportComplianceVerified || !/(?:JPEG|JPG|1200\s*[×xX]\s*1200|800\s*KB|내보내기|납품\s*규격|exportCompliance)/i.test(failure))
@@ -62,8 +76,50 @@ export function normalizeNativeCreativeValidation(
     ])].slice(0, 20);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
   }
+  const humanReplacementFailed = normalized.sourcePersonDetected && (!normalized.sourcePersonReplaced || !normalized.humanCompositionChanged || normalized.targetAudienceFit < 75);
+  if (humanReplacementFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `원본 인물을 타깃 고객에 맞는 다른 인물·다른 인물 구도로 완전히 교체하지 못했습니다${normalized.humanReplacementFindings.length ? `: ${normalized.humanReplacementFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.humanNaturalness = Math.min(normalized.humanNaturalness, 40);
+    normalized.composition = Math.min(normalized.composition, 60);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 60);
+  }
+  const humanCopyAlignmentFailed = normalized.sourcePersonDetected && normalized.humanCopyAligned === false;
+  if (humanCopyAlignmentFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `새 인물의 행동·표정·상황이 최종 광고 문구의 의미를 뒷받침하지 않습니다${normalized.humanCopyAlignmentFindings.length ? `: ${normalized.humanCopyAlignmentFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.hookAlignment = Math.min(normalized.hookAlignment, 40);
+    normalized.humanNaturalness = Math.min(normalized.humanNaturalness, 60);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 50);
+  }
+  const sceneProductInteractionFailed = normalized.sceneProductInteractionAligned === false;
+  if (sceneProductInteractionFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `장면 또는 인물 행동이 현재 상품의 실제 사용·섭취 맥락과 맞지 않습니다${normalized.sceneProductInteractionFindings.length ? `: ${normalized.sceneProductInteractionFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.hookAlignment = Math.min(normalized.hookAlignment, 40);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 40);
+  }
+  if (normalized.unrelatedFoodOrIngredientDetected) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `현재 상품·확인된 재료와 무관한 먹거리 또는 재료가 보입니다${normalized.unrelatedFoodOrIngredientFindings.length ? `: ${normalized.unrelatedFoodOrIngredientFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.productIdentity = Math.min(normalized.productIdentity, 45);
+    normalized.categoryFit = Math.min(normalized.categoryFit, 40);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
+  }
   const passed = passesNativeCreativeValidation(normalized, options.category || "general");
-  normalized.recommendation = normalized.standaloneLogoDetected ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
+  // Vision이 failures에 실제 문구·상품 오류를 기록하고도 점수만 높게 주는
+  // 응답이 있습니다. 발견된 실패가 하나라도 있으면 approve로 정규화하지 않습니다.
+  const reportedFailure = normalized.failures.length > 0;
+  normalized.recommendation = normalized.standaloneLogoDetected || humanReplacementFailed || humanCopyAlignmentFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
   return normalized;
 }
 
@@ -108,6 +164,115 @@ export function enforceExactRenderedCopyValidation(
     ...validation,
     koreanTextAccuracy: Math.min(validation.koreanTextAccuracy, observed.length ? 45 : 0),
     failures: [...new Set(failures)].slice(0, 20),
+    recommendation: "revise",
+  };
+}
+
+const sourceDisclosureCopyPattern = /(?:(?:연출|예시|참고|합성|생성)\s*(?:된\s*)?(?:이미지|사진|컷)|(?:이미지|사진)\s*(?:연출|예시|참고|합성|생성)|이해를\s*돕기\s*(?:위한|위해)[^\n]{0,16}(?:이미지|사진|연출|예시|참고|합성|생성)|실제와\s*(?:다를|상이할)\s*수|(?:AI|인공지능)\s*(?:를|을)?\s*(?:활용|사용|생성)(?:한|하여|해|된|되었|했습니다|하였습니다)?\s*(?:이미지|사진|콘텐츠)?)/iu;
+
+export function isSourceDisclosureCopy(value: string) {
+  return sourceDisclosureCopyPattern.test(String(value || "").normalize("NFKC"));
+}
+
+/**
+ * 원본 레퍼런스의 이미지 고지는 기본 완성본에 승계하지 않는다. 사용자가
+ * 선택하는 AI 고지는 생성·QA가 끝난 뒤 delivery 파생본에 별도로 적용되므로,
+ * 이 게이트에서는 발견되는 모든 출처성 고지를 원본 잔존으로 판정한다.
+ */
+export function enforceNoSourceDisclosureCopy(
+  validation: NativeCreativeValidation
+): NativeCreativeValidation {
+  const findings = validation.observedKoreanText
+    .map((line) => String(line || "").trim())
+    .filter((line) => line && isSourceDisclosureCopy(line));
+  if (!findings.length) return validation;
+
+  return {
+    ...validation,
+    koreanTextAccuracy: Math.min(validation.koreanTextAccuracy, 45),
+    commercialQuality: Math.min(validation.commercialQuality, 40),
+    failures: [...new Set([
+      ...validation.failures,
+      `출처 문구가 최종 이미지에 남아 있습니다: ${findings.slice(0, 4).join(" / ")}. 연출 이미지·예시 이미지·참고/합성/생성 이미지·원본 AI 활용 고지는 제거해야 합니다.`,
+    ])].slice(0, 20),
+    recommendation: "revise",
+  };
+}
+
+/** 목표 문구에 없더라도 레퍼런스의 원산지 배지가 남는 경우를 최종 OCR에서 차단합니다. */
+export function enforceOriginCopyPolicy(
+  validation: NativeCreativeValidation,
+  product: ProductInfoForPrompt
+): NativeCreativeValidation {
+  const originLines = validation.observedKoreanText
+    .map((line) => String(line || "").trim())
+    .filter((line) => line && isOriginCreativeSignal(line));
+  if (!originLines.length) return validation;
+
+  const meat = isMeatProductContext(product);
+  const disallowed = originLines.filter((line) => !meat || !isDomesticOriginCreativeSignal(line) || isNonDomesticOriginCreativeSignal(line));
+  if (!disallowed.length) return validation;
+
+  return {
+    ...validation,
+    factualAccuracy: Math.min(validation.factualAccuracy, 45),
+    koreanTextAccuracy: Math.min(validation.koreanTextAccuracy, 70),
+    commercialQuality: Math.min(validation.commercialQuality, 45),
+    failures: [...new Set([
+      ...validation.failures,
+      `원산지 문구 사용 정책을 위반했습니다: ${disallowed.slice(0, 4).join(" / ")}. 원산지는 확인된 국내산 육류 광고에만 표시할 수 있습니다.`,
+    ])].slice(0, 20),
+    recommendation: "revise",
+  };
+}
+
+/**
+ * 레퍼런스 광고의 비브랜드 문구 패널은 빈 상태로 납품할 수 없다. 빈 목표값은
+ * 이미지 OCR로 찾을 수 없으므로 슬롯 계약 자체를 별도의 결정적 게이트로
+ * 검사한다. source-brand/remove 슬롯만 배경 복원을 위해 비워 둘 수 있다.
+ */
+export function enforceReferenceCopySlotCompleteness(
+  validation: NativeCreativeValidation,
+  copySlots: NonNullable<ReferenceAdaptedCopyPlan["copySlots"]> = []
+): NativeCreativeValidation {
+  const blankSlots = copySlots.filter((slot) =>
+    slot.sourceText.trim() &&
+    slot.sourceType !== "source-brand" &&
+    slot.replacePolicy !== "remove" &&
+    !slot.targetText.trim()
+  );
+  if (!blankSlots.length) return validation;
+
+  const labels = blankSlots.slice(0, 4).map((slot) => `${slot.role} ${slot.index + 1}번`).join(" / ");
+  return {
+    ...validation,
+    hookAlignment: Math.min(validation.hookAlignment, 40),
+    composition: Math.min(validation.composition, 60),
+    commercialQuality: Math.min(validation.commercialQuality, 40),
+    failures: [...new Set([
+      ...validation.failures,
+      `레퍼런스의 비브랜드 문구 슬롯이 빈 상태입니다: ${labels}. 빈 버튼·띠·배지·패널은 납품할 수 없습니다.`,
+    ])].slice(0, 20),
+    recommendation: "revise",
+  };
+}
+
+/** 이미지 QA 점수가 높아도 입력 문구 계약 자체가 invalid면 승인할 수 없습니다. */
+export function enforceReferenceCopyPlanValidity(
+  validation: NativeCreativeValidation,
+  plan: ReferenceAdaptedCopyPlan | undefined
+): NativeCreativeValidation {
+  if (plan?.validationStatus === "valid" && !(plan.validationErrors || []).length) return validation;
+  const details = (plan?.validationErrors || []).slice(0, 4);
+  return {
+    ...validation,
+    hookAlignment: Math.min(validation.hookAlignment, 45),
+    koreanTextAccuracy: Math.min(validation.koreanTextAccuracy, 70),
+    commercialQuality: Math.min(validation.commercialQuality, 45),
+    failures: [...new Set([
+      ...validation.failures,
+      `이미지에 전달된 광고 문구 계획이 최종 품질 검수를 통과하지 못했습니다${details.length ? `: ${details.join(" / ")}` : "."}`,
+    ])].slice(0, 20),
     recommendation: "revise",
   };
 }

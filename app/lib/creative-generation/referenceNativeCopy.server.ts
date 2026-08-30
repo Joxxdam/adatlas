@@ -322,7 +322,7 @@ async function runOcrPass(thread: ReturnType<Codex["startThread"]>, prompt: stri
 
 export async function extractReferenceNativeCopy(imagePath: string, options: { previousAttemptCount?: number } = {}): Promise<ReferenceNativeCopy> {
   const now = new Date().toISOString();
-  if (!(await codexLocalAuthenticated())) {
+  if (!(await codexLocalAuthenticated({ force: true }))) {
     return { referenceId: "", rawText: "", rawLines: [], textRegions: [], analysisVersion: REFERENCE_NATIVE_COPY_ANALYSIS_VERSION, promptVersion: REFERENCE_NATIVE_COPY_PROMPT_VERSION, analysisStatus: "unavailable", approvalStatus: "needs-review", analysisError: "로컬 Codex 로그인이 없습니다.", attemptCount: (options.previousAttemptCount || 0) + 1, manuallyCorrected: false, useForCopyAdaptation: false, extractionSource: "unavailable", updatedAt: now };
   }
   const firstFiles = await prepareAnalysisFiles(imagePath);

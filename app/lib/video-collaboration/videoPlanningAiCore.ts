@@ -10,6 +10,7 @@ export type VideoPlanningTextVerbosity = "low" | "medium" | "high";
 export type VideoPlanningAiInput = {
   stage: VideoGenerationStage;
   prompt: string;
+  imageDataUrls?: string[];
   outputSchema: Record<string, unknown>;
   timeoutMs?: number;
   purpose?: VideoPlanningAiPurpose;
@@ -311,7 +312,21 @@ export function createOpenAiVideoPlanningRunner(
         const response = await client.responses.create(
           {
             model: config.model,
-            input: input.prompt,
+            input: input.imageDataUrls?.length
+              ? [
+                  {
+                    role: "user",
+                    content: [
+                      { type: "input_text", text: input.prompt },
+                      ...input.imageDataUrls.map((imageUrl) => ({
+                        type: "input_image",
+                        image_url: imageUrl,
+                        detail: "high",
+                      })),
+                    ],
+                  },
+                ]
+              : input.prompt,
             store: false,
             tools: [],
             reasoning: { effort: config.effort },

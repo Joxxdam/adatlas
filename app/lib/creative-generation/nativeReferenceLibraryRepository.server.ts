@@ -18,8 +18,8 @@ const maximumFilesPerUpload = 12;
 const supportedFormats = new Set(["jpeg", "png", "webp"]);
 const lockKey = Symbol.for("daywiz.native-reference-library-lock-v1");
 const lockState = globalThis as typeof globalThis & { [lockKey]?: Promise<unknown> };
-const managedManifestVersion = "native-creative-reference-library-v9-category-wide-random";
-const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 대카테고리는 패션·식품·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 같은 대카테고리에 등록된 전체 풀을 OCR 상태·상품 형태·슬롯 수·인물 포함 여부·호환 점수·최근 사용 여부로 다시 제한하지 않고 중복 없이 순수 무작위 선택합니다. 다른 대카테고리로 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
+const managedManifestVersion = "native-creative-reference-library-v11-food-snack-semantic-props";
+const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 대카테고리는 패션·음식·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 일반 음식 상품은 간식 태그 항목까지 포함한 음식 전체 풀에서, 간식 상품은 음식 > 간식 하위 풀에서만 중복 없이 순수 무작위 선택합니다. 간식 풀 안에서는 원본 상품 형태나 조리 소품으로 추가 제외하지 않습니다. 원상품의 용기·조리도구·식재료·상차림은 현재 상품과 맞지 않으면 같은 생성 단계에서 상품에 맞는 의미 소품과 장면으로 다시 구성합니다. OCR 상태·상품 형태·슬롯 수·인물 포함 여부·호환 점수·최근 사용 여부는 추가 선택 제한으로 사용하지 않습니다. 다른 대카테고리나 일반 음식 풀로 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
 
 function normalizeManifest(value: ManagedNativeReferenceManifest): ManagedNativeReferenceManifest {
   return {

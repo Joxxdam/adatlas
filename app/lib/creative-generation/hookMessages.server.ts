@@ -1,4 +1,5 @@
 import { matchCategoryProfile } from "./profiles.ts";
+import { isDomesticOriginCreativeSignal } from "./productSignalHygiene.ts";
 import { validateCopyAgainstTruth } from "./productTruth.ts";
 import { hookMessageCodes, type HookMessageCode, type HookMessageHypothesis, type ProductEvidence, type ProductFact, type ProductTruth } from "./types.ts";
 
@@ -79,9 +80,13 @@ function evidenceTypeScore(fact: ProductFact) {
   return rank[fact.evidenceType || "other"] || 0;
 }
 
+function isUsableCreativeFact(fact: ProductFact) {
+  return fact.usableInCopy && fact.evidenceType !== "shipping" && !/^shipping(?:-|$)/i.test(fact.key);
+}
+
 export function selectCoreEvidence(truth: ProductTruth): ProductEvidence[] {
   const selected = truth.facts
-    .filter((fact) => fact.usableInCopy)
+    .filter(isUsableCreativeFact)
     .map((fact) => ({
       factId: fact.id,
       summary: `${fact.label}: ${fact.value}`,
@@ -99,7 +104,12 @@ export function selectCoreEvidence(truth: ProductTruth): ProductEvidence[] {
       specificity: item.specificity,
       evidenceType: item.evidenceType,
     }));
-  return selected.length ? selected : truth.coreEvidence || [];
+  return selected.length
+    ? selected
+    : (truth.coreEvidence || []).filter((evidence) => {
+        const fact = truth.facts.find((item) => item.id === evidence.factId);
+        return Boolean(fact && isUsableCreativeFact(fact));
+      });
 }
 
 function factForEvidence(truth: ProductTruth, evidence: ProductEvidence) {
@@ -107,7 +117,7 @@ function factForEvidence(truth: ProductTruth, evidence: ProductEvidence) {
 }
 
 function evidenceForType(truth: ProductTruth, type: string) {
-  const facts = truth.facts.filter((fact) => fact.usableInCopy);
+  const facts = truth.facts.filter(isUsableCreativeFact);
   const matchers: Record<string, RegExp[]> = {
     "review-ugc": [/^review/],
     "price-benefit": [/^discount/, /^price/, /^original-price/, /^content-note-promotion/],
@@ -151,13 +161,15 @@ function compactSubject(fact: ProductFact | undefined, truth: ProductTruth, maxC
 }
 
 function productLabel(truth: ProductTruth) {
-  const cleaned = normalize(truth.product.productName)
+  const hasDomesticOrigin = truth.facts.some((fact) => isDomesticOriginCreativeSignal(`${fact.label} ${fact.value}`));
+  let cleaned = normalize(truth.product.productName)
     .replace(/[★☆◆◇♥♡●■▶▷✔✓🍏🍎🔥]/gu, " ")
     .replace(/\b\d[\d,.]*\s*(?:원|%|kg|g|ml|mL|개|팩|병|박스)\b/gi, " ")
     .replace(/(?:^|\s)(?:1등|특가|한정특가|초특가|무료배송|이벤트)(?:\s|$)/gi, " ")
     .replace(/(?:아삭달콤|여름한정|지금만|놓치지\s*마세요)/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+  if (!hasDomesticOrigin) cleaned = cleaned.replace(/(?:^|\s)산지(?:\s|$)/gu, " ").replace(/\s+/g, " ").trim();
   const produceName = cleaned.match(/(?:[가-힣]{2,8}\s*)?(?:청사과|아오리|여름사과|사과|복숭아|자두|포도|수박|참외|배)/u)?.[0];
   if (produceName) return fitWords(produceName, 13);
   const words = cleaned
@@ -242,7 +254,7 @@ function fallbackCopy(truth: ProductTruth, hookType: string, fact: ProductFact |
     agriculture: `${itemNoun}, ${fitWords(subject, 10)}`,
     fashion: "단정한 실루엣, 입는 순간",
     "personal-care": ingredients ? `${ingredients}, 샤워하는 순간` : `${subject}, 샤워하는 순간`,
-    "household-goods": "펼쳐 쓰고, 접어서 보관",
+    "household-goods": `${subject}, 펼쳐 쓰고 보관`,
     "generic-commerce": `${itemNoun}, 쓰는 순간`,
   };
   const situationMain: Record<string, string> = {
@@ -383,7 +395,7 @@ function factSpecificTerms(truth: ProductTruth, ids: string[]) {
 export function validateSingleHookMessage(hypothesis: HookMessageHypothesis, truth: ProductTruth, peers: HookMessageHypothesis[] = []) {
   const errors: string[] = [];
   const categoryId = matchCategoryProfile(truth.product).id;
-  const usableFactIds = new Set(truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.id));
+  const usableFactIds = new Set(truth.facts.filter(isUsableCreativeFact).map((fact) => fact.id));
   const wholeCopy = `${hypothesis.mainHook} ${hypothesis.subCopy}`;
   if (!hypothesis.mainHook || visibleChars(hypothesis.mainHook) > 18) errors.push("메인 후킹이 비어 있거나 18자를 초과합니다.");
   if (!hypothesis.subCopy || visibleChars(hypothesis.subCopy) > 28) errors.push("서브 문구가 비어 있거나 28자를 초과합니다.");
@@ -430,7 +442,7 @@ function responseText(payload: unknown) {
 function llmFacts(truth: ProductTruth) {
   const preferred = new Set(selectCoreEvidence(truth).map((item) => item.factId));
   return truth.facts
-    .filter((fact) => fact.usableInCopy)
+    .filter(isUsableCreativeFact)
     .map((fact: ProductFact) => ({
       id: fact.id,
       label: fact.label,

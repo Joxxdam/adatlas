@@ -5,7 +5,7 @@ import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
 import { defaultCompositionTypes, pickUniqueRandomItems, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import { normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
+import { inferNativeReferenceFoodSubcategoryFromText, normalizeNativeReferenceCompatibility, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
 export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
 
@@ -103,17 +103,30 @@ export async function ensureNativeReferenceCopies(references: NativeAdReference[
 
 function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
   if (categoryGroup === "fashion") return "패션";
-  if (categoryGroup === "food") return "식품";
+  if (categoryGroup === "food") return "음식";
   return "화장품";
 }
 
 export function resolveNativeReferenceCategoryGroup(job: ReferenceSelectionJob): NativeReferenceCategoryGroup {
   if (job.referenceCategoryOverride === "fashion") return "fashion";
-  if (job.referenceCategoryOverride === "food" || job.referenceCategoryOverride === "food-produce") return "food";
+  if (["food", "food-snack", "food-produce"].includes(job.referenceCategoryOverride || "")) return "food";
   if (job.referenceCategoryOverride === "beauty") return "beauty";
   const category = resolveCategoryCreativeProfile(job.productTruth).category;
   if (category.startsWith("food_")) return "food";
   if (category === "fashion") return "fashion";
+  if (["beauty_cosmetics", "personal_care", "health"].includes(category)) return "beauty";
+  // A weak upstream category such as "기타" must not silently become beauty
+  // when the product identity itself clearly says food or fashion.
+  const identityText = [
+    job.productTruth.product.category,
+    job.productTruth.product.productSubCategory,
+    job.productTruth.product.detectedProductType,
+    job.productTruth.product.productName,
+    job.productTruth.normalized.category,
+    job.productTruth.normalized.cleanProductName,
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (/food|snack|dessert|meat|fruit|produce|식품|음식|간식|스낵|과자|디저트|육류|과일|채소|농산|무화과|곶감|건조|말랭이|김치|반찬|음료|주스/.test(identityText)) return "food";
+  if (/fashion|apparel|clothing|패션|의류|원피스|셔츠|바지|신발|가방/.test(identityText)) return "fashion";
   return "beauty";
 }
 
@@ -124,7 +137,7 @@ function resolveProductForm(job: ReferenceSelectionJob, categoryGroup: NativeRef
   const text = [truth.normalized.cleanProductName, truth.normalized.rawProductTitle, truth.normalized.category, truth.normalized.quantity, truth.normalized.composition, truth.normalized.packageOrOption, truth.product.productName].filter(Boolean).join(" ").toLowerCase();
   if (categoryGroup === "fashion") return "fashion-item";
   if (categoryGroup === "food" && /스테이크|등심|안심|갈비|삼겹|목살|한우|소고기|돼지고기|육류|meat|beef|pork/.test(text)) return "meat-cut";
-  if (foodSubcategory) return "produce";
+  if (foodSubcategory === "snack") return "natural-food";
   if (/캔|can\b/.test(text)) return "can";
   if (/튜브|tube/.test(text)) return "tube";
   if (/파우치|봉지|팩(?:\s|$|\d)|분말|즙|pouch|sachet/.test(text)) return "pouch";
@@ -138,15 +151,12 @@ function resolveProductForm(job: ReferenceSelectionJob, categoryGroup: NativeRef
 }
 
 export function resolveNativeReferenceFoodSubcategory(job: ReferenceSelectionJob): NativeReferenceFoodSubcategory | undefined {
-  if (job.referenceCategoryOverride === "food-produce") return "produce-agriculture";
-  // 사용자가 일반 식품이나 다른 대분류를 직접 골랐다면 자동 과일 판정을 덮어씁니다.
+  if (job.referenceCategoryOverride === "food-snack" || job.referenceCategoryOverride === "food-produce") return "snack";
+  // 사용자가 일반 음식이나 다른 대분류를 직접 골랐다면 자동 간식 판정을 덮어씁니다.
   if (job.referenceCategoryOverride) return undefined;
   const truth = job.productTruth;
   const identityText = [truth.product.category, truth.product.productSubCategory, truth.product.detectedProductType, truth.product.productName, truth.normalized.category, truth.normalized.cleanProductName, truth.normalized.rawProductTitle].filter(Boolean).join(" ").toLowerCase();
-  const isProcessedFood = /주스|과즙|즙(?:\s|$|팩)|잼|청(?:\s|$)|말랭이|건조|분말|스낵|과자|음료|우유|요거트|소스|냉동|통조림|가공|젤리|juice|jam|snack|drink|milk|powder/.test(identityText);
-  const hasProduceIdentity = /농산|청과|과채|과일|채소|사과|복숭아|자두|포도|수박|배(?:\s|$)|감귤|귤(?:\s|$)|오렌지|레몬|라임|딸기|멜론|참외|토마토|고구마|감자|양파|마늘|버섯|옥수수|산지직송|제철|생과|produce|fruit|vegetable/.test(identityText);
-  const isFreshProfile = resolveCategoryCreativeProfile(truth).category === "food_fresh";
-  return !isProcessedFood && (hasProduceIdentity || isFreshProfile) ? "produce-agriculture" : undefined;
+  return inferNativeReferenceFoodSubcategoryFromText(identityText);
 }
 
 function resolveProductCount(job: ReferenceSelectionJob) {
@@ -178,8 +188,8 @@ export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectio
 }
 
 /**
- * 새 작업을 만들 때 운영자가 등록해 둔 같은 대분류 전체 풀에서 중복 없이
- * 무작위 레퍼런스를 뽑는다. 등록 여부 자체가 운영자의 품질 승인이다.
+ * 새 작업을 만들 때 일반 음식은 음식 전체 풀에서, 간식은 운영자가 지정한
+ * 간식 하위 풀에서 중복 없이 무작위 레퍼런스를 뽑는다.
  * 선택 결과는 GenerationJob에 저장되므로 새로고침·재시도·서버 복구 시에는
  * 다시 추첨하지 않고 같은 디자인을 이어서 편집한다.
  */
@@ -189,16 +199,21 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const categoryName = categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
   const categoryItems = referenceItems.filter((item) => item.categoryGroup === categoryGroup);
+  const eligibleItems = profile.foodSubcategory
+    ? categoryItems.filter((item) => item.foodSubcategory === profile.foodSubcategory)
+    : categoryItems;
   // OCR 준비 상태, 상품 형태, 슬롯 수, 인물 포함 여부, 호환 점수와 최근 사용
-  // 여부로 다시 거르지 않는다. 문구가 없으면 ProductTruth fallback을 사용하고,
-  // 인물·상품 슬롯은 생성 단계의 교체 계약으로 안전하게 적응한다.
+  // 여부로 다시 거르지 않는다. 단, 간식 상품은 음식 전체가 아니라 간식으로
+  // 직접 지정된 하위 풀만 사용한다. 일반 음식은 간식 항목까지 포함한 전체다.
   void recentReferenceIds;
-  if (categoryItems.length < count) {
-    throw new Error(`${categoryName}에 등록된 광고 레퍼런스가 부족합니다. 필요 ${count}장, 등록 ${categoryItems.length}장입니다.`);
+  if (eligibleItems.length < count) {
+    const poolName = profile.foodSubcategory === "snack" ? "간식" : categoryName;
+    throw new Error(`${poolName}에 등록된 광고 레퍼런스가 부족합니다. 필요 ${count}장, 등록 ${eligibleItems.length}장입니다.`);
   }
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
-  const selected = pickUniqueRandomItems(categoryItems, count, nextIndex);
-  return selected.map((item, index) => toNativeAdReference(item, `${selectionMode} · ${categoryName} 등록 풀 전체에서 ${index + 1}번째 레퍼런스로 순수 무작위 선택했습니다. OCR·형태·슬롯·인물·점수·최근 사용 여부는 선택 제한으로 사용하지 않습니다. 선택 결과는 작업에 고정되며 최종 결과는 원본 구성을 보존하고 실제 URL 상품과 ProductTruth 문구를 교체합니다.`));
+  const poolName = profile.foodSubcategory === "snack" ? "음식 > 간식 전용 풀" : `${categoryName} 등록 풀 전체`;
+  const selected = pickUniqueRandomItems(eligibleItems, count, nextIndex);
+  return selected.map((item, index) => toNativeAdReference(item, `${selectionMode} · ${poolName}에서 ${index + 1}번째 레퍼런스로 순수 무작위 선택했습니다. 일반 음식은 간식 레퍼런스를 포함한 음식 전체 풀을 사용하고, 간식은 간식 전용 풀만 사용합니다. OCR·형태·슬롯·인물·점수·최근 사용 여부는 추가 선택 제한으로 사용하지 않습니다. 선택 결과는 작업에 고정되며, 원상품의 의미 소품과 상차림은 현재 상품에 맞게 다시 구성합니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */
@@ -206,7 +221,9 @@ export function selectNativeAdReference(job: GenerationJob, result: GenerationRe
   const allReferenceItems = readReferenceItems();
   const profile = buildProductReferenceCompatibilityProfile(job);
   if (!allReferenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
-  const categoryItems = allReferenceItems.filter((item) => item.categoryGroup === profile.categoryGroup);
+  const categoryItems = allReferenceItems.filter((item) =>
+    item.categoryGroup === profile.categoryGroup && (!profile.foodSubcategory || item.foodSubcategory === profile.foodSubcategory)
+  );
   if (!categoryItems.length) {
     throw new Error(`${categoryLabel(profile.categoryGroup)}에 등록된 복구용 레퍼런스가 없습니다.`);
   }

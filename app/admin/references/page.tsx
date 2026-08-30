@@ -19,7 +19,7 @@ export default async function ReferenceManagementPage({ searchParams }: { search
     updatedAt: manifest.updatedAt || manifest.importedAt,
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((categoryGroup) => [categoryGroup, manifest.items.filter((item) => item.categoryGroup === categoryGroup).length])) as Record<(typeof nativeReferenceCategoryGroups)[number], number>,
-    foodProduceCount: manifest.items.filter((item) => item.categoryGroup === "food" && item.foodSubcategory === "produce-agriculture").length,
+    foodSnackCount: manifest.items.filter((item) => item.categoryGroup === "food" && item.foodSubcategory === "snack").length,
   };
   return (
     <FeaturePageShell activeFeature="references">

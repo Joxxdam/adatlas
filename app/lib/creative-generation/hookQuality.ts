@@ -44,7 +44,9 @@ export function selectQualityDiverseHooks(candidates: HookHypothesisCandidate[],
     // Claims and scenes define the actual experiment axis. Never relax these
     // constraints merely to fill six slots.
     if (!claim || claims.has(claim) || !scene || scenes.has(scene)) return false;
-    if (strictDistribution && (tagCount >= 2 || styleCount >= 2)) return false;
+    // A third candidate with the same appeal point makes the six creatives feel
+    // like wording variants rather than meaningfully different ad hypotheses.
+    if (tagCount >= 2 || (strictDistribution && styleCount >= 2)) return false;
     if (candidate.primaryTag === "price-value" && priceCount >= 2) return false;
     selected.push({ ...candidate, status: "selected" });
     mainHooks.add(main);

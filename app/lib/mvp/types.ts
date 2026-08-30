@@ -105,6 +105,8 @@ export type ProductInfoForPrompt = {
   productCutoutAvailable?: boolean;
   productRepresentation?: ProductRepresentation;
   reviewSources?: ReviewSourceCandidate[];
+  detailImageOcrInsights?: ProductDetailImageOcrInsight[];
+  productCopyConstraints?: string[];
   vendorResearch?: VendorProductResearchContext;
   creativeContext?: CreativeOpportunityContext;
 };
@@ -441,6 +443,22 @@ export type ReviewSourceCandidate = {
   warnings: string[];
 };
 
+export type ProductDetailImageOcrInsight = {
+  id: string;
+  imageUrl: string;
+  contentHash: string;
+  ocrText: string;
+  ocrProvider: ReviewSourceCandidate["ocrProvider"];
+  ocrConfidence: number;
+  /** 검증 후 광고 문구 근거로 사용할 수 있는 문장만 들어갑니다. */
+  copyFacts: string[];
+  /** 광고에는 쓰지 않지만 상품을 과장하지 않도록 생성기에 전달할 조건입니다. */
+  productConstraints: string[];
+  /** 배송·CS·양해·판매원·부정 표현처럼 광고 근거에서 폐기한 문장입니다. */
+  discardedNotices: string[];
+  warnings: string[];
+};
+
 export type ReviewCreativeTemplate = "reaction-comment" | "real-review-focus" | "review-collection" | "before-after-usage";
 
 export type ReviewCreativeState = {
@@ -665,6 +683,8 @@ export type ExtractedProductInfo = {
   sourceImageCandidates?: SourceImageCandidate[];
   productRepresentation?: ProductRepresentation;
   reviewSources?: ReviewSourceCandidate[];
+  detailImageOcrInsights?: ProductDetailImageOcrInsight[];
+  productCopyConstraints?: string[];
   verifiedBenefits?: string[];
   ingredients?: string[];
   vendorResearch?: VendorProductResearchContext;

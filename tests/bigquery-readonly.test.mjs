@@ -450,5 +450,5 @@ test("BigQuery 업체 화면은 부정적인 기술 충분도 문구를 노출�
     assert.equal(source.includes(phrase), false, `${phrase} 문구가 UI에 남아 있습니다.`);
   }
   assert.match(source, /광고 추천도/);
-  assert.match(source, /이 상품으로 후킹 6개 만들기/);
+  assert.match(source, /이 상품으로 광고 소재 6장 만들기/);
 });

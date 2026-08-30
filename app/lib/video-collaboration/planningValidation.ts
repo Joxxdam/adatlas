@@ -32,6 +32,8 @@ const STAGE_DIRECTION_COPY = [
 const AWKWARD_AUDIENCE_COPY = [
   /(?:고르는|갈리는|찾는|준비하는)\s*집들/i,
   /(?:누구의|어떤)\s*(?:불편|반응|구매\s*이유)/i,
+  /가격\s*조건(?:에|과|,)?\s*할인\s*조건(?:으로)?$/i,
+  /상품\s*구성는/i,
 ];
 const DELIVERY_AUDIENCE_COPY = [
   /(?:무료\s*)?배송(?:비|료|조건|지|지역|일정|기간|안내|가능|불가|추가|제외|문의)?/i,
@@ -40,6 +42,7 @@ const DELIVERY_AUDIENCE_COPY = [
 ];
 const CTA_ACTION = /(?:확인(?:해|하세요|하기|해요)|살펴(?:봐|보세요|보기)|비교(?:해|하세요|하기)|구매(?:해|하세요|하기)|주문(?:해|하세요|하기)|예약(?:해|하세요|하기)|신청(?:해|하세요|하기)|담아(?:봐|보세요)|눌러(?:봐|보세요)|챙겨(?:가|가세요|두세요)|쟁여(?:둬|두세요)|선택(?:해|하세요|하기)|만나(?:봐|보세요))/i;
 const OPENING_RHYTHM_MARKERS = ["잠깐", "진짜", "설마", "왜", "여러분", "형님들"];
+const OPENING_STRENGTH = /[?!]|왜|설마|잠깐|진짜|누가|또|처음|비밀|공개|혼나|냄새|가격|말이 돼|보세요|봐요|멈춰|고르지 마|열자마자|한입|밥|먹|굽|지글|윤기|육즙/i;
 
 function containsDeliveryDetail(value: unknown) {
   return DELIVERY_AUDIENCE_COPY.some((pattern) => pattern.test(String(value || "")));
@@ -74,6 +77,44 @@ export function detailedCaptionReadingIssues(cuts: VideoCut[]) {
     .filter((item) => item.speed > item.limit + 0.01);
 }
 
+function openingCuts(concept: VideoConcept) {
+  return [...concept.cuts]
+    .sort((left, right) => left.startSecond - right.startSecond)
+    .filter((cut) => cut.startSecond < 3 && cut.endSecond <= 3)
+    .slice(0, 2);
+}
+
+export function hasStrongDetailedPlanningOpening(concept: VideoConcept) {
+  return !concept.conceptArchetype || openingCuts(concept).some((cut) => OPENING_STRENGTH.test(`${cut.caption} ${cut.narration}`));
+}
+
+/**
+ * 유효한 오프닝 자막을 특정 단어가 없다는 이유만으로 전체 폐기하지 않습니다.
+ * AI가 질문·명령의 문장부호만 빠뜨린 경우 읽기 여유가 가장 큰 첫 3초 구간에
+ * 최소한의 강조 부호를 복원하고 나머지 대본은 그대로 보존합니다.
+ */
+export function repairDetailedPlanningOpeningHook(concept: VideoConcept) {
+  if (hasStrongDetailedPlanningOpening(concept)) return concept;
+  const candidates = openingCuts(concept)
+    .map((cut) => ({
+      cut,
+      headroom: Math.floor(captionDuration(cut) * captionReadingLimit(cut, false)) - visibleCaptionLength(cut.caption),
+    }))
+    .sort((left, right) => right.headroom - left.headroom);
+  const target = candidates.find((candidate) => candidate.headroom >= 1)?.cut;
+  if (!target?.caption.trim()) return concept;
+  const caption = `${target.caption.trim().replace(/[.。]+$/u, "")}!`;
+  const cuts = concept.cuts.map((cut) => (cut.id === target.id ? { ...cut, caption } : cut));
+  return {
+    ...concept,
+    cuts,
+    fullScript: cuts
+      .map((cut) => normalizePlanningCopy(cut.narration) || normalizePlanningCopy(cut.caption))
+      .filter(Boolean)
+      .join(" "),
+  };
+}
+
 function hasDetailedCaptionDensity(concept: VideoConcept, cuts: VideoCut[]) {
   // Legacy/template plans were authored under the old compact-caption rule.
   // Apply the richer density contract only to the new four-concept AI path.
@@ -89,9 +130,11 @@ function hasDetailedCaptionDensity(concept: VideoConcept, cuts: VideoCut[]) {
 }
 
 export function segmentRange(duration: VideoDuration) {
-  if (duration === 15) return { min: 8, max: 11, preferred: 9 };
-  if (duration === 20) return { min: 10, max: 13, preferred: 11 };
-  if (duration === 30) return { min: 14, max: 17, preferred: 15 };
+  // 30초 이상은 성과형 숏폼의 정보 밀도를 유지하되, 각 컷을 단순 자막
+  // 카드가 아닌 실제 사건·대사·제품 반응이 있는 장면으로 구성합니다.
+  if (duration === 15) return { min: 15, max: 17, preferred: 15 };
+  if (duration === 20) return { min: 15, max: 17, preferred: 15 };
+  if (duration === 30) return { min: 15, max: 17, preferred: 15 };
   if (duration === 45) return { min: 18, max: 23, preferred: 20 };
   return { min: 22, max: 28, preferred: 24 };
 }
@@ -105,18 +148,105 @@ export function hasVerifiedVideoBenefit(analysis: ProductAnalysisSnapshot) {
   );
 }
 
+function commercialPlanningFacts(analysis: ProductAnalysisSnapshot) {
+  return [
+    { value: analysis.price, replacement: "가격 조건" },
+    { value: analysis.originalPrice, replacement: "기존 가격 조건" },
+    { value: analysis.discountInfo, replacement: "할인 조건" },
+    { value: analysis.promotion, replacement: "예약 조건" },
+    { value: analysis.volumeOrOption, replacement: "상품 구성" },
+    ...(analysis.composition || []).map((value) => ({ value, replacement: "상품 구성" })),
+  ]
+    .map((item) => ({ ...item, value: String(item.value || "").trim() }))
+    .filter((item) => item.value && !containsDeliveryDetail(item.value));
+}
+
+function containsExactCommercialFact(value: string, facts: ReturnType<typeof commercialPlanningFacts>) {
+  const normalized = value.replace(/\s+/g, "").toLowerCase();
+  return facts.some((fact) => {
+    const token = fact.value.replace(/\s+/g, "").toLowerCase();
+    return token.length >= 2 && normalized.includes(token);
+  });
+}
+
+function replaceExactCommercialFacts(value: string, facts: ReturnType<typeof commercialPlanningFacts>) {
+  let next = value;
+  for (const fact of facts.sort((left, right) => right.value.length - left.value.length)) {
+    const escaped = Array.from(fact.value.replace(/\s+/g, ""))
+      .map((character) => character.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("\\s*");
+    next = next.replace(new RegExp(escaped, "giu"), fact.replacement);
+  }
+  return next
+    .replace(/상품\s*구성는/g, "상품 구성은")
+    .replace(/(?:지금\s*)?상품\s*구성은\s*가격\s*조건\s*,?\s*할인\s*조건으로\s*볼\s*수\s*있습니다[.]?/g, "상품 구성과 가격·할인 조건을 함께 확인해보세요.")
+    .replace(/^가격\s*조건(?:에|과|,)?\s*할인\s*조건[.]?$/g, "가격·할인 조건을 확인해요")
+    .replace(/가격(?:은|이|도)?\s*(?:기존\s*)?가격\s*조건(?:입니다|이에요|예요)?/g, "가격 조건도 확인해보세요")
+    .replace(/(?:기존\s*)?가격\s*조건(?:으로|에)?\s*(?:만나는|구매하는)?\s*구성/g, "가격 조건도 확인해요")
+    .replace(/(?:가격\s*조건\s*){2,}/g, "가격 조건 ")
+    .replace(/(?:기존\s*가격\s*조건\s*){2,}/g, "기존 가격 조건 ")
+    .replace(/(?:할인\s*조건\s*){2,}/g, "할인 조건 ")
+    .replace(/(?:상품\s*구성\s*){2,}/g, "상품 구성 ")
+    .replace(/할인\s*조건\s*,\s*/g, "할인 조건과 ")
+    .replace(/\s+([,.!?])/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** 가격·할인·구성을 15개 자막의 중심 사건처럼 연속 나열하지 않게 정리합니다. */
+export function repairDetailedPlanningCommercialRestraint(concept: VideoConcept, analysis: ProductAnalysisSnapshot) {
+  if (!concept.conceptArchetype) return concept;
+  const facts = commercialPlanningFacts(analysis);
+  if (!facts.length) return concept;
+  const ordered = [...concept.cuts].sort((left, right) => left.startSecond - right.startSecond);
+  const commercial = ordered.filter((cut) => containsExactCommercialFact(`${cut.caption} ${cut.narration}`, facts));
+  const consecutive = commercial.some((cut, index) => index > 0 && cut.cutNumber === commercial[index - 1].cutNumber + 1);
+  if (commercial.length <= 2 && !consecutive) return concept;
+
+  const keepIds = new Set<string>();
+  const finalCut = ordered.at(-1);
+  if (finalCut && commercial.some((cut) => cut.id === finalCut.id)) keepIds.add(finalCut.id);
+  for (const cut of commercial) {
+    if (keepIds.size >= 2) break;
+    const conflicts = commercial.some((kept) => keepIds.has(kept.id) && Math.abs(kept.cutNumber - cut.cutNumber) <= 1);
+    if (!conflicts) keepIds.add(cut.id);
+  }
+  if (!keepIds.size && commercial[0]) keepIds.add(commercial[0].id);
+
+  const commercialIds = new Set(commercial.map((cut) => cut.id));
+  const cuts = concept.cuts.map((cut) =>
+    commercialIds.has(cut.id) && !keepIds.has(cut.id)
+      ? {
+          ...cut,
+          caption: replaceExactCommercialFacts(cut.caption, facts),
+          narration: replaceExactCommercialFacts(cut.narration, facts),
+        }
+      : cut
+  );
+  return {
+    ...concept,
+    cuts,
+    fullScript: cuts
+      .map((cut) => normalizePlanningCopy(cut.narration) || normalizePlanningCopy(cut.caption))
+      .filter(Boolean)
+      .join(" "),
+  };
+}
+
 export function assignPlanningTimeline<T extends { caption: string; narration?: string; sceneDescription: string }>(rows: T[], duration: VideoDuration): Array<T & { startSecond: number; endSecond: number }> {
-  if (rows.length < 3) throw new Error("첫 3초를 구성할 대본 구간이 부족합니다.");
-  const bodyCount = Math.max(0, rows.length - 4);
+  if (rows.length < 3) throw new Error("영상 대본을 구성할 구간이 부족합니다.");
+  const openingCount = 2;
+  const bodyCount = Math.max(0, rows.length - openingCount - 1);
   const ctaDuration = duration >= 45 ? 3 : duration >= 30 ? 2.4 : duration >= 20 ? 2 : 1.5;
   const bodyDuration = Math.max(0, duration - 3 - ctaDuration);
   let previous = 0;
   return rows.map((row, index) => {
     const startSecond = previous;
     let endSecond: number;
-    if (index < 3) endSecond = index + 1;
+    if (index === 0) endSecond = 1.2;
+    else if (index === 1) endSecond = 3;
     else if (index === rows.length - 1) endSecond = duration;
-    else endSecond = Number((3 + (bodyDuration * (index - 2)) / Math.max(1, bodyCount)).toFixed(2));
+    else endSecond = Number((3 + (bodyDuration * (index - openingCount + 1)) / Math.max(1, bodyCount)).toFixed(2));
     previous = endSecond;
     return { ...row, startSecond, endSecond };
   });
@@ -171,27 +301,6 @@ function sceneSetting(analysis: ProductAnalysisSnapshot) {
   return "자연광이 드는 제품 촬영 테이블";
 }
 
-function observableReaction(analysis: ProductAnalysisSnapshot) {
-  const category = `${analysis.category} ${analysis.productType || ""} ${analysis.productName}`;
-  if (/육류|축산|고기/i.test(category)) {
-    return "반응은 원물 표면의 윤기와 익어가는 색감이 선명해지는 변화로 보여주고, 인물이 있으면 만족한 표정과 고개 끄덕임을 함께 잡는다.";
-  }
-  if (/식품|먹거리|과일|채소|농산|수산|음료/i.test(category)) {
-    return "반응은 원물이나 내용물의 촉촉한 질감과 색감이 선명해지는 변화로 보여주고, 인물이 있으면 만족한 표정과 고개 끄덕임을 함께 잡는다.";
-  }
-  if (/뷰티|바디|샤워|화장|세정|생활/i.test(category)) {
-    return "반응은 제품을 사용한 부위의 질감과 색감, 물방울이나 거품이 선명해지는 변화로 보여주고, 인물이 있으면 상쾌한 표정과 고개 끄덕임을 함께 잡는다.";
-  }
-  if (/패션|의류|신발|가방|주얼리/i.test(category)) {
-    return "반응은 움직임에 따라 핏과 소재의 실루엣이 선명해지는 변화로 보여주고, 인물이 거울을 보며 만족한 표정으로 고개를 끄덕이는 모습을 잡는다.";
-  }
-  return "반응은 제품의 질감과 색감이 선명해지는 변화로 보여주고, 인물이 있으면 만족한 표정과 고개 끄덕임을 함께 잡는다.";
-}
-
-function compactTransitionCaption(value: string) {
-  return value.replace(/\s+/g, " ").trim().slice(0, 24) || "다음 행동";
-}
-
 function normalizePlanningCopy(value: string | undefined) {
   return String(value || "")
     .replace(/\s+/g, " ")
@@ -209,7 +318,7 @@ function hasReadableKoreanSpacing(value: string) {
 
 function isIncompleteAudienceCaption(value: string) {
   const normalized = normalizePlanningCopy(value).replace(/[?!.;~]+$/g, "");
-  return /(?:될\s*수|할\s*수|하면|인데|이고|이며|해서|하며|라서|라고|라는|처럼|보다|위해|대한|관한)$/i.test(normalized);
+  return /(?:될\s*수|할\s*수|하면|인데|이고|이며|해서|하며|라서|라고|라는|처럼|보다|위해|대한|관한|볼\s*건|할\s*건|것은|점은|이유는|답은)$/i.test(normalized);
 }
 
 function naturalizePlanningCta(value: string) {
@@ -274,12 +383,15 @@ export function repairDetailedPlanningCta(concept: VideoConcept) {
   const alreadyValid = normalizePlanningCopy(concept.cta) === cta && normalizePlanningCopy(finalCut.caption).includes(cta) && finalCut.caption.length <= readableLimit;
   if (alreadyValid) return concept;
   const cuts = concept.cuts.map((cut) => (cut.id === finalCut.id ? { ...cut, caption: cta } : cut));
-  const fullScript = normalizePlanningCopy(concept.fullScript);
+  const fullScript = cuts
+    .map((cut) => normalizePlanningCopy(cut.narration) || normalizePlanningCopy(cut.caption))
+    .filter(Boolean)
+    .join(" ");
   return {
     ...concept,
     cta,
     cuts,
-    fullScript: fullScript.includes(cta) ? fullScript : `${fullScript} ${cta}`.trim(),
+    fullScript,
   };
 }
 
@@ -339,7 +451,7 @@ export function repairDetailedPlanningAudienceCopy(concept: VideoConcept) {
  */
 export function repairDetailedPlanningSceneDescriptions(concept: VideoConcept, analysis: ProductAnalysisSnapshot) {
   let changed = false;
-  const cuts = concept.cuts.map((cut, index) => {
+  const cuts = concept.cuts.map((cut) => {
     const missing = missingSceneSignals(cut);
     const additions: string[] = [];
     if (missing.includes("setting")) {
@@ -351,19 +463,11 @@ export function repairDetailedPlanningSceneDescriptions(concept: VideoConcept, a
     if (missing.includes("action")) {
       additions.push("손이 제품을 들어 화면 중앙에 놓고 정면 라벨을 카메라에 비춘다.");
     }
-    if (missing.includes("reaction")) {
-      additions.push(observableReaction(analysis));
-    }
-    if (missing.includes("firstFocus")) {
-      additions.push("첫 화면에는 제품 패키지 또는 핵심 행동이 중앙 클로즈업으로 가장 먼저 보인다.");
-    }
-    if (missing.includes("transition")) {
-      const nextCaption = compactTransitionCaption(concept.cuts[index + 1]?.caption || "마지막 제품 화면");
-      additions.push(`동작이 끝나면 다음 구간의 '${nextCaption}' 화면으로 매치컷 전환한다.`);
-    }
+    // Reaction, first focus and transitions are creative choices. Requiring the
+    // same sentence in every cut produced repetitive, checklist-like scene plans.
     if (!additions.length && cut.sceneDescription.length >= 75) return cut;
     if (cut.sceneDescription.length < 75 && !additions.length) {
-      additions.push(`첫 화면은 ${sceneSetting(analysis)} 중앙의 제품 패키지 클로즈업으로 시작하고, 손이 제품을 들어 정면 라벨을 비춘다.`, observableReaction(analysis), "동작이 끝나면 다음 구간 화면으로 매치컷 전환한다.");
+      additions.push(`장소는 ${sceneSetting(analysis)}다. 화면의 주체는 제품과 이를 다루는 손이며, 손이 제품을 들어 정면 라벨을 카메라에 비춘다.`);
     }
     changed = true;
     return {
@@ -384,7 +488,10 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
   const firstThree = cuts.filter((cut) => cut.startSecond < 3 && cut.endSecond <= 3);
   const allowed = allowedNumbers(analysis);
   const unknownNumbers = normalizedNumbers(audienceCopy).filter((value) => !allowed.has(value));
-  const sceneSignalFailures = cuts.map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut) })).filter((item) => item.missing.length > 0);
+  const requiredSceneSignals: SceneProductionSignal[] = ["setting", "subject", "action"];
+  const sceneSignalFailures = cuts
+    .map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut).filter((signal) => requiredSceneSignals.includes(signal)) }))
+    .filter((item) => item.missing.length > 0);
   const abstract = cuts.filter((cut) => cut.sceneDescription.length < 75 || (ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription)) && missingSceneSignals(cut).length >= 2));
   const readingIssues = concept.conceptArchetype ? detailedCaptionReadingIssues(cuts) : [];
   const spacingFailures = concept.conceptArchetype ? cuts.filter((cut) => !hasReadableKoreanSpacing(cut.caption)) : [];
@@ -392,13 +499,18 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
   const stageDirectionCuts = concept.conceptArchetype ? cuts.filter((cut) => [...STAGE_DIRECTION_COPY, ...AWKWARD_AUDIENCE_COPY].some((pattern) => pattern.test(cut.caption))) : [];
   const deliveryCopyCuts = concept.conceptArchetype ? cuts.filter((cut) => DELIVERY_AUDIENCE_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))) : [];
   const openingMarkerRepeats = OPENING_RHYTHM_MARKERS.filter((marker) => firstThree.filter((cut) => cut.caption.includes(marker)).length > 1);
-  const earlyWindow = Math.min(8, Math.max(5, duration * 0.3));
-  const earlyCopy = cuts.filter((cut) => cut.startSecond < earlyWindow).map((cut) => `${cut.caption} ${cut.narration}`).join(" ").replace(/\s+/g, "").toLowerCase();
-  const commercialTokens = [analysis.price, analysis.originalPrice, analysis.discountInfo, analysis.promotion, analysis.volumeOrOption, ...(analysis.composition || [])]
-    .filter((value) => !containsDeliveryDetail(value))
-    .map((value) => String(value || "").replace(/\s+/g, "").toLowerCase())
+  const commercialTokens = commercialPlanningFacts(analysis)
+    .map((item) => item.value.replace(/\s+/g, "").toLowerCase())
     .filter((value) => value.length >= 2);
-  const hasEarlyCommercialSignal = commercialTokens.some((token) => earlyCopy.includes(token));
+  const commercialCuts = cuts.filter((cut) => {
+    const copy = `${cut.caption} ${cut.narration}`.replace(/\s+/g, "").toLowerCase();
+    return commercialTokens.some((token) => copy.includes(token));
+  });
+  const consecutiveCommercialCuts = commercialCuts.some((cut, index) => index > 0 && cut.cutNumber === commercialCuts[index - 1].cutNumber + 1);
+  const spokenBodyCuts = cuts.slice(0, -1).filter((cut) => normalizePlanningCopy(cut.narration).length >= 8);
+  const minimumSpokenCuts = Math.ceil(Math.max(1, cuts.length - 1) * 0.5);
+  const isFood = /식품|육류|축산|고기|한우|음료|간식|베이커리|과일|수산/i.test(analysis.category);
+  const foodDesireCuts = cuts.filter((cut) => /굽|팬|지글|수증기|육즙|윤기|결이|잘리|한입|밥|젓가락|씹|바삭|촉촉|먹고|먹는|입맛|향이/i.test(`${cut.caption} ${cut.narration} ${cut.sceneDescription}`));
   const checks: PlanningQualityCheck[] = [
     {
       key: "segment-count",
@@ -412,7 +524,7 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
     },
     {
       key: "opening-strength",
-      passed: !concept.conceptArchetype || firstThree.slice(0, 2).some((cut) => /[?!]|왜|설마|잠깐|진짜|누가|또|처음|비밀|공개|혼나|냄새|가격|말이 돼/i.test(`${cut.caption} ${cut.narration}`)),
+      passed: hasStrongDetailedPlanningOpening(concept),
       message: "첫 1~2개 자막에는 질문·갈등·의외성·감각 반응 중 하나가 필요합니다.",
     },
     {
@@ -492,14 +604,24 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       message: deliveryCopyCuts.length ? `영상의 목적과 무관한 배송·배송비 안내가 들어간 자막: ${deliveryCopyCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}. 배송 정보는 자막과 내레이션에서 완전히 제외해 주세요.` : "자막과 내레이션에 배송·배송비 안내가 없습니다.",
     },
     {
-      key: "early-commercial-signal",
-      passed: !concept.conceptArchetype || !hasVerifiedVideoBenefit(analysis) || hasEarlyCommercialSignal,
-      message: hasEarlyCommercialSignal ? `${earlyWindow.toFixed(0)}초 안에 확인된 가격·할인·구성 중 하나가 노출됩니다.` : `${earlyWindow.toFixed(0)}초 안에 확인된 가격·할인·구성 중 하나를 노출해 상품 광고임을 알려 주세요. 상황극의 정체 공개는 뒤에 유지해도 됩니다.`,
+      key: "spoken-story",
+      passed: !concept.conceptArchetype || spokenBodyCuts.length >= minimumSpokenCuts,
+      message: `자막 나열이 아니라 실제로 들을 수 있는 대사·내레이션이 최소 ${minimumSpokenCuts}개 구간에 필요합니다. 현재 ${spokenBodyCuts.length}개입니다.`,
+    },
+    {
+      key: "commercial-restraint",
+      passed: !concept.conceptArchetype || commercialCuts.length <= 2 && !consecutiveCommercialCuts,
+      message: commercialCuts.length > 2 || consecutiveCommercialCuts ? `가격·할인·구성 정보가 ${commercialCuts.map((cut) => `${cut.cutNumber}번`).join(", ")} 자막에 반복됩니다. 마지막 CTA와 서로 붙지 않은 핵심 근거 한 곳만 정확한 수치를 남기고, 나머지는 욕구·사용 이유·반응 장면으로 바꾸세요.` : "가격·할인·구성은 중심 사건을 방해하지 않는 보조 근거로 제한되었습니다.",
+    },
+    {
+      key: "food-desire-context",
+      passed: !concept.conceptArchetype || !isFood || foodDesireCuts.length >= 2,
+      message: "식품 영상은 막연히 맛있다고 말하지 말고 조리 변화·질감·한입 이후의 생활 반응처럼 보이는 맛의 이유를 두 장면 이상 연결해야 합니다.",
     },
     {
       key: "scene-specificity",
       passed: abstract.length === 0 && sceneSignalFailures.length === 0,
-      message: abstract.length || sceneSignalFailures.length ? `구체성이 부족한 구간: ${sceneSignalFailures.map((item) => `${item.cutNumber}번(${item.missing.join(", ")})`).join(" · ") || "추상 장면"}. 각 구간에 장소·주체·행동·반응·첫 시각 요소·다음 전환을 모두 명시해 주세요.` : "모든 장면에 장소·주체·행동·반응·첫 시각 요소·다음 전환이 구체적으로 포함되어 있습니다.",
+      message: abstract.length || sceneSignalFailures.length ? `구체성이 부족한 구간: ${sceneSignalFailures.map((item) => `${item.cutNumber}번(${item.missing.join(", ")})`).join(" · ") || "추상 장면"}. 각 구간에 장소·주체·이야기를 바꾸는 행동을 구체적으로 명시해 주세요.` : "모든 장면에 장소·주체·실행 가능한 행동이 구체적으로 포함되어 있습니다.",
     },
     {
       key: "unsupported-numbers",

@@ -16,6 +16,11 @@ async function pixel(buffer, x, y) {
 test("상품 문맥에서 단일·세트·비정형·포장·플레이팅·투명 유형을 구분한다", () => {
   assert.equal(inferProductRepresentation({ productName: "민트 티트리 샤워젤 250ml" }).type, "single-product");
   assert.equal(inferProductRepresentation({ productName: "샤워젤 5종 세트" }).type, "multi-unit-set");
+  assert.equal(inferProductRepresentation({ productName: "부산 가야 밀면 특가 10인분", category: "식품/선물" }).type, "plated-product");
+  assert.equal(inferProductRepresentation({ productName: "시원한 평양냉면 10인분", category: "식품" }).type, "plated-product");
+  assert.notEqual(inferProductRepresentation({ productName: "샤워젤 4개 묶음 1+1" }).type, "multi-unit-set");
+  assert.equal(inferProductRepresentation({ productName: "샤워젤 4개 세트" }).type, "multi-unit-set");
+  assert.equal(inferProductRepresentation({ productName: "평양냉면 선물 세트", category: "식품" }).type, "multi-unit-set");
   assert.equal(inferProductRepresentation({ productName: "한우 등심 1kg 생고기" }).type, "irregular-product");
   assert.equal(inferProductRepresentation({ productName: "여름 한정 봉황 청사과 5kg" }).type, "irregular-product");
   assert.equal(inferProductRepresentation({ productName: "진공 포장 트레이 한우" }).type, "packaged-product");

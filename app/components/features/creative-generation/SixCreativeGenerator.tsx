@@ -8,7 +8,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import { CREATIVE_PLANNER_VERSION, type CopyPlan, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
-import { buildGenerationSummary } from "../../../lib/creative-generation/generationSummary";
 import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
 import { failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
@@ -33,8 +32,8 @@ type ReferenceCategoryChoice = "" | ReferenceCategoryOverride;
 
 const referenceCategoryOptions: Array<{ value: ReferenceCategoryOverride; label: string }> = [
   { value: "fashion", label: "패션" },
-  { value: "food", label: "식품" },
-  { value: "food-produce", label: "식품 · 과일/농산물" },
+  { value: "food", label: "음식" },
+  { value: "food-snack", label: "음식 · 간식" },
   { value: "beauty", label: "화장품 · 건강/웰니스" },
 ];
 
@@ -617,10 +616,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     try {
       const successes: GenerationResult[] = [];
       for (const result of completedResults) successes.push(await ensureResultAsset(job, result));
-      const summaryJob: GenerationJob = {
-        ...job,
-        results: job.results.map((result) => successes.find((success) => success.id === result.id) || result),
-      };
       const zip = new JSZip();
       await Promise.all(
         successes.map(async (result, index) => {
@@ -631,47 +626,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           await markCreativeAssetExported(result.creativeAsset.assetCode);
         })
       );
-      zip.file("generation-summary.json", JSON.stringify(buildGenerationSummary(summaryJob), null, 2));
-      zip.file(
-        "manifest.json",
-        JSON.stringify(
-          {
-            version: "daywiz-creative-download-v2",
-            jobId: job.id,
-            productId: job.productTruth.productId,
-            landingUrl: job.productTruth.product.landingUrl,
-            productUrl: job.productTruth.product.landingUrl,
-            productName: job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName,
-            exportedAt: new Date().toISOString(),
-            files: successes.map((result, index) => ({
-              fileName: numberedProductImageFileName(job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName, index + 1),
-              creativeCode: result.creativeAsset?.assetCode,
-              hookCode: result.hookPlan.hookCode,
-              mainHook: result.hookPlan.headline,
-              subCopy: result.hookPlan.body,
-              materialCode: result.creativeAsset?.assetCode,
-              creativeGrammar: result.hookPlan.creativeGrammarId || result.nativeCreative?.composition?.creativeGrammarId,
-              utm: result.creativeAsset?.utmContent,
-              createdAt: result.creativeAsset?.createdAt || result.completedAt,
-            })),
-            missing: job.results
-              .filter((result) => !successes.some((success) => success.id === result.id))
-              .map((result) => ({
-                hookCode: result.hookPlan.hookCode,
-                status: result.status,
-                reason: result.error || "생성된 이미지 파일이 없습니다.",
-              })),
-          },
-          null,
-          2
-        )
-      );
-      if (job.adCopy?.primaryText && job.adCopy.status !== "needs-review") {
-        const copyResponse = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/ad-copy?format=txt`);
-        if (copyResponse.ok) zip.file("meta-primary-text.txt", await copyResponse.blob());
-        const csvResponse = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/ad-copy?format=csv`);
-        if (csvResponse.ok) zip.file("meta-ad-settings.csv", await csvResponse.blob());
-      }
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
@@ -696,7 +650,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const selectedCategoryLabel = job?.referenceCategoryOverride
     ? referenceCategoryLabel(job.referenceCategoryOverride)
     : storedReference
-      ? `${storedReference.categoryLabel}${storedReference.foodSubcategory ? " · 과일/농산물" : ""} (자동)`
+      ? `${storedReference.categoryLabel}${storedReference.foodSubcategory ? " · 간식" : ""} (자동)`
       : undefined;
   const activeResults = [...(job?.results || [])].filter((result) => result.status === "running").sort((left, right) => left.order - right.order);
   const completedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);

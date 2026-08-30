@@ -260,6 +260,36 @@ test("세트 상품은 실제 판매 구성 이미지가 없으면 확인 필요
   assert.equal(verifyAutoProductionProductImages("한우 4팩 세트", product).status, "verified");
 });
 
+test("세트 표기가 없는 수량·묶음·1+1 상품은 세트 이미지 검수를 강제하지 않는다", () => {
+  const product = candidate("meal-bundle").productInfo;
+  product.sourceImageCandidates = [];
+  assert.equal(verifyAutoProductionProductImages("냉면 10인분 1+1 묶음", product).status, "verified");
+});
+
+test("자동제작 이미지 점수는 0~1과 과거 0~100 단위를 같은 기준으로 검증한다", () => {
+  const base = candidate("score").productInfo;
+  base.productImagePaths = [];
+  base.productImagePath = "";
+  base.extractedMainImage = "";
+  base.extractedGalleryImages = [];
+  const source = {
+    id: "source-score",
+    type: "hero",
+    imagePath: "https://cdn.example.com/scored-product.jpg",
+    label: "상품 원본",
+    selected: true,
+    createdAt: "2026-08-30",
+    sourceType: "product-gallery",
+    sourceImageQualityScore: 0.47,
+    salesUnitMatchScore: 0.74,
+  };
+  const ratio = verifyAutoProductionProductImages("밀면 10인분", { ...base, sourceImageCandidates: [source] });
+  const percent = verifyAutoProductionProductImages("밀면 10인분", { ...base, sourceImageCandidates: [{ ...source, sourceImageQualityScore: 47, salesUnitMatchScore: 74 }] });
+  assert.equal(ratio.status, "verified");
+  assert.equal(percent.status, "verified");
+  assert.deepEqual(ratio.selectedPaths, percent.selectedPaths);
+});
+
 test("예약 CLI는 도래한 광고주만 실행하고 force를 API에 명시적으로 전달한다", async () => {
   const scheduler = await read("app/lib/auto-production/scheduler.server.ts");
   const route = await read("app/api/auto-production/run/route.ts");
@@ -467,7 +497,8 @@ test("18. 후킹별 단일 세션을 분리하고 한 상품에서 최대 3장�
   assert.match(generation, /session\.validate/);
   assert.doesNotMatch(generation, /provider\.(?:generate|validate)\(/);
   const sessionBlock = provider.slice(provider.indexOf("async openSession"), provider.indexOf("async validateGroup"));
-  assert.equal((sessionBlock.match(/this\.codex\.startThread/g) || []).length, 1);
+  assert.equal((sessionBlock.match(/codex\.startThread/g) || []).length, 1);
+  assert.match(sessionBlock, /runThreadWithIdleTimeout/);
   assert.doesNotMatch(provider, /qaThread|resumeThread|saveAdvertiserThread|codexProductThreadKey/);
   assert.match(runner, /selectRunnableResults/);
   assert.match(runner, /Promise\.all/);
@@ -513,18 +544,24 @@ test("23. Codex 실패 시 유료 API로 자동 전환되지 않는다", async (
   assert.doesNotMatch(runner, /openai_api/);
 });
 
-test("23-1. 완료 실행은 출근 전 ZIP과 후킹별 광고 세팅 파일을 미리 준비한다", async () => {
+test("23-1. 완료 실행은 출근 전 이미지 전용 ZIP을 미리 준비한다", async () => {
   const source = await read("app/lib/auto-production/package.server.ts");
   const productRoute = await read("app/api/auto-production/runs/[runId]/products/[taskId]/download/route.ts");
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
-  assert.match(source, /meta-ad-settings\.csv/);
-  assert.match(source, /\$\{hookCode\}-ad-setup\.json/);
-  assert.match(source, /engine: "codex_local"/);
+  assert.match(source, /images-only-v1/);
+  assert.doesNotMatch(source, /meta-ad-settings\.csv|ad-setup\.(?:json|txt)|failures\.(?:json|txt)|manifest\.json|README\.txt/);
   assert.match(source, /buildAutoProductionProductPackage/);
-  assert.match(source, /failures\.json/);
   assert.match(productRoute, /buildAutoProductionProductPackage/);
   assert.match(runner, /buildAutoProductionPackage/);
   assert.match(runner, /packageStatus: "ready"/);
+});
+
+test("수동 제작 ZIP도 이미지 외 요약·문구·설정 파일을 포함하지 않는다", async () => {
+  const source = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
+  const downloadBlock = source.slice(source.indexOf("async function downloadAll"), source.indexOf("if ((!props.productLoaded"));
+  assert.match(downloadBlock, /new JSZip\(\)/);
+  assert.match(downloadBlock, /numberedProductImageFileName/);
+  assert.doesNotMatch(downloadBlock, /generation-summary\.json|manifest\.json|meta-primary-text\.txt|meta-ad-settings\.csv/);
 });
 
 test("24. 실행 API는 외부 임의 요청과 CSRF 없는 변경을 차단한다", () => {

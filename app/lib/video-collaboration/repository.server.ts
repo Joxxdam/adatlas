@@ -720,6 +720,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (project.finalScript?.id === current.id) project.finalScript = clone(normalized);
         if (options.productionNotes !== undefined)
           project.productionNotes = clean(options.productionNotes, 5000);
+        project.generationFailure = undefined;
         project.scriptLastEditedBy = clean(actor, 80) || project.marketerName;
       });
     },

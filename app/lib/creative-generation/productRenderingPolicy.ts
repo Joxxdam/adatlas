@@ -13,7 +13,7 @@ export function resolveProductRenderingPolicy(job: GenerationJob): ProductRender
   // 사용자가 고른 식품 풀과 ProductTruth의 식품 프로필을 우선한다. 상품명에
   // '건강간식'처럼 마케팅 단어가 있다는 이유만으로 건강·웰니스 상품으로
   // 재분류하면 원물/간식을 불필요한 포장 상품 AI 정책으로 보내게 된다.
-  if (override === "food-produce" || profile === "food_fresh" || /fruit|produce|agriculture|과일|농산물/i.test(productType)) {
+  if (override === "food-snack" || override === "food-produce" || profile === "food_fresh" || /snack|fruit|produce|agriculture|간식|과일|농산물/i.test(productType)) {
     return "standard-reference";
   }
   const packageText = [productText, job.productTruth.normalized?.packageOrOption, job.productTruth.normalized?.quantity, job.productTruth.normalized?.composition].filter(Boolean).join(" ");
@@ -53,6 +53,12 @@ export function resolveProtectedProductPlacement(result: GenerationResult): Plac
 
 export function productRenderingPromptContract(job: GenerationJob, result: GenerationResult) {
   const policy = resolveProductRenderingPolicy(job);
+  const productConstraints = job.productTruth.productCopyConstraints || [];
+  const constraintContract = productConstraints.length
+    ? `\nPRODUCT CONDITION CONSTRAINTS — INTERNAL, NEVER RENDER AS COPY
+- These OCR-backed notes prevent visual or verbal overstatement: ${productConstraints.join("; ")}
+- Do not print, paraphrase or expose these cautionary notes in the advertisement. Use them only to avoid depicting a more premium grade, more uniform appearance, different use class or better physical condition than the actual sold product.`
+    : "";
   if (policy === "natural-meat-reference") {
     return `MEAT PRODUCT POLICY — NATURAL SCENE INTEGRATION
 - Treat the highest-resolution authoritative URL product photos as the visual truth for the sold cut, muscle direction, irregular marbling boundaries, fat-to-lean ratio, meat color, thickness, surface moisture, pack count and label. Do not average these details into a generic steak or chicken image.
@@ -66,7 +72,7 @@ export function productRenderingPromptContract(job: GenerationJob, result: Gener
 - In a genuine cooking or serving composition, show only a plausible portion unwrapped while keeping the verified sold unit truthful; do not imply a different bundle, tray count or gift-set package.
 - Match the reference photo's white balance and natural food color. Avoid neon red/orange saturation, cloned marbling, symmetrical fibers, melted-plastic highlights, waxy skin, floating trays and unrelated stock meat photography.
 - Use the source photos as visual evidence, not as pixels to paste: recreate the product coherently inside the selected advertisement layout and never crop, screen-capture, cut out or locally composite the seller photo.
-- If the source evidence is insufficient for a convincing close-up, use a slightly wider credible cooking or serving composition instead of hallucinating macro texture.`;
+- If the source evidence is insufficient for a convincing close-up, use a slightly wider credible cooking or serving composition instead of hallucinating macro texture.${constraintContract}`;
   }
   if (policy === "protected-packaged-product") {
     const placement = resolveProtectedProductPlacement(result);
@@ -77,8 +83,8 @@ export function productRenderingPromptContract(job: GenerationJob, result: Gener
 - Generate or edit the surrounding scene, contact surface, water, foam, ingredients, hands, reflections and shadows around the protected product region. Do not paint over the package to make the lighting match.
 - Keep at least one protected hero package large and unobstructed enough for its real label hierarchy to remain recognizable on mobile.
 - Reserve this exact 1200-grid product region for the immutable layer: x=${placement.x}, y=${placement.y}, width=${placement.width}, height=${placement.height}. Keep advertising copy and faces outside it.
-- A clean protected composite is intentional identity preservation, not permission to add a detached stock-product sticker. Ground it with coherent scale, occlusion-free placement and surrounding scene light while leaving the product RGB pixels unchanged.`;
+- A clean protected composite is intentional identity preservation, not permission to add a detached stock-product sticker. Ground it with coherent scale, occlusion-free placement and surrounding scene light while leaving the product RGB pixels unchanged.${constraintContract}`;
   }
   return `STANDARD PRODUCT REFERENCE POLICY
-- Preserve the authoritative URL product's type, silhouette, proportions, package structure, dominant colors, count and recognizable details while integrating it naturally into the scene.`;
+- Preserve the authoritative URL product's type, silhouette, proportions, package structure, dominant colors, count and recognizable details while integrating it naturally into the scene.${constraintContract}`;
 }

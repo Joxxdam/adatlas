@@ -2,6 +2,7 @@ import "server-only";
 
 import crypto from "node:crypto";
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader.ts";
 import {
@@ -29,7 +30,9 @@ import {
   assignPlanningTimeline,
   hasVerifiedVideoBenefit,
   repairDetailedPlanningAudienceCopy,
+  repairDetailedPlanningCommercialRestraint,
   repairDetailedPlanningCta,
+  repairDetailedPlanningOpeningHook,
   repairDetailedPlanningSceneDescriptions,
   segmentRange,
   validateConceptDiversity,
@@ -50,7 +53,6 @@ import {
   selectVideoPlanningBlueprints,
 } from "./videoPlanningBlueprints.ts";
 import { runWithSingleVideoPlanningCorrection } from "./videoPlanningCorrection.ts";
-import { analyzeReferenceAssets } from "./planningPipeline.ts";
 import {
   matchesVideoParodyGenre,
   selectVideoParodyGenre,
@@ -274,40 +276,39 @@ function localReferencePath(asset: VideoReferenceAsset) {
 }
 
 export async function analyzeVideoReferencesAi(assets: VideoReferenceAsset[]) {
-  // The Responses API receives no tools and cannot dereference a server-local video path.
-  // Keep the uploaded reference in the project, but do not present an unobserved video as
-  // AI-analyzed. The explicit codex-local provider retains the existing local media path.
-  if (getVideoPlanningProvider() === "openai-api") {
-    return analyzeReferenceAssets(assets);
-  }
-
-  const videoAssets = assets
-    .filter((asset) => asset.mimeType.startsWith("video/"))
+  const provider = getVideoPlanningProvider();
+  const mediaAssets = assets
+    .filter((asset) => asset.mimeType.startsWith("image/") || (provider === "codex-local" && asset.mimeType.startsWith("video/")))
     .map((asset) => ({ ...asset, localPath: localReferencePath(asset) }))
     .filter((asset) => Boolean(asset.localPath))
     .slice(0, 3);
-  const nonVideos: ReferenceVideoAnalysis[] = assets
-    .filter((asset) => !asset.mimeType.startsWith("video/"))
+  const selectedAssetIds = new Set(mediaAssets.map((asset) => asset.id));
+  const unavailableAssets: ReferenceVideoAnalysis[] = assets
+    .filter((asset) => !selectedAssetIds.has(asset.id))
     .map((asset) => ({
       assetId: asset.id,
       assetName: asset.name,
-      analysisStatus: "not-applicable",
-      openingHookMethod: "정지 자료",
-      openingTiming: "해당 없음",
+      analysisStatus: asset.mimeType.startsWith("video/") || asset.mimeType.startsWith("image/") ? "limited" : "not-applicable",
+      openingHookMethod: "확인 불가",
+      openingTiming: "확인 불가",
       cutCount: null,
       averageCutLength: null,
       cameraAndGaze: [],
       actions: [],
-      informationDensity: "해당 없음",
-      subtitlePosition: "해당 없음",
+      informationDensity: "확인 불가",
+      subtitlePosition: "확인 불가",
       transitions: [],
       timingMap: { problem: "해당 없음", product: "해당 없음", usp: "해당 없음", cta: "해당 없음" },
       compositionRatio: { liveAction: null, animation: null, composite: null },
-      emotionalTone: "해당 없음",
+      emotionalTone: "확인 불가",
       reusablePrinciples: [],
-      limitations: ["정지 자료는 영상 컷 타이밍 분석 대상이 아닙니다."],
+      limitations: [
+        provider === "openai-api" && asset.mimeType.startsWith("video/")
+          ? "현재 Responses API 영상 기획 경로는 정지 이미지 레퍼런스만 직접 판독합니다."
+          : "참고 자료 파일을 읽지 못했거나 지원하지 않는 형식입니다.",
+      ],
     }));
-  if (!videoAssets.length) return nonVideos;
+  if (!mediaAssets.length) return unavailableAssets;
 
   try {
     const payload = await runVideoPlanningAi<{ analyses: AiReferenceAnalysis[] }>({
@@ -315,14 +316,24 @@ export async function analyzeVideoReferencesAi(assets: VideoReferenceAsset[]) {
       purpose: "analysis",
       outputSchema: referenceAnalysisSchema as unknown as Record<string, unknown>,
       timeoutMs: Number(process.env.VIDEO_PLANNING_ANALYSIS_TIMEOUT_MS || 45_000),
-      prompt: `당신은 숏폼 퍼포먼스 광고 편집 분석가다. 아래 로컬 참고 영상을 운영체제에서 사용할 수 있는 읽기 전용 미디어 정보 도구와 샘플 프레임으로 분석한다. 특정 명령어가 없으면 다른 읽기 전용 도구를 사용하고, 확인하지 못한 값은 추측하지 않는다. 새 이미지나 영상을 생성하지 않으며 원본 파일을 수정하지 않는다.
+      imageDataUrls:
+        provider === "openai-api"
+          ? await Promise.all(
+              mediaAssets.map(async (asset) =>
+                `data:${asset.mimeType};base64,${(await readFile(asset.localPath)).toString("base64")}`
+              )
+            )
+          : undefined,
+      prompt: `당신은 숏폼 퍼포먼스 광고 편집 분석가다. ${provider === "openai-api" ? "첨부된 정지 광고 이미지를 직접 확인한다." : "아래 로컬 참고 영상 또는 정지 광고 이미지를 읽기 전용 도구로 직접 확인한다."} 확인하지 못한 값은 추측하지 않는다. 새 이미지나 영상을 생성하지 않으며 원본 파일을 수정하지 않는다.
 
-[로컬 참고 영상]
-${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: asset.name, localPath: asset.localPath })))}
+[참고 자료]
+${JSON.stringify(mediaAssets.map((asset) => ({ assetId: asset.id, assetName: asset.name, mimeType: asset.mimeType, ...(provider === "codex-local" ? { localPath: asset.localPath } : {}) })))}
 
-각 파일의 첫 장면 후킹 방식, 컷 전환 속도, 평균 자막 길이, 문제 제기 시점, 상품 등장 시점, 인물 말투, 장면 구성, 시각 변화, USP와 CTA 시점을 분석한다. emotionalTone에는 단순히 ‘친근함’이라고 일반화하지 말고 반말/존댓말, 직접 호칭, 문장 파편, 머뭇거림, 과장 직전의 직설성 같은 화법을 구체적으로 적는다. reusablePrinciples에는 구조·속도뿐 아니라 ㅎㅎ, ..., ..?, ;; 같은 말끝 장치, 호칭 방식, 댓글·독백 리듬을 원문 전체를 복제하지 않는 짧은 패턴으로 기록한다. 브랜드·인물·장면과 완성 문장을 복제하지 않는다. 실제로 확인하지 못한 항목은 추측하지 말고 analysisStatus를 limited로 두고 limitations에 이유를 쓴다. JSON만 반환한다.`,
+영상은 첫 장면 후킹, 컷 속도, 자막 길이, 문제·상품·USP·CTA 시점, 인물 말투와 시각 변화를 분석한다. 정지 광고 이미지는 cutCount=1, averageCutLength=0으로 두고 openingTiming에는 ‘첫 화면’을 쓴다. 이미지 안에서 실제로 읽히는 헤드라인·가격·보조 문구, 가장 먼저 보이는 피사체, 상품의 식감·사용 욕구 또는 사람의 반응을 어떻게 후킹으로 만든 것인지, 가격이 주인공인지 보조 근거인지를 분석한다. 이미지에 없는 움직임이나 대사를 창작하지 않는다.
+
+emotionalTone에는 단순히 ‘친근함’이라고 일반화하지 말고 반말/존댓말, 직접 호칭, 문장 파편, 머뭇거림, 과장 직전의 직설성 같은 화법을 구체적으로 적는다. reusablePrinciples에는 원문 전체를 복제하지 않는 범위에서 ‘관찰 가능한 맛의 이유 → 한입 반응’, ‘가격은 마지막 확신’처럼 맥락과 욕구가 이어지는 원리를 적는다. 브랜드·인물·완성 문장을 복제하지 않는다. 실제로 확인하지 못한 항목은 추측하지 말고 analysisStatus를 limited로 두고 limitations에 이유를 쓴다. JSON만 반환한다.`,
     });
-    const allowed = new Set(videoAssets.map((asset) => asset.id));
+    const allowed = new Set(mediaAssets.map((asset) => asset.id));
     const analyses = payload.analyses
       .filter((analysis) => allowed.has(analysis.assetId))
       .map((analysis): ReferenceVideoAnalysis => ({
@@ -330,7 +341,7 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
         cutCount: analysis.cutCount || null,
         averageCutLength: analysis.averageCutLength || null,
       }));
-    const completed = videoAssets.map(
+    const completed = mediaAssets.map(
       (asset) =>
         analyses.find((analysis) => analysis.assetId === asset.id) || {
           assetId: asset.id,
@@ -354,16 +365,16 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
           compositionRatio: { liveAction: null, animation: null, composite: null },
           emotionalTone: "확인 불가",
           reusablePrinciples: [],
-          limitations: ["참고 영상의 프레임 구조를 완전히 확인하지 못했습니다."],
+          limitations: ["참고 자료의 시각 구조를 완전히 확인하지 못했습니다."],
         }
     );
-    return [...completed, ...nonVideos];
+    return [...completed, ...unavailableAssets];
   } catch (error) {
     console.info(
       `[video-planning] stage=reference-analysis event=limited code=${error instanceof VideoPlanningGenerationError ? error.failure.code : "REFERENCE_ANALYSIS_LIMITED"}`
     );
     return [
-      ...videoAssets.map((asset): ReferenceVideoAnalysis => ({
+      ...mediaAssets.map((asset): ReferenceVideoAnalysis => ({
         assetId: asset.id,
         assetName: asset.name,
         analysisStatus: "limited",
@@ -386,10 +397,10 @@ ${JSON.stringify(videoAssets.map((asset) => ({ assetId: asset.id, assetName: ass
         emotionalTone: "확인 불가",
         reusablePrinciples: [],
         limitations: [
-          "참고 영상 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다.",
+          "참고 자료 분석만 제한되었습니다. 상품 근거 기반 4개 콘셉트 생성은 계속할 수 있습니다.",
         ],
       })),
-      ...nonVideos,
+      ...unavailableAssets,
     ];
   }
 }
@@ -998,7 +1009,7 @@ ${correction} JSON만 반환한다.`,
   return concepts;
 }
 
-type AiScriptRow = { caption: string; sceneDescription: string };
+type AiScriptRow = { caption: string; narration: string; sceneDescription: string };
 
 function scriptSchema(duration: VideoDuration) {
   const count = segmentRange(duration).preferred;
@@ -1014,10 +1025,11 @@ function scriptSchema(duration: VideoDuration) {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["caption", "sceneDescription"],
+          required: ["caption", "narration", "sceneDescription"],
           properties: {
             caption: { type: "string", minLength: 4, maxLength: 46 },
-            sceneDescription: { type: "string", minLength: 80, maxLength: 700 },
+            narration: { type: "string", minLength: 0, maxLength: 220 },
+            sceneDescription: { type: "string", minLength: 70, maxLength: 420 },
           },
         },
       },
@@ -1048,7 +1060,7 @@ function rowsToCuts(
       startSecond: row.startSecond,
       endSecond: row.endSecond,
       caption: clean(row.caption, 80),
-      narration: "",
+      narration: clean(row.narration, 320),
       sceneDescription: clean(row.sceneDescription, 1000),
       requiredSources: beat ? [beat.visual] : [],
       referenceImages: [],
@@ -1105,8 +1117,8 @@ function detailedPrompt(input: {
 }) {
   const count = segmentRange(input.duration).preferred;
   const ctaDuration = input.duration >= 45 ? 3 : input.duration >= 30 ? 2.4 : input.duration >= 20 ? 2 : 1.5;
-  const bodyDuration = Math.max(1, (input.duration - 3 - ctaDuration) / Math.max(1, count - 4));
-  const bodyCaptionMax = Math.max(10, Math.min(22, Math.floor(bodyDuration * 10)));
+  const bodyDuration = Math.max(1, (input.duration - 3 - ctaDuration) / Math.max(1, count - 3));
+  const bodyCaptionMax = Math.max(7, Math.min(22, Math.floor(bodyDuration * 10)));
   const ctaCaptionMax = Math.max(12, Math.min(30, Math.floor(ctaDuration * 10)));
   return `당신은 촬영팀이 추가 질문 없이 실행할 수 있는 한국 퍼포먼스 광고 숏폼 대본을 쓴다.
 
@@ -1167,11 +1179,19 @@ ${blueprintPrompt(input.concept.blueprintSelection)}
 [사용자 수정 요청]
 ${clean(input.revisionFeedback, 1600) || "없음"}
 
-정확히 ${count}개 구간을 만든다. 첫 3개 행은 각각 첫 1초, 2초, 3초에 해당하고 최소 2번 화면이 확실히 바뀐다. 배정된 주 블루프린트의 장면 역할과 전체 리듬을 상품에 맞게 전용하고, 보조 블루프린트는 훅 또는 CTA 장치 하나만 참고한다. 첫 자막부터 상품명을 설명하지 않는다. 첫 3개 자막 중 하나에는 targetCallout을 그대로 또는 말맛만 유지한 짧은 변형으로 반드시 넣는다.
+정확히 ${count}개 구간을 만든다. 첫 두 행이 0~1.2초와 1.2~3초를 맡고 두 화면 사이에 확실한 사건 변화가 있어야 한다. 배정된 주 블루프린트는 참고하되, 선택 기획안의 한 가지 중심 사건이 시작→궁금증→증거→반응→행동으로 이어져야 한다. 장면을 가격·구성·USP 카드의 나열로 만들지 않는다. 첫 자막부터 상품명을 설명하지 않고, 첫 두 자막 중 하나에는 targetCallout을 말맛만 유지한 자연스러운 변형으로 넣는다.
+
+[내레이션과 대화]
+- narration은 실제로 사람이 읽거나 말할 수 있는 대사·보이스오버다. 제작 설명문이 아니다. 마지막 CTA를 제외한 구간의 절반 이상에 자연스러운 narration을 쓴다.
+- caption은 말의 핵심을 짧게 보완하는 화면 문구다. narration을 그대로 복사하거나 모든 정보를 자막으로 압축하지 않는다.
+- 상황극은 ‘아버지:’, ‘딸:’처럼 필요한 화자 표기를 narration에만 쓸 수 있다. caption에는 화자 라벨을 쓰지 않는다.
+- 실제 후기가 아닌 연출임을 밝혀야 할 때는 sceneDescription의 작은 화면 고지나 productionMemo 수준으로 처리한다. ‘광고용 상황극입니다’ 같은 제작 고지를 narration이나 caption으로 읽지 않는다.
+- 첫 narration과 caption은 같은 사건을 가리켜야 한다. 첫 화면에서 뒤 장면의 대사를 미리 들려주는 콜드 오픈이라면 caption이 그 대사의 상황을 즉시 이해시켜야 한다.
+- fullScript는 타임코드·괄호 지시·자막 목록 없이 narration 중심으로 연결한 실제 음성 대본이다. 말이 없는 핵심 장면만 caption 문장을 보충한다.
 
 [자막 분량과 완성도]
-- 첫 1~3초 자막은 각 1초 화면에 맞춰 공백 제외 5~10자로 쓴다. 짧아도 타깃 호명·문제·반응 중 하나가 완결되어야 한다.
-- 4번째부터 마지막 직전까지는 공백 제외 7~${bodyCaptionMax}자로 쓴다. 한 화면에서 한 번에 읽히는 한 문장 또는 자연스러운 문장 파편만 사용한다.
+- 첫 3초의 두 자막은 공백 제외 5~13자로 쓴다. 짧아도 타깃 호명·상황·반응 중 하나가 완결되어야 한다.
+- 3번째부터 마지막 직전까지는 공백 제외 7~${bodyCaptionMax}자로 쓴다. 한 화면에서 한 번에 읽히는 한 문장 또는 자연스러운 문장 파편만 사용한다.
 - 마지막 CTA는 약 ${ctaDuration}초 동안 보이며 공백 제외 ${ctaCaptionMax}자 이내로 쓴다. 반드시 확인·구매·예약·신청처럼 시청자가 실행할 행동 동사로 끝낸다.
 - 글자 수를 줄이려고 한국어 띄어쓰기를 삭제하지 않는다. ‘마블링 많으면 끝..?’, ‘국내산 설록우 등심’처럼 조사와 단어 사이의 자연스러운 띄어쓰기를 유지한다. 숫자와 단위(250ml, 1kg, 66%)만 붙여 쓴다.
 - ‘~될 수’, ‘~하면’, ‘~인데’, ‘~라는’처럼 조사·연결어에서 자막을 끊지 않는다. 화면 하나만 읽어도 뜻이 완결되는 문장으로 마친다.
@@ -1190,9 +1210,11 @@ ${clean(input.revisionFeedback, 1600) || "없음"}
 
 ‘이 제품의 정체를 확인합니다’, ‘핵심 차이를 살펴봅니다’ 같은 진행자 설명문으로 순화하지 않는다. ㅎㅎ, ..., ..?, ;;는 필수가 아니며 전체 대본에서 감정상 꼭 필요한 곳에만 최대 1~2회 사용한다. 상세페이지 문장을 잘라 붙이지 않고 같은 문장과 상품명을 반복하지 않는다. 마지막 행의 caption에는 기획안의 CTA 문구를 정확히 포함한다.
 
-참고 영상의 품질 원칙처럼 첫 1~3초에는 인물·상품·검증된 가격 중 하나를 강하게 노출하고, 6초 전에는 다른 피사체 또는 B-roll로 전환한다. ${hasVerifiedVideoBenefit(input.analysis) ? "8초 안에 ProductTruth로 확인된 가격·할인·구성 중 하나를 자막에 정확히 노출한다. 블라인드 테스트처럼 정체 공개가 결말인 장르는 상품명을 숨겨도 되지만 확인된 가격·구성 예고까지 늦추지 않는다." : "확인된 판매 혜택이 없으므로 가격·할인·구성을 창작하지 않고 상품 사용 장면을 초반부터 보여준다."} 발표자와 원물·생산·사용·가격·신뢰 장면을 교차하고 상품은 초반부터 반복 노출한다. 배송 정보는 어떤 경우에도 사용하지 않는다. 원문 자막과 특정 인물·장면은 복제하지 않는다.
+첫 3초에는 인물의 즉각적인 반응, 상품의 가장 먹고 싶거나 써 보고 싶은 순간, 또는 선택 기획안의 갈등 중 하나를 강하게 보여준다. 6초 전에는 그 반응의 이유가 되는 다른 피사체나 행동으로 전환한다. ${hasVerifiedVideoBenefit(input.analysis) ? "가격·할인·구성은 기획안의 중심 사건이 가격일 때만 초반 근거로 쓰고, 그 외에는 욕구와 이유가 먼저 납득된 뒤 최대 두 구간에서만 보조 근거로 쓴다. 가격·중량·할인을 서로 이어 붙인 정보 카드 장면은 금지한다." : "확인된 판매 혜택이 없으므로 가격·할인·구성을 창작하지 않고 상품 사용 장면을 초반부터 보여준다."}
 
-각 sceneDescription은 100자 이상이며 촬영팀이 그대로 실행할 수 있게 등장인물·사물, 장소·배경, 구체 행동, 표정·반응, 카메라 구도, 필요한 제품 노출, 활용 B-roll, 전환·편집 방식, 기존 촬영본 재사용 가능 여부를 자연스러운 문장으로 모두 쓴다. 각 행에 '첫 화면', '장소', '주체', '행동', '관찰 가능한 반응', '다음 전환'이 반드시 문장으로 드러나야 한다. 사람이 없는 제품·원물 B-roll의 반응은 표면 변화·윤기·색감·거품·물방울·수증기·질감처럼 카메라로 확인할 수 있는 시각 반응으로 쓴다. 반드시 무엇이 먼저 보이고 다음 구간에서 무엇으로 바뀌는지도 명시한다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다', '사용 전후를 비교한다', '제품 전체와 CTA를 보여준다' 같은 추상 문장은 금지한다.
+식품이라면 ‘맛있다’라는 결론만 말하지 않는다. 굽는 소리, 표면의 윤기·육즙, 잘리는 결, 밥이나 다음 한입을 찾는 생활 반응처럼 카메라로 확인 가능한 이유와 맥락을 먼저 만든다. 가족·친구의 반응은 연출된 상황극으로 명확히 쓰고 실제 후기처럼 꾸미지 않는다. 발표자·원물·조리·먹는 반응·상품 정보를 중심 사건에 필요한 만큼만 교차한다. 배송 정보는 어떤 경우에도 사용하지 않는다. 원문 자막과 특정 인물·장면은 복제하지 않는다.
+
+각 sceneDescription은 70~420자로, 촬영팀이 실행할 수 있을 만큼 구체적이되 체크리스트 문구를 반복하지 않는다. 장소와 주체, 이 구간에서 이야기가 바뀌는 한 가지 행동, 카메라가 먼저 잡는 시각 요소, 다음 구간으로 넘기는 전환을 자연스러운 2~3문장으로 쓴다. 사람이 없는 제품 B-roll은 표면 변화·윤기·색감·거품·수증기·질감처럼 카메라로 확인할 수 있는 반응을 쓴다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다' 같은 추상 문장은 금지한다.
 
 검증된 사실에 없는 숫자·효능·원산지·후기·성과는 쓰지 않는다. 이미지, 이미지 프롬프트, 이미지 생성, visualBible, productLockedAsset은 만들지 않는다. ${input.correction || ""} JSON만 반환한다.`;
 }
@@ -1231,10 +1253,14 @@ export async function generateDetailedVideoScriptAi(input: {
     previous: VideoConcept,
     revised: boolean
   ) => {
+    const cuts = rowsToCuts(payload.rows, generationInput.duration, previous.cuts, previous);
     let concept: VideoConcept = {
       ...previous,
-      cuts: rowsToCuts(payload.rows, generationInput.duration, previous.cuts, previous),
-      fullScript: clean(payload.fullScript, 4000),
+      cuts,
+      fullScript: cuts
+        .map((cut) => clean(cut.narration, 320) || clean(cut.caption, 80))
+        .filter(Boolean)
+        .join(" "),
       detailStatus: "ready",
       generationFailure: undefined,
       revision: previous.revision + 1,
@@ -1243,6 +1269,10 @@ export async function generateDetailedVideoScriptAi(input: {
     concept = repairDetailedPlanningSceneDescriptions(concept, generationInput.analysis);
     concept = sanitizeGeneratedConceptCopy(concept, generationInput.guideline.forbiddenPhrases);
     concept = repairDetailedPlanningAudienceCopy(concept);
+    // 최초 응답의 반복은 구간 번호가 포함된 품질 피드백으로 AI가 문맥에 맞게
+    // 고치게 합니다. 한 번의 교정 뒤에도 남은 경우에만 결정적 안전 보정을 씁니다.
+    if (revised) concept = repairDetailedPlanningCommercialRestraint(concept, generationInput.analysis);
+    concept = repairDetailedPlanningOpeningHook(concept);
     concept = repairDetailedPlanningCta(concept);
     concept.validation = {
       ...validateDetailedPlanning(concept, generationInput.analysis, generationInput.duration),
@@ -1354,6 +1384,8 @@ export async function regeneratePlanningSegmentAi(input: {
   concept = repairDetailedPlanningSceneDescriptions(concept, input.analysis);
   concept = sanitizeGeneratedConceptCopy(concept, input.guideline.forbiddenPhrases);
   concept = repairDetailedPlanningAudienceCopy(concept);
+  concept = repairDetailedPlanningCommercialRestraint(concept, input.analysis);
+  concept = repairDetailedPlanningOpeningHook(concept);
   concept = repairDetailedPlanningCta(concept);
   concept.validation = validateDetailedPlanning(concept, input.analysis, input.duration);
   return concept;

@@ -43,6 +43,8 @@ export function directProductInfo(extracted: ExtractedProductInfo, productUrl: s
     selectedSourceImagePath: sourceCandidates[0]?.imagePath || mainImage,
     productRepresentation: extracted.productRepresentation,
     reviewSources: extracted.reviewSources || [],
+    detailImageOcrInsights: extracted.detailImageOcrInsights || [],
+    productCopyConstraints: extracted.productCopyConstraints || [],
     verifiedBenefits: extracted.verifiedBenefits || [],
     ingredients: extracted.ingredients || [],
     vendorResearch: extracted.vendorResearch,

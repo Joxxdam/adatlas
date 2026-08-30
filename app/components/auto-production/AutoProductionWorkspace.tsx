@@ -283,6 +283,45 @@ export function AutoProductionWorkspace() {
     };
   }, [hasActiveRun, refresh]);
 
+  const runAction = useCallback(
+    async (key: string, work: () => Promise<void>) => {
+      setWorking(key);
+      setError("");
+      try {
+        await work();
+        await refresh();
+      } catch (actionError) {
+        setError(actionError instanceof Error ? actionError.message : "요청을 처리하지 못했습니다.");
+      } finally {
+        setWorking(null);
+      }
+    },
+    [refresh]
+  );
+
+  const preview = useCallback(
+    async (advertiserId?: string, applyCandidates = false) => {
+      await runAction(`preview:${advertiserId || "all"}`, async () => {
+        const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
+          method: "POST",
+          body: JSON.stringify({ advertiserId }),
+        });
+        setPreviews((current) => (advertiserId ? [...current.filter((item) => item.advertiserId !== advertiserId), ...payload.previews] : payload.previews));
+        if (!applyCandidates) return;
+        setPlannedUrlDrafts((current) => {
+          const next = { ...current };
+          for (const previewItem of payload.previews) {
+            const config = advertisers.find((item) => item.advertiserId === previewItem.advertiserId);
+            const existing = next[previewItem.advertiserId] || [];
+            next[previewItem.advertiserId] = Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => config?.adminProductUrls[index] || existing[index] || previewItem.candidates[index]?.productUrl || "");
+          }
+          return next;
+        });
+      });
+    },
+    [advertisers, runAction]
+  );
+
   useEffect(() => {
     if (!advertisers.length || plannedPreviewRequested.current) return;
     plannedPreviewRequested.current = true;
@@ -296,40 +335,7 @@ export function AutoProductionWorkspace() {
       return next;
     });
     void preview();
-  }, [advertisers]);
-
-  async function runAction(key: string, work: () => Promise<void>) {
-    setWorking(key);
-    setError("");
-    try {
-      await work();
-      await refresh();
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "요청을 처리하지 못했습니다.");
-    } finally {
-      setWorking(null);
-    }
-  }
-
-  async function preview(advertiserId?: string, applyCandidates = false) {
-    await runAction(`preview:${advertiserId || "all"}`, async () => {
-      const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
-        method: "POST",
-        body: JSON.stringify({ advertiserId }),
-      });
-      setPreviews((current) => (advertiserId ? [...current.filter((item) => item.advertiserId !== advertiserId), ...payload.previews] : payload.previews));
-      if (!applyCandidates) return;
-      setPlannedUrlDrafts((current) => {
-        const next = { ...current };
-        for (const previewItem of payload.previews) {
-          const config = advertisers.find((item) => item.advertiserId === previewItem.advertiserId);
-          const existing = next[previewItem.advertiserId] || [];
-          next[previewItem.advertiserId] = Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => config?.adminProductUrls[index] || existing[index] || previewItem.candidates[index]?.productUrl || "");
-        }
-        return next;
-      });
-    });
-  }
+  }, [advertisers, preview]);
 
   async function run(advertiserId?: string) {
     await runAction(`run:${advertiserId || "all"}`, async () => {

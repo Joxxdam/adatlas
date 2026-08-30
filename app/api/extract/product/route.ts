@@ -3,8 +3,9 @@ import { ExtractedProductInfo, ProductImageCandidate, SourceImageCandidate } fro
 import { analyzeProductSourceCandidates } from "../../../lib/mvp/productImageAnalysis.server";
 import { inferProductRepresentation } from "../../../lib/mvp/productImagePipeline";
 import { analyzeReviewSourceCandidates, type ReviewRawCandidate } from "../../../lib/mvp/reviewImageAnalysis.server";
+import { analyzeProductDetailImageCandidates } from "../../../lib/mvp/productDetailOcr.server";
 import { reviewCandidateContextScore } from "../../../lib/mvp/reviewCreative";
-import { isUnsafeProductCreativeSignal } from "../../../lib/creative-generation/productSignalHygiene.ts";
+import { isMalformedProductSignal, isPriceOnlyCreativeSignal, isPromotionalProductSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../../../lib/creative-generation/productSignalHygiene.ts";
 import { normalizeCafe24BundlePricingClaims, resolveCafe24RequiredBundlePricing } from "../../../lib/store-analysis/extractors/cafe24Pricing";
 import { applyOriginalSourceVendorResearch } from "../../../lib/product-research/originalSourceResearch";
 
@@ -279,7 +280,7 @@ function normalizeProductCategory(rawCategory: string, productContext: string) {
   if (/건강기능|영양제|비타민|프로바이오틱스|supplement|wellness/.test(context)) {
     return "건강기능식품";
   }
-  if (/식품|음식|육류|한우|정육|소고기|돼지고기|과일|채소|농산|축산|사과|청사과|아오리|배|복숭아|자두|포도|수박|참외|딸기|감귤|한라봉|토마토|감자|고구마|옥수수|버섯|food|beef|meat|apple|fruit|produce/.test(context)) {
+  if (/식품|음식|육류|한우|정육|소고기|돼지고기|과일|채소|농산|축산|사과|청사과|아오리|배|복숭아|자두|포도|수박|참외|딸기|감귤|한라봉|토마토|감자|고구마|옥수수|버섯|무화과|곶감|말랭이|반건조|건조과일|간식|스낵|과자|디저트|빵|떡|견과|김치|반찬|수산|해산물|생선|food|beef|meat|apple|fruit|produce|snack|dessert/.test(context)) {
     return "식품/선물";
   }
   if (/패션|의류|신발|가방|fashion|apparel/.test(context)) return "패션/의류";
@@ -305,17 +306,6 @@ function looksLikeUsableProductImage(value: string) {
   if (/(sprite|favicon|logo|icon|blank|placeholder|loading|tracking|pixel|badge|btn|button|coupon|event|header|footer|share|kakao|talk|qr|app|ad_|ads?\/|noimage|salelabel|main_floting|main_info|floating|whiteclose|floating_zoom|commonimg|reward|insertreview|qnaregist|alarm_customer|getstockchild)/.test(lower)) return false;
   if (/\.(svg)(?:[?#].*)?$/.test(lower)) return false;
   return /\.(jpg|jpeg|png|webp|avif|gif)(?:[?#].*)?$/.test(lower) || /image|img|product|detail|thumb|thumfull|thumbpc|photo|cdn|upload|editor|contents?\//.test(lower);
-}
-
-function imageCandidateScore(value: string, context = "") {
-  const text = `${value} ${context}`.toLowerCase();
-  let score = 0;
-  if (/(product|goods|item|detail|thumb|thumbnail|photo|gallery|prd|prod|contents?|view|viewarea|detailview)/.test(text)) score += 2;
-  if (/(상품|제품|상세|상세정보|상품정보|대표|썸네일|포토|사진|갤러리|원본|고기|식품|구성|조리컷|실제)/.test(text)) score += 2;
-  if (/(main|large|big|origin|original)/.test(text)) score += 1;
-  if (/(banner|event|coupon|promo|promotion|logo|icon|badge|button|btn|sprite|delivery|review-star|recommend|related|recent|bestitem)/.test(text)) score -= 6;
-  if (/(배너|이벤트|쿠폰|기획전|프로모션|로고|아이콘|배송|혜택|버튼|오늘의\s*추천상품|추천상품|관련상품|최근\s*본\s*상품|함께\s*구매|다른\s*고객)/.test(text)) score -= 8;
-  return score;
 }
 
 function textContextFromHtml(value: string) {
@@ -702,7 +692,7 @@ function indexInRanges(index: number, ranges: Array<[number, number]>) {
 const productUspTextPattern = /(원산지|국내산|한우|등급|부위|등심|안심|채끝|갈비|마블링|선별|숙성|냉장|냉동|산지|직송|구성|중량|용량|식감|육즙|풍미|고소|부드|신선|원재료|함량|무첨가|저자극|향|세정|쿨링|보습|선물|캠핑|가족|실속|프리미엄|특마블|도매팩|사과|청사과|아오리|과일|제철|수확|한정|아삭|새콤달콤|청량|과즙|품종)/i;
 const productUspBoilerplatePattern = /(로그인|회원가입|장바구니|마이페이지|고객센터|상품문의|구매후기|리뷰쓰기|교환|반품|환불|배송안내|개인정보|이용약관|추천상품|관련상품|최근 본 상품|전체\s*리뷰|리뷰\s*목록|step\s*\d+|구성\s*선택|copyright|all rights reserved)/i;
 function isNoisyProductSignal(value: string) {
-  return isUnsafeProductCreativeSignal(value) || /[ㄱ-ㅎㅏ-ㅣ]|너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
+  return isUnsafeProductCreativeSignal(value) || isMalformedProductSignal(value) || /[ㄱ-ㅎㅏ-ㅣ]|너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
 }
 
 function productDetailText(html: string) {
@@ -733,7 +723,7 @@ function extractProductUspDescription(html: string, baseDescription: string, pro
       const length = [...value.replace(/\s+/g, "")].length;
       const normalized = value.toLowerCase();
       const matchesCurrentProduct = !productNameTokens.length || productNameTokens.some((token) => normalized.includes(token)) || productUspTextPattern.test(value);
-      return length >= 5 && length <= 120 && matchesCurrentProduct && !productUspBoilerplatePattern.test(value) && !isNoisyProductSignal(value) && !/^(상품|제품|상세|정보|설명|홈)$/.test(value);
+      return length >= 5 && length <= 120 && matchesCurrentProduct && !productUspBoilerplatePattern.test(value) && !isNoisyProductSignal(value) && !isPriceOnlyCreativeSignal(value) && !/^(상품|제품|상세|정보|설명|홈)$/.test(value);
     })
     .map((value, index) => {
       let score = index === 0 && baseDescription ? 20 : 0;
@@ -761,6 +751,8 @@ function selectMainBenefit(benefits: string[], description: string, productName:
     .map((value) => decodeHtml(value).replace(/\s+/g, " ").trim())
     .filter(Boolean)
     .filter((value) => value !== productName)
+    .filter((value) => !isVagueStandaloneSensoryClaim(value))
+    .filter((value) => !isPriceOnlyCreativeSignal(value) && !isPromotionalProductSignal(value))
     .filter((value) => !/(택배사|배송비|포인트\s*지급|회원|로그인|쿠폰)/i.test(value) && !isNoisyProductSignal(value));
   const ranked = candidates
     .map((value, index) => {
@@ -785,6 +777,7 @@ function extractStructuredProductSignals(description: string) {
     .filter((value) => value.length >= 4 && value.length <= 120 && !productUspBoilerplatePattern.test(value) && !isNoisyProductSignal(value));
   const verifiedBenefits = candidates
     .filter((value) => productUspTextPattern.test(value))
+    .filter((value) => !isPriceOnlyCreativeSignal(value) && !isPromotionalProductSignal(value) && !isMalformedProductSignal(value))
     .filter((value) => !/&#\d+;|(?:^|\s)1등(?:\s|$)/i.test(value))
     .filter((value, index, values) => values.indexOf(value) === index)
     .slice(0, 12);
@@ -980,13 +973,38 @@ export async function POST(request: Request) {
       packageType: [productName, extractedDescription].join(" "),
     });
     const rawReviewCandidates = collectReviewImageCandidates(html, url.toString());
-    const reviewSources = await analyzeReviewSourceCandidates({
-      candidates: rawReviewCandidates,
-      productName,
-      productDescription: extractedDescription,
-      collectLimit: 10,
-      displayLimit: 5,
-    }).catch(() => []);
+    const detailOcrCandidates: ProductImageCandidate[] = [
+      ...enhancedCandidates,
+      ...mergedGalleryCandidates
+        .filter((image) => image !== fallbackMainImage && !enhancedCandidates.some((candidate) => candidate.url === image))
+        .map((image, index) => ({
+          url: image,
+          type: "detail" as const,
+          score: Math.max(5, 35 - index),
+          reason: "상품 상세 영역에서 수집한 OCR 후보",
+        })),
+    ];
+    const [reviewSources, detailImageOcrInsights] = await Promise.all([
+      analyzeReviewSourceCandidates({
+        candidates: rawReviewCandidates,
+        productName,
+        productDescription: extractedDescription,
+        collectLimit: 10,
+        displayLimit: 5,
+      }).catch(() => []),
+      analyzeProductDetailImageCandidates({
+        candidates: detailOcrCandidates,
+        productName,
+        category: normalizedCategory,
+        price,
+        originalPrice,
+        discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(html, price, originalPrice),
+        description: extractedDescription,
+        verifiedBenefits: structuredSignals.verifiedBenefits,
+        ingredients: structuredSignals.ingredients,
+      }).catch(() => []),
+    ]);
+    const productCopyConstraints = Array.from(new Set(detailImageOcrInsights.flatMap((insight) => insight.productConstraints))).slice(0, 20);
     const rankedCandidates: ProductImageCandidate[] = [
       ...(fallbackMainImage
         ? [
@@ -1075,6 +1093,8 @@ export async function POST(request: Request) {
       sourceImageCandidates,
       productRepresentation: inferredRepresentation,
       reviewSources,
+      detailImageOcrInsights,
+      productCopyConstraints,
       verifiedBenefits: structuredSignals.verifiedBenefits,
       ingredients: structuredSignals.ingredients,
     };

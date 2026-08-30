@@ -1,55 +1,12 @@
 import "server-only";
 
-import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
-import { promisify } from "node:util";
 import { Codex } from "@openai/codex-sdk";
+import { codexLocalEnvironment, requireFreshCodexLocalChatGptLogin } from "../creative-generation/codexLocalRuntime.server";
 import type { VideoGenerationStage } from "./types.ts";
 import { assertStructuredVideoPlanningResponse } from "./structuredSchema.ts";
 import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, videoPlanningFailureMessage, VideoPlanningGenerationError, type VideoPlanningAiInput } from "./videoPlanningAiCore.ts";
 
 export { sanitizeVideoPlanningErrorMessage, VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "./videoPlanningAiCore.ts";
-
-const execFileAsync = promisify(execFile);
-let authenticatedExecutablePromise: Promise<string> | undefined;
-
-function safeEnvironment() {
-  const secretNames = new Set(["OPENAI_API_KEY", "CODEX_API_KEY", "AZURE_OPENAI_API_KEY", "REMOVE_BG_API_KEY"]);
-  return Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !secretNames.has(key))) as Record<string, string>;
-}
-
-function codexExecutable() {
-  const explicit = process.env.CODEX_CLI_PATH?.trim();
-  if (explicit && existsSync(explicit)) return explicit;
-  for (const directory of (process.env.PATH || "").split(path.delimiter)) {
-    const candidate = path.join(directory, process.platform === "win32" ? "codex.exe" : "codex");
-    if (existsSync(candidate)) return candidate;
-  }
-  return undefined;
-}
-
-async function assertAuthenticated() {
-  if (authenticatedExecutablePromise) return authenticatedExecutablePromise;
-  authenticatedExecutablePromise = (async () => {
-    const executable = codexExecutable();
-    if (!executable) throw new Error("로컬 Codex 실행 파일을 찾지 못했습니다.");
-    const { stdout, stderr } = await execFileAsync(executable, ["login", "status"], {
-      timeout: 10_000,
-      env: safeEnvironment() as NodeJS.ProcessEnv,
-    });
-    if (!/logged in/i.test(`${stdout}\n${stderr}`)) {
-      throw new Error("로컬 Codex 로그인이 필요합니다.");
-    }
-    return executable;
-  })();
-  try {
-    return await authenticatedExecutablePromise;
-  } catch (error) {
-    authenticatedExecutablePromise = undefined;
-    throw error;
-  }
-}
 
 function safeMessage(error: unknown) {
   return sanitizeVideoPlanningErrorMessage(error);
@@ -64,7 +21,7 @@ function failureCode(error: unknown) {
   const message = safeMessage(error).toLowerCase();
   if (/timeout|timed out|abort/.test(message)) return "VIDEO_PLANNING_TIMEOUT";
   if (/json|parse|schema|validation/.test(message)) return "VIDEO_PLANNING_INVALID_RESPONSE";
-  if (/login|authenticated|실행 파일/.test(message)) return "VIDEO_PLANNING_AUTH_ERROR";
+  if (/login|authenticated|로그인|실행 파일/.test(message)) return "VIDEO_PLANNING_AUTH_ERROR";
   return "VIDEO_PLANNING_MODEL_ERROR";
 }
 
@@ -87,8 +44,8 @@ async function runCodexVideoPlanningAi<T>(input: VideoPlanningAiInput): Promise<
       startedAt: startedIso,
     });
     try {
-      const executable = await assertAuthenticated();
-      const codex = new Codex({ env: safeEnvironment(), codexPathOverride: executable });
+      const executable = await requireFreshCodexLocalChatGptLogin();
+      const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: executable });
       const thread = codex.startThread({
         workingDirectory: process.cwd(),
         sandboxMode: "workspace-write",

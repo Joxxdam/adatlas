@@ -65,11 +65,13 @@ export function inferProductRepresentation(input: RepresentationInput): ProductR
       reason: "원본 이미지에 정상 알파 채널이 확인됨",
     });
   }
-  if (/세트|구성|묶음|골라담|\d+\s*종|\d+\s*개|\d+\s*팩|\d+\s*병|\d+\s*입|\d+\s*\+\s*\d+|bundle|set/.test(text)) {
+  // 수량·묶음·1+1은 판매 조건일 뿐 세트 상품의 근거가 아니다.
+  // 상품 정보에 실제로 "세트"(또는 영문 set)가 있을 때만 세트 형태로 분류한다.
+  if (/세트|\bset\b/i.test(text)) {
     signals.push({
       type: /본품|구성품|액세서리|케이스|증정|사은품/.test(text) ? "bundle-components" : "multi-unit-set",
-      score: expectedUnitCount ? 0.9 : 0.78,
-      reason: expectedUnitCount ? `상품 정보에서 ${expectedUnitCount}개 판매 구성이 확인됨` : "상품 정보에서 세트 또는 묶음 구성이 확인됨",
+      score: 0.92,
+      reason: expectedUnitCount ? `세트 표기와 ${expectedUnitCount}개 판매 구성이 확인됨` : "상품 정보에서 세트 표기가 확인됨",
     });
   }
   if (/진공|트레이|포장|파우치|박스|팩\b|vacuum|package|tray/.test(text)) {
@@ -79,8 +81,8 @@ export function inferProductRepresentation(input: RepresentationInput): ProductR
       reason: "포장 또는 트레이가 판매 상태의 일부로 확인됨",
     });
   }
-  if (/접시|그릇|플레이팅|한상|조리예|serving|plated/.test(text)) {
-    signals.push({ type: "plated-product", score: 0.76, reason: "플레이팅된 식품 신호가 확인됨" });
+  if (/접시|그릇|플레이팅|한상|조리예|냉면|밀면|국수|칼국수|쌀국수|메밀면|비빔면|쫄면|라면|우동|파스타|스파게티|떡볶이|볶음밥|덮밥|비빔밥|국밥|갈비탕|곰탕|설렁탕|삼계탕|찌개|전골|serving|plated/.test(text)) {
+    signals.push({ type: "plated-product", score: 0.84, reason: "완성된 조리 음식 또는 플레이팅 식품 신호가 확인됨" });
   }
   if (/의류|셔츠|티셔츠|바지|원피스|가방|신발|패브릭|니트|후드|스커트|apparel|bag|shoes/.test(text)) {
     signals.push({
@@ -98,9 +100,9 @@ export function inferProductRepresentation(input: RepresentationInput): ProductR
   }
   if (/생고기|고기|등심|안심|갈비|한우|육류|꽃|화분|식물|과일|채소|사과|청사과|아오리|배|복숭아|자두|포도|수박|참외|딸기|감귤|한라봉|토마토|감자|고구마|옥수수|버섯|수산|회|원물|meat|fruit|apple|produce|flower|plant/.test(text)) {
     signals.push({
-      type: expectedUnitCount && expectedUnitCount > 1 ? "multi-unit-set" : "irregular-product",
+      type: "irregular-product",
       score: expectedUnitCount ? 0.88 : 0.8,
-      reason: expectedUnitCount ? `비정형 상품 ${expectedUnitCount}개가 판매 단위일 가능성이 높음` : "고정된 외곽선이 없는 식품·식물 유형으로 확인됨",
+      reason: expectedUnitCount ? `비정형 상품 ${expectedUnitCount}개 판매 단위가 확인되지만 세트 표기는 없음` : "고정된 외곽선이 없는 식품·식물 유형으로 확인됨",
     });
   }
 

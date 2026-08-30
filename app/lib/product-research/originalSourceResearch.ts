@@ -1,5 +1,6 @@
 import originalSourceResearchData from "../../../data/original-source-vendor-research.json" with { type: "json" };
 import type { ExtractedProductInfo } from "../mvp/types";
+import { isShippingCreativeSignal, isUnsafeProductCreativeSignal } from "../creative-generation/productSignalHygiene.ts";
 import type { VendorProductResearchContext, VendorResearchFact } from "./types";
 
 type ResearchProduct = {
@@ -10,7 +11,7 @@ type ResearchProduct = {
   ingredients: string[];
   targetCustomer: string;
   facts: VendorResearchFact[];
-  blockedClaims: string[];
+  researchCautions: string[];
   sourceDocument: string;
 };
 
@@ -86,12 +87,13 @@ export function applyOriginalSourceVendorResearch(value: ExtractedProductInfo, p
   const matched = matchResearchProduct(value, productUrl);
   if (!matched) return value;
 
-  const facts = matched.product.facts.filter((fact) => fact.copyEligibility !== "blocked");
+  const facts = matched.product.facts.filter((fact) => fact.copyEligibility !== "blocked" && fact.copyEligibility !== "researchOnly");
   const headlineFacts = facts.filter((fact) => fact.copyEligibility === "headlineEligible").map((fact) => fact.value);
   const proofFacts = facts.filter((fact) => fact.copyEligibility === "proofOnly").map((fact) => fact.value);
-  const verifiedBenefits = compact([matched.product.mainBenefit, ...headlineFacts, ...proofFacts, ...(value.verifiedBenefits || [])], 16);
-  const ingredients = compact([...matched.product.ingredients, ...(value.ingredients || [])], 12);
-  const description = compact([value.extractedDescription || value.description, matched.product.mainBenefit, ...headlineFacts, ...proofFacts], 12).join(" · ");
+  const cleanIncoming = (values: Array<string | undefined>) => values.filter((item): item is string => Boolean(item && !isUnsafeProductCreativeSignal(item) && !isShippingCreativeSignal(item)));
+  const verifiedBenefits = compact([matched.product.mainBenefit, ...headlineFacts, ...proofFacts, ...cleanIncoming(value.verifiedBenefits || [])], 16);
+  const ingredients = compact([...matched.product.ingredients, ...cleanIncoming(value.ingredients || [])], 12);
+  const description = compact([...cleanIncoming([value.extractedDescription || value.description]), matched.product.mainBenefit, ...headlineFacts, ...proofFacts], 12).join(" · ");
   const vendorResearch: VendorProductResearchContext = {
     sourceType: researchLibrary.sourceType,
     sourceLabel: researchLibrary.sourceLabel,
@@ -99,12 +101,17 @@ export function applyOriginalSourceVendorResearch(value: ExtractedProductInfo, p
     sourceDocument: matched.product.sourceDocument,
     extractedAt: researchLibrary.extractedAt,
     matchReason: matched.reason,
-    facts: matched.product.facts,
-    blockedClaims: matched.product.blockedClaims,
+    facts,
+    // 사용자가 제공한 5개 조사 시트는 오리지널소스에 한해 허용 근거다.
+    // 과거 검토 목록은 추적용으로만 보존하고 ProductTruth 차단에는 넘기지 않는다.
+    blockedClaims: [],
+    allowSheetClaimsInCopy: true,
+    researchCautions: matched.product.researchCautions,
   };
 
   return {
     ...value,
+    category: !value.category || /^(?:기타|생활용품)$/u.test(value.category) ? "화장품" : value.category,
     mainBenefit: matched.product.mainBenefit,
     targetCustomer: matched.product.targetCustomer,
     description,

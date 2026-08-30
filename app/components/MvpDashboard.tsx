@@ -1569,6 +1569,8 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       selectedSourceImagePath: replaceExtractedFields ? selectedCandidate?.imagePath || "" : current.selectedSourceImagePath || selectedCandidate?.imagePath || "",
       productRepresentation: replaceExtractedFields ? extracted.productRepresentation : current.productRepresentation || extracted.productRepresentation,
       reviewSources: replaceExtractedFields ? extracted.reviewSources || [] : current.reviewSources?.length ? current.reviewSources : extracted.reviewSources || [],
+      detailImageOcrInsights: replaceExtractedFields ? extracted.detailImageOcrInsights || [] : current.detailImageOcrInsights?.length ? current.detailImageOcrInsights : extracted.detailImageOcrInsights || [],
+      productCopyConstraints: replaceExtractedFields ? extracted.productCopyConstraints || [] : current.productCopyConstraints?.length ? current.productCopyConstraints : extracted.productCopyConstraints || [],
       verifiedBenefits: replaceExtractedFields ? extracted.verifiedBenefits || [] : current.verifiedBenefits?.length ? current.verifiedBenefits : extracted.verifiedBenefits || [],
       ingredients: replaceExtractedFields ? extracted.ingredients || [] : current.ingredients?.length ? current.ingredients : extracted.ingredients || [],
       targetCustomer: replaceExtractedFields ? extracted.targetCustomer || "" : current.targetCustomer || extracted.targetCustomer || "",

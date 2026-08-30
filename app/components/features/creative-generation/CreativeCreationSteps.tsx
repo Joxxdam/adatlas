@@ -17,7 +17,7 @@ export function CreativeCreationSteps({ currentProductLoaded, generationPlanConf
         <b>2</b>
         <span>
           <strong>상품군 레퍼런스 6장 선택</strong>
-          <small>패션·식품·화장품 중 같은 상품군에서 무작위로 고정합니다</small>
+          <small>패션·음식·화장품 중 같은 상품군에서 무작위로 고정합니다</small>
         </span>
       </li>
       <li className={generationPlanConfirmed ? "done" : ""}>

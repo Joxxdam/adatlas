@@ -127,8 +127,8 @@ test("reference creatives are server-driven and deliver each completed card imme
   assert.match(generator, /visibleGeneratedResults/);
   assert.match(generator, /이미지가 만들어지는 즉시 표시되고 다운로드할 수 있습니다/);
   assert.match(generator, /다운로드 가능/);
-  assert.match(generator, /Boolean\(result\.imagePath && result\.nativeCreative\?\.finalPath\)/);
-  assert.doesNotMatch(generator, /이미지는 생성됐으며 품질 확인이 필요합니다/);
+  assert.match(generator, /Boolean\(result\.imagePath\)/);
+  assert.match(generator, /품질 확인 필요 · 다운로드 가능/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
   assert.match(generator, /copyEdits|수정 문구로 전체 광고 재생성|문구 수정·제작 정보/);

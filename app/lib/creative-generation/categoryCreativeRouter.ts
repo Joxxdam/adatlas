@@ -38,7 +38,7 @@ const definitions: Record<CategoryCreativeProfileId, ProfileDefinition> = {
   food_processed: {
     category: "food_processed",
     label: "가공식품·간편식",
-    terms: ["간편식", "밀키트", "즉석", "냉동", "냉장", "소스", "음료", "주스", "과즙", "반찬", "시리얼", "가공식품", "식품"],
+    terms: ["간편식", "밀키트", "즉석", "냉동", "냉장", "소스", "음료", "주스", "과즙", "반찬", "시리얼", "가공식품", "식품", "스낵", "snack", "간식", "과자", "디저트", "건조", "반건조", "말랭이", "곶감"],
     visualObjectives: ["패키지와 완성 음식의 연결", "조리 편의·활용 메뉴·구매 혜택을 장면으로 설명"],
     recommendedScenes: ["포장을 열고 바로 조리하는 행동", "완성 메뉴 여러 가지", "퇴근 후 빠른 한 끼", "패키지 중심 가격·구성 히어로"],
     recommendedHumanUsage: ["포장을 여는 손", "간단히 조리하는 사람", "완성 음식을 먹는 장면"],

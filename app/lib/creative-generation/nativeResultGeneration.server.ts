@@ -1,7 +1,7 @@
 import "server-only";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
 import sharp from "sharp";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
@@ -15,11 +15,11 @@ import { CURRENT_REFERENCE_EDIT_WORKFLOW, executionResults, REFERENCE_EDIT_STAGE
 import { hasExplicitPaidApiAuthorization, type CopyPlan, type GenerationJob, type NativeCreativeValidation } from "./types";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
-import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
+import { buildProductTruth, extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNativeAdReference, type NativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createTruthFallbackReferenceCopyPlan, hasExecutableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
-import { enforceExactRenderedCopyValidation } from "./nativeCreativeValidation";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createBestEffortReferenceCopyPlan, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
+import { enforceExactRenderedCopyValidation, enforceNoSourceDisclosureCopy, enforceOriginCopyPolicy, enforceReferenceCopyPlanValidity, enforceReferenceCopySlotCompleteness } from "./nativeCreativeValidation";
 import { resolveProductRenderingPolicy, resolveProtectedProductPlacement } from "./productRenderingPolicy";
 import { createIdentityLockedProductComposite } from "./protectedProductCompositor.server";
 
@@ -105,9 +105,13 @@ function conciseQaFeedback(validation: NativeCreativeValidation) {
 
 export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation, isMeat = false) {
   if (validation.standaloneLogoDetected) return true;
+  if (validation.sourcePersonDetected && (!validation.sourcePersonReplaced || !validation.humanCompositionChanged || (validation.targetAudienceFit || 0) < 75)) return true;
+  if (validation.sourcePersonDetected && validation.humanCopyAligned === false) return true;
+  if (validation.sceneProductInteractionAligned === false) return true;
+  if (validation.unrelatedFoodOrIngredientDetected) return true;
   if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
   if (isMeat && (validation.productIdentity < 82 || validation.foodAppetiteAppeal < 82)) return true;
-  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|원본\s*인물|같은\s*인물|인물\s*동일|얼굴\s*복제|이전\s*문구|출처\s*문구|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|source\s*(?:brand|copy|price|person)|same\s*(?:person|face)|face\s*cop|recognizable\s*(?:face|identity)|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|marbling|meat\s*texture|thickness|fat-to-lean/i.test(failure));
+  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|원본\s*인물|같은\s*인물|인물\s*동일|인물\s*구도|타깃\s*(?:고객|인물)|포즈|시선|얼굴\s*복제|이전\s*문구|출처\s*문구|원산지|국내산|국산|연출\s*(?:이미지|사진)|예시\s*(?:이미지|사진)|이해를\s*돕기|(?:AI|인공지능)\s*(?:를|을)?\s*(?:활용|사용|생성)|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|프라이팬|후라이팬|불판|그릴|정육\s*(?:트레이|용기)|고기\s*(?:트레이|용기)|김치\s*(?:통|용기|트레이)|벌크\s*(?:통|용기)|절임\s*(?:통|용기)|조리\s*(?:도구|용기)|주방\s*도구|의미\s*(?:소품|용기|배경|캐릭터|아이콘|장식)|무관한\s*(?:캐릭터|아이콘|일러스트|재료)|엉뚱한\s*(?:캐릭터|아이콘|일러스트|재료)|카테고리\s*(?:소품|용기|불일치)|source\s*(?:brand|copy|price|person)|same\s*(?:person|face|pose)|face\s*(?:cop|swap)|recognizable\s*(?:face|identity)|human\s*(?:composition|pose|framing)|target\s*audience|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|semantic\s*(?:prop|carrier|container|vessel|motif)|decorative\s*(?:motif|character|icon|illustration)|unrelated\s*(?:character|mascot|icon|illustration|ingredient)|category[-\s]*(?:incompatible|mismatch)|cookware|frying\s*pan|meat\s*tray|kimchi\s*(?:tub|container)|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|marbling|meat\s*texture|thickness|fat-to-lean/i.test(failure));
 }
 
 async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<CopyPlan>) {
@@ -214,6 +218,27 @@ async function validStageFile(file: string | undefined) {
   }
 }
 
+function isTimeoutLike(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  return (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) || /(?:operation was aborted|timed?\s*out|timeout|시간.*초과|진행 이벤트 없이)/i.test(message);
+}
+
+async function validStageFileWrittenSince(file: string, startedAt: number) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    try {
+      const info = await stat(file);
+      // A full user-requested regeneration can reuse the same deterministic
+      // pathname. Never mistake an older artifact for this attempt's output.
+      if (info.isFile() && info.mtimeMs >= startedAt - 1_000 && (await validStageFile(file))) return true;
+    } catch {
+      // The image tool may still be completing its final atomic copy.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return false;
+}
+
 async function updateNativeProgress(job: GenerationJob, resultId: string, generationStage: NonNullable<GenerationJob["results"][number]["generationStage"]>, mutate?: (result: GenerationJob["results"][number]) => Partial<GenerationJob["results"][number]>) {
   return creativeGenerationJobStore.update(job.id, (active) => ({
     ...active,
@@ -248,6 +273,22 @@ async function runNativeResultGeneration(input: NativeResultInput) {
 
   if (action === "copy-update") {
     job = await updateCopy(job, input.resultId, input.copy || {});
+    initial = job.results.find((result) => result.id === input.resultId)!;
+  }
+
+  if (action === "regenerate" || action === "regenerate-new-reference") {
+    const currentTruth = job.productTruth;
+    const refreshedTruth = buildProductTruth({
+      product: currentTruth.product,
+      rawProductTitle: currentTruth.normalized.rawProductTitle,
+      productImagePaths: currentTruth.imagePaths,
+      imageAssets: currentTruth.imageAssets,
+      source: currentTruth.product.landingUrl ? "landing-page" : "user-input",
+    });
+    job = await creativeGenerationJobStore.update(job.id, (active) => ({
+      ...active,
+      productTruth: refreshedTruth,
+    }));
     initial = job.results.find((result) => result.id === input.resultId)!;
   }
 
@@ -354,35 +395,91 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   if (!(await validStageFile(selectedAdReference.path))) {
     throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
   }
-  if (!hasExecutableReferenceCopyContract(initial.referenceAdaptedCopyPlan, job.productTruth)) {
-    const safeCopyPlan = await createTruthFallbackReferenceCopyPlan({
+  if (action === "regenerate" || action === "regenerate-new-reference" || !hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
+    try {
+      const replanning = await planReferenceAdaptedCopies({
+        truth: job.productTruth,
+        references: [selectedAdReference],
+      });
+      const replannedCopy = replanning.plans[0];
+      if (replannedCopy && hasPublishableReferenceCopyContract(replannedCopy)) {
+        const replannedCreative = buildReferenceAdaptedCreativePlan({
+          truth: job.productTruth,
+          references: [selectedAdReference],
+          copyPlans: [replannedCopy],
+          provider: replanning.provider,
+          warnings: replanning.warnings,
+        });
+        const projectedHook = replannedCreative.hookPlans[0];
+        const projectedScene = buildReferenceScenes([selectedAdReference], [replannedCopy])[0];
+        const currentCode = initial.hookPlan.hookCode;
+        job = await creativeGenerationJobStore.update(job.id, (active) => ({
+          ...active,
+          recoveryLog: [
+            ...(active.recoveryLog || []),
+            { at: new Date().toISOString(), message: "과거 품질 기준 미달 문구를 최신 레퍼런스 문구 계획으로 재생성", resultIds: [initial.id] },
+          ].slice(-20),
+          results: active.results.map((result) => result.id === initial.id
+            ? {
+                ...result,
+                referenceAdaptedCopyPlan: {
+                  ...replannedCopy,
+                  id: result.referenceAdaptedCopyPlan?.id || replannedCopy.id,
+                  resultCode: currentCode,
+                },
+                hookPlan: {
+                  ...projectedHook,
+                  id: result.hookPlan.id,
+                  hookCode: currentCode,
+                  title: result.hookPlan.title,
+                },
+                scenePlan: {
+                  ...projectedScene,
+                  id: result.scenePlan.id,
+                  blueprintId: projectedHook.blueprintId,
+                },
+                blueprintId: projectedHook.blueprintId,
+              }
+            : result),
+        }));
+        initial = job.results.find((result) => result.id === input.resultId)!;
+      }
+    } catch {
+      // 최신 AI 재기획이 실패해도 아래의 결정론적 최선 문구 복구를 계속 시도한다.
+    }
+  }
+  if (!hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
+    const bestEffortCopyPlan = await createBestEffortReferenceCopyPlan({
       truth: job.productTruth,
       reference: selectedAdReference,
       index: Math.max(0, initial.order - 1),
       previous: initial.referenceAdaptedCopyPlan,
     });
+    if (!hasPublishableReferenceCopyContract(bestEffortCopyPlan)) {
+      throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구가 품질 검수를 통과하지 못했습니다. 깨진 문구를 이미지에 넣지 않고 문구 계획을 다시 생성해야 합니다.`);
+    }
     job = await creativeGenerationJobStore.update(job.id, (active) => ({
       ...active,
-      errors: [...active.errors, `${initial.hookPlan.hookCode}의 빈 문구 계획을 ProductTruth 안전 문구로 교체해 제작을 계속합니다.`].slice(-20),
+      errors: [...active.errors, `${initial.hookPlan.hookCode}의 품질 기준 미달 문구를 레퍼런스 구조 기반 최선 문구로 교체해 제작을 계속합니다.`].slice(-20),
       recoveryLog: [
         ...(active.recoveryLog || []),
-        { at: new Date().toISOString(), message: "빈 레퍼런스 문구 계획을 ProductTruth 안전 슬롯으로 복구", resultIds: [initial.id] },
+        { at: new Date().toISOString(), message: "품질 기준 미달 레퍼런스 문구를 구조 기반 최선 문구로 교체", resultIds: [initial.id] },
       ].slice(-20),
       results: active.results.map((result) => result.id === initial.id
         ? {
             ...result,
-            referenceAdaptedCopyPlan: safeCopyPlan,
+            referenceAdaptedCopyPlan: bestEffortCopyPlan,
             hookPlan: {
               ...result.hookPlan,
-              headline: safeCopyPlan.headline,
-              body: safeCopyPlan.subCopy,
-              proof: safeCopyPlan.proof,
-              offer: safeCopyPlan.offer,
-              cta: safeCopyPlan.cta,
-              factIds: safeCopyPlan.factIds,
-              numericTokens: extractNumericTokens([safeCopyPlan.headline, safeCopyPlan.subCopy, safeCopyPlan.proof, safeCopyPlan.offer, safeCopyPlan.cta].join(" ")),
+              headline: bestEffortCopyPlan.headline,
+              body: bestEffortCopyPlan.subCopy,
+              proof: bestEffortCopyPlan.proof,
+              offer: bestEffortCopyPlan.offer,
+              cta: bestEffortCopyPlan.cta,
+              factIds: bestEffortCopyPlan.factIds,
+              numericTokens: extractNumericTokens([bestEffortCopyPlan.headline, bestEffortCopyPlan.subCopy, bestEffortCopyPlan.proof, bestEffortCopyPlan.offer, bestEffortCopyPlan.cta].join(" ")),
               validationStatus: "fallback",
-              validationErrors: safeCopyPlan.validationErrors,
+              validationErrors: bestEffortCopyPlan.validationErrors,
               generationSource: "fallback",
             },
           }
@@ -441,6 +538,50 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     qaRepairPaths = [];
   }
 
+  // A Codex child turn can write its deterministic output and then miss the
+  // final turn.completed event. Recover those valid files before opening a new
+  // image session, but never do so for an explicit user regeneration or after
+  // a prompt migration.
+  if (action === "generate" && !promptVersionChanged) {
+    const recoveredProductPath = path.join(directory, "02-product.png");
+    const recoveredCopyPath = path.join(directory, "03-copy.png");
+    const previousProductPath = productPath;
+    const previousCopyPath = copyPath;
+    if (!(await validStageFile(productPath)) && (await validStageFile(recoveredProductPath))) {
+      productPath = recoveredProductPath;
+    }
+    if (await validStageFile(productPath)) {
+      if (!(await validStageFile(copyPath)) && (await validStageFile(recoveredCopyPath))) {
+        copyPath = recoveredCopyPath;
+      }
+    }
+    if (productPath !== previousProductPath || copyPath !== previousCopyPath) {
+      const recoveredStages = [productPath !== previousProductPath ? "상품 교체" : undefined, copyPath !== previousCopyPath ? "문구 교체" : undefined].filter(Boolean).join("·");
+      job = await creativeGenerationJobStore.update(job.id, (current) => ({
+        ...current,
+        recoveryLog: [
+          ...(current.recoveryLog || []),
+          { at: new Date().toISOString(), message: `시간 초과 뒤 저장된 ${recoveredStages} 단계 파일을 복구`, resultIds: [input.resultId] },
+        ].slice(-20),
+        results: current.results.map((result) =>
+          result.id === input.resultId
+            ? {
+                ...result,
+                nativeCreative: {
+                  ...result.nativeCreative!,
+                  stagePaths: {
+                    ...(result.nativeCreative?.stagePaths || {}),
+                    ...(productPath ? { productPath } : {}),
+                    ...(copyPath ? { copyPath } : {}),
+                  },
+                },
+              }
+            : result
+        ),
+      }));
+    }
+  }
+
   // The structure copy is byte-for-byte local work. Do it before opening the
   // H-specific image session so this non-generative stage cannot create a
   // Codex thread.
@@ -473,18 +614,30 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       await requireActiveJob();
       job = await updateNativeProgress(job, input.resultId, generationStage);
       const generationStarted = Date.now();
-      await session.generate({
-        job,
-        result: job.results.find((result) => result.id === input.resultId)!,
-        outputPath,
-        referencePaths: generationReferences,
-        productReferencePaths: generationReferences,
-        adReferencePath: selectedAdReference.path,
-        sourceImagePath,
-        feedback,
-        stage,
-      });
-      generationMs += Date.now() - generationStarted;
+      try {
+        await session.generate({
+          job,
+          result: job.results.find((result) => result.id === input.resultId)!,
+          outputPath,
+          referencePaths: generationReferences,
+          productReferencePaths: generationReferences,
+          adReferencePath: selectedAdReference.path,
+          sourceImagePath,
+          feedback,
+          stage,
+        });
+      } catch (error) {
+        if (!isTimeoutLike(error) || !(await validStageFileWrittenSince(outputPath, generationStarted))) throw error;
+        job = await creativeGenerationJobStore.update(job.id, (current) => ({
+          ...current,
+          recoveryLog: [
+            ...(current.recoveryLog || []),
+            { at: new Date().toISOString(), message: `${generationStage} 완료 파일을 Codex 완료 이벤트 지연 뒤 복구`, resultIds: [input.resultId] },
+          ].slice(-20),
+        }));
+      } finally {
+        generationMs += Date.now() - generationStarted;
+      }
       // Provider 호출은 즉시 중단할 수 없지만, 취소가 들어오면 그 결과를 다음
       // 문구 교체·QA 단계로 넘기지 않고 현재 생성 호출 경계에서 종료한다.
       await requireActiveJob();
@@ -583,6 +736,10 @@ async function runNativeResultGeneration(input: NativeResultInput) {
         const currentResult = job.results.find((result) => result.id === input.resultId)!;
         const requiredLines = currentResult.referenceAdaptedCopyPlan?.adaptedLines || [currentResult.hookPlan.headline, currentResult.hookPlan.body, currentResult.hookPlan.proof, currentResult.hookPlan.offer, currentResult.hookPlan.cta].filter(Boolean);
         validation = enforceExactRenderedCopyValidation(validation, requiredLines);
+        validation = enforceReferenceCopyPlanValidity(validation, currentResult.referenceAdaptedCopyPlan);
+        validation = enforceReferenceCopySlotCompleteness(validation, currentResult.referenceAdaptedCopyPlan?.copySlots);
+        validation = enforceNoSourceDisclosureCopy(validation);
+        validation = enforceOriginCopyPolicy(validation, job.productTruth.product);
       } catch {
         validation = manualReviewValidation("AI 완성 광고 검수 응답을 받지 못해 사람 검수가 필요합니다.");
       }
@@ -638,9 +795,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
         result.id === input.resultId
           ? {
               ...result,
-              // 검수는 치명 오류 1회 보정에만 사용한다. 최종 JPEG가 만들어졌다면
-              // 사용자가 직접 판단·삭제할 수 있도록 항상 다운로드 가능한 성공으로 저장한다.
-              status: "success",
+              // 결과 파일은 검수 실패 때도 다운로드 가능하게 보존하되, 승인되지
+              // 않은 결과를 정상 성공으로 표시하지 않는다.
+              status: validation.recommendation === "approve" ? "success" : "quality-review",
               generationStage: "completed",
               imagePath: publicImage,
               downloadName: assetResult.asset.fileName,
@@ -669,9 +826,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                   productSourcePaths: generationReferences,
                   sourceProductImageIds: job.productTruth.imageAssets.filter((asset) => generationReferences.includes(asset.path)).map((asset) => asset.id),
                   finalImageId: result.id,
-                  editableRegions: ["source-product", "source-person-identity", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
-                  lockedRegions: ["background", "animals", "props", "camera", "composition", "text-box-position", "non-product-graphics", ...(productRenderingPolicy === "protected-packaged-product" ? ["immutable-current-product-raster"] : [])],
-                  productReplacementSummary: "선택 레퍼런스의 상품 영역만 URL 상품 레퍼런스로 교체",
+                  editableRegions: ["source-product", "source-person-identity", "incompatible-semantic-carrier", "incompatible-product-linked-character-or-icon", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
+                  lockedRegions: ["compatible-background", "animals", "compatible-props", "camera", "composition", "text-box-position", "neutral-non-product-graphics", ...(productRenderingPolicy === "protected-packaged-product" ? ["immutable-current-product-raster"] : [])],
+                  productReplacementSummary: "선택 레퍼런스의 상품과 상품 의미가 충돌하는 용기·소품·캐릭터·아이콘을 URL 상품 근거에 맞게 교체",
                   copyReplacementSummary: "원문 줄·문장부호·말투를 기준으로 ProductTruth 상품 관련 표현만 교체",
                   finalOutputPath: finalFile,
                   productQa: { status: validation.productIdentity >= 75 ? "passed" : "manual-review", score: validation.productIdentity },

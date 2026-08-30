@@ -18,11 +18,11 @@ import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
 import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
 import { assertCurrentReferenceEditGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, CURRENT_REFERENCE_EDIT_WORKFLOW, REFERENCE_EDIT_STAGE_ORDER } from "./jobRunnerPolicy";
-import { isUnsafeProductCreativeSignal } from "./productSignalHygiene.ts";
+import { isMalformedProductSignal, isNonDomesticOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim } from "./productSignalHygiene.ts";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
-const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["fashion", "food", "food-produce", "beauty"]);
+const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["fashion", "food", "food-snack", "food-produce", "beauty"]);
 const internalStrategyText = /(?:T0\d|주력\s*상품|우승\s*소재|판매[·ㆍ,\s-]*노출[·ㆍ,\s-]*구매\s*근거|기존\s*우수\s*소재|광고\s*가설|성과\s*학습|USP[·ㆍ,\s-]*가격[·ㆍ,\s-]*랜딩\s*조건\s*점검|랜딩\s*(?:조건|페이지)\s*(?:점검|확인)|내부\s*(?:전략|점검|검토))/i;
 
 export type NativeGenerationJobOptions = {
@@ -53,7 +53,8 @@ function conciseVerifiedBenefit(value: string) {
     .replace(/\s+/g, " ")
     .trim();
   if (/^(?:마블링|향|식감|구성)\s*(?:정도|정보)$/u.test(normalized)) return "";
-  const cue = normalized.match(/(?:쿨링감|보습감|사용감|세정력|흡수력|지속력|휴대성|식감|향|구성)(?:으로|로|이|가|은|는)?[^,.!?]{0,34}/u)?.[0];
+  const matchedCue = normalized.match(/(?:쿨링감|보습감|사용감|세정력|흡수력|지속력|휴대성|식감|향|구성)(?:으로|로|이|가|은|는)?[^,.!?]{0,34}/u)?.[0];
+  const cue = matchedCue && !isVagueStandaloneSensoryClaim(matchedCue) ? matchedCue : "";
   const segment = normalized
     .split(/\s*[·•|]\s*|[.!?]+\s*|\s*[★☆*]\s*/u)
     .map((candidate) => candidate.trim())
@@ -62,7 +63,7 @@ function conciseVerifiedBenefit(value: string) {
 }
 
 function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]) {
-  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isUnsafeProductCreativeSignal(value) || isPromotionLike(value)));
+  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isProhibitedAdCopySignal(value) || isMalformedProductSignal(value) || isPriceOnlyCreativeSignal(value) || isShippingCreativeSignal(value) || isNonDomesticOriginCreativeSignal(value) || isPromotionLike(value)));
   const cleanList = (values?: string[]) => (values || []).map((value) => value.trim()).filter((value) => value && !unsafe(value));
   const ingredients = cleanList(product.ingredients);
   const verifiedBenefits = Array.from(new Set(cleanList(product.verifiedBenefits).map(conciseVerifiedBenefit).filter(Boolean)));
@@ -84,6 +85,7 @@ function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]
     extractedDescription,
     verifiedBenefits,
     ingredients,
+    discountInfo: isShippingCreativeSignal(product.discountInfo) ? "" : product.discountInfo,
   };
 }
 
@@ -200,9 +202,8 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.results = job.results.map((result, index) => ({
     ...result,
     materialCode: `M${String(index + 1).padStart(2, "0")}`,
-    // 문구 구조가 레퍼런스와 완전히 일치하지 않아도 ProductTruth를 지킨 안이면
-    // 이미지 제작은 진행한다. 이 검증은 생성 차단 조건이 아니라 이후 수정에
-    // 참고할 진단 정보이며, 사용자는 완성 결과를 보고 직접 판단한다.
+    // 문구 품질 미달은 작업 전체를 중단하지 않는다. 공통 문구 계획 단계와
+    // 결과 실행 단계가 해당 안만 레퍼런스 구조 기반 최선 문구로 교체한다.
     status: result.status,
     error: undefined,
     completedAt: undefined,

@@ -34,6 +34,7 @@ type CopyGuideIndex = {
 
 const ROOT = process.cwd();
 const INDEX_PATH = path.join(ROOT, "data", "copy-guides", "index.json");
+const COPY_GUIDE_ROOT = path.join(ROOT, "data", "copy-guides");
 const MAX_GUIDE_CHARS = 12000;
 
 function normalize(value?: string) {
@@ -114,10 +115,14 @@ async function readIndex(): Promise<CopyGuideIndex> {
 }
 
 function safeGuidePath(filePath: string) {
-  const resolved = path.resolve(ROOT, filePath);
-  const allowedRoot = path.resolve(ROOT, "data", "copy-guides");
+  const normalized = filePath.replace(/\\/g, "/").replace(/^\.\//, "");
+  const relative = normalized.startsWith("data/copy-guides/")
+    ? normalized.slice("data/copy-guides/".length)
+    : normalized;
+  const resolved = path.resolve(COPY_GUIDE_ROOT, relative);
+  const allowedRoot = path.resolve(COPY_GUIDE_ROOT);
 
-  if (!resolved.startsWith(allowedRoot)) {
+  if (resolved !== allowedRoot && !resolved.startsWith(`${allowedRoot}${path.sep}`)) {
     throw new Error("Invalid copy guide path");
   }
 

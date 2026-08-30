@@ -1,27 +1,28 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { inferNativeReferenceCategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
+import { inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
-test("업로드 파일명 fallback도 패션·식품·화장품 세 그룹만 사용한다", () => {
+test("업로드 파일명 fallback도 패션·음식·화장품 세 그룹만 사용한다", () => {
   assert.equal(inferNativeReferenceCategoryFromText("여름 원피스 광고.png"), "fashion");
   assert.equal(inferNativeReferenceCategoryFromText("한우 선물세트.jpg"), "food");
   assert.equal(inferNativeReferenceCategoryFromText("비타민 건강기능식품.webp"), "beauty");
   assert.equal(inferNativeReferenceCategoryFromText("알 수 없는 상품.jpg"), "beauty");
 });
 
-test("과일/농산물은 새 대카테고리가 아니라 식품에만 붙는 수동 하위 태그다", () => {
-  assert.equal(normalizeNativeReferenceFoodSubcategory("produce-agriculture"), "produce-agriculture");
+test("간식은 새 대카테고리가 아니라 음식에만 붙는 수동 하위 태그다", () => {
+  assert.equal(normalizeNativeReferenceFoodSubcategory("snack"), "snack");
+  assert.equal(normalizeNativeReferenceFoodSubcategory("produce-agriculture"), "snack");
   assert.equal(normalizeNativeReferenceFoodSubcategory("fruit"), undefined);
   const food = normalizeNativeReferenceCompatibility({
-    id: "food-produce",
-    publicPath: "/food-produce.jpg",
-    sourceFile: "과일 광고.jpg",
+    id: "food-snack",
+    publicPath: "/food-snack.jpg",
+    sourceFile: "간식 광고.jpg",
     layoutFamily: "sensory-editorial",
     categoryGroup: "food",
-    foodSubcategory: "produce-agriculture",
+    foodSubcategory: "snack",
     ordinal: 201,
   });
   const beauty = normalizeNativeReferenceCompatibility({
@@ -29,8 +30,16 @@ test("과일/농산물은 새 대카테고리가 아니라 식품에만 붙는 �
     id: "beauty-with-invalid-food-tag",
     categoryGroup: "beauty",
   });
-  assert.equal(food.foodSubcategory, "produce-agriculture");
+  assert.equal(food.foodSubcategory, "snack");
   assert.equal(beauty.foodSubcategory, undefined);
+});
+
+test("신규 음식 레퍼런스는 상품의 섭취 맥락으로 간식 여부를 분류한다", () => {
+  assert.equal(inferNativeReferenceFoodSubcategoryFromText("반건조 무화과 간식 광고.jpg"), "snack");
+  assert.equal(inferNativeReferenceFoodSubcategoryFromText("과일12.jpg"), "snack");
+  assert.equal(inferNativeReferenceFoodSubcategoryFromText("한가득 바삭 종합전병 5종"), "snack");
+  assert.equal(inferNativeReferenceFoodSubcategoryFromText("한우 떡갈비 프라이팬.jpg"), undefined);
+  assert.equal(inferNativeReferenceFoodSubcategoryFromText("김치 반찬 광고.jpg"), undefined);
 });
 
 test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 상품군을 작업에 고정할 수 있다", async () => {
@@ -39,13 +48,14 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   const factory = await read("app/lib/creative-generation/createNativeGenerationJob.server.ts");
   const selector = await read("app/lib/creative-generation/referenceCreativeLibrary.server.ts");
 
-  assert.match(types, /ReferenceCategoryOverride\s*=\s*"fashion"\s*\|\s*"food"\s*\|\s*"food-produce"\s*\|\s*"beauty"/);
+  assert.match(types, /ReferenceCategoryOverride\s*=\s*"fashion"\s*\|\s*"food"\s*\|\s*"food-snack"\s*\|\s*"food-produce"\s*\|\s*"beauty"/);
   assert.match(generator, /자동 매칭 \(상품 분석 기준\)/);
   assert.match(generator, /referenceCategoryOverride:\s*referenceCategoryOverride \|\| undefined/);
-  assert.match(generator, /식품 · 과일\/농산물/);
+  assert.match(generator, /음식 · 간식/);
   assert.match(factory, /job\.referenceCategoryOverride\s*=/);
   assert.ok(factory.indexOf("const referenceCategoryOverride =") < factory.indexOf("selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }"));
-  assert.match(selector, /job\.referenceCategoryOverride === "food-produce"/);
+  assert.match(selector, /job\.referenceCategoryOverride === "food-snack"/);
+  assert.match(selector, /item\.foodSubcategory === profile\.foodSubcategory/);
   assert.match(selector, /사용자 수동 지정/);
 });
 
@@ -77,7 +87,7 @@ test("레퍼런스 관리 API는 목록·업로드·분류수정·삭제를 지�
   assert.match(route, /updateCompatibility/);
   assert.match(route, /supportsPackagedProduct/);
   assert.match(route, /foodSubcategory/);
-  assert.match(route, /foodProduceCount/);
+  assert.match(route, /foodSnackCount/);
 });
 
 test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업로드·삭제 UI를 표시한다", async () => {
@@ -90,8 +100,8 @@ test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업�
   assert.match(manager, /삭제/);
   assert.match(manager, /고급 호환 태그/);
   assert.match(manager, /productForm/);
-  assert.match(manager, /food-produce/);
-  assert.match(manager, /과일\/농산물 레퍼런스로도 사용/);
+  assert.match(manager, /food-snack/);
+  assert.match(manager, /간식 레퍼런스로도 사용/);
   assert.match(manager, /\/api\/admin\/references/);
 });
 
@@ -147,7 +157,8 @@ test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제�
   assert.match(runner, /completedIds/);
   assert.match(runner, /isApprovedReferenceNativeCopy/);
   assert.doesNotMatch(selector, /nativeReferenceLibraryRepository\.extractNativeCopy/);
-  assert.match(selector, /isApprovedReferenceNativeCopy/);
+  assert.doesNotMatch(selector, /nativeCopy\?\.analysisStatus\s*===/);
+  assert.match(selector, /등록 풀 전체에서/);
   assert.match(planner, /제작 중 즉석 OCR은 실행하지 않았습니다/);
   assert.doesNotMatch(planner, /imagePath 이미지를 직접 읽어 전사한다/);
   assert.match(planner, /isApprovedReferenceNativeCopy\(reference\.nativeCopy\)/);

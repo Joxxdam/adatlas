@@ -166,8 +166,8 @@ test("SEO 광고 문구를 정식 상품명과 혜택으로 분리한다", () =>
 
 test("영상 길이별 구간 수와 빈틈없는 시간이 정확하다", () => {
   for (const [duration, expected] of [
-    [15, 9],
-    [20, 11],
+    [15, 15],
+    [20, 15],
     [30, 15],
   ]) {
     const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, duration, expected);
@@ -177,17 +177,16 @@ test("영상 길이별 구간 수와 빈틈없는 시간이 정확하다", () =>
   }
 });
 
-test("첫 3초는 세 구간과 서로 다른 시각 변화로 구성된다", () => {
+test("첫 3초는 두 개의 의미 있는 구간과 서로 다른 시각 변화로 구성된다", () => {
   const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
   assert.deepEqual(
-    concept.cuts.slice(0, 3).map((cut) => [cut.startSecond, cut.endSecond]),
+    concept.cuts.slice(0, 2).map((cut) => [cut.startSecond, cut.endSecond]),
     [
-      [0, 1],
-      [1, 2],
-      [2, 3],
+      [0, 1.2],
+      [1.2, 3],
     ]
   );
-  assert.equal(new Set(concept.cuts.slice(0, 3).map((cut) => cut.sceneDescription)).size, 3);
+  assert.equal(new Set(concept.cuts.slice(0, 2).map((cut) => cut.sceneDescription)).size, 2);
 });
 
 test("SEO 원문과 추상 장면은 품질 검수에서 차단된다", () => {
@@ -243,15 +242,15 @@ test("새 AI 대본은 충분한 자막 분량을 요구하고 내부 기획 메
 
 test("상세페이지 검수 말투는 저장 전에 시청자용 자막으로 바꾼다", () => {
   const concept = makeDetailed(makeSummary(beautyAnalysis, 0, "problem-solution"), beautyAnalysis, 20);
-  concept.cuts[8].caption = "상세페이지 구성 표기는 250ml로 보입니다";
-  concept.cuts[9].caption = "가격 보고 멈칫한 분들, 71% 할인 표기에요";
+  concept.cuts[5].caption = "상세페이지 구성 표기는 250ml로 보입니다";
+  concept.cuts[6].caption = "가격 보고 멈칫한 분들, 71% 할인 표기에요";
 
   const repaired = repairDetailedPlanningAudienceCopy(concept);
 
-  assert.doesNotMatch(repaired.cuts[8].caption, /상세페이지|표기|보입니다/);
-  assert.doesNotMatch(repaired.cuts[9].caption, /표기(?:예요|에요|입니다)/);
-  assert.match(repaired.cuts[8].caption, /250ml/);
-  assert.match(repaired.cuts[9].caption, /71%/);
+  assert.doesNotMatch(repaired.cuts[5].caption, /상세페이지|표기|보입니다/);
+  assert.doesNotMatch(repaired.cuts[6].caption, /표기(?:예요|에요|입니다)/);
+  assert.match(repaired.cuts[5].caption, /250ml/);
+  assert.match(repaired.cuts[6].caption, /71%/);
 });
 
 test("세 기획안은 후킹·화자·문제·서사 방향이 달라야 한다", () => {
@@ -437,7 +436,7 @@ test("내부 제작 주의사항은 광고 금지 문구의 공개 카피 검사
       conceptId: detailed.id,
     });
     assert.equal(saved.concepts[0].productionCautions[0], caution);
-    assert.equal(saved.concepts[0].cuts.length, 11);
+    assert.equal(saved.concepts[0].cuts.length, segmentRange(20).preferred);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -475,7 +474,7 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
     });
     assert.equal(requested.status, "production_requested");
     assert.equal(requested.productionRequest.designerName, "김디자이너");
-    assert.equal(requested.finalScript.cuts.length, 11);
+    assert.equal(requested.finalScript.cuts.length, segmentRange(20).preferred);
     assert.equal(requested.designerAssignmentHistory.at(-1).nextDesigner, "김디자이너");
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -529,7 +528,10 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(generatorSource, /생활 비교를 막연한 ‘합리적인 가격’으로 일반화하지/);
   assert.match(generatorSource, /배송·배송비·도서산간·배송지 안내는 자막과 내레이션에서 완전히 제외/);
   assert.match(generatorSource, /체크리스트가 아니다/);
-  assert.match(generatorSource, /4번째부터 마지막 직전까지는 공백 제외 7~\$\{bodyCaptionMax\}자/);
+  assert.match(generatorSource, /3번째부터 마지막 직전까지는 공백 제외 7~\$\{bodyCaptionMax\}자/);
+  assert.match(generatorSource, /narration은 실제로 사람이 읽거나 말할 수 있는 대사·보이스오버/);
+  assert.match(generatorSource, /가격·할인·구성은 기획안의 중심 사건이 가격일 때만/);
+  assert.match(generatorSource, /asset\.mimeType\.startsWith\("image\/"\)/);
   assert.match(generatorSource, /마지막 CTA는 약 \$\{ctaDuration\}초/);
   assert.match(detailWorkspace, /광고 집행 품질검사/);
   assert.match(generatorSource, /‘담당자:’, ‘진행자:’, ‘정보 부족’/);
@@ -559,9 +561,11 @@ test("광고 집행 품질검사는 붙여 쓴 자막과 중간에 끊긴 문장
   concept.conceptArchetype = "real-review";
   concept.cuts[4].caption = "국내산설록우등심";
   concept.cuts[5].caption = "제주도는 추가비 안내될 수";
+  concept.cuts[6].caption = "이름보다 먼저 볼 건";
   const validation = validateDetailedPlanning(concept, beautyAnalysis, 20);
   assert.equal(validation.checks.find((check) => check.key === "caption-spacing").passed, false);
   assert.equal(validation.checks.find((check) => check.key === "sentence-completion").passed, false);
+  assert.match(validation.checks.find((check) => check.key === "sentence-completion").message, /6번, 7번/);
 });
 
 test("배송 정보는 영상 자막에서 제외하고 배송만으로 판매 혜택을 충족하지 않는다", () => {

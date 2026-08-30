@@ -16,7 +16,7 @@ import { fitCopyToTemplate } from "../../../lib/mvp/templateCopyFitter";
 import { fitTextToBox } from "../../../lib/mvp/textFit";
 import type { AdaptiveCreativePlan, AutomaticLayoutPreset } from "../../../lib/background-library/types";
 import { readCatalogAssetFromUrl } from "../../../lib/background-library/catalogStore.server";
-import type { AdHookType, AdProductPosition, AdTextSafeArea, GeneratedAdCopy, GeneratedAdCopyVariant, CopyVariantKey, ProductInfoForPrompt, ProductImageRenderEffect, ProductImageState, TemplateCopyLimits } from "../../../lib/mvp/types";
+import type { AdHookType, AdProductPosition, AdTextSafeArea, GeneratedAdCopy, GeneratedAdCopyVariant, CopyVariantKey, ProductInfoForPrompt, ProductImageRenderEffect, ProductImageState } from "../../../lib/mvp/types";
 
 export const runtime = "nodejs";
 
@@ -440,53 +440,6 @@ function estimateWidth(text: string, fontSize: number, letterSpacing = 0) {
     }
   }
   return width + Math.max(0, text.length - 1) * letterSpacing;
-}
-
-function pushLongToken(lines: string[], token: string, maxWidth: number, fontSize: number, letterSpacing: number, maxLines: number) {
-  let current = "";
-  for (const char of token) {
-    const candidate = `${current}${char}`;
-    if (estimateWidth(candidate, fontSize, letterSpacing) <= maxWidth || !current) {
-      current = candidate;
-    } else {
-      lines.push(current);
-      current = char;
-    }
-    if (lines.length >= maxLines) return "";
-  }
-  return current;
-}
-
-function wrapText(text: string, maxWidth: number, fontSize: number, maxLines: number, letterSpacing = 0) {
-  const tokens = text.trim().split(/\s+/).filter(Boolean);
-  if (!tokens.length) return [""];
-
-  const lines: string[] = [];
-  let current = "";
-
-  for (const token of tokens) {
-    const candidate = current ? `${current} ${token}` : token;
-    if (estimateWidth(candidate, fontSize, letterSpacing) <= maxWidth) {
-      current = candidate;
-      continue;
-    }
-
-    if (current) {
-      lines.push(current);
-      current = "";
-      if (lines.length >= maxLines) break;
-    }
-
-    if (estimateWidth(token, fontSize, letterSpacing) > maxWidth) {
-      current = pushLongToken(lines, token, maxWidth, fontSize, letterSpacing, maxLines);
-      if (lines.length >= maxLines) break;
-    } else {
-      current = token;
-    }
-  }
-
-  if (lines.length < maxLines && current) lines.push(current);
-  return lines.slice(0, maxLines);
 }
 
 function fitLines(
@@ -1046,7 +999,6 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const headlineFontFamily = `AdAtlasHeadlineFont, ${String(style.headlineFontFamily || headlineStyle.fontFamily)
     .replaceAll("AdAtlasSelectedFont", "")
     .replaceAll("AdAtlasHeadlineFont", "")}`;
-  const hasCta = Boolean(copy.cta?.trim());
   const hasPrice = Boolean(copy.price?.trim());
   const globalLogoOverlay =
     templateId === "food-template-001" || templateId === "food-template-002"
@@ -1106,8 +1058,6 @@ async function renderFoodCategoryTemplate(body: RenderBody, templateId: string) 
   const textLines: TextLine[] = [];
 
   const image = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") => (productImageDataUrl ? productImageSvg(productImageDataUrl, x, y, w, h, mode, productEffect) : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`);
-
-  const secondaryImage = (x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") => (secondaryProductImageDataUrl ? productImageSvg(secondaryProductImageDataUrl, x, y, w, h, mode, productEffect) : image(x, y, w, h, mode));
 
   const imageFromDataUrl = (dataUrl: string, x: number, y: number, w: number, h: number, mode: "meet" | "cover" = "meet") => (dataUrl ? productImageSvg(dataUrl, x, y, w, h, mode, productEffect) : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="22" fill="#ffffff" opacity="0.7" />`);
 

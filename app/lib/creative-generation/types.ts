@@ -101,7 +101,7 @@ export type ReferenceAdaptedCopyPlan = {
   validationStatus: "valid" | "needs-review" | "invalid";
   validationErrors: string[];
   repairCount: number;
-  generationSource: "codex-local" | "repaired-codex-local" | "safe-minimal";
+  generationSource: "codex-local" | "repaired-codex-local" | "reference-best-effort" | "safe-minimal";
 };
 
 export type ProductEvidence = {
@@ -315,6 +315,8 @@ export type ProductTruth = {
   unverifiedClaims: string[];
   allowedNumericTokens: string[];
   blockedClaimPatterns: string[];
+  /** 상세 이미지 OCR에서 광고 문구로는 쓰지 않고 과장 방지에만 쓰는 조건입니다. */
+  productCopyConstraints: string[];
   imageAssets: CreativeImageAsset[];
   referenceImages: CreativeImageAsset[];
   imagePaths: string[];
@@ -518,6 +520,23 @@ export type NativeCreativeValidation = {
   /** 실제 상품 패키지 밖에 AI가 새로 만든 독립 로고·워드마크가 있는지에 대한 시각 QA 결과입니다. */
   standaloneLogoDetected: boolean;
   standaloneLogoFindings: string[];
+  /** 레퍼런스에 교체가 필요한 인물이 실제로 포함됐는지에 대한 시각 QA 결과입니다. */
+  sourcePersonDetected?: boolean;
+  /** 원본 인물을 삭제하지 않고 타깃 고객에 맞는 다른 가상 인물로 완전히 교체했는지 여부입니다. */
+  sourcePersonReplaced?: boolean;
+  /** 포즈·시선·카메라·크롭·위치 중 최소 두 요소가 달라졌는지 여부입니다. */
+  humanCompositionChanged?: boolean;
+  targetAudienceFit?: number;
+  humanReplacementFindings?: string[];
+  /** 새 인물의 행동·표정·상황이 최종 광고 문구의 의미를 직접 뒷받침하는지 여부입니다. */
+  humanCopyAligned?: boolean;
+  humanCopyAlignmentFindings?: string[];
+  /** 장면과 인물 행동이 원본 카테고리가 아니라 현재 상품의 사용·섭취 맥락을 보여주는지 여부입니다. */
+  sceneProductInteractionAligned?: boolean;
+  sceneProductInteractionFindings?: string[];
+  /** 식품 결과에 현재 상품·확인된 재료가 아닌 다른 먹거리나 재료가 보이는지 여부입니다. */
+  unrelatedFoodOrIngredientDetected?: boolean;
+  unrelatedFoodOrIngredientFindings?: string[];
   failures: string[];
   recommendation: "approve" | "revise" | "manual-review";
   checkedAt: string;
@@ -1100,9 +1119,10 @@ export type GenerationJobStatus = "pending" | "running" | "partial" | "completed
 
 /**
  * 수동 제작에서 자동 상품군 판정을 덮어쓸 때만 저장하는 레퍼런스 풀입니다.
- * `food-produce`는 별도 대분류가 아니라 식품 안의 과일/농산물 전용 풀입니다.
+ * `food-snack`은 별도 대분류가 아니라 음식 안의 간식 전용 풀입니다.
+ * `food-produce`는 저장된 과거 작업을 읽기 위한 호환 값이며 신규 UI에는 노출하지 않습니다.
  */
-export type ReferenceCategoryOverride = "fashion" | "food" | "food-produce" | "beauty";
+export type ReferenceCategoryOverride = "fashion" | "food" | "food-snack" | "food-produce" | "beauty";
 
 export type GenerationJob = {
   id: string;

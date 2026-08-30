@@ -129,7 +129,7 @@ async function planningThread(codex: Codex) {
 }
 
 async function runPlanner(truth: ProductTruth) {
-  if (!(await codexLocalAuthenticated())) throw new Error("로컬 Codex 로그인 상태를 확인할 수 없습니다.");
+  if (!(await codexLocalAuthenticated({ force: true }))) throw new Error("로컬 Codex 로그인 상태를 확인할 수 없습니다.");
   const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: resolveCodexLocalExecutable() });
   const thread = await planningThread(codex);
   const response = await thread.run(plannerPrompt(truth), {

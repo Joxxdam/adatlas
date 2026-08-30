@@ -13,7 +13,7 @@ import { createCreativeGenerationProvider } from "./providers/providerFactory.se
 
 // 실행 함수나 지원 작업 버전이 바뀌면 키도 갱신해 개발 서버 핫리로드가
 // 이전 콜백을 가진 전역 러너를 재사용하지 않게 한다.
-const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v10-ad-copy-version-refresh");
+const runnerKey = Symbol.for("daywiz.creative-generation.server-runner-v13-always-render-copy");
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
 const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely);
 globalRunner[runnerKey] = runner;
@@ -28,7 +28,7 @@ function staleAfterMs() {
 function runnerErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "AI 광고 생성 중 알 수 없는 오류가 발생했습니다.";
   if ((error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) || /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)) {
-    return "AI 광고 레퍼런스 편집이 제한시간을 초과했습니다. 해당 카드의 ‘다시 만들기’로 재시도해 주세요.";
+    return "AI 광고 레퍼런스 편집의 진행 응답이 장시간 없어 중단되었습니다. 저장된 완료 단계부터 자동으로 재시도합니다.";
   }
   return message.replace(/(?:\/Users|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 600);
 }
@@ -218,7 +218,9 @@ export async function runGenerationJob(jobId: string) {
             jobId,
             resultId: next.id,
             requestId: `server-runner:${jobId}:${next.id}:${next.attempts + 1}`,
-            action: next.attempts > 0 ? "regenerate" : "generate",
+            // Automatic retries resume valid structure/product/copy checkpoints.
+            // Full regeneration is reserved for an explicit user action.
+            action: "generate",
             feedback: next.userFeedback,
           });
         } catch (error) {

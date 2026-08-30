@@ -279,6 +279,37 @@ async function fromExactProductUrl(config: AutoProductionAdvertiserConfig, produ
   };
 }
 
+/**
+ * 예약 자동제작도 최종 선택된 상품 URL을 수동 제작과 같은 추출기로 다시
+ * 확인합니다. 후보 점수·성과 메타데이터는 보존하고 상품 사실·상세 OCR만
+ * 현재 랜딩페이지 결과로 갱신합니다.
+ */
+export async function enrichAutoProductionCandidateFromLandingPage(config: AutoProductionAdvertiserConfig, candidate: AutoProductionProductCandidate) {
+  const productUrl = candidate.productUrl || candidate.canonicalProductUrl || candidate.productInfo.landingUrl;
+  if (!productUrl) return candidate;
+  const exact = await fromExactProductUrl(config, productUrl);
+  return verifiedCandidate({
+    ...candidate,
+    productName: exact.productName,
+    productUrl,
+    canonicalProductUrl: canonicalProductUrl(productUrl),
+    category: exact.category,
+    imageUrl: exact.imageUrl,
+    productInfo: {
+      ...candidate.productInfo,
+      ...exact.productInfo,
+      advertiserName: config.advertiserName,
+      brandName: exact.productInfo.brandName || candidate.productInfo.brandName || config.advertiserName,
+      creativeContext: {
+        ...candidate.productInfo.creativeContext,
+        ...exact.productInfo.creativeContext,
+        advertiserId: config.advertiserId,
+        productId: candidate.productInfo.creativeContext?.productId || exact.productInfo.creativeContext?.productId || candidate.id,
+      },
+    },
+  });
+}
+
 async function fromPlannedProductUrls(config: AutoProductionAdvertiserConfig) {
   const plannedUrls = config.adminProductUrls.slice(0, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT);
   const batches = await Promise.allSettled(plannedUrls.map((url) => fromExactProductUrl(config, url)));

@@ -9,7 +9,7 @@ import { autoProductionAdvertiserRepository } from "./advertiserConfig.server";
 import { recentTasks } from "./duplicateGuard";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "./hookSelector";
 import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT } from "./policy";
-import { loadAutoProductionCandidates } from "./productSource.server";
+import { enrichAutoProductionCandidateFromLandingPage, loadAutoProductionCandidates } from "./productSource.server";
 import { selectAutoProductionCandidates } from "./productSelector";
 import { autoProductionRepository } from "./productionRepository.server";
 import { nextScheduledAt, scheduledRunKey, seoulClock } from "./schedule";
@@ -180,13 +180,30 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       : { ...current, status: "generating-hooks", tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, status: "analyzing", updatedAt: new Date().toISOString() } : item)) }
   );
   if (analyzingRun.status === "cancelled") throw new AutoProductionRunCancelledError();
+  let productionCandidate = task.candidate;
+  const productUrl = task.candidate.productUrl || task.candidate.canonicalProductUrl || task.candidate.productInfo.landingUrl;
+  if (productUrl) {
+    try {
+      productionCandidate = await enrichAutoProductionCandidateFromLandingPage(config, task.candidate);
+      await autoProductionRepository.update(run.id, (current) => ({
+        ...current,
+        tasks: current.tasks.map((item) => (item.id === task.id ? { ...item, candidate: productionCandidate, updatedAt: new Date().toISOString() } : item)),
+      }));
+    } catch (error) {
+      await autoProductionRepository.update(run.id, (current) => ({
+        ...current,
+        warnings: [...current.warnings, `상품 상세 OCR 갱신 실패로 기존 검증 정보로 계속합니다: ${error instanceof Error ? error.message : "랜딩페이지 분석 실패"}`].slice(-30),
+      }));
+    }
+  }
+  const productionTask = { ...task, candidate: productionCandidate };
   const job = await createNativeGenerationJob(
     {
-      product: task.candidate.productInfo,
-      productImagePaths: task.candidate.productInfo.productImagePaths,
-      selectedAdImages: task.candidate.productInfo.productImagePaths,
+      product: productionCandidate.productInfo,
+      productImagePaths: productionCandidate.productInfo.productImagePaths,
+      selectedAdImages: productionCandidate.productInfo.productImagePaths,
       source: "landing-page",
-      adBrief: adBrief(config, task),
+      adBrief: adBrief(config, productionTask),
       engine: "codex_local",
     },
     {
