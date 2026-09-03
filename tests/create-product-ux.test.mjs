@@ -22,7 +22,11 @@ test("analysis handoff keeps the selected product URL independently of cached de
   assert.equal(normalizeProductCreationUrl("javascript:alert(1)"), "");
 
   const page = await read("app/create-product/page.tsx");
-  const dashboard = await read("app/components/MvpDashboard.tsx");
+  const dashboard = [
+    await read("app/components/MvpDashboard.tsx"),
+    await read("app/components/MvpDashboardConfig.ts"),
+    await read("app/components/features/MvpWorkspacePanels.tsx"),
+  ].join("\n");
   const selectionRoute = await read("app/api/ad-candidates/site/select/route.ts");
   const bigQueryWorkspace = await read("app/components/bigquery/BigQueryCandidateWorkspace.tsx");
   assert.match(page, /initialProductUrl/);
@@ -81,7 +85,11 @@ test("auto production manages orchestration and shows stored creative results di
 
 test("공통 화면은 데이위즈 로고와 설정 없는 ZIP 레퍼런스 단계별 제작 흐름을 안내한다", async () => {
   const navigation = await read("app/components/AppFeatureNavigation.tsx");
-  const dashboard = await read("app/components/MvpDashboard.tsx");
+  const dashboard = [
+    await read("app/components/MvpDashboard.tsx"),
+    await read("app/components/MvpDashboardConfig.ts"),
+    await read("app/components/features/MvpWorkspacePanels.tsx"),
+  ].join("\n");
   const creationSteps = await read("app/components/features/creative-generation/CreativeCreationSteps.tsx");
   const brand = await read("app/components/DaywizBrand.tsx");
   const logo = await readFile(new URL("../public/daywiz-logo.png", import.meta.url));

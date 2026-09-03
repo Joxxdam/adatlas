@@ -33,6 +33,19 @@ import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "../a
 import { downloadSequenceFromCodes, numberedProductImageFileName, productDownloadStem } from "../app/lib/creative-generation/downloadNaming.ts";
 import { resolveCategoryCreativeProfile } from "../app/lib/creative-generation/categoryCreativeRouter.ts";
 
+async function readJoinedSource(relativePaths) {
+  return (await Promise.all(relativePaths.map((relativePath) => readFile(new URL(relativePath, import.meta.url), "utf8")))).join("\n");
+}
+
+function readReferenceAdaptedPlanningSource() {
+  return readJoinedSource([
+    "../app/lib/creative-generation/referenceAdaptedPlanning.server.ts",
+    "../app/lib/creative-generation/referenceCopyProfiles.server.ts",
+    "../app/lib/creative-generation/referenceCopyPlanningCore.ts",
+    "../app/lib/creative-generation/referenceCopyPlannerRuntime.server.ts",
+  ]);
+}
+
 const product = {
   productName: "민트 샤워젤",
   category: "뷰티",
@@ -1290,7 +1303,11 @@ test("무화과 반건조 간식은 기타·snack 입력이어도 식품으로 �
   const productReplacement = buildNativeStagePrompt("product-replacement", figJob, humanResult, "/tmp/02-product.png");
   const validation = buildNativeValidationPrompt(figJob, humanResult);
   const categorySource = await readFile(new URL("../app/lib/creative-generation/referenceCreativeLibrary.server.ts", import.meta.url), "utf8");
-  const extractSource = await readFile(new URL("../app/api/extract/product/route.ts", import.meta.url), "utf8");
+  const extractSource = await readJoinedSource([
+    "../app/api/extract/product/route.ts",
+    "../app/lib/mvp/productHtmlSignals.server.ts",
+    "../app/lib/mvp/productImageCandidateExtraction.server.ts",
+  ]);
 
   assert.equal(resolveCategoryCreativeProfile(figTruth).category, "food_processed");
   assert.match(categorySource, /identityText[\s\S]*무화과[\s\S]*return "food"/);
@@ -1867,7 +1884,7 @@ test("SEO 상품명은 기본 상품명·검증 설명·용량·판매단위·�
 });
 
 test("레퍼런스 문구 프로필은 해시·버전 캐시와 일괄 critic·실패 항목 1회 보정을 사용한다", async () => {
-  const source = await readFile(new URL("../app/lib/creative-generation/referenceAdaptedPlanning.server.ts", import.meta.url), "utf8");
+  const source = await readReferenceAdaptedPlanningSource();
   assert.match(source, /REFERENCE_COPY_PROFILE_VERSION/);
   assert.match(source, /referenceHash/);
   assert.match(source, /prewarmReferenceCopyProfiles/);
@@ -1878,7 +1895,7 @@ test("레퍼런스 문구 프로필은 해시·버전 캐시와 일괄 critic·�
 });
 
 test("기존 광고주 로고 슬롯은 새 브랜드 로고로 치환하지 않고 배경으로 제거한다", async () => {
-  const planner = await readFile(new URL("../app/lib/creative-generation/referenceAdaptedPlanning.server.ts", import.meta.url), "utf8");
+  const planner = await readReferenceAdaptedPlanningSource();
   const prompt = await readFile(new URL("../app/lib/creative-generation/nativeCreativePrompt.ts", import.meta.url), "utf8");
   assert.match(planner, /function isSourceBrandRemovalRegion/);
   assert.match(planner, /const removeSourceRegion = isSourceBrandRemovalRegion\(region, sourceText\)/);
@@ -2193,7 +2210,7 @@ test("native 실행은 구조를 무손실 복사하고 상품·문구·치명 Q
 });
 
 test("레퍼런스 fallback은 브랜드 슬롯을 비우되 강한 원문과 문구 밀도를 상품 사실로 보존한다", async () => {
-  const source = await readFile(new URL("../app/lib/creative-generation/referenceAdaptedPlanning.server.ts", import.meta.url), "utf8");
+  const source = await readReferenceAdaptedPlanningSource();
   assert.match(source, /factIdByKey\.get\(`vendor-\$\{id\}`\)/);
   assert.match(source, /if \(isSourceBrandRemovalRegion\(region\)\) return ""/);
   assert.match(source, /function referenceAwareFallbackText/);
@@ -2416,7 +2433,7 @@ test("UI는 한 번의 클릭 뒤 1~6 진행 상태·완성 즉시 표시·전�
   const source = await readFile(new URL("../app/components/features/creative-generation/SixCreativeGenerator.tsx", import.meta.url), "utf8");
   const jobFactory = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
   const jobRunner = await readFile(new URL("../app/lib/creative-generation/jobRunner.server.ts", import.meta.url), "utf8");
-  const adaptedPlanner = await readFile(new URL("../app/lib/creative-generation/referenceAdaptedPlanning.server.ts", import.meta.url), "utf8");
+  const adaptedPlanner = await readReferenceAdaptedPlanningSource();
   const nativeResultGenerator = await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts", import.meta.url), "utf8");
   assert.match(source, /concurrency: 3/);
   assert.match(source, /수정 문구로 전체 광고 재생성/);

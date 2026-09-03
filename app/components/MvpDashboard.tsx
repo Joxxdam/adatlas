@@ -9,12 +9,14 @@ import { getCreativeTextStylePreset } from "../lib/creative/textStylePresets";
 import type { AdaptiveCreativePlan, AdaptiveCreativeRenderResult, AudienceProfile, BackgroundLibraryItem, BackgroundRecommendation, BackgroundRecommendationHistory, CreativeGenerationMode } from "../lib/background-library/types";
 import type { AdImageAnalysisDraft, AdImageLabel, BatchRenderResult, BatchRenderStatus, CollectedAdImage, CreativeStrategy, GeneratedAdImage, GeneratedAdCopy, GeneratedImageAsset, GptImageCandidate, GptImageFailureReason, GptImageGenerationMode, GptImagePreservationMode, GptImageSourceMode, GptPromptTemplateMode, GptCustomPromptState, ExtractedProductInfo, MvpBrand, ProductImageEffectPreset, ProductCutoutQuality, ProductExtractionScope, ProductImageMode, ProductRepresentation, ProductRepresentationType, ProductImageRenderEffect, ProductImageState, ProductInfoForPrompt, RenderDiagnostics, SelectedAdImageSource, SelectedAdImageState, SourceImageCandidate, SourceImageSelectionState, TemplateCopyApplyMode, TemplateCopyPreview, TemplateFittedCopy } from "../lib/mvp/types";
 import { inferProductRepresentation } from "../lib/mvp/productImagePipeline";
+import { requestProductCutout } from "../lib/mvp/productImageClient";
 import { evaluateCopyQuality, tightenCopyToTemplate } from "../lib/mvp/copyQualityEvaluator";
 import { resolveTemplateFontAssignment, systemFontOptions } from "../lib/mvp/fontCatalog";
 import { copyToMessageHierarchy, messageHierarchyToCopy } from "../lib/mvp/messageHierarchy";
 import { buildRevisionPromptFromFeedback } from "../lib/mvp/gptImageFeedback";
 import { buildAutoImagePrompt } from "../lib/mvp/defaultImagePromptTemplates";
 import { compactUniqueImagePaths, resolveCurrentProductImagePaths } from "../lib/mvp/imageSelectionResolver";
+import { readStoredProductAnalysis, writeStoredProductAnalysis, type StoredProductAnalysis } from "../lib/mvp/productAnalysisStorage.client";
 import { buildTemplateCopyPreviews, resolveCopyForTemplate } from "../lib/mvp/templateCopyPlanner";
 import { BasicStyleControls, type BasicEditorSettings } from "./features/banner-editor/BasicStyleControls";
 import { CanvasPreview } from "./features/banner-editor/CanvasPreview";
@@ -39,653 +41,54 @@ import type { ProductCreationHandoff } from "../lib/store-analysis/types";
 import { AppSidebar, type AppFeatureKey } from "./AppFeatureNavigation";
 import { CreativeContentNotesPanel } from "./creative-content-notes/CreativeContentNotesPanel";
 import { CreativeCreationSteps } from "./features/creative-generation/CreativeCreationSteps";
+import { appealPointOptions, categoryOptions, CrawledGrid, FilterBar, hookTypeOptions, ImageGrid, LabelPanel, TaxonomyGroup, type MetaCrawlItem } from "./features/reference-management/ReferenceAnalysisPanels";
+import { CategoryManagementPanel, ManagementOverview, ReferenceManagementPanel, ResultsDownloadPanel, WorkspaceHeader } from "./features/MvpWorkspacePanels";
+import {
+  advertiserOptions,
+  allCreatableTemplates,
+  batchResultImageUrl,
+  batchZipTimestamp,
+  buildSourceImageCandidates,
+  confirmedExtractedProductImagePaths,
+  copyVisibleLength,
+  cutoutProductEffectPresets,
+  defaultCutoutProductEffect,
+  emptyBannerCopy,
+  emptyDraft,
+  emptyProductImageState,
+  emptyProductInfo,
+  emptyRecommendationIds,
+  emptySelectedAdImages,
+  emptySourceImageSelection,
+  extractedProductImagePaths,
+  fixedSourceReferenceImages,
+  getSelectedProductImagePath,
+  gptImageFailureReasonOptions,
+  legacyFoodImpactTemplateOption,
+  legacyManualProductionToolsAvailable,
+  noPackageChangePromptTemplate,
+  noTextAdVisualPromptTemplate,
+  normalizeAnalysisDraft,
+  normalizeProductCategory,
+  normalizeProductRenderEffect,
+  preserveSourcePromptTemplate,
+  presetBrandLogos,
+  productFields,
+  productImageModeLabel,
+  recentProductsStorageKey,
+  type BackgroundLevel,
+  type BackgroundMode,
+  type BackgroundStyleState,
+  type BannerTextColorState,
+  type HeadlineStyleOverrides,
+  type ImageGenerationProvider,
+  type MainImageSourceMode,
+  type MvpMenu,
+  type Props,
+  type RecentProductSummary,
+  type Status,
+} from "./MvpDashboardConfig";
 
-type MvpMenu = "카테고리 관리" | "이미지 수집" | "이미지 분석" | "광고 생성" | "결과 다운로드";
-
-type Props = {
-  initialBrands: MvpBrand[];
-  initialImages: CollectedAdImage[];
-  initialGenerated: GeneratedAdImage[];
-  initialCreationHandoff?: ProductCreationHandoff | null;
-  initialProductUrl?: string;
-  initialActiveMenu?: MvpMenu;
-  initialWorkflowStep?: "product" | "hooks" | "creative" | "results";
-  activeFeature?: AppFeatureKey;
-};
-
-type Status = { kind: "idle" | "loading" | "success" | "error"; message: string };
-
-type RecentProductSummary = {
-  productName: string;
-  landingUrl: string;
-  imagePath: string;
-  brandName: string;
-  price: string;
-};
-
-const recentProductsStorageKey = "adatlas-recent-products";
-const productAnalysisStorageKeyPrefix = "adatlas-product-analysis:";
-const productAnalysisStorageVersion = "product-analysis-v2-product-source-safety";
-const legacyManualProductionToolsAvailable = false;
-
-type StoredProductAnalysis = {
-  version: string;
-  productInfo: ProductInfoForPrompt;
-  selectedAdvertiserName: string;
-  generationPlanConfirmed: boolean;
-  savedAt: string;
-};
-
-function normalizeStoredProductUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  try {
-    const url = new URL(trimmed);
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return trimmed;
-  }
-}
-
-function productAnalysisStorageKey(productUrl: string) {
-  return `${productAnalysisStorageKeyPrefix}${encodeURIComponent(normalizeStoredProductUrl(productUrl))}`;
-}
-
-function readStoredProductAnalysis(productUrl: string): StoredProductAnalysis | null {
-  if (typeof window === "undefined" || !productUrl.trim()) return null;
-  try {
-    const raw = window.localStorage.getItem(productAnalysisStorageKey(productUrl));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<StoredProductAnalysis>;
-    if (parsed.version !== productAnalysisStorageVersion || !parsed.productInfo?.productName || normalizeStoredProductUrl(parsed.productInfo.landingUrl || "") !== normalizeStoredProductUrl(productUrl)) {
-      return null;
-    }
-    return {
-      version: parsed.version,
-      productInfo: parsed.productInfo,
-      selectedAdvertiserName: parsed.selectedAdvertiserName || "",
-      generationPlanConfirmed: Boolean(parsed.generationPlanConfirmed),
-      savedAt: parsed.savedAt || "",
-    };
-  } catch {
-    return null;
-  }
-}
-
-type HeadlineStyleOverrides = {
-  headlineFontPreset?: "impact-korean-red" | "commerce-heavy-black" | "premium-serif-gold" | "ugc-bold-white";
-  headlineFontSize?: number;
-  headlineFontWeight?: number;
-  headlineLetterSpacing?: number;
-  headlineLineHeight?: number;
-  headlineColor?: string;
-  headlineTextStroke?: boolean;
-  headlineTextStrokeColor?: string;
-  headlineTextStrokeWidth?: number;
-  headlineShadow?: boolean;
-};
-
-type BackgroundMode = "none" | "auto-detail-blur-dark" | "selected-detail-blur-dark";
-type BackgroundLevel = "low" | "medium" | "high";
-
-type BackgroundStyleState = {
-  blurLevel: BackgroundLevel;
-  dimLevel: BackgroundLevel;
-  brightness: number;
-  overlayOpacity: number;
-  scale: number;
-  offsetX: number;
-  offsetY: number;
-  flipHorizontal: boolean;
-};
-
-type BannerTextColorState = {
-  bodyColor: string;
-  bodyFontSize: number;
-};
-
-type MainImageSourceMode = "detail" | "upload" | "gpt";
-type ImageGenerationProvider = "openai" | "gemini";
-
-type ProductCutoutApiResult = {
-  success?: boolean;
-  error?: string;
-  fallbackMessage?: string;
-  message?: string;
-  processedImagePath?: string;
-  cutoutImagePath?: string;
-  styledCutoutImagePath?: string;
-  originalImagePath?: string;
-  requestedImagePath?: string;
-  autoSelectedAlternative?: boolean;
-  attemptedImageCount?: number;
-  debug?: { cacheHit?: boolean };
-  quality?: ProductCutoutQuality;
-  retryCount?: number;
-  croppedImagePath?: string;
-};
-
-type ProductCutoutRequestOptions = {
-  representationType?: ProductRepresentationType;
-  extractionScope?: ProductExtractionScope;
-  selectedObjectIds?: string[];
-  selectedObjectBoxes?: Array<{ x: number; y: number; width: number; height: number }>;
-  cropBox?: { x: number; y: number; width: number; height: number };
-  expectedUnitCount?: number;
-};
-
-async function requestProductCutout(imagePath: string, effectPreset: ProductImageEffectPreset, candidateImagePaths: string[] = [], options: ProductCutoutRequestOptions = {}): Promise<ProductCutoutApiResult> {
-  const response = await fetch("/api/image/remove-background", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      imagePath,
-      sourceImagePath: imagePath,
-      candidateImagePaths,
-      provider: "removebg",
-      effectPreset,
-      ...options,
-    }),
-  });
-  const result = (await response.json()) as ProductCutoutApiResult;
-  if (!response.ok) {
-    throw new Error(result.error || "누끼 적용에 실패했습니다. 다른 이미지를 선택해 주세요.");
-  }
-  return result;
-}
-
-function batchZipTimestamp(date = new Date()) {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return String(date.getFullYear()) + pad(date.getMonth() + 1) + pad(date.getDate()) + "-" + pad(date.getHours()) + pad(date.getMinutes());
-}
-
-function batchResultImageUrl(result: BatchRenderResult) {
-  return result.downloadUrl || result.imagePath || "";
-}
-
-const gptImageFailureReasonOptions: { value: GptImageFailureReason; label: string }[] = [
-  { value: "original-subject-changed", label: "원본 상품이 바뀜" },
-  { value: "turned-into-packaged-product", label: "포장 상품처럼 바뀜" },
-  { value: "cooked-food-turned-raw", label: "조리/원물 상태가 바뀜" },
-  { value: "product-too-small", label: "상품이 너무 작음" },
-  { value: "bad-background", label: "배경이 어색함" },
-  { value: "unwanted-text", label: "원치 않는 글씨가 생김" },
-  { value: "unwanted-label-or-logo", label: "라벨/로고가 생김" },
-  { value: "copied-reference-product", label: "레퍼런스를 너무 따라감" },
-  { value: "weak-advertising-mood", label: "광고 느낌이 약함" },
-  { value: "too-ai-looking", label: "AI 느낌이 강함" },
-  { value: "wrong-composition", label: "구도가 안 맞음" },
-  { value: "other", label: "기타" },
-];
-
-const preserveSourcePromptTemplate = `이 이미지는 GPT 이미지 생성의 기준 이미지입니다.
-
-원본 이미지의 핵심 피사체, 형태, 색감, 질감, 구도, 음식의 상태를 최대한 유지해주세요.
-현재 이미지가 조리된 고기 또는 상세페이지 음식 이미지라면, 이를 포장육 상품, 플라스틱 트레이 상품, 새로운 패키지 상품으로 바꾸지 마세요.
-
-Preserve the original subject, food texture, cooked appearance, composition, color tone, and visual identity.
-Do not redesign the product.
-Do not replace the food with a packaged product, plastic tray product, raw meat package, or a different item.
-Do not create a new package, label, logo, or container unless explicitly requested.
-
-변경해도 되는 것은 배경, 조명, 선명도, 광고 분위기, 색 보정, 약한 그림자 정도입니다.
-Edit only the background, lighting, sharpness, commercial mood, color grading, and subtle shadows.
-
-이미지 안에는 글씨, 숫자, 로고, 캡션, 버튼 문구를 넣지 마세요.
-No readable text.
-No typography.
-No letters.
-No numbers.
-No captions.
-
-최종 이미지는 원본 이미지를 기반으로 한 글씨 없는 광고 비주얼이어야 합니다.`;
-
-const noTextAdVisualPromptTemplate = `원본 이미지를 기반으로 1:1 비율의 이커머스 광고용 비주얼을 만들어주세요.
-
-상품 또는 음식은 화면의 주인공처럼 크게 보이게 해주세요.
-Make the product or food the main hero.
-Keep the original subject recognizable.
-
-배경과 조명은 더 광고스럽고 고급스럽게 개선해주세요.
-Edit only the background, lighting, and advertising mood.
-
-이미지 안에는 글씨를 넣지 마세요.
-No readable text.
-No typography.
-No letters.
-No numbers.
-No captions.`;
-
-const noPackageChangePromptTemplate = `중요:
-원본 이미지가 포장 제품이 아니라면, 절대 포장 제품으로 바꾸지 마세요.
-Do not turn the original image into a packaged product.
-Do not create a plastic tray package.
-Do not add a new product label.
-Do not add a brand logo.
-Do not change cooked food into raw meat or packaged meat.`;
-
-const emptySourceImageSelection: SourceImageSelectionState = {
-  candidates: [],
-  selectedSourceImageId: "",
-  selectedSourceImagePath: "",
-};
-
-const emptyProductImageState: ProductImageState = {
-  originalImagePath: "",
-  selectedImageMode: "original",
-  cutoutApplied: false,
-  effectPreset: "commerce-shadow",
-};
-
-const emptySelectedAdImages: SelectedAdImageState = {
-  selectedImagePaths: [],
-  primaryImagePath: "",
-  secondaryImagePath: "",
-  source: "unknown",
-  updatedAt: "",
-};
-
-const emptyRecommendationIds: string[] = [];
-
-const defaultCutoutProductEffect: ProductImageRenderEffect = {
-  outline: false,
-  outlineColor: "#ffffff",
-  outlineWidth: 2,
-  shadow: true,
-  shadowBaseColor: "#000000",
-  shadowOpacity: 0.45,
-  shadowColor: "rgba(0,0,0,0.45)",
-  shadowBlur: 24,
-  shadowOffsetX: 0,
-  shadowOffsetY: 10,
-  glow: false,
-  glowBaseColor: "#ffffff",
-  glowOpacity: 0.55,
-  glowColor: "rgba(255,255,255,0.55)",
-  glowBlur: 28,
-  productScale: 1.08,
-  productOffsetX: 0,
-  productOffsetY: 0,
-  productRotation: 0,
-};
-
-const cutoutProductEffectPresets: {
-  id: string;
-  label: string;
-  effect: ProductImageRenderEffect;
-}[] = [
-  {
-    id: "clean-outline",
-    label: "깔끔한 흰 테두리",
-    effect: {
-      ...defaultCutoutProductEffect,
-      outlineWidth: 10,
-      shadowOpacity: 0.28,
-      shadowColor: "rgba(0,0,0,0.28)",
-      shadowBlur: 16,
-      shadowOffsetY: 6,
-      glow: false,
-      glowOpacity: 0.4,
-      glowColor: "rgba(255,255,255,0.4)",
-      glowBlur: 0,
-      productScale: 1,
-    },
-  },
-  {
-    id: "strong-commerce",
-    label: "강한 광고 강조",
-    effect: {
-      ...defaultCutoutProductEffect,
-      outlineWidth: 16,
-      shadowOpacity: 0.5,
-      shadowColor: "rgba(0,0,0,0.5)",
-      shadowBlur: 28,
-      shadowOffsetY: 12,
-      glowOpacity: 0.65,
-      glowColor: "rgba(255,255,255,0.65)",
-      glowBlur: 34,
-      productScale: 1.12,
-    },
-  },
-  {
-    id: "yellow-deal",
-    label: "특가식 강전환",
-    effect: {
-      ...defaultCutoutProductEffect,
-      outlineColor: "#fff200",
-      outlineWidth: 12,
-      shadowOpacity: 0.6,
-      shadowColor: "rgba(0,0,0,0.6)",
-      shadowBlur: 30,
-      shadowOffsetY: 14,
-      glowBaseColor: "#fff200",
-      glowOpacity: 0.5,
-      glowColor: "rgba(255,242,0,0.5)",
-      glowBlur: 30,
-      productScale: 1.15,
-    },
-  },
-  {
-    id: "premium-gift",
-    label: "고급 선물 힌트",
-    effect: {
-      ...defaultCutoutProductEffect,
-      outlineWidth: 8,
-      shadowOpacity: 0.55,
-      shadowColor: "rgba(0,0,0,0.55)",
-      shadowBlur: 34,
-      shadowOffsetY: 16,
-      glowBaseColor: "#ffdc96",
-      glowOpacity: 0.35,
-      glowColor: "rgba(255,220,150,0.35)",
-      glowBlur: 26,
-      productScale: 1.05,
-    },
-  },
-];
-
-type MetaCrawlItem = {
-  brandName: string;
-  imageUrl: string;
-  localImagePath?: string;
-  originalAdUrl: string;
-  collectedAt: string;
-};
-
-const presetBrandLogos = [
-  {
-    id: "gukdae-hanwoo",
-    label: "국대한우 로고",
-    imagePath: "/brand-logos/gukdae-hanwoo-logo-exact.png",
-  },
-  {
-    id: "daehan-hanwoo",
-    label: "대한한우 로고",
-    imagePath: "/brand-logos/advertisers/daehan-hanwoo.png",
-  },
-  {
-    id: "himnaera-farm",
-    label: "힘내라농가 로고",
-    imagePath: "/brand-logos/advertisers/himnaera-farm.png",
-  },
-  {
-    id: "original-source",
-    label: "오리지널소스 로고",
-    imagePath: "/brand-logos/original-source-logo.png",
-  },
-  {
-    id: "ririnco",
-    label: "리리앤코 로고",
-    imagePath: "/brand-logos/ririnco-logo.png",
-  },
-];
-
-const fixedSourceReferenceImages: SourceImageCandidate[] = [
-  {
-    id: "fixed-seolroku-logo-reference",
-    type: "detail",
-    imagePath: "/source-reference-images/seolroku-logo-reference.jpg",
-    originalUrl: "/source-reference-images/seolroku-logo-reference.jpg",
-    label: "설록우 로고 참고 이미지",
-    selected: false,
-    createdAt: "preset",
-  },
-];
-
-const categoryOptions = ["식품/선물", "뷰티/스킨케어", "패션/의류", "생활용품", "건강기능식품", "디지털/앱", "인테리어/리빙", "기타"];
-const hookTypeOptions = ["가격정당화형", "가격소구형", "문제제기형", "공감형", "후기/리뷰형", "UGC형", "비포애프터형", "전문가/권위형", "선물명분형", "긴급/한정형", "반전/궁금증형", "상황제안형"];
-const appealPointOptions = ["가성비", "선물명분", "고급감", "실속", "불편해소", "체형보완", "성분/효능", "시간절약", "후기신뢰", "희소성", "즉시혜택", "자기관리", "사회적 인정"];
-
-const labelFields: { key: keyof AdImageAnalysisDraft; label: string }[] = [
-  { key: "ocrText", label: "이미지 문구" },
-  { key: "category", label: "카테고리" },
-  { key: "hookType", label: "후킹 방식" },
-  { key: "appealPoint", label: "핵심 소구점" },
-  { key: "targetEmotion", label: "소비자 감정" },
-  { key: "copyNuance", label: "카피 뉘앙스" },
-  { key: "visualTone", label: "비주얼 톤" },
-  { key: "layoutPattern", label: "레이아웃 구조" },
-  { key: "whyItWorks", label: "왜 먹히는지" },
-  { key: "recommendedUse", label: "응용 추천" },
-];
-
-const advancedLabelFields: { key: keyof AdImageAnalysisDraft; label: string }[] = [
-  { key: "firstLineHook", label: "첫 문장 후킹" },
-  { key: "copyStructure", label: "카피 구조" },
-  { key: "toneOfVoice", label: "말투/톤" },
-  { key: "trendElements", label: "트렌드 요소" },
-  { key: "consumerInsight", label: "소비자 인사이트" },
-  { key: "purchaseTrigger", label: "구매 트리거" },
-  { key: "reusableCopyPattern", label: "재사용 카피 패턴" },
-  { key: "visualCopyRelation", label: "비주얼-카피 연결" },
-];
-
-const emptyDraft: AdImageAnalysisDraft = {
-  ocrText: "",
-  category: "",
-  hookType: "",
-  appealPoint: "",
-  targetEmotion: "",
-  copyNuance: "",
-  visualTone: "",
-  layoutPattern: "",
-  whyItWorks: "",
-  recommendedUse: "",
-  firstLineHook: "",
-  copyStructure: "",
-  toneOfVoice: "",
-  trendElements: "",
-  consumerInsight: "",
-  purchaseTrigger: "",
-  reusableCopyPattern: "",
-  visualCopyRelation: "",
-};
-
-function normalizeAnalysisDraft(draft?: Partial<AdImageAnalysisDraft>): AdImageAnalysisDraft {
-  return { ...emptyDraft, ...(draft ?? {}) };
-}
-
-const emptyProductInfo: ProductInfoForPrompt = {
-  productName: "",
-  category: "",
-  price: "",
-  originalPrice: "",
-  oldPrice: "",
-  advertiserName: "",
-  brandName: "",
-  copyGuideId: "",
-  copyGuideContext: undefined,
-  discountInfo: "",
-  mainBenefit: "",
-  targetCustomer: "",
-  landingUrl: "",
-  productImagePath: "",
-  secondaryProductImagePath: "",
-  productImagePaths: [],
-  backgroundImagePath: "",
-  extractedDescription: "",
-  extractedMainImage: "",
-  extractedGalleryImages: [],
-  selectedBackgroundSource: "",
-  backgroundMode: "none",
-  sourceImageCandidates: [],
-  reviewSources: [],
-  selectedSourceImageId: "",
-  selectedSourceImagePath: "",
-};
-
-const productFields: { key: keyof ProductInfoForPrompt; label: string; placeholder: string }[] = [
-  { key: "productName", label: "productName", placeholder: "예: 큐빅 헤어밴드 세트" },
-  { key: "category", label: "category", placeholder: "예: 패션/의류" },
-  { key: "price", label: "price", placeholder: "예: 39,900원" },
-  { key: "discountInfo", label: "discountInfo", placeholder: "예: 오늘만 20% 할인" },
-  { key: "mainBenefit", label: "mainBenefit", placeholder: "예: 선물하기 좋은 고급스러운 구성" },
-  { key: "targetCustomer", label: "targetCustomer", placeholder: "예: 부담 없는 선물을 찾는 2030" },
-  { key: "landingUrl", label: "landingUrl", placeholder: "https://..." },
-];
-
-const advertiserOptions = [
-  { label: "선택 안 함", value: "", guideId: "" },
-  { label: "국대한우", value: "국대한우", guideId: "kookdae-hanwoo" },
-  { label: "대한한우", value: "대한한우", guideId: "daehan-hanwoo" },
-  { label: "힘내라농가", value: "힘내라농가", guideId: "fighting-farm" },
-  { label: "오리지널소스", value: "오리지널소스", guideId: "original-source" },
-];
-
-function normalizeProductCategory(...values: string[]) {
-  const text = values.filter(Boolean).join(" ").toLowerCase();
-  const firstCategory = values.find((value) => categoryOptions.includes(value));
-  if (firstCategory) return firstCategory;
-
-  if (/(식품|선물|한우|고기|소고기|돼지고기|갈비|등심|안심|스테이크|정육|육류|과일|복숭아|사과|배|포도|감귤|귤|딸기|수박|참외|멜론|토마토|채소|야채|쌀|잡곡|고구마|감자|옥수수|농산|농가|수산|간식|명절|추석|설날|푸드|food|meat|beef|gift)/i.test(text)) return "식품/선물";
-  if (/(뷰티|화장품|스킨|케어|크림|앰플|향수|메이크업|beauty|cosmetic|skin)/i.test(text)) return "뷰티/스킨케어";
-  if (/(패션|의류|옷|룩|자켓|셔츠|신발|가방|주얼리|웨어|fashion|apparel)/i.test(text)) return "패션/의류";
-  if (/(생활|용품|주방|청소|정리|세제|수납|daily|household)/i.test(text)) return "생활용품";
-  if (/(건강|영양|비타민|유산균|홍삼|오메가|기능식품|health|supplement)/i.test(text)) return "건강기능식품";
-  if (/(디지털|앱|어플|소프트웨어|전자|가전|모바일|digital|app|software)/i.test(text)) return "디지털/앱";
-  if (/(인테리어|리빙|가구|침구|조명|홈데코|interior|living|furniture)/i.test(text)) return "인테리어/리빙";
-
-  return "기타";
-}
-function getSelectedProductImagePath(state: ProductImageState) {
-  if (state.selectedImageMode === "styled-cutout" && state.styledCutoutImagePath) {
-    return state.styledCutoutImagePath;
-  }
-
-  if (state.selectedImageMode === "cutout" && state.cutoutImagePath) {
-    return state.cutoutImagePath;
-  }
-
-  return state.originalImagePath;
-}
-
-function productImageModeLabel(mode: ProductImageMode) {
-  if (mode === "cutout") return "누끼본";
-  if (mode === "styled-cutout") return "효과 적용 누끼본";
-  return "원본";
-}
-
-function copyVisibleLength(value: string) {
-  return [
-    ...String(value || "")
-      .replace(/\s+/g, "")
-      .trim(),
-  ].length;
-}
-
-function hexToRgba(hex: string, opacity: number) {
-  const normalized = hex.replace("#", "");
-  const sixDigit =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((char) => `${char}${char}`)
-          .join("")
-      : normalized.padEnd(6, "0").slice(0, 6);
-  const value = parseInt(sixDigit, 16);
-  const red = (value >> 16) & 255;
-  const green = (value >> 8) & 255;
-  const blue = value & 255;
-  return `rgba(${red},${green},${blue},${Math.max(0, Math.min(1, opacity))})`;
-}
-
-function normalizeProductRenderEffect(effect: ProductImageRenderEffect): ProductImageRenderEffect {
-  const shadowBaseColor = effect.shadowBaseColor || "#000000";
-  const glowBaseColor = effect.glowBaseColor || "#ffffff";
-  const shadowOpacity = effect.shadowOpacity ?? 0.45;
-  const glowOpacity = effect.glowOpacity ?? 0.55;
-
-  return {
-    ...effect,
-    shadowBaseColor,
-    shadowOpacity,
-    shadowColor: hexToRgba(shadowBaseColor, shadowOpacity),
-    glowBaseColor,
-    glowOpacity,
-    glowColor: hexToRgba(glowBaseColor, glowOpacity),
-  };
-}
-
-function buildSourceImageCandidates(extracted: ExtractedProductInfo): SourceImageCandidate[] {
-  const createdAt = new Date().toISOString();
-  const heroImage = extracted.heroImage || extracted.mainImage || extracted.galleryImages?.[0] || "";
-  const detailImages = (extracted.detailImages?.length ? extracted.detailImages : (extracted.galleryImages ?? [])).filter((imagePath) => imagePath && imagePath !== heroImage).slice(0, 30);
-  const candidates: SourceImageCandidate[] = [];
-
-  if (heroImage) {
-    candidates.push({
-      id: "hero-001",
-      type: "hero",
-      imagePath: heroImage,
-      originalUrl: heroImage,
-      label: "대표 이미지",
-      selected: true,
-      createdAt,
-    });
-  }
-
-  detailImages.forEach((imagePath, index) => {
-    candidates.push({
-      id: `detail-${String(index + 1).padStart(3, "0")}`,
-      type: "detail",
-      imagePath,
-      originalUrl: imagePath,
-      label: `상세 이미지 ${index + 1}`,
-      selected: false,
-      createdAt,
-    });
-  });
-
-  return candidates;
-}
-
-function extractedProductImagePaths(extracted: ExtractedProductInfo, sourceCandidates: SourceImageCandidate[] = []) {
-  return compactUniqueImagePaths([extracted.mainImage, extracted.heroImage, ...(extracted.galleryImages ?? []), ...(extracted.detailImages ?? []), ...sourceCandidates.map((candidate) => candidate.imagePath)]);
-}
-
-function confirmedExtractedProductImagePaths(extracted: ExtractedProductInfo) {
-  // 신규 추출 응답은 확정 배열을 명시한다. 빈 배열도 "확정 이미지 없음"을
-  // 뜻하므로 자동 갤러리의 main/hero를 다시 승격하지 않는다. 필드가 없는
-  // 과거 저장 데이터만 대표 이미지를 하위 호환으로 사용한다.
-  return compactUniqueImagePaths(extracted.confirmedProductImages === undefined
-    ? [extracted.mainImage, extracted.heroImage]
-    : extracted.confirmedProductImages).slice(0, 6);
-}
-
-const emptyBannerCopy: GeneratedAdCopy = {
-  headline: "",
-  bodyCopy: "",
-  highlightCopy: "",
-  bottomBarCopy: "",
-  cta: "",
-  price: "",
-  hookType: "",
-  appealPoint: "",
-  whyThisWorks: "",
-};
-
-const legacyFoodImpactTemplateOption: BannerTemplateDefinition = {
-  id: foodImpactHeroTemplate.id,
-  name: "기존 식품 임팩트 템플릿",
-  category: "식품/선물",
-  templateGroup: "food-legacy",
-  description: "기존 food-impact-hero-001 템플릿입니다. 새 템플릿과 별도로 원래 형태를 선택할 수 있습니다.",
-  recommendedHookTypes: ["기존", "가격정당화형", "공감형"],
-  recommendedAppealPoints: ["가성비", "구성", "즉시구매"],
-  style: foodImpactHeroTemplate.style as Record<string, string | number | boolean>,
-  typography: foodImpactHeroTemplate.typography,
-  zones: {
-    headline: "top",
-    body: "top-mid",
-    highlight: "mid-band",
-    product: "center-large",
-    bottom: "bottom-bar",
-    cta: "bottom-pill",
-  },
-};
-
-const allCreatableTemplates = Array.from(new Map([...beautyCategoryTemplates, ...healthCategoryTemplates, ...qualityFoodTemplates, ...foodCategoryTemplates, legacyFoodImpactTemplateOption].map((template) => [template.id, template])).values());
 
 export function MvpDashboard({ activeFeature = "creative-production", initialActiveMenu = "광고 생성", initialWorkflowStep = "product", initialCreationHandoff, initialProductUrl = "", initialGenerated, initialImages }: Props) {
   const handoffProductInfo = initialCreationHandoff?.productInfo;
@@ -1166,7 +569,6 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
     if (!currentProductLoaded || !productInfo.productName.trim()) return;
     try {
       const stored: StoredProductAnalysis = {
-        version: productAnalysisStorageVersion,
         productInfo: {
           ...productInfo,
           landingUrl: lastLoadedProductUrl,
@@ -1175,7 +577,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
         generationPlanConfirmed,
         savedAt: new Date().toISOString(),
       };
-      window.localStorage.setItem(productAnalysisStorageKey(lastLoadedProductUrl), JSON.stringify(stored));
+      writeStoredProductAnalysis(lastLoadedProductUrl, stored);
     } catch {
       // 분석 결과 복원은 편의 기능이므로 브라우저 저장소 오류가 제작을 막지 않게 합니다.
     }
@@ -3936,72 +3338,49 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       <AppSidebar activeFeature={activeFeature} className={`mvp-sidebar ${mobileNavOpen ? "open" : ""}`} id="adatlas-workspace-navigation" />
 
       <section className="mvp-workspace">
-        <header className={`mvp-hero ${activeMenu === "광고 생성" ? "creation-page-hero" : ""}`}>
-          <div>
-            <p className="eyebrow">{activeMenu === "광고 생성" ? "CREATE" : activeMenu === "결과 다운로드" ? "RESULTS" : "ADMIN"}</p>
-            <h2>{activeMenu === "광고 생성" ? "광고 만들기" : activeMenu === "결과 다운로드" ? "제작 결과" : "이미지 관리 현황"}</h2>
-            <p>{activeMenu === "광고 생성" ? "상품 페이지 주소를 입력하면 상품을 분석하고 광고 콘텐츠를 제작합니다." : activeMenu === "결과 다운로드" ? "생성한 광고와 소재코드를 다시 확인하고 내려받습니다." : "수집 이미지, 라벨, 카테고리와 생성 설정을 관리합니다."}</p>
-          </div>
-        </header>
+        <WorkspaceHeader activeMenu={activeMenu} />
 
-        {!["광고 생성", "결과 다운로드"].includes(activeMenu) ? (
-          <>
-            <section className="mvp-metrics" aria-label="이미지 관리 현황">
-              {metrics.map(([label, value]) => (
-                <article key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </article>
-              ))}
-            </section>
-            <div className={`mvp-status ${status.kind}`}>{status.message}</div>
-          </>
+        {!["광고 생성", "결과 다운로드"].includes(activeMenu) ? <ManagementOverview metrics={metrics} status={status} /> : null}
+
+        {activeMenu === "카테고리 관리" ? <CategoryManagementPanel /> : null}
+
+        {activeMenu === "이미지 수집" || activeMenu === "이미지 분석" ? (
+          <ReferenceManagementPanel
+            mode={activeMenu === "이미지 수집" ? "collection" : "analysis"}
+            onRefresh={refreshImages}
+            crawledItems={crawledItems}
+            filterBarProps={{
+              appealPointFilter,
+              categoryFilter,
+              hookTypeFilter,
+              labelStateFilter,
+              platformFilter,
+              setAppealPointFilter,
+              setCategoryFilter,
+              setHookTypeFilter,
+              setLabelStateFilter,
+              setPlatformFilter,
+            }}
+            imageGridProps={{
+              images: filteredImages,
+              labelsByImageId,
+              onAnalyze: analyzeImage,
+              onMetadataSave: saveImageMetadata,
+              onSelect: openLabelPanel,
+              selectedImageId: selectedImage?.id,
+            }}
+            labelPanelProps={{
+              aiDraft,
+              finalLabel,
+              hasExistingLabel: Boolean(selectedImage && labelsByImageId.has(selectedImage.id)),
+              image: selectedImage,
+              onAnalyze: analyzeImage,
+              onDraftChange: setFinalLabel,
+              onSave: saveLabel,
+              status: labelStatus,
+            }}
+          />
         ) : null}
-
-        {activeMenu === "카테고리 관리" ? (
-          <section className="mvp-panel">
-            <div className="mvp-panel-head">
-              <h3>카테고리 관리</h3>
-            </div>
-            <div className="taxonomy-board">
-              <TaxonomyGroup title="카테고리" items={categoryOptions} />
-              <TaxonomyGroup title="후킹 유형" items={hookTypeOptions} />
-              <TaxonomyGroup title="소구점" items={appealPointOptions} />
-            </div>
-            <BackgroundLibraryManager />
-          </section>
-        ) : null}
-
-        {activeMenu === "이미지 수집" ? (
-          <section className="mvp-panel">
-            <div className="mvp-panel-head">
-              <h3>이미지 수집</h3>
-              <button onClick={refreshImages} type="button">
-                이미지 새로고침
-              </button>
-            </div>
-            <FilterBar appealPointFilter={appealPointFilter} categoryFilter={categoryFilter} hookTypeFilter={hookTypeFilter} labelStateFilter={labelStateFilter} platformFilter={platformFilter} setAppealPointFilter={setAppealPointFilter} setCategoryFilter={setCategoryFilter} setHookTypeFilter={setHookTypeFilter} setLabelStateFilter={setLabelStateFilter} setPlatformFilter={setPlatformFilter} />
-            {crawledItems.length ? <CrawledGrid items={crawledItems} /> : null}
-            <div className="labeling-workspace">
-              <ImageGrid images={filteredImages} labelsByImageId={labelsByImageId} onAnalyze={analyzeImage} onMetadataSave={saveImageMetadata} onSelect={openLabelPanel} selectedImageId={selectedImage?.id} />
-              <LabelPanel aiDraft={aiDraft} finalLabel={finalLabel} hasExistingLabel={Boolean(selectedImage && labelsByImageId.has(selectedImage.id))} image={selectedImage} onAnalyze={analyzeImage} onDraftChange={setFinalLabel} onSave={saveLabel} status={labelStatus} />
-            </div>
-          </section>
-        ) : null}
-
-        {activeMenu === "이미지 분석" ? (
-          <section className="mvp-panel">
-            <div className="mvp-panel-head">
-              <h3>이미지 분석</h3>
-              <span className="panel-note">이미지별 카드에서 AI 분석 또는 재분석을 실행하세요.</span>
-            </div>
-            <div className="labeling-workspace">
-              <ImageGrid images={filteredImages} labelsByImageId={labelsByImageId} onAnalyze={analyzeImage} onMetadataSave={saveImageMetadata} onSelect={openLabelPanel} selectedImageId={selectedImage?.id} showAnalysis />
-              <LabelPanel aiDraft={aiDraft} finalLabel={finalLabel} hasExistingLabel={Boolean(selectedImage && labelsByImageId.has(selectedImage.id))} image={selectedImage} onAnalyze={analyzeImage} onDraftChange={setFinalLabel} onSave={saveLabel} status={labelStatus} />
-            </div>
-          </section>
-        ) : null}
-
         {activeMenu === "광고 생성" ? (
           <section className="mvp-panel create-product-panel">
             <nav className="create-product-step-navigation" aria-label="광고 제작 단계">
@@ -6037,293 +5416,8 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
           </section>
         ) : null}
 
-        {activeMenu === "결과 다운로드" ? (
-          <section className="mvp-panel">
-            <div className="mvp-panel-head">
-              <div>
-                <p className="eyebrow">STEP 4 · RESULTS</p>
-                <h3>H01~H06 제작 결과</h3>
-              </div>
-              <Link className="mvp-primary-link" href="/archive">
-                아카이브에서 성과 테스트 설정
-              </Link>
-            </div>
-            <nav className="create-product-step-navigation" aria-label="광고 제작 단계">
-              {[
-                ["product", "01 상품 선택"],
-                ["hooks", "02 후킹 및 방향"],
-                ["creative", "03 AI 광고 제작"],
-                ["results", "04 제작 결과"],
-              ].map(([step, label]) => (
-                <Link aria-current={step === "results" ? "step" : undefined} className={step === "results" ? "active" : ""} href={`/create-product?${step === "results" ? "view=results" : `step=${step}`}`} key={step}>
-                  {label}
-                </Link>
-              ))}
-            </nav>
-            <div className="download-list">
-              {generated.length ? (
-                generated.map((item) => (
-                  <article key={item.id}>
-                    <strong>{item.productName}</strong>
-                    <span>{new Date(item.createdAt).toLocaleString("ko-KR")}</span>
-                  </article>
-                ))
-              ) : (
-                <article>
-                  <strong>아직 저장된 이미지 생성 결과가 없습니다.</strong>
-                  <span>광고 만들기에서 상품을 분석하고 첫 광고를 만들어 보세요.</span>
-                </article>
-              )}
-            </div>
-            <CreativeAssetLibrary />
-          </section>
-        ) : null}
+        {activeMenu === "결과 다운로드" ? <ResultsDownloadPanel generated={generated} /> : null}
       </section>
     </main>
-  );
-}
-
-function CrawledGrid({ items }: { items: MetaCrawlItem[] }) {
-  return (
-    <div className="mvp-image-grid">
-      {items.map((item) => (
-        <article key={`${item.imageUrl}-${item.originalAdUrl}`}>
-          <img alt={`${item.brandName} 수집 광고 이미지`} src={item.localImagePath || item.imageUrl} />
-          <div>
-            <strong>{item.brandName}</strong>
-            <span>{new Date(item.collectedAt).toLocaleString("ko-KR")}</span>
-            {item.originalAdUrl ? (
-              <a href={item.originalAdUrl} rel="noreferrer" target="_blank">
-                광고 원본 보기
-              </a>
-            ) : null}
-          </div>
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function TaxonomyGroup({ title, items }: { title: string; items: string[] }) {
-  return (
-    <section>
-      <h4>{title}</h4>
-      <div>
-        {items.map((item) => (
-          <span key={item}>{item}</span>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function FilterBar({ appealPointFilter, categoryFilter, hookTypeFilter, labelStateFilter, platformFilter, setAppealPointFilter, setCategoryFilter, setHookTypeFilter, setLabelStateFilter, setPlatformFilter }: { appealPointFilter: string; categoryFilter: string; hookTypeFilter: string; labelStateFilter: string; platformFilter: string; setAppealPointFilter: (value: string) => void; setCategoryFilter: (value: string) => void; setHookTypeFilter: (value: string) => void; setLabelStateFilter: (value: string) => void; setPlatformFilter: (value: string) => void }) {
-  return (
-    <div className="taxonomy-filters">
-      <label>
-        <span>카테고리</span>
-        <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-          <option value="all">전체</option>
-          {categoryOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>소구점</span>
-        <select value={appealPointFilter} onChange={(event) => setAppealPointFilter(event.target.value)}>
-          <option value="all">전체</option>
-          {appealPointOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>후킹 유형</span>
-        <select value={hookTypeFilter} onChange={(event) => setHookTypeFilter(event.target.value)}>
-          <option value="all">전체</option>
-          {hookTypeOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span>플랫폼</span>
-        <select value={platformFilter} onChange={(event) => setPlatformFilter(event.target.value)}>
-          <option value="all">전체</option>
-          <option value="meta">meta</option>
-          <option value="tiktok">tiktok</option>
-          <option value="manual">manual</option>
-        </select>
-      </label>
-      <label>
-        <span>라벨 상태</span>
-        <select value={labelStateFilter} onChange={(event) => setLabelStateFilter(event.target.value)}>
-          <option value="all">전체</option>
-          <option value="needed">라벨 필요</option>
-          <option value="done">라벨 완료</option>
-        </select>
-      </label>
-    </div>
-  );
-}
-
-function ImageGrid({ images, labelsByImageId, onAnalyze, onMetadataSave, onSelect, selectedImageId, showAnalysis = false }: { images: CollectedAdImage[]; labelsByImageId: Map<string, AdImageLabel>; onAnalyze: (image: CollectedAdImage) => void; onMetadataSave: (image: CollectedAdImage, updates: Partial<CollectedAdImage>) => void; onSelect: (image: CollectedAdImage) => void; selectedImageId?: string; showAnalysis?: boolean }) {
-  return (
-    <div className="mvp-image-grid">
-      {images.map((image) => (
-        <article className={selectedImageId === image.id ? "selected" : ""} key={image.id} onClick={() => onSelect(image)}>
-          {(() => {
-            const existingLabel = labelsByImageId.get(image.id);
-            const displayCategory = existingLabel?.finalLabel.category || image.category || "기타";
-            const displayHookType = existingLabel?.finalLabel.hookType || image.hookType || "";
-            const displayAppealPoint = existingLabel?.finalLabel.appealPoint || image.appealPoint || "";
-
-            return (
-              <>
-                <div className={`label-badge ${existingLabel ? "done" : "needed"}`}>{existingLabel ? "라벨 완료" : "라벨 필요"}</div>
-                <img alt={`${image.category || "광고"} 이미지`} src={image.localImagePath || image.imageUrl} />
-                <div>
-                  <strong>{displayCategory}</strong>
-                  <span>
-                    {displayHookType || "후킹 미지정"} / {displayAppealPoint || "소구점 미지정"} / {image.sourcePlatform}
-                  </span>
-                  <div className="metadata-editor" onClick={(event) => event.stopPropagation()}>
-                    <select aria-label="카테고리" defaultValue={displayCategory} onChange={(event) => onMetadataSave(image, { category: event.target.value })}>
-                      {categoryOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <select aria-label="후킹 유형" defaultValue={displayHookType} onChange={(event) => onMetadataSave(image, { hookType: event.target.value })}>
-                      <option value="">후킹 유형</option>
-                      {hookTypeOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <select aria-label="소구점" defaultValue={displayAppealPoint} onChange={(event) => onMetadataSave(image, { appealPoint: event.target.value })}>
-                      <option value="">소구점</option>
-                      {appealPointOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      aria-label="브랜드명 optional"
-                      defaultValue={image.brandName}
-                      onBlur={(event) => {
-                        const value = event.target.value.trim();
-                        if (value !== image.brandName) onMetadataSave(image, { brandName: value });
-                      }}
-                      placeholder="브랜드명 optional"
-                    />
-                    <select
-                      aria-label="플랫폼"
-                      defaultValue={String(image.sourcePlatform).toLowerCase()}
-                      onChange={(event) =>
-                        onMetadataSave(image, {
-                          sourcePlatform: event.target.value as CollectedAdImage["sourcePlatform"],
-                        })
-                      }
-                    >
-                      <option value="meta">meta</option>
-                      <option value="tiktok">tiktok</option>
-                      <option value="manual">manual</option>
-                    </select>
-                  </div>
-                  {showAnalysis && existingLabel ? <p>{existingLabel.finalLabel.copyNuance || existingLabel.finalLabel.hookType}</p> : null}
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onAnalyze(image);
-                    }}
-                    type="button"
-                  >
-                    {existingLabel ? "재분석하기" : "AI 분석하기"}
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-        </article>
-      ))}
-    </div>
-  );
-}
-
-function LabelPanel({ aiDraft, finalLabel, hasExistingLabel, image, onAnalyze, onDraftChange, onSave, status }: { aiDraft: AdImageAnalysisDraft; finalLabel: AdImageAnalysisDraft; hasExistingLabel: boolean; image: CollectedAdImage | null; onAnalyze: (image: CollectedAdImage) => void; onDraftChange: (draft: AdImageAnalysisDraft) => void; onSave: () => void; status: Status }) {
-  return (
-    <aside className="label-panel">
-      {image ? (
-        <>
-          <div className="label-preview">
-            <img alt={`${image.category || "광고"} 라벨 편집 이미지`} src={image.localImagePath || image.imageUrl} />
-            <div>
-              <p className="eyebrow">Ad Image Label</p>
-              <h3>{finalLabel.category || image.category || "기타"}</h3>
-              <span>
-                {finalLabel.hookType || image.hookType || "후킹 미지정"} / {finalLabel.appealPoint || image.appealPoint || "소구점 미지정"} / {image.sourcePlatform}
-              </span>
-            </div>
-          </div>
-          <div className={`mvp-status ${status.kind}`}>{status.message}</div>
-          <div className="label-actions">
-            <button onClick={() => onAnalyze(image)} type="button">
-              {hasExistingLabel ? "재분석하기" : "AI 분석하기"}
-            </button>
-            <button onClick={onSave} type="button">
-              라벨 저장
-            </button>
-          </div>
-          <section className="ai-draft-box">
-            <h4>AI 분석 초안</h4>
-            <p>{aiDraft.whyItWorks || "아직 분석 초안이 없습니다."}</p>
-          </section>
-          <form className="label-form">
-            <h4>기본 분석</h4>
-            {labelFields.map((field) => (
-              <label key={field.key}>
-                <span>{field.label}</span>
-                {field.key === "category" || field.key === "hookType" || field.key === "appealPoint" ? (
-                  <select onChange={(event) => onDraftChange({ ...finalLabel, [field.key]: event.target.value })} value={finalLabel[field.key]}>
-                    <option value="">선택</option>
-                    {(field.key === "category" ? categoryOptions : field.key === "hookType" ? hookTypeOptions : appealPointOptions).map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <textarea onChange={(event) => onDraftChange({ ...finalLabel, [field.key]: event.target.value })} rows={field.key === "whyItWorks" || field.key === "recommendedUse" ? 4 : 3} value={finalLabel[field.key]} />
-                )}
-              </label>
-            ))}
-            <h4>심화 카피 분석</h4>
-            {advancedLabelFields.map((field) => (
-              <label key={field.key}>
-                <span>{field.label}</span>
-                <textarea onChange={(event) => onDraftChange({ ...finalLabel, [field.key]: event.target.value })} rows={field.key === "reusableCopyPattern" || field.key === "visualCopyRelation" ? 4 : 3} value={finalLabel[field.key]} />
-              </label>
-            ))}
-          </form>
-        </>
-      ) : (
-        <div className="empty-label-panel">
-          <p className="eyebrow">Ad Image Label</p>
-          <h3>이미지를 선택하세요</h3>
-          <p>이미지 카드에서 AI 분석 초안을 만들고 최종 라벨로 저장할 수 있습니다.</p>
-        </div>
-      )}
-    </aside>
   );
 }

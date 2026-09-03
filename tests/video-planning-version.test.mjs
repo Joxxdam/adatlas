@@ -119,11 +119,17 @@ test("구형 규칙 생성기 파일과 활성 import 연결은 남지 않는다
   ]) {
     await assert.rejects(access(file));
   }
-  const [generator, conceptsRoute, detailRoute] = await Promise.all([
-    readFile("app/lib/video-collaboration/videoPlanningGenerator.server.ts", "utf8"),
+  const [generatorParts, conceptsRoute, detailRoute] = await Promise.all([
+    Promise.all([
+      "videoPlanningGenerator.server.ts",
+      "videoPlanningPromptSupport.ts",
+      "videoConceptGenerator.server.ts",
+      "videoScriptGenerator.server.ts",
+    ].map((file) => readFile(`app/lib/video-collaboration/${file}`, "utf8"))),
     readFile("app/api/video-projects/[projectId]/concepts/route.ts", "utf8"),
     readFile("app/api/video-projects/[projectId]/concepts/[conceptId]/route.ts", "utf8"),
   ]);
+  const generator = generatorParts.join("\n");
   assert.doesNotMatch(generator, /fourConceptMode|planningMode|request\(undefined\)|buildVideoHookCandidates/);
   assert.match(generator, /requestFourVideoConcepts/);
   assert.match(generator, /currentVideoCreativePremiseIssue/);

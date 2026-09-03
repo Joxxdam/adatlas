@@ -112877,10 +112877,10 @@
       "classificationMethod": "codex-local",
       "nativeCopy": {
         "referenceId": "reference-upload-c8041d59-1543-41cc-b6ed-6dcba053e817",
-        "rawText": "총 17가지 맛, 한 팩씩 맛보기\n1팩 3,000원\n1,641원",
+        "rawText": "총 17가지 맛, 한 팩씩 맛보기\n1팩 3,000원 /\n1,641원",
         "rawLines": [
           "총 17가지 맛, 한 팩씩 맛보기",
-          "1팩 3,000원",
+          "1팩 3,000원 /",
           "1,641원"
         ],
         "textRegions": [
@@ -112897,20 +112897,20 @@
             "box": {
               "x": 0.247,
               "y": 0.074,
-              "width": 0.506,
-              "height": 0.066
+              "width": 0.507,
+              "height": 0.064
             },
             "x": 0.247,
             "y": 0.074,
-            "width": 0.506,
-            "height": 0.066,
+            "width": 0.507,
+            "height": 0.064,
             "align": "center",
             "emphasis": "strong",
             "colorHint": "black",
             "backgroundHint": "bright yellow rectangular banner",
             "outlineHint": "none",
             "sizeClass": "large",
-            "characterBudget": 19,
+            "characterBudget": 18,
             "reviewRequired": false,
             "confidence": 0.99
           },
@@ -112920,61 +112920,59 @@
             "readingOrder": 2,
             "sourceType": "ad-copy",
             "replacePolicy": "adapt",
-            "text": "1팩 3,000원\n1,641원",
+            "text": "1팩 3,000원 /",
             "lines": [
-              "1팩 3,000원",
-              "1,641원"
+              "1팩 3,000원 /"
             ],
             "box": {
-              "x": 0.086,
-              "y": 0.189,
-              "width": 0.828,
-              "height": 0.349
+              "x": 0.211,
+              "y": 0.188,
+              "width": 0.588,
+              "height": 0.105
             },
-            "x": 0.086,
-            "y": 0.189,
-            "width": 0.828,
-            "height": 0.349,
+            "x": 0.211,
+            "y": 0.188,
+            "width": 0.588,
+            "height": 0.105,
             "align": "center",
             "emphasis": "strong",
-            "colorHint": "white, dark gray, bright yellow",
-            "backgroundHint": "black-to-dark-brown gradient",
-            "outlineHint": "3,000원에 가로 취소선과 우하향 선 장식",
-            "sizeClass": "hero",
-            "characterBudget": 16,
+            "colorHint": "white for 1팩; dark gray for 3,000원 /",
+            "backgroundHint": "black-to-dark-brown background",
+            "outlineHint": "horizontal strike-through across 3,000원",
+            "sizeClass": "large",
+            "characterBudget": 11,
             "reviewRequired": false,
             "confidence": 0.99
           },
           {
             "id": "region-03",
-            "role": "other",
+            "role": "offer",
             "readingOrder": 3,
-            "sourceType": "source-product-label",
-            "replacePolicy": "product-replacement",
-            "text": "작심통\n치즈닭갈",
+            "sourceType": "ad-copy",
+            "replacePolicy": "adapt",
+            "text": "1,641원",
             "lines": [
-              "작심통",
-              "치즈닭갈"
+              "1,641원"
             ],
             "box": {
-              "x": 0,
-              "y": 0.774,
-              "width": 0.123,
-              "height": 0.154
+              "x": 0.083,
+              "y": 0.307,
+              "width": 0.838,
+              "height": 0.216
             },
-            "x": 0,
-            "y": 0.774,
-            "width": 0.123,
-            "height": 0.154,
+            "x": 0.083,
+            "y": 0.307,
+            "width": 0.838,
+            "height": 0.216,
             "align": "center",
             "emphasis": "strong",
-            "colorHint": "black, yellow",
-            "backgroundHint": "orange product package",
-            "outlineHint": "dark shadow",
-            "sizeClass": "medium",
-            "characterBudget": 8,
-            "reviewRequired": true,
-            "confidence": 0.56
+            "colorHint": "bright yellow",
+            "backgroundHint": "dark brown gradient",
+            "outlineHint": "dark drop shadow",
+            "sizeClass": "hero",
+            "characterBudget": 6,
+            "reviewRequired": false,
+            "confidence": 0.99
           },
           {
             "id": "region-04",
@@ -112987,20 +112985,20 @@
               "New"
             ],
             "box": {
-              "x": 0.123,
-              "y": 0.609,
-              "width": 0.105,
-              "height": 0.077
+              "x": 0.185,
+              "y": 0.574,
+              "width": 0.123,
+              "height": 0.094
             },
-            "x": 0.123,
-            "y": 0.609,
-            "width": 0.105,
-            "height": 0.077,
+            "x": 0.185,
+            "y": 0.574,
+            "width": 0.123,
+            "height": 0.094,
             "align": "center",
             "emphasis": "strong",
             "colorHint": "white",
-            "backgroundHint": "red package tab",
-            "outlineHint": "red glow/shadow",
+            "backgroundHint": "red package",
+            "outlineHint": "red glow and dark shadow",
             "sizeClass": "medium",
             "characterBudget": 3,
             "reviewRequired": false,
@@ -113012,31 +113010,31 @@
             "readingOrder": 5,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "ON SUGGO\n귀리·찰현미\nSIGNATURE",
+            "text": "LOW SUGAR\n귀리·찰현미\nRICH IN FIBER",
             "lines": [
-              "ON SUGGO",
+              "LOW SUGAR",
               "귀리·찰현미",
-              "SIGNATURE"
+              "RICH IN FIBER"
             ],
             "box": {
-              "x": 0.263,
-              "y": 0.704,
-              "width": 0.113,
-              "height": 0.092
+              "x": 0.269,
+              "y": 0.68,
+              "width": 0.126,
+              "height": 0.112
             },
-            "x": 0.263,
-            "y": 0.704,
-            "width": 0.113,
-            "height": 0.092,
+            "x": 0.269,
+            "y": 0.68,
+            "width": 0.126,
+            "height": 0.112,
             "align": "center",
-            "emphasis": "light",
+            "emphasis": "strong",
             "colorHint": "white",
-            "backgroundHint": "red product package over food photograph",
-            "outlineHint": "white circular stamp",
+            "backgroundHint": "transparent over red package and product photo",
+            "outlineHint": "white circular seal with diagonal bands",
             "sizeClass": "small",
-            "characterBudget": 23,
-            "reviewRequired": true,
-            "confidence": 0.77
+            "characterBudget": 28,
+            "reviewRequired": false,
+            "confidence": 0.9
           },
           {
             "id": "region-06",
@@ -113050,22 +113048,22 @@
               "직화낙지볶음"
             ],
             "box": {
-              "x": 0.167,
-              "y": 0.821,
-              "width": 0.206,
-              "height": 0.105
+              "x": 0.178,
+              "y": 0.793,
+              "width": 0.32,
+              "height": 0.125
             },
-            "x": 0.167,
-            "y": 0.821,
-            "width": 0.206,
-            "height": 0.105,
+            "x": 0.178,
+            "y": 0.793,
+            "width": 0.32,
+            "height": 0.125,
             "align": "center",
             "emphasis": "strong",
-            "colorHint": "white, yellow",
-            "backgroundHint": "red product package",
-            "outlineHint": "dark red shadow",
+            "colorHint": "white and yellow",
+            "backgroundHint": "red package",
+            "outlineHint": "dark red and black shadow",
             "sizeClass": "large",
-            "characterBudget": 12,
+            "characterBudget": 10,
             "reviewRequired": false,
             "confidence": 0.99
           },
@@ -113075,29 +113073,29 @@
             "readingOrder": 7,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "100g | 220 kcal",
+            "text": "100g | 210 kcal",
             "lines": [
-              "100g | 220 kcal"
+              "100g | 210 kcal"
             ],
             "box": {
-              "x": 0.127,
-              "y": 0.934,
-              "width": 0.13,
-              "height": 0.028
+              "x": 0.177,
+              "y": 0.931,
+              "width": 0.151,
+              "height": 0.041
             },
-            "x": 0.127,
-            "y": 0.934,
-            "width": 0.13,
-            "height": 0.028,
+            "x": 0.177,
+            "y": 0.931,
+            "width": 0.151,
+            "height": 0.041,
             "align": "left",
             "emphasis": "light",
             "colorHint": "white",
-            "backgroundHint": "red product package",
+            "backgroundHint": "red package",
             "outlineHint": "none",
             "sizeClass": "small",
             "characterBudget": 14,
-            "reviewRequired": true,
-            "confidence": 0.91
+            "reviewRequired": false,
+            "confidence": 0.94
           },
           {
             "id": "region-08",
@@ -113110,20 +113108,20 @@
               "New"
             ],
             "box": {
-              "x": 0.433,
-              "y": 0.568,
-              "width": 0.107,
-              "height": 0.079
+              "x": 0.438,
+              "y": 0.535,
+              "width": 0.111,
+              "height": 0.09
             },
-            "x": 0.433,
-            "y": 0.568,
-            "width": 0.107,
-            "height": 0.079,
+            "x": 0.438,
+            "y": 0.535,
+            "width": 0.111,
+            "height": 0.09,
             "align": "center",
             "emphasis": "strong",
             "colorHint": "white",
-            "backgroundHint": "dark-brown package tab",
-            "outlineHint": "red glow/shadow",
+            "backgroundHint": "dark brown package",
+            "outlineHint": "red glow and dark shadow",
             "sizeClass": "medium",
             "characterBudget": 3,
             "reviewRequired": false,
@@ -113135,31 +113133,31 @@
             "readingOrder": 9,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "ON SUGGO\n귀리·찰현미\nSIGNATURE",
+            "text": "LOW SUGAR\n귀리·찰현미\nRICH IN FIBER",
             "lines": [
-              "ON SUGGO",
+              "LOW SUGAR",
               "귀리·찰현미",
-              "SIGNATURE"
+              "RICH IN FIBER"
             ],
             "box": {
-              "x": 0.514,
-              "y": 0.668,
-              "width": 0.145,
-              "height": 0.104
+              "x": 0.523,
+              "y": 0.656,
+              "width": 0.137,
+              "height": 0.119
             },
-            "x": 0.514,
-            "y": 0.668,
-            "width": 0.145,
-            "height": 0.104,
+            "x": 0.523,
+            "y": 0.656,
+            "width": 0.137,
+            "height": 0.119,
             "align": "center",
-            "emphasis": "light",
+            "emphasis": "strong",
             "colorHint": "white",
-            "backgroundHint": "dark-brown package over food photograph",
-            "outlineHint": "white circular stamp",
+            "backgroundHint": "transparent over dark brown package and product photo",
+            "outlineHint": "white circular seal with diagonal bands",
             "sizeClass": "small",
-            "characterBudget": 23,
-            "reviewRequired": true,
-            "confidence": 0.82
+            "characterBudget": 28,
+            "reviewRequired": false,
+            "confidence": 0.94
           },
           {
             "id": "region-10",
@@ -113167,28 +113165,28 @@
             "readingOrder": 10,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "작심통밥\n삼겹김치",
+            "text": "작심통밥\n신촌김치",
             "lines": [
               "작심통밥",
-              "삼겹김치"
+              "신촌김치"
             ],
             "box": {
-              "x": 0.374,
-              "y": 0.801,
-              "width": 0.257,
-              "height": 0.113
+              "x": 0.36,
+              "y": 0.802,
+              "width": 0.281,
+              "height": 0.115
             },
-            "x": 0.374,
-            "y": 0.801,
-            "width": 0.257,
-            "height": 0.113,
+            "x": 0.36,
+            "y": 0.802,
+            "width": 0.281,
+            "height": 0.115,
             "align": "center",
             "emphasis": "strong",
-            "colorHint": "white, dark orange-red",
-            "backgroundHint": "dark-brown product package",
+            "colorHint": "white and red-orange",
+            "backgroundHint": "dark brown package",
             "outlineHint": "black shadow",
             "sizeClass": "large",
-            "characterBudget": 9,
+            "characterBudget": 8,
             "reviewRequired": false,
             "confidence": 0.99
           },
@@ -113203,24 +113201,24 @@
               "100g | 215 kcal"
             ],
             "box": {
-              "x": 0.363,
-              "y": 0.934,
-              "width": 0.13,
-              "height": 0.027
+              "x": 0.356,
+              "y": 0.936,
+              "width": 0.159,
+              "height": 0.038
             },
-            "x": 0.363,
-            "y": 0.934,
-            "width": 0.13,
-            "height": 0.027,
+            "x": 0.356,
+            "y": 0.936,
+            "width": 0.159,
+            "height": 0.038,
             "align": "left",
             "emphasis": "light",
             "colorHint": "white",
-            "backgroundHint": "dark-brown product package",
+            "backgroundHint": "dark brown package",
             "outlineHint": "none",
             "sizeClass": "small",
             "characterBudget": 14,
             "reviewRequired": false,
-            "confidence": 0.98
+            "confidence": 0.99
           },
           {
             "id": "region-12",
@@ -113233,20 +113231,20 @@
               "New"
             ],
             "box": {
-              "x": 0.728,
-              "y": 0.616,
-              "width": 0.106,
-              "height": 0.073
+              "x": 0.715,
+              "y": 0.576,
+              "width": 0.115,
+              "height": 0.092
             },
-            "x": 0.728,
-            "y": 0.616,
-            "width": 0.106,
-            "height": 0.073,
+            "x": 0.715,
+            "y": 0.576,
+            "width": 0.115,
+            "height": 0.092,
             "align": "center",
             "emphasis": "strong",
             "colorHint": "white",
-            "backgroundHint": "orange-red package tab",
-            "outlineHint": "red glow/shadow",
+            "backgroundHint": "orange-red package",
+            "outlineHint": "red glow and dark shadow",
             "sizeClass": "medium",
             "characterBudget": 3,
             "reviewRequired": false,
@@ -113258,31 +113256,31 @@
             "readingOrder": 13,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "ON SUGGO\n귀리·찰현미\nSIGNATURE",
+            "text": "LOW SUGAR\n귀리·찰현미\nRICH IN FIBER",
             "lines": [
-              "ON SUGGO",
+              "LOW SUGAR",
               "귀리·찰현미",
-              "SIGNATURE"
+              "RICH IN FIBER"
             ],
             "box": {
-              "x": 0.789,
-              "y": 0.708,
-              "width": 0.13,
-              "height": 0.092
+              "x": 0.783,
+              "y": 0.688,
+              "width": 0.134,
+              "height": 0.109
             },
-            "x": 0.789,
-            "y": 0.708,
-            "width": 0.13,
-            "height": 0.092,
+            "x": 0.783,
+            "y": 0.688,
+            "width": 0.134,
+            "height": 0.109,
             "align": "center",
-            "emphasis": "light",
+            "emphasis": "strong",
             "colorHint": "white",
-            "backgroundHint": "orange-red package over food photograph",
-            "outlineHint": "white circular stamp",
+            "backgroundHint": "transparent over orange-red package and product photo",
+            "outlineHint": "white circular seal with diagonal bands",
             "sizeClass": "small",
-            "characterBudget": 23,
-            "reviewRequired": true,
-            "confidence": 0.78
+            "characterBudget": 28,
+            "reviewRequired": false,
+            "confidence": 0.91
           },
           {
             "id": "region-14",
@@ -113297,21 +113295,21 @@
             ],
             "box": {
               "x": 0.694,
-              "y": 0.824,
-              "width": 0.211,
-              "height": 0.108
+              "y": 0.802,
+              "width": 0.232,
+              "height": 0.116
             },
             "x": 0.694,
-            "y": 0.824,
-            "width": 0.211,
-            "height": 0.108,
+            "y": 0.802,
+            "width": 0.232,
+            "height": 0.116,
             "align": "center",
             "emphasis": "strong",
-            "colorHint": "white, pale yellow",
-            "backgroundHint": "orange-red product package",
+            "colorHint": "white and pale cream",
+            "backgroundHint": "orange-red package",
             "outlineHint": "dark red shadow",
             "sizeClass": "large",
-            "characterBudget": 10,
+            "characterBudget": 9,
             "reviewRequired": false,
             "confidence": 0.99
           },
@@ -113326,54 +113324,54 @@
               "100 kcal"
             ],
             "box": {
-              "x": 0.696,
-              "y": 0.939,
-              "width": 0.069,
-              "height": 0.021
+              "x": 0.687,
+              "y": 0.936,
+              "width": 0.087,
+              "height": 0.037
             },
-            "x": 0.696,
-            "y": 0.939,
-            "width": 0.069,
-            "height": 0.021,
+            "x": 0.687,
+            "y": 0.936,
+            "width": 0.087,
+            "height": 0.037,
             "align": "left",
             "emphasis": "light",
             "colorHint": "white",
-            "backgroundHint": "orange-red product package",
+            "backgroundHint": "orange-red package",
             "outlineHint": "none",
             "sizeClass": "small",
             "characterBudget": 8,
-            "reviewRequired": true,
-            "confidence": 0.55
+            "reviewRequired": false,
+            "confidence": 0.91
           },
           {
             "id": "region-16",
-            "role": "badge",
+            "role": "other",
             "readingOrder": 16,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "귀리·찰현미",
+            "text": "작심통",
             "lines": [
-              "귀리·찰현미"
+              "작심통"
             ],
             "box": {
-              "x": 0.922,
-              "y": 0.731,
-              "width": 0.078,
-              "height": 0.067
+              "x": 0.002,
+              "y": 0.807,
+              "width": 0.167,
+              "height": 0.058
             },
-            "x": 0.922,
-            "y": 0.731,
-            "width": 0.078,
-            "height": 0.067,
+            "x": 0.002,
+            "y": 0.807,
+            "width": 0.167,
+            "height": 0.058,
             "align": "center",
-            "emphasis": "light",
+            "emphasis": "strong",
             "colorHint": "black",
-            "backgroundHint": "yellow package over food photograph",
-            "outlineHint": "black circular stamp",
-            "sizeClass": "small",
-            "characterBudget": 6,
-            "reviewRequired": true,
-            "confidence": 0.7
+            "backgroundHint": "orange package",
+            "outlineHint": "light shadow",
+            "sizeClass": "medium",
+            "characterBudget": 3,
+            "reviewRequired": false,
+            "confidence": 0.95
           },
           {
             "id": "region-17",
@@ -113381,58 +113379,115 @@
             "readingOrder": 17,
             "sourceType": "source-product-label",
             "replacePolicy": "product-replacement",
-            "text": "심통밥\n치킨치즈",
+            "text": "치즈닭갈",
             "lines": [
-              "심통밥",
-              "치킨치즈"
+              "치즈닭갈"
             ],
             "box": {
-              "x": 0.875,
-              "y": 0.824,
-              "width": 0.125,
-              "height": 0.111
+              "x": 0.001,
+              "y": 0.86,
+              "width": 0.17,
+              "height": 0.052
             },
-            "x": 0.875,
-            "y": 0.824,
-            "width": 0.125,
-            "height": 0.111,
+            "x": 0.001,
+            "y": 0.86,
+            "width": 0.17,
+            "height": 0.052,
             "align": "center",
             "emphasis": "strong",
-            "colorHint": "black, orange-red",
-            "backgroundHint": "yellow product package",
+            "colorHint": "yellow",
+            "backgroundHint": "orange package",
             "outlineHint": "dark shadow",
             "sizeClass": "medium",
-            "characterBudget": 7,
-            "reviewRequired": true,
-            "confidence": 0.58
+            "characterBudget": 4,
+            "reviewRequired": false,
+            "confidence": 0.91
+          },
+          {
+            "id": "region-18",
+            "role": "other",
+            "readingOrder": 18,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "심통밥",
+            "lines": [
+              "심통밥"
+            ],
+            "box": {
+              "x": 0.89,
+              "y": 0.807,
+              "width": 0.11,
+              "height": 0.059
+            },
+            "x": 0.89,
+            "y": 0.807,
+            "width": 0.11,
+            "height": 0.059,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "black",
+            "backgroundHint": "yellow package",
+            "outlineHint": "light shadow",
+            "sizeClass": "medium",
+            "characterBudget": 3,
+            "reviewRequired": false,
+            "confidence": 0.94
+          },
+          {
+            "id": "region-19",
+            "role": "other",
+            "readingOrder": 19,
+            "sourceType": "source-product-label",
+            "replacePolicy": "product-replacement",
+            "text": "치콘치즈",
+            "lines": [
+              "치콘치즈"
+            ],
+            "box": {
+              "x": 0.89,
+              "y": 0.861,
+              "width": 0.11,
+              "height": 0.054
+            },
+            "x": 0.89,
+            "y": 0.861,
+            "width": 0.11,
+            "height": 0.054,
+            "align": "center",
+            "emphasis": "strong",
+            "colorHint": "red-orange",
+            "backgroundHint": "yellow package",
+            "outlineHint": "dark shadow",
+            "sizeClass": "medium",
+            "characterBudget": 4,
+            "reviewRequired": false,
+            "confidence": 0.9
           }
         ],
-        "confidence": 0.8570588235294119,
-        "ocrConfidence": 0.8570588235294119,
+        "confidence": 0.95,
+        "ocrConfidence": 0.95,
         "analysisVersion": "reference-native-copy-analysis-v4-full-label-consensus",
         "promptVersion": "reference-native-copy-ocr-v4-full-label-four-pass-contract",
         "model": "gpt-5.6-sol",
         "imageHash": "09a9bedb2ac70832afb01b26f6e6974a28b00da89eef3b749671848afc0827f1",
         "imageWidth": 1200,
         "imageHeight": 1200,
-        "analysisStatus": "needs-review",
-        "approvalStatus": "needs-review",
+        "analysisStatus": "ready",
+        "approvalStatus": "auto-approved",
+        "approvedAt": "2026-09-03T09:48:47.537Z",
         "validation": {
           "textCoverage": 1,
           "regionCoverage": 1,
           "passAgreement": 1,
           "numericAgreement": 1,
-          "issues": [
-            "작은 패키지 라벨을 포함해 사람 확인이 필요한 저신뢰 문구 영역이 있습니다."
-          ]
+          "issues": []
         },
-        "analysisError": "작은 패키지 라벨을 포함해 사람 확인이 필요한 저신뢰 문구 영역이 있습니다.",
-        "attemptCount": 3,
+        "attemptCount": 4,
         "manuallyCorrected": false,
-        "useForCopyAdaptation": false,
+        "useForCopyAdaptation": true,
         "extractionSource": "codex-local",
-        "extractedAt": "2026-09-03T08:57:10.762Z",
-        "updatedAt": "2026-09-03T09:05:43.437Z"
+        "extractedAt": "2026-09-03T09:48:47.537Z",
+        "updatedAt": "2026-09-03T09:54:54.231Z"
       }
     },
     {
@@ -114038,5 +114093,5 @@
       }
     }
   ],
-  "updatedAt": "2026-09-03T09:05:43.437Z"
+  "updatedAt": "2026-09-03T09:54:54.231Z"
 }

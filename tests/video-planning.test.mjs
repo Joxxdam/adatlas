@@ -660,7 +660,8 @@ test("디자이너 지정 후에만 제작 기준 버전과 요청 이력을 저
 });
 
 test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한 안의 자막·장면안만 보여준다", async () => {
-  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource, generatorSource] = await Promise.all([readFile("app/components/AppFeatureNavigation.tsx", "utf8"), readFile("app/video-planning/page.tsx", "utf8"), readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"), readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"), readFile("app/lib/video-collaboration/types.ts", "utf8"), readFile("app/lib/video-collaboration/videoPlanningGenerator.server.ts", "utf8")]);
+  const [navigation, listPage, newWorkspace, detailPage, detailWorkspace, productionPage, typesSource, generatorParts] = await Promise.all([readFile("app/components/AppFeatureNavigation.tsx", "utf8"), readFile("app/video-planning/page.tsx", "utf8"), readFile("app/components/video-collaboration/NewVideoProjectWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/concept/[conceptId]/page.tsx", "utf8"), readFile("app/components/video-planning/VideoPlanningConceptWorkspace.tsx", "utf8"), readFile("app/video-planning/[projectId]/production/page.tsx", "utf8"), readFile("app/lib/video-collaboration/types.ts", "utf8"), Promise.all(["videoPlanningGenerator.server.ts", "videoPlanningPromptSupport.ts", "videoReferenceAnalysis.server.ts", "videoHookGenerator.server.ts", "videoConceptGenerator.server.ts", "videoScriptGenerator.server.ts"].map((file) => readFile(`app/lib/video-collaboration/${file}`, "utf8")))]);
+  const generatorSource = generatorParts.join("\n");
   assert.match(navigation, /VIDEO_PLANNING_FEATURE[\s\S]*label: "영상 기획"/);
   assert.match(navigation, /VIDEO CONTENT[\s\S]*영상 콘텐츠/);
   assert.match(
