@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { VIDEO_CONCEPT_FORMATS } from "./types.ts";
+import { VIDEO_CONCEPT_ARCHETYPES, VIDEO_CONCEPT_FORMATS } from "./types.ts";
 import type {
   CreateVideoProjectInput,
   ReviewComment,
@@ -16,10 +16,16 @@ import type {
   ReferenceVideoAnalysis,
   VideoGenerationFailure,
   VideoParodyGenre,
+  VideoConceptArchetype,
+  VideoConceptSlot,
 } from "./types.ts";
 import { normalizeVideoCut } from "./script.ts";
 import { segmentRange, validateConceptDiversity, validateDetailedPlanning } from "./planningValidation.ts";
 import { inferVideoParodyGenre } from "./videoParodyGenres.ts";
+import {
+  CURRENT_VIDEO_PLANNING_ENGINE_VERSION,
+  currentVideoCreativePremiseIssue,
+} from "./videoPlanningVersion.ts";
 import {
   assertVideoProjectTransition,
   createVideoMaterialCode,
@@ -85,8 +91,90 @@ function normalizeConcept(concept: VideoConcept, duration?: VideoProject["durati
   };
 }
 
+function stableRecoveredConceptId(projectId: string, archetype: string, index: number) {
+  const digest = crypto
+    .createHash("sha256")
+    .update(`${projectId}:${archetype}:${index}`)
+    .digest("hex");
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-a${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+}
+
+const STALE_VIDEO_GENERATION_MS = 10 * 60 * 1000;
+
+function staleVideoGenerationFailure(project: VideoProject, now = Date.now()): VideoGenerationFailure | undefined {
+  const runningUpdates = [
+    ...(project.pipelineProgress || [])
+      .filter((item) => item.status === "running")
+      .map((item) => Date.parse(item.updatedAt)),
+    ...(project.conceptSlots || [])
+      .filter((slot) => slot.status === "generating")
+      .map((slot) => Date.parse(slot.updatedAt)),
+  ].filter(Number.isFinite);
+  if (!runningUpdates.length) return undefined;
+  const latestRunningUpdate = Math.max(...runningUpdates);
+  if (now - latestRunningUpdate <= STALE_VIDEO_GENERATION_MS) return undefined;
+  return {
+    stage: "concept-summaries",
+    code: "STALE_GENERATION_INTERRUPTED",
+    message: "이전 영상 기획 작업이 서버 종료 또는 연결 중단으로 멈췄습니다. 완료된 콘셉트는 유지하고 실패한 콘셉트만 다시 생성해 주세요.",
+    retryable: true,
+    attempts: Math.max(1, ...(project.conceptSlots || []).map((slot) => slot.attempts || 0)),
+    failedAt: new Date(latestRunningUpdate + STALE_VIDEO_GENERATION_MS).toISOString(),
+  };
+}
+
 function normalizeProject(project: VideoProject): VideoProject {
   const createdAt = clean(project.createdAt, 80) || new Date().toISOString();
+  const seenConceptIds = new Set<string>();
+  const seenMaterialCodes: string[] = [];
+  const concepts = Array.isArray(project.concepts)
+    ? project.concepts.map((concept, index) => {
+        const normalized = normalizeConcept(concept, project.duration);
+        let id = clean(normalized.id, 120);
+        if (!id || seenConceptIds.has(id)) {
+          id = stableRecoveredConceptId(
+            project.id,
+            normalized.conceptArchetype || normalized.hookType || "concept",
+            index
+          );
+        }
+        seenConceptIds.add(id);
+        let materialCode = clean(normalized.materialCode, 160);
+        if (!validateVideoMaterialCode(materialCode) || seenMaterialCodes.includes(materialCode)) {
+          materialCode = createVideoMaterialCode({
+            advertiserName: project.advertiserName,
+            productName: project.productAnalysis?.productName || project.projectName,
+            hookType: normalized.hookType,
+            existingCodes: seenMaterialCodes,
+            createdAt: new Date(clean(normalized.createdAt, 80) || createdAt),
+          });
+        }
+        seenMaterialCodes.push(materialCode);
+        return { ...normalized, id, materialCode };
+      })
+    : [];
+  const storedSlots = new Map(
+    (Array.isArray(project.conceptSlots) ? project.conceptSlots : [])
+      .filter((slot) => VIDEO_CONCEPT_ARCHETYPES.includes(slot.archetype))
+      .map((slot) => [slot.archetype, slot] as const)
+  );
+  const conceptSlots: VideoConceptSlot[] = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
+    const concept = concepts.find((item) => item.conceptArchetype === archetype);
+    const stored = storedSlots.get(archetype);
+    return {
+      archetype,
+      status:
+        concept && stored?.status === "generating"
+          ? "generating"
+          : concept
+            ? "ready"
+            : stored?.status || "pending",
+      conceptId: concept?.id,
+      failure: concept ? undefined : stored?.failure,
+      attempts: Number.isFinite(stored?.attempts) ? Math.max(0, Number(stored?.attempts)) : 0,
+      updatedAt: clean(stored?.updatedAt, 80) || clean(project.updatedAt, 80) || createdAt,
+    };
+  });
   return {
     ...project,
     marketerName: clean(project.marketerName, 80) || "마케터",
@@ -97,7 +185,11 @@ function normalizeProject(project: VideoProject): VideoProject {
     platform: project.platform || "meta",
     aspectRatio: "9:16",
     creativeStyle: project.creativeStyle || "auto",
-    planningMode: project.planningMode || "legacy",
+    planningMode: "four-concepts",
+    videoPlanningEngineVersion:
+      project.videoPlanningEngineVersion === CURRENT_VIDEO_PLANNING_ENGINE_VERSION
+        ? CURRENT_VIDEO_PLANNING_ENGINE_VERSION
+        : "legacy",
     durationMode: project.durationMode || "fixed",
     conceptFormat:
       project.conceptFormat && VIDEO_CONCEPT_FORMATS.includes(project.conceptFormat)
@@ -107,9 +199,8 @@ function normalizeProject(project: VideoProject): VideoProject {
     advancedTone: clean(project.advancedTone, 500),
     productionNotes: clean(project.productionNotes, 5000),
     deadline: clean(project.deadline, 40),
-    concepts: Array.isArray(project.concepts)
-      ? project.concepts.map((concept) => normalizeConcept(concept, project.duration))
-      : [],
+    concepts,
+    conceptSlots,
     hookCandidates: Array.isArray(project.hookCandidates) ? project.hookCandidates : [],
     pipelineProgress: Array.isArray(project.pipelineProgress) ? project.pipelineProgress : [],
     referenceAnalyses: Array.isArray(project.referenceAnalyses) ? project.referenceAnalyses : [],
@@ -293,7 +384,56 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
 
     async get(projectId: string) {
       const project = (await readStore()).projects.find((item) => item.id === projectId);
-      return project ? clone(project) : null;
+      if (!project) return null;
+      const staleFailure = staleVideoGenerationFailure(project);
+      if (!staleFailure) return clone(project);
+      return update(projectId, (current) => {
+        const currentFailure = staleVideoGenerationFailure(current);
+        if (!currentFailure) return;
+        let failedStageFound = false;
+        current.pipelineProgress = (current.pipelineProgress || []).map((item) => {
+          if (item.status === "running") {
+            failedStageFound = true;
+            return {
+              ...item,
+              status: "failed",
+              message: currentFailure.message,
+              updatedAt: currentFailure.failedAt,
+            };
+          }
+          if (failedStageFound && item.status === "pending") {
+            return {
+              ...item,
+              status: "warning",
+              message: "이전 단계 중단으로 재생성 필요",
+              updatedAt: currentFailure.failedAt,
+            };
+          }
+          return item;
+        });
+        current.conceptSlots = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
+          const previous = current.conceptSlots?.find((slot) => slot.archetype === archetype);
+          const concept = current.concepts.find((item) => item.conceptArchetype === archetype);
+          if (previous?.status !== "generating") {
+            return previous || {
+              archetype,
+              status: concept ? "ready" : "pending",
+              conceptId: concept?.id,
+              attempts: 0,
+              updatedAt: currentFailure.failedAt,
+            };
+          }
+          return {
+            archetype,
+            status: concept ? "ready" : "failed",
+            conceptId: concept?.id,
+            failure: concept ? undefined : currentFailure,
+            attempts: previous.attempts || 1,
+            updatedAt: currentFailure.failedAt,
+          };
+        });
+        current.generationFailure = currentFailure;
+      });
     },
 
     async recentParodyGenres(options: {
@@ -337,7 +477,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           platform: input.platform || "meta",
           aspectRatio: "9:16",
           creativeStyle: input.creativeStyle || "auto",
-          planningMode: input.planningMode || "legacy",
+          planningMode: "four-concepts",
+          videoPlanningEngineVersion: CURRENT_VIDEO_PLANNING_ENGINE_VERSION,
           durationMode: input.durationMode || "fixed",
           conceptFormat: input.conceptFormat,
           advancedTarget: clean(input.advancedTarget, 500),
@@ -357,6 +498,12 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           brandGuideline: clone(input.brandGuideline),
           status: "script_pending",
           concepts: [],
+          conceptSlots: VIDEO_CONCEPT_ARCHETYPES.map((archetype) => ({
+            archetype,
+            status: "pending",
+            attempts: 0,
+            updatedAt: now,
+          })),
           hookCandidates: [],
           pipelineProgress: [],
           scriptRevisions: [],
@@ -463,23 +610,16 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           if (!clean(concept.title) || !clean(concept.openingHook) || !clean(concept.cta)) {
             throw new Error("기획안 요약의 제목, 후킹, CTA를 확인해 주세요.");
           }
+          const premiseIssue = currentVideoCreativePremiseIssue(concept);
+          if (premiseIssue) throw new Error(`최신 영상기획 품질 기준을 충족하지 못했습니다. ${premiseIssue}`);
           if (concept.cuts.length)
             throw new Error("요약 단계에는 상세 대본을 함께 저장하지 않습니다.");
         }
         if (
-          project.planningMode === "four-concepts" &&
           !options.replaceConceptId &&
           (concepts.length !== 4 || !validateConceptDiversity(concepts).valid)
         ) {
-          throw new Error("사건·상황극·리얼 사용·USP·시크릿 혜택의 서로 다른 기획안 4개가 필요합니다.");
-        }
-        if (
-          project.planningMode !== "four-concepts" &&
-          !options.replaceConceptId &&
-          concepts.length > 1 &&
-          !validateConceptDiversity(concepts).valid
-        ) {
-          throw new Error("서로 다른 후킹 유형과 광고 가설의 기획안이 필요합니다.");
+          throw new Error("특정 인물·세계관·관계 경험담·비교·발견·상품 의인화의 서로 다른 기획안 4개가 필요합니다.");
         }
         if (options.replaceConceptId) {
           const index = project.concepts.findIndex(
@@ -496,8 +636,25 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           project.selectedConceptId = undefined;
           project.finalScript = undefined;
         }
+        const slotByArchetype = new Map(
+          (project.conceptSlots || []).map((slot) => [slot.archetype, slot] as const)
+        );
+        project.conceptSlots = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
+          const concept = project.concepts.find((item) => item.conceptArchetype === archetype);
+          const previousSlot = slotByArchetype.get(archetype);
+          return {
+            archetype,
+            status: concept ? "ready" : previousSlot?.status || "pending",
+            conceptId: concept?.id,
+            failure: concept ? undefined : previousSlot?.failure,
+            attempts: previousSlot?.attempts || 0,
+            updatedAt: new Date().toISOString(),
+          };
+        });
         if (options.hookCandidates) project.hookCandidates = clone(options.hookCandidates);
         if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
+        project.planningMode = "four-concepts";
+        project.videoPlanningEngineVersion = CURRENT_VIDEO_PLANNING_ENGINE_VERSION;
         project.generationFailure = undefined;
         if (project.status === "script_pending") {
           transition(
@@ -510,6 +667,171 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           );
         } else if (project.status === "concept_selected") {
           transition(project, "script_review", options.actor || "사용자", "기획안 요약 다시 생성");
+        }
+        project.scriptLastEditedBy = clean(options.actor, 80) || "시스템";
+      });
+    },
+
+    async beginConceptSlotGeneration(
+      projectId: string,
+      archetypes: VideoConceptArchetype[]
+    ) {
+      return update(projectId, (project) => {
+        const requested = new Set(archetypes);
+        const now = new Date().toISOString();
+        project.conceptSlots = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
+          const previous = project.conceptSlots?.find((slot) => slot.archetype === archetype);
+          const concept = project.concepts.find((item) => item.conceptArchetype === archetype);
+          if (!requested.has(archetype)) {
+            return previous || {
+              archetype,
+              status: concept ? "ready" : "pending",
+              conceptId: concept?.id,
+              attempts: 0,
+              updatedAt: now,
+            };
+          }
+          return {
+            archetype,
+            status: "generating",
+            conceptId: concept?.id,
+            attempts: (previous?.attempts || 0) + 1,
+            updatedAt: now,
+          };
+        });
+        project.generationFailure = undefined;
+      });
+    },
+
+    async saveConceptSlotProgress(
+      projectId: string,
+      concepts: VideoConcept[],
+      options: {
+        actor?: string;
+        unresolvedArchetypes?: VideoConceptArchetype[];
+        failedArchetypes?: VideoConceptArchetype[];
+        failure?: VideoGenerationFailure;
+        hookCandidates?: VideoHookCandidate[];
+        referenceAnalyses?: ReferenceVideoAnalysis[];
+        completeSet?: boolean;
+      } = {}
+    ) {
+      return update(projectId, (project) => {
+        const now = new Date().toISOString();
+        const incomingArchetypes = new Set<VideoConceptArchetype>();
+        for (const incoming of concepts) {
+          if (!incoming.conceptArchetype || !VIDEO_CONCEPT_ARCHETYPES.includes(incoming.conceptArchetype)) {
+            throw new Error("영상 기획안의 필수 유형을 확인해 주세요.");
+          }
+          if (incomingArchetypes.has(incoming.conceptArchetype)) {
+            throw new Error("같은 유형의 영상 기획안을 중복 저장할 수 없습니다.");
+          }
+          if (!clean(incoming.title) || !clean(incoming.openingHook) || !clean(incoming.cta)) {
+            throw new Error("기획안 요약의 제목, 후킹, CTA를 확인해 주세요.");
+          }
+          const premiseIssue = currentVideoCreativePremiseIssue(incoming);
+          if (premiseIssue) throw new Error(`최신 영상기획 품질 기준을 충족하지 못했습니다. ${premiseIssue}`);
+          if (incoming.cuts.length) throw new Error("요약 단계에는 상세 대본을 함께 저장하지 않습니다.");
+
+          incomingArchetypes.add(incoming.conceptArchetype);
+          const existingIndex = project.concepts.findIndex(
+            (item) => item.conceptArchetype === incoming.conceptArchetype
+          );
+          const existing = existingIndex >= 0 ? project.concepts[existingIndex] : undefined;
+          const next = clone({
+            ...incoming,
+            id: existing?.id || incoming.id,
+            materialCode: existing?.materialCode || incoming.materialCode,
+          });
+          if (
+            project.concepts.some(
+              (item) => item.id === next.id && item.conceptArchetype !== incoming.conceptArchetype
+            )
+          ) {
+            next.id = crypto.randomUUID();
+          }
+          if (
+            project.concepts.some(
+              (item) =>
+                item.materialCode === next.materialCode &&
+                item.conceptArchetype !== incoming.conceptArchetype
+            )
+          ) {
+            next.materialCode = createVideoMaterialCode({
+              advertiserName: project.advertiserName,
+              productName: project.productAnalysis.productName,
+              hookType: next.hookType,
+              existingCodes: project.concepts.map((item) => item.materialCode),
+              createdAt: new Date(next.createdAt || now),
+            });
+          }
+          uniqueMaterialCode(project, next.materialCode, existing?.id || next.id);
+          if (existingIndex >= 0) project.concepts[existingIndex] = next;
+          else project.concepts.push(next);
+        }
+
+        const unresolved = new Set(options.unresolvedArchetypes || []);
+        const failed = new Set(options.failedArchetypes || []);
+        project.concepts = VIDEO_CONCEPT_ARCHETYPES.flatMap((archetype) => {
+          const concept = project.concepts.find((item) => item.conceptArchetype === archetype);
+          return concept ? [concept] : [];
+        });
+        if (
+          options.completeSet &&
+          (project.concepts.length !== VIDEO_CONCEPT_ARCHETYPES.length ||
+            !validateConceptDiversity(project.concepts).valid)
+        ) {
+          throw new Error("특정 인물·세계관·관계 경험담·비교·발견·상품 의인화의 서로 다른 기획안 4개가 필요합니다.");
+        }
+        project.conceptSlots = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
+          const previous = project.conceptSlots?.find((slot) => slot.archetype === archetype);
+          const concept = project.concepts.find((item) => item.conceptArchetype === archetype);
+          if (incomingArchetypes.has(archetype) && concept) {
+            return {
+              archetype,
+              status: "ready",
+              conceptId: concept.id,
+              attempts: previous?.attempts || 1,
+              updatedAt: now,
+            };
+          }
+          if (failed.has(archetype)) {
+            return {
+              archetype,
+              status: "failed",
+              attempts: previous?.attempts || 1,
+              failure: options.failure,
+              updatedAt: now,
+            };
+          }
+          if (unresolved.has(archetype)) {
+            return {
+              archetype,
+              status: "generating",
+              conceptId: concept?.id,
+              attempts: previous?.attempts || 1,
+              updatedAt: now,
+            };
+          }
+          return previous || {
+            archetype,
+            status: concept ? "ready" : "pending",
+            conceptId: concept?.id,
+            attempts: 0,
+            updatedAt: now,
+          };
+        });
+        if (options.hookCandidates) project.hookCandidates = clone(options.hookCandidates);
+        if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
+        project.planningMode = "four-concepts";
+        project.videoPlanningEngineVersion = CURRENT_VIDEO_PLANNING_ENGINE_VERSION;
+        project.generationFailure = options.failure ? clone(options.failure) : undefined;
+        if (options.completeSet) {
+          project.selectedConceptId = undefined;
+          project.finalScript = undefined;
+        }
+        if (project.concepts.length && project.status === "script_pending") {
+          transition(project, "script_review", options.actor || "시스템", "통과한 영상 콘셉트 우선 저장");
         }
         project.scriptLastEditedBy = clean(options.actor, 80) || "시스템";
       });
@@ -567,6 +889,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (!concepts.length) throw new Error("저장할 영상 기획안이 없습니다.");
         const incomingCodes = new Set<string>();
         for (const concept of concepts) {
+          const premiseIssue = currentVideoCreativePremiseIssue(concept);
+          if (premiseIssue) throw new Error(`최신 영상기획 품질 기준을 충족하지 못했습니다. ${premiseIssue}`);
           validateConceptForProject(project, concept);
           if (incomingCodes.has(concept.materialCode))
             throw new Error("생성된 기획안 사이에 중복 소재코드가 있습니다.");
@@ -609,6 +933,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (options.productLockedAsset)
           project.productLockedAsset = clone(options.productLockedAsset);
         if (options.referenceAnalyses) project.referenceAnalyses = clone(options.referenceAnalyses);
+        project.planningMode = "four-concepts";
+        project.videoPlanningEngineVersion = CURRENT_VIDEO_PLANNING_ENGINE_VERSION;
         project.generationFailure = undefined;
         project.scriptLastEditedBy = clean(options.actor, 80) || "시스템";
       });
@@ -626,6 +952,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         const index = project.concepts.findIndex((item) => item.id === conceptId);
         if (index < 0) throw new Error("수정할 기획안을 찾지 못했습니다.");
         const previous = project.concepts[index];
+        const premiseIssue = currentVideoCreativePremiseIssue(concept);
+        if (premiseIssue) throw new Error(`최신 영상기획 품질 기준을 충족하지 못했습니다. ${premiseIssue}`);
         validateConceptForProject(project, {
           ...concept,
           id: conceptId,
@@ -649,6 +977,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           updatedAt: new Date().toISOString(),
         };
         project.scriptLastEditedBy = clean(actor, 80) || "사용자";
+        project.videoPlanningEngineVersion = CURRENT_VIDEO_PLANNING_ENGINE_VERSION;
       });
     },
 
@@ -671,6 +1000,8 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
               ? project.concepts[index]
               : null;
         if (!current) throw new Error("수정할 제작 대본을 찾지 못했습니다.");
+        const premiseIssue = currentVideoCreativePremiseIssue(concept);
+        if (premiseIssue) throw new Error(`최신 영상기획 품질 기준을 충족하지 못했습니다. ${premiseIssue}`);
         const normalized = normalizeConcept({
           ...clone(concept),
           id: current.id,
@@ -721,6 +1052,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (options.productionNotes !== undefined)
           project.productionNotes = clean(options.productionNotes, 5000);
         project.generationFailure = undefined;
+        project.videoPlanningEngineVersion = CURRENT_VIDEO_PLANNING_ENGINE_VERSION;
         project.scriptLastEditedBy = clean(actor, 80) || project.marketerName;
       });
     },
@@ -748,6 +1080,10 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           createdAt: current.createdAt,
           updatedAt: new Date().toISOString(),
         }, project.duration);
+        const premiseIssue = currentVideoCreativePremiseIssue(restored);
+        if (premiseIssue) {
+          throw new Error("구버전 영상기획은 이력 조회만 가능하며 현재 기획안으로 복원할 수 없습니다. 최신 기획안 4안을 다시 생성해 주세요.");
+        }
         validateConceptForProject(project, restored);
         project.scriptRevisions.push({
           id: crypto.randomUUID(),
@@ -761,6 +1097,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
         if (index >= 0) project.concepts[index] = clone(restored);
         if (project.finalScript?.id === current.id) project.finalScript = clone(restored);
         project.scriptLastEditedBy = clean(actor, 80) || "사용자";
+        project.videoPlanningEngineVersion = CURRENT_VIDEO_PLANNING_ENGINE_VERSION;
       });
     },
 

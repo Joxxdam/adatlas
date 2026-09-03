@@ -134,6 +134,12 @@ function confirmedProductUrls(values: string[]) {
   return values.map((value) => value.trim()).filter(Boolean);
 }
 
+function sameProductUrls(left: string[], right: string[]) {
+  const normalizedLeft = confirmedProductUrls(left);
+  const normalizedRight = confirmedProductUrls(right);
+  return normalizedLeft.length === normalizedRight.length && normalizedLeft.every((value, index) => value === normalizedRight[index]);
+}
+
 function toForm(config: AutoProductionAdvertiserConfig): FormState {
   return {
     advertiserName: config.advertiserName,
@@ -218,6 +224,8 @@ export function AutoProductionWorkspace() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [working, setWorking] = useState<string | null>(null);
+  const [backgroundPreviewCount, setBackgroundPreviewCount] = useState(0);
+  const [applyingPreviewCount, setApplyingPreviewCount] = useState(0);
   const [error, setError] = useState("");
   const [runPeriod, setRunPeriod] = useState<RunPeriod>("today");
   const [customFrom, setCustomFrom] = useState(() => seoulBusinessDate(-6));
@@ -259,10 +267,16 @@ export function AutoProductionWorkspace() {
     });
   }, [advertisers]);
   const latestRunByAdvertiser = useMemo(() => new Map(advertisers.map((advertiser) => [advertiser.advertiserId, runs.find((run) => run.advertiserId === advertiser.advertiserId)])), [advertisers, runs]);
+  const previewing = backgroundPreviewCount > 0 || applyingPreviewCount > 0;
+  const previewBlocksPlanEdits = applyingPreviewCount > 0;
 
   const refresh = useCallback(async () => {
     try {
-      const [configPayload, statusPayload, runPayload] = await Promise.all([api<{ advertisers: AutoProductionAdvertiserConfig[]; settings: GlobalSettings }>("/api/auto-production/advertisers"), api<{ status: AutoProductionDashboardStatus }>("/api/auto-production/status"), api<{ runs: AutoProductionRun[] }>(`/api/auto-production/runs?${runQuery}`)]);
+      const [configPayload, statusPayload, runPayload] = await Promise.all([
+        api<{ advertisers: AutoProductionAdvertiserConfig[]; settings: GlobalSettings }>("/api/auto-production/advertisers"),
+        api<{ status: AutoProductionDashboardStatus }>("/api/auto-production/status"),
+        api<{ runs: AutoProductionRun[] }>(`/api/auto-production/runs?${runQuery}`),
+      ]);
       setAdvertisers(configPayload.advertisers);
       setSettings(configPayload.settings);
       setStatus(statusPayload.status);
@@ -301,7 +315,12 @@ export function AutoProductionWorkspace() {
 
   const preview = useCallback(
     async (advertiserId?: string, applyCandidates = false) => {
-      await runAction(`preview:${advertiserId || "all"}`, async () => {
+      const updateCount = applyCandidates
+        ? setApplyingPreviewCount
+        : setBackgroundPreviewCount;
+      updateCount((count) => count + 1);
+      setError("");
+      try {
         const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
           method: "POST",
           body: JSON.stringify({ advertiserId }),
@@ -317,9 +336,13 @@ export function AutoProductionWorkspace() {
           }
           return next;
         });
-      });
+      } catch (previewError) {
+        setError(previewError instanceof Error ? previewError.message : "자동 제작 후보를 불러오지 못했습니다.");
+      } finally {
+        updateCount((count) => Math.max(0, count - 1));
+      }
     },
-    [advertisers, runAction]
+    [advertisers]
   );
 
   useEffect(() => {
@@ -357,8 +380,12 @@ export function AutoProductionWorkspace() {
 
   async function savePlannedProducts(advertiserId: string, runAfterSave = false) {
     const urls = confirmedProductUrls(plannedUrlDrafts[advertiserId] || []);
-    if (urls.length < 1 || urls.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT || urls.some((value) => !validProductUrl(value)) || new Set(urls).size !== urls.length) {
-      setError(`서로 다른 상품 상세페이지 URL을 1개 이상 ${AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT}개 이하로 입력해주세요.`);
+    if (urls.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT || urls.some((value) => !validProductUrl(value)) || new Set(urls).size !== urls.length) {
+      setError(`상품 상세페이지 URL은 서로 다른 유효한 주소로 ${AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT}개 이하까지 저장할 수 있습니다. 모두 비운 상태도 저장할 수 있습니다.`);
+      return;
+    }
+    if (runAfterSave && urls.length === 0) {
+      setError("지금 제작하려면 상품 상세페이지 URL을 1개 이상 입력해주세요.");
       return;
     }
     await runAction(`plan:${advertiserId}`, async () => {
@@ -434,12 +461,12 @@ export function AutoProductionWorkspace() {
           <p>자동 후보는 몰별 4개, 수기 대기열은 최대 6개까지 확정한 상품만 순차 제작합니다.</p>
         </div>
         <div className={styles.actions}>
-          <button className={styles.buttonSecondary} disabled={Boolean(working)} onClick={() => void preview(undefined, true)} type="button">
-            예정 상품 새로 찾기
+          <button className={styles.buttonSecondary} disabled={Boolean(working) || previewing} onClick={() => void preview(undefined, true)} type="button">
+            {applyingPreviewCount > 0 ? "예정 상품 찾는 중…" : "예정 상품 새로 찾기"}
           </button>
           <button
             className={styles.button}
-            disabled={Boolean(working) || settings.paused || !hasEnabledConfirmedPlan}
+            disabled={Boolean(working) || previewing || settings.paused || !hasEnabledConfirmedPlan}
             onClick={() => void run()}
             title={hasEnabledConfirmedPlan ? undefined : "예정상품 URL을 1~6개 확정한 사용 중 몰이 최소 1곳 필요합니다."}
             type="button"
@@ -472,6 +499,8 @@ export function AutoProductionWorkspace() {
             const enteredUrls = confirmedProductUrls(urls);
             const validCount = enteredUrls.filter(validProductUrl).length;
             const planReady = enteredUrls.length >= 1 && enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length;
+            const planSavable = enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length;
+            const planChanged = !sameProductUrls(enteredUrls, advertiser.adminProductUrls);
             const isSaved = savedPlanId === advertiser.advertiserId;
             const hasManuallyChangedUrl = enteredUrls.some((url, index) => url !== previewItem?.candidates[index]?.productUrl);
             const previewProductNames = previewItem?.candidates
@@ -513,7 +542,7 @@ export function AutoProductionWorkspace() {
                   </div>
                   <button
                     className={styles.smallButton}
-                    disabled={Boolean(working)}
+                    disabled={Boolean(working) || previewing}
                     onClick={() => void (advertiser.adminProductUrls.length ? resetPlannedProducts(advertiser.advertiserId) : preview(advertiser.advertiserId, true))}
                     type="button"
                   >
@@ -558,16 +587,16 @@ export function AutoProductionWorkspace() {
                   <div className={styles.actions}>
                     <button
                       className={styles.buttonSecondary}
-                      disabled={Boolean(working) || (!advertiser.adminProductUrls.length && !enteredUrls.length)}
+                      disabled={Boolean(working) || previewBlocksPlanEdits || (!advertiser.adminProductUrls.length && !enteredUrls.length)}
                       onClick={() => void clearPlannedProducts(advertiser.advertiserId)}
                       type="button"
                     >
                       {working === `clear-plan:${advertiser.advertiserId}` ? "비우는 중…" : "대기열 비우기"}
                     </button>
-                    <button className={styles.buttonSecondary} disabled={Boolean(working) || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId)} type="button">
-                      {working === `plan:${advertiser.advertiserId}` ? "저장 중…" : `이 ${validCount}개로 예정상품 확정`}
+                    <button className={styles.buttonSecondary} disabled={Boolean(working) || previewBlocksPlanEdits || !planSavable || !planChanged} onClick={() => void savePlannedProducts(advertiser.advertiserId)} type="button">
+                      {working === `plan:${advertiser.advertiserId}` ? "저장 중…" : `변경사항 저장 (${validCount}개)`}
                     </button>
-                    <button className={styles.button} disabled={Boolean(working) || settings.paused || !advertiser.enabled || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId, true)} type="button">
+                    <button className={styles.button} disabled={Boolean(working) || previewBlocksPlanEdits || settings.paused || !advertiser.enabled || !planReady} onClick={() => void savePlannedProducts(advertiser.advertiserId, true)} type="button">
                       저장하고 지금 제작
                     </button>
                   </div>
@@ -849,10 +878,10 @@ export function AutoProductionWorkspace() {
                   <span>최근 실행 {latestRunByAdvertiser.get(advertiser.advertiserId) ? `${localDateTime(latestRunByAdvertiser.get(advertiser.advertiserId)?.startedAt)} · ${runStatusLabels[latestRunByAdvertiser.get(advertiser.advertiserId)!.status]}` : "없음"}</span>
                 </div>
                 <div className={styles.cardActions}>
-                  <button disabled={Boolean(working)} onClick={() => void preview(advertiser.advertiserId)} type="button">
-                    후보 보기
+                  <button disabled={Boolean(working) || previewing} onClick={() => void preview(advertiser.advertiserId)} type="button">
+                    {previewing ? "후보 확인 중…" : "후보 보기"}
                   </button>
-                  <button disabled={Boolean(working) || settings.paused || !advertiser.enabled} onClick={() => void run(advertiser.advertiserId)} type="button">
+                  <button disabled={Boolean(working) || previewing || settings.paused || !advertiser.enabled} onClick={() => void run(advertiser.advertiserId)} type="button">
                     지금 실행
                   </button>
                   <button

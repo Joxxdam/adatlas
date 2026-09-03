@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
+  VIDEO_CONCEPT_ARCHETYPES,
   VIDEO_CONCEPT_ARCHETYPE_OPTIONS,
+  type VideoConceptArchetype,
   type VideoProject,
 } from "../../lib/video-collaboration/types";
 import { getVideoPlanningBlueprint } from "../../lib/video-collaboration/videoPlanningBlueprints";
@@ -53,16 +55,16 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
     const generationRunning = project?.pipelineProgress?.some(
       (item) => item.status === "running"
     );
-    if (!project || project.concepts.length || !generationRunning) return;
+    if (!project || !(generating || generationRunning)) return;
     const interval = window.setInterval(() => {
       void load().catch((caught) =>
         setError(caught instanceof Error ? caught.message : "진행 상태 조회 실패")
       );
     }, 3000);
     return () => window.clearInterval(interval);
-  }, [load, project]);
+  }, [generating, load, project]);
 
-  async function generate() {
+  async function generate(archetype?: VideoConceptArchetype) {
     setBusy(true);
     setGenerating(true);
     setError("");
@@ -70,7 +72,10 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
       const response = await fetch(`/api/video-projects/${projectId}/concepts`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ actor: project?.marketerName || "마케터" }),
+        body: JSON.stringify({
+          actor: project?.marketerName || "마케터",
+          archetype,
+        }),
       });
       const payload = await response.json();
       if (!response.ok && payload.failure?.code === "GENERATION_ALREADY_RUNNING") {
@@ -159,10 +164,22 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
   );
   const generationFailureReason =
     project.generationFailure?.code === "CONCEPTS_NOT_DISTINCT"
-      ? "필수 4개 유형 중 하나가 누락·중복됐거나, 기획안 사이의 첫 문장·사건·화자·소구·화면 스타일이 품질 기준보다 겹쳤습니다. 상품 분석이나 API 연결 실패는 아닙니다."
+      ? "AI가 기획안 자체를 만들지 못한 것이 아니라 일부 유형이 구체성·차별성 검수를 통과하지 못한 상태입니다. 정상 유형은 보존하고 실패한 유형만 최대 두 차례 다시 생성하며, 그래도 통과하지 못한 유형은 위 오류 문구에 표시합니다."
       : project.generationFailure?.code === "PARODY_GENRE_MISMATCH"
         ? "사건·상황극 기획이 자동 선택된 세부 장르의 인물·사건·화면 문법을 충분히 따르지 못했습니다."
         : "API 응답 또는 생성 결과가 저장 전 품질검사를 통과하지 못했습니다.";
+  const conceptSlots = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
+    const stored = project.conceptSlots?.find((slot) => slot.archetype === archetype);
+    const concept = project.concepts.find((item) => item.conceptArchetype === archetype);
+    return stored || {
+      archetype,
+      status: concept ? ("ready" as const) : ("pending" as const),
+      conceptId: concept?.id,
+      attempts: 0,
+      updatedAt: project.updatedAt,
+    };
+  });
+  const readyConceptCount = conceptSlots.filter((slot) => slot.status === "ready").length;
 
   return (
     <main className={styles.page}>
@@ -215,15 +232,15 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
           <div className={styles.generationSpinner} aria-hidden="true" />
           <div className={styles.generationRunningCopy}>
             <span>AI VIDEO PLANNING</span>
-            <h2>영상 기획 4안을 생성하고 있습니다</h2>
+            <h2>영상 기획을 생성하고 있습니다</h2>
             <p>
               {runningGenerationStage?.message ||
                 "요청을 전송했습니다. 상품 근거를 바탕으로 서로 다른 기획안을 구성하는 중입니다."}
-              <br />완료되면 이 화면에 자동으로 표시됩니다. 페이지를 닫지 않고 기다려 주세요.
+              <br />검수를 통과한 콘셉트부터 이 화면에 표시됩니다.
             </p>
           </div>
           <div className={styles.generationRunningCount}>
-            <strong>{completedGenerationStages}/4 단계</strong>
+            <strong>{readyConceptCount}/4 콘셉트</strong>
             <span>자동 갱신 중</span>
           </div>
           <div className={styles.generationProgressTrack} aria-hidden="true">
@@ -247,7 +264,7 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
             </p>
           ) : null}
           <div className={styles.errorActions}>
-            <button className={styles.secondaryButton} disabled={busy} onClick={generate}>
+            <button className={styles.secondaryButton} disabled={busy} onClick={() => generate()}>
               다시 시도
             </button>
           </div>
@@ -289,7 +306,7 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
             <button
               className={styles.primaryButton}
               disabled={busy || generationRunning}
-              onClick={generate}
+              onClick={() => generate()}
             >
               {generationRunning ? "4개 콘셉트 생성 중…" : "4개 콘셉트 다시 생성"}
             </button>
@@ -304,12 +321,56 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
             ))}
           </div>
         ) : null}
-        {project.concepts.length ? (
+        {project.concepts.length || conceptSlots.some((slot) => slot.status !== "pending") ? (
           <div className={styles.conceptGrid}>
-            {project.concepts.map((concept, conceptIndex) => {
-              const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(
-                (option) => option.id === concept.conceptArchetype
+            {conceptSlots.map((slot, conceptIndex) => {
+              const concept = project.concepts.find(
+                (item) => item.id === slot.conceptId || item.conceptArchetype === slot.archetype
               );
+              const archetype = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(
+                (option) => option.id === slot.archetype
+              );
+              if (!concept) {
+                return (
+                  <article
+                    className={`${styles.conceptCard} ${styles.conceptSlotCard}`}
+                    data-status={slot.status}
+                    key={slot.archetype}
+                  >
+                    <div className={styles.conceptCardHead}>
+                      <div>
+                        <b>콘셉트 {String(conceptIndex + 1).padStart(2, "0")}</b>
+                        <span className={styles.status}>{archetype?.label}</span>
+                      </div>
+                    </div>
+                    <div className={styles.conceptSlotState}>
+                      <strong>
+                        {slot.status === "generating"
+                          ? "이 콘셉트를 생성하고 있습니다"
+                          : slot.status === "failed"
+                            ? "이 콘셉트만 생성에 실패했습니다"
+                            : "생성 대기 중입니다"}
+                      </strong>
+                      <p>
+                        {slot.failure?.message ||
+                          (slot.status === "generating"
+                            ? "성공한 다른 콘셉트는 그대로 보존됩니다."
+                            : "저장된 상품·레퍼런스 분석을 재사용합니다.")}
+                      </p>
+                      {slot.status === "failed" ? (
+                        <button
+                          className={styles.primaryButton}
+                          disabled={busy || generationRunning}
+                          onClick={() => generate(slot.archetype)}
+                          type="button"
+                        >
+                          이 콘셉트만 다시 생성
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              }
               const parodyGenre = getVideoParodyGenre(concept.parodyGenre);
               const primaryBlueprint = getVideoPlanningBlueprint(
                 concept.blueprintSelection?.primaryId
@@ -334,23 +395,28 @@ export function VideoPlanningProjectWorkspace({ projectId }: { projectId: string
                   <blockquote>{concept.openingHook}</blockquote>
                   <div className={styles.conceptSnapshot}>
                     <div>
+                      <span>특정 인물·세계</span>
+                      <strong>
+                        {[concept.distinctiveCharacter, concept.socialWorld]
+                          .filter(Boolean)
+                          .join(" · ") || concept.speakerPointOfView || concept.speaker}
+                      </strong>
+                    </div>
+                    <div>
                       <span>핵심 사건</span>
-                      <strong>{concept.centralIncident || concept.narrativeSummary}</strong>
+                      <strong>
+                        {concept.storyTrigger || concept.centralIncident || concept.narrativeSummary}
+                      </strong>
                     </div>
                     <div>
                       <span>화자</span>
                       <strong>{concept.speakerPointOfView || concept.speaker}</strong>
                     </div>
                     <div>
-                      <span>핵심 소구</span>
-                      <strong>{concept.keyAppeal || concept.usp}</strong>
+                      <span>상품 사실 연결</span>
+                      <strong>{concept.truthBridge || concept.keyAppeal || concept.usp}</strong>
                     </div>
                   </div>
-                  {concept.benefitAvailability === "insufficient" ? (
-                    <div className={styles.benefitWarning}>
-                      확인 가능한 혜택 정보가 부족합니다. 가격·구성·배송 정보를 추가해 주세요.
-                    </div>
-                  ) : null}
                   <div className={styles.conceptActions}>
                     <Link
                       className={styles.primaryButton}

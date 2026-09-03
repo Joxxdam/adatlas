@@ -1,6 +1,7 @@
 import type { ProductInfoForPrompt } from "../mvp/types.ts";
 import { isDomesticOriginCreativeSignal, isMeatProductContext, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal } from "./productSignalHygiene.ts";
 import type { CategoryCreativeProfileId, NativeCreativeValidation, NativeGroupValidation, ReferenceAdaptedCopyPlan } from "./types.ts";
+import type { MeatPresentationContract } from "./productRenderingPolicy.ts";
 
 type NativeCreativeQaScores = {
   hookAlignment: number;
@@ -44,8 +45,10 @@ export function normalizeNativeCreativeValidation(
     exportComplianceVerified?: boolean;
     requiresHumanReplacement?: boolean;
     requiresHumanSceneBackgroundRebuild?: boolean;
+    requiresContextualBackgroundRebuild?: boolean;
     requiresSourceBrandRegionClear?: boolean;
     requiresComparisonSemanticAlignment?: boolean;
+    meatPresentationContract?: MeatPresentationContract;
   } = {}
 ): NativeCreativeValidation {
   const normalized = { ...validation };
@@ -57,6 +60,8 @@ export function normalizeNativeCreativeValidation(
   normalized.observedKoreanText = Array.isArray(validation.observedKoreanText) ? validation.observedKoreanText.map(String).slice(0, 30) : [];
   normalized.standaloneLogoDetected = validation.standaloneLogoDetected === true;
   normalized.standaloneLogoFindings = Array.isArray(validation.standaloneLogoFindings) ? validation.standaloneLogoFindings.map(String).slice(0, 10) : [];
+  normalized.detachedProductCutoutDetected = validation.detachedProductCutoutDetected === true;
+  normalized.detachedProductCutoutFindings = Array.isArray(validation.detachedProductCutoutFindings) ? validation.detachedProductCutoutFindings.map(String).slice(0, 10) : [];
   normalized.sourcePersonDetected = options.requiresHumanReplacement === true || validation.sourcePersonDetected === true;
   normalized.sourcePersonReplaced = validation.sourcePersonReplaced === true;
   normalized.humanCompositionChanged = validation.humanCompositionChanged === true;
@@ -69,13 +74,25 @@ export function normalizeNativeCreativeValidation(
   normalized.sourceAnimalDetected = validation.sourceAnimalDetected === true;
   normalized.sourceAnimalReplaced = validation.sourceAnimalReplaced === true;
   normalized.animalReplacementFindings = Array.isArray(validation.animalReplacementFindings) ? validation.animalReplacementFindings.map(String).slice(0, 10) : [];
-  normalized.sourceContextualBackgroundDetected = validation.sourceContextualBackgroundDetected === true;
+  normalized.sourceContextualBackgroundDetected = options.requiresContextualBackgroundRebuild === true || validation.sourceContextualBackgroundDetected === true;
   normalized.contextualBackgroundRebuilt = validation.contextualBackgroundRebuilt === true;
   normalized.contextualBackgroundFindings = Array.isArray(validation.contextualBackgroundFindings) ? validation.contextualBackgroundFindings.map(String).slice(0, 10) : [];
   normalized.sceneProductInteractionAligned = validation.sceneProductInteractionAligned !== false;
   normalized.sceneProductInteractionFindings = Array.isArray(validation.sceneProductInteractionFindings) ? validation.sceneProductInteractionFindings.map(String).slice(0, 10) : [];
   normalized.unrelatedFoodOrIngredientDetected = validation.unrelatedFoodOrIngredientDetected === true;
   normalized.unrelatedFoodOrIngredientFindings = Array.isArray(validation.unrelatedFoodOrIngredientFindings) ? validation.unrelatedFoodOrIngredientFindings.map(String).slice(0, 10) : [];
+  normalized.meatCutIdentityAccurate = validation.meatCutIdentityAccurate !== false;
+  normalized.meatTextureNatural = validation.meatTextureNatural !== false;
+  normalized.meatArtificialPatternDetected = validation.meatArtificialPatternDetected === true;
+  normalized.meatArtificialPatternFindings = Array.isArray(validation.meatArtificialPatternFindings) ? validation.meatArtificialPatternFindings.map(String).slice(0, 10) : [];
+  normalized.meatGrotesqueDetailDetected = validation.meatGrotesqueDetailDetected === true;
+  normalized.meatGrotesqueDetailFindings = Array.isArray(validation.meatGrotesqueDetailFindings) ? validation.meatGrotesqueDetailFindings.map(String).slice(0, 10) : [];
+  normalized.meatPresentationModeAligned = validation.meatPresentationModeAligned !== false;
+  normalized.meatPresentationFindings = Array.isArray(validation.meatPresentationFindings) ? validation.meatPresentationFindings.map(String).slice(0, 10) : [];
+  normalized.meatCookedPresentationDetected = validation.meatCookedPresentationDetected === true;
+  normalized.meatCookedEvidenceSatisfied = validation.meatCookedEvidenceSatisfied !== false;
+  normalized.meatSetCompositionAccurate = validation.meatSetCompositionAccurate !== false;
+  normalized.meatObservedPackCount = Math.max(0, Math.min(99, Math.round(Number(validation.meatObservedPackCount) || 0)));
   normalized.sourceBrandRegionCleared = options.requiresSourceBrandRegionClear ? validation.sourceBrandRegionCleared === true : validation.sourceBrandRegionCleared !== false;
   normalized.sourceBrandRegionFindings = Array.isArray(validation.sourceBrandRegionFindings) ? validation.sourceBrandRegionFindings.map(String).slice(0, 10) : [];
   normalized.comparisonSemanticAligned = options.requiresComparisonSemanticAlignment ? validation.comparisonSemanticAligned === true : validation.comparisonSemanticAligned !== false;
@@ -90,6 +107,15 @@ export function normalizeNativeCreativeValidation(
       `실제 상품 패키지 밖에 AI가 새로 만든 독립 로고·워드마크가 있습니다${normalized.standaloneLogoFindings.length ? `: ${normalized.standaloneLogoFindings.join(" / ")}` : "."}`,
     ])].slice(0, 20);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
+  }
+  if (normalized.detachedProductCutoutDetected) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `상품이 누끼·스티커·독립 패널처럼 분리되어 장면에 붙어 있습니다${normalized.detachedProductCutoutFindings.length ? `: ${normalized.detachedProductCutoutFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.productIdentity = Math.min(normalized.productIdentity, 55);
+    normalized.composition = Math.min(normalized.composition, 35);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 30);
   }
   const humanReplacementFailed = normalized.sourcePersonDetected && (!normalized.sourcePersonReplaced || !normalized.humanCompositionChanged || normalized.targetAudienceFit < 75);
   if (humanReplacementFailed) {
@@ -160,6 +186,46 @@ export function normalizeNativeCreativeValidation(
     normalized.categoryFit = Math.min(normalized.categoryFit, 40);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 40);
   }
+  const meatContract = options.meatPresentationContract;
+  const meatIdentityFailed = Boolean(meatContract && normalized.meatCutIdentityAccurate === false);
+  const meatTextureFailed = Boolean(meatContract && (normalized.meatTextureNatural === false || normalized.meatArtificialPatternDetected || normalized.meatGrotesqueDetailDetected));
+  const meatCookedPolicyFailed = Boolean(
+    meatContract &&
+      normalized.meatCookedPresentationDetected &&
+      (!meatContract.cookedSceneAllowed || normalized.meatCookedEvidenceSatisfied === false)
+  );
+  const meatModeFailed = Boolean(
+    meatContract &&
+      (normalized.meatPresentationModeAligned === false ||
+        (meatContract.mode === "hook-supported-cooked-scene" && !normalized.meatCookedPresentationDetected))
+  );
+  const meatSetFailed = Boolean(
+    meatContract?.mode === "verified-set-composition" &&
+      (normalized.meatSetCompositionAccurate === false ||
+        normalized.meatObservedPackCount !== meatContract.verifiedPackCount)
+  );
+  if (meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed) {
+    const findings = [
+      ...(normalized.meatArtificialPatternFindings || []),
+      ...(normalized.meatGrotesqueDetailFindings || []),
+      ...(normalized.meatPresentationFindings || []),
+    ];
+    const reasons = [
+      meatIdentityFailed ? "판매자 원본과 부위·두께·지방 분포가 다릅니다." : "",
+      meatTextureFailed ? "반복·대칭·각인된 육결 또는 과도하게 징그러운 조직 묘사가 있습니다." : "",
+      meatCookedPolicyFailed ? "판매자 부위 원본과 후킹 조건을 충족하지 않은 구운 고기 장면입니다." : "",
+      meatModeFailed ? `확정된 육류 표현 모드(${meatContract?.mode})와 결과가 맞지 않습니다.` : "",
+      meatSetFailed ? `검증된 ${meatContract?.verifiedPackCount}팩 구성이 한눈에 정확히 세어지지 않습니다.` : "",
+    ].filter(Boolean);
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `${reasons.join(" ")}${findings.length ? ` ${findings.join(" / ")}` : ""}`,
+    ])].slice(0, 20);
+    normalized.productIdentity = Math.min(normalized.productIdentity, meatIdentityFailed || meatSetFailed ? 45 : 65);
+    normalized.foodAppetiteAppeal = Math.min(normalized.foodAppetiteAppeal, meatTextureFailed ? 35 : 65);
+    normalized.hookAlignment = Math.min(normalized.hookAlignment, meatModeFailed || meatCookedPolicyFailed ? 45 : normalized.hookAlignment);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 45);
+  }
   const sourceBrandRegionFailed = options.requiresSourceBrandRegionClear === true && normalized.sourceBrandRegionCleared !== true;
   if (sourceBrandRegionFailed) {
     normalized.failures = [...new Set([
@@ -184,7 +250,7 @@ export function normalizeNativeCreativeValidation(
   // Vision이 failures에 실제 문구·상품 오류를 기록하고도 점수만 높게 주는
   // 응답이 있습니다. 발견된 실패가 하나라도 있으면 approve로 정규화하지 않습니다.
   const reportedFailure = normalized.failures.length > 0;
-  normalized.recommendation = normalized.standaloneLogoDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
+  normalized.recommendation = normalized.standaloneLogoDetected || normalized.detachedProductCutoutDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
   return normalized;
 }
 
@@ -322,13 +388,31 @@ export function enforceReferenceCopySlotCompleteness(
   };
 }
 
-/** 이미지 QA 점수가 높아도 입력 문구 계약 자체가 invalid면 승인할 수 없습니다. */
+/**
+ * 문구 계획의 사실 오류는 이미지 QA에서도 수정 대상으로 유지한다. 말투·길이·소재 간
+ * 중복 같은 비치명 품질 경고는 결과를 막지 않고 검수용 이미지를 남긴다. 사용자가 실제
+ * 결과를 본 뒤 판단할 수 있어야 하며, 문구 메타데이터 경고만으로 비싼 이미지 보정을
+ * 반복하지 않는다.
+ */
 export function enforceReferenceCopyPlanValidity(
   validation: NativeCreativeValidation,
   plan: ReferenceAdaptedCopyPlan | undefined
 ): NativeCreativeValidation {
   if (plan?.validationStatus === "valid" && !(plan.validationErrors || []).length) return validation;
   const details = (plan?.validationErrors || []).slice(0, 4);
+  const blockingDetails = details.filter((detail) =>
+    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지|배송|출고|도착|부정|CS|양해|판매주체|차단|금지|수치|가격·혜택/u.test(detail)
+  );
+  if (!blockingDetails.length) {
+    return {
+      ...validation,
+      failures: [...new Set([
+        ...validation.failures,
+        `문구 품질 경고가 있어 결과 확인이 필요합니다${details.length ? `: ${details.join(" / ")}` : "."}`,
+      ])].slice(0, 20),
+      recommendation: validation.recommendation === "approve" ? "manual-review" : validation.recommendation,
+    };
+  }
   return {
     ...validation,
     hookAlignment: Math.min(validation.hookAlignment, 45),
@@ -336,7 +420,7 @@ export function enforceReferenceCopyPlanValidity(
     commercialQuality: Math.min(validation.commercialQuality, 45),
     failures: [...new Set([
       ...validation.failures,
-      `이미지에 전달된 광고 문구 계획이 최종 품질 검수를 통과하지 못했습니다${details.length ? `: ${details.join(" / ")}` : "."}`,
+      `이미지에 전달된 광고 문구 계획에 치명적인 사실·정책 오류가 있습니다: ${blockingDetails.join(" / ")}`,
     ])].slice(0, 20),
     recommendation: "revise",
   };

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, executionResults, isCurrentAutoProductionGenerationJob, isCurrentReferenceEditGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, CURRENT_REFERENCE_COPY_POLICY_VERSION, executionResults, isCurrentAutoProductionGenerationJob, isCurrentReferenceEditGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 import { hasDuplicateRunKey, isProductRecentlyProduced, selectFreshHook, textSimilarity } from "../app/lib/auto-production/duplicateGuard.ts";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "../app/lib/auto-production/hookSelector.ts";
 import { eligibleAutoProductionCandidates, plannedImageCount, selectAutoProductionCandidates } from "../app/lib/auto-production/productSelector.ts";
@@ -256,6 +256,15 @@ test("세트 상품은 실제 판매 구성 이미지가 없으면 확인 필요
   const product = candidate("set").productInfo;
   product.sourceImageCandidates = [{ id: "single", type: "hero", imagePath: "https://cdn.example.com/single-product.jpg", label: "단품 정면", selected: false, createdAt: "2026-08-20", sourceType: "product-gallery" }];
   assert.equal(verifyAutoProductionProductImages("한우 4팩 세트", product).status, "needs-review");
+  const reviewCandidate = candidate("set-review", {
+    productName: "한우 4팩 세트",
+    imageVerificationStatus: "needs-review",
+    imageUrl: "https://cdn.example.com/single-product.jpg",
+  });
+  assert.equal(
+    eligibleAutoProductionCandidates([reviewCandidate], config()).map((item) => item.id).includes("set-review"),
+    true
+  );
   product.sourceImageCandidates.push({ id: "set", type: "detail", imagePath: "https://cdn.example.com/full-set.jpg", label: "4팩 전체 판매 구성", selected: false, createdAt: "2026-08-20", sourceType: "detail-content", multipleObjectsAreSalesUnit: true });
   assert.equal(verifyAutoProductionProductImages("한우 4팩 세트", product).status, "verified");
 });
@@ -404,13 +413,18 @@ test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성
   assert.equal(resultIdsForHookCodes(generated, ["H02"]).length, 1);
   const runner = await read("app/lib/auto-production/productionRunner.server.ts");
   const factory = await read("app/lib/creative-generation/createNativeGenerationJob.server.ts");
+  const generationRunner = await read("app/lib/creative-generation/jobRunner.server.ts");
   assert.match(runner, /createNativeGenerationJob/);
   assert.match(runner, /executionResultIds = job\.results\.map/);
   assert.match(runner, /isCurrentAutoProductionGenerationJob/);
   assert.match(runner, /assignedReferences/);
   assert.doesNotMatch(runner, /config\.creativesPerProduct|fullHookTestForNewProducts/);
   assert.match(factory, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6/);
-  assert.match(factory, /planReferenceAdaptedCopies/);
+  assert.match(factory, /prepareReferenceAdaptedCopyScaffold/);
+  assert.match(generationRunner, /planReferenceAdaptedCopies/);
+  assert.match(generationRunner, /ensureReferenceCopyPlanning/);
+  assert.match(factory, /result\.nativeCreative\?\.promptVersion === NATIVE_FINAL_PROMPT_VERSION/);
+  assert.match(factory, /수동·자동 공통 최신 이미지 정책/);
   assert.doesNotMatch(factory, /planHooksWithCodexLocal|buildExplorationCreativePlan/);
 });
 
@@ -419,12 +433,26 @@ test("구형 4장 자동제작은 실행·복구하지 않고 현재 레퍼런�
   const referenceResults = base.results.map((result, index) => ({
     ...result,
     nativeCreative: { adReference: { id: `reference-${index + 1}` } },
+    referenceAdaptedCopyPlan: {
+      creativePremise: {
+        policyVersion: "image-creative-premise-v2",
+        kind: index === 0 ? "everyday-relationship" : index === 1 ? "everyday-question-answer" : "usp-focus",
+        fictionalContext: true,
+        character: "구체적인 광고용 가상 인물",
+        situation: "상품을 선택하는 구체적인 순간",
+        tension: "평범한 선택으로는 아쉬운 순간",
+        productBridge: "확인된 상품 특징",
+        supportingFactIds: ["fact-1"],
+        factBoundary: "생활 장면은 광고용 창작 맥락이며 상품 사실은 검증된 ProductTruth만 사용한다.",
+      },
+    },
   }));
   const current = {
     ...base,
     sourceType: "auto-production",
     version: CURRENT_AUTO_PRODUCTION_JOB_VERSION,
     pipeline: CURRENT_AUTO_PRODUCTION_PIPELINE,
+    templateRegistryVersion: CURRENT_REFERENCE_COPY_POLICY_VERSION,
     copyPlanMode: "reference-adapted",
     results: referenceResults,
     executionResultIds: referenceResults.map((result) => result.id),
@@ -435,9 +463,10 @@ test("구형 4장 자동제작은 실행·복구하지 않고 현재 레퍼런�
   assert.equal(isCurrentReferenceEditGenerationJob(manual), true);
   assert.equal(isServerRunnableGenerationJob(manual), true);
   assert.equal(isCurrentReferenceEditGenerationJob({ ...manual, results: manual.results.slice(0, 5) }), false);
+  assert.equal(isCurrentReferenceEditGenerationJob({ ...manual, templateRegistryVersion: "reference-native-copy-adapter-v22-live-research-semantic-gate" }), false);
   assert.equal(isCurrentAutoProductionGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
   assert.equal(isServerRunnableGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
-  assert.equal(isServerRunnableGenerationJob({ ...current, sourceType: "manual", version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined }), true);
+  assert.equal(isServerRunnableGenerationJob({ ...current, sourceType: "manual", version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined }), false);
   assert.equal(isCurrentAutoProductionGenerationJob({ ...current, results: current.results.map((result) => ({ ...result, nativeCreative: undefined })) }), false);
 });
 
@@ -601,7 +630,7 @@ test("27. 공개 자동제작 응답은 원본 분석 후보와 로컬 비공개
 
 test("28. UI는 날짜별 실행 내역과 자동제작 이미지를 한 화면에서 보여준다", async () => {
   const workspace = await read("app/components/auto-production/AutoProductionWorkspace.tsx");
-  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "몰별 다음 제작 예정 상품", "예정상품 확정", "자동제작 설정", "최근 자동 제작 결과", "어제", "최근 7일", "기간 선택", "전체 {productionRun.completedImages}장 ZIP 다운로드", "상품 {downloadableCount}장 ZIP", "다운로드"]) {
+  for (const label of ["자동 콘텐츠 제작", "오늘의 제작 현황", "몰별 다음 제작 예정 상품", "변경사항 저장", "자동제작 설정", "최근 자동 제작 결과", "어제", "최근 7일", "기간 선택", "전체 {productionRun.completedImages}장 ZIP 다운로드", "상품 {downloadableCount}장 ZIP", "다운로드"]) {
     assert.match(workspace, new RegExp(label));
   }
   assert.match(workspace, /settingsPanel/);
@@ -662,6 +691,22 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   ]);
   assert.match(workspace, /plannedUrlDrafts/);
   assert.match(workspace, /adminProductUrls: urls/);
+  assert.match(workspace, /urls\.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
+  assert.doesNotMatch(workspace, /urls\.length < 1 \|\| urls\.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
+  assert.match(workspace, /const planSavable = enteredUrls\.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
+  assert.match(workspace, /const planChanged = !sameProductUrls\(enteredUrls, advertiser\.adminProductUrls\)/);
+  assert.match(workspace, /const \[backgroundPreviewCount, setBackgroundPreviewCount\] = useState\(0\)/);
+  assert.match(workspace, /const previewBlocksPlanEdits = applyingPreviewCount > 0/);
+  const previewFlow = workspace.slice(
+    workspace.indexOf("const preview = useCallback"),
+    workspace.indexOf("useEffect", workspace.indexOf("const preview = useCallback"))
+  );
+  assert.doesNotMatch(previewFlow, /runAction/);
+  assert.match(previewFlow, /setBackgroundPreviewCount/);
+  assert.match(workspace, /disabled=\{Boolean\(working\) \|\| previewBlocksPlanEdits \|\| !planSavable \|\| !planChanged\}/);
+  assert.match(workspace, /disabled=\{Boolean\(working\) \|\| previewBlocksPlanEdits \|\| settings\.paused \|\| !advertiser\.enabled \|\| !planReady\}/);
+  assert.match(workspace, /변경사항 저장 \(\$\{validCount\}개\)/);
+  assert.match(workspace, /runAfterSave && urls\.length === 0/);
   assert.match(workspace, /저장하고 지금 제작/);
   assert.match(workspace, /확정 목록이 없는 몰은 그날 제작하지 않습니다/);
   assert.match(workspace, /후보 찾기와 화면 미리보기만으로는 예약되지 않습니다/);

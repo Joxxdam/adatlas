@@ -5,6 +5,7 @@ import { handleNativeResultGeneration } from "../../../../../../lib/creative-gen
 import { writeNativeManifest } from "../../../../../../lib/creative-generation/nativeCreativeStorage.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError, toPublicGenerationJob } from "../../../../../../lib/creative-generation/publicJob.server";
+import { isCurrentReferenceEditGenerationJob } from "../../../../../../lib/creative-generation/jobRunnerPolicy";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,13 @@ export async function POST(request: Request, context: { params: Promise<{ jobId:
     const target = job.results.find((result) => result.id === resultId);
     if (!target) return NextResponse.json({ ok: false, error: "결과 항목을 찾지 못했습니다." }, { status: 404 });
     if (job.engine) {
+      const executionActions = new Set(["generate", "regenerate", "regenerate-new-reference", "revise", "revalidate", "copy-update"]);
+      if (executionActions.has(body.action || "generate") && !isCurrentReferenceEditGenerationJob(job)) {
+        return NextResponse.json(
+          { ok: false, error: "구버전 결과는 조회·다운로드만 가능합니다. 현재 상품을 다시 분석해 최신 제작 작업으로 시작해 주세요." },
+          { status: 409 }
+        );
+      }
       const native = await handleNativeResultGeneration({ jobId, resultId, requestId: body.requestId, action: body.action, feedback: body.feedback, copy: body.copy });
       const ok = ["success", "approved", "excluded"].includes(native.result.status) || body.action === "feedback" || body.action === "golden-reference";
       const publicJob = toPublicGenerationJob(native.job);

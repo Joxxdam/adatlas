@@ -16,7 +16,10 @@ export function directProductInfo(extracted: ExtractedProductInfo, productUrl: s
     ...(extracted.galleryImages || []),
     ...(extracted.detailImages || []),
   ]).slice(0, 12);
-  const mainImage = imagePaths[0] || "";
+  const confirmedProductImagePaths = unique(extracted.confirmedProductImages === undefined
+    ? [extracted.mainImage, extracted.heroImage]
+    : extracted.confirmedProductImages).slice(0, 6);
+  const mainImage = confirmedProductImagePaths[0] || imagePaths[0] || "";
   return {
     productName: extracted.productName || "",
     category: extracted.category || "기타",
@@ -33,11 +36,12 @@ export function directProductInfo(extracted: ExtractedProductInfo, productUrl: s
     landingUrl: extracted.landingUrl || productUrl,
     productImagePath: mainImage,
     secondaryProductImagePath: imagePaths[1] || "",
-    productImagePaths: imagePaths,
+    productImagePaths: confirmedProductImagePaths,
+    confirmedProductImagePaths,
     backgroundImagePath: "",
     extractedDescription: extracted.extractedDescription || extracted.description || "",
     extractedMainImage: mainImage,
-    extractedGalleryImages: imagePaths,
+    extractedGalleryImages: imagePaths.filter((imagePath) => imagePath !== mainImage),
     sourceImageCandidates: sourceCandidates,
     selectedSourceImageId: sourceCandidates[0]?.id || "",
     selectedSourceImagePath: sourceCandidates[0]?.imagePath || mainImage,

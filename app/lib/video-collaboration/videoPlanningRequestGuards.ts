@@ -6,6 +6,7 @@ import type {
 } from "./types.ts";
 import { segmentRange } from "./planningValidation.ts";
 import { VideoPlanningGenerationError } from "./videoPlanningAiCore.ts";
+import { isCurrentVideoPlanningConcept } from "./videoPlanningVersion.ts";
 
 const inFlight = new Set<string>();
 
@@ -33,7 +34,7 @@ export async function withVideoPlanningGenerationLock<T>(input: { key: string; s
 }
 
 export function hasReusableDetailedVideoPlan(concept: VideoConcept, duration: VideoDuration) {
-  return concept.detailStatus === "ready" && concept.cuts.length >= segmentRange(duration).min && concept.validation?.valid === true;
+  return isCurrentVideoPlanningConcept(concept) && concept.detailStatus === "ready" && concept.cuts.length >= segmentRange(duration).min && concept.validation?.valid === true;
 }
 
 export function failVideoPlanningPipeline(

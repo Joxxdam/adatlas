@@ -20,6 +20,9 @@ import { AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT } from "./policy";
 function verifiedCandidate(candidate: AutoProductionProductCandidate): AutoProductionProductCandidate {
   const verification = verifyAutoProductionProductImages(candidate.productName, candidate.productInfo);
   const selected = verification.selectedPaths;
+  // 자동 점수 검증을 통과했다는 이유만으로 갤러리를 사용자 확정 이미지로
+  // 승격하지 않는다. 각 수집기가 대표·구조화 이미지로 명시한 경로만 유지한다.
+  const confirmedProductImagePaths = Array.from(new Set((candidate.productInfo.confirmedProductImagePaths || []).filter(Boolean))).slice(0, 6);
   const next = {
     ...candidate,
     canonicalProductUrl: candidate.canonicalProductUrl || canonicalProductUrl(candidate.productUrl),
@@ -29,7 +32,8 @@ function verifiedCandidate(candidate: AutoProductionProductCandidate): AutoProdu
     productInfo: {
       ...candidate.productInfo,
       productImagePath: selected[0] || "",
-      productImagePaths: selected,
+      productImagePaths: confirmedProductImagePaths,
+      confirmedProductImagePaths,
       extractedMainImage: selected[0] || "",
       extractedGalleryImages: selected.slice(1),
     },
@@ -160,6 +164,7 @@ function cremaProductInfo(config: AutoProductionAdvertiserConfig, product: Produ
     landingUrl,
     productImagePath: images[0] || "",
     productImagePaths: images,
+    confirmedProductImagePaths: images[0] ? [images[0]] : [],
     backgroundImagePath: "",
     extractedMainImage: images[0] || "",
     extractedGalleryImages: images,

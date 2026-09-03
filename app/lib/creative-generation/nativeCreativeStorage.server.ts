@@ -14,6 +14,17 @@ const GENERATED_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "
 const SAFE = /^[a-zA-Z0-9가-힣._-]+$/;
 export const MAX_FINAL_BYTES = 800 * 1024;
 const TARGET_BYTES = 790 * 1024;
+const NATIVE_CUTOUT_PATH_PATTERN = /(?:^|[\\/_.-])(?:processed-products|product-cutouts?|remove-?bg|cutout|nukki|누끼)(?:[\\/_.-]|$)/iu;
+
+/**
+ * Native reference editing must receive complete seller/product-page photos,
+ * never a transparent or previously background-removed product layer.  Keep
+ * this policy at the attachment boundary so old jobs and cached ProductTruth
+ * data cannot silently re-introduce a registered cutout.
+ */
+export function isForbiddenNativeCutoutAsset(asset: CreativeImageAsset) {
+  return asset.role === "product-cutout" || asset.transparent === true || NATIVE_CUTOUT_PATH_PATTERN.test(asset.path);
+}
 
 function segment(value: string) {
   if (!SAFE.test(value) || value === "." || value === "..") throw new Error("안전하지 않은 파일 경로입니다.");
@@ -44,8 +55,8 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
     ["product-detail", 350],
   ]);
   const truthSources = job.productTruth.imageAssets
-    .filter((asset) => asset.role !== "ad-reference" && asset.role !== "product-cutout" && asset.verified)
-    .filter((asset) => !/\/(?:processed-products|product-cutouts)\//i.test(asset.path));
+    .filter((asset) => asset.role !== "ad-reference" && asset.verified)
+    .filter((asset) => !isForbiddenNativeCutoutAsset(asset));
   const profileSources: CreativeImageAsset[] = (job.productReferenceProfile?.referenceImages || [])
     .filter((image) => image.usableForGeneration && !image.duplicateOf && !image.watermarkRisk)
     // Text-heavy square/detail images are often finished ads or promotional
@@ -53,7 +64,7 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
     // reproduce old copy panels and embedded ad fragments. Product labels are
     // still available through the separately verified ProductTruth assets.
     .filter((image) => !image.hasText)
-    .filter((image) => !/\/(?:processed-products|product-cutouts)\//i.test(image.url))
+    .filter((image) => !NATIVE_CUTOUT_PATH_PATTERN.test(image.url))
     .sort((left, right) => (rolePriority.get(right.role) || 0) + right.importance - (rolePriority.get(left.role) || 0) - left.importance)
     .map((image) => ({
       id: image.id,
@@ -68,7 +79,7 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
   // 분석기가 긴 배송/고시 이미지를 front-package로 오인하더라도 그 결과가
   // 실제 대표 상품 이미지를 밀어내지 못하게 한다.
   const unique = [...truthSources, ...profileSources, ...job.productTruth.referenceImages].filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index);
-  const originals = unique.filter((asset) => asset.role !== "product-cutout" && !/\/(?:processed-products|product-cutouts)\//i.test(asset.path));
+  const originals = unique.filter((asset) => !isForbiddenNativeCutoutAsset(asset));
   const productScore = (asset: CreativeImageAsset) => {
     if (asset.role === "product-packshot") return 500;
     if (asset.role === "product-lifestyle") return 420;
@@ -97,13 +108,31 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
 export function selectProtectedProductSource(job: GenerationJob): CreativeImageAsset | undefined {
   const candidates = job.productTruth.imageAssets
     .filter((asset) => asset.verified && asset.validationStatus !== "excluded")
-    .filter((asset) => ["product-cutout", "product-packshot"].includes(asset.role))
+    .filter((asset) => asset.role === "product-packshot")
+    .filter((asset) => !isForbiddenNativeCutoutAsset(asset))
     .filter((asset) => asset.role !== "ad-reference");
   const score = (asset: CreativeImageAsset) =>
-    (asset.role === "product-cutout" ? 500 : 300) +
+    300 +
     (asset.source === "known-product" ? 120 : asset.source === "product-page" ? 80 : 40) +
-    (asset.transparent ? 40 : 0);
+    (asset.transparent ? -500 : 0);
   return candidates.sort((left, right) => score(right) - score(left))[0];
+}
+
+async function containsCutoutTransparency(buffer: Buffer) {
+  const metadata = await sharp(buffer, { limitInputPixels: 50_000_000 }).metadata();
+  if (!metadata.hasAlpha) return false;
+  const { data, info } = await sharp(buffer, { limitInputPixels: 50_000_000 })
+    .rotate()
+    .resize(192, 192, { fit: "inside", withoutEnlargement: true })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let transparentPixels = 0;
+  const total = Math.max(1, info.width * info.height);
+  for (let offset = 3; offset < data.length; offset += info.channels) {
+    if (data[offset] < 250) transparentPixels += 1;
+  }
+  return transparentPixels / total >= 0.0025;
 }
 
 export async function prepareNativeReferenceImages(job: GenerationJob) {
@@ -115,18 +144,22 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
     throw new Error("AI 제작에 사용할 검증된 원본 상품 이미지가 없습니다.");
   }
   const files: string[] = [];
-  for (let index = 0; index < sources.length; index += 1) {
-    const file = path.join(directory, `reference-${index + 1}.png`);
+  for (const source of sources) {
     // Always refresh the prepared file. Older jobs may have cached an ad
     // reference at the same numbered path before the product-only policy.
-    const buffer = await readCreativeRasterAsset(sources[index].path);
+    const buffer = await readCreativeRasterAsset(source.path);
+    // Asset metadata in historical jobs is not always reliable. Inspect the
+    // actual pixels and reject any alpha-backed/background-removed source.
+    // Flattening it onto white would only disguise the cutout and is forbidden.
+    if (await containsCutoutTransparency(buffer)) continue;
+    const file = path.join(directory, `reference-${files.length + 1}.png`);
     // Codex local_image가 확장자로 MIME을 추론해도 실제 파일 포맷과 일치하도록
     // 모든 상품 근거 이미지를 진짜 PNG로 정규화한다.
-    const normalized = await sharp(buffer, { limitInputPixels: 50_000_000 }).rotate().toColorspace("srgb").png({ compressionLevel: 9 }).toBuffer();
+    const normalized = await sharp(buffer, { limitInputPixels: 50_000_000 }).rotate().flatten({ background: "#ffffff" }).toColorspace("srgb").png({ compressionLevel: 9 }).toBuffer();
     await writeFile(file, normalized);
     files.push(file);
   }
-  if (!files.length) throw new Error("AI 제작에 사용할 실제 상품 참조 이미지가 없습니다.");
+  if (!files.length) throw new Error("AI 광고 제작에 사용할 상세페이지 원본 상품 이미지를 준비하지 못했습니다. 위 원본 이미지에서 실제 상품 사진을 선택해 주세요.");
   return files;
 }
 

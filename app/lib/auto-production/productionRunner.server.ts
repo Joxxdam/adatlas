@@ -197,11 +197,25 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
     }
   }
   const productionTask = { ...task, candidate: productionCandidate };
+  const productionProductImagePaths = Array.from(
+    new Set(
+      [
+        ...(productionCandidate.productInfo.confirmedProductImagePaths || []),
+        ...(productionCandidate.productInfo.productImagePaths || []),
+        productionCandidate.productInfo.productImagePath || "",
+        productionCandidate.productInfo.extractedMainImage || "",
+        productionCandidate.imageUrl || "",
+      ].filter(Boolean)
+    )
+  ).slice(0, 6);
   const job = await createNativeGenerationJob(
     {
       product: productionCandidate.productInfo,
-      productImagePaths: productionCandidate.productInfo.productImagePaths,
-      selectedAdImages: productionCandidate.productInfo.productImagePaths,
+      // 자동 검증에서 현재 상품으로 판별된 대표 이미지가 있으면 세트 전체
+      // 구성이 보이지 않는다는 이유만으로 1분 내 건너뛰지 않는다. 다른 상품
+      // 번호와 배너는 앞선 검증 단계에서 이미 제외된다.
+      productImagePaths: productionProductImagePaths,
+      selectedAdImages: productionProductImagePaths,
       source: "landing-page",
       adBrief: adBrief(config, productionTask),
       engine: "codex_local",

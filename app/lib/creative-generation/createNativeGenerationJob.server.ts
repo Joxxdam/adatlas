@@ -16,9 +16,11 @@ import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { buildCreativePlanFingerprint } from "./creativePlanCache.server";
 import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, prepareReferenceAdaptedCopyScaffold, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
 import { assertCurrentReferenceEditGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, CURRENT_REFERENCE_EDIT_WORKFLOW, REFERENCE_EDIT_STAGE_ORDER } from "./jobRunnerPolicy";
 import { isMalformedProductSignal, isNonDomesticOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim } from "./productSignalHygiene.ts";
+import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
+import { applyOriginalSourceVendorResearch } from "../product-research/originalSourceResearch.ts";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
@@ -105,22 +107,30 @@ function normalizedImagePath(value: unknown) {
 function currentProductImagePaths(input: CreateGenerationJobInput, product: CreateGenerationJobInput["product"]) {
   const declared = [
     product.extractedMainImage,
+    ...(product.confirmedProductImagePaths || []),
     ...(product.productImagePaths || []),
     product.productImagePath,
     product.secondaryProductImagePath,
     product.selectedSourceImagePath,
     ...(product.extractedGalleryImages || []),
     ...(product.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
-  ].map(normalizedImagePath).filter(Boolean);
+  ].map(normalizedImagePath).filter((imagePath) => Boolean(imagePath) && !isDifferentProductImage(product.landingUrl, imagePath));
   const declaredSet = new Set(declared);
   // 분석 결과가 아직 별도 필드로 승격되지 않은 업로드 흐름만 요청 경로를
   // 기준으로 허용합니다. 현재 상품 경로가 하나라도 있으면 교집합만 받습니다.
-  const requested = (input.productImagePaths || []).map(normalizedImagePath).filter(Boolean);
+  const requested = (input.productImagePaths || []).map(normalizedImagePath).filter((imagePath) => Boolean(imagePath) && !isDifferentProductImage(product.landingUrl, imagePath));
   const acceptedRequested = declaredSet.size ? requested.filter((imagePath) => declaredSet.has(imagePath)) : requested;
   const acceptedSelected = (input.selectedAdImages || [])
     .map(normalizedImagePath)
-    .filter((imagePath) => declaredSet.has(imagePath) || acceptedRequested.includes(imagePath));
-  return Array.from(new Set([...acceptedSelected, ...acceptedRequested, ...declared]));
+    .filter((imagePath) => !isDifferentProductImage(product.landingUrl, imagePath) && (declaredSet.has(imagePath) || acceptedRequested.includes(imagePath)));
+  return {
+    allPaths: Array.from(new Set([...acceptedSelected, ...acceptedRequested, ...declared])),
+    // 사용자가 상품 카드에서 제작을 확정한 뒤 클라이언트가 전달한 경로는
+    // 현재 ProductInfo가 소유한 경로와 교집합을 통과한 경우에만 제작 근거로
+    // 승격합니다. 이렇게 하면 다른 상품 이미지는 막으면서도 대표·상세 원본이
+    // 별도 이미지 선택 UI를 거치지 않았다는 이유로 제작이 차단되지 않습니다.
+    userConfirmedPaths: Array.from(new Set([...acceptedSelected, ...acceptedRequested])),
+  };
 }
 
 function normalizeReferenceCategoryOverride(value: unknown): ReferenceCategoryOverride | undefined {
@@ -139,12 +149,17 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   if (!providerStatus.available) {
     throw new Error(`${providerStatus.detail} 다른 엔진이나 기존 배경으로 자동 전환하지 않습니다.`);
   }
-  const rawProductTitle = input.product.productName;
-  const product = sanitizeProductForCreative(input.product);
-  const allPaths = currentProductImagePaths(input, product).slice(0, 20);
+  // 장시간 떠 있는 자동 러너나 이전 화면 상태가 오래된 상품 분석 payload를
+  // 넘겨도 작업 생성 직전에 최신 업체 조사본을 다시 결합한다. 수동·자동 모두
+  // 이 한 지점을 통과하므로 OCR/시트 근거가 생성 작업에서 누락되지 않는다.
+  const researchedProduct = applyOriginalSourceVendorResearch(input.product, input.product.landingUrl);
+  const rawProductTitle = researchedProduct.productName;
+  const product = sanitizeProductForCreative(researchedProduct);
+  const resolvedPaths = currentProductImagePaths(input, product);
+  const allPaths = resolvedPaths.allPaths.slice(0, 20);
   const originals = allPaths.filter((value) => !isAutomaticCutoutPath(value));
   if (!originals.length) {
-    throw new Error("광고 제작에는 자동 누끼가 아닌 상세페이지 원본 상품 이미지가 필요합니다.");
+    throw new Error("광고 제작에 사용할 상세페이지 원본 상품 이미지가 없습니다. 상품을 다시 분석하거나 위 원본 이미지에서 실제 상품 사진을 선택해 주세요.");
   }
   const productReferencePaths = allPaths.slice(0, 12);
   const allowedProductPaths = new Set(productReferencePaths);
@@ -154,7 +169,9 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const rawTruth = buildProductTruth({
     product,
     rawProductTitle,
-    productImagePaths: productReferencePaths,
+    // 다른 상품 번호를 배제하고 현재 ProductInfo 소유 경로와 교집합을 통과한
+    // 대표·상세 원본만 제작 근거로 전달합니다.
+    productImagePaths: resolvedPaths.userConfirmedPaths,
     selectedAdImages: [],
     imageAssets: currentProductAssets,
     source: input.source === "landing-page" ? "landing-page" : "user-input",
@@ -173,7 +190,10 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const selectedAdReferences = await ensureNativeReferenceCopies(
     selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6)
   );
-  const referencePlanning = await planReferenceAdaptedCopies({ truth, references: selectedAdReferences });
+  // 버튼 클릭 요청 안에서 수분이 걸릴 수 있는 Codex 기획·독립 검수를 기다리지
+  // 않는다. 렌더 가능한 초안으로 작업 ID를 먼저 저장한 뒤 공통 서버 러너가
+  // 6장 문구를 한 번에 최신 정책으로 기획하고 나서 이미지 생성을 시작한다.
+  const referencePlanning = await prepareReferenceAdaptedCopyScaffold({ truth, references: selectedAdReferences });
   const creativePlan = buildReferenceAdaptedCreativePlan({
     truth,
     references: selectedAdReferences,
@@ -202,8 +222,8 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.results = job.results.map((result, index) => ({
     ...result,
     materialCode: `M${String(index + 1).padStart(2, "0")}`,
-    // 문구 품질 미달은 작업 전체를 중단하지 않는다. 공통 문구 계획 단계와
-    // 결과 실행 단계가 해당 안만 레퍼런스 구조 기반 최선 문구로 교체한다.
+    // 서버 러너의 공통 문구 계획이 끝나기 전 scaffold다. 최신 상황형 문구가
+    // 품질 기준에 미달해도 사실상 안전한 문구로 보완해 이미지 제작은 진행한다.
     status: result.status,
     error: undefined,
     completedAt: undefined,
@@ -219,6 +239,9 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
       revisionCount: 0,
     },
   }));
+  if (!job.results.every((result) => result.nativeCreative?.promptVersion === NATIVE_FINAL_PROMPT_VERSION)) {
+    throw new Error("수동·자동 공통 최신 이미지 정책을 작업 결과 6장에 적용하지 못했습니다.");
+  }
   job.paidApiAuthorization = engine === "openai_api" && explicitPaidApiAuthorization ? input.paidApiAuthorization : undefined;
   job.paidApiUsed = engine === "openai_api";
   job.advertiserId = advertiserId;
@@ -233,6 +256,10 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.templateRegistryVersion = REFERENCE_ADAPTED_PLANNER_VERSION;
   job.unusedPerformanceTemplateIds = [];
   job.referenceCopyProfiles = referencePlanning.profiles;
+  job.referenceCopyPlanning = {
+    status: "pending",
+    updatedAt: new Date().toISOString(),
+  };
   job.copyPlanMode = "reference-adapted";
   job.version = CURRENT_REFERENCE_EDIT_JOB_VERSION;
   job.pipeline = CURRENT_REFERENCE_EDIT_PIPELINE;

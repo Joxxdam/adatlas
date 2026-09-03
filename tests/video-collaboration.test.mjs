@@ -7,8 +7,8 @@ import test from "node:test";
 
 import { createVideoProjectRepository } from "../app/lib/video-collaboration/repository.server.ts";
 import { resequenceVideoCuts, videoScriptCsv } from "../app/lib/video-collaboration/script.ts";
-import { generateGroundedVideoConcepts } from "../app/lib/video-collaboration/scriptGenerator.ts";
-import { buildProductLockedAsset, buildVideoHookCandidates, buildVisualBible, selectTopDistinctHooks, validateVideoPlan } from "../app/lib/video-collaboration/planningPipeline.ts";
+import { buildCurrentProductSelfIntroductionHook } from "../app/lib/video-collaboration/videoPlanningHookFallback.ts";
+import { isCurrentVideoPlanningConcept } from "../app/lib/video-collaboration/videoPlanningVersion.ts";
 import { detectSceneReferenceType } from "../app/lib/video-collaboration/referenceImage.ts";
 import { detectVideoType } from "../app/lib/video-collaboration/videoFile.ts";
 import { canTransitionVideoProject, createVideoMaterialCode, validateVideoMaterialCode } from "../app/lib/video-collaboration/workflow.ts";
@@ -44,6 +44,78 @@ const guideline = {
   designerNotes: "세로형 안전 영역 준수",
 };
 
+function buildTestVideoConcepts(input) {
+  const hookTypes = input.hookTypes || ["problem-solution", "feature-usp", "sensory-scene"];
+  const times = input.duration === 20
+    ? [[0, 3], [3, 7], [7, 12], [12, 18], [18, 20]]
+    : [[0, 3], [3, 6], [6, 9], [9, 12], [12, 15]];
+  const existingCodes = (input.existingConcepts || []).map((item) => item.materialCode);
+  return hookTypes.map((hookType, conceptIndex) => {
+    const previous = input.existingConcepts?.find((item) => item.hookType === hookType);
+    const cta = "상품 상세 확인하세요";
+    const cuts = times.map(([startSecond, endSecond], index) => ({
+      id: previous?.cuts[index]?.id || crypto.randomUUID(),
+      cutNumber: index + 1,
+      sceneName: `장면 ${index + 1}`,
+      startSecond,
+      endSecond,
+      sceneDescription: `운동을 마친 인물이 오래된 동네 체육관 샤워실에서 민트 티트리 샤워젤을 꺼내는 구체적인 장면 ${index + 1}`,
+      caption: index === times.length - 1 ? cta : `민트와 티트리 사용 장면 ${index + 1}`,
+      narration: `민트와 티트리의 산뜻한 사용감을 보여주는 설명 ${index + 1}`,
+      requiredSources: [],
+      referenceImages: previous?.cuts[index]?.referenceImages || [],
+      productionMemo: previous?.cuts[index]?.productionMemo || "",
+      cameraComposition: "세로형 근접 촬영",
+      motionDirection: "왼쪽에서 오른쪽",
+      transition: "행동 매치컷",
+      generationPrompt: "오래된 동네 체육관 샤워실의 실제 사용 장면",
+      productLockInstruction: {
+        useOriginalComposite: index >= 2,
+        position: "중앙",
+        size: "화면 높이 35%",
+        cameraAngle: "정면",
+        handInteraction: "손으로 든다",
+        labelVisibility: "라벨 전체 노출",
+        matchCut: "동일 방향",
+        editMargin: "좌우 8%",
+      },
+    }));
+    const materialCode = previous?.materialCode || createVideoMaterialCode({
+      advertiserName: input.advertiserName,
+      productName: input.analysis.productName,
+      hookType,
+      existingCodes,
+      createdAt: input.now,
+    });
+    existingCodes.push(materialCode);
+    return {
+      id: previous?.id || crypto.randomUUID(),
+      title: `체육관 샤워실 사건 ${conceptIndex + 1}`,
+      hookType,
+      coreTarget: "퇴근 뒤 오래된 동네 체육관에서 운동하는 직장인",
+      objective: input.objective,
+      openingHook: "퇴근 뒤 체육관 샤워실에서 늘 마지막까지 남는 사람이라면?",
+      fullScript: cuts.map((cut) => cut.narration).join(" "),
+      cuts,
+      requiredSources: [],
+      cta,
+      productionCautions: [],
+      materialCode,
+      generationSource: "codex-local",
+      generationWarnings: [],
+      conceptArchetype: "usp-focus",
+      revision: (previous?.revision || 0) + 1,
+      createdAt: previous?.createdAt || input.now.toISOString(),
+      updatedAt: input.now.toISOString(),
+      distinctiveCharacter: "퇴근 뒤 20년 된 동네 체육관에서 마지막 순서로 샤워하는 야근 많은 직장인",
+      socialWorld: "밤 10시, 오래된 동네 체육관의 습기 찬 공동 샤워실과 막차를 앞둔 퇴근 동선",
+      storyTrigger: "막차까지 12분 남은 순간 익숙한 샤워젤이 비어 있어 가방 속 민트 티트리 샤워젤을 꺼낸다.",
+      truthBridge: "민트와 티트리라는 검증된 상품 특징을 급한 운동 후 샤워 장면의 선택 이유로 연결한다.",
+      dramatizationBoundary: "체육관과 직장인은 창작 상황극이며 민트와 티트리는 검증된 상품 사실이다.",
+    };
+  });
+}
+
 test("영상 소재코드는 지정 형식과 프로젝트 내 순번을 지킨다", () => {
   const first = createVideoMaterialCode({
     advertiserName: "Original Source",
@@ -73,8 +145,8 @@ test("영상 소재코드 날짜는 서버 위치와 관계없이 Asia/Seoul 기
   assert.match(code, /_20260819_01$/);
 });
 
-test("서로 다른 후킹 3개가 근거와 금지 문구 규칙을 지켜 생성된다", () => {
-  const concepts = generateGroundedVideoConcepts({
+test("저장용 최신 기획안 fixture는 구체적 인물·세계·사건 계약을 지킨다", () => {
+  const concepts = buildTestVideoConcepts({
     advertiserName: "오리지널소스",
     analysis,
     guideline,
@@ -93,9 +165,10 @@ test("서로 다른 후킹 3개가 근거와 금지 문구 규칙을 지켜 생�
     concepts.some((item) => JSON.stringify(item).includes("무조건 1위")),
     false
   );
+  assert.equal(concepts.every(isCurrentVideoPlanningConcept), true);
 });
 
-test("후킹 후보는 5개 이상 평가하고 서로 다른 상위 3개만 선택한다", () => {
+test("최신 자기소개형 보완 후킹은 검증 사실과 ‘나 ~인데’ 구조를 유지한다", () => {
   const grounded = {
     ...analysis,
     verifiedFacts: [
@@ -105,23 +178,15 @@ test("후킹 후보는 5개 이상 평가하고 서로 다른 상위 3개만 선
     verifiedNumbers: ["12,000원"],
     unsupportedClaims: [{ id: "unsupported-1", label: "사용 금지", value: "체감온도 -8.9도", source: "검증 규칙", bucket: "unsupported" }],
   };
-  const candidates = buildVideoHookCandidates(grounded);
-  const selected = selectTopDistinctHooks(candidates);
-  assert.equal(candidates.length >= 5, true);
-  assert.equal(selected.length, 3);
-  assert.equal(new Set(selected.map((item) => item.hookType)).size, 3);
-  assert.equal(
-    candidates.every((item) => item.score.total >= 0 && item.score.total <= 100),
-    true
-  );
-  assert.equal(
-    candidates.some((item) => item.hook.includes("체감온도 -8.9도")),
-    false
-  );
+  const candidate = buildCurrentProductSelfIntroductionHook(grounded);
+  assert.equal(candidate.hookType, "product-self-introduction");
+  assert.match(candidate.hook, /^나\s/u);
+  assert.match(candidate.hook, /인데!/u);
+  assert.doesNotMatch(candidate.hook, /체감온도 -8\.9도/u);
 });
 
 test("20초 기획은 후킹→문제→제품→근거→CTA가 빈 시간 없이 이어진다", () => {
-  const concept = generateGroundedVideoConcepts({
+  const concept = buildTestVideoConcepts({
     advertiserName: "오리지널소스",
     analysis,
     guideline,
@@ -147,7 +212,6 @@ test("20초 기획은 후킹→문제→제품→근거→CTA가 빈 시간 없�
     concept.cuts.slice(2).every((cut) => cut.productLockInstruction?.useOriginalComposite),
     true
   );
-  assert.equal(validateVideoPlan(concept, analysis, 20).valid, true);
   const csv = videoScriptCsv({
     projectName: "CSV 테스트",
     advertiserName: "오리지널소스",
@@ -159,26 +223,6 @@ test("20초 기획은 후킹→문제→제품→근거→CTA가 빈 시간 없�
   assert.match(csv, /생성 프롬프트/);
 });
 
-test("카테고리별 비주얼 바이블과 상품 원본 고정 규칙을 만든다", () => {
-  const food = buildVisualBible({ ...analysis, category: "식품·육류" }, "auto");
-  const beauty = buildVisualBible({ ...analysis, category: "뷰티·바디케어" }, "auto");
-  assert.notEqual(food.visualMode, beauty.visualMode);
-  const locked = buildProductLockedAsset({
-    id: "asset-1",
-    name: "product.png",
-    filePath: "/video-collaboration/references/product.png",
-    mimeType: "image/png",
-    size: 2000,
-    uploadedAt: "2026-08-20T00:00:00.000Z",
-    role: "product-original",
-  });
-  assert.equal(locked?.filePath, "/video-collaboration/references/product.png");
-  assert.equal(
-    locked?.preserveRules.some((rule) => rule.includes("로고")),
-    true
-  );
-});
-
 test("상태 전이는 제작 시작과 업로드 검수를 건너뛰지 않는다", () => {
   assert.equal(canTransitionVideoProject("script_review", "production_requested"), true);
   assert.equal(canTransitionVideoProject("production_requested", "marketer_review"), false);
@@ -188,7 +232,7 @@ test("상태 전이는 제작 시작과 업로드 검수를 건너뛰지 않는�
 });
 
 test("엑셀형 제작 대본처럼 15개 장면을 순서와 시간에 맞게 재배치한다", () => {
-  const base = generateGroundedVideoConcepts({
+  const base = buildTestVideoConcepts({
     advertiserName: "오리지널소스",
     analysis,
     guideline,
@@ -229,7 +273,7 @@ test("장면별 참고 이미지와 메모가 재조회와 대본 재생성 후�
       productAnalysis: analysis,
       brandGuideline: guideline,
     });
-    const concepts = generateGroundedVideoConcepts({
+    const concepts = buildTestVideoConcepts({
       advertiserName: created.advertiserName,
       analysis,
       guideline,
@@ -263,7 +307,7 @@ test("장면별 참고 이미지와 메모가 재조회와 대본 재생성 후�
     assert.equal(reloaded?.concepts[0].cuts[0].productionMemo, "라벨이 가려지지 않게 제작");
     assert.equal(reloaded?.productionNotes, "전체 장면에서 제품 색상 유지");
 
-    const regenerated = generateGroundedVideoConcepts({
+    const regenerated = buildTestVideoConcepts({
       advertiserName: created.advertiserName,
       analysis,
       guideline,
@@ -303,7 +347,7 @@ test("수동 저장 버전은 이전 내용을 덮어쓰지 않고 복원할 수
       productAnalysis: analysis,
       brandGuideline: guideline,
     });
-    const [concept] = generateGroundedVideoConcepts({
+    const [concept] = buildTestVideoConcepts({
       advertiserName: created.advertiserName,
       analysis,
       guideline,
@@ -355,7 +399,7 @@ test("프로젝트·버전·피드백·승인 이력이 재조회 후에도 유�
       productAnalysis: analysis,
       brandGuideline: guideline,
     });
-    const concepts = generateGroundedVideoConcepts({
+    const concepts = buildTestVideoConcepts({
       advertiserName: created.advertiserName,
       analysis,
       guideline,
@@ -367,7 +411,7 @@ test("프로젝트·버전·피드백·승인 이력이 재조회 후에도 유�
     await assert.rejects(repository.updateConcept(created.id, concepts[0].id, { ...concepts[0], openingHook: "무조건 1위 상품" }, "마케터"), /금지 문구/);
     const detailed = structuredClone(concepts[0]);
     const actions = ["젖은 운동복을 내려놓는다", "이마의 땀을 닦는다", "샤워기 손잡이를 돌린다", "거울 속 표정을 바라본다", "선반 문을 천천히 연다", "상품을 손으로 꺼낸다", "손바닥에 내용물을 덜어낸다", "손가락으로 질감을 펼친다", "양손으로 거품을 만든다", "어깨를 따라 거품을 문지른다", "샤워기 물로 씻어낸다", "수건을 들고 웃는다", "깨끗한 옷을 가방에 넣는다", "현관에서 신발을 신는다", "상세 화면을 손으로 누른다"];
-    const captions = ["씻고도 금방 찝찝했죠", "운동 뒤엔 더 빨랐고요", "샤워 순서부터 봐요", "익숙한 방식은 잠깐", "남은 답답함을 보고", "상쾌함이 필요한 순간", "민트와 티트리가 보여요", "사용감부터 확인해요", "손에 덜어 살펴봐요", "거품이 부드럽게 퍼져요", "물과 함께 산뜻하게", "표정도 한결 편안해져요", "다음 운동도 가볍게", "샤워 루틴을 바꾼다면", concepts[0].cta];
+    const captions = ["왜 또 찝찝하죠?", "운동 뒤 더 심해요!", "샤워 순서 봐요", "익숙함은 잠깐", "답답함이 남아요", "상쾌함이 필요해요", "민트와 티트리예요", "사용감부터 봐요", "손에 덜어 봐요", "거품이 퍼져요", "물로 씻어내요", "표정이 풀려요", "운동복도 챙겨요", "다음 샤워 전엔", concepts[0].cta];
     detailed.cuts = actions.map((action, index) => ({
       ...structuredClone(concepts[0].cuts[0]),
       id: crypto.randomUUID(),
@@ -376,7 +420,7 @@ test("프로젝트·버전·피드백·승인 이력이 재조회 후에도 유�
       startSecond: index,
       endSecond: index + 1,
       caption: captions[index],
-      narration: "",
+      narration: index < 8 ? captions[index] : "",
       sceneDescription: `밝은 욕실과 샤워실 배경에서 운동을 마친 인물이 ${action} 손의 움직임과 편안해지는 표정을 먼저 보여준다. 화면은 이 행동이 자막의 의미로 이어지는 순간을 가까이 담고 다음 구간의 다른 행동으로 자연스럽게 전환한다.`,
       referenceImages: [],
       requiredSources: [],

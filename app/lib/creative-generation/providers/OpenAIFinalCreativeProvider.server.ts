@@ -2,11 +2,12 @@ import "server-only";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { editImageFromSource } from "../../mvp/openaiImageClient.ts";
-import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import { readBrandMemory } from "../codexRegistry.server.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput } from "./CreativeGenerationProvider.ts";
 import { normalizeNativeCreativeValidation } from "../nativeCreativeValidation";
+import { resolveMeatPresentationContract, resolveProductRenderingPolicy } from "../productRenderingPolicy.ts";
 
 export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
   readonly engine = "openai_api" as const;
@@ -96,7 +97,11 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
             content: [
               {
                 type: "input_text",
-                text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,sourcePersonDetected,sourcePersonReplaced,humanCompositionChanged,humanSceneBackgroundRebuilt,humanSceneBackgroundFindings,targetAudienceFit,humanReplacementFindings,humanCopyAligned,humanCopyAlignmentFindings,sourceAnimalDetected,sourceAnimalReplaced,animalReplacementFindings,sourceContextualBackgroundDetected,contextualBackgroundRebuilt,contextualBackgroundFindings,sceneProductInteractionAligned,sceneProductInteractionFindings,unrelatedFoodOrIngredientDetected,unrelatedFoodOrIngredientFindings,sourceBrandRegionCleared,sourceBrandRegionFindings,comparisonSemanticAligned,comparisonSemanticFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. 레퍼런스에 실제·일러스트 동물이 있으면 sourceAnimalDetected=true이며 상품 관련 다른 동물로 교체됐을 때만 sourceAnimalReplaced=true다. 실제 장소·생활 소품 맥락의 배경이 있으면 sourceContextualBackgroundDetected=true이며 새 상품 장면으로 재구성됐을 때만 contextualBackgroundRebuilt=true다. 식품에서 현재 상품·확인된 재료 외 먹거리가 하나라도 보이면 unrelatedFoodOrIngredientDetected=true다. sourceBrandRegionCleared는 원본 브랜드 글자와 그 빈 배지 컨테이너가 모두 사라졌을 때만 true다. recommendation은 approve, revise, manual-review 중 하나다.`,
+                text: `${buildNativeValidationPrompt(input.job, input.result)}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,sourcePersonDetected,sourcePersonReplaced,humanCompositionChanged,humanSceneBackgroundRebuilt,humanSceneBackgroundFindings,targetAudienceFit,humanReplacementFindings,humanCopyAligned,humanCopyAlignmentFindings,sourceAnimalDetected,sourceAnimalReplaced,animalReplacementFindings,sourceContextualBackgroundDetected,contextualBackgroundRebuilt,contextualBackgroundFindings,sceneProductInteractionAligned,sceneProductInteractionFindings,unrelatedFoodOrIngredientDetected,unrelatedFoodOrIngredientFindings,meatCutIdentityAccurate,meatTextureNatural,meatArtificialPatternDetected,meatArtificialPatternFindings,meatGrotesqueDetailDetected,meatGrotesqueDetailFindings,meatPresentationModeAligned,meatPresentationFindings,meatCookedPresentationDetected,meatCookedEvidenceSatisfied,meatSetCompositionAccurate,meatObservedPackCount,sourceBrandRegionCleared,sourceBrandRegionFindings,comparisonSemanticAligned,comparisonSemanticFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. 레퍼런스에 실제·일러스트 동물이 있으면 sourceAnimalDetected=true이며 상품 관련 다른 동물로 교체됐을 때만 sourceAnimalReplaced=true다. 실제 장소·생활 소품 맥락의 배경이 있으면 sourceContextualBackgroundDetected=true이며 새 상품 장면으로 재구성됐을 때만 contextualBackgroundRebuilt=true다. 식품에서 현재 상품·확인된 재료 외 먹거리가 하나라도 보이면 unrelatedFoodOrIngredientDetected=true다. sourceBrandRegionCleared는 원본 브랜드 글자와 그 빈 배지 컨테이너가 모두 사라졌을 때만 true다. recommendation은 approve, revise, manual-review 중 하나다.`,
+              },
+              {
+                type: "input_text",
+                text: "위 JSON에 detachedProductCutoutDetected(boolean)와 detachedProductCutoutFindings(string[])도 반드시 포함하세요. 상품이 누끼·스티커·떠 있는 독립 패널·흰 테두리·분리된 그림자처럼 보이면 true이며 recommendation은 revise입니다.",
               },
               { type: "input_image", image_url: await imageUrl(input.imagePath), detail: "high" },
               ...(await Promise.all(
@@ -146,6 +151,8 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         observedKoreanText: Array.isArray(parsed.observedKoreanText) ? parsed.observedKoreanText.map(String).slice(0, 30) : [],
         standaloneLogoDetected: parsed.standaloneLogoDetected === true,
         standaloneLogoFindings: Array.isArray(parsed.standaloneLogoFindings) ? parsed.standaloneLogoFindings.map(String).slice(0, 10) : [],
+        detachedProductCutoutDetected: parsed.detachedProductCutoutDetected === true,
+        detachedProductCutoutFindings: Array.isArray(parsed.detachedProductCutoutFindings) ? parsed.detachedProductCutoutFindings.map(String).slice(0, 10) : [],
         sourcePersonDetected: parsed.sourcePersonDetected === true,
         sourcePersonReplaced: parsed.sourcePersonReplaced === true,
         humanCompositionChanged: parsed.humanCompositionChanged === true,
@@ -165,6 +172,18 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         sceneProductInteractionFindings: Array.isArray(parsed.sceneProductInteractionFindings) ? parsed.sceneProductInteractionFindings.map(String).slice(0, 10) : [],
         unrelatedFoodOrIngredientDetected: parsed.unrelatedFoodOrIngredientDetected === true,
         unrelatedFoodOrIngredientFindings: Array.isArray(parsed.unrelatedFoodOrIngredientFindings) ? parsed.unrelatedFoodOrIngredientFindings.map(String).slice(0, 10) : [],
+        meatCutIdentityAccurate: parsed.meatCutIdentityAccurate !== false,
+        meatTextureNatural: parsed.meatTextureNatural !== false,
+        meatArtificialPatternDetected: parsed.meatArtificialPatternDetected === true,
+        meatArtificialPatternFindings: Array.isArray(parsed.meatArtificialPatternFindings) ? parsed.meatArtificialPatternFindings.map(String).slice(0, 10) : [],
+        meatGrotesqueDetailDetected: parsed.meatGrotesqueDetailDetected === true,
+        meatGrotesqueDetailFindings: Array.isArray(parsed.meatGrotesqueDetailFindings) ? parsed.meatGrotesqueDetailFindings.map(String).slice(0, 10) : [],
+        meatPresentationModeAligned: parsed.meatPresentationModeAligned !== false,
+        meatPresentationFindings: Array.isArray(parsed.meatPresentationFindings) ? parsed.meatPresentationFindings.map(String).slice(0, 10) : [],
+        meatCookedPresentationDetected: parsed.meatCookedPresentationDetected === true,
+        meatCookedEvidenceSatisfied: parsed.meatCookedEvidenceSatisfied !== false,
+        meatSetCompositionAccurate: parsed.meatSetCompositionAccurate !== false,
+        meatObservedPackCount: Math.max(0, Math.min(99, Math.round(Number(parsed.meatObservedPackCount) || 0))),
         sourceBrandRegionCleared: parsed.sourceBrandRegionCleared === true,
         sourceBrandRegionFindings: Array.isArray(parsed.sourceBrandRegionFindings) ? parsed.sourceBrandRegionFindings.map(String).slice(0, 10) : [],
         comparisonSemanticAligned: parsed.comparisonSemanticAligned === true,
@@ -178,8 +197,10 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         exportComplianceVerified: input.exportComplianceVerified,
         requiresHumanReplacement: nativeReferenceRequiresHumanReplacement(input.result),
         requiresHumanSceneBackgroundRebuild: nativeReferenceRequiresHumanReplacement(input.result),
+        requiresContextualBackgroundRebuild: nativeReferenceRequiresContextualBackgroundRebuild(input.result),
         requiresSourceBrandRegionClear: nativeReferenceRequiresSourceBrandRegionClear(input.result),
         requiresComparisonSemanticAlignment: nativeReferenceRequiresComparisonSemantics(input.result),
+        meatPresentationContract: resolveProductRenderingPolicy(input.job) === "natural-meat-reference" ? resolveMeatPresentationContract(input.job, input.result) : undefined,
       }
     );
   }

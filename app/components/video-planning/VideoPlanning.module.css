@@ -372,6 +372,41 @@
   padding: 19px;
   background: linear-gradient(145deg, #f4f9ff, #fff);
 }
+.conceptSlotCard {
+  min-height: 290px;
+  border-style: dashed;
+  background: #fafbfd;
+}
+.conceptSlotCard[data-status="generating"] {
+  border-color: #8ab9ef;
+  background: linear-gradient(145deg, #f4f9ff, #fff);
+}
+.conceptSlotCard[data-status="failed"] {
+  border-color: #efb4ae;
+  background: linear-gradient(145deg, #fff7f6, #fff);
+}
+.conceptSlotState {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  flex: 1;
+  gap: 10px;
+  padding: 28px 4px 8px;
+}
+.conceptSlotState strong {
+  color: #20334f;
+  font-size: 18px;
+  line-height: 1.45;
+}
+.conceptSlotState p {
+  margin: 0;
+  color: #66768c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.conceptSlotCard[data-status="failed"] .conceptSlotState strong {
+  color: #a1433a;
+}
 .conceptCardHead {
   display: flex;
   align-items: center;
@@ -800,6 +835,22 @@
 }
 .wide {
   grid-column: 1 / -1;
+}
+.optionalProjectInfo {
+  margin-top: 14px;
+  border: 1px solid #d9e3f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #f8fbff;
+}
+.optionalProjectInfo > summary {
+  color: #53647c;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.optionalProjectInfo[open] > summary {
+  margin-bottom: 14px;
 }
 .history {
   margin-top: 18px;
@@ -1281,6 +1332,65 @@
   background: #e1f3ee;
   font-size: 12px;
 }
+.sourceReferencePanel {
+  margin-top: 14px;
+  border: 1px solid #d4e9e4;
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.sourceReferencePanel > summary {
+  color: #176f61;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.sourceReferencePanel > p {
+  margin: 10px 0 12px;
+  color: #5b736f;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.sourceReferenceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.sourceReferenceGrid article {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  overflow: hidden;
+  border: 1px solid #dfe9e6;
+  border-radius: 12px;
+  background: #fff;
+}
+.sourceReferenceGrid img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  background: #edf4f2;
+}
+.sourceReferenceGrid span,
+.sourceReferenceGrid strong,
+.sourceReferenceGrid small {
+  margin-inline: 10px;
+}
+.sourceReferenceGrid span {
+  color: #17806d;
+  font-size: 10px;
+  font-weight: 900;
+}
+.sourceReferenceGrid strong {
+  color: #183d37;
+  font-size: 12px;
+}
+.sourceReferenceGrid small {
+  margin-bottom: 10px;
+  color: #728783;
+  line-height: 1.45;
+}
 .scenePlanCard {
   display: grid;
   grid-template-columns: 86px minmax(180px, 0.7fr) minmax(320px, 1.3fr);
@@ -1400,6 +1510,9 @@
   .blueprintBeatGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .sourceReferenceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .formatGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1445,6 +1558,9 @@
     grid-template-columns: 1fr;
   }
   .blueprintBeatGrid {
+    grid-template-columns: 1fr;
+  }
+  .sourceReferenceGrid {
     grid-template-columns: 1fr;
   }
   .conceptFlowGrid {

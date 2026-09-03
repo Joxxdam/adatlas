@@ -1,8 +1,9 @@
 import type { ProductInfoForPrompt, SourceImageCandidate } from "../mvp/types";
+import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 import type { CreativeImageAsset, CreativeImageRole, FactVerification, ProductFact, ProductEvidenceType, ProductTruth } from "./types";
-import { isDomesticOriginCreativeSignal, isMalformedProductSignal, isMeatProductContext, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim, removeOriginCreativePhrases } from "./productSignalHygiene.ts";
+import { isAmbiguousMerchantCredentialCreativeSignal, isDomesticOriginCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMeatProductContext, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal, isPackageLabelOcrCopyNoise, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim, removeOriginCreativePhrases } from "./productSignalHygiene.ts";
 
-export const PRODUCT_TRUTH_VERSION = "product-truth-v7-meat-only-origin-copy";
+export const PRODUCT_TRUTH_VERSION = "product-truth-v10-product-image-identity-and-copy-quality";
 
 function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
@@ -238,7 +239,7 @@ function classifySourceImage(imagePath: string, candidate: SourceImageCandidate 
     };
   }
 
-  const confirmedSource = source === "user-confirmed" || source === "known-product" || candidate?.alreadyTransparent || candidate?.sourceType === "structured-data" || candidate?.sourceType === "open-graph" || candidate?.sourceType === "product-gallery" || candidate?.type === "hero";
+  const confirmedSource = source === "user-confirmed" || source === "known-product" || candidate?.sourceType === "structured-data" || candidate?.sourceType === "open-graph";
   if (!confirmedSource && source === "source-candidate") {
     return {
       role: fallback,
@@ -270,21 +271,24 @@ function uniqueImageAssets(values: Array<CreativeImageAsset | null>) {
 
 function buildImageAssets(input: { product: ProductInfoForPrompt; productImagePaths?: string[]; selectedAdImages?: string[]; imageAssets?: CreativeImageAsset[] }) {
   const product = input.product;
-  const sourceCandidates = new Map((product.sourceImageCandidates || []).map((candidate) => [candidate.imagePath, candidate]));
+  const belongsToCurrentProduct = (path: string | undefined) => !isDifferentProductImage(product.landingUrl, path);
+  const sourceCandidates = new Map((product.sourceImageCandidates || []).filter((candidate) => belongsToCurrentProduct(candidate.imagePath)).map((candidate) => [candidate.imagePath, candidate]));
   const selectedReferences = new Set((input.selectedAdImages || []).map((value) => String(value || "").trim()).filter(Boolean));
+  const confirmedProductPaths = new Set((product.confirmedProductImagePaths || []).map((value) => String(value || "").trim()).filter((value) => Boolean(value) && belongsToCurrentProduct(value)));
   const candidateAsset = (imagePath: string | undefined, fallback: CreativeImageRole, source: CreativeImageAsset["source"], reason: string, verified = true) => {
     const path = String(imagePath || "").trim();
-    if (!path) return null;
+    if (!path || !belongsToCurrentProduct(path)) return null;
     const candidate = sourceCandidates.get(path);
     const naturalProductPhoto = Boolean(candidate && !candidate.alreadyTransparent && !candidate.hasText && /식품|농산|과일|채소|육류|수산/i.test(product.category || "") && ["irregular-product", "plated-product"].includes(product.productRepresentation?.type || ""));
     const classification = classifySourceImage(path, candidate, naturalProductPhoto ? "product-lifestyle" : fallback, source, naturalProductPhoto);
+    const finalVerified = verified && classification.verified;
     return imageAsset({
       path,
       role: classification.role,
       source,
-      verified: verified && classification.verified,
-      validationStatus: classification.validationStatus,
-      reason: classification.verified ? reason : classification.reason,
+      verified: finalVerified,
+      validationStatus: finalVerified ? classification.validationStatus : classification.validationStatus === "excluded" ? "excluded" : "needs-confirmation",
+      reason: finalVerified ? reason : classification.validationStatus === "excluded" ? classification.reason : "자동 수집 갤러리라 상품 이미지로 확정되지 않음",
       hasText: candidate?.hasText,
       transparent: candidate?.alreadyTransparent,
       classificationSignals: classification.signals,
@@ -293,20 +297,23 @@ function buildImageAssets(input: { product: ProductInfoForPrompt; productImagePa
   // Explicit role assignments come from the product workbench or the known
   // product registry. selectedAdImages itself still creates reference-only
   // assets below and never promotes an image to a product role.
-  const explicitAssets = (input.imageAssets || []).map((asset) => ({
-    ...asset,
-    validationStatus: asset.validationStatus || (asset.verified && ["product-cutout", "product-packshot", "product-lifestyle"].includes(asset.role) ? "confirmed" : "excluded"),
-  }));
+  const explicitAssets = (input.imageAssets || [])
+    .filter((asset) => asset.role === "ad-reference" || belongsToCurrentProduct(asset.path))
+    .map((asset) => ({
+      ...asset,
+      validationStatus: asset.validationStatus || (asset.verified && ["product-cutout", "product-packshot", "product-lifestyle"].includes(asset.role) ? "confirmed" : "excluded"),
+    }));
   const requestedProductAssets = (input.productImagePaths || []).filter((path) => !selectedReferences.has(String(path || "").trim())).map((path) => candidateAsset(path, "product-packshot", "user-confirmed", "사용자가 상품 이미지로 확정"));
   const productAssets = [
     ...explicitAssets,
     ...requestedProductAssets,
-    ...(product.productImagePaths || []).filter((path) => !selectedReferences.has(path)).map((path) => candidateAsset(path, "product-packshot", "product-page", "상품정보의 제품 이미지")),
-    selectedReferences.has(product.productImagePath) ? null : candidateAsset(product.productImagePath, product.productCutoutAvailable ? "product-cutout" : "product-packshot", "product-page", product.productCutoutAvailable ? "확정된 상품 누끼" : "상품정보의 대표 제품 이미지"),
-    selectedReferences.has(product.secondaryProductImagePath || "") ? null : candidateAsset(product.secondaryProductImagePath, "product-packshot", "product-page", "상품정보의 보조 제품 이미지"),
-    selectedReferences.has(product.selectedSourceImagePath || "") ? null : candidateAsset(product.selectedSourceImagePath, "product-packshot", "source-candidate", "상품 이미지 작업대에서 선택된 제품 이미지"),
-    selectedReferences.has(product.extractedMainImage || "") ? null : candidateAsset(product.extractedMainImage, "product-packshot", "product-page", "상세페이지의 대표 제품 이미지"),
-    ...(product.extractedGalleryImages || []).map((path) =>
+    ...(product.confirmedProductImagePaths || []).filter((path) => !selectedReferences.has(path)).map((path) => candidateAsset(path, "product-packshot", "product-page", "대표 이미지 또는 JSON-LD에서 확인한 현재 상품 이미지")),
+    ...(product.productImagePaths || []).filter((path) => !selectedReferences.has(path) && !confirmedProductPaths.has(path)).map((path) => candidateAsset(path, "product-packshot", "product-page", "자동 수집 상품 이미지 후보", false)),
+    selectedReferences.has(product.productImagePath) || confirmedProductPaths.has(product.productImagePath) ? null : candidateAsset(product.productImagePath, product.productCutoutAvailable ? "product-cutout" : "product-packshot", "product-page", product.productCutoutAvailable ? "상품 누끼 후보" : "상품정보의 대표 제품 이미지 후보", false),
+    selectedReferences.has(product.secondaryProductImagePath || "") || confirmedProductPaths.has(product.secondaryProductImagePath || "") ? null : candidateAsset(product.secondaryProductImagePath, "product-packshot", "product-page", "자동 수집 보조 제품 이미지", false),
+    selectedReferences.has(product.selectedSourceImagePath || "") || confirmedProductPaths.has(product.selectedSourceImagePath || "") ? null : candidateAsset(product.selectedSourceImagePath, "product-packshot", "source-candidate", "자동 분석에서 선택된 제품 이미지 후보", false),
+    selectedReferences.has(product.extractedMainImage || "") || confirmedProductPaths.has(product.extractedMainImage || "") ? null : candidateAsset(product.extractedMainImage, "product-packshot", "product-page", "상세페이지의 대표 제품 이미지 후보", false),
+    ...(product.extractedGalleryImages || []).filter(belongsToCurrentProduct).map((path) =>
       imageAsset({
         path,
         role: "detail-image",
@@ -355,24 +362,26 @@ function fact(
     .replace(/\s+/g, " ")
     .trim();
   if (!normalized) return null;
-  const evidenceType: ProductEvidenceType = key.startsWith("review") ? "review" : key.startsWith("ingredient") ? "ingredient" : key === "origin" ? "origin" : key === "quantity" ? "quantity" : key === "package-option" ? (/(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|포함)/iu.test(normalized) ? "composition" : "other") : key === "season-event" ? "usage" : key === "price" || key === "original-price" ? "price" : key === "discount" || key.includes("promotion") ? "offer" : key === "target" ? "target" : key === "product-name" || key === "brand-name" || key === "category" ? "identity" : key.includes("benefit") || key.includes("usp") ? "usp" : extractNumericTokens(normalized).length ? "numeric" : "other";
-  const specificity = Math.min(100, 30 + Math.min(30, normalized.length) + (extractNumericTokens(normalized).length ? 25 : 0) + (evidenceType === "identity" ? -20 : 10));
-  const strength = Math.max(10, Math.min(100, (verification === "verified" || verification === "source-backed" ? 55 : 38) + (evidenceType === "usp" || evidenceType === "review" || evidenceType === "offer" ? 20 : 5) + (extractNumericTokens(normalized).length ? 15 : 0)));
-  const resolvedEvidenceType = overrides.evidenceType || evidenceType;
+  const inferredEvidenceType: ProductEvidenceType = key.startsWith("review") ? "review" : key.startsWith("ingredient") ? "ingredient" : key === "origin" ? "origin" : key === "quantity" ? "quantity" : key === "package-option" ? (/(?:\d+\s*(?:개|팩|병|세트|종)|세트\s*구성|묶음|택\s*\d+|옵션|포함)/iu.test(normalized) ? "composition" : "other") : key === "season-event" ? "usage" : key === "price" || key === "original-price" ? "price" : key === "discount" || key.includes("promotion") ? "offer" : key === "target" ? "target" : key === "product-name" || key === "brand-name" || key === "category" ? "identity" : key.includes("benefit") || key.includes("usp") ? "usp" : extractNumericTokens(normalized).length ? "numeric" : "other";
+  const merchantCredential = isMerchantCredentialCreativeSignal(normalized);
+  const ambiguousMerchantCredential = isAmbiguousMerchantCredentialCreativeSignal(normalized);
+  const resolvedEvidenceType: ProductEvidenceType = merchantCredential ? "merchant-proof" : overrides.evidenceType || inferredEvidenceType;
+  const specificity = Math.min(100, 30 + Math.min(30, normalized.length) + (extractNumericTokens(normalized).length ? 25 : 0) + (resolvedEvidenceType === "identity" ? -20 : resolvedEvidenceType === "merchant-proof" ? -10 : 10));
+  const strength = Math.max(10, Math.min(100, (verification === "verified" || verification === "source-backed" ? 55 : 38) + (resolvedEvidenceType === "usp" || resolvedEvidenceType === "review" || resolvedEvidenceType === "offer" ? 20 : resolvedEvidenceType === "merchant-proof" ? -10 : 5) + (extractNumericTokens(normalized).length ? 15 : 0)));
   const originAllowedInCopy = resolvedEvidenceType !== "origin" || isDomesticOriginCreativeSignal(normalized);
   const copyEligibility: NonNullable<ProductFact["copyEligibility"]> =
-    !originAllowedInCopy
+    ambiguousMerchantCredential || !originAllowedInCopy
       ? "blocked"
       :
     verification === "unverified"
       ? "blocked"
       : isVagueStandaloneSensoryClaim(normalized)
         ? "proofOnly"
-      : evidenceType === "price" || evidenceType === "offer"
+      : resolvedEvidenceType === "price" || resolvedEvidenceType === "offer"
         ? "offerOnly"
-        : evidenceType === "identity"
+        : resolvedEvidenceType === "identity"
           ? "identityOnly"
-          : evidenceType === "review" || evidenceType === "origin" || evidenceType === "composition" || evidenceType === "quantity" || evidenceType === "numeric"
+          : resolvedEvidenceType === "merchant-proof" || resolvedEvidenceType === "review" || resolvedEvidenceType === "origin" || resolvedEvidenceType === "composition" || resolvedEvidenceType === "quantity" || resolvedEvidenceType === "numeric"
             ? "proofOnly"
             : "headlineEligible";
   return {
@@ -383,12 +392,12 @@ function fact(
     verification,
     source,
     sourceUrl,
-    usableInCopy: verification !== "unverified" && originAllowedInCopy,
+    usableInCopy: verification !== "unverified" && originAllowedInCopy && !ambiguousMerchantCredential,
     numericTokens: extractNumericTokens(normalized),
     strength,
     specificity,
     evidenceType: resolvedEvidenceType,
-    copyEligibility: originAllowedInCopy ? overrides.copyEligibility || copyEligibility : "blocked",
+    copyEligibility: ambiguousMerchantCredential || !originAllowedInCopy ? "blocked" : merchantCredential ? "proofOnly" : overrides.copyEligibility || copyEligibility,
     sourceDocument: overrides.sourceDocument,
     sourceSheet: overrides.sourceSheet,
     sourceCells: overrides.sourceCells,
@@ -396,7 +405,12 @@ function fact(
 }
 
 function vendorResearchEvidenceType(kind: string): ProductEvidenceType {
-  if (kind === "origin" || kind === "vendor-narrative") return "origin";
+  if (kind === "origin") return "origin";
+  // 시칠리아 레몬·히말라야 민트처럼 원료의 희소성과 향을 설명하는 산지 서사는
+  // 일반 원산지 표기와 분리한다. 비육류 원산지 차단 정책은 유지하면서도
+  // 업체가 제공한 원료 스토리를 ingredient 근거로 사용할 수 있게 한다.
+  if (kind === "ingredient-provenance") return "ingredient";
+  if (kind === "vendor-narrative") return "usp";
   if (kind === "usage") return "usage";
   if (kind === "target") return "target";
   if (kind === "certification") return "certification";
@@ -407,6 +421,7 @@ function vendorResearchEvidenceType(kind: string): ProductEvidenceType {
 }
 
 function detailOcrFactPolicy(value: string): { evidenceType: ProductEvidenceType; copyEligibility: NonNullable<ProductFact["copyEligibility"]> } {
+  if (isMerchantCredentialCreativeSignal(value)) return { evidenceType: "merchant-proof", copyEligibility: "proofOnly" };
   if (/(?:판매가|정가|기존가|할인가|가격|특가|할인|\d[\d,.]*\s*원)/iu.test(value)) return { evidenceType: "offer", copyEligibility: "offerOnly" };
   if (/(?:국내산|국산|원산지|산지)/iu.test(value)) return { evidenceType: "origin", copyEligibility: "proofOnly" };
   if (/(?:원재료|원료|성분|함량|함유)/iu.test(value)) return { evidenceType: "ingredient", copyEligibility: "proofOnly" };
@@ -417,7 +432,7 @@ function detailOcrFactPolicy(value: string): { evidenceType: ProductEvidenceType
 
 function freeTextClaims(product: ProductInfoForPrompt) {
   return compact([product.mainBenefit, ...(product.verifiedBenefits || []), ...(product.ingredients || []).filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient)).map((ingredient) => `${ingredient} 함유`)])
-    .filter((value) => !isPromotionLike(value) && !isProhibitedAdCopySignal(value) && !isNonDomesticOriginCreativeSignal(value))
+    .filter((value) => !isPromotionLike(value) && !isMalformedProductSignal(value) && !isProhibitedAdCopySignal(value) && !isNonDomesticOriginCreativeSignal(value))
     .filter((value) => isMeatProductContext(product) || !isOriginCreativeSignal(value));
 }
 
@@ -444,7 +459,9 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     .filter((item): item is ProductFact => Boolean(item));
   const detailOcrFacts = (product.detailImageOcrInsights || [])
     .flatMap((insight) => insight.copyFacts.map((value) => ({ insight, value })))
-    .filter(({ value }) => !isProhibitedAdCopySignal(value) && !isNonDomesticOriginCreativeSignal(value))
+    // 과거 캐시에 이미 copyFacts로 저장된 패키지 라벨도 ProductTruth 진입
+    // 경계에서 한 번 더 차단해 수동·자동 신규 작업에 동일하게 적용합니다.
+    .filter(({ value }) => !isPackageLabelOcrCopyNoise(value) && !isMalformedProductSignal(value) && !isIncompleteOcrCopyFragment(value) && !isAmbiguousMerchantCredentialCreativeSignal(value) && !isProhibitedAdCopySignal(value) && !isNonDomesticOriginCreativeSignal(value))
     .map(({ insight, value }, index) => {
       const policy = detailOcrFactPolicy(value);
       return fact(`detail-ocr-${index + 1}`, "상세 이미지에서 확인된 상품 사실", value, "source-backed", "landing-page", insight.imageUrl, policy);
@@ -490,7 +507,7 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     });
   const seenFactValues = new Set<string>();
   const candidates = candidateFacts.filter((item) => {
-    if (item.evidenceType === "shipping" || isProhibitedAdCopySignal(item.value)) return false;
+    if (item.evidenceType === "shipping" || isMalformedProductSignal(item.value) || isIncompleteOcrCopyFragment(item.value) || isProhibitedAdCopySignal(item.value)) return false;
     const key = comparableSignal(item.value);
     if (!key || seenFactValues.has(key)) return false;
     seenFactValues.add(key);
@@ -503,7 +520,7 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
   const images = buildImageAssets(input);
   const imagePaths = images.productImages.map((asset) => asset.path);
   const coreEvidence = candidates
-    .filter((item) => item.usableInCopy)
+    .filter((item) => item.usableInCopy && item.evidenceType !== "merchant-proof")
     .map((item) => ({
       factId: item.id,
       summary: `${item.label}: ${item.value}`,
@@ -512,8 +529,8 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
       evidenceType: item.evidenceType || ("other" as const),
     }))
     .sort((left, right) => {
-      const identityPenalty = (value: ProductEvidenceType) => (value === "identity" ? 35 : 0);
-      return right.strength + right.specificity - identityPenalty(right.evidenceType) - (left.strength + left.specificity - identityPenalty(left.evidenceType));
+      const scopePenalty = (value: ProductEvidenceType) => value === "identity" ? 35 : value === "merchant-proof" ? 55 : 0;
+      return right.strength + right.specificity - scopePenalty(right.evidenceType) - (left.strength + left.specificity - scopePenalty(left.evidenceType));
     })
     .slice(0, 5);
   const required = [product.productName, product.category, product.price, product.mainBenefit, imagePaths[0]];
@@ -551,8 +568,10 @@ export function validateCopyAgainstTruth(copy: string, truth: ProductTruth) {
   const originCopyDetected = isOriginCreativeSignal(copy);
   const disallowedOriginDetected = originCopyDetected && (!isMeatProductContext(truth.product) || nonDomesticOriginDetected);
   const prohibitedAdCopyDetected = isProhibitedAdCopySignal(copy);
+  const packageLabelOcrNoiseDetected = isPackageLabelOcrCopyNoise(copy);
+  const malformedProductSignalDetected = isMalformedProductSignal(copy);
   return {
-    valid: unauthorizedNumericTokens.length === 0 && blockedClaims.length === 0 && !shippingCopyDetected && !disallowedOriginDetected && !prohibitedAdCopyDetected,
+    valid: unauthorizedNumericTokens.length === 0 && blockedClaims.length === 0 && !shippingCopyDetected && !disallowedOriginDetected && !prohibitedAdCopyDetected && !packageLabelOcrNoiseDetected && !malformedProductSignalDetected,
     numericTokens,
     unauthorizedNumericTokens,
     blockedClaims,
@@ -561,5 +580,7 @@ export function validateCopyAgainstTruth(copy: string, truth: ProductTruth) {
     originCopyDetected,
     disallowedOriginDetected,
     prohibitedAdCopyDetected,
+    packageLabelOcrNoiseDetected,
+    malformedProductSignalDetected,
   };
 }

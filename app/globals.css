@@ -365,6 +365,31 @@
   border-color: #1677d2;
 }
 
+.simple-generation-preflight {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 4px 0 2px;
+}
+
+.simple-generation-preflight p {
+  margin: 0;
+  color: #65758a;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.simple-generation-preflight .simple-generation-start-error {
+  width: min(100%, 720px);
+  border: 1px solid #efb7b7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff5f5;
+  color: #a33c3c;
+  font-weight: 700;
+}
+
 .six-creative-head,
 .six-creative-status,
 .six-creative-actions,

@@ -153,7 +153,7 @@ export function resolveVideoPlanningStageConfig(input: VideoPlanningAiInput, env
       model: conceptModel,
       effort: input.reasoningEffort || ("low" as VideoPlanningReasoningEffort),
       verbosity: "medium" as VideoPlanningTextVerbosity,
-      timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_CONCEPT_TIMEOUT_MS, 60_000, "VIDEO_PLANNING_CONCEPT_TIMEOUT_MS"),
+      timeoutMs: input.timeoutMs || timeoutFromEnvironment(env.VIDEO_PLANNING_CONCEPT_TIMEOUT_MS, 90_000, "VIDEO_PLANNING_CONCEPT_TIMEOUT_MS"),
     };
   }
   return {

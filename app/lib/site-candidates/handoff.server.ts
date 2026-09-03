@@ -106,6 +106,7 @@ export function siteCandidateToProductInfo(candidate: SiteAdCandidate): ProductI
     productImagePath: product.representativeImage || "",
     secondaryProductImagePath: product.additionalImages[0] || "",
     productImagePaths: images,
+    confirmedProductImagePaths: product.representativeImage ? [product.representativeImage] : [],
     backgroundImagePath: "",
     extractedDescription: product.description,
     extractedMainImage: product.representativeImage,

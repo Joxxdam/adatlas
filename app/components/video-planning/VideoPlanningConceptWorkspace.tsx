@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
   type VideoProject,
 } from "../../lib/video-collaboration/types";
 import { getVideoPlanningBlueprint } from "../../lib/video-collaboration/videoPlanningBlueprints";
+import { getCuratedVideoReference } from "../../lib/video-collaboration/curatedVideoReferences";
 import { getVideoParodyGenre } from "../../lib/video-collaboration/videoParodyGenres";
 import { VIDEO_HOOK_LABELS } from "../../lib/video-collaboration/workflow";
 import { assignPlanningTimeline, segmentRange } from "../../lib/video-collaboration/planningValidation";
@@ -391,6 +393,7 @@ export function VideoPlanningConceptWorkspace({
   const parodyGenre = getVideoParodyGenre(concept.parodyGenre);
   const primaryBlueprint = getVideoPlanningBlueprint(concept.blueprintSelection?.primaryId);
   const secondaryBlueprint = getVideoPlanningBlueprint(concept.blueprintSelection?.secondaryId);
+  const primarySourceReference = getCuratedVideoReference(primaryBlueprint?.sourceReferenceId);
   const hasExecutionQualityChecks = Boolean(concept.validation?.checks.some((check) => check.key === "caption-readability"));
   const failedQualityChecks = concept.validation?.checks.filter((check) => !check.passed) || [];
 
@@ -503,11 +506,11 @@ export function VideoPlanningConceptWorkspace({
         <div className={styles.conceptFlowGrid}>
           <article>
             <span>01 · 상황</span>
-            <strong>{concept.centralIncident || concept.narrativeStructure}</strong>
+            <strong>{concept.storyTrigger || concept.centralIncident || concept.narrativeStructure}</strong>
           </article>
           <article>
             <span>02 · 상품 역할</span>
-            <strong>{concept.keyAppeal || concept.usp}</strong>
+            <strong>{concept.truthBridge || concept.keyAppeal || concept.usp}</strong>
           </article>
           <article>
             <span>03 · 마무리</span>
@@ -517,6 +520,19 @@ export function VideoPlanningConceptWorkspace({
         <details className={styles.conceptDetails}>
           <summary>타깃·화자·자막 말투 상세보기</summary>
           <div className={styles.conceptDetailsGrid}>
+            <span>특정 인물</span>
+            <strong>{concept.distinctiveCharacter || concept.speakerPointOfView || concept.speaker}</strong>
+            <span>사회·시대 배경</span>
+            <strong>{concept.socialWorld || concept.centralIncident || concept.narrativeStructure}</strong>
+            <span>사건 발화점</span>
+            <strong>{concept.storyTrigger || concept.centralIncident}</strong>
+            <span>상품 사실 연결</span>
+            <strong>{concept.truthBridge || concept.keyAppeal || concept.usp}</strong>
+            <span>연출·사실 경계</span>
+            <strong>
+              {concept.dramatizationBoundary ||
+                "인물과 상황은 광고용 연출이며 상품 주장은 상세페이지에서 확인된 사실만 사용합니다."}
+            </strong>
             <span>화자</span>
             <strong>
               {concept.speakerPointOfView || concept.speaker || "상품을 직접 겪는 사용자"}
@@ -568,6 +584,34 @@ export function VideoPlanningConceptWorkspace({
                 </article>
               ))}
             </div>
+            {primarySourceReference ? (
+              <details className={styles.sourceReferencePanel}>
+                <summary>첨부 레퍼런스 원문 자막·장면 캡처 {primarySourceReference.scenes.length}개 보기</summary>
+                <p>
+                  전달받은 분석의 자막·화면·역할·해석을 장면별로 그대로 보존했습니다. 생성 시에는
+                  이 전체 진행을 축약하지 않고 참고하되 같은 인물·상품 사실·문장은 복제하지 않습니다.
+                </p>
+                <div className={styles.sourceReferenceGrid}>
+                  {primarySourceReference.scenes.map((scene) => (
+                    <article key={`${primarySourceReference.id}-${scene.number}`}>
+                      {scene.capturePath ? (
+                        <Image
+                          src={scene.capturePath}
+                          alt={`${scene.number}번 레퍼런스 장면`}
+                          width={360}
+                          height={640}
+                          sizes="(max-width: 720px) 100vw, (max-width: 1050px) 50vw, 25vw"
+                        />
+                      ) : null}
+                      <span>{String(scene.number).padStart(2, "0")} · {scene.timing}</span>
+                      <strong>{scene.caption}</strong>
+                      <small>{scene.scene}</small>
+                      <small><b>{scene.role}</b> — {scene.analysis}</small>
+                    </article>
+                  ))}
+                </div>
+              </details>
+            ) : null}
             {secondaryBlueprint ? (
               <div className={styles.secondaryBlueprint}>
                 보조 레퍼런스는 훅·CTA 장치만 참고: <strong>{secondaryBlueprint.title}</strong>

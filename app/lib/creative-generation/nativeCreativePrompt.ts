@@ -2,12 +2,12 @@ import type { GenerationJob, GenerationResult } from "./types";
 import type { AdvertiserBrandMemory } from "./codexRegistry.server";
 import type { NativeCreativeGenerationStage } from "./providers/CreativeGenerationProvider.ts";
 import { buildAdaptiveLayoutPlan, referenceCreativeGrammars } from "./referenceCreativeGrammar.ts";
-import { productRenderingPromptContract, resolveProductRenderingPolicy } from "./productRenderingPolicy.ts";
+import { productRenderingPromptContract, resolveMeatPresentationContract } from "./productRenderingPolicy.ts";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter.ts";
 import { isMeatProductContext } from "./productSignalHygiene.ts";
 import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v27-living-subject-context-scene";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v35-meat-presentation-contract";
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -27,9 +27,40 @@ function hasVerifiedReviewEvidence(job: GenerationJob, result: GenerationResult)
   return job.productTruth.facts.some((fact) => fact.evidenceType === "review" && fact.usableInCopy && fact.verification !== "unverified" && (!selected.size || selected.has(fact.id)));
 }
 
+function creativePremisePromptContract(result: GenerationResult) {
+  const premise = result.referenceAdaptedCopyPlan?.creativePremise;
+  if (!premise) return "";
+  return `CREATIVE PREMISE — LIGHTWEIGHT COPY/SCENE ALIGNMENT ONLY
+- Reference-led speaking mode: ${premise.kind}
+- Familiar speaker cue: ${premise.character}
+- One immediately legible everyday moment or rhetorical device: ${premise.situation}
+- Short consumer tension/answer: ${premise.tension}
+- Verified product bridge: ${premise.productBridge}
+- This premise is a lightweight consumer-language cue inside the inherited reference rhetoric. Never expand it into a profession, backstory, historical world, fictional expert, new layout, new copy slot or unsupported product claim.
+- Familiar relationships, everyday situations and unmistakable advertising metaphors are fictional context, never a real buyer testimonial, medical condition, expert endorsement or product fact.
+- If the inherited reference has a person or contextual scene that must be rebuilt, align that replacement scene with this premise while preserving the reference's macro hierarchy and copy zones. If the inherited reference has no person and a plain/graphic background, do not add a person or new location solely because a premise exists.`;
+}
+
 export function nativeReferenceRequiresHumanReplacement(result: GenerationResult) {
   const reference = result.nativeCreative?.adReference;
   return reference?.photographyType === "human-model" || reference?.compositionType === "human-use" || reference?.layoutFamily === "human-use" || result.scenePlan?.sceneAsset?.includesPerson === true;
+}
+
+/**
+ * The validator must not be allowed to call an obvious lifestyle/location
+ * reference "background absent" merely because the inherited scene is still
+ * superficially plausible for the new product.  These manifest classes are
+ * the deterministic lower bound; visual QA can additionally detect context in
+ * packshot/price-card references that happen to contain a real place.
+ */
+export function nativeReferenceRequiresContextualBackgroundRebuild(result: GenerationResult) {
+  const reference = result.nativeCreative?.adReference;
+  if (!reference) return false;
+  if (nativeReferenceRequiresHumanReplacement(result)) return true;
+  return (
+    ["natural-food-scene", "lifestyle-scene"].includes(reference.compositionType || "") ||
+    reference.photographyType === "lifestyle"
+  );
 }
 
 export function nativeReferenceRequiresComparisonSemantics(result: GenerationResult) {
@@ -199,6 +230,7 @@ export function buildNativeFinalCreativePrompt(job: GenerationJob, result: Gener
   const humanContract = humanReferenceIdentityContract(job, result);
   const backgroundContract = backgroundAdaptationContract(job, result);
   const originalSourceContract = originalSourceResearchSceneContract(job, result);
+  const premiseContract = creativePremisePromptContract(result);
   const exactCopy = [`MAIN COPY: ${result.hookPlan.headline}`, result.hookPlan.body ? `SUB COPY: ${result.hookPlan.body}` : "", result.hookPlan.proof ? `PROOF: ${result.hookPlan.proof}` : "", result.hookPlan.offer ? `OFFER: ${result.hookPlan.offer}` : "", result.hookPlan.cta ? `CTA: ${result.hookPlan.cta}` : ""].filter(Boolean).join("\n");
 
   return `Use the image generation skill to create ONE FINAL, COMPLETE, READY-TO-RUN Korean square performance advertisement.
@@ -210,6 +242,7 @@ NON-NEGOTIABLE OUTPUT
 - This is NOT a background plate. Do not reserve an empty product slot or copy-safe placeholder for later compositing.
 - No template renderer, SVG text layer, canvas text layer, product cutout or post-render copy panel will be added after generation.
 - URL product images are authoritative AI references only. No source-product pixels will be extracted, cut out, pasted or restored after generation.
+- ZERO-CUTOUT POLICY: never reproduce an attached product image as a detached packshot, sticker, floating layer, miniature foreground copy, white/transparent-background object, rectangular source-image panel or locally composited overlay. Re-photograph/rebuild the product together with its contact surface, surrounding light, reflections, shadows, hands, occlusions and product-relevant environment as one continuous raster. A visible white halo, hard extraction edge, unrelated source rectangle or shadow that is detached from the receiving surface is a critical failure.
 
 AUTHORITATIVE PRODUCT REFERENCE
 - The FIRST attached product-page image is the authoritative product identity and sales unit.
@@ -218,6 +251,7 @@ AUTHORITATIVE PRODUCT REFERENCE
 - Additional attached product-page images are evidence for texture, use, ingredients, context and alternate views. They are not ads to copy.
 - The selected reference advertisement's macro design, copy zones, reading order and visual hierarchy are locked. Scene/background pixels follow the explicit background decision policy below; its source product, incompatible semantic props and source advertiser identity must be replaced, not retained.
 - Repeat or overlap the same product only when the verified composition and this hook genuinely need quantity/lineup emphasis. Otherwise use one dominant product hero.
+- An intentional set/lineup/quantity composition is allowed when every visible unit belongs to one coherent photographed scene. The forbidden case is an extra smaller duplicate, packshot or lineup pasted over an advertisement that already contains the correct product. Judge integration and visual continuity, not product count alone.
 
 Shipping, free-shipping, shipping-fee, dispatch, arrival-date, courier or delivery wording anywhere in the final is prohibited and requires revise.
 
@@ -228,6 +262,8 @@ ${humanContract}
 ${backgroundContract}
 
 ${originalSourceContract}
+
+${premiseContract}
 
 EXACT KOREAN COPY TO RENDER
 ${exactCopy}
@@ -290,13 +326,13 @@ ${feedback ? `REVISION DIRECTION\n${feedback}\nRegenerate the ENTIRE final adver
 export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job: GenerationJob, result: GenerationResult, outputPath: string, feedback?: string, brandMemory?: AdvertiserBrandMemory) {
   const productName = job.productTruth.normalized.cleanProductName || job.productTruth.product.productName;
   const facts = verifiedFacts(job, result);
-  const productPolicy = resolveProductRenderingPolicy(job);
   const productContract = productRenderingPromptContract(job, result);
   const humanContract = humanReferenceIdentityContract(job, result);
   const backgroundContract = backgroundAdaptationContract(job, result);
   const integratedHumanScene = nativeReferenceRequiresHumanReplacement(result);
   const comparisonReference = nativeReferenceRequiresComparisonSemantics(result);
   const originalSourceContract = originalSourceResearchSceneContract(job, result);
+  const premiseContract = creativePremisePromptContract(result);
   const referenceRawCopy = result.referenceAdaptedCopyPlan?.referenceRawCopy || result.nativeCreative?.adReference?.nativeCopy?.rawText || "";
   const referenceRawLines = result.referenceAdaptedCopyPlan?.referenceRawLines || result.nativeCreative?.adReference?.nativeCopy?.rawLines || [];
   const adaptedLines = result.referenceAdaptedCopyPlan?.adaptedLines || [result.hookPlan.headline, result.hookPlan.body, result.hookPlan.proof, result.hookPlan.offer, result.hookPlan.cta].filter(Boolean);
@@ -346,6 +382,8 @@ ${humanContract}
 ${backgroundContract}
 
 ${originalSourceContract}
+
+${premiseContract}
 `;
 
   if (stage === "structure-recreation") {
@@ -392,6 +430,8 @@ ${comparisonProductContract}
 - When any source animal or animal-like character is visible, replace it with a clearly different current-product-relevant animal while preserving its count, footprint, depth, gaze, reaction role and visual style. Rebuild it together with the surrounding scene; never retain or locally patch the old animal.
 - Preserve a real logo only in its physically printed package location; do not reproduce it as a separate logo elsewhere on the canvas.
 - Match the original reference product positions, count, perspective, scale, shadows, reflections, contact, depth and lighting so the replacement belongs in exactly the same design.
+- PRODUCT-SCALE RULE: replace each inherited product slot exactly once. If the verified target product is already present but too small, enlarge and recompose that SAME instance inside the inherited product region; never add a second copy, a smaller foreground copy, a detached packshot, or a separate product panel merely to improve visibility.
+- For a verified multi-product set or lineup, resize and recompose the existing lineup as one unit. Never place a second miniature lineup over or in front of the first lineup.
 - Apply the following region contract exactly:
 ${sceneRegionContract}
 - If the reference repeats one product visually and is NOT a semantic comparison, repeat the same verified target product cleanly without implying a bundle or changing the verified sales unit.
@@ -465,6 +505,11 @@ ${referenceRawCopy || "Read it directly from the original reference attachment."
 
 TASK
 - Inspect the entire advertisement for: compliance with the background/person full-scene decision policy, reference macro-design preservation outside allowed scene/product/copy regions, real product/package identity, product count, logo/label fidelity, verified price and offer, exact Korean copy, one-for-one preservation of every source copy slot and its visual weight, preservation of the reference's headline strength, line order/punctuation/slang and information density, scene-copy alignment, Hangul spelling, mobile readability, clipping, collisions, natural shadows/perspective and coherent commercial finish.
+- BEFORE REPAIRING PRODUCT VISIBILITY, count the target-product instances already visible in the stage-3 raster. A product that exists but is small is a scale/layout problem, not a missing-product problem.
+- When the correct product already exists, repair visibility only by enlarging and recomposing that SAME existing instance and its contact surface, shadow, reflection and occlusion as one coherent region. Do not add another package, duplicate lineup, miniature foreground product, detached packshot, rectangular product-reference panel or pasted product scene.
+- If a previous attempt already created both a large and a small copy, remove the duplicate and keep exactly the ProductTruth-verified sales unit/count. For a verified set, keep one set and resize the whole set as one unit rather than repeating it.
+- Do not mistake an intentional, physically coherent set arrangement for an overlay. Fail only the visually secondary duplicate/product lineup that looks added after the main advertisement was already complete: mismatched scale, light, perspective, contact, occlusion, edge treatment or redundant placement are decisive evidence.
+- Product-reference images are identity evidence only. Never copy their surrounding promotional background, rays, splashes, ingredient collage, copy, badge or border into the ad while resizing an existing product.
 - Inspect every inherited non-brand text container. An empty button, capsule, banner, ribbon, badge, price strip, CTA panel or headline panel is a critical failure even when its old unsupported wording was correctly removed. Fill it with the assigned verified target copy and preserve the inherited visual weight. Only explicit source-brand/remove boxes may remain text-free.
 - Inspect Korean at 200–400% character level. Transcribe only the glyphs actually visible; never infer the intended word from sentence context. If a syllable block has fused, missing or malformed strokes, record it as [깨짐:판독불가] and repair it. Repeated-syllable words such as 넉넉, 촉촉 and 쫀득 must show each complete Hangul block independently, with no merged or mutated letterforms.
 - For a packaged lineup, compare every visible bottle/package independently against the authoritative references. Repair duplicated generic packages, wrong cap/container colors, invented variants, changed printed volume, malformed brand marks and random readable label glyphs. Keep at least one dominant package large and unobstructed enough for mobile identity recognition.
@@ -486,6 +531,7 @@ ${feedback ? `KNOWN QA FEEDBACK\n${feedback}` : "Run a complete visual QA pass e
 
 export function buildNativeValidationPrompt(job: GenerationJob, result: GenerationResult) {
   const productContract = productRenderingPromptContract(job, result);
+  const meatPresentation = isMeatProductContext(job.productTruth.product) ? resolveMeatPresentationContract(job, result) : undefined;
   const originCopyPolicy = isMeatProductContext(job.productTruth.product)
     ? "This is a meat product. Origin copy is allowed only when the exact required target lines contain verified domestic-Korean origin wording; never preserve or invent any other origin wording."
     : "This is not a meat product. Remove every origin claim, including 국내산, 국산, 원산지 and place-of-origin badges, even when it is true or appears in the source reference/product page; origin must not occupy any visible copy slot.";
@@ -502,6 +548,7 @@ export function buildNativeValidationPrompt(job: GenerationJob, result: Generati
     ? copySlots.filter((slot) => slot.sourceText.trim() && slot.sourceType !== "source-brand" && slot.replacePolicy !== "remove").length
     : result.referenceAdaptedCopyPlan?.referenceRawLines?.filter((line) => line.trim()).length || 0;
   const targetCustomer = targetCustomerForHuman(job, result);
+  const premiseContract = creativePremisePromptContract(result);
   return `Inspect the attached COMPLETE Korean performance advertisement.
 Attachment order after the finished advertisement: first the randomly selected ZIP advertisement reference for composition fidelity when present, then authoritative URL product reference images.
 Product: ${job.productTruth.normalized.cleanProductName || job.productTruth.product.productName}
@@ -515,14 +562,22 @@ Source-brand/remove slots that must be text-free background after removal: ${JSO
 Source-brand region clear required: ${sourceBrandRegionClearRequired}. Every listed source-brand region must lose both its text/logo and its associated visual container; an empty badge/capsule/ribbon/button/colored panel is not cleared background.
 Semantic comparison required: ${semanticComparison}. When true, the unfavorable side must depict one generic unbranded same-category alternative and the favorable side must depict the authoritative current product; an unrelated product category or the same hero product on both sides fails.
 This is a reference-driven replacement workflow. Judge the selected reference's composition and design grammar; do not require a separate scene concept that conflicts with that reference.
+${premiseContract}
+When a Creative Premise is present, judge it through humanCopyAligned and sceneProductInteractionAligned: the final scene must support that assigned specific moment when the inherited reference contains a person or contextual scene, while a plain/graphic reference must not gain an unnecessary person or location solely to illustrate it.
 ${backgroundContract}
 ${integratedHumanScene ? "Because the reference contains a person, require one coherent regenerated person+action+location+props+complete-background scene. A new person patched onto the old location or old category story fails sceneProductInteractionAligned." : "If the reference contains a meaningful contextual background, require one coherent regenerated product-relevant place and surrounding prop arrangement; retaining a merely plausible old desk, room, table or lifestyle scene fails contextualBackgroundRebuilt. Only a genuinely background-absent white/solid/achromatic/abstract/graphic/plain seamless studio field should remain unchanged."}
 The inspected attachment has already been locally normalized and decoded as a 1200x1200 JPEG under 800KB. Set exportCompliance to 100 and never request a visual remake for file format, dimensions or byte size.
+MANDATORY ZERO-CUTOUT AUDIT: set detachedProductCutoutDetected=true and list concrete evidence in detachedProductCutoutFindings if any target product looks like an extracted packshot, sticker, floating layer, miniature foreground duplicate, transparent/white-background object, rectangular source-image panel, hard-edged overlay, white halo, detached shadow, or product lacking coherent contact/occlusion with the receiving scene. Intentional multi-unit/set staging is allowed only when all units share one physically coherent photographic composition. If a complete main product scene already exists and a second smaller product/lineup appears visually pasted over it, this is a critical detached overlay regardless of whether the duplicated package identity is correct. Any such finding requires recommendation=revise even if package identity is otherwise correct.
 Check fidelity to the reference layout, product/package identity, exact Korean copy, one-for-one copy-block count outside removal slots, headline rhetorical strength, information density, factual safety, mobile readability, natural anatomy/food texture, and whether this is one coherent finished ad rather than a background plus pasted product/text panel. Inspect every inherited non-brand button, capsule, banner, ribbon, badge, price strip, CTA panel and headline panel: an empty visual text container is a critical failure and requires revise. A source-brand/remove region may be text-free only after its complete badge/capsule/ribbon/button/label container has also been removed and the surrounding background reconstructed continuously. Set sourceBrandRegionCleared=false and list the region in sourceBrandRegionFindings if any empty branded container, colored pill or old-brand silhouette remains. Search every speech bubble, badge, label, corner, footer and small-print area for source-reference disclosure copy including '연출 이미지', '예시 이미지', '참고 이미지', '합성/생성 이미지', '이해를 돕기 위한 이미지', '실제와 다를 수 있습니다' and source AI-use disclosures. Transcribe any such disclosure literally into observedKoreanText and require revise; it must be removed from the base creative rather than adapted or relocated. Optional AI disclosure is a separate user-selected delivery post-process and must not be generated or required during this QA. Inspect the final image at 200–400% and transcribe only the glyphs literally visible into observedKoreanText; do not autocorrect or infer intended words from Required target lines. Mark fused, missing or malformed Hangul strokes as [깨짐:판독불가]. Repeated-syllable words such as 넉넉, 촉촉 and 쫀득 require two separately complete syllable blocks. Also read the Korean target lines as consumer-facing sentences: subject and predicate, particles, modifiers and sentence endings must be natural when adjacent lines are joined. A grammatically broken slot substitution, non-human subject performing a human action, dangling connective ending or incomplete comma is a Korean-copy and commercial-quality failure even when every Hangul glyph was rendered exactly. The final image must keep the reference's design grammar but contain no source product, source wording, source price or source advertiser identity. Every listed source-brand/remove box must contain only reconstructed surrounding background: any standalone replacement brand text, empty badge container, stylized initials, emblem, stamp or invented logo in those boxes requires revise. Separately inspect the entire canvas for a newly generated standalone logo-like mark outside the physical target product/package. A calligraphic or handwritten brand/product name, standalone wordmark, initials, monogram, emblem, crest, seal, certification badge, signature or stamp counts as a generated logo even when its letters are spelled correctly or resemble required copy. Ordinary ad copy in an assigned text zone is not a logo. Set standaloneLogoDetected=true, describe each finding in standaloneLogoFindings and require revise whenever any such generated mark exists; only a real logo physically printed on the authoritative product/package is exempt. A detached cutout, plain product-name headline replacing a strong source hook, missing non-brand source copy zones, any number absent from the required target lines, fake label, broken Hangul, invented claim, large layout drift or surviving source identity requires revise. Scores must use the 0–100 scale.
 
 ${originCopyPolicy} Transcribe any visible origin wording into observedKoreanText and require revise whenever it violates this policy.
 
 MANDATORY FOOD-OBJECT AUDIT: inspect the complete canvas and enumerate every visible edible object, ingredient, garnish, side dish and food-shaped decorative motif. Compare each one with the current product, ProductTruth and authoritative product images. Set unrelatedFoodOrIngredientDetected=true if even one edible object cannot be verified as the current product or a real ingredient/component; list it precisely in unrelatedFoodOrIngredientFindings and require revise. For example, mushrooms beside apples, bell peppers beside crackers, meat-table garnishes beside dried fruit, or unrelated produce characters are critical failures. For non-food products set the field false unless food is incorrectly present in the scene.
+
+MANDATORY STRUCTURED MEAT AUDIT: ${meatPresentation ? `this material's resolved meat mode is ${meatPresentation.mode}${meatPresentation.verifiedPackCount ? ` with exactly ${meatPresentation.verifiedPackCount} verified packs` : ""}. Cooked presentation allowed=${meatPresentation.cookedSceneAllowed}; seller-provided cooked reference present=${meatPresentation.hasAuthoritativeCookedEvidence}; hook needs cooked/sensory payoff=${meatPresentation.hookNeedsCookedScene}.` : "this is not a meat product; return neutral passing meat fields, meatCookedPresentationDetected=false and meatObservedPackCount=0."}
+For meat, always return every structured meat field. Set meatCutIdentityAccurate=true only when the seller-proven cut outline, median width-to-thickness ratio, fat cap/distribution and marbling range remain identifiable. Set meatTextureNatural=false or meatArtificialPatternDetected=true for cloned/mirrored/symmetrical/grid-like/spiderweb/worm-like grain, repeated vein maps, embossed/printed surface patterns, plastic/waxy/rubbery gloss or impossible fibers, and list exact regions in meatArtificialPatternFindings. Set meatGrotesqueDetailDetected=true for exaggerated pores, torn wet fibers, blood, sinew, connective tissue or anatomical macro detail that is unappetizing; list it in meatGrotesqueDetailFindings. A clean commercial close-up may be detailed, but it must remain appetizing and photographic.
+Set meatCookedPresentationDetected=true whenever the hero meat is visibly seared, browned, grilled, cut-open after cooking, served hot or actively cooking. Cooked meat is allowed without a seller-provided cooked photograph only when the authoritative raw/cut evidence establishes the same sold cut AND cookedSceneAllowed=true because the exact hook/scene calls for cooking, eating, serving, searing or juiciness. In that case meatCookedEvidenceSatisfied=true only if the cooked result preserves the verified raw cut through plausible shrinkage and the visual directly proves the hook. It must show appetizing irregular searing, rendered fat, moist cut surfaces and abundant but physically believable juices—not dry/burned meat, orange glaze, pooled artificial liquid or a generic stock steak. Product-name words such as steak, grill or barbecue alone are not hook alignment.
+Set meatPresentationModeAligned=true only when the result follows the resolved mode. clean-retail-cut forbids cooked meat and favors the verified raw/chilled cut or one retail unit. hook-supported-cooked-scene requires a clearly legible cooking/eating/juiciness payoff that matches the exact copy. verified-set-composition requires one coherent seller-faithful package arrangement with every pack separately countable. For the set mode, count only visibly complete sales units, put that integer in meatObservedPackCount and set meatSetCompositionAccurate=true only when it exactly equals the verified count and tray/vacuum-pack/label format is preserved. For other modes, set meatSetCompositionAccurate=true and meatObservedPackCount=0. Explain any mode mismatch in meatPresentationFindings. Any false required meat field or detected artificial/grotesque condition requires revise.
 
 If the selected advertisement reference contains a person, treat that source person only as evidence that the composition needs a human—not as an identity, pose, action, expression, wardrobe, location or category-story reference. The final must contain a clearly different fictional adult suitable for the verified target customer (${targetCustomer}) and must visibly change at least TWO of: body orientation, pose/action, hand gesture or product grip, gaze, camera angle/height, crop, or position. The target person, action, styling, location, surrounding props, lighting and complete photographic background must form one newly generated coherent scene; person-only patching onto the old background is a critical failure. Compare concrete background landmarks between the reference and final—desk objects, pencils, bottles, glasses, wall art, furniture edges, windows, shelves, tile seams, plants and lighting patterns. If several distinctive landmarks remain in the same positions, set humanSceneBackgroundRebuilt=false even when the face, hands or product changed, and list those landmarks in humanSceneBackgroundFindings. A deleted person, the same face or biometric likeness, a face swap on the same body, a near-identical pose/framing, or an obviously unrelated target model is also a critical failure. Set sourcePersonDetected=true whenever the reference contains any visible person, partial body, model-led hand or recognizable face. Set sourcePersonReplaced=true only when a new person remains in the final and the source identity is fully gone. Set humanCompositionChanged=true only when at least two listed human-composition attributes visibly changed and the human scene is not a person-only patch. Set humanSceneBackgroundRebuilt=true only when the old location pixels and distinctive background landmark arrangement are genuinely gone. Score targetAudienceFit from 0–100 and explain failures in humanReplacementFindings. Independently set humanCopyAligned=false when the new person's action, expression, styling or situation does not visually support the exact target copy, or still tells the source advertisement's story; explain this in humanCopyAlignmentFindings.
 
@@ -544,6 +599,7 @@ export function buildNativeGroupValidationPrompt(job: GenerationJob) {
     referenceId: result.nativeCreative?.adReference?.id,
     mainCopy: result.hookPlan.headline,
     referenceProfile: result.referenceAdaptedCopyPlan?.referenceCopyProfileId,
+    creativePremiseKind: result.referenceAdaptedCopyPlan?.creativePremise?.kind,
   }));
-  return `Compare the six COMPLETE advertisements as independent reference-adapted materials. Check reference separation, product role, layout, palette and typography without claiming a hook-only causal experiment. 문구만 다르고 배경·제품 배치가 사실상 같으면 실패로 판정한다. 이전 광고 조각을 재사용한 경우, 또는 배경 위에 상품·큰 문구 패널을 붙인 것처럼 보이는 경우에도 실패로 판정한다. ${JSON.stringify(materials)}`;
+  return `Compare the six COMPLETE advertisements as independent reference-adapted materials. Check reference separation, product role, layout, palette and typography without claiming a hook-only causal experiment. Do not require a fixed count of character, historical-world, product-first-person, USP or comparison roles. Each copy premise must follow its own reference rhetoric and stay lightweight: one familiar relationship or everyday situation, one short question/answer, one unmistakable advertising metaphor, or one verified product reason. Reject invented professions, elaborate backstories and six generic family/daily-life/price messages. 문구만 다르고 배경·제품 배치가 사실상 같으면 실패로 판정한다. 이전 광고 조각을 재사용한 경우, 또는 배경 위에 상품·큰 문구 패널을 붙인 것처럼 보이는 경우에도 실패로 판정한다. ${JSON.stringify(materials)}`;
 }

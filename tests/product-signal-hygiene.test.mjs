@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isDomesticOriginCreativeSignal, isMalformedProductSignal, isMeatProductContext, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../app/lib/creative-generation/productSignalHygiene.ts";
+import { hasExplicitMerchantCredentialAttribution, isAmbiguousMerchantCredentialCreativeSignal, isDomesticOriginCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMeatProductContext, isMerchantCredentialCreativeSignal, isMerchantCredentialOnlyDetailImage, isNonDomesticOriginCreativeSignal, isOperationalInformationSignal, isOriginCreativeSignal, isPackageLabelOcrCopyNoise, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../app/lib/creative-generation/productSignalHygiene.ts";
 import { buildProductTruth, cleanProductTitle, validateCopyAgainstTruth } from "../app/lib/creative-generation/productTruth.ts";
 
 test("배송·출고·도착 정보는 광고 문구 후보와 최종 검증에서 차단한다", () => {
@@ -31,6 +31,17 @@ test("배송·출고·도착 정보는 광고 문구 후보와 최종 검증에�
   assert.equal(validateCopyAgainstTruth("한입부터 쫀득달콤", truth).valid, true);
   assert.equal(validateCopyAgainstTruth("두쫀쿠 다음엔 뭐 먹지? 한입부터 쫀득달콤", truth).valid, true);
   assert.equal(validateCopyAgainstTruth("가을 간식 고민될 때, 반건조 무화과 한입", truth).valid, true);
+});
+
+test("불완전 OCR 조각과 보관·사업자 운영정보를 광고 USP에서 분리한다", () => {
+  for (const value of ["풍미를 살린 원료의", "한입에 느껴지는 고소한", "정성스러운 공정으로"]) {
+    assert.equal(isIncompleteOcrCopyFragment(value), true, value);
+  }
+  assert.equal(isIncompleteOcrCopyFragment("정성스러운 공정으로 완성했습니다."), false);
+  for (const value of ["냉장 보관해 주세요", "개봉 후 냉동 보관", "사업자 회원 전용", "도매 문의 바랍니다"]) {
+    assert.equal(isOperationalInformationSignal(value), true, value);
+    assert.equal(isProhibitedAdCopySignal(value), true, value);
+  }
 });
 
 test("부정·양해·CS·판매주체 문구는 OCR 출처여도 광고 문구에서 차단한다", () => {
@@ -79,6 +90,108 @@ test("부정·양해·CS·판매주체 문구는 OCR 출처여도 광고 문구�
   assert.equal(validateCopyAgainstTruth("국내산 제철 사과", truth).valid, false);
 });
 
+test("업체 실적 OCR은 상품 USP와 분리하고 주체 없는 조각은 차단한다", () => {
+  assert.equal(isMerchantCredentialCreativeSignal("한국 1위 국가대표"), true);
+  assert.equal(isAmbiguousMerchantCredentialCreativeSignal("한국 1위 국가대표"), true);
+  assert.equal(isMerchantCredentialCreativeSignal("축산물 쇼핑몰 브랜드 파워 1위"), true);
+  assert.equal(hasExplicitMerchantCredentialAttribution("국대한우, 축산물 쇼핑몰 브랜드 파워 1위", ["국대한우"]), true);
+  assert.equal(hasExplicitMerchantCredentialAttribution("축산물 쇼핑몰 브랜드 파워 1위", ["국대한우"]), false);
+
+  const truth = buildProductTruth({
+    source: "landing-page",
+    product: {
+      productName: "국대한우 어린소 찜갈비 1kg",
+      advertiserName: "국대한우",
+      brandName: "국대한우",
+      category: "식품/육류",
+      landingUrl: "https://example.com/products/galbi",
+      price: "88,000원",
+      discountInfo: "69% 할인",
+      mainBenefit: "어린소라 너무 연해요",
+      detailImageOcrInsights: [
+        {
+          imageUrl: "https://example.com/detail.jpg",
+          contentHash: "merchant-proof",
+          ocrText: "한국 1위 국가대표\n축산물 쇼핑몰 브랜드 파워 1위\n어린소라 너무 연해요",
+          ocrProvider: "apple-vision",
+          ocrConfidence: 0.96,
+          copyFacts: ["한국 1위 국가대표", "축산물 쇼핑몰 브랜드 파워 1위", "어린소라 너무 연해요"],
+          productConstraints: [],
+          identityOnlyLabels: [],
+          discardedNotices: [],
+          warnings: [],
+        },
+      ],
+    },
+  });
+  assert.ok(truth.facts.some((fact) => fact.value === "축산물 쇼핑몰 브랜드 파워 1위" && fact.evidenceType === "merchant-proof" && fact.copyEligibility === "proofOnly"));
+  assert.ok(truth.facts.some((fact) => fact.value === "어린소라 너무 연해요" && fact.evidenceType === "usp" && fact.copyEligibility === "headlineEligible"));
+  assert.ok(truth.facts.some((fact) => fact.value === "69% 할인" && fact.copyEligibility === "offerOnly"));
+  assert.ok(!truth.facts.some((fact) => fact.value === "한국 1위 국가대표" && fact.usableInCopy));
+  assert.ok(!truth.coreEvidence.some((evidence) => evidence.evidenceType === "merchant-proof"));
+});
+
+test("수상·순위 증빙 전용 이미지만 자동 대표 상품 이미지에서 제외한다", () => {
+  assert.equal(isMerchantCredentialOnlyDetailImage({
+    ocrText: "2024 올해의 소비자 만족지수\nTYKB 올해의 한국브랜드 대상\n대한민국 브랜드 파워 1위\n원위너 어워즈",
+    copyFacts: [],
+    productConstraints: [],
+  }), true);
+
+  assert.equal(isMerchantCredentialOnlyDetailImage({
+    ocrText: "탑브랜드 한우 안창살\n부드러운 식감\n2024 브랜드 대상",
+    copyFacts: ["탑브랜드 한우 안창살", "부드러운 식감"],
+    productConstraints: [],
+  }), false);
+
+  assert.equal(isMerchantCredentialOnlyDetailImage({
+    ocrText: "ORGANIC 인증\n바디워시 250ml",
+    copyFacts: ["바디워시 250ml"],
+    productConstraints: [],
+  }), false);
+});
+
+test("패키지 OCR 라벨은 동일성 확인에만 남고 식품·상품 사실은 카피에 유지한다", () => {
+  for (const value of ["SHOWER 250mle", "I'M 30% RECYCLED", "PETA APPROVED", "FSC MIX", "CRUELTY FREE"]) {
+    assert.equal(isPackageLabelOcrCopyNoise(value), true, value);
+  }
+  for (const value of ["350g", "5종", "종합전병 5종 구성", "바삭달콤한 식감", "빵과 함께 먹기 좋은 반건조 무화과"]) {
+    assert.equal(isPackageLabelOcrCopyNoise(value), false, value);
+  }
+
+  const truth = buildProductTruth({
+    source: "landing-page",
+    product: {
+      productName: "바삭 종합전병 5종 350g",
+      category: "식품/간식",
+      landingUrl: "https://example.com/products/snack",
+      price: "10,500원",
+      detailImageOcrInsights: [
+        {
+          id: "ocr-package-labels",
+          imageUrl: "https://example.com/detail.jpg",
+          contentHash: "package-labels",
+          ocrText: "SHOWER 250mle\nPETA APPROVED\n종합전병 5종 구성\n바삭달콤한 식감",
+          ocrProvider: "apple-vision",
+          ocrConfidence: 0.96,
+          copyFacts: ["SHOWER 250mle", "PETA APPROVED", "종합전병 5종 구성", "바삭달콤한 식감"],
+          productConstraints: [],
+          identityOnlyLabels: ["SHOWER 250mle", "PETA APPROVED"],
+          discardedNotices: [],
+          warnings: [],
+        },
+      ],
+    },
+  });
+  const factText = truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.value).join("\n");
+  assert.doesNotMatch(factText, /SHOWER|250mle|PETA/);
+  assert.match(factText, /종합전병 5종 구성/);
+  assert.match(factText, /바삭달콤한 식감/);
+  assert.match(factText, /10,500원/);
+  assert.equal(validateCopyAgainstTruth("SHOWER 250mle", truth).valid, false);
+  assert.equal(validateCopyAgainstTruth("종합전병 5종 구성, 바삭달콤한 식감", truth).valid, true);
+});
+
 test("원산지는 국내산 육류 광고에서만 허용한다", () => {
   assert.equal(isDomesticOriginCreativeSignal("국내산 무화과"), true);
   assert.equal(isDomesticOriginCreativeSignal("제주산 감귤"), true);
@@ -122,6 +235,8 @@ test("가격·깨진 SEO 판촉문구는 상품 USP로 승격하지 않는다", 
   assert.equal(isPriceOnlyCreativeSignal("정가 19,900원 → 7,900원"), true);
   assert.equal(isPromotionalProductSignal("[8kg 7,900원 전국최저가도전!]"), true);
   assert.equal(isMalformedProductSignal("[8kg 7,900원 전국최저가도전"), true);
+  assert.equal(isMalformedProductSignal("향/연도최고"), true);
+  assert.equal(isMalformedProductSignal("국내산 유 프레이엄 비프"), true);
   assert.equal(isPriceOnlyCreativeSignal("한입부터 아삭한 사과"), false);
 
   const appleTruth = buildProductTruth({
@@ -142,6 +257,23 @@ test("가격·깨진 SEO 판촉문구는 상품 USP로 승격하지 않는다", 
   assert.ok(appleTruth.facts.some((fact) => fact.key === "original-price" && fact.copyEligibility === "offerOnly"));
   assert.ok(appleTruth.facts.every((fact) => fact.key === "price" || fact.key === "original-price" || fact.value !== "19,900원"));
   assert.doesNotMatch(appleTruth.facts.filter((fact) => fact.evidenceType === "usp").map((fact) => fact.value).join(" "), /최저가|19,900원/);
+});
+
+test("OCR로 훼손된 상품 표현은 상세페이지 출처여도 ProductTruth와 최종 문구에서 차단한다", () => {
+  const truth = buildProductTruth({
+    source: "landing-page",
+    product: {
+      productName: "한우 안심 스테이크 세트",
+      category: "식품/육류",
+      landingUrl: "https://example.com/products/beef-tenderloin",
+      mainBenefit: "향/연도최고",
+      verifiedBenefits: ["국내산 유 프레이엄 비프", "48시간 비법 숙성"],
+    },
+  });
+  const usable = truth.facts.filter((fact) => fact.usableInCopy).map((fact) => fact.value).join(" ");
+  assert.doesNotMatch(usable, /향\/연도|프레이엄/u);
+  assert.equal(validateCopyAgainstTruth("향/연도최고 한우 안심", truth).valid, false);
+  assert.equal(validateCopyAgainstTruth("48시간 비법 숙성 한우 안심", truth).valid, true);
 });
 
 test("무화과 SEO 상품명은 광고용 상품 정체성과 감각 표현을 분리한다", () => {

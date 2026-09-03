@@ -10,7 +10,7 @@ export const creativeBlueprintIds = ["problem-solution-split", "editorial-story"
 
 export type CreativeBlueprintId = (typeof creativeBlueprintIds)[number];
 export type FactVerification = "verified" | "source-backed" | "user-provided" | "unverified";
-export type ProductEvidenceType = "identity" | "usp" | "ingredient" | "composition" | "quantity" | "usage" | "target" | "price" | "offer" | "shipping" | "review" | "origin" | "certification" | "numeric" | "other";
+export type ProductEvidenceType = "identity" | "usp" | "ingredient" | "composition" | "quantity" | "usage" | "target" | "price" | "offer" | "shipping" | "review" | "origin" | "certification" | "merchant-proof" | "numeric" | "other";
 
 export type ProductFact = {
   id: string;
@@ -58,11 +58,42 @@ export type ReferenceCopyProfile = {
   createdAt: string;
 };
 
+export type ImageCreativePremiseKind =
+  | "everyday-question-answer"
+  | "everyday-relationship"
+  | "obvious-ad-metaphor"
+  | "specific-person-situation"
+  | "social-world-situation"
+  | "product-self-introduction"
+  | "usp-focus"
+  | "comparison-benefit";
+
+/**
+ * 레퍼런스의 구도·수사 구조는 그대로 두면서, 여섯 소재가 모두 범용 상품
+ * 소개로 수렴하지 않도록 배정하는 광고용 가상 인물·상황 계약입니다.
+ * supportingFactIds만 상품 사실이며 나머지는 사실 주장으로 위장하지 않는
+ * 창작 맥락입니다.
+ */
+export type ImageCreativePremise = {
+  /** v1 is retained only so archived jobs can still be read. New jobs use v2. */
+  policyVersion: "image-creative-premise-v1" | "image-creative-premise-v2";
+  kind: ImageCreativePremiseKind;
+  fictionalContext: true;
+  character: string;
+  situation: string;
+  tension: string;
+  productBridge: string;
+  supportingFactIds: string[];
+  factBoundary: string;
+};
+
 export type ReferenceAdaptedCopyPlan = {
   id: string;
   resultCode: string;
   referenceId: string;
   referenceCopyProfileId: string;
+  /** 과거 저장 작업 호환을 위해 optional이며, 최신 작업은 버전 게이트에서 필수입니다. */
+  creativePremise?: ImageCreativePremise;
   /** 선택 레퍼런스에 실제로 적혀 있던 원문과 줄 구조입니다. */
   referenceRawCopy?: string;
   referenceRawLines?: string[];
@@ -520,6 +551,9 @@ export type NativeCreativeValidation = {
   /** 실제 상품 패키지 밖에 AI가 새로 만든 독립 로고·워드마크가 있는지에 대한 시각 QA 결과입니다. */
   standaloneLogoDetected: boolean;
   standaloneLogoFindings: string[];
+  /** 상품 원본을 누끼·스티커·독립 패널처럼 떼어 붙인 흔적이 있는지에 대한 시각 QA 결과입니다. */
+  detachedProductCutoutDetected?: boolean;
+  detachedProductCutoutFindings?: string[];
   /** 레퍼런스에 교체가 필요한 인물이 실제로 포함됐는지에 대한 시각 QA 결과입니다. */
   sourcePersonDetected?: boolean;
   /** 원본 인물을 삭제하지 않고 타깃 고객에 맞는 다른 가상 인물로 완전히 교체했는지 여부입니다. */
@@ -550,6 +584,22 @@ export type NativeCreativeValidation = {
   /** 식품 결과에 현재 상품·확인된 재료가 아닌 다른 먹거리나 재료가 보이는지 여부입니다. */
   unrelatedFoodOrIngredientDetected?: boolean;
   unrelatedFoodOrIngredientFindings?: string[];
+  /** 육류의 판매 부위·두께·지방 분포가 판매자 원본과 같은지에 대한 전용 QA입니다. */
+  meatCutIdentityAccurate?: boolean;
+  /** 반복·대칭·각인된 결 없이 식품 사진으로 자연스러운지에 대한 전용 QA입니다. */
+  meatTextureNatural?: boolean;
+  meatArtificialPatternDetected?: boolean;
+  meatArtificialPatternFindings?: string[];
+  /** 과도한 혈액·근섬유·힘줄·해부학적 매크로 묘사를 검출합니다. */
+  meatGrotesqueDetailDetected?: boolean;
+  meatGrotesqueDetailFindings?: string[];
+  /** 결과가 작업 생성 시 확정된 원물/세트/조리 모드와 일치하는지 확인합니다. */
+  meatPresentationModeAligned?: boolean;
+  meatPresentationFindings?: string[];
+  meatCookedPresentationDetected?: boolean;
+  meatCookedEvidenceSatisfied?: boolean;
+  meatSetCompositionAccurate?: boolean;
+  meatObservedPackCount?: number;
   /** source-brand/remove 영역의 글자뿐 아니라 빈 배지·캡슐·리본까지 완전히 제거했는지 여부입니다. */
   sourceBrandRegionCleared?: boolean;
   sourceBrandRegionFindings?: string[];
@@ -1195,6 +1245,16 @@ export type GenerationJob = {
   /** 값이 없으면 과거 작업으로 보고 legacy-hook-first로 읽습니다. */
   copyPlanMode?: "reference-adapted" | "legacy-hook-first";
   referenceCopyProfiles?: ReferenceCopyProfile[];
+  /**
+   * 클릭 직후 작업을 먼저 저장하고, 고비용 문구 기획·검수를 서버 러너에서
+   * 완료하기 위한 상태입니다. ready 전에는 이미지 생성 단계를 시작하지 않습니다.
+   */
+  referenceCopyPlanning?: {
+    status: "pending" | "running" | "ready";
+    provider?: "codex-local" | "fallback";
+    error?: string;
+    updatedAt: string;
+  };
 };
 
 export type GenerationJobSummary = {

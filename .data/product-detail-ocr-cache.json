@@ -1587,5 +1587,3524 @@
       "warnings": []
     },
     "createdAt": "2026-08-30T12:30:14.652Z"
+  },
+  {
+    "key": "6f0364eeb850f6724d2f4bf6b894324a317a41cce52321128717e7c1444e7687",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:32:56.129Z"
+  },
+  {
+    "key": "ee9ca053da039d93e22fcb1e70beb24867125da0265533f656d4e3730a7dfe12",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:32:56.157Z"
+  },
+  {
+    "key": "1c52d65677b6424524ccc81335de2024ab7eb331b82e505458aa910fa39a6684",
+    "insight": {
+      "id": "detail-ocr-672f19309365",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240802125222868915b8f72bf0-ade2-4071-b2c1-bcea78ad972b.jpg",
+      "contentHash": "672f19309365a02e3042c09de50a85926ef1ad144521d63a683f1ea08308e582",
+      "ocrText": "Danish Crown",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Danish Crown"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:32:56.727Z"
+  },
+  {
+    "key": "34cd949b0ea1fac43dc1d6a17b9c39cd37ca7842e0d509dd8a8ba815a132a350",
+    "insight": {
+      "id": "detail-ocr-591860bc3093",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/2024010410233716912144a54b92-3afa-4187-87f4-82cf058269a3.jpg",
+      "contentHash": "591860bc30934feeb0e4b5b32e7fdd140162a3e7425a561254052a48dcfec819",
+      "ocrText": "HI ECO\n자연으로 돌아가는 하",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "HI ECO"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:32:56.849Z"
+  },
+  {
+    "key": "3b0dc82eb8a9d8f7942e4a2aa1af01ca3f16c7f792a45bef213c6240546daab7",
+    "insight": {
+      "id": "detail-ocr-9439186aefca",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202608121251552211211356874a-4a4c-464f-ad48-82274e8b7f81.png",
+      "contentHash": "9439186aefca584a61013044639a0efdf63b029e83b05932e27c005569834ca4",
+      "ocrText": "이마지연한갈비 8근막스\nNORLAND\nANS\nEA\n손질완벽한 연한 소갈비(갈비찜, 탕 겸용)\n(배송상품 실사진)\n런칭기념 특별기획 특가\n283,000원 69,800원\n2세트 이상 무료배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6444444457689921,
+      "copyFacts": [
+        "손질완벽한 연한 소갈비(갈비찜, 탕 겸용)"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "NORLAND"
+      ],
+      "discardedNotices": [
+        "이마지연한갈비 8근막스",
+        "(배송상품 실사진)",
+        "283,000원 69,800원",
+        "2세트 이상 무료배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:32:58.030Z"
+  },
+  {
+    "key": "88331c1dc7de6c1c4c7730471bfa88c034693fbc0245d4b22a1e5900986d13b7",
+    "insight": {
+      "id": "detail-ocr-77c3602b5236",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/20240104102224403876531ab83c-c844-4225-83b0-402e1eb00112.jpg",
+      "contentHash": "77c3602b523611e97dbe8400519e342c9f84c85ef032ccb82f3be3413f307624",
+      "ocrText": "0~\n(주)종부아이스터\n상분해도 95.9% 안심하고 자연으로 돌려주세요\n2 5e\n자연으로돌아가는 하이에코팍\nHI ECO PAG\n~.\n오.\n고.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5555555555555556,
+      "copyFacts": [
+        "(주)종부아이스터"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "HI ECO PAG"
+      ],
+      "discardedNotices": [
+        "상분해도 95.9% 안심하고 자연으로 돌려주세요"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:32:59.518Z"
+  },
+  {
+    "key": "49f683cb410ab5a5d932d1205bc2e0bba702c0d92b36df2dfa2219ad792137af",
+    "insight": {
+      "id": "detail-ocr-e63a01c8c22c",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608060951160457903d23793d-1bdf-4971-9a1c-25927792592b.jpg",
+      "contentHash": "e63a01c8c22cc337b62ad0bd2742cb4bf44174a852b6331be519e770304c360b",
+      "ocrText": "고급 프리미엄 과일\n샤인머스켓\n0,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "샤인머스켓"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "0,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:16.400Z"
+  },
+  {
+    "key": "d4d423962e2517bd6836b37e319942753a8c2f5fed0fe9d6e5b7044733103c17",
+    "insight": {
+      "id": "detail-ocr-a5a448924a84",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522064905855583ba6bc0ec-bab1-4789-a678-87e8987b7419.jpg",
+      "contentHash": "a5a448924a840cccca749dbb1fcaa5536ee652d0738ac2ab0522f86e4a0ff4c6",
+      "ocrText": "쭈글쥬스용 혼합과 안내\n쭈글하거나 외관이 고르지 않은\n사과가 포함된 쥬스용 혼합과 입니다.\n외형보다는 가공용 활용에 적합한 상품으로,\n쥬스용으로 권장드립니다.\n※ 상품 특성상 외관에 따른 교환 및 환불은 어려운 점 양해 부탁드립니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8333333333333334,
+      "copyFacts": [],
+      "productConstraints": [
+        "사과가 포함된 쥬스용 혼합과 입니다.",
+        "외형보다는 가공용 활용에 적합한 상품으로,"
+      ],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "쭈글쥬스용 혼합과 안내",
+        "쭈글하거나 외관이 고르지 않은",
+        "상품 특성상 외관에 따른 교환 및 환불은 어려운 점 양해 부탁드립니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:16.463Z"
+  },
+  {
+    "key": "2aa4493a0d5a47713e9c8976587dbdf917b56976569f8b4b670eacb26425b23b",
+    "insight": {
+      "id": "detail-ocr-bc30d7fe217e",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608060951164677294f049abf-30af-4714-b8ec-d5e66be42e73.jpg",
+      "contentHash": "bc30d7fe217e619f5b6e827e2432eaa0f93b9218c6cb498e4c2a93dd4bfca2fd",
+      "ocrText": "경북에서 왔어요~\n100% 국내산으로\n안심하고 드세요~!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "100% 국내산으로"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:16.613Z"
+  },
+  {
+    "key": "b74c14ddcaacecc7f86a37a272b0c786ee78abb455d0ccbd6206e80da7eaee3e",
+    "insight": {
+      "id": "detail-ocr-6fd6f205ef64",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202606010122231855111afae973-1d8c-476e-85a5-c85661aae033.jpg",
+      "contentHash": "6fd6f205ef644f528c4f63431c0cf9a93ab07964b06878a49b43c48e16e4ac9b",
+      "ocrText": "초기7900원\n이탈거나 처리해?!\n힘내라농가 전국 최저가에 도전합니다!!\n지금이 딱 제철!! 황궁부사\n지금 아니면 못사는 이가격!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7,
+      "copyFacts": [
+        "힘내라농가 전국 최저가에 도전합니다!!",
+        "지금이 딱 제철!! 황궁부사"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "초기7900원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:16.663Z"
+  },
+  {
+    "key": "af46ab19a45d286b2d0a8085e7f59e5b7431609d44c21531b3f850e390bb5770",
+    "insight": {
+      "id": "detail-ocr-2e72d42ec499",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260806095118139852d6ef34d9-3327-4512-8f7b-28e5f129039f.jpg",
+      "contentHash": "2e72d42ec499bc5f44db048c223e5c42b2d2b7cb173e9c1fae27f10e79c8692b",
+      "ocrText": "남다른 풍길의 사인머스켓을 경향해보세요!\n프리미엄에 프리미엄을 더한\n고당도 샤인머스켓",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "남다른 풍길의 사인머스켓을 경향해보세요!",
+        "고당도 샤인머스켓"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:17.504Z"
+  },
+  {
+    "key": "89b55f6bbcf9cd077f979a46bae077984402e43a0d4a8e5b9978becafb1f4bdc",
+    "insight": {
+      "id": "detail-ocr-14911e2f3174",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522064918091776d47c9017-f18c-46a8-bb79-31581585d72f.jpg",
+      "contentHash": "14911e2f3174188740fc956a366b955f724ef69a7780f883c34c7c4a14055659",
+      "ocrText": "쥬스용(혼합과)반품 불가 안내\n해당 상품의 쥬스용 혼합과는\n반품이 불가한 상품 으로\n구매에 참고하시길 바랍니다\n※ 조금만 기다려주시면 맛 좋은 상품으로\n빠르게 배송드릴 수 있도록 하겠습니다!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8333333333333334,
+      "copyFacts": [
+        "조금만 기다려주시면 맛 좋은 상품으로"
+      ],
+      "productConstraints": [
+        "해당 상품의 쥬스용 혼합과는"
+      ],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "쥬스용(혼합과)반품 불가 안내",
+        "반품이 불가한 상품 으로",
+        "빠르게 배송드릴 수 있도록 하겠습니다!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:17.590Z"
+  },
+  {
+    "key": "24f2cdbed5e732a503341a151eb13ae6a9aba23000bddb635eb15ace5b6dae50",
+    "insight": {
+      "id": "detail-ocr-62156b6323fb",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026080609511895247465664050-d086-48b5-8e8f-3c82dabfc0d6.jpg",
+      "contentHash": "62156b6323fb7b4cd4ef97051193a7d3b44a9c89162d57e1453f66127f0a5b43",
+      "ocrText": "아삭아삭한 식감,\n향긋한 머스켓 향!\n달콤함이 가득~!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "아삭아삭한 식감,",
+        "향긋한 머스켓 향!",
+        "달콤함이 가득~!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:17.709Z"
+  },
+  {
+    "key": "5f15210ef870725e114be161f55e0d7b22c7a565fcabede9acb4487b1e2f21e9",
+    "insight": {
+      "id": "detail-ocr-f51e5c903e47",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522095742139475b653b24e-d678-4e4e-96fa-ce842bda3b49.jpg",
+      "contentHash": "f51e5c903e4731fde99d81dd934bc5ba746f63cf58584553b818e0ebd61ab2ab",
+      "ocrText": "가정용 얼음을 사과\n구매 전 확인해주세요!\n해당 사과는 정품 사과가 아닌 가정용 사과 입니다.\n가정용 얼음골사과는 맛은 정품과 동일하지만\n외관상의 이유(다양한 모양, 자라면서 생긴 흠집,\n균일하지 않은 컬러 등)로 정품과가 되지못한 사과입니다.\n맛과 저렴한 가격을 동시에 잡을 수 있는 제품입니다.\n벌어짐\n점박이\n다양한 모양, 미색\n기스\n정품사과와는 다른 가정용 사과이니 예시를 꼭 참고해주세요.\n외관상의 문제,맛이 없다는 이유로 교환/환불이\n어려운 점 양해부탁드립니다",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7857142857142857,
+      "copyFacts": [
+        "가정용 얼음을 사과",
+        "해당 사과는 정품 사과가 아닌 가정용 사과 입니다.",
+        "가정용 얼음골사과는 맛은 정품과 동일하지만",
+        "맛과 저렴한 가격을 동시에 잡을 수 있는 제품입니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "구매 전 확인해주세요!",
+        "외관상의 이유(다양한 모양, 자라면서 생긴 흠집,",
+        "정품사과와는 다른 가정용 사과이니 예시를 꼭 참고해주세요.",
+        "외관상의 문제,맛이 없다는 이유로 교환/환불이",
+        "어려운 점 양해부탁드립니다"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:17.904Z"
+  },
+  {
+    "key": "67ab7c1ee201dd1c39e802e000782ddb5f969ed450a5ddc158ebcca93d7032ae",
+    "insight": {
+      "id": "detail-ocr-c2bd4242cfb7",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260806095119874486e38ff19c-96d1-4a0f-b8a4-3008eef07aed.jpg",
+      "contentHash": "c2bd4242cfb79f16d044916ffafb2e73e24ebc8c6e74bf61bffac6dcacd18798",
+      "ocrText": "7 아삭\n상큼달콤\n프리미엄 과일",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "상큼달콤"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:18.335Z"
+  },
+  {
+    "key": "a8fa31ec2af51efac4fd0252061b75a77dd4ecc9d09860f58a96a81edc5e547a",
+    "insight": {
+      "id": "detail-ocr-919b4f220424",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522095802267474b1631ea9-64d7-4bbb-8e53-15b0da5edefd.jpg",
+      "contentHash": "919b4f220424ece396ded6b0b0a03598fd33c5f00efb2791e8d748f231b544b3",
+      "ocrText": "가정용\n풍부한 과즙과 아삭한 맛\n황궁얼음골사과\n과즙이 줄줄~\n100%\n국내산",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5833333333333334,
+      "copyFacts": [
+        "풍부한 과즙과 아삭한 맛",
+        "과즙이 줄줄"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:18.481Z"
+  },
+  {
+    "key": "b722184abe162562b2258e23ff98099a6cb2f1f8111eb9fe2f6b013ea8466439",
+    "insight": {
+      "id": "detail-ocr-95c8ceb55811",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20250612035955756684488e3ca6-fad9-4de4-9e26-87ca7ae9e179.jpg",
+      "contentHash": "95c8ceb55811998e032d2fe908c9bdcefc623097ba3001e42077536177e13d31",
+      "ocrText": "좋은 품질의 고기를 합리적인 가격에 고객님께\n보내드리기 위해 항상 노력하고 있어요.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:19.775Z"
+  },
+  {
+    "key": "f96012a5fa1065a724d14053b0361ad0869898ef4452184810dd90e450fb254e",
+    "insight": {
+      "id": "detail-ocr-1c2477000494",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260522095803564541c833740b-f682-43f7-9a9e-ed1f7c994ed0.jpg",
+      "contentHash": "1c247700049436097f9c881b937578974685ae362e8e7332a6d032465debc113",
+      "ocrText": "아삭!\n달달~",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:20.042Z"
+  },
+  {
+    "key": "0ef0f56d4c9fca56369859b0b2c0a49a008e0fc3dfcb4d56d622a2cc3ac9ea0b",
+    "insight": {
+      "id": "detail-ocr-9eb18b6e9096",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608060951214997285a26a822-858a-448c-884d-34584d306523.jpg",
+      "contentHash": "9eb18b6e90966339e22b3cade0c162e7ab91489783164163c59d65d5ce7d029c",
+      "ocrText": "후숙 과일 샤인머스켓\n샤인머스켓은 후숙과일로, 받아보시고\n1주일가량 노란 빛깔로 변할때까지\n충분히 후숙해 드시면 더욱 달콤한\n샤인머스켓을 즐기실 수 있습니다.\n※ 샤인머스켓은 후숙 전엔 초록빛을 보이지만\n후숙될수록 노란색으로 변해갑니다.\n노란빛으로\n꽉 찬속!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6111111111111112,
+      "copyFacts": [
+        "후숙 과일 샤인머스켓",
+        "충분히 후숙해 드시면 더욱 달콤한"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "1주일가량 노란 빛깔로 변할때까지"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:20.055Z"
+  },
+  {
+    "key": "ff8e6a5ce2237e71dd9f4bb45966a89540f1a197eb51330387b9a8208cfe2547",
+    "insight": {
+      "id": "detail-ocr-59576b6ebad8",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026080609512223421286754225-3cb1-434a-9d0b-a6d6cea1fc6d.jpg",
+      "contentHash": "59576b6ebad8383997f7fac5b9aff278634f00ea405556345e6fa4059443d6cd",
+      "ocrText": "왕 큰 사이즈의\n샤인머스켓!\n2079\n500\n500원 동전과 비슷한 크기!\n(3~4수 기준)",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "샤인머스켓!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "2079",
+        "500원 동전과 비슷한 크기!",
+        "(3~4수 기준)"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:21.028Z"
+  },
+  {
+    "key": "2187845675a7f057d9b43bdd34a0fc07f081e4b327304bab494c9a7957a7814f",
+    "insight": {
+      "id": "detail-ocr-938bd82eb6ba",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026052209580389271559572435-6d10-462a-83b2-c6d9dcc5f4fe.jpg",
+      "contentHash": "938bd82eb6ba98c6e92b0b374e34f4f39bda71998924c27e38aea9c1d1ea5ee2",
+      "ocrText": "아삭아삭 맛있는 꿀사과!\n100% 국내산이에요!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "아삭아삭 맛있는 꿀사과!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "100% 국내산이에요!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:21.039Z"
+  },
+  {
+    "key": "493d72ab1b9181021278360d2a1f8cf2bd23e57acd38451f3c7e3e15780e7fed",
+    "insight": {
+      "id": "detail-ocr-95cdfa5829d6",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2025061204154630449510f70701-9328-41af-bbe9-c03294be784c.jpg",
+      "contentHash": "95cdfa5829d6c76d272b03a8fbea311275fc2192b44bd151e9fe144b0e088db2",
+      "ocrText": "'축산물이력제' 사이트에서(aunit.mtrace.go.kr)\n제품 뒷면의 이력번호를 조회하시면\n고기의 모든 정보를 확인하실 수 있습니다.\n이력 (묶음) 번호를 띄어쓰기 없이 입력해 주세요\nQ\n축산물이력제란?\n축산물의 도축부터 판매에 이르기까지의 정보를\n기록, 관리하여 위생, 안전의 문제를 사전에 방지하고,\n문제가 발생할 경우에 그 이력을 추적하여\n신속하게 대처하기 위해 시행되고 있는 제도입니다.\n위생 및 식품안전에 대한 투명성을 확보할 수 있으며\n원산지 허위 표시 등을 사전 예방하며\n소비자가 안심하고 구매할 수 있습니다.\n당일배송\n신선식품\n5의 당일배송\n신선식품!\n신선식품\n선식품.\n당일배송\n신선식품\n담담%;\n선식품 4급주의 당일배송\n배송\n신선식품 취급주의 당일배송\n신선식품 3급주\n신선식품 1\n신선식품 374입 당일물증\n신선식품\n신선식품\n신선식품 취금주의 당일\n• 85배 7615g\n매일 하루에 3000건~10000여건 판매되고 있습니다.\n압도적인 판매수량을 매주 갱신하고 있습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7000000003506156,
+      "copyFacts": [
+        "신선식품",
+        "신선식품 취금주의 당일"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "기록, 관리하여 위생, 안전의 문제를 사전에 방지하고,",
+        "문제가 발생할 경우에 그 이력을 추적하여",
+        "원산지 허위 표시 등을 사전 예방하며",
+        "당일배송",
+        "5의 당일배송",
+        "선식품 4급주의 당일배송",
+        "신선식품 취급주의 당일배송",
+        "신선식품 3급주",
+        "신선식품 1",
+        "신선식품 374입 당일물증",
+        "85배 7615g",
+        "매일 하루에 3000건~10000여건 판매되고 있습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-30T22:33:21.298Z"
+  },
+  {
+    "key": "88bba90809652b22e327c46890b19a41cf560bb7fbad9ee5b9eb2b4db1c2e988",
+    "insight": {
+      "id": "detail-ocr-195232af51f1",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202608/30f0ca5176ce2e8b2d397aa73b740b77.png",
+      "contentHash": "195232af51f10e035d0aa00cd442d855256b72951b6d89d185c93f275d6bb2fd",
+      "ocrText": "1M 30%\nRECYCLED\nZESTY\nLEMON\nGTEATREE\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nTOREAN\nOPETA\nEVERY BOTTLE\nN LEMONS IN\nBE APPROVED\nCloluet Aeimat Teat Poticy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TOREAN",
+        "OPETA",
+        "EVERY BOTTLE",
+        "N LEMONS IN",
+        "BE APPROVED",
+        "Cloluet Aeimat Teat Poticy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T11:37:51.481Z"
+  },
+  {
+    "key": "da6db612c01c80ed17190f1361ffcf71f6529d8f4e9b49775f07d1dd9b4a5266",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T11:37:51.496Z"
+  },
+  {
+    "key": "49e3852dfa68e8306e450ecb99219c1e2831b400ab0ecb0b837d361b42d94947",
+    "insight": {
+      "id": "detail-ocr-2a74b0838e20",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/38b8580f2d9a8b22373ccbc4cdb6d1cf.jpg",
+      "contentHash": "2a74b0838e2059ede85fac4ab4d93d6453f2a973df02fedf039a398428338ba6",
+      "ocrText": "RECYCLED\n1130%\nZESTY\nLEMON\nSTEATREE\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nAPPROVED\nGlobal Amimat Tist Plicy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "STEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "APPROVED",
+        "Global Amimat Tist Plicy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T11:37:52.452Z"
+  },
+  {
+    "key": "549a340aef4bd5f9d8059b7a9262c65fc32b785edb7161237b8f85508cfdd0d4",
+    "insight": {
+      "id": "detail-ocr-174cc3c4a5a3",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/5772ac7855e3a5fc2ea6a59fda161e9a.jpg",
+      "contentHash": "174cc3c4a5a32707c5530a833840d3f2e9aaf9e162a8a970ef23d1dd0c8d5452",
+      "ocrText": "답답한 날\n시원 상쾌하게\nRECYCIED\n4430%\nZESTY\nLEMON\nGTEATREE\n9100%\nFRACRANCE)\nNATURAT\nORIGINAL\nSOURCE\nNATURAL\nLESTY LEMON O\n{EVERY BOTTL\nVPCTA\nSHOWER 250mle\nCoet tana Toins\nCON ARTEONTO",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7894736842105263,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "FRACRANCE)",
+        "NATURAT",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "LESTY LEMON O",
+        "{EVERY BOTTL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "Coet tana Toins",
+        "CON ARTEONTO"
+      ],
+      "discardedNotices": [
+        "4430%",
+        "9100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T11:37:52.467Z"
+  },
+  {
+    "key": "e246846c18293a374269fdbf3e1743ab6e0f2beaad8c2a56af8462146aad8027",
+    "insight": {
+      "id": "detail-ocr-7dcbfcb7cc7a",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/2026083110271869281056095b4f-a07a-4a31-bfa4-258a11c71de1.jpg",
+      "contentHash": "7dcbfcb7cc7a253d33f96fe48f783fe1ac4840d763645db2f4c6ee1509bae168",
+      "ocrText": "고급 프리미엄 과일\n샤인머스켓\n1000원!®",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "샤인머스켓"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "1000원!®"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:13.301Z"
+  },
+  {
+    "key": "8c8a41eada6e88c1ad49895317ae16e01fe8177c539028e20a4b548249c1acb8",
+    "insight": {
+      "id": "detail-ocr-b60623f94db1",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260831102718270875f736eb78-e14e-4780-84ce-81b216578237.jpg",
+      "contentHash": "b60623f94db1e92ca4b7859c5cfdbbf43fa08178e1d2035cfd62111d64e08a7c",
+      "ocrText": "노지 프리미엄 청포도\n봉황 샤인머스켓\n아색!아색!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "봉황 샤인머스켓"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:14.333Z"
+  },
+  {
+    "key": "dc0f169544a373568c042fe9cb297595b7eb1239b0c2687345baef17dbb54d3a",
+    "insight": {
+      "id": "detail-ocr-3d21c2ef39af",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260831102720193037aa4e0cb6-d35e-45ef-a654-c680125d829d.jpg",
+      "contentHash": "3d21c2ef39af363e3e834e1490c75146b88ae11cba8331a264d99d79d5c24fbc",
+      "ocrText": "아삭아삭한 식감\n향긋한 머스켓 향!\n달콤함이 가득~!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "아삭아삭한 식감",
+        "향긋한 머스켓 향!",
+        "달콤함이 가득~!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:15.554Z"
+  },
+  {
+    "key": "5477b74ee869bf5fee6e6e86df4e77f3d0077b388e34970c457b5792c8c91b2b",
+    "insight": {
+      "id": "detail-ocr-176e1ecaea8d",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202608311027195210604d655d84-bcd2-4af7-b64f-5cebd23e44a7.jpg",
+      "contentHash": "176e1ecaea8d838b253330915980978b1a426e0dd643ef5ddd0379a6f3d6ab74",
+      "ocrText": "최상의 맛과 품질을\n유지하고 있습니다!\n알이 꽉 찼어요~!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8333333333333334,
+      "copyFacts": [
+        "최상의 맛과 품질을"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:15.560Z"
+  },
+  {
+    "key": "8acacb6f17c59678d6986d9678ddf0c137f9af7ce460803cd426ae35eab143a3",
+    "insight": {
+      "id": "detail-ocr-e860ce9e01f4",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260831102720568092f1bfc978-3ea6-485f-80bf-dafd935e8205.jpg",
+      "contentHash": "e860ce9e01f4b51ca96bb0e3c0c2f756555fee203e54f2c3c853b1a2625e1dc7",
+      "ocrText": "\"사인 머스켓'\n뭔가 다를까요?\n일반 청포도\n샤인 머스켓\n새콤달콤한 맛\n달콤한 망고향\n알이 작고 말랑함\n알이 크고 단단함",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5625,
+      "copyFacts": [
+        "\"사인 머스켓'",
+        "샤인 머스켓",
+        "새콤달콤한 맛",
+        "달콤한 망고향"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:18.322Z"
+  },
+  {
+    "key": "68c4fc81ade29bddca6268df397952e02693ed00f9fba7a1dd9c5940842ea71b",
+    "insight": {
+      "id": "detail-ocr-33b617dcdf06",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260831102720880638f2cf6dbd-2abb-4f2c-ae3b-a7925a00c049.jpg",
+      "contentHash": "33b617dcdf06074791f86d7b363399f01c0a85b8d2f35aebb58c6dc1be116b1d",
+      "ocrText": "7 아삭\n상큼달콤\n프리미엄 과일",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [
+        "상큼달콤"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:19.105Z"
+  },
+  {
+    "key": "ee39eb908b4d7a6b617546a51545ceff4e872cfba837d8fcc75e9b07a919d2a0",
+    "insight": {
+      "id": "detail-ocr-ca7edf95bf3d",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/20260831102721677630b3e99646-d233-446e-a863-f3b100ce4538.jpg",
+      "contentHash": "ca7edf95bf3de99c08a0edffba5908f881d651de24a53d16e3ef68a9a7211b44",
+      "ocrText": "후숙 과일 샤인머스켓\n샤인머스켓은 후숙과일로, 받아보시고\n1주일가량 노란 빛깔로 변할때까지\n충분히 후숙해 드시면 더욱 달콤한\n샤인머스켓을 즐기실 수 있습니다.\n※ 샤인머스켓은 후숙 전엔 초록빛을 보이지만\n후숙될수록 노란색으로 변해갑니다.\n노란빛으로\n꽉 찬속!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5555555555555556,
+      "copyFacts": [
+        "후숙 과일 샤인머스켓",
+        "충분히 후숙해 드시면 더욱 달콤한"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "1주일가량 노란 빛깔로 변할때까지"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:03:20.313Z"
+  },
+  {
+    "key": "a6e080bc363482f838561241326a0cd1a011c01e8d2cc3b224c1ca9907ca3fa9",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:04:30.781Z"
+  },
+  {
+    "key": "fa6f19af058e3fff13caa34843d5fa28588ea005c2cb291770bd3713fa806172",
+    "insight": {
+      "id": "detail-ocr-195232af51f1",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202608/30f0ca5176ce2e8b2d397aa73b740b77.png",
+      "contentHash": "195232af51f10e035d0aa00cd442d855256b72951b6d89d185c93f275d6bb2fd",
+      "ocrText": "1M 30%\nRECYCLED\nZESTY\nLEMON\nGTEATREE\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nTOREAN\nOPETA\nEVERY BOTTLE\nN LEMONS IN\nBE APPROVED\nCloluet Aeimat Teat Poticy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TOREAN",
+        "OPETA",
+        "EVERY BOTTLE",
+        "N LEMONS IN",
+        "BE APPROVED",
+        "Cloluet Aeimat Teat Poticy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:04:30.947Z"
+  },
+  {
+    "key": "e3112f2b1e3294d063533d72b6c7f0b8f85c74b09fb70c6b49e35d258df9b0dd",
+    "insight": {
+      "id": "detail-ocr-2a74b0838e20",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/38b8580f2d9a8b22373ccbc4cdb6d1cf.jpg",
+      "contentHash": "2a74b0838e2059ede85fac4ab4d93d6453f2a973df02fedf039a398428338ba6",
+      "ocrText": "RECYCLED\n1130%\nZESTY\nLEMON\nSTEATREE\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nAPPROVED\nGlobal Amimat Tist Plicy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "STEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "APPROVED",
+        "Global Amimat Tist Plicy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:04:32.646Z"
+  },
+  {
+    "key": "31328042cd44ce290c10eb752894b35fae8876cac876d921ef19984c5169d5b1",
+    "insight": {
+      "id": "detail-ocr-174cc3c4a5a3",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/5772ac7855e3a5fc2ea6a59fda161e9a.jpg",
+      "contentHash": "174cc3c4a5a32707c5530a833840d3f2e9aaf9e162a8a970ef23d1dd0c8d5452",
+      "ocrText": "답답한 날\n시원 상쾌하게\nRECYCIED\n4430%\nZESTY\nLEMON\nGTEATREE\n9100%\nFRACRANCE)\nNATURAT\nORIGINAL\nSOURCE\nNATURAL\nLESTY LEMON O\n{EVERY BOTTL\nVPCTA\nSHOWER 250mle\nCoet tana Toins\nCON ARTEONTO",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7894736842105263,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "FRACRANCE)",
+        "NATURAT",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "LESTY LEMON O",
+        "{EVERY BOTTL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "Coet tana Toins",
+        "CON ARTEONTO"
+      ],
+      "discardedNotices": [
+        "4430%",
+        "9100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T14:04:32.651Z"
+  },
+  {
+    "key": "56278dd3ef7c4f38cac042e9eab105263614ea4a3b0f9f125d3020e3507747b7",
+    "insight": {
+      "id": "detail-ocr-9e8792a9ba12",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/f14e5b33d7abb26f3c5275cf11a69401.jpg",
+      "contentHash": "9e8792a9ba12772cd31ecb7a4e10646d0784254f7ddeb5c6ea00c8a1b38e30ea",
+      "ocrText": "SWEET:\nRHUBARB\nGRASPBERRY\n2100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nVPETA\nEVERY BOTTLE\nCO APPROVED\nGalat faimat Tert Picy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8461538461538461,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "SWEET:",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "VPETA",
+        "EVERY BOTTLE",
+        "CO APPROVED",
+        "Galat faimat Tert Picy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "2100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:01.133Z"
+  },
+  {
+    "key": "3b43bccd74307d00ea706aaf176808cb8a7f982653a02301f609cc452643d34a",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:01.185Z"
+  },
+  {
+    "key": "99d72cef8280bb36d1e9e44349cce2827c503c3b49d8ec4b695caa9967b78cb4",
+    "insight": {
+      "id": "detail-ocr-9baae2cc9e0c",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/781db3430cdddebeb6bea43d03a941de.jpg",
+      "contentHash": "9baae2cc9e0c69118926a50950d4efe5d8b668d7af6667a403fde82ac641ed0e",
+      "ocrText": "1M 30%\nRECYCLED\nLIME\n100%\nNATURAL\nFRAGRANCE\nVegent\nORIGINAL\nSOURCE\nNATURAL\nOPCTA\nIN EVERY BOTTE\nZINGY UIME OIL\nAPKONTED\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8666666666666667,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "LIME",
+        "NATURAL",
+        "FRAGRANCE",
+        "Vegent",
+        "ORIGINAL",
+        "SOURCE",
+        "OPCTA",
+        "IN EVERY BOTTE",
+        "ZINGY UIME OIL",
+        "APKONTED",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:01.198Z"
+  },
+  {
+    "key": "e76bfec91202cc015b1ff4d8386e245602d6ef7437d288d4eb348b7e7d95d230",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:01.272Z"
+  },
+  {
+    "key": "212b779f9779a97befe6b1713597f2fab8c099e4be43deda7e4eb607d60a8ecd",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:01.280Z"
+  },
+  {
+    "key": "a73075f8971f7408d4f52c5eff2ea2faa8c953cf7a4982460560dba77b6d1cd4",
+    "insight": {
+      "id": "detail-ocr-d31a91360ee4",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202607/0206446860f55c9a4b384b5a0e3b9f6b.jpg",
+      "contentHash": "d31a91360ee4a734178cd84f5dcd7c5edc743c7e1f56b4f6a9cf187f1e75e182",
+      "ocrText": "5종 골라담아 세트\n원하는 향으로 선택 가능\nRECYCIED\n130%\nRECYCIED\n030%\nRECYCLED\n130%\n0130%\nRECYCLED\n130%\nRECYCLED\nTINGLY:\nZESTY\nMINTG\nLEMON\nTROPICAL\nZINGY\nLIME\nSWEET\nCOCONUT\nTEA TREE\nRHUBARB\nGTEATREE\n& SHEA BUTTER\nGRASPBERRY\nMATURAL\n4100%\n4100%\nFRACRANCE\nNATURAL\n0100%\n100%\nFRAGRANCE\nFRADRANCE\nNATURAI\nFRAGRANCE\nNATURAL\nNATURAL\n4100%\nFRAGRANCE\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\nSOURCE\nSOURCE\nSOURCE\n1.927\nREAL MINT\nV PCIA\n10REAL\n9 PCTA\n7.872\nTROPICAL\n2 PCTA\n4OREAL\nYPOTA\nESSENTIAL\nO PETA\nTHERY SO\nLEAVES IN\nO AIMONED\nEVERY BOTTLE\nSHOWER 250mle\nIVERY BOTTLE\nEVERY BOTTLE\nEVERY BOTTLE\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\n15% 할인",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.868421052631579,
+      "copyFacts": [
+        "5종 골라담아 세트",
+        "원하는 향으로 선택 가능",
+        "15% 할인"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "RECYCLED",
+        "TINGLY:",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TROPICAL",
+        "ZINGY",
+        "LIME",
+        "SWEET",
+        "COCONUT",
+        "TEA TREE",
+        "RHUBARB",
+        "GTEATREE",
+        "& SHEA BUTTER",
+        "GRASPBERRY",
+        "MATURAL",
+        "FRACRANCE",
+        "NATURAL",
+        "FRAGRANCE",
+        "FRADRANCE",
+        "NATURAI",
+        "ORIGINAL",
+        "SOURCE"
+      ],
+      "discardedNotices": [
+        "0130%",
+        "4100%",
+        "0100%",
+        "1.927",
+        "7.872"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:01.284Z"
+  },
+  {
+    "key": "85513ea14720dd33d670fbe7c83ec35cebd59d769ae36a1ff6a021bd9a410115",
+    "insight": {
+      "id": "detail-ocr-4d2ebcdbeb8b",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/c4be9aee86b83f8426fd4e446d9662c5.jpg",
+      "contentHash": "4d2ebcdbeb8bf2672acba55c36bf2dcfbaca178bbb9e0ddf27b595649af8c1ec",
+      "ocrText": "RECYCLED\n3M 30%\nSWEET!\nRHUBARB\nGRASPBERRY\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nOILS I\nIESSENTIA\nOPETA\nEVERY BOTTLE\nGlast tainal Teat Pig\nAPPROVED\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8529411764705882,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "SWEET!",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OILS I",
+        "IESSENTIA",
+        "OPETA",
+        "EVERY BOTTLE",
+        "Glast tainal Teat Pig",
+        "APPROVED",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "3M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:02.575Z"
+  },
+  {
+    "key": "116ae64fce301e4ca9ad1c6022aed44ff81e64df5eb4f513dc3f794687550993",
+    "insight": {
+      "id": "detail-ocr-230a378b6acf",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/af871a93fe53d8ec0438fa0ae71245b6.jpg",
+      "contentHash": "230a378b6acf6b2d38447e0b1925bac7f8c3fb461f9a403323a85d13004b9260",
+      "ocrText": "힘빠진 날\n생기 활기차게\nRECYCIED\n# 30%\nZINGY\nLIME\n0100%\nFRAGRANCE\nSATURAL\nORIGINAL\nSOURCE\nNATURAL\nIN EVERY BOTTLE\nZINGY LIME OIL\nVPCTA\nSHOWER 250mle\nEO APKOTED",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8235294117647058,
+      "copyFacts": [
+        "생기 활기차게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZINGY",
+        "LIME",
+        "FRAGRANCE",
+        "SATURAL",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "IN EVERY BOTTLE",
+        "ZINGY LIME OIL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "EO APKOTED"
+      ],
+      "discardedNotices": [
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:02.768Z"
+  },
+  {
+    "key": "742965491c591de2948ddc83f2768d3da01252168f15709d25a3a29995956908",
+    "insight": {
+      "id": "detail-ocr-4f17b1219f60",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/25fffb1c30c5c681ea89335701590e5a.jpg",
+      "contentHash": "4f17b1219f6092130c46205d89021732044b7cdaab49573a1123294f8e53a7e2",
+      "ocrText": "예민한 날 달콤 향긋하게\nRECYCIED\nA 30%\nSWEET\nRHUBARB\nGRASPBERRY\nNATURAL\n0100%\nFRAGRANCE\nORIGINAL\nSOURCE\nTASSENTIA\nEVERY BOTTLE\nTOIS IN\nV PCTA\nSHOWER 250mle\nSD ARTROVED",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [
+        "예민한 날 달콤 향긋하게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "SWEET",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TASSENTIA",
+        "EVERY BOTTLE",
+        "TOIS IN",
+        "V PCTA",
+        "SHOWER 250mle",
+        "SD ARTROVED"
+      ],
+      "discardedNotices": [
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:02.771Z"
+  },
+  {
+    "key": "b8e78c985b10a688d741a3c1c66ee5f65e120310e0ede2bca183b5f9a7338941",
+    "insight": {
+      "id": "detail-ocr-8708a6f114d9",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/a188eeb23abbc356704112aefd71a90a.jpg",
+      "contentHash": "8708a6f114d9910edcafc74544b506b5421edbe087d4333b4db3ed66e7f770f9",
+      "ocrText": "RECYCLED\n3130%\nLIME\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nZINGY LIME OIL\nIN EVERY BOTTLE\nAPPROVED\nGlobal Animal Tear Policy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9333333333333333,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "LIME",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "ZINGY LIME OIL",
+        "IN EVERY BOTTLE",
+        "APPROVED",
+        "Global Animal Tear Policy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "3130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-08-31T21:35:02.789Z"
+  },
+  {
+    "key": "85093041ef4d635838ce138892e2bff1a1f442da5dd36b1c25eab42b9a9cbca1",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:18:54.335Z"
+  },
+  {
+    "key": "b357612cad8c3ce8c91b4d1d621e7415f6df4f1caa669637fc085bf65c609a63",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:18:54.409Z"
+  },
+  {
+    "key": "f40c0e99dabbfd3ab1077378263cc20c109f16e0754b2c434afd8a250828fe0f",
+    "insight": {
+      "id": "detail-ocr-a12f5548a949",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202603200157294213847fa4da21-bcb7-4473-92b7-5fcf4f2319ad.jpg",
+      "contentHash": "a12f5548a949d5a0cf1dc5dd2f8211ad507349d77c21fa4fbf4c2eefb6d554ee",
+      "ocrText": "드디어 나왔어요 미친가성비\n마닐링 좋은 특등심 5팩세트\n188000원 ~> 파격특가 88,000원\n선주우\n설주우\n성추우\"\n어린소라 엄청 연해요!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4857142908232553,
+      "copyFacts": [
+        "마닐링 좋은 특등심 5팩세트",
+        "어린소라 엄청 연해요!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "188000원 ~> 파격특가 88,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:18:56.576Z"
+  },
+  {
+    "key": "6a10e285b95494bf43fcba2c4ef618f84b3f98c623e7534f937929b4e07b8571",
+    "insight": {
+      "id": "detail-ocr-0849c52cf75a",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202608310558304134195d0c5724-c391-43c1-8f93-5d843e56a857.jpg",
+      "contentHash": "0849c52cf75afdf86a41d10215027c69c92941714f71ab9b82ad8878d2cd20b3",
+      "ocrText": "추석사전예약시 50% 저럼\n**\n**\n드디어 나왔어요-미친가성비\n✓ 일등장 중에서도 30\n토마호크안 담은\n특수부위!!\n마블링 좋은 특등심 5팩세트\n188,000원 +> 파격특가 88,000원\n성추우°\n성축우\n어린소라 엄청 연해요!\n어린소라\n전문가의 손질\n신선 냉장 포장\n신선 포장\n엄청 연한소고기\n착한손질\n최상의 신선도\n빠른배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5700000017881394,
+      "copyFacts": [
+        "마블링 좋은 특등심 5팩세트",
+        "188,000원 +> 파격특가 88,000원",
+        "어린소라 엄청 연해요!",
+        "어린소라",
+        "신선 냉장 포장",
+        "신선 포장",
+        "최상의 신선도"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "추석사전예약시 50% 저럼",
+        "일등장 중에서도 30",
+        "빠른배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:18:56.664Z"
+  },
+  {
+    "key": "54918ad54a6720f599b8d1732f000377e228ce115091c6e68a3d58c9a1d7251f",
+    "insight": {
+      "id": "detail-ocr-4ed340ed5cb3",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/2023122503071610577698d072c2-a7aa-4cac-8601-644e52f646a2.jpg",
+      "contentHash": "4ed340ed5cb38436dd8696c908b840cbd09063acd6eb045170e02f6113ee509d",
+      "ocrText": "설록우\n설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:19:02.045Z"
+  },
+  {
+    "key": "3b8fe057e3856fe0b54cc1063728715c21cf2151895e4e37816e653e302e9658",
+    "insight": {
+      "id": "detail-ocr-41727f3ac973",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20250112035941068807dc3da260-f353-4b49-92ee-08eb316f42fc.jpg",
+      "contentHash": "41727f3ac973e322740badd260a8778f4a50289a474bb7908602cb243746416e",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:19:02.176Z"
+  },
+  {
+    "key": "0c25e02aa71160fae1e08ac76043e40f3d442ce396c015d0495df10b16274c28",
+    "insight": {
+      "id": "detail-ocr-e96a72fc2264",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240121025829739555b4fb5bf4-8ce5-4e72-a7de-c6828fb65a5a.jpg",
+      "contentHash": "e96a72fc2264a4a6177f0a966ccba702979ed2115369c2eb1fc4c72425f61e45",
+      "ocrText": "대한민국 NO.1 고기 브랜드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "대한민국 NO.1 고기 브랜드"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T15:19:04.875Z"
+  },
+  {
+    "key": "7fad2ef2e2ba615aa7b3da01350c57ac5a175e573b2b987638382201da3444f2",
+    "insight": {
+      "id": "detail-ocr-a8db251cae18",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/mobile/moment/img/review_banner.jpg",
+      "contentHash": "a8db251cae182805a0f122604e997ac6fcfe6fff1dce64369cbad3128413be41",
+      "ocrText": "4 푸딩팩토리 리뷰 베네핏 스\n작성만 해도 적립금이 팡팡!\n이번 달 베스트\n리뷰왕은 누구?\n리뷰 혜택을 지금 바로 확인해 보세요!\ns1,500P\n81,000P\n8300P\n#10초 이상\n#2컷 이상\n#40사 이상\n통영상 리뷰\n포토 리뷰\n넥스트 리뷰\n810,000P\ns 1,000P\n1 매달 베스트 리뷰 추가 지급\n4 신제품 첫 리뷰어 추가 지급\n나는야 베스트리뷰왕!\n나는야 푸드얼리어답터!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.725,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "4 푸딩팩토리 리뷰 베네핏 스",
+        "리뷰왕은 누구?",
+        "리뷰 혜택을 지금 바로 확인해 보세요!",
+        "s1,500P",
+        "81,000P",
+        "8300P",
+        "#10초 이상",
+        "#2컷 이상",
+        "#40사 이상",
+        "통영상 리뷰",
+        "포토 리뷰",
+        "넥스트 리뷰",
+        "810,000P",
+        "s 1,000P",
+        "1 매달 베스트 리뷰 추가 지급",
+        "4 신제품 첫 리뷰어 추가 지급",
+        "나는야 베스트리뷰왕!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:01:57.808Z"
+  },
+  {
+    "key": "602c457fb3f288e351738885e9eb7163906616b3fcd346ffe7a4d8ba0feaa930",
+    "insight": {
+      "id": "detail-ocr-3a93fc0b4123",
+      "imageUrl": "https://img.bizthenaum.co.kr/data/contents/202605/ori/202605_jpqyBMHz1vYI0eBJ11Y2.jpg",
+      "contentHash": "3a93fc0b41230981d219413ba8e780641a7192562a5b9d20e92d1e3e53b436f6",
+      "ocrText": "Pick!\nWHY FOODINGPICK?\n왜 '푸딩픽'인가요?\n푸딩픽을 선택해야 하는 이유\n01\n02\n초간편 레시피\n압도적 효율성\n365일 언제나 전문\n원팩 형태의 콤팩트한\n주방장 없이 5분 만에 완성\n패키지로 공간 효율 최대\n03\n04\n차별화된 퀄리티\n확실한 원가절감\n전문점 수준의 깊은\n중간 거품을 빼고 마진을\n맛으로 단골손님 증가\n확 낮춘 합리적인 공급가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.875,
+      "copyFacts": [
+        "왜 '푸딩픽'인가요?",
+        "초간편 레시피",
+        "원팩 형태의 콤팩트한",
+        "전문점 수준의 깊은",
+        "맛으로 단골손님 증가"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pick!",
+        "WHY FOODINGPICK?"
+      ],
+      "discardedNotices": [
+        "365일 언제나 전문",
+        "주방장 없이 5분 만에 완성"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:48.839Z"
+  },
+  {
+    "key": "5ac2e9a1933bbc11db32a64c6a5605fa3ae582ed801fbf1634d8b94200d5b2a6",
+    "insight": {
+      "id": "detail-ocr-70ac600b83fd",
+      "imageUrl": "https://img.bizthenaum.co.kr/data/contents/202605/ori/202605_mIvG86X3NKtkcye8Wen4.jpg",
+      "contentHash": "70ac600b83fd04e2b3ffd1f03326c4bb431fe637add61cc46abb3e7737b28aa2",
+      "ocrText": "Pice!\n셰프가 아니어도 5분이면 OK!\n넣고 끓이거나, 붓고 볶기만 하세요.\n변함없는 전문점의 맛",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "넣고 끓이거나, 붓고 볶기만 하세요.",
+        "변함없는 전문점의 맛"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pice!"
+      ],
+      "discardedNotices": [
+        "셰프가 아니어도 5분이면 OK!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:48.855Z"
+  },
+  {
+    "key": "dbea681eb9d98225bb0ff4604e1aba5493119063fa53a852135c15078ae4251e",
+    "insight": {
+      "id": "detail-ocr-8532f8c1ad09",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017140/image/add3/1000017140_add3_031.jpg",
+      "contentHash": "8532f8c1ad0944645e5e20c53bcd205961f2ece3e5c61866d79ebb5567129dbc",
+      "ocrText": "Pich!\n무당!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:50.386Z"
+  },
+  {
+    "key": "26e00c103479ebad192b0060b9b05caf7df800d99f9da3a6bf647450d6554b84",
+    "insight": {
+      "id": "detail-ocr-4a8680584810",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017141/image/add3/1000017141_add3_018.jpg",
+      "contentHash": "4a8680584810d722548fcfab2382112da1ed4dc67bbb30e4cd96ec183eb24f4a",
+      "ocrText": "Pia:!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:50.389Z"
+  },
+  {
+    "key": "1cf0af4b53452b8226128af2d15f99d52560f7e930332749ad357fbcc8c3eec0",
+    "insight": {
+      "id": "detail-ocr-9a7d00d6dfba",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017139/image/add3/1000017139_add3_09.jpg",
+      "contentHash": "9a7d00d6dfbadc93f7b8c3338f366ae4572a6540d208e36c999a70485581a988",
+      "ocrText": "Pich!\n부당명",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:51.374Z"
+  },
+  {
+    "key": "90edd2ce1229eef341bef5b34dc933da4e00ec2102729b3d5f26ce9834d66c83",
+    "insight": {
+      "id": "detail-ocr-767ffd341352",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017138/image/add3/1000017138_add3_074.jpg",
+      "contentHash": "767ffd341352aa62f64c92d54d7e48997af53a84ae105fd05ac12bd8c986d69b",
+      "ocrText": "Pick!\n푸핑",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pick!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:51.377Z"
+  },
+  {
+    "key": "b0a97603e8c7727a5f1a509c175a6b7b06fd43d14b5feac4e5160caebd14f731",
+    "insight": {
+      "id": "detail-ocr-58403f08e7c3",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017112/image/add3/1000017112_add3_011.jpg",
+      "contentHash": "58403f08e7c3d7007a251edd83701223c0b8541909d7b053c62ba717c9a11d90",
+      "ocrText": "Pich!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T16:40:54.554Z"
+  },
+  {
+    "key": "b6b7406a20a0a3e11e83acb36534ffc0cab29015199713eec1316d3eb8534c23",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [
+        "한국 1위 국가대표"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T23:12:22.328Z"
+  },
+  {
+    "key": "8e9217893d4d86e97f45f3a12b1aaea22fea56f6bae97cd666cec91b1819aaa5",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T23:12:22.357Z"
+  },
+  {
+    "key": "c101fe78c87e278224bf734992ba4f24bfa1956335ae5366b68b38986dd647c2",
+    "insight": {
+      "id": "detail-ocr-a80fb0713ed1",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026083106231787421880280977-a604-42a8-aff3-bf51673f42d3.jpg",
+      "contentHash": "a80fb0713ed15cdfd6f616ed77438c1fcfd80efae96f3b018cc0fc52605476f1",
+      "ocrText": "주석 스페셜 루부의 5등트\n어린소라 너무 연해요\nPREMIUM\nPREMIUM\n69%\n88,000원\n기획특가\n할인!\n정상가\n288,000원\n프리미엄 비프 추석 스페셜 특수부위 5종세트\n*",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7916666666666666,
+      "copyFacts": [
+        "어린소라 너무 연해요",
+        "88,000원",
+        "288,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM"
+      ],
+      "discardedNotices": [
+        "주석 스페셜 루부의 5등트",
+        "프리미엄 비프 추석 스페셜 특수부위 5종세트"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T23:12:25.745Z"
+  },
+  {
+    "key": "f266b8f960035d6e28ed24fedad582271870b078d5cdd4a74dc4a5f8c7501fc2",
+    "insight": {
+      "id": "detail-ocr-5256028a3101",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20251001061247689492cbb642c6-7553-470f-9a49-3637833973da.jpg",
+      "contentHash": "5256028a3101674d6f095776c246187e6d02b865cd102911628ae94e425abe25",
+      "ocrText": "업진살\n제비\n토시\n설록우리\n^\n설록우\n치마살\n부채살",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T23:12:26.064Z"
+  },
+  {
+    "key": "08fa986a106ae2f1120d50e2712e76555d17a129e35bcdd2b235d794b369bbba",
+    "insight": {
+      "id": "detail-ocr-afc8db2ece9e",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260205031536826827b0afc428-4a6a-4382-801c-6787c5e4a0e8.jpg",
+      "contentHash": "afc8db2ece9e53a58f8bdda827b493840e39202268780c0f3d614726e5cd60a3",
+      "ocrText": "PHEMONE\nITINEST OUALITY\n:INEST OUAUTY",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PHEMONE",
+        "ITINEST OUALITY",
+        ":INEST OUAUTY"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T23:12:27.967Z"
+  },
+  {
+    "key": "884091cd87ab77ac5c0aff7d95fe8c64b150f58cc0f51d1c65aa4b1bafb4d42a",
+    "insight": {
+      "id": "detail-ocr-1e2adec6ac47",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20251010060634082676d486fa67-7f42-4ca2-a6cb-bbc634108f5e.jpg",
+      "contentHash": "1e2adec6ac4771a98ed6d84405bde7d0b0113070a5167da4bd10d03a37991506",
+      "ocrText": "\"스테셜특수부위 모듬구이 세트®\n설록우\n설록우\n설록우\n(배송상품 실사진)\n설록우리\n리얼 특수부위 5종 특가\n88,000원\n288,000\n행사기간중 무료배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5700000047683715,
+      "copyFacts": [
+        "\"스테셜특수부위 모듬구이 세트®",
+        "88,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "(배송상품 실사진)",
+        "리얼 특수부위 5종 특가",
+        "288,000",
+        "행사기간중 무료배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-01T23:12:28.344Z"
+  },
+  {
+    "key": "9c47a787b7900d31baba5fe247a3756fe0e42e4f6223135ef0d144be981cfba4",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:00:45.301Z"
+  },
+  {
+    "key": "be7d85fe009fa1b5589a8bbaacab8d43258ac9ddc3fe3c789187a2786a1510de",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:00:45.361Z"
+  },
+  {
+    "key": "6c5009bddb5b410e35956e5aad5d49908bf5820a96281fb3d4a6028c98974997",
+    "insight": {
+      "id": "detail-ocr-76a47da4b545",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260525011906428537bb8e929b-8cea-4c6b-a98a-63cfad66ca2d.png",
+      "contentHash": "76a47da4b5452139156d10a210953138dd94264928d4ab40a1670a3a5c4271f1",
+      "ocrText": "대한민국이 들썩거리는 파격특가\n셜록우 저지방 찰진등심 1kg\n1kg박스\n설록위\"\n실제상품사진\n14만원 넘는 최고품질, 저지방건강육!\n오늘의 특가 49,800원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6857142874172756,
+      "copyFacts": [
+        "셜록우 저지방 찰진등심 1kg",
+        "1kg박스",
+        "오늘의 특가 49,800원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "14만원 넘는 최고품질, 저지방건강육!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:00:46.481Z"
+  },
+  {
+    "key": "83b0dcfc1c5e814d4d4aab9c98d578705debab6988cb2d98877e3fd527849c4d",
+    "insight": {
+      "id": "detail-ocr-3c3e98ad9b77",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202605240548598821245da86e77-c14c-4f60-8c2f-d5ed51a0ebfc.jpg",
+      "contentHash": "3c3e98ad9b7751fd70ff07d5d24d7c2d9a09acdcbf97f1d462adacc33e82725c",
+      "ocrText": "설록우 찰진등심 1kg 박스\n(어린소라 잡내안남)\n알등심 / 특마블 옵션 선택가능\n특등심 / 실속 도매팩\n실속가성비포\n어린소라\n잡내안남\n초위생\n가공\n손질완벽\n가성비 도매가격\n프리미엄\n설록우\n초신선\n1kg\n빠른배송\n대용량\n단골용\n1일 300팩한정\n기존가\n148,000원\n부드러움의\n파격\n49,800원\n끝판왕\n특가\n가성비 1등 상품\n3중선별 우수상품\n8 신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.648275862480032,
+      "copyFacts": [
+        "설록우 찰진등심 1kg 박스",
+        "특등심 / 실속 도매팩",
+        "148,000원",
+        "부드러움의",
+        "49,800원",
+        "가성비 1등 상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "알등심 / 특마블 옵션 선택가능",
+        "빠른배송",
+        "1일 300팩한정",
+        "3중선별 우수상품",
+        "8 신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:00:46.537Z"
+  },
+  {
+    "key": "f3d52863ea86a8a693a7fe46045e72432d15e7e230015d75cd4b881274b74265",
+    "insight": {
+      "id": "detail-ocr-b839049e64a6",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202606120310461044718f8e06ce-881c-44c5-9558-3a4a7d430b6a.jpg",
+      "contentHash": "b839049e64a6af74712e105b7fa9e266f9309b38efe30742d99480327cdb6cee",
+      "ocrText": "싸게 드릴려고\n50%3\n200톤 구매했어요\n할인 선\n(대량 구매해서 가격을 반으로 낮춤)\n1 특별기획가\n설록우\n찰진등심\n1kg 박스\n(어린소라 잡내안남)\n1kg\n알등심 / 특마블\n옵션 선택가능\n대용량\n부드러움의\n끝판왕!\n기존가\n149,000원\n49,800원\n파격특가\n가성비 1등 상품\n3종선별 우수상품\n신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7086956526922144,
+      "copyFacts": [
+        "찰진등심",
+        "1kg 박스",
+        "부드러움의",
+        "49,800원",
+        "가성비 1등 상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "200톤 구매했어요",
+        "옵션 선택가능",
+        "149,000원",
+        "3종선별 우수상품",
+        "신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:00:47.481Z"
+  },
+  {
+    "key": "34b8414424b7f9076f344e1ed84882621f861418046653ce9c5a9ee386dce481",
+    "insight": {
+      "id": "detail-ocr-086d5dbecfc6",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240127023517918810945f4275-081e-4e92-943c-ea539a352f49.jpg",
+      "contentHash": "086d5dbecfc675ce2a882a024536315e15bb04f5d739d9fc20a98702748e219e",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:00:49.711Z"
+  },
+  {
+    "key": "e88412b3f44d42e0735349875e6169555c8cf179fb5916ad19726b9df1993044",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:28.667Z"
+  },
+  {
+    "key": "412eca3a6e58c43ddc53cf7c7ae19fcc586b0742aa94b5b3cfb6ae9bef239d43",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:32.224Z"
+  },
+  {
+    "key": "f0283a1ee2db7ac418b15fed2579cb23b3b1865ae4689e671d49fd52ca20d64b",
+    "insight": {
+      "id": "detail-ocr-0849c52cf75a",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202608310558304134195d0c5724-c391-43c1-8f93-5d843e56a857.jpg",
+      "contentHash": "0849c52cf75afdf86a41d10215027c69c92941714f71ab9b82ad8878d2cd20b3",
+      "ocrText": "추석사전예약시 50% 저럼\n**\n**\n드디어 나왔어요-미친가성비\n✓ 일등장 중에서도 30\n토마호크안 담은\n특수부위!!\n마블링 좋은 특등심 5팩세트\n188,000원 +> 파격특가 88,000원\n성추우°\n성축우\n어린소라 엄청 연해요!\n어린소라\n전문가의 손질\n신선 냉장 포장\n신선 포장\n엄청 연한소고기\n착한손질\n최상의 신선도\n빠른배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5700000017881394,
+      "copyFacts": [
+        "마블링 좋은 특등심 5팩세트",
+        "188,000원 +> 파격특가 88,000원",
+        "어린소라 엄청 연해요!",
+        "어린소라",
+        "신선 냉장 포장",
+        "신선 포장",
+        "최상의 신선도"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "추석사전예약시 50% 저럼",
+        "일등장 중에서도 30",
+        "빠른배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:40.344Z"
+  },
+  {
+    "key": "799bb2a0e443a69132ac674c9fa3c21b784e457a3521fa53a5917c012a74c616",
+    "insight": {
+      "id": "detail-ocr-a12f5548a949",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202603200157294213847fa4da21-bcb7-4473-92b7-5fcf4f2319ad.jpg",
+      "contentHash": "a12f5548a949d5a0cf1dc5dd2f8211ad507349d77c21fa4fbf4c2eefb6d554ee",
+      "ocrText": "드디어 나왔어요 미친가성비\n마닐링 좋은 특등심 5팩세트\n188000원 ~> 파격특가 88,000원\n선주우\n설주우\n성추우\"\n어린소라 엄청 연해요!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4857142908232553,
+      "copyFacts": [
+        "마닐링 좋은 특등심 5팩세트",
+        "어린소라 엄청 연해요!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "188000원 ~> 파격특가 88,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:42.180Z"
+  },
+  {
+    "key": "956011de5f9630fe1b80450c35f26cbe786ba1b03a2cd2ddbe94395ba7c1bea0",
+    "insight": {
+      "id": "detail-ocr-41727f3ac973",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20250112035941068807dc3da260-f353-4b49-92ee-08eb316f42fc.jpg",
+      "contentHash": "41727f3ac973e322740badd260a8778f4a50289a474bb7908602cb243746416e",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:43.532Z"
+  },
+  {
+    "key": "167a23392d082465f2b27e6a6368dc54b40da67336c311a710f6be1f513ec574",
+    "insight": {
+      "id": "detail-ocr-4ed340ed5cb3",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/2023122503071610577698d072c2-a7aa-4cac-8601-644e52f646a2.jpg",
+      "contentHash": "4ed340ed5cb38436dd8696c908b840cbd09063acd6eb045170e02f6113ee509d",
+      "ocrText": "설록우\n설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:43.535Z"
+  },
+  {
+    "key": "03fe761c8cc45eb022630e8384d2fbe78aed6cebf0e2d4df3abad28acb599ac1",
+    "insight": {
+      "id": "detail-ocr-e96a72fc2264",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240121025829739555b4fb5bf4-8ce5-4e72-a7de-c6828fb65a5a.jpg",
+      "contentHash": "e96a72fc2264a4a6177f0a966ccba702979ed2115369c2eb1fc4c72425f61e45",
+      "ocrText": "대한민국 NO.1 고기 브랜드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "대한민국 NO.1 고기 브랜드"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:17:44.261Z"
+  },
+  {
+    "key": "98b4ad6b30392b6b21e6b3cade70a055fe511d194d6e6f31b51db0c6c41de6ee",
+    "insight": {
+      "id": "detail-ocr-d31a91360ee4",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202607/0206446860f55c9a4b384b5a0e3b9f6b.jpg",
+      "contentHash": "d31a91360ee4a734178cd84f5dcd7c5edc743c7e1f56b4f6a9cf187f1e75e182",
+      "ocrText": "5종 골라담아 세트\n원하는 향으로 선택 가능\nRECYCIED\n130%\nRECYCIED\n030%\nRECYCLED\n130%\n0130%\nRECYCLED\n130%\nRECYCLED\nTINGLY:\nZESTY\nMINTG\nLEMON\nTROPICAL\nZINGY\nLIME\nSWEET\nCOCONUT\nTEA TREE\nRHUBARB\nGTEATREE\n& SHEA BUTTER\nGRASPBERRY\nMATURAL\n4100%\n4100%\nFRACRANCE\nNATURAL\n0100%\n100%\nFRAGRANCE\nFRADRANCE\nNATURAI\nFRAGRANCE\nNATURAL\nNATURAL\n4100%\nFRAGRANCE\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\nSOURCE\nSOURCE\nSOURCE\n1.927\nREAL MINT\nV PCIA\n10REAL\n9 PCTA\n7.872\nTROPICAL\n2 PCTA\n4OREAL\nYPOTA\nESSENTIAL\nO PETA\nTHERY SO\nLEAVES IN\nO AIMONED\nEVERY BOTTLE\nSHOWER 250mle\nIVERY BOTTLE\nEVERY BOTTLE\nEVERY BOTTLE\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\n15% 할인",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.868421052631579,
+      "copyFacts": [
+        "5종 골라담아 세트",
+        "원하는 향으로 선택 가능",
+        "15% 할인"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "RECYCLED",
+        "TINGLY:",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TROPICAL",
+        "ZINGY",
+        "LIME",
+        "SWEET",
+        "COCONUT",
+        "TEA TREE",
+        "RHUBARB",
+        "GTEATREE",
+        "& SHEA BUTTER",
+        "GRASPBERRY",
+        "MATURAL",
+        "FRACRANCE",
+        "NATURAL",
+        "FRAGRANCE",
+        "FRADRANCE",
+        "NATURAI",
+        "ORIGINAL",
+        "SOURCE"
+      ],
+      "discardedNotices": [
+        "0130%",
+        "4100%",
+        "0100%",
+        "1.927",
+        "7.872"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:51.746Z"
+  },
+  {
+    "key": "10a24d33d5312e95e89a42ffa24cd7960c5713a987d2142cce5d62205766c487",
+    "insight": {
+      "id": "detail-ocr-195232af51f1",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202608/30f0ca5176ce2e8b2d397aa73b740b77.png",
+      "contentHash": "195232af51f10e035d0aa00cd442d855256b72951b6d89d185c93f275d6bb2fd",
+      "ocrText": "1M 30%\nRECYCLED\nZESTY\nLEMON\nGTEATREE\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nTOREAN\nOPETA\nEVERY BOTTLE\nN LEMONS IN\nBE APPROVED\nCloluet Aeimat Teat Poticy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TOREAN",
+        "OPETA",
+        "EVERY BOTTLE",
+        "N LEMONS IN",
+        "BE APPROVED",
+        "Cloluet Aeimat Teat Poticy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.410Z"
+  },
+  {
+    "key": "85f9f05db89c043f4da99fb07b51fad38483f6426f0adf11a3028c48209e2b59",
+    "insight": {
+      "id": "detail-ocr-9e8792a9ba12",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/f14e5b33d7abb26f3c5275cf11a69401.jpg",
+      "contentHash": "9e8792a9ba12772cd31ecb7a4e10646d0784254f7ddeb5c6ea00c8a1b38e30ea",
+      "ocrText": "SWEET:\nRHUBARB\nGRASPBERRY\n2100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nVPETA\nEVERY BOTTLE\nCO APPROVED\nGalat faimat Tert Picy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8461538461538461,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "SWEET:",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "VPETA",
+        "EVERY BOTTLE",
+        "CO APPROVED",
+        "Galat faimat Tert Picy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "2100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.421Z"
+  },
+  {
+    "key": "0fee990a0aaae999e8e6534d4d6c0168cc652e4b42f1d620a8272ce90d5f80ed",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.460Z"
+  },
+  {
+    "key": "4c53b25b14ed1c4c188e2d8b012db61438424e4bfac921e25ba673d72dd14d93",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.527Z"
+  },
+  {
+    "key": "8d0dec77b02ff21f641670407e8ddc859122110df5049599ea59f295e10f1cc3",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.542Z"
+  },
+  {
+    "key": "766a56d35cdb6625406b75cbbf78c0aca781068d5e220c6c75d3a4a28b4ec274",
+    "insight": {
+      "id": "detail-ocr-9baae2cc9e0c",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/781db3430cdddebeb6bea43d03a941de.jpg",
+      "contentHash": "9baae2cc9e0c69118926a50950d4efe5d8b668d7af6667a403fde82ac641ed0e",
+      "ocrText": "1M 30%\nRECYCLED\nLIME\n100%\nNATURAL\nFRAGRANCE\nVegent\nORIGINAL\nSOURCE\nNATURAL\nOPCTA\nIN EVERY BOTTE\nZINGY UIME OIL\nAPKONTED\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8666666666666667,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "LIME",
+        "NATURAL",
+        "FRAGRANCE",
+        "Vegent",
+        "ORIGINAL",
+        "SOURCE",
+        "OPCTA",
+        "IN EVERY BOTTE",
+        "ZINGY UIME OIL",
+        "APKONTED",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.550Z"
+  },
+  {
+    "key": "613215a69a0fc6ec328a2d3a03fc04fec4f5a07c468995cecc5ca749bf1ddde5",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:54.558Z"
+  },
+  {
+    "key": "232575cebbd03d246df79ec09ed469cc0898f34ac668c23df29fbe7c49104742",
+    "insight": {
+      "id": "detail-ocr-4d2ebcdbeb8b",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/c4be9aee86b83f8426fd4e446d9662c5.jpg",
+      "contentHash": "4d2ebcdbeb8bf2672acba55c36bf2dcfbaca178bbb9e0ddf27b595649af8c1ec",
+      "ocrText": "RECYCLED\n3M 30%\nSWEET!\nRHUBARB\nGRASPBERRY\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nOILS I\nIESSENTIA\nOPETA\nEVERY BOTTLE\nGlast tainal Teat Pig\nAPPROVED\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8529411764705882,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "SWEET!",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OILS I",
+        "IESSENTIA",
+        "OPETA",
+        "EVERY BOTTLE",
+        "Glast tainal Teat Pig",
+        "APPROVED",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "3M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:56.367Z"
+  },
+  {
+    "key": "57709f99259c840145ba1d084b0c626f9107de155d0f2911557d1bdf45588f3a",
+    "insight": {
+      "id": "detail-ocr-2a74b0838e20",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/38b8580f2d9a8b22373ccbc4cdb6d1cf.jpg",
+      "contentHash": "2a74b0838e2059ede85fac4ab4d93d6453f2a973df02fedf039a398428338ba6",
+      "ocrText": "RECYCLED\n1130%\nZESTY\nLEMON\nSTEATREE\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nAPPROVED\nGlobal Amimat Tist Plicy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "STEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "APPROVED",
+        "Global Amimat Tist Plicy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:56.794Z"
+  },
+  {
+    "key": "0a41c1f9193c956f566c8999b5f6cab70f22ba5ebb037dbfab693cd253b798ab",
+    "insight": {
+      "id": "detail-ocr-8708a6f114d9",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/a188eeb23abbc356704112aefd71a90a.jpg",
+      "contentHash": "8708a6f114d9910edcafc74544b506b5421edbe087d4333b4db3ed66e7f770f9",
+      "ocrText": "RECYCLED\n3130%\nLIME\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nZINGY LIME OIL\nIN EVERY BOTTLE\nAPPROVED\nGlobal Animal Tear Policy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9333333333333333,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "LIME",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "ZINGY LIME OIL",
+        "IN EVERY BOTTLE",
+        "APPROVED",
+        "Global Animal Tear Policy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "3130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:18:58.693Z"
+  },
+  {
+    "key": "2f8bd386aa60e451a24828dd331936cdbfebf9c7d6af2efb4ca0b9c386bd8c6c",
+    "insight": {
+      "id": "detail-ocr-174cc3c4a5a3",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/5772ac7855e3a5fc2ea6a59fda161e9a.jpg",
+      "contentHash": "174cc3c4a5a32707c5530a833840d3f2e9aaf9e162a8a970ef23d1dd0c8d5452",
+      "ocrText": "답답한 날\n시원 상쾌하게\nRECYCIED\n4430%\nZESTY\nLEMON\nGTEATREE\n9100%\nFRACRANCE)\nNATURAT\nORIGINAL\nSOURCE\nNATURAL\nLESTY LEMON O\n{EVERY BOTTL\nVPCTA\nSHOWER 250mle\nCoet tana Toins\nCON ARTEONTO",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7894736842105263,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "FRACRANCE)",
+        "NATURAT",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "LESTY LEMON O",
+        "{EVERY BOTTL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "Coet tana Toins",
+        "CON ARTEONTO"
+      ],
+      "discardedNotices": [
+        "4430%",
+        "9100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:19:00.230Z"
+  },
+  {
+    "key": "5cbb429d57b8d52a00ee9241eafa483b11f791a3386508aa3cb4b996c83bbb62",
+    "insight": {
+      "id": "detail-ocr-4f17b1219f60",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/25fffb1c30c5c681ea89335701590e5a.jpg",
+      "contentHash": "4f17b1219f6092130c46205d89021732044b7cdaab49573a1123294f8e53a7e2",
+      "ocrText": "예민한 날 달콤 향긋하게\nRECYCIED\nA 30%\nSWEET\nRHUBARB\nGRASPBERRY\nNATURAL\n0100%\nFRAGRANCE\nORIGINAL\nSOURCE\nTASSENTIA\nEVERY BOTTLE\nTOIS IN\nV PCTA\nSHOWER 250mle\nSD ARTROVED",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [
+        "예민한 날 달콤 향긋하게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "SWEET",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TASSENTIA",
+        "EVERY BOTTLE",
+        "TOIS IN",
+        "V PCTA",
+        "SHOWER 250mle",
+        "SD ARTROVED"
+      ],
+      "discardedNotices": [
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:19:00.254Z"
+  },
+  {
+    "key": "c4311c28ca00aadf4db31b6cd4195362d5d38234c1ab951e2fecf27ea49ff58c",
+    "insight": {
+      "id": "detail-ocr-230a378b6acf",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/af871a93fe53d8ec0438fa0ae71245b6.jpg",
+      "contentHash": "230a378b6acf6b2d38447e0b1925bac7f8c3fb461f9a403323a85d13004b9260",
+      "ocrText": "힘빠진 날\n생기 활기차게\nRECYCIED\n# 30%\nZINGY\nLIME\n0100%\nFRAGRANCE\nSATURAL\nORIGINAL\nSOURCE\nNATURAL\nIN EVERY BOTTLE\nZINGY LIME OIL\nVPCTA\nSHOWER 250mle\nEO APKOTED",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8235294117647058,
+      "copyFacts": [
+        "생기 활기차게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZINGY",
+        "LIME",
+        "FRAGRANCE",
+        "SATURAL",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "IN EVERY BOTTLE",
+        "ZINGY LIME OIL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "EO APKOTED"
+      ],
+      "discardedNotices": [
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:19:00.297Z"
+  },
+  {
+    "key": "3c429d5696f593b10e62c1e1b8bd079fccfe3aca81610f35b8523456f2776edb",
+    "insight": {
+      "id": "detail-ocr-3a93fc0b4123",
+      "imageUrl": "https://img.bizthenaum.co.kr/data/contents/202605/ori/202605_jpqyBMHz1vYI0eBJ11Y2.jpg",
+      "contentHash": "3a93fc0b41230981d219413ba8e780641a7192562a5b9d20e92d1e3e53b436f6",
+      "ocrText": "Pick!\nWHY FOODINGPICK?\n왜 '푸딩픽'인가요?\n푸딩픽을 선택해야 하는 이유\n01\n02\n초간편 레시피\n압도적 효율성\n365일 언제나 전문\n원팩 형태의 콤팩트한\n주방장 없이 5분 만에 완성\n패키지로 공간 효율 최대\n03\n04\n차별화된 퀄리티\n확실한 원가절감\n전문점 수준의 깊은\n중간 거품을 빼고 마진을\n맛으로 단골손님 증가\n확 낮춘 합리적인 공급가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.875,
+      "copyFacts": [
+        "왜 '푸딩픽'인가요?",
+        "초간편 레시피",
+        "원팩 형태의 콤팩트한",
+        "전문점 수준의 깊은",
+        "맛으로 단골손님 증가"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pick!",
+        "WHY FOODINGPICK?"
+      ],
+      "discardedNotices": [
+        "365일 언제나 전문",
+        "주방장 없이 5분 만에 완성"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:41.584Z"
+  },
+  {
+    "key": "7f8f27a15fd9416803c999c9d5f05ef72d51e1b896937bde4bcd0f92201943c0",
+    "insight": {
+      "id": "detail-ocr-70ac600b83fd",
+      "imageUrl": "https://img.bizthenaum.co.kr/data/contents/202605/ori/202605_mIvG86X3NKtkcye8Wen4.jpg",
+      "contentHash": "70ac600b83fd04e2b3ffd1f03326c4bb431fe637add61cc46abb3e7737b28aa2",
+      "ocrText": "Pice!\n셰프가 아니어도 5분이면 OK!\n넣고 끓이거나, 붓고 볶기만 하세요.\n변함없는 전문점의 맛",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "넣고 끓이거나, 붓고 볶기만 하세요.",
+        "변함없는 전문점의 맛"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pice!"
+      ],
+      "discardedNotices": [
+        "셰프가 아니어도 5분이면 OK!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:41.639Z"
+  },
+  {
+    "key": "9f05317eb18979e244529069fad1fd5dbafd9c199ff116d84a450043f61b9a57",
+    "insight": {
+      "id": "detail-ocr-8532f8c1ad09",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017140/image/add3/1000017140_add3_031.jpg",
+      "contentHash": "8532f8c1ad0944645e5e20c53bcd205961f2ece3e5c61866d79ebb5567129dbc",
+      "ocrText": "Pich!\n무당!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:42.848Z"
+  },
+  {
+    "key": "ce292d899ed5e8336b5801ba4ca785e0628b50328a40bc92084662fed25f64b3",
+    "insight": {
+      "id": "detail-ocr-4a8680584810",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017141/image/add3/1000017141_add3_018.jpg",
+      "contentHash": "4a8680584810d722548fcfab2382112da1ed4dc67bbb30e4cd96ec183eb24f4a",
+      "ocrText": "Pia:!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:42.850Z"
+  },
+  {
+    "key": "80873fb5819b0fe78d0d9e08ad3d68a309086b0cd60c9a1eb971cf2df6da235c",
+    "insight": {
+      "id": "detail-ocr-9a7d00d6dfba",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017139/image/add3/1000017139_add3_09.jpg",
+      "contentHash": "9a7d00d6dfbadc93f7b8c3338f366ae4572a6540d208e36c999a70485581a988",
+      "ocrText": "Pich!\n부당명",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:43.644Z"
+  },
+  {
+    "key": "9b98b08cb59593a1f89a0855734b56da7b3778fc1f70d023d5322297581e5814",
+    "insight": {
+      "id": "detail-ocr-767ffd341352",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017138/image/add3/1000017138_add3_074.jpg",
+      "contentHash": "767ffd341352aa62f64c92d54d7e48997af53a84ae105fd05ac12bd8c986d69b",
+      "ocrText": "Pick!\n푸핑",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pick!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:43.723Z"
+  },
+  {
+    "key": "1f975f2432b38f9ef939427888805a31815dd1d42df084cfe2e61284afb3375a",
+    "insight": {
+      "id": "detail-ocr-58403f08e7c3",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000017112/image/add3/1000017112_add3_011.jpg",
+      "contentHash": "58403f08e7c3d7007a251edd83701223c0b8541909d7b053c62ba717c9a11d90",
+      "ocrText": "Pich!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T07:33:45.851Z"
+  },
+  {
+    "key": "5054a864da807c6ef82bc221c7cb8d751fd300fe2fb8f1776401b0702def99b6",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T12:20:36.033Z"
+  },
+  {
+    "key": "cf2268e51570f7028768d8f8c68ed3ba6af927bf39528b9d13f8e44541060e50",
+    "insight": {
+      "id": "detail-ocr-d31a91360ee4",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202607/0206446860f55c9a4b384b5a0e3b9f6b.jpg",
+      "contentHash": "d31a91360ee4a734178cd84f5dcd7c5edc743c7e1f56b4f6a9cf187f1e75e182",
+      "ocrText": "5종 골라담아 세트\n원하는 향으로 선택 가능\nRECYCIED\n130%\nRECYCIED\n030%\nRECYCLED\n130%\n0130%\nRECYCLED\n130%\nRECYCLED\nTINGLY:\nZESTY\nMINTG\nLEMON\nTROPICAL\nZINGY\nLIME\nSWEET\nCOCONUT\nTEA TREE\nRHUBARB\nGTEATREE\n& SHEA BUTTER\nGRASPBERRY\nMATURAL\n4100%\n4100%\nFRACRANCE\nNATURAL\n0100%\n100%\nFRAGRANCE\nFRADRANCE\nNATURAI\nFRAGRANCE\nNATURAL\nNATURAL\n4100%\nFRAGRANCE\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\nSOURCE\nSOURCE\nSOURCE\n1.927\nREAL MINT\nV PCIA\n10REAL\n9 PCTA\n7.872\nTROPICAL\n2 PCTA\n4OREAL\nYPOTA\nESSENTIAL\nO PETA\nTHERY SO\nLEAVES IN\nO AIMONED\nEVERY BOTTLE\nSHOWER 250mle\nIVERY BOTTLE\nEVERY BOTTLE\nEVERY BOTTLE\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\n15% 할인",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.868421052631579,
+      "copyFacts": [
+        "5종 골라담아 세트",
+        "원하는 향으로 선택 가능",
+        "15% 할인"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "RECYCLED",
+        "TINGLY:",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TROPICAL",
+        "ZINGY",
+        "LIME",
+        "SWEET",
+        "COCONUT",
+        "TEA TREE",
+        "RHUBARB",
+        "GTEATREE",
+        "& SHEA BUTTER",
+        "GRASPBERRY",
+        "MATURAL",
+        "FRACRANCE",
+        "NATURAL",
+        "FRAGRANCE",
+        "FRADRANCE",
+        "NATURAI",
+        "ORIGINAL",
+        "SOURCE"
+      ],
+      "discardedNotices": [
+        "0130%",
+        "4100%",
+        "0100%",
+        "1.927",
+        "7.872"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T12:20:36.541Z"
+  },
+  {
+    "key": "ff0ad375b2c6d47c70b02bf9f2d7b026d04761a123961683e5135b4520eb3f59",
+    "insight": {
+      "id": "detail-ocr-a8db251cae18",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/mobile/moment/img/review_banner.jpg",
+      "contentHash": "a8db251cae182805a0f122604e997ac6fcfe6fff1dce64369cbad3128413be41",
+      "ocrText": "4 푸딩팩토리 리뷰 베네핏 스\n작성만 해도 적립금이 팡팡!\n이번 달 베스트\n리뷰왕은 누구?\n리뷰 혜택을 지금 바로 확인해 보세요!\ns1,500P\n81,000P\n8300P\n#10초 이상\n#2컷 이상\n#40사 이상\n통영상 리뷰\n포토 리뷰\n넥스트 리뷰\n810,000P\ns 1,000P\n1 매달 베스트 리뷰 추가 지급\n4 신제품 첫 리뷰어 추가 지급\n나는야 베스트리뷰왕!\n나는야 푸드얼리어답터!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.725,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "4 푸딩팩토리 리뷰 베네핏 스",
+        "리뷰왕은 누구?",
+        "리뷰 혜택을 지금 바로 확인해 보세요!",
+        "s1,500P",
+        "81,000P",
+        "8300P",
+        "#10초 이상",
+        "#2컷 이상",
+        "#40사 이상",
+        "통영상 리뷰",
+        "포토 리뷰",
+        "넥스트 리뷰",
+        "810,000P",
+        "s 1,000P",
+        "1 매달 베스트 리뷰 추가 지급",
+        "4 신제품 첫 리뷰어 추가 지급",
+        "나는야 베스트리뷰왕!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T13:58:08.531Z"
+  },
+  {
+    "key": "2012e8f422be096226939e42bc409cb0a0640a97c205aea0e865adc515838037",
+    "insight": {
+      "id": "detail-ocr-be882ee99030",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202401270459315847297e0731c0-7965-4be8-9a65-caed2bbb534f.jpg",
+      "contentHash": "be882ee9903051172b56f7889f96d551e95f759e3ebd22cd6740ff69fc16630b",
+      "ocrText": "^대 ..못하 0",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "^대 ..못하 0"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:49:38.641Z"
+  },
+  {
+    "key": "946c482a145472a876b939f82eaeb9337022acb9dea0d66b9a24841ee9e7ee67",
+    "insight": {
+      "id": "detail-ocr-05038a3ac1ba",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609020633563440633cb7ceef-439e-4801-83d9-c5505f92ef3a.jpg",
+      "contentHash": "05038a3ac1babc091207c0a70485d42fe698c60934750d1c7536b4015adf1d22",
+      "ocrText": "[추석맞이 50% 반짝특가]\n한우안심스테이크\n**\n스테이크\n1등부위\n한우안심\n선물세트\n스테이크\n(추석 스페셜/국내산 한우)\nPremium Bes\n[대한민국 최저가 1000세트 한정]\n국내산 유 프레이엄 비프\n[1팩당 24,500원꼴]\n국내산 한우 안심\n100% 프리미엄\n전문가의 손질\n착한 손질\n신선 냉장 포장\n최상의 신선도\n선물 포장\n선물용 최적화\n240\n9,000원\n특별\n74,000원\n기획특가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "[추석맞이 50% 반짝특가]",
+        "한우안심스테이크",
+        "스테이크",
+        "한우안심",
+        "선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "국내산 유 프레이엄 비프",
+        "국내산 한우 안심",
+        "100% 프리미엄",
+        "신선 냉장 포장",
+        "최상의 신선도",
+        "선물 포장"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premium Bes"
+      ],
+      "discardedNotices": [
+        "1등부위",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "9,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:49:38.787Z"
+  },
+  {
+    "key": "36918c7e54982e34a033832974dbbbd66d0a3a13ac87d6f08bf47accd1bd30d3",
+    "insight": {
+      "id": "detail-ocr-e52e04333f00",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260902032719151883dd8a325c-bb1d-41d5-aefe-994bad5e1fdf.jpg",
+      "contentHash": "e52e04333f00fae716110208ec6c5b7c86b98150c1f81995389c128e4c948754",
+      "ocrText": "[추석맞이 50% 반짝특가]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bee\n[1팩당 24,500원꼴]\n구대한유 즈리디에 비드\n240,000\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "[추석맞이 50% 반짝특가]",
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bee"
+      ],
+      "discardedNotices": [
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:49:42.634Z"
+  },
+  {
+    "key": "19e19543767b49c2bb264989e3eaf73e521376dbb8953cba6d9d9b3e836ebaa9",
+    "insight": {
+      "id": "detail-ocr-46cf8d2c58ff",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020904373338203958c37046-1bd0-46ac-8b49-2843848cd9cb.png",
+      "contentHash": "46cf8d2c58ffd03cbfcf11f39b366bbea752ceccd050afcaba09d74d32ce1817",
+      "ocrText": "remium Segr\n국내한유 프리디앙 비드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "remium Segr"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:49:43.854Z"
+  },
+  {
+    "key": "b3dcd68d65d4b880fa1fe2ecfcf931a812dba1c6fb4dd04e4cd0f5a1604c704a",
+    "insight": {
+      "id": "detail-ocr-670e763b2f22",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260902042700900696fb10c9f5-18e6-4bea-b429-c13972aacd69.jpg",
+      "contentHash": "670e763b2f2219db7f50e0bc50c7791fcd170f45be7568ec0152c88f060b28a2",
+      "ocrText": "PRENIUM\nPREA\nPREMIUM",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PRENIUM",
+        "PREA",
+        "PREMIUM"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:49:44.547Z"
+  },
+  {
+    "key": "69c746952df78d59014c48e8ab7df12156372b62915b42a71fbf283dfc948c87",
+    "insight": {
+      "id": "detail-ocr-d31a91360ee4",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202607/0206446860f55c9a4b384b5a0e3b9f6b.jpg",
+      "contentHash": "d31a91360ee4a734178cd84f5dcd7c5edc743c7e1f56b4f6a9cf187f1e75e182",
+      "ocrText": "5종 골라담아 세트\n원하는 향으로 선택 가능\nRECYCIED\n130%\nRECYCIED\n030%\nRECYCLED\n130%\n0130%\nRECYCLED\n130%\nRECYCLED\nTINGLY:\nZESTY\nMINTG\nLEMON\nTROPICAL\nZINGY\nLIME\nSWEET\nCOCONUT\nTEA TREE\nRHUBARB\nGTEATREE\n& SHEA BUTTER\nGRASPBERRY\nMATURAL\n4100%\n4100%\nFRACRANCE\nNATURAL\n0100%\n100%\nFRAGRANCE\nFRADRANCE\nNATURAI\nFRAGRANCE\nNATURAL\nNATURAL\n4100%\nFRAGRANCE\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\nSOURCE\nSOURCE\nSOURCE\n1.927\nREAL MINT\nV PCIA\n10REAL\n9 PCTA\n7.872\nTROPICAL\n2 PCTA\n4OREAL\nYPOTA\nESSENTIAL\nO PETA\nTHERY SO\nLEAVES IN\nO AIMONED\nEVERY BOTTLE\nSHOWER 250mle\nIVERY BOTTLE\nEVERY BOTTLE\nEVERY BOTTLE\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\nSHOWER 250mle\n15% 할인",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.868421052631579,
+      "copyFacts": [
+        "5종 골라담아 세트",
+        "원하는 향으로 선택 가능",
+        "15% 할인"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "RECYCLED",
+        "TINGLY:",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TROPICAL",
+        "ZINGY",
+        "LIME",
+        "SWEET",
+        "COCONUT",
+        "TEA TREE",
+        "RHUBARB",
+        "GTEATREE",
+        "& SHEA BUTTER",
+        "GRASPBERRY",
+        "MATURAL",
+        "FRACRANCE",
+        "NATURAL",
+        "FRAGRANCE",
+        "FRADRANCE",
+        "NATURAI",
+        "ORIGINAL",
+        "SOURCE"
+      ],
+      "discardedNotices": [
+        "0130%",
+        "4100%",
+        "0100%",
+        "1.927",
+        "7.872"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:32.894Z"
+  },
+  {
+    "key": "e6167539edf78efd5f4d46b8f0f1b026601a176c0d0b800b1543e587c22ea182",
+    "insight": {
+      "id": "detail-ocr-195232af51f1",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202608/30f0ca5176ce2e8b2d397aa73b740b77.png",
+      "contentHash": "195232af51f10e035d0aa00cd442d855256b72951b6d89d185c93f275d6bb2fd",
+      "ocrText": "1M 30%\nRECYCLED\nZESTY\nLEMON\nGTEATREE\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nTOREAN\nOPETA\nEVERY BOTTLE\nN LEMONS IN\nBE APPROVED\nCloluet Aeimat Teat Poticy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TOREAN",
+        "OPETA",
+        "EVERY BOTTLE",
+        "N LEMONS IN",
+        "BE APPROVED",
+        "Cloluet Aeimat Teat Poticy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:32.951Z"
+  },
+  {
+    "key": "28001c2da7ed5c14003d05e75b15361aefdef873978d2ef55bc591215ed3c3be",
+    "insight": {
+      "id": "detail-ocr-9baae2cc9e0c",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/781db3430cdddebeb6bea43d03a941de.jpg",
+      "contentHash": "9baae2cc9e0c69118926a50950d4efe5d8b668d7af6667a403fde82ac641ed0e",
+      "ocrText": "1M 30%\nRECYCLED\nLIME\n100%\nNATURAL\nFRAGRANCE\nVegent\nORIGINAL\nSOURCE\nNATURAL\nOPCTA\nIN EVERY BOTTE\nZINGY UIME OIL\nAPKONTED\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8666666666666667,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "LIME",
+        "NATURAL",
+        "FRAGRANCE",
+        "Vegent",
+        "ORIGINAL",
+        "SOURCE",
+        "OPCTA",
+        "IN EVERY BOTTE",
+        "ZINGY UIME OIL",
+        "APKONTED",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1M 30%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:32.988Z"
+  },
+  {
+    "key": "75956b406f3fc73c3ca4ebd35aafe615f82419d042ab639b001f33f886282846",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:33.021Z"
+  },
+  {
+    "key": "ccbd742fc5e5f194de1428c51e800cb5656dd225c24b9c386f418e9d5bf9a925",
+    "insight": {
+      "id": "detail-ocr-9e8792a9ba12",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/f14e5b33d7abb26f3c5275cf11a69401.jpg",
+      "contentHash": "9e8792a9ba12772cd31ecb7a4e10646d0784254f7ddeb5c6ea00c8a1b38e30ea",
+      "ocrText": "SWEET:\nRHUBARB\nGRASPBERRY\n2100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nVPETA\nEVERY BOTTLE\nCO APPROVED\nGalat faimat Tert Picy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8461538461538461,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "SWEET:",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "VPETA",
+        "EVERY BOTTLE",
+        "CO APPROVED",
+        "Galat faimat Tert Picy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "2100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:33.025Z"
+  },
+  {
+    "key": "045c9394d784b50c991f53747cf10ac1dcc092507582078e9cf5d204333dc6bf",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:33.029Z"
+  },
+  {
+    "key": "a9f9a543a2cfb882fd8bf5ca363c0de796e835e24148ed0cefbebdbb03962076",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:33.035Z"
+  },
+  {
+    "key": "0a35d30422a16139bc15cbd2d6f9629f4f413e13858ebdd4dd4dfe14df528fe9",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:33.041Z"
+  },
+  {
+    "key": "74e54370893256d54e0e7a47ab3b7056c2547bb3f85fc8b368cb1e6bc958a26a",
+    "insight": {
+      "id": "detail-ocr-4d2ebcdbeb8b",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/c4be9aee86b83f8426fd4e446d9662c5.jpg",
+      "contentHash": "4d2ebcdbeb8bf2672acba55c36bf2dcfbaca178bbb9e0ddf27b595649af8c1ec",
+      "ocrText": "RECYCLED\n3M 30%\nSWEET!\nRHUBARB\nGRASPBERRY\n6100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nOILS I\nIESSENTIA\nOPETA\nEVERY BOTTLE\nGlast tainal Teat Pig\nAPPROVED\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8529411764705882,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "SWEET!",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OILS I",
+        "IESSENTIA",
+        "OPETA",
+        "EVERY BOTTLE",
+        "Glast tainal Teat Pig",
+        "APPROVED",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "3M 30%",
+        "6100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:34.967Z"
+  },
+  {
+    "key": "b496b5fa77de9c237c704b4d933e0b30a2da422996df107e395a50bb395ceacb",
+    "insight": {
+      "id": "detail-ocr-2a74b0838e20",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/38b8580f2d9a8b22373ccbc4cdb6d1cf.jpg",
+      "contentHash": "2a74b0838e2059ede85fac4ab4d93d6453f2a973df02fedf039a398428338ba6",
+      "ocrText": "RECYCLED\n1130%\nZESTY\nLEMON\nSTEATREE\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nAPPROVED\nGlobal Amimat Tist Plicy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "ZESTY",
+        "LEMON",
+        "STEATREE",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "APPROVED",
+        "Global Amimat Tist Plicy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "1130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:35.142Z"
+  },
+  {
+    "key": "9e4395e31d6c0aa18ebc6d20c6e6026da2b77ac899d47119a19112fbb0a5cdad",
+    "insight": {
+      "id": "detail-ocr-4f17b1219f60",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/25fffb1c30c5c681ea89335701590e5a.jpg",
+      "contentHash": "4f17b1219f6092130c46205d89021732044b7cdaab49573a1123294f8e53a7e2",
+      "ocrText": "예민한 날 달콤 향긋하게\nRECYCIED\nA 30%\nSWEET\nRHUBARB\nGRASPBERRY\nNATURAL\n0100%\nFRAGRANCE\nORIGINAL\nSOURCE\nTASSENTIA\nEVERY BOTTLE\nTOIS IN\nV PCTA\nSHOWER 250mle\nSD ARTROVED",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7941176470588235,
+      "copyFacts": [
+        "예민한 날 달콤 향긋하게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "SWEET",
+        "RHUBARB",
+        "GRASPBERRY",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "TASSENTIA",
+        "EVERY BOTTLE",
+        "TOIS IN",
+        "V PCTA",
+        "SHOWER 250mle",
+        "SD ARTROVED"
+      ],
+      "discardedNotices": [
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:35.155Z"
+  },
+  {
+    "key": "b19a5bcb5e6d82b29ac378c8d6713bf6990fea694996444d79bce02ee3197b63",
+    "insight": {
+      "id": "detail-ocr-230a378b6acf",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/af871a93fe53d8ec0438fa0ae71245b6.jpg",
+      "contentHash": "230a378b6acf6b2d38447e0b1925bac7f8c3fb461f9a403323a85d13004b9260",
+      "ocrText": "힘빠진 날\n생기 활기차게\nRECYCIED\n# 30%\nZINGY\nLIME\n0100%\nFRAGRANCE\nSATURAL\nORIGINAL\nSOURCE\nNATURAL\nIN EVERY BOTTLE\nZINGY LIME OIL\nVPCTA\nSHOWER 250mle\nEO APKOTED",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8235294117647058,
+      "copyFacts": [
+        "생기 활기차게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZINGY",
+        "LIME",
+        "FRAGRANCE",
+        "SATURAL",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "IN EVERY BOTTLE",
+        "ZINGY LIME OIL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "EO APKOTED"
+      ],
+      "discardedNotices": [
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:35.160Z"
+  },
+  {
+    "key": "77e31a8bde691def3215507d8f4ef09db6009df6613ddbc82a4917c2311e45c2",
+    "insight": {
+      "id": "detail-ocr-8708a6f114d9",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/a188eeb23abbc356704112aefd71a90a.jpg",
+      "contentHash": "8708a6f114d9910edcafc74544b506b5421edbe087d4333b4db3ed66e7f770f9",
+      "ocrText": "RECYCLED\n3130%\nLIME\n0100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\nNATURAL\nOPETA\nZINGY LIME OIL\nIN EVERY BOTTLE\nAPPROVED\nGlobal Animal Tear Policy\nSHOWER 250mle",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9333333333333333,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCLED",
+        "LIME",
+        "NATURAL",
+        "FRAGRANCE",
+        "ORIGINAL",
+        "SOURCE",
+        "OPETA",
+        "ZINGY LIME OIL",
+        "IN EVERY BOTTLE",
+        "APPROVED",
+        "Global Animal Tear Policy",
+        "SHOWER 250mle"
+      ],
+      "discardedNotices": [
+        "3130%",
+        "0100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:35.199Z"
+  },
+  {
+    "key": "ebee86af7ab5723a84b8e0dcaeea3d9e1437ae746fe9991dbd085a9ea2b19a06",
+    "insight": {
+      "id": "detail-ocr-174cc3c4a5a3",
+      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/5772ac7855e3a5fc2ea6a59fda161e9a.jpg",
+      "contentHash": "174cc3c4a5a32707c5530a833840d3f2e9aaf9e162a8a970ef23d1dd0c8d5452",
+      "ocrText": "답답한 날\n시원 상쾌하게\nRECYCIED\n4430%\nZESTY\nLEMON\nGTEATREE\n9100%\nFRACRANCE)\nNATURAT\nORIGINAL\nSOURCE\nNATURAL\nLESTY LEMON O\n{EVERY BOTTL\nVPCTA\nSHOWER 250mle\nCoet tana Toins\nCON ARTEONTO",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7894736842105263,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "RECYCIED",
+        "ZESTY",
+        "LEMON",
+        "GTEATREE",
+        "FRACRANCE)",
+        "NATURAT",
+        "ORIGINAL",
+        "SOURCE",
+        "NATURAL",
+        "LESTY LEMON O",
+        "{EVERY BOTTL",
+        "VPCTA",
+        "SHOWER 250mle",
+        "Coet tana Toins",
+        "CON ARTEONTO"
+      ],
+      "discardedNotices": [
+        "4430%",
+        "9100%"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T16:50:35.216Z"
+  },
+  {
+    "key": "cad28485d342edd4adfbd2bec134bfdd329e6724578ea0b37aaaa140653fdace",
+    "insight": {
+      "id": "detail-ocr-05038a3ac1ba",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609020633563440633cb7ceef-439e-4801-83d9-c5505f92ef3a.jpg",
+      "contentHash": "05038a3ac1babc091207c0a70485d42fe698c60934750d1c7536b4015adf1d22",
+      "ocrText": "[추석맞이 50% 반짝특가]\n한우안심스테이크\n**\n스테이크\n1등부위\n한우안심\n선물세트\n스테이크\n(추석 스페셜/국내산 한우)\nPremium Bes\n[대한민국 최저가 1000세트 한정]\n국내산 유 프레이엄 비프\n[1팩당 24,500원꼴]\n국내산 한우 안심\n100% 프리미엄\n전문가의 손질\n착한 손질\n신선 냉장 포장\n최상의 신선도\n선물 포장\n선물용 최적화\n240\n9,000원\n특별\n74,000원\n기획특가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "한우안심스테이크",
+        "스테이크",
+        "한우안심",
+        "선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "국내산 유 프레이엄 비프",
+        "국내산 한우 안심",
+        "100% 프리미엄",
+        "신선 냉장 포장",
+        "최상의 신선도",
+        "선물 포장",
+        "선물용 최적화"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premium Bes"
+      ],
+      "discardedNotices": [
+        "[추석맞이 50% 반짝특가]",
+        "1등부위",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "9,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T23:24:15.340Z"
+  },
+  {
+    "key": "49ececdb077e94fda41c1ea63214662a729b60f6eb05fe2a90e643aeeb5c0fc0",
+    "insight": {
+      "id": "detail-ocr-be882ee99030",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202401270459315847297e0731c0-7965-4be8-9a65-caed2bbb534f.jpg",
+      "contentHash": "be882ee9903051172b56f7889f96d551e95f759e3ebd22cd6740ff69fc16630b",
+      "ocrText": "^대 ..못하 0",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "^대 ..못하 0"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T23:24:16.890Z"
+  },
+  {
+    "key": "044eac6428d6c60fcefaab845b1aa2f041c2bbba7e28a869a4a1808288eec78f",
+    "insight": {
+      "id": "detail-ocr-e52e04333f00",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260902032719151883dd8a325c-bb1d-41d5-aefe-994bad5e1fdf.jpg",
+      "contentHash": "e52e04333f00fae716110208ec6c5b7c86b98150c1f81995389c128e4c948754",
+      "ocrText": "[추석맞이 50% 반짝특가]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bee\n[1팩당 24,500원꼴]\n구대한유 즈리디에 비드\n240,000\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bee"
+      ],
+      "discardedNotices": [
+        "[추석맞이 50% 반짝특가]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T23:24:18.019Z"
+  },
+  {
+    "key": "c5c68e0fd7f2a7f152c5103235398b4378e1952b4fa36ece1d5aa3ded9555e3d",
+    "insight": {
+      "id": "detail-ocr-46cf8d2c58ff",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020904373338203958c37046-1bd0-46ac-8b49-2843848cd9cb.png",
+      "contentHash": "46cf8d2c58ffd03cbfcf11f39b366bbea752ceccd050afcaba09d74d32ce1817",
+      "ocrText": "remium Segr\n국내한유 프리디앙 비드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "remium Segr"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T23:24:18.805Z"
+  },
+  {
+    "key": "a15c5d75a810b6690667a89e10cafcef804a65a38889fbc3d2d77903996c4401",
+    "insight": {
+      "id": "detail-ocr-670e763b2f22",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260902042700900696fb10c9f5-18e6-4bea-b429-c13972aacd69.jpg",
+      "contentHash": "670e763b2f2219db7f50e0bc50c7791fcd170f45be7568ec0152c88f060b28a2",
+      "ocrText": "PRENIUM\nPREA\nPREMIUM",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PRENIUM",
+        "PREA",
+        "PREMIUM"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-02T23:24:19.055Z"
+  },
+  {
+    "key": "d535ca119a4d460b470a077e560e09b5d60b390314e991335788e51fcce53d41",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T02:14:08.670Z"
+  },
+  {
+    "key": "844d2efc8cc07c00655624849f62afc6ac33a90f6a1c8e0194ea5ad55fbf438b",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T02:14:08.697Z"
+  },
+  {
+    "key": "95fb87586e54f3be11d696346738165f7fafb540bcbe46968dbeb4b0918a594f",
+    "insight": {
+      "id": "detail-ocr-30a747383bd4",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609030716492377224322de8c-7c4c-4bef-b831-4c32509cfb1e.jpg",
+      "contentHash": "30a747383bd463d66324925e6dfecd47e3437fc0d7a87cdac4c2bda36c3b25a8",
+      "ocrText": "입점기념특가\n탑브랜드\"\n한우\nTOP BRAND\n브랜드\n한우\n안창살\n탑브랜드 한우의 진한 풍미!\n부드러운 식감! 깊은 풍미!\n69,800원\n기존가\n29,800원\n입점기념\n특가\n브랜드 한우\n부드러운 식감\n전국\n안창살\n깊은 풍미\nO\"\n배송 가능",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6904761904761905,
+      "copyFacts": [
+        "탑브랜드\"",
+        "탑브랜드 한우의 진한 풍미!",
+        "부드러운 식감! 깊은 풍미!",
+        "69,800원",
+        "29,800원",
+        "입점기념",
+        "브랜드 한우",
+        "부드러운 식감",
+        "깊은 풍미"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TOP BRAND"
+      ],
+      "discardedNotices": [
+        "배송 가능"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T02:14:10.478Z"
+  },
+  {
+    "key": "e1227afb2651180244126967c46604b083b992cccbf52635418ac46207198a22",
+    "insight": {
+      "id": "detail-ocr-041a199dfa2b",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903072739462520ec5f41da-79cd-48b6-905e-fab0f0c161f1.jpg",
+      "contentHash": "041a199dfa2bb90b650c1384ace436bc17d04cda11e8c80c9e9bb4d8528cf347",
+      "ocrText": "탑브랜드\nTOP BRAND\n탑브랜드\n탑브랜드\n탑브랜드\nTOP BRAND\nTOP BRAND\nTOP BRAND\n한우\n한\n한우\n\"\n탑브랜드\nTOP BRAND",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6642857151372092,
+      "copyFacts": [
+        "탑브랜드"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TOP BRAND"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T02:14:13.036Z"
+  },
+  {
+    "key": "dfcca41553bc1d0cfe747f1594f08b8878714ed4f34e145f453e259007e86c76",
+    "insight": {
+      "id": "detail-ocr-30a747383bd4",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903071734857654625c096b-7112-4920-8bc2-3c5efac7a526.jpg",
+      "contentHash": "30a747383bd463d66324925e6dfecd47e3437fc0d7a87cdac4c2bda36c3b25a8",
+      "ocrText": "입점기념특가\n탑브랜드\"\n한우\nTOP BRAND\n브랜드\n한우\n안창살\n탑브랜드 한우의 진한 풍미!\n부드러운 식감! 깊은 풍미!\n69,800원\n기존가\n29,800원\n입점기념\n특가\n브랜드 한우\n부드러운 식감\n전국\n안창살\n깊은 풍미\nO\"\n배송 가능",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6904761904761905,
+      "copyFacts": [
+        "탑브랜드\"",
+        "탑브랜드 한우의 진한 풍미!",
+        "부드러운 식감! 깊은 풍미!",
+        "69,800원",
+        "29,800원",
+        "입점기념",
+        "브랜드 한우",
+        "부드러운 식감",
+        "깊은 풍미"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TOP BRAND"
+      ],
+      "discardedNotices": [
+        "배송 가능"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T02:14:13.497Z"
+  },
+  {
+    "key": "8efcf3d87c1838d3bf8932723ec15f30aa8872104602261624d8d0e132e2de85",
+    "insight": {
+      "id": "detail-ocr-1baf1423b100",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903072752736383f4c4d9ea-0328-4171-800d-ce9d0f52262a.jpg",
+      "contentHash": "1baf1423b100c7cc250f345050f23338a567337282b3acb684d91ae3d5f50ab5",
+      "ocrText": "\"\n탑브랜드\n탐브랜드\nTOP BRAND\nTOP BRAND\n\"\n\"\n탑브랜드\n탑브렌드\nTUF BKAND\nTOP BRAND",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5818181850693442,
+      "copyFacts": [
+        "탑브랜드"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TOP BRAND",
+        "TUF BKAND"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T02:14:13.768Z"
+  },
+  {
+    "key": "506befd9c4bc6ada473d7c829924e9f72bb3b715ecaad045da4dde81e83bf0d9",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903011833448980626d6550-6b90-4bf3-9709-f55bea61f63b.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T04:43:35.814Z"
+  },
+  {
+    "key": "ef2059ec2c78fde5784f129b6d64a8a55f1e7c99bac17adb7aa28d7edc228e9a",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609030118203728453de614c3-e369-4f0e-9a9d-09567d880382.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T04:43:35.823Z"
+  },
+  {
+    "key": "eeb1c13da9616bfc417241226b104d76a905fff144735ffbcd22db02d0e7ee96",
+    "insight": {
+      "id": "detail-ocr-46cf8d2c58ff",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020904373338203958c37046-1bd0-46ac-8b49-2843848cd9cb.png",
+      "contentHash": "46cf8d2c58ffd03cbfcf11f39b366bbea752ceccd050afcaba09d74d32ce1817",
+      "ocrText": "remium Segr\n국내한유 프리디앙 비드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "remium Segr"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T04:43:40.789Z"
   }
 ]

@@ -104,7 +104,7 @@ test("create-product defaults to URL analysis and preserves admin entry points",
   const productSummary = await read("app/components/features/product-brief/ProductAnalysisSummary.tsx");
   assert.match(dashboard, /상품 분석하기/);
   assert.match(productSummary, /이 상품으로 광고 만들기/);
-  assert.match(productSummary, /선택 완료 · 아래에서 제작 상태 확인/);
+  assert.match(productSummary, /상품 선택 완료 · 아래에서 자동매칭 확인/);
   assert.match(dashboard, /loaded=\{currentProductLoaded\}/);
   assert.match(dashboard, /selectedForGeneration=\{generationPlanConfirmed\}/);
   assert.doesNotMatch(dashboard, /loaded=\{currentProductLoaded && !generationPlanConfirmed\}/);
@@ -114,6 +114,29 @@ test("create-product defaults to URL analysis and preserves admin entry points",
   assert.match(dashboard, /이미지 수집/);
   assert.match(dashboard, /이미지 분석/);
   assert.match(dashboard, /AppSidebar/);
+});
+
+test("광고 제작 전 자동 매칭을 수정하고 명시적으로 제작을 시작한다", async () => {
+  const generator = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
+  assert.match(generator, /if \(!props\.productLoaded && !job\) return null/);
+  assert.match(generator, /제작 시작 전까지 자동 매칭을 그대로 쓰거나/);
+  assert.match(generator, /disabled=\{loading \|\| Boolean\(job\)\}/);
+  assert.match(generator, /이 매칭으로 광고 6장 제작 시작/);
+  assert.match(generator, /availableProductImagePaths/);
+  assert.match(generator, /confirmedProductImagePaths/);
+  assert.match(generator, /extractedMainImage/);
+  assert.match(generator, /productImagePaths: availableProductImagePaths/);
+  assert.match(generator, /const \[startError, setStartError\]/);
+  assert.match(generator, /광고 제작을 시작하지 못했습니다/);
+  assert.match(generator, /role="alert"/);
+  assert.doesNotMatch(generator, /becameConfirmed/);
+});
+
+test("검수 보류 결과라도 완성 이미지가 있으면 수동 작업을 전체 실패로 숨기지 않는다", async () => {
+  const store = await read("app/lib/creative-generation/jobStore.server.ts");
+  assert.match(store, /const renderedCount = results\.filter/);
+  assert.match(store, /successCount > 0 \|\| renderedCount > 0/);
+  assert.match(store, /status = "partial"/);
 });
 
 test("reference creatives are server-driven and deliver each completed card immediately", async () => {
@@ -143,12 +166,17 @@ test("같은 URL도 다시 분석하면 새 제작을 시작하고 진행 중 �
 
   assert.match(dashboard, /analyzedProductUrl=\{lastLoadedProductUrl\}/);
   assert.match(dashboard, /setProductAnalysisRevision\(\(current\) => current \+ 1\)/);
+  assert.match(dashboard, /const replaceExtractedFieldsForUrl = isNewProductUrl \|\| !options\.silent/);
   assert.match(generator, /props\.analysisRevision/);
   assert.match(generator, /hasGenerationWorkRemaining/);
   assert.match(generator, /shouldPersistGenerationJob/);
+  assert.match(generator, /function shouldPersistGenerationJob\(job: GenerationJob\) \{\s*return hasGenerationWorkRemaining\(job\);/);
+  assert.match(generator, /\["pending", "running"\]\.includes\(candidate\.status\)/);
   assert.match(generator, /activeCreativeProductJobStorageKey\(currentProductUrl\)/);
   assert.match(jobStorage, /daywiz-active-creative-job-id/);
-  assert.match(generator, /상품 분석이 완료됐습니다\. 이 상품으로 새 광고 6장을 제작합니다/);
+  assert.match(generator, /상품 분석을 다시 완료해 이전 제작 카드를 비웠습니다\. 이 상품으로 새 광고 6장을 제작합니다/);
+  assert.doesNotMatch(generator, /같은 상품 분석이 갱신되어 진행 중인 광고 작업을 그대로 유지합니다/);
+  assert.match(generator, /dismissedJobIds\.current\.add\(activeJobIdRef\.current\)/);
   assert.match(generator, /다운로드가 완료됐습니다\. 같은 상품 URL을 다시 분석하면 새 광고 6장을 제작합니다/);
   assert.match(generator, /jobs\/active\$\{query\}/);
   assert.match(generator, /jobs\/recent\?limit=10/);

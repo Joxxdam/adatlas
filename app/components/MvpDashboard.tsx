@@ -641,6 +641,15 @@ function extractedProductImagePaths(extracted: ExtractedProductInfo, sourceCandi
   return compactUniqueImagePaths([extracted.mainImage, extracted.heroImage, ...(extracted.galleryImages ?? []), ...(extracted.detailImages ?? []), ...sourceCandidates.map((candidate) => candidate.imagePath)]);
 }
 
+function confirmedExtractedProductImagePaths(extracted: ExtractedProductInfo) {
+  // 신규 추출 응답은 확정 배열을 명시한다. 빈 배열도 "확정 이미지 없음"을
+  // 뜻하므로 자동 갤러리의 main/hero를 다시 승격하지 않는다. 필드가 없는
+  // 과거 저장 데이터만 대표 이미지를 하위 호환으로 사용한다.
+  return compactUniqueImagePaths(extracted.confirmedProductImages === undefined
+    ? [extracted.mainImage, extracted.heroImage]
+    : extracted.confirmedProductImages).slice(0, 6);
+}
+
 const emptyBannerCopy: GeneratedAdCopy = {
   headline: "",
   bodyCopy: "",
@@ -1279,7 +1288,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       );
       setProductImageProcessStatus({
         kind: "idle",
-        message: imagePath ? "AI 전체 광고는 누끼 없이 상세페이지 원본 이미지를 참조합니다." : "상품 이미지를 불러오면 상세페이지 원본을 참조합니다.",
+        message: imagePath ? "AI 전체 광고는 상세페이지의 실제 상품 원본 이미지를 참조합니다." : "상품 이미지를 불러오면 상세페이지 원본을 참조합니다.",
       });
     });
     return () => window.cancelAnimationFrame(frame);
@@ -1536,10 +1545,11 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
 
     const sourceCandidates = (extracted.sourceImageCandidates?.length ? extracted.sourceImageCandidates : buildSourceImageCandidates(extracted)).filter((candidate, index, candidates) => candidate.imagePath && candidates.findIndex((item) => item.imagePath === candidate.imagePath) === index);
     const galleryImages = extractedProductImagePaths(extracted, sourceCandidates);
+    const confirmedProductImages = confirmedExtractedProductImagePaths(extracted);
     const selectedCandidate = sourceCandidates.find((candidate) => candidate.selected) || sourceCandidates[0];
     const shouldRefreshSelectedBackground = !current.selectedBackgroundSource || current.selectedBackgroundSource === current.extractedMainImage || current.selectedBackgroundSource === current.productImagePath;
     const selectedBackgroundSource = shouldRefreshSelectedBackground ? extracted.mainImage || galleryImages[0] || "" : current.selectedBackgroundSource;
-    const nextProductImagePaths = galleryImages.slice(0, 4);
+    const nextProductImagePaths = confirmedProductImages.slice(0, 4);
     const defaultSelectedProductImagePaths = nextProductImagePaths.length > 0 ? [nextProductImagePaths[0]] : [];
 
     return {
@@ -1558,6 +1568,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       productImagePath: replaceExtractedFields ? nextProductImagePaths[0] || "" : nextProductImagePaths[0] || current.productImagePath || "",
       secondaryProductImagePath: replaceExtractedFields ? nextProductImagePaths[1] || "" : current.secondaryProductImagePath || nextProductImagePaths[1] || "",
       productImagePaths: replaceExtractedFields ? nextProductImagePaths : current.productImagePaths?.length ? current.productImagePaths : defaultSelectedProductImagePaths,
+      confirmedProductImagePaths: replaceExtractedFields ? confirmedProductImages : current.confirmedProductImagePaths?.length ? current.confirmedProductImagePaths : confirmedProductImages,
       backgroundImagePath: replaceExtractedFields ? "" : current.backgroundImagePath || "",
       extractedDescription: replaceExtractedFields ? extracted.extractedDescription || extracted.description || "" : extracted.extractedDescription || extracted.description || current.extractedDescription || "",
       extractedMainImage: replaceExtractedFields ? nextProductImagePaths[0] || "" : nextProductImagePaths[0] || current.extractedMainImage || "",
@@ -1590,6 +1601,9 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
 
     if (!options.silent) {
       setGenerationPlanConfirmed(false);
+      // URL 분석 버튼은 같은 주소여도 새 제작 흐름을 시작한다. 긴 상품 분석
+      // 중에 이전 광고 카드가 계속 보이거나 다시 복원되지 않게 즉시 비운다.
+      setProductAnalysisRevision((current) => current + 1);
       setProductExtractStatus({
         kind: "loading",
         message: "상품 상세페이지 정보를 불러오는 중입니다.",
@@ -1609,7 +1623,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       }
 
       let mergedProductInfo = productInfo;
-      const replaceExtractedFieldsForUrl = isNewProductUrl;
+      const replaceExtractedFieldsForUrl = isNewProductUrl || !options.silent;
       setProductInfo((current) => {
         mergedProductInfo = mergeExtractedProductInfo(current, result.productInfo, replaceExtractedFieldsForUrl);
         return mergedProductInfo;
@@ -1667,7 +1681,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
         message: "원본 기준 이미지 후보를 불러왔습니다. GPT 생성 기준 이미지를 선택할 수 있습니다.",
       });
       setLastLoadedProductUrl(productUrl);
-      if (isNewProductUrl) {
+      if (replaceExtractedFieldsForUrl) {
         setGeneratedBannerPath("");
         setGptMainImagePath("");
         setGptTextAdImagePath("");
@@ -1681,7 +1695,6 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
         kind: "success",
         message: "상품 확인이 끝났어요. 아래 정보가 맞는지 확인해 주세요.",
       });
-      if (!options.silent) setProductAnalysisRevision((current) => current + 1);
       return mergedProductInfo;
     } catch {
       setProductExtractStatus({

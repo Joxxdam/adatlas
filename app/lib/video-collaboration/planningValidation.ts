@@ -14,8 +14,10 @@ const EVIDENCE_AUDIT_COPY = [
   /확인\s*결과(?:로|는|가|입니다)?/i,
   /근거(?:상|에\s*따르면)/i,
 ];
+const INTERNAL_SPEAKER_LABEL_COPY = /(?:담당자|진행자|제작자)\s*[:：]/i;
+const FAMILY_SCRIPT_LABEL_COPY = /(?:^|\s)(?:아버지|아빠|어머니|엄마|딸|아들|남편|아내|배우자|친구|언니|오빠|누나|형|동생)\s*[:：]/i;
+const WORKPLACE_SCRIPT_LABEL_COPY = /(?:^|\s)(?:팀장|사장|대표|직원|대리|과장|부장|매니저)\s*[:：]/i;
 const INTERNAL_PLANNING_COPY = [
-  /(?:담당자|진행자|제작자)\s*[:：]/i,
   /정보\s*부족/i,
   /확인부터(?:요|해|하자)?/i,
   /(?:상품|제품|가격|혜택)\s*(?:검증|근거\s*확인)/i,
@@ -28,6 +30,8 @@ const STAGE_DIRECTION_COPY = [
   /(?:가림|가격|정보)\s*카드.*(?:있어요|보여요|나옵니다|등장합니다)$/i,
   /화면으로\s*(?:먼저\s*)?(?:보이|확인)/i,
   /(?:장면|화면|표면\s*색).*(?:바뀜|보임|전환|확대)$/i,
+  /(?:링크|구매처).*(?:여기에서|여기서)\s*(?:공개|열기)/i,
+  /(?:연출|예시|참고)\s*이미지/i,
 ];
 const AWKWARD_AUDIENCE_COPY = [
   /(?:고르는|갈리는|찾는|준비하는)\s*집들/i,
@@ -40,7 +44,7 @@ const DELIVERY_AUDIENCE_COPY = [
   /(?:제주|도서\s*산간|산간\s*지역).*(?:추가|비용|요금|배송)/i,
   /(?:택배|착불)\s*(?:비|비용|요금|안내)/i,
 ];
-const CTA_ACTION = /(?:확인(?:해|하세요|하기|해요)|살펴(?:봐|보세요|보기)|비교(?:해|하세요|하기)|구매(?:해|하세요|하기)|주문(?:해|하세요|하기)|예약(?:해|하세요|하기)|신청(?:해|하세요|하기)|담아(?:봐|보세요)|눌러(?:봐|보세요)|챙겨(?:가|가세요|두세요)|쟁여(?:둬|두세요)|선택(?:해|하세요|하기)|만나(?:봐|보세요))/i;
+const CTA_ACTION = /(?:확인(?:해|하세요|하기|해요)|살펴(?:봐|보세요|보기)|비교(?:해|하세요|하기)|구매(?:해|하세요|하기)|주문(?:해|하세요|하기)|예약(?:해|하세요|하기)|신청(?:해|하세요|하기)|담아(?:봐|보세요)|눌러(?:봐|보세요)|챙겨(?:가|가세요|두세요)|쟁여(?:둬|두세요)|선택(?:해|하세요|하기)|만나(?:봐|보세요)|끓여(?:봐|보세요)|먹어(?:봐|보세요)|맛(?:봐|보세요)|써(?:봐|보세요)|사용해(?:봐|보세요))/i;
 const OPENING_RHYTHM_MARKERS = ["잠깐", "진짜", "설마", "왜", "여러분", "형님들"];
 const OPENING_STRENGTH = /[?!]|왜|설마|잠깐|진짜|누가|또|처음|비밀|공개|혼나|냄새|가격|말이 돼|보세요|봐요|멈춰|고르지 마|열자마자|한입|밥|먹|굽|지글|윤기|육즙/i;
 
@@ -252,8 +256,53 @@ export function assignPlanningTimeline<T extends { caption: string; narration?: 
   });
 }
 
+type PlanningNumberOccurrence = { value: string; index: number; raw: string };
+
+function planningNumberOccurrences(value: string): PlanningNumberOccurrence[] {
+  return [...value.matchAll(/\d[\d,.]*/g)].map((match) => ({
+    value: String(match[0] || "").replace(/[,.]/g, ""),
+    index: match.index || 0,
+    raw: String(match[0] || ""),
+  }));
+}
+
 function normalizedNumbers(value: string) {
-  return (value.match(/\d[\d,.]*/g) || []).map((item) => item.replace(/[,.]/g, ""));
+  return planningNumberOccurrences(value).map((item) => item.value);
+}
+
+/**
+ * 블라인드 테스트의 `1번 국물`, `2개의 냄비`, `친구 2명`처럼 촬영 사건을
+ * 구분하는 숫자는 상품의 가격·용량·구성 주장이 아니다. 숫자만 떼어 ProductTruth와
+ * 대조하면 이런 장면 번호까지 근거 없는 수치로 오인하므로, 매우 제한된 촬영·선택
+ * 문맥만 예외로 분리한다. `2개입`, `2팩`, `2+1` 같은 판매 구성은 예외가 아니다.
+ */
+function isNarrativePlanningNumber(source: string, occurrence: PlanningNumberOccurrence) {
+  if (!/^[12]$/.test(occurrence.value)) return false;
+  const before = source.slice(Math.max(0, occurrence.index - 18), occurrence.index);
+  const after = source.slice(occurrence.index + occurrence.raw.length, occurrence.index + occurrence.raw.length + 24);
+  const context = `${before}#${after}`;
+  return (
+    /#\s*(?:번(?:째)?\s*(?:국물|맛|냄비|그릇|접시|후보|선택|쪽|팀|사람)?|명(?:의)?\s*(?:친구|사람|인물|출연자)|(?:개(?:의)?|가지)\s*(?:국물|맛|냄비|그릇|접시|후보|선택지)|사람|팀|후보|선택지|냄비|그릇|접시|쪽)/u.test(context) ||
+    /(?:친구|사람|인물|출연자|후보|냄비|그릇|접시)\s*#\s*(?:명)?/u.test(context) ||
+    /(?:A|B)\s*(?:와|랑|대|vs\.?)?\s*#\s*(?:번|쪽|팀)?/iu.test(context)
+  );
+}
+
+function hasInternalPlanningAudienceCopy(cut: VideoCut) {
+  return (
+    INTERNAL_SPEAKER_LABEL_COPY.test(cut.caption) ||
+    INTERNAL_PLANNING_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))
+  );
+}
+
+function unsupportedAudienceNumbers(value: string, allowed: Set<string>) {
+  return planningNumberOccurrences(value)
+    .filter((occurrence) => !allowed.has(occurrence.value) && !isNarrativePlanningNumber(value, occurrence))
+    .map((occurrence) => occurrence.value);
+}
+
+function hasProductClaimNumber(value: string) {
+  return planningNumberOccurrences(value).some((occurrence) => !isNarrativePlanningNumber(value, occurrence));
 }
 
 function allowedNumbers(analysis: ProductAnalysisSnapshot) {
@@ -321,6 +370,119 @@ function isIncompleteAudienceCaption(value: string) {
   return /(?:될\s*수|할\s*수|하면|인데|이고|이며|해서|하며|라서|라고|라는|처럼|보다|위해|대한|관한|볼\s*건|할\s*건|것은|점은|이유는|답은)$/i.test(normalized);
 }
 
+function isIntentionalCaptionChain(cuts: VideoCut[], index: number) {
+  const current = cuts[index];
+  if (!current || !isIncompleteAudienceCaption(current.caption)) return false;
+  let combined = normalizePlanningCopy(current.caption);
+  // 연결어로 끝난 자막은 바로 다음 화면에서만 완결되어야 한다. 여러 화면을
+  // 건너뛰어 우연히 완결되는 것처럼 보이면 서로 무관한 문구도 통과할 수 있다.
+  for (let offset = 1; offset <= 1; offset += 1) {
+    const next = cuts[index + offset];
+    if (!next) break;
+    combined = `${combined} ${normalizePlanningCopy(next.caption)}`.trim();
+    const compactCombined = combined.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+    const spokenContext = `${normalizePlanningCopy(current.narration)} ${normalizePlanningCopy(next.narration)}`
+      .replace(/[^0-9a-z가-힣]/gi, "")
+      .toLowerCase();
+    if (
+      !isIncompleteAudienceCaption(combined) &&
+      visibleCaptionLength(combined) >= 8 &&
+      compactCombined.length >= 6 &&
+      spokenContext.includes(compactCombined)
+    ) return true;
+  }
+  return false;
+}
+
+function captionCompletionCandidate(cut: VideoCut, narration: string) {
+  const normalized = normalizePlanningCopy(narration)
+    .replace(/^(?:[가-힣A-Z]{1,12})\s*[:：]\s*/u, "")
+    .trim();
+  if (!normalized || isIncompleteAudienceCaption(normalized)) return "";
+  const maxVisible = Math.max(5, Math.min(46, Math.floor(captionDuration(cut) * captionReadingLimit(cut, false))));
+  const candidates = [
+    normalized,
+    ...normalized.split(/(?<=[?!.])\s+|[,，]\s*/u).map((item) => item.trim()),
+  ].filter(Boolean);
+  return (
+    candidates.find((candidate) => {
+      const length = visibleCaptionLength(candidate);
+      return length >= (cut.startSecond < 3 ? 4 : 5) && length <= maxVisible && !isIncompleteAudienceCaption(candidate);
+    }) || ""
+  );
+}
+
+function minimallyCompleteCaption(value: string) {
+  const normalized = normalizePlanningCopy(value).replace(/[?!.;~]+$/g, "");
+  const replacements: Array<[RegExp, string]> = [
+    [/될\s*수$/i, "될 수 있을까요?"],
+    [/할\s*수$/i, "할 수 있을까요?"],
+    [/하면$/i, "하면 어떨까요?"],
+    [/인데$/i, "인데요?"],
+    [/이고$/i, "이고요."],
+    [/이며$/i, "이에요."],
+    [/해서$/i, "해서 골랐어요."],
+    [/하며$/i, "하면서 달라져요."],
+    [/라서$/i, "라서 골랐어요."],
+    [/라고$/i, "라고 하더라고요."],
+    [/라는$/i, "라는 점이에요."],
+    [/처럼$/i, "처럼 보여요."],
+    [/보다$/i, "보다 더 궁금해져요."],
+    [/위해$/i, "위해 준비했어요."],
+    [/대한$/i, "대한 답이에요."],
+    [/관한$/i, "관한 이야기예요."],
+    [/볼\s*건$/i, "볼 건 이거예요."],
+    [/할\s*건$/i, "할 건 이거예요."],
+    [/것은$/i, "것은 이거예요."],
+    [/점은$/i, "점은 바로 이거예요."],
+    [/이유는$/i, "이유는 바로 이거예요."],
+    [/답은$/i, "답은 바로 이거예요."],
+  ];
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(normalized)) return normalized.replace(pattern, replacement);
+  }
+  return value;
+}
+
+function audienceCaptionKey(value: string) {
+  return value.replace(/[^0-9a-z가-힣]/gi, "").toLowerCase();
+}
+
+function repairRepeatedAudienceCaptions(cuts: VideoCut[]) {
+  const ordered = [...cuts].sort((left, right) => left.startSecond - right.startSecond);
+  const finalId = ordered.at(-1)?.id;
+  const groups = new Map<string, VideoCut[]>();
+  for (const cut of ordered) {
+    const key = audienceCaptionKey(cut.caption);
+    if (key.length < 5) continue;
+    groups.set(key, [...(groups.get(key) || []), cut]);
+  }
+  const used = new Set(ordered.map((cut) => audienceCaptionKey(cut.caption)));
+  const replacements = new Map<string, string>();
+  for (const duplicateCuts of [...groups.values()].filter((items) => items.length > 1)) {
+    const keepId = duplicateCuts.some((cut) => cut.id === finalId) ? finalId : duplicateCuts[0].id;
+    for (const cut of duplicateCuts) {
+      if (cut.id === keepId) continue;
+      const candidate = captionCompletionCandidate(cut, cut.narration);
+      const key = audienceCaptionKey(candidate);
+      if (
+        !candidate ||
+        key.length < 5 ||
+        used.has(key) ||
+        GENERIC_COPY.some((pattern) => pattern.test(candidate)) ||
+        INTERNAL_PLANNING_COPY.some((pattern) => pattern.test(candidate)) ||
+        isIncompleteAudienceCaption(candidate)
+      ) {
+        continue;
+      }
+      used.add(key);
+      replacements.set(cut.id, candidate);
+    }
+  }
+  if (!replacements.size) return cuts;
+  return cuts.map((cut) => (replacements.has(cut.id) ? { ...cut, caption: replacements.get(cut.id)! } : cut));
+}
+
 function naturalizePlanningCta(value: string) {
   return normalizePlanningCopy(value)
     .replace(/^(?:확인된|검증된)\s*(?:혜택|할인)(?:은|는|이|가)?\s*(\d[\d,.]*%)\s*/i, "$1 할인, ")
@@ -347,20 +509,20 @@ export function compactPlanningCta(value: string, fallback: string, maxLength = 
   const safeLimit = Math.max(12, Math.min(34, Math.floor(maxLength)));
   const fallbackCopy = normalizePlanningCopy(fallback) || "상품 정보를 지금 확인하세요";
   let normalized = naturalizePlanningCta(value) || fallbackCopy;
-  if (normalized.length <= safeLimit && CTA_ACTION.test(normalized)) return normalized;
-  const matchedAction = normalized.match(/(?:지금\s*)?(?:직접\s*)?(?:확인(?:해\s*보세요|해보세요|하세요)|살펴보세요|비교하세요|구매하세요|주문하세요|예약하세요|신청하세요|눌러보세요|챙겨두세요|쟁여두세요|선택하세요|만나보세요)[.!?]*$/i)?.[0];
+  if (visibleCaptionLength(normalized) <= safeLimit && CTA_ACTION.test(normalized)) return normalized;
+  const matchedAction = normalized.match(/(?:지금\s*)?(?:직접\s*)?(?:확인(?:해\s*보세요|해보세요|하세요)|살펴보세요|비교하세요|구매하세요|주문하세요|예약하세요|신청하세요|눌러보세요|챙겨두세요|쟁여두세요|선택하세요|만나보세요|끓여보세요|먹어보세요|맛보세요|써보세요|사용해보세요)[.!?]*$/i)?.[0];
   const action = normalizePlanningCopy(matchedAction) || "지금 확인하세요";
   const subject = normalizePlanningCopy(matchedAction ? normalized.slice(0, -matchedAction.length) : normalized).replace(/[,.·/|\-]+$/g, "").trim();
-  const subjectLimit = Math.max(0, safeLimit - action.length - 1);
+  const subjectLimit = Math.max(0, safeLimit - visibleCaptionLength(action));
   let compactSubject = "";
   for (const word of subject.split(" ").filter(Boolean)) {
     const candidate = compactSubject ? `${compactSubject} ${word}` : word;
-    if (candidate.length > subjectLimit) break;
+    if (visibleCaptionLength(candidate) > subjectLimit) break;
     compactSubject = candidate;
   }
   normalized = compactSubject ? `${compactSubject} ${action}` : action;
-  if (normalized.length <= safeLimit) return normalized;
-  return CTA_ACTION.test(fallbackCopy) && fallbackCopy.length <= safeLimit ? fallbackCopy : "지금 확인하세요";
+  if (visibleCaptionLength(normalized) <= safeLimit) return normalized;
+  return CTA_ACTION.test(fallbackCopy) && visibleCaptionLength(fallbackCopy) <= safeLimit ? fallbackCopy : "지금 확인하세요";
 }
 
 export function hasFinalPlanningCta(concept: VideoConcept) {
@@ -380,7 +542,7 @@ export function repairDetailedPlanningCta(concept: VideoConcept) {
   if (!finalCut) return concept;
   const readableLimit = Math.max(12, Math.floor(captionDuration(finalCut) * 10));
   const cta = compactPlanningCta(concept.cta, fallbackPlanningCta(concept), readableLimit);
-  const alreadyValid = normalizePlanningCopy(concept.cta) === cta && normalizePlanningCopy(finalCut.caption).includes(cta) && finalCut.caption.length <= readableLimit;
+  const alreadyValid = normalizePlanningCopy(concept.cta) === cta && normalizePlanningCopy(finalCut.caption).includes(cta) && visibleCaptionLength(finalCut.caption) <= readableLimit;
   if (alreadyValid) return concept;
   const cuts = concept.cuts.map((cut) => (cut.id === finalCut.id ? { ...cut, caption: cta } : cut));
   const fullScript = cuts
@@ -428,13 +590,26 @@ function naturalizeEvidenceAuditCaption(value: string, isOpening: boolean) {
  */
 export function repairDetailedPlanningAudienceCopy(concept: VideoConcept) {
   let changed = false;
-  const cuts = concept.cuts.map((cut) => {
-    const caption = naturalizeEvidenceAuditCaption(cut.caption, cut.startSecond < 3);
+  let cuts = concept.cuts.map((cut, index) => {
+    let caption = naturalizeEvidenceAuditCaption(cut.caption, cut.startSecond < 3);
     const narration = naturalizeEvidenceAuditCaption(cut.narration, cut.startSecond < 3);
+    if (isIncompleteAudienceCaption(caption) && !isIntentionalCaptionChain(concept.cuts, index)) {
+      const fromNarration = captionCompletionCandidate(cut, narration);
+      const completed = fromNarration || minimallyCompleteCaption(caption);
+      const readableLimit = Math.max(5, Math.min(46, Math.floor(captionDuration(cut) * captionReadingLimit(cut, false))));
+      if (visibleCaptionLength(completed) <= readableLimit && !isIncompleteAudienceCaption(completed)) {
+        caption = completed;
+      }
+    }
     if (caption === cut.caption && narration === cut.narration) return cut;
     changed = true;
     return { ...cut, caption, narration };
   });
+  const deduplicated = repairRepeatedAudienceCaptions(cuts);
+  if (deduplicated !== cuts) {
+    cuts = deduplicated;
+    changed = true;
+  }
   if (!changed) return concept;
   return {
     ...concept,
@@ -487,7 +662,7 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
   const audienceCopy = cuts.map((cut) => `${cut.caption} ${cut.narration}`).join(" ");
   const firstThree = cuts.filter((cut) => cut.startSecond < 3 && cut.endSecond <= 3);
   const allowed = allowedNumbers(analysis);
-  const unknownNumbers = normalizedNumbers(audienceCopy).filter((value) => !allowed.has(value));
+  const unknownNumbers = unsupportedAudienceNumbers(audienceCopy, allowed);
   const requiredSceneSignals: SceneProductionSignal[] = ["setting", "subject", "action"];
   const sceneSignalFailures = cuts
     .map((cut) => ({ cutNumber: cut.cutNumber, missing: missingSceneSignals(cut).filter((signal) => requiredSceneSignals.includes(signal)) }))
@@ -495,7 +670,24 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
   const abstract = cuts.filter((cut) => cut.sceneDescription.length < 75 || (ABSTRACT_SCENES.some((pattern) => pattern.test(cut.sceneDescription)) && missingSceneSignals(cut).length >= 2));
   const readingIssues = concept.conceptArchetype ? detailedCaptionReadingIssues(cuts) : [];
   const spacingFailures = concept.conceptArchetype ? cuts.filter((cut) => !hasReadableKoreanSpacing(cut.caption)) : [];
-  const incompleteCaptions = concept.conceptArchetype ? cuts.filter((cut) => isIncompleteAudienceCaption(cut.caption)) : [];
+  const incompleteCaptions = concept.conceptArchetype
+    ? cuts.filter((cut, index) => isIncompleteAudienceCaption(cut.caption) && !isIntentionalCaptionChain(cuts, index))
+    : [];
+  const captionDensityFailures = concept.conceptArchetype
+    ? cuts.filter((cut) => {
+        const finalCut = cuts.at(-1);
+        const length = visibleCaptionLength(cut.caption);
+        if (cut.caption.length > 46) return true;
+        if (cut.id === finalCut?.id) return length < 4;
+        return length < (cut.startSecond < 3 ? 4 : 5);
+      })
+    : [];
+  const genericCopyCuts = concept.conceptArchetype
+    ? cuts.filter((cut) => GENERIC_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`)))
+    : [];
+  const internalPlanningCuts = concept.conceptArchetype
+    ? cuts.filter((cut) => hasInternalPlanningAudienceCopy(cut))
+    : [];
   const stageDirectionCuts = concept.conceptArchetype ? cuts.filter((cut) => [...STAGE_DIRECTION_COPY, ...AWKWARD_AUDIENCE_COPY].some((pattern) => pattern.test(cut.caption))) : [];
   const deliveryCopyCuts = concept.conceptArchetype ? cuts.filter((cut) => DELIVERY_AUDIENCE_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))) : [];
   const openingMarkerRepeats = OPENING_RHYTHM_MARKERS.filter((marker) => firstThree.filter((cut) => cut.caption.includes(marker)).length > 1);
@@ -508,9 +700,18 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
   });
   const consecutiveCommercialCuts = commercialCuts.some((cut, index) => index > 0 && cut.cutNumber === commercialCuts[index - 1].cutNumber + 1);
   const spokenBodyCuts = cuts.slice(0, -1).filter((cut) => normalizePlanningCopy(cut.narration).length >= 8);
+  const familyDialogueCuts = cuts.filter((cut) => FAMILY_SCRIPT_LABEL_COPY.test(cut.narration));
+  const workplaceDialogueCuts = cuts.filter((cut) => WORKPLACE_SCRIPT_LABEL_COPY.test(cut.narration));
   const minimumSpokenCuts = Math.ceil(Math.max(1, cuts.length - 1) * 0.5);
   const isFood = /식품|육류|축산|고기|한우|음료|간식|베이커리|과일|수산/i.test(analysis.category);
   const foodDesireCuts = cuts.filter((cut) => /굽|팬|지글|수증기|육즙|윤기|결이|잘리|한입|밥|젓가락|씹|바삭|촉촉|먹고|먹는|입맛|향이/i.test(`${cut.caption} ${cut.narration} ${cut.sceneDescription}`));
+  const selfIntroductionCopy = firstThree.map((cut) => `${cut.caption} ${cut.narration}`).join(" ");
+  const selfIntroductionBody = cuts.slice(0, Math.max(3, Math.ceil(cuts.length / 2))).map((cut) => `${cut.caption} ${cut.narration}`).join(" ");
+  const numericClaimSceneFailures = cuts.filter((cut) => {
+    const spoken = `${cut.caption} ${cut.narration}`;
+    if (!hasProductClaimNumber(spoken)) return false;
+    return !/(?:상품|제품|원료|패키지|라벨|숫자|가격|구성|용량|중량|매크로|클로즈업|카드|자막)/i.test(cut.sceneDescription);
+  });
   const checks: PlanningQualityCheck[] = [
     {
       key: "segment-count",
@@ -528,6 +729,15 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       message: "첫 1~2개 자막에는 질문·갈등·의외성·감각 반응 중 하나가 필요합니다.",
     },
     {
+      key: "product-self-introduction-structure",
+      passed:
+        concept.hookType !== "product-self-introduction" ||
+        (/나\s+.{1,32}(?:인데|이야|예요|입니다)[!?]?/u.test(selfIntroductionCopy) &&
+          /(?:그냥|흔한|뻔한|알았|아니고|아니야|아니거든)/u.test(selfIntroductionBody)),
+      message:
+        "상품 자기소개형은 첫 3초의 ‘나 [상품]인데!’와 초반의 흔한 오해 부정이 함께 있어야 합니다.",
+    },
+    {
       key: "visual-changes",
       passed: new Set(firstThree.map((cut) => cut.sceneDescription)).size >= 2,
       message: "첫 3초에 서로 다른 시각적 변화가 2개 이상 필요합니다.",
@@ -542,8 +752,8 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
         ),
       message:
         concept.conceptArchetype === "parody" && concept.parodyGenre
-          ? `사건·상황극은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 장르의 인물·사건·화면 문법을 상세 대본 끝까지 유지해야 합니다.`
-          : "사건·상황극은 자동 선택된 세부 장르를 상세 대본 끝까지 유지해야 합니다.",
+          ? `특정 인물·세계관형은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 장르의 인물·사건·화면 문법을 상세 대본 끝까지 유지해야 합니다.`
+          : "특정 인물·세계관형은 자동 선택된 세부 장르를 상세 대본 끝까지 유지해야 합니다.",
     },
     {
       key: "timeline",
@@ -574,9 +784,12 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       key: "natural-copy",
       passed:
         hasDetailedCaptionDensity(concept, cuts) &&
-        !GENERIC_COPY.some((pattern) => pattern.test(audienceCopy)) &&
-        !cuts.some((cut) => INTERNAL_PLANNING_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))),
-      message: "자막은 시청자에게 직접 말하는 충분한 구어체여야 하며 내부 기획 용어·범용 광고 문구를 사용하지 않아야 합니다.",
+        genericCopyCuts.length === 0 &&
+        internalPlanningCuts.length === 0,
+      message:
+        captionDensityFailures.length || genericCopyCuts.length || internalPlanningCuts.length
+          ? `시청자용 자막 품질을 수정해 주세요.${captionDensityFailures.length ? ` 분량이 너무 짧거나 긴 자막: ${captionDensityFailures.map((cut) => `${cut.cutNumber}번`).join(", ")}.` : ""}${genericCopyCuts.length ? ` 범용 광고 문구가 들어간 구간: ${genericCopyCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}.` : ""}${internalPlanningCuts.length ? ` 내부 기획·검수 표현이 들어간 구간: ${internalPlanningCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}.` : ""}`
+          : "자막은 시청자에게 직접 말하는 충분한 구어체이며 내부 기획 용어와 범용 광고 문구가 없습니다.",
     },
     {
       key: "caption-readability",
@@ -591,7 +804,7 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
     {
       key: "sentence-completion",
       passed: incompleteCaptions.length === 0,
-      message: incompleteCaptions.length ? `문장이 중간에 끊긴 자막: ${incompleteCaptions.map((cut) => `${cut.cutNumber}번`).join(", ")}. ‘~될 수’, ‘~하면’ 같은 연결 표현 뒤까지 완결해 주세요.` : "모든 자막이 화면 안에서 의미가 완결됩니다.",
+      message: incompleteCaptions.length ? `문장이 중간에 끊긴 자막: ${incompleteCaptions.map((cut) => `${cut.cutNumber}번`).join(", ")}. 연결 표현은 바로 다음 자막까지 읽었을 때 같은 내레이션 안에서 한 화자의 말로 완결되게 써 주세요.` : "모든 자막이 단독 또는 의도적인 연속 자막 안에서 의미가 완결됩니다.",
     },
     {
       key: "audience-value-copy",
@@ -609,6 +822,16 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       message: `자막 나열이 아니라 실제로 들을 수 있는 대사·내레이션이 최소 ${minimumSpokenCuts}개 구간에 필요합니다. 현재 ${spokenBodyCuts.length}개입니다.`,
     },
     {
+      key: "audience-narrator",
+      passed:
+        !concept.conceptArchetype ||
+        (familyDialogueCuts.length === 0 && workplaceDialogueCuts.length <= 2),
+      message:
+        familyDialogueCuts.length || workplaceDialogueCuts.length > 2
+          ? `등장인물끼리 주고받는 드라마 대본이 많습니다. 가족·친구 화자 라벨은 제거하고 한 명의 주 화자가 시청자에게 경험을 전달하게 바꿔 주세요.${workplaceDialogueCuts.length > 2 ? " 팀장·사장·직원 문답도 1~2회만 남겨 주세요." : ""}`
+          : "한 명의 주 화자가 시청자에게 경험과 상품 정보를 자연스럽게 전달합니다.",
+    },
+    {
       key: "commercial-restraint",
       passed: !concept.conceptArchetype || commercialCuts.length <= 2 && !consecutiveCommercialCuts,
       message: commercialCuts.length > 2 || consecutiveCommercialCuts ? `가격·할인·구성 정보가 ${commercialCuts.map((cut) => `${cut.cutNumber}번`).join(", ")} 자막에 반복됩니다. 마지막 CTA와 서로 붙지 않은 핵심 근거 한 곳만 정확한 수치를 남기고, 나머지는 욕구·사용 이유·반응 장면으로 바꾸세요.` : "가격·할인·구성은 중심 사건을 방해하지 않는 보조 근거로 제한되었습니다.",
@@ -622,6 +845,13 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       key: "scene-specificity",
       passed: abstract.length === 0 && sceneSignalFailures.length === 0,
       message: abstract.length || sceneSignalFailures.length ? `구체성이 부족한 구간: ${sceneSignalFailures.map((item) => `${item.cutNumber}번(${item.missing.join(", ")})`).join(" · ") || "추상 장면"}. 각 구간에 장소·주체·이야기를 바꾸는 행동을 구체적으로 명시해 주세요.` : "모든 장면에 장소·주체·실행 가능한 행동이 구체적으로 포함되어 있습니다.",
+    },
+    {
+      key: "claim-scene-alignment",
+      passed: numericClaimSceneFailures.length === 0,
+      message: numericClaimSceneFailures.length
+        ? `숫자·가격·구성 주장을 화면 근거로 확인할 수 없는 구간: ${numericClaimSceneFailures.map((cut) => `${cut.cutNumber}번`).join(", ")}. 해당 상품·원료·구성·가격을 같은 장면에 명시해 주세요.`
+        : "숫자·가격·구성 주장이 같은 구간의 상품 근거 장면과 연결되어 있습니다.",
     },
     {
       key: "unsupported-numbers",
@@ -654,7 +884,7 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
 
 export function validateConceptDiversity(concepts: VideoConcept[]) {
   const hookTypes = new Set(concepts.map((concept) => concept.hookType));
-  const fields = concepts.map((concept) => [concept.hookType, concept.openingHook, concept.centralIncident, concept.customerProblem, concept.usp, concept.speakerPointOfView || concept.speaker, concept.recommendedVisualStyle || concept.creativeStyle, concept.narrativeStructure, concept.cta]);
+  const fields = concepts.map((concept) => [concept.hookType, concept.openingHook, concept.centralIncident, concept.distinctiveCharacter, concept.socialWorld, concept.storyTrigger, concept.truthBridge, concept.customerProblem, concept.usp, concept.speakerPointOfView || concept.speaker, concept.recommendedVisualStyle || concept.creativeStyle, concept.narrativeStructure, concept.cta]);
   const pairSimilarities: number[] = [];
   for (let left = 0; left < fields.length; left += 1) {
     for (let right = left + 1; right < fields.length; right += 1) {

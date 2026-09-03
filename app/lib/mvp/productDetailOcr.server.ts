@@ -6,16 +6,19 @@ import { createHash } from "node:crypto";
 import { extractNumericTokens } from "../creative-generation/productTruth.ts";
 import {
   isDomesticOriginCreativeSignal,
+  isAmbiguousMerchantCredentialCreativeSignal,
+  isIncompleteOcrCopyFragment,
   isNonDomesticOriginCreativeSignal,
+  isPackageLabelOcrCopyNoise,
   isProhibitedAdCopySignal,
   isPromotionalProductSignal,
 } from "../creative-generation/productSignalHygiene.ts";
 import { ocrRasterImage } from "./reviewImageAnalysis.server.ts";
+import { selectProductDetailOcrCandidates } from "./productDetailOcrSelection.ts";
 import type { ProductDetailImageOcrInsight, ProductImageCandidate } from "./types.ts";
 
-const DETAIL_OCR_VERSION = "product-detail-ocr-v1-classified-facts";
+const DETAIL_OCR_VERSION = "product-detail-ocr-v4-complete-ad-facts-only";
 const CACHE_PATH = path.join(process.cwd(), ".data", "product-detail-ocr-cache.json");
-const MAX_CANDIDATES = 8;
 const MAX_CONCURRENCY = 2;
 let cacheWriteQueue = Promise.resolve();
 
@@ -67,6 +70,7 @@ function relevantToProduct(value: string, authoritativeText: string) {
 export function classifyProductDetailOcrLines(input: { lines: string[]; authoritativeText: string }) {
   const copyFacts: string[] = [];
   const productConstraints: string[] = [];
+  const identityOnlyLabels: string[] = [];
   const discardedNotices: string[] = [];
   const seen = new Set<string>();
 
@@ -87,8 +91,20 @@ export function classifyProductDetailOcrLines(input: { lines: string[]; authorit
       discardedNotices.push(value);
       continue;
     }
+    if (isIncompleteOcrCopyFragment(value)) {
+      discardedNotices.push(value);
+      continue;
+    }
+    if (isAmbiguousMerchantCredentialCreativeSignal(value)) {
+      discardedNotices.push(value);
+      continue;
+    }
     if (productConstraintPattern.test(value)) {
       productConstraints.push(value);
+      continue;
+    }
+    if (isPackageLabelOcrCopyNoise(value)) {
+      identityOnlyLabels.push(value);
       continue;
     }
     if (isNonDomesticOriginCreativeSignal(value) || !numericFactsAreVerified(value, input.authoritativeText)) {
@@ -112,34 +128,9 @@ export function classifyProductDetailOcrLines(input: { lines: string[]; authorit
   return {
     copyFacts: copyFacts.slice(0, 12),
     productConstraints: productConstraints.slice(0, 12),
+    identityOnlyLabels: identityOnlyLabels.slice(0, 24),
     discardedNotices: discardedNotices.slice(0, 24),
   };
-}
-
-function candidateScore(candidate: ProductImageCandidate, index: number) {
-  const context = `${candidate.url} ${candidate.alt || ""} ${candidate.reason || ""}`;
-  let score = candidate.score - index * 0.05;
-  if (candidate.type === "detail" || candidate.type === "content") score += 30;
-  if (/(?:detail|contents?|editor|description|goods_info|상세|상품정보|제품정보)/i.test(context)) score += 18;
-  if (/(?:banner|event|coupon|review|후기|리뷰|logo|icon|qr|appstore|playstore|recommend|related)/i.test(context)) score -= 40;
-  if (candidate.width && candidate.height && Math.min(candidate.width, candidate.height) >= 360) score += 5;
-  return score;
-}
-
-function selectCandidates(candidates: ProductImageCandidate[]) {
-  const seen = new Set<string>();
-  return candidates
-    .map((candidate, index) => ({ candidate, score: candidateScore(candidate, index) }))
-    .filter(({ candidate, score }) => candidate.url && score >= 5 && candidate.type !== "main")
-    .sort((left, right) => right.score - left.score)
-    .map(({ candidate }) => candidate)
-    .filter((candidate) => {
-      const key = candidate.url.replace(/([?&])(?:width|height|w|h|quality|q|format|auto)=[^&]+/gi, "$1");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, MAX_CANDIDATES);
 }
 
 async function readCache() {
@@ -201,8 +192,9 @@ export async function analyzeProductDetailImageCandidates(input: {
   description?: string;
   verifiedBenefits?: string[];
   ingredients?: string[];
+  maxCandidates?: number;
 }) {
-  const selected = selectCandidates(input.candidates);
+  const selected = selectProductDetailOcrCandidates(input.candidates, input.maxCandidates ?? 8);
   const authoritativeText = [
     input.productName,
     input.category,
@@ -223,7 +215,7 @@ export async function analyzeProductDetailImageCandidates(input: {
       cursor += 1;
       try {
         const insight = await analyzeOne(candidate, authoritativeText);
-        if (insight.copyFacts.length || insight.productConstraints.length || insight.discardedNotices.length) results.push(insight);
+        if (insight.copyFacts.length || insight.productConstraints.length || insight.identityOnlyLabels?.length || insight.discardedNotices.length) results.push(insight);
       } catch {
         // 상세 이미지 한 장의 실패가 상품 분석과 나머지 이미지 OCR을 막지 않습니다.
       }

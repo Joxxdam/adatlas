@@ -135,6 +135,8 @@ DAYWIZ AdAtlas는 상품 상세페이지의 공개 근거와 사용자 제공 �
 
 AI 편집 중간본, 수정본, 프롬프트, ProductTruth 원문, 레퍼런스 문구 프로필, QA 상세는 웹 공개 폴더에 두지 않습니다. Codex 세션 ID는 작업·manifest에 저장하지 않습니다.
 
+AdAtlas가 이미지 제작용으로 추적한 Codex 세션은 활성 작업을 제외하고 종료 2일 후 자동 삭제합니다. 아카이브에서 결과 이미지를 삭제하면 연결된 종료 세션도 즉시 정리하지만 완성 이미지 원본과 제작 작업은 보존합니다. 상태와 수동 점검은 `이미지 제작 관리 도구 → Codex 세션 정리`에서 확인합니다.
+
 ```text
 .data/generated/{advertiserId}/{jobId}/
   manifest.json

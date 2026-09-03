@@ -132,10 +132,13 @@ export function buildVideoPlanningPdfHtml(input: {
     <p class="section-title">CONCEPT SUMMARY · 콘셉트 요약</p>
     <div class="summary">
       <div class="wide"><b>첫 자막</b><p>${text(concept.openingHook)}</p></div>
-      <div><b>핵심 사건</b><p>${text(concept.centralIncident || concept.narrativeStructure)}</p></div>
-      <div><b>핵심 소구</b><p>${text(concept.keyAppeal || concept.usp)}</p></div>
+      <div><b>특정 인물</b><p>${text(concept.distinctiveCharacter || concept.speakerPointOfView || concept.speaker)}</p></div>
+      <div><b>사회·시대 배경</b><p>${text(concept.socialWorld || concept.centralIncident)}</p></div>
+      <div><b>핵심 사건</b><p>${text(concept.storyTrigger || concept.centralIncident || concept.narrativeStructure)}</p></div>
+      <div><b>상품 사실 연결</b><p>${text(concept.truthBridge || concept.keyAppeal || concept.usp)}</p></div>
       <div><b>화자·시점</b><p>${text(concept.speakerPointOfView || concept.speaker)}</p></div>
       <div><b>타깃 호명</b><p>${text(concept.targetCallout || concept.coreTarget)}</p></div>
+      <div class="wide"><b>연출·사실 경계</b><p>${text(concept.dramatizationBoundary, "인물과 상황은 광고용 연출이며 상품 주장은 확인된 사실만 사용합니다.")}</p></div>
       <div class="wide"><b>마무리 CTA</b><p>${text(concept.cta)}</p></div>
     </div>
   </section>

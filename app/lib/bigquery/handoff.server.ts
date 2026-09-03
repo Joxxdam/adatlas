@@ -32,6 +32,7 @@ export function bigQueryCandidateToProductInfo(candidate: BigQueryAdCandidate): 
     productImagePath: candidate.imageUrl || "",
     secondaryProductImagePath: "",
     productImagePaths: candidate.imageUrl ? [candidate.imageUrl] : [],
+    confirmedProductImagePaths: candidate.imageUrl ? [candidate.imageUrl] : [],
     backgroundImagePath: "",
     extractedDescription: `${candidate.recommendationReason} ${evidence.join(" · ")}`,
     extractedMainImage: candidate.imageUrl || "",

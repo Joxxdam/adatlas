@@ -4,10 +4,12 @@ import { analyzeProductSourceCandidates } from "../../../lib/mvp/productImageAna
 import { inferProductRepresentation } from "../../../lib/mvp/productImagePipeline";
 import { analyzeReviewSourceCandidates, type ReviewRawCandidate } from "../../../lib/mvp/reviewImageAnalysis.server";
 import { analyzeProductDetailImageCandidates } from "../../../lib/mvp/productDetailOcr.server";
+import { inferProductDetailOcrEvidenceRoles, resolveProductDetailOcrBudget } from "../../../lib/mvp/productDetailOcrSelection.ts";
 import { reviewCandidateContextScore } from "../../../lib/mvp/reviewCreative";
-import { isMalformedProductSignal, isPriceOnlyCreativeSignal, isPromotionalProductSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../../../lib/creative-generation/productSignalHygiene.ts";
+import { isMalformedProductSignal, isMerchantCredentialOnlyDetailImage, isPriceOnlyCreativeSignal, isPromotionalProductSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../../../lib/creative-generation/productSignalHygiene.ts";
 import { normalizeCafe24BundlePricingClaims, resolveCafe24RequiredBundlePricing } from "../../../lib/store-analysis/extractors/cafe24Pricing";
-import { applyOriginalSourceVendorResearch } from "../../../lib/product-research/originalSourceResearch";
+import { applyOriginalSourceVendorResearch, matchOriginalSourceVendorResearch } from "../../../lib/product-research/originalSourceResearch";
+import { evaluateProductImageIdentity, filterCurrentProductImages, isDifferentProductImage, stripDifferentProductLinkBlocks } from "../../../lib/mvp/productImageIdentity.ts";
 
 function countHangul(value: string) {
   return (value.match(/[가-힣]/g) ?? []).length;
@@ -581,6 +583,9 @@ function pushCandidate(
     alt: input.alt,
     width: input.width,
     height: input.height,
+    pageOrder: input.order,
+    evidenceRoles: input.type === "main" ? ["identity"] : inferProductDetailOcrEvidenceRoles(`${input.alt || ""} ${input.context || ""}`),
+    evidenceScope: input.type === "main" ? "structured-main" : input.type === "detail" || input.type === "content" ? "product-detail" : "gallery",
   });
 }
 
@@ -711,7 +716,10 @@ function productDetailText(html: string) {
 
 function extractProductUspDescription(html: string, baseDescription: string, productName: string) {
   const summary = currentProductSummaryText(html);
-  const source = summary ? `${baseDescription} · ${summary}` : `${baseDescription} · ${productDetailText(html)}`;
+  // 상단 요약이 존재하더라도 이미지 중심 상세페이지의 본문·alt 근거를 버리지
+  // 않습니다. 요약은 상품명·가격뿐인 경우가 많아 이것만 쓰면 OCR의 사실 상한도
+  // 빈약해지고, 결과적으로 6장 문구가 같은 일반론으로 수렴합니다.
+  const source = [baseDescription, summary, productDetailText(html)].filter(Boolean).join(" · ");
   const genericNameTokens = new Set(["국내산", "상품", "제품", "만든", "진짜", "세트", "팩", "박스", "행사상품"]);
   const productNameTokens = Array.from(productName.matchAll(/[0-9a-z가-힣]+/gi))
     .map((match) => match[0].toLowerCase())
@@ -946,6 +954,9 @@ export async function POST(request: Request) {
 
     const jsonLd = extractJsonLd(html, url.toString());
     const productName = jsonLd.name || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html);
+    // 추천상품 카드의 다른 goodsNo가 본문 문구·OCR 후보·상품 이미지에 함께
+    // 들어오는 것을 도메인별 클래스명이 아니라 상품번호 경계로 먼저 차단합니다.
+    const productScopedHtml = stripDifferentProductLinkBlocks(url.toString(), html);
     const fallbackPrice = extractPrice(html, jsonLd.price);
     const fallbackOriginalPrice = extractOriginalPrice(html, fallbackPrice);
     const cafe24BundlePricing = resolveCafe24RequiredBundlePricing(html, productName);
@@ -953,13 +964,18 @@ export async function POST(request: Request) {
     const originalPrice = cafe24BundlePricing?.originalPrice || fallbackOriginalPrice;
     const rawBaseDescription = jsonLd.description || metaContent(html, "og:description") || metaContent(html, "description") || metaContent(html, "twitter:description");
     const baseDescription = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawBaseDescription, cafe24BundlePricing) : rawBaseDescription;
-    const rawExtractedDescription = extractProductUspDescription(html, baseDescription, productName);
+    const rawExtractedDescription = extractProductUspDescription(productScopedHtml, baseDescription, productName);
     const extractedDescription = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawExtractedDescription, cafe24BundlePricing) : rawExtractedDescription;
     const structuredSignals = extractStructuredProductSignals(extractedDescription);
     const mainBenefit = selectMainBenefit(structuredSignals.verifiedBenefits, extractedDescription, productName);
-    const fallbackMainImage = jsonLd.image || absoluteUrl(metaContent(html, "og:image") || metaContent(html, "twitter:image"), url.toString());
-    const rawGalleryImages = collectGalleryImages(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
-    const enhancedCandidates = extractEnhancedImageCandidates(html, url.toString(), [fallbackMainImage, ...(jsonLd.images ?? [])]);
+    const structuredProductImages = filterCurrentProductImages(url.toString(), jsonLd.images ?? [], (image) => image);
+    const openGraphImage = absoluteUrl(metaContent(html, "og:image") || metaContent(html, "twitter:image"), url.toString());
+    const fallbackMainImage = [...structuredProductImages, openGraphImage]
+      .find((image) => image && !isDifferentProductImage(url.toString(), image)) || "";
+    const collectedGalleryImages = collectGalleryImages(productScopedHtml, url.toString(), [fallbackMainImage, ...structuredProductImages]);
+    const rawGalleryImages = filterCurrentProductImages(url.toString(), collectedGalleryImages, (image) => image);
+    const collectedEnhancedCandidates = extractEnhancedImageCandidates(productScopedHtml, url.toString(), [fallbackMainImage, ...structuredProductImages]);
+    const enhancedCandidates = filterCurrentProductImages(url.toString(), collectedEnhancedCandidates, (candidate) => candidate.url);
     const extractedCategory = extractCategory(html, jsonLd.category);
     const normalizedCategory = normalizeProductCategory(extractedCategory, [productName, baseDescription, extractedDescription].join(" "));
     const productTextForType = [jsonLd.name, jsonLd.description, normalizedCategory, metaContent(html, "og:title"), metaContent(html, "og:description")].join(" ");
@@ -972,9 +988,24 @@ export async function POST(request: Request) {
       category: normalizedCategory,
       packageType: [productName, extractedDescription].join(" "),
     });
-    const rawReviewCandidates = collectReviewImageCandidates(html, url.toString());
+    const rawReviewCandidates = filterCurrentProductImages(url.toString(), collectReviewImageCandidates(productScopedHtml, url.toString()), (candidate) => candidate.url);
     const detailOcrCandidates: ProductImageCandidate[] = [
-      ...enhancedCandidates,
+      ...mergeImageUrls([...structuredProductImages, openGraphImage]).map((image, index) => ({
+        url: image,
+        type: "detail" as const,
+        score: Math.max(70, 100 - index),
+        reason: "구조화 대표 이미지 자동 확정 전 OCR 검증",
+        pageOrder: index,
+        evidenceRoles: ["identity" as const],
+        evidenceScope: "structured-main" as const,
+      })),
+      ...enhancedCandidates.map((candidate) => ({
+        ...candidate,
+        evidenceRoles: candidate.evidenceRoles?.length
+          ? candidate.evidenceRoles
+          : inferProductDetailOcrEvidenceRoles(`${candidate.alt || ""} ${candidate.reason || ""} ${candidate.url}`),
+        evidenceScope: candidate.evidenceScope || (candidate.type === "main" ? "structured-main" as const : candidate.type === "detail" || candidate.type === "content" ? "product-detail" as const : "gallery" as const),
+      })),
       ...mergedGalleryCandidates
         .filter((image) => image !== fallbackMainImage && !enhancedCandidates.some((candidate) => candidate.url === image))
         .map((image, index) => ({
@@ -982,8 +1013,17 @@ export async function POST(request: Request) {
           type: "detail" as const,
           score: Math.max(5, 35 - index),
           reason: "상품 상세 영역에서 수집한 OCR 후보",
+          pageOrder: index,
+          evidenceRoles: inferProductDetailOcrEvidenceRoles(image),
+          evidenceScope: "product-detail" as const,
         })),
     ];
+    const curatedResearchMatch = matchOriginalSourceVendorResearch({ productName, brandName: jsonLd.brandName }, url.toString());
+    const detailOcrBudget = resolveProductDetailOcrBudget({
+      hasCuratedResearch: Boolean(curatedResearchMatch),
+      htmlFactCount: new Set([...structuredSignals.verifiedBenefits, ...structuredSignals.ingredients]).size,
+      candidateCount: detailOcrCandidates.length,
+    });
     const [reviewSources, detailImageOcrInsights] = await Promise.all([
       analyzeReviewSourceCandidates({
         candidates: rawReviewCandidates,
@@ -992,19 +1032,37 @@ export async function POST(request: Request) {
         collectLimit: 10,
         displayLimit: 5,
       }).catch(() => []),
-      analyzeProductDetailImageCandidates({
-        candidates: detailOcrCandidates,
-        productName,
-        category: normalizedCategory,
-        price,
-        originalPrice,
-        discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(html, price, originalPrice),
-        description: extractedDescription,
-        verifiedBenefits: structuredSignals.verifiedBenefits,
-        ingredients: structuredSignals.ingredients,
-      }).catch(() => []),
+      detailOcrBudget > 0
+        ? analyzeProductDetailImageCandidates({
+            candidates: detailOcrCandidates,
+            productName,
+            category: normalizedCategory,
+            price,
+            originalPrice,
+            discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(html, price, originalPrice),
+            description: extractedDescription,
+            verifiedBenefits: structuredSignals.verifiedBenefits,
+            ingredients: structuredSignals.ingredients,
+            maxCandidates: detailOcrBudget,
+          }).catch(() => [])
+        : Promise.resolve([]),
     ]);
     const productCopyConstraints = Array.from(new Set(detailImageOcrInsights.flatMap((insight) => insight.productConstraints))).slice(0, 20);
+    const excludedAutoProductImageKeys = new Set(
+      detailImageOcrInsights
+        .filter((insight) => {
+          // 수상·순위만 있는 판매자 배너는 상품 원본에서 제외합니다. 반면 실제
+          // 포장 라벨이나 조리·사용 사진은 OCR 문구가 많다는 이유만으로 버리지
+          // 않습니다. OCR 근거 풀과 생성용 상품 이미지 풀은 서로 다른 책임입니다.
+          return isMerchantCredentialOnlyDetailImage(insight);
+        })
+        .map((insight) => normalizeImageUrlForDedup(insight.imageUrl))
+    );
+    const isAutoProductImage = (image: string | undefined) => Boolean(
+      image &&
+      !isDifferentProductImage(url.toString(), image) &&
+      !excludedAutoProductImageKeys.has(normalizeImageUrlForDedup(image))
+    );
     const rankedCandidates: ProductImageCandidate[] = [
       ...(fallbackMainImage
         ? [
@@ -1057,6 +1115,18 @@ export async function POST(request: Request) {
       sourceImageCandidates = [...sourceImageCandidates, ...fallbackCandidates];
       if (sourceImageCandidates[0]) sourceImageCandidates[0].selected = true;
     }
+    sourceImageCandidates = sourceImageCandidates.filter((candidate) => {
+      const originalKey = normalizeImageUrlForDedup(candidate.originalUrl || candidate.imagePath);
+      const finalKey = normalizeImageUrlForDedup(candidate.imagePath);
+      const excluded = excludedAutoProductImageKeys.has(originalKey) || excludedAutoProductImageKeys.has(finalKey);
+      if (excluded) {
+        // 리디렉션·리사이즈 URL도 같은 수상 배너로 다시 유입되지 않게 두
+        // 주소를 함께 기억합니다. OCR insight 자체는 상품 분석 자료로 남습니다.
+        excludedAutoProductImageKeys.add(originalKey);
+        excludedAutoProductImageKeys.add(finalKey);
+      }
+      return !excluded;
+    });
     const inferredRepresentation = sourceImageCandidates[0]?.alreadyTransparent
       ? {
           ...representation,
@@ -1067,10 +1137,57 @@ export async function POST(request: Request) {
           selectedExtractionScope: "visible-all" as const,
         }
       : representation;
-    const fallbackSelectedImage = selectMainProductImage(enhancedCandidates, mergedGalleryCandidates, fallbackMainImage, false);
-    const mainImage = sourceImageCandidates[0]?.imagePath || fallbackSelectedImage;
-    const galleryImages = mergeImageUrls([...sourceImageCandidates.map((candidate) => candidate.imagePath), ...mergedGalleryCandidates]).slice(0, maxGalleryImages);
+    const fallbackSelectedImage = selectMainProductImage(
+      enhancedCandidates.filter((candidate) => isAutoProductImage(candidate.url)),
+      mergedGalleryCandidates.filter(isAutoProductImage),
+      "",
+      false
+    );
+    const autoProductSourceScore = (candidate: SourceImageCandidate) => {
+      let score = candidate.recommendationScore ?? 0;
+      if (["multi-unit-set", "bundle-components"].includes(representation.type)) {
+        if (candidate.multipleObjectsAreSalesUnit) score += 0.24;
+        else if (candidate.hasMultipleObjects) score -= 0.12;
+      }
+      return score;
+    };
+    const rankedAutoProductSources = sourceImageCandidates
+      .filter((candidate) =>
+        (!candidate.hasText || evaluateProductImageIdentity(url.toString(), candidate.originalUrl || candidate.imagePath).status === "match") &&
+        isAutoProductImage(candidate.originalUrl || candidate.imagePath) &&
+        isAutoProductImage(candidate.imagePath)
+      )
+      .sort((left, right) => autoProductSourceScore(right) - autoProductSourceScore(left));
+    const preferredSourceImage = rankedAutoProductSources[0];
+    // OCR에서 수상·순위 증빙 전용 이미지로 확인된 구조화 이미지는 대표로
+    // 승격하지 않습니다. 나머지 구조화 이미지는 분석 추천 순서에 맞춰 실제
+    // 상품 사진이 썸네일과 제작 원본의 첫 장이 되도록 정렬합니다.
+    const sourceRank = new Map<string, number>();
+    rankedAutoProductSources.forEach((candidate, index) => {
+      sourceRank.set(normalizeImageUrlForDedup(candidate.imagePath), index);
+      if (candidate.originalUrl) sourceRank.set(normalizeImageUrlForDedup(candidate.originalUrl), index);
+    });
+    const analyzedProductImages = rankedAutoProductSources
+      .filter((candidate) => (candidate.sourceImageQualityScore ?? 0) >= 0.45 && (candidate.recommendationScore ?? 0) >= 0.45)
+      .map((candidate) => candidate.imagePath);
+    const confirmedProductImages = mergeImageUrls([...structuredProductImages, openGraphImage, ...analyzedProductImages])
+      .filter(isAutoProductImage)
+      .sort((left, right) => (sourceRank.get(normalizeImageUrlForDedup(left)) ?? Number.MAX_SAFE_INTEGER) - (sourceRank.get(normalizeImageUrlForDedup(right)) ?? Number.MAX_SAFE_INTEGER))
+      .slice(0, 6);
+    const mainImage = preferredSourceImage?.imagePath || confirmedProductImages[0] || fallbackSelectedImage;
+    sourceImageCandidates = sourceImageCandidates.map((candidate, index) => ({
+      ...candidate,
+      selected: preferredSourceImage ? candidate.id === preferredSourceImage.id : index === 0,
+      type: preferredSourceImage?.id === candidate.id ? "hero" : candidate.type,
+      sourceType: preferredSourceImage?.id === candidate.id ? "product-gallery" : candidate.sourceType,
+    }));
+    const galleryImages = mergeImageUrls([...sourceImageCandidates.map((candidate) => candidate.imagePath), ...mergedGalleryCandidates])
+      .filter(isAutoProductImage)
+      .slice(0, maxGalleryImages);
     const detailImages = galleryImages.filter((image) => image && image !== mainImage).slice(0, maxDetailImages);
+    // 자동 갤러리·OCR 후보는 대표 이미지로 보이더라도 확정 자산이 아니다.
+    // JSON-LD와 페이지 대표 메타 이미지만 자동 확정하고 나머지는 사용자가
+    // 직접 선택해야 user-confirmed로 승격할 수 있다.
     const baseExtractedProductInfo: ExtractedProductInfo = {
       productName,
       category: normalizedCategory,
@@ -1083,6 +1200,7 @@ export async function POST(request: Request) {
       categoryKeywords: detected.keywords,
       mainImage,
       galleryImages,
+      confirmedProductImages,
       description: extractedDescription,
       extractedDescription,
       mainBenefit,
@@ -1128,11 +1246,14 @@ export async function POST(request: Request) {
       debug: {
         totalImageUrlsFound: enhancedCandidates.length || rawGalleryImages.length,
         imageCandidatesReturned: productInfo.imageCandidates?.length || 0,
-        rejectedImageCount: Math.max(0, mergedGalleryCandidates.length - galleryImages.length),
+        rejectedImageCount: Math.max(0, collectedEnhancedCandidates.length - enhancedCandidates.length) + Math.max(0, collectedGalleryImages.length - rawGalleryImages.length) + Math.max(0, mergedGalleryCandidates.length - galleryImages.length),
         mainImageSource: isRecommendedThumbnailUrl(mainImage) ? "fallback-thumbnail" : enhancedCandidates.some((candidate) => candidate.url === mainImage) ? "html" : galleryImages.includes(mainImage) ? "gallery" : fallbackMainImage ? "og" : "none",
         detectedProductType: detected.type,
         reviewCandidatesFound: rawReviewCandidates.length,
         reviewCandidatesReturned: reviewSources.length,
+        detailOcrBudget,
+        detailOcrImagesAnalyzed: detailImageOcrInsights.length,
+        curatedResearchUsed: Boolean(curatedResearchMatch),
       },
     });
   } catch (error) {

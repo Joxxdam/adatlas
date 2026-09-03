@@ -101,9 +101,10 @@ export function assertNativeProductReferenceReady(truth: ProductTruth) {
       asset.verified &&
       asset.validationStatus !== "excluded" &&
       ["product-packshot", "product-lifestyle", "detail-image"].includes(asset.role) &&
-      !/\/(?:processed-products|product-cutouts)\//i.test(asset.path)
+      asset.transparent !== true &&
+      !/(?:^|[\\/_.-])(?:processed-products|product-cutouts?|remove-?bg|cutout|nukki|누끼)(?:[\\/_.-]|$)/iu.test(asset.path)
   );
   if (!usableReference) {
-    throw new Error("AI 광고 제작에 사용할 상세페이지 원본 이미지가 없습니다. 상품 사진 또는 상세 이미지를 선택해 주세요.");
+    throw new Error("AI 광고 제작에 사용할 상세페이지 원본 상품 이미지를 확인하지 못했습니다. 상품을 다시 분석하거나 위 원본 이미지에서 실제 상품 사진을 선택해 주세요.");
   }
 }

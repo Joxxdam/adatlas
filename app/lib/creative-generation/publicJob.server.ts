@@ -33,6 +33,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
     productImagePath: safeWebPath(product.productImagePath),
     secondaryProductImagePath: safeWebPath(product.secondaryProductImagePath),
     productImagePaths: (product.productImagePaths || []).map(safeWebPath).filter(Boolean),
+    confirmedProductImagePaths: (product.confirmedProductImagePaths || []).map(safeWebPath).filter(Boolean),
     backgroundImagePath: "",
     extractedMainImage: safeWebPath(product.extractedMainImage),
     extractedGalleryImages: (product.extractedGalleryImages || []).map(safeWebPath).filter(Boolean),

@@ -27,6 +27,7 @@ export const VIDEO_HOOK_LABELS: Record<VideoHookType, string> = {
   "seasonal-situation": "계절·상황형",
   "myth-busting": "상식 뒤집기형",
   "user-monologue": "사용자 독백형",
+  "product-self-introduction": "상품 자기소개형",
 };
 
 export const VIDEO_FORMAT_LABELS = {
@@ -83,6 +84,7 @@ const hookCode: Record<VideoHookType, string> = {
   "seasonal-situation": "SEASON",
   "myth-busting": "MYTH",
   "user-monologue": "MONOLOGUE",
+  "product-self-introduction": "SELFINTRO",
 };
 
 function readableSegment(value: string, fallback: string) {
@@ -119,7 +121,7 @@ export function createVideoMaterialCode(input: { advertiserName: string; product
 }
 
 export function validateVideoMaterialCode(value: string) {
-  return /^VIDEO_[A-Z0-9_]{2,24}_[A-Z0-9_]{2,24}_(?:PROBLEM|BENEFIT|USP|SENSORY|CURIOSITY|REVIEW|BRAND|LOSS|COMPARE|ORIGIN|CHANGE|SEASON|MYTH|MONOLOGUE)_\d{8}_\d{2}$/.test(value);
+  return /^VIDEO_[A-Z0-9_]{2,24}_[A-Z0-9_]{2,24}_(?:PROBLEM|BENEFIT|USP|SENSORY|CURIOSITY|REVIEW|BRAND|LOSS|COMPARE|ORIGIN|CHANGE|SEASON|MYTH|MONOLOGUE|SELFINTRO)_\d{8}_\d{2}$/.test(value);
 }
 
 function compactUnique(values: unknown[], limit = 8) {

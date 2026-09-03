@@ -30,7 +30,13 @@ export async function GET(request: Request) {
       if (hasOrphanedRunningResult(job, runnerWasActive)) {
         job = await creativeGenerationJobStore.update(job.id, (current) => resumeGenerationJob(current, false));
       }
-      if (requestedProductUrl) enqueueGenerationJob(job.id, { priority: true });
+      // 이 상태 API는 전체 화면의 백그라운드 알림이 주기적으로 호출한다.
+      // 개발 서버 HMR로 인메모리 러너만 교체된 경우, 영상기획 등 다른
+      // 화면에 있어도 영속 작업을 새 러너에 자동 재등록한다.
+      if (!isGenerationJobRunnerActive(job.id)) {
+        if (requestedProductUrl) enqueueGenerationJob(job.id, { priority: true });
+        else enqueueGenerationJob(job.id);
+      }
       activeJobs.push(toGenerationJobSummary(job, isGenerationJobRunnerActive(job.id)));
     }
     return NextResponse.json({

@@ -18,7 +18,7 @@ import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
 import { buildProductTruth, extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNativeAdReference, type NativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createBestEffortReferenceCopyPlan, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createBestEffortReferenceCopyPlan, hasExecutableReferenceCopyContract, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
 import { enforceExactRenderedCopyValidation, enforceNoSourceDisclosureCopy, enforceOriginCopyPolicy, enforceReferenceCopyPlanValidity, enforceReferenceCopySlotCompleteness } from "./nativeCreativeValidation";
 import { resolveProductRenderingPolicy } from "./productRenderingPolicy";
 
@@ -32,7 +32,7 @@ type NativeResultInput = {
 };
 
 const resultLocks = new Map<string, Promise<void>>();
-const referenceCacheKey = Symbol.for("daywiz.native-creative-reference-cache-v5-staged-reference-edit");
+const referenceCacheKey = Symbol.for("daywiz.native-creative-reference-cache-v6-no-cutout-input");
 const referenceGlobal = globalThis as typeof globalThis & {
   [referenceCacheKey]?: Map<string, Promise<string[]>>;
 };
@@ -91,19 +91,29 @@ function manualReviewValidation(message: string): NativeCreativeValidation {
     observedKoreanText: [],
     standaloneLogoDetected: false,
     standaloneLogoFindings: [],
+    detachedProductCutoutDetected: false,
+    detachedProductCutoutFindings: [],
     failures: [message],
     recommendation: "manual-review",
     checkedAt: new Date().toISOString(),
   };
 }
 
-function conciseQaFeedback(validation: NativeCreativeValidation) {
+function conciseQaFeedback(validation: NativeCreativeValidation, isMeat = false) {
   const failures = validation.failures.slice(0, 6).join("; ");
-  return `AI quality review requested a complete remake. ${failures || "Improve product identity, exact Korean text, hierarchy and coherent hook-specific composition."}`;
+  const meatRecovery = isMeat
+    ? `\nMEAT IDENTITY RECOVERY — REBUILD, DO NOT RETOUCH THE GENERIC STEAK:
+- Compare the authoritative product attachments again before drawing any meat. The failed raster is not evidence for cut shape, thickness, marbling or texture.
+- If the failure mentions a thick/round/rectangular block, repeated grain or marbling, waxy/rubbery/glossy texture, or a different cut, discard every failed meat instance and regenerate it from the authoritative seller evidence.
+- A cooked scene is permitted when the authoritative attachments clearly establish the sold raw cut AND the exact hook calls for cooking, eating, serving, searing or juiciness. Rebuild it as that same cut after plausible cooking with appetizing irregular sear, rendered fat, moist cut surfaces and abundant but believable juices. If the hook does not require that payoff, replace it with a polished raw/chilled, verified tray, set or package-led scene. Never keep or retry a generic stock steak.
+- Preserve the seller-proven median width-to-thickness ratio, irregular perimeter, taper, muscle direction, restrained marbling range and piece-to-piece variation. Never turn thin slices into medallions, cubes or identical molded rectangles.`
+    : "";
+  return `AI quality review requested a complete remake. ${failures || "Improve product identity, exact Korean text, hierarchy and coherent hook-specific composition."}\nZERO-CUTOUT REMAKE: rebuild the product, contact surface, reflections, shadows, occlusion, hands and surrounding scene together as one continuous raster. Never crop, extract, paste, overlay, restore, miniaturize or frame any attached product reference. No detached packshot, transparent-background look, white halo, sticker edge, rectangular source-image panel or floating product is allowed.\nPRODUCT VISIBILITY REPAIR: inspect the current raster before adding any product. If the verified target product or set already exists but is small, enlarge and recompose that same instance or whole set in place. Never add a second package, miniature copy, duplicate lineup, detached packshot or rectangular product-reference panel.${meatRecovery}`;
 }
 
 export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation, isMeat = false) {
   if (validation.standaloneLogoDetected) return true;
+  if (validation.detachedProductCutoutDetected) return true;
   if (validation.sourcePersonDetected && (!validation.sourcePersonReplaced || !validation.humanCompositionChanged || (validation.targetAudienceFit || 0) < 75)) return true;
   if (validation.sourcePersonDetected && validation.humanSceneBackgroundRebuilt === false) return true;
   if (validation.sourcePersonDetected && validation.humanCopyAligned === false) return true;
@@ -111,6 +121,9 @@ export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation,
   if (validation.sourceContextualBackgroundDetected && validation.contextualBackgroundRebuilt !== true) return true;
   if (validation.sceneProductInteractionAligned === false) return true;
   if (validation.unrelatedFoodOrIngredientDetected) return true;
+  if (isMeat && (validation.meatCutIdentityAccurate === false || validation.meatTextureNatural === false)) return true;
+  if (isMeat && (validation.meatArtificialPatternDetected || validation.meatGrotesqueDetailDetected)) return true;
+  if (isMeat && (validation.meatPresentationModeAligned === false || validation.meatCookedEvidenceSatisfied === false || validation.meatSetCompositionAccurate === false)) return true;
   if (validation.sourceBrandRegionCleared === false) return true;
   if (validation.comparisonSemanticAligned === false) return true;
   if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
@@ -399,92 +412,63 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   if (!(await validStageFile(selectedAdReference.path))) {
     throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
   }
-  if (action === "regenerate" || action === "regenerate-new-reference" || !hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
-    try {
-      const replanning = await planReferenceAdaptedCopies({
-        truth: job.productTruth,
-        references: [selectedAdReference],
-      });
-      const replannedCopy = replanning.plans[0];
-      if (replannedCopy && hasPublishableReferenceCopyContract(replannedCopy)) {
-        const replannedCreative = buildReferenceAdaptedCreativePlan({
+  // 최신 문구 배치는 6장을 한 번에 만들고 실패 항목만 한 번 수정한다. 품질
+  // 미달은 이미지 생성을 막지 않고 결과의 확인 필요 사유로 남긴다. 다만 빈
+  // 비브랜드 슬롯이나 사실 안전성 문제가 있어 편집 자체가 불가능한 계획은
+  // ProductTruth 기반 best-effort 문구로 교체한 뒤 생성한다.
+  const userConfirmedCopy = action === "copy-update";
+  if (!userConfirmedCopy && !hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
+    const previousPlan = initial.referenceAdaptedCopyPlan;
+    const executablePlan = hasExecutableReferenceCopyContract(previousPlan)
+      ? previousPlan
+      : await createBestEffortReferenceCopyPlan({
           truth: job.productTruth,
-          references: [selectedAdReference],
-          copyPlans: [replannedCopy],
-          provider: replanning.provider,
-          warnings: replanning.warnings,
+          reference: selectedAdReference,
+          index: Math.max(0, initial.order - 1),
+          previous: previousPlan,
         });
-        const projectedHook = replannedCreative.hookPlans[0];
-        const projectedScene = buildReferenceScenes([selectedAdReference], [replannedCopy])[0];
-        const currentCode = initial.hookPlan.hookCode;
-        job = await creativeGenerationJobStore.update(job.id, (active) => ({
-          ...active,
-          recoveryLog: [
-            ...(active.recoveryLog || []),
-            { at: new Date().toISOString(), message: "과거 품질 기준 미달 문구를 최신 레퍼런스 문구 계획으로 재생성", resultIds: [initial.id] },
-          ].slice(-20),
-          results: active.results.map((result) => result.id === initial.id
-            ? {
-                ...result,
-                referenceAdaptedCopyPlan: {
-                  ...replannedCopy,
-                  id: result.referenceAdaptedCopyPlan?.id || replannedCopy.id,
-                  resultCode: currentCode,
-                },
-                hookPlan: {
-                  ...projectedHook,
-                  id: result.hookPlan.id,
-                  hookCode: currentCode,
-                  title: result.hookPlan.title,
-                },
-                scenePlan: {
-                  ...projectedScene,
-                  id: result.scenePlan.id,
-                  blueprintId: projectedHook.blueprintId,
-                },
-                blueprintId: projectedHook.blueprintId,
-              }
-            : result),
-        }));
-        initial = job.results.find((result) => result.id === input.resultId)!;
-      }
-    } catch {
-      // 최신 AI 재기획이 실패해도 아래의 결정론적 최선 문구 복구를 계속 시도한다.
+    if (!executablePlan || !hasExecutableReferenceCopyContract(executablePlan)) {
+      const reasons = executablePlan?.validationErrors?.slice(0, 3).join(" · ");
+      throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구에서 안전하게 대체할 수 없는 상품 사실 오류가 확인됐습니다.${reasons ? ` ${reasons}` : " ProductTruth를 다시 확인해 주세요."}`);
     }
-  }
-  if (!hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
-    const bestEffortCopyPlan = await createBestEffortReferenceCopyPlan({
-      truth: job.productTruth,
-      reference: selectedAdReference,
-      index: Math.max(0, initial.order - 1),
-      previous: initial.referenceAdaptedCopyPlan,
-    });
-    if (!hasPublishableReferenceCopyContract(bestEffortCopyPlan)) {
-      throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구가 품질 검수를 통과하지 못했습니다. 깨진 문구를 이미지에 넣지 않고 문구 계획을 다시 생성해야 합니다.`);
-    }
+    const usedFallback = executablePlan !== previousPlan;
+    const currentCode = initial.hookPlan.hookCode;
     job = await creativeGenerationJobStore.update(job.id, (active) => ({
       ...active,
-      errors: [...active.errors, `${initial.hookPlan.hookCode}의 품질 기준 미달 문구를 레퍼런스 구조 기반 최선 문구로 교체해 제작을 계속합니다.`].slice(-20),
+      errors: [
+        ...active.errors,
+        `${currentCode} 문구 품질 경고를 남기고 ${usedFallback ? "ProductTruth 안전 문구로 교체해 " : "현재 문구로 "}이미지 제작을 계속합니다.`,
+      ].slice(-20),
       recoveryLog: [
         ...(active.recoveryLog || []),
-        { at: new Date().toISOString(), message: "품질 기준 미달 레퍼런스 문구를 구조 기반 최선 문구로 교체", resultIds: [initial.id] },
+        {
+          at: new Date().toISOString(),
+          message: usedFallback ? "편집 불가능 문구를 ProductTruth 안전 문구로 교체하고 이미지 생성 계속" : "문구 품질 경고를 보존하고 이미지 생성 계속",
+          resultIds: [initial.id],
+        },
       ].slice(-20),
       results: active.results.map((result) => result.id === initial.id
         ? {
             ...result,
-            referenceAdaptedCopyPlan: bestEffortCopyPlan,
+            referenceAdaptedCopyPlan: executablePlan,
             hookPlan: {
               ...result.hookPlan,
-              headline: bestEffortCopyPlan.headline,
-              body: bestEffortCopyPlan.subCopy,
-              proof: bestEffortCopyPlan.proof,
-              offer: bestEffortCopyPlan.offer,
-              cta: bestEffortCopyPlan.cta,
-              factIds: bestEffortCopyPlan.factIds,
-              numericTokens: extractNumericTokens([bestEffortCopyPlan.headline, bestEffortCopyPlan.subCopy, bestEffortCopyPlan.proof, bestEffortCopyPlan.offer, bestEffortCopyPlan.cta].join(" ")),
-              validationStatus: "fallback",
-              validationErrors: bestEffortCopyPlan.validationErrors,
-              generationSource: "fallback",
+              headline: executablePlan.headline,
+              body: executablePlan.subCopy,
+              proof: executablePlan.proof,
+              offer: executablePlan.offer,
+              cta: executablePlan.cta,
+              factIds: executablePlan.factIds,
+              numericTokens: extractNumericTokens([
+                executablePlan.headline,
+                executablePlan.subCopy,
+                executablePlan.proof,
+                executablePlan.offer,
+                executablePlan.cta,
+              ].join(" ")),
+              validationStatus: executablePlan.validationStatus === "valid" ? "valid" : "fallback",
+              validationErrors: executablePlan.validationErrors,
+              generationSource: usedFallback ? "fallback" : result.hookPlan.generationSource,
             },
           }
         : result),
@@ -495,7 +479,6 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   const directory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, initial.hookPlan.hookCode);
   await mkdir(directory, { recursive: true });
   const runtime = resolveFastCreativeRuntime();
-  const productRenderingPolicy = resolveProductRenderingPolicy(job);
   const provider = createCreativeGenerationProvider(job.engine || "codex_local", {
     explicitPaidApiAuthorization: hasExplicitPaidApiAuthorization(job.paidApiAuthorization),
   });
@@ -700,7 +683,8 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       }));
     }
 
-    for (let attempt = 0; attempt <= runtime.autoRevisionLimit; attempt += 1) {
+    const mandatoryCriticalQaRevisionLimit = Math.max(1, runtime.autoRevisionLimit);
+    for (let attempt = 0; attempt <= mandatoryCriticalQaRevisionLimit; attempt += 1) {
       job = await updateNativeProgress(job, input.resultId, "quality-check");
       const qaPreviewPath = path.join(directory, `qa-preview-${attempt + 1}.jpg`);
       const qaExportStarted = Date.now();
@@ -728,10 +712,11 @@ async function runNativeResultGeneration(input: NativeResultInput) {
         validation = manualReviewValidation("AI 완성 광고 검수 응답을 받지 못해 사람 검수가 필요합니다.");
       }
       validationMs += Date.now() - validationStarted;
-      const criticalFailure = hasCriticalNativeQaFailure(validation, resolveProductRenderingPolicy(job) === "natural-meat-reference");
-      if (validation.recommendation !== "revise" || !criticalFailure || action === "revalidate" || attempt >= Math.min(1, runtime.autoRevisionLimit)) break;
+      const isMeat = resolveProductRenderingPolicy(job) === "natural-meat-reference";
+      const criticalFailure = hasCriticalNativeQaFailure(validation, isMeat);
+      if (validation.recommendation !== "revise" || !criticalFailure || action === "revalidate" || attempt >= mandatoryCriticalQaRevisionLimit) break;
       const repairedPath = path.join(directory, `04-qa-repair-${attempt + 1}.png`);
-      await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, [input.feedback, conciseQaFeedback(validation)].filter(Boolean).join("\n"));
+      await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, [input.feedback, conciseQaFeedback(validation, isMeat)].filter(Boolean).join("\n"));
       qaRepairPaths.push(repairedPath);
       generatedPath = repairedPath;
       job = await updateNativeProgress(job, input.resultId, "qa-repairing", (result) => ({

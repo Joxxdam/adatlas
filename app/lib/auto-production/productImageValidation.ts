@@ -1,4 +1,5 @@
 import type { ProductInfoForPrompt, SourceImageCandidate } from "../mvp/types";
+import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 
 export type AutoProductionImageVerification = {
   status: "verified" | "needs-review" | "rejected";
@@ -30,13 +31,13 @@ export function verifyAutoProductionProductImages(productName: string, product: 
   const rawFallbacks = unique([...(product.productImagePaths || []), product.productImagePath || "", product.extractedMainImage || "", ...(product.extractedGalleryImages || [])]);
   const acceptedStructured = structured.filter((image) => {
     const text = descriptor(image);
-    if (!image.imagePath || rejectedCue.test(text)) return false;
+    if (!image.imagePath || isDifferentProductImage(product.landingUrl, image.imagePath) || rejectedCue.test(text)) return false;
     if (belowNormalizedScore(image.sourceImageQualityScore, 0.35)) return false;
     if (belowNormalizedScore(image.salesUnitMatchScore, 0.45)) return false;
     return image.type === "hero" || image.sourceType === "product-gallery" || productCue.test(text) || image.multipleObjectsAreSalesUnit === true;
   });
-  const rejectedPaths = unique([...structured.filter((image) => !acceptedStructured.includes(image)).map((image) => image.imagePath), ...rawFallbacks.filter((path) => rejectedCue.test(path))]);
-  const selectedPaths = unique([...acceptedStructured.map((image) => image.imagePath), ...rawFallbacks.filter((path) => !rejectedCue.test(path))]).slice(0, 5);
+  const rejectedPaths = unique([...structured.filter((image) => !acceptedStructured.includes(image)).map((image) => image.imagePath), ...rawFallbacks.filter((path) => isDifferentProductImage(product.landingUrl, path) || rejectedCue.test(path))]);
+  const selectedPaths = unique([...acceptedStructured.map((image) => image.imagePath), ...rawFallbacks.filter((path) => !isDifferentProductImage(product.landingUrl, path) && !rejectedCue.test(path))]).slice(0, 5);
   if (!selectedPaths.length) {
     return { status: "rejected", selectedPaths: [], rejectedPaths, reasons: ["해당 상품으로 확인할 수 있는 원본 이미지가 없습니다."] };
   }

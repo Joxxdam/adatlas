@@ -49,6 +49,7 @@ export async function buildOpportunityProductCreationHandoff(opportunityId: stri
     productImagePath: images[0] || "",
     secondaryProductImagePath: "",
     productImagePaths: images,
+    confirmedProductImagePaths: images[0] ? [images[0]] : [],
     backgroundImagePath: "",
     extractedDescription: opportunity.recommendation.rationale.join(" · "),
     extractedMainImage: images[0] || "",

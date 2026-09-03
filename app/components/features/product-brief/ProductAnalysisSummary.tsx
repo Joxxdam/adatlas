@@ -69,7 +69,7 @@ export function ProductAnalysisSummary(props: { product: ProductInfoForPrompt; b
         <p className={styles.sourceImageCount}>광고 제작에 사용할 수 있는 원본 이미지 {sourceImageCount}장</p>
         <div className={styles.productConfirmationActions}>
           <button disabled={props.selectedForGeneration} onClick={props.onUseProduct} type="button">
-            {props.selectedForGeneration ? "선택 완료 · 아래에서 제작 상태 확인" : "이 상품으로 광고 만들기"}
+            {props.selectedForGeneration ? "상품 선택 완료 · 아래에서 자동매칭 확인" : "이 상품으로 광고 만들기"}
           </button>
           <button onClick={props.onChooseOther} type="button">
             다른 상품 선택

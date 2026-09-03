@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createOpenAiVideoPlanningRunner, resolveVideoPlanningProvider, resolveVideoPlanningStageConfig, sanitizeVideoPlanningErrorMessage, videoPlanningRateLimitDelayMs, VideoPlanningGenerationError } from "../app/lib/video-collaboration/videoPlanningAiCore.ts";
-import { hasExactVideoConceptArchetypes, requestFourVideoConcepts } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
+import { hasExactVideoConceptArchetypes, requestFourVideoConcepts, VideoConceptBatchValidationError } from "../app/lib/video-collaboration/videoPlanningConceptBatch.ts";
 import { runWithSingleVideoPlanningCorrection } from "../app/lib/video-collaboration/videoPlanningCorrection.ts";
 import { compactPlanningCta, hasFinalPlanningCta, hasStrongDetailedPlanningOpening, missingSceneSignals, repairDetailedPlanningCommercialRestraint, repairDetailedPlanningCta, repairDetailedPlanningOpeningHook, repairDetailedPlanningSceneDescriptions } from "../app/lib/video-collaboration/planningValidation.ts";
 import { failVideoPlanningPipeline, hasReusableDetailedVideoPlan, withVideoPlanningGenerationLock } from "../app/lib/video-collaboration/videoPlanningRequestGuards.ts";
@@ -172,7 +172,7 @@ test("단계별 모델·reasoning·timeout과 Responses API 보안 옵션을 적
     VIDEO_PLANNING_SCRIPT_MODEL: "script-model",
   };
   assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "product-analysis", prompt: "", outputSchema: {} }, env), { purpose: "analysis", model: "analysis-model", effort: "low", verbosity: "low", timeoutMs: 45_000 });
-  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "concept-summaries", purpose: "concept", prompt: "", outputSchema: {} }, env), { purpose: "concept", model: "concept-model", effort: "low", verbosity: "medium", timeoutMs: 60_000 });
+  assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "concept-summaries", purpose: "concept", prompt: "", outputSchema: {} }, env), { purpose: "concept", model: "concept-model", effort: "low", verbosity: "medium", timeoutMs: 90_000 });
   assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "detailed-script", purpose: "script", prompt: "", outputSchema: {} }, env), { purpose: "script", model: "script-model", effort: "medium", verbosity: "high", timeoutMs: 90_000 });
   assert.deepEqual(resolveVideoPlanningStageConfig({ stage: "automatic-revision", purpose: "correction", prompt: "", outputSchema: {} }, env), { purpose: "correction", model: "script-model", effort: "low", verbosity: "high", timeoutMs: 90_000 });
 
@@ -196,7 +196,7 @@ test("단계별 모델·reasoning·timeout과 Responses API 보안 옵션을 적
   assert.equal(calls[0].body.text.format.type, "json_schema");
   assert.equal(calls[0].body.text.format.strict, true);
   assert.equal(calls[0].body.text.verbosity, "medium");
-  assert.equal(calls[0].options.timeout, 60_000);
+  assert.equal(calls[0].options.timeout, 90_000);
 });
 
 test("정지 광고 레퍼런스는 Responses API의 실제 이미지 입력으로 전달한다", async () => {
@@ -355,6 +355,69 @@ test("4개 콘셉트는 기본 한 번의 호출로 유형을 정확히 하나�
   );
 });
 
+test("안정 생성 모드는 네 유형을 최대 2개씩 만들고 성공 슬롯을 즉시 보고한다", async () => {
+  let active = 0;
+  let peak = 0;
+  let batchCalls = 0;
+  const completed = [];
+  const progress = [];
+  const activeWhenSaved = [];
+  const result = await requestFourVideoConcepts({
+    requestBatch: async () => {
+      batchCalls += 1;
+      return [];
+    },
+    requestOne: async (conceptArchetype) => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) =>
+        setTimeout(resolve, conceptArchetype === "real-review" ? 25 : 5)
+      );
+      completed.push(conceptArchetype);
+      active -= 1;
+      return { conceptArchetype };
+    },
+    initialStrategy: "per-archetype",
+    concurrency: 2,
+    onProgress: async (state) => {
+      progress.push(state);
+      activeWhenSaved.push(active);
+    },
+  });
+  assert.equal(batchCalls, 0);
+  assert.equal(peak, 2);
+  assert.deepEqual(completed.sort(), [...archetypes].sort());
+  assert.equal(hasExactVideoConceptArchetypes(result), true);
+  assert.equal(progress.some((state) => state.preservedRows.length > 0), true);
+  assert.equal(activeWhenSaved.some((count) => count > 0), true);
+  assert.equal(progress.at(-1).unresolvedArchetypes.length, 0);
+});
+
+test("안정 생성 모드는 실패한 유형만 다시 만들고 먼저 성공한 유형을 보존한다", async () => {
+  const calls = new Map();
+  const progress = [];
+  const result = await requestFourVideoConcepts({
+    requestBatch: async () => [],
+    requestOne: async (conceptArchetype) => {
+      const count = (calls.get(conceptArchetype) || 0) + 1;
+      calls.set(conceptArchetype, count);
+      if (conceptArchetype === "real-review" && count === 1) {
+        throw new Error("temporary timeout");
+      }
+      return { conceptArchetype, marker: `${conceptArchetype}-${count}` };
+    },
+    initialStrategy: "per-archetype",
+    concurrency: 2,
+    onProgress: async (state) => progress.push(state),
+  });
+  assert.equal(calls.get("parody"), 1);
+  assert.equal(calls.get("real-review"), 2);
+  assert.equal(calls.get("usp-focus"), 1);
+  assert.equal(calls.get("secret-benefit"), 1);
+  assert.equal(result.find((item) => item.conceptArchetype === "parody").marker, "parody-1");
+  assert.equal(progress.some((state) => state.preservedRows.some((item) => item.conceptArchetype === "parody")), true);
+});
+
 test("특정 콘셉트 하나만 부적합하면 그 유형만 한 번 재생성한다", async () => {
   let batchCalls = 0;
   const regenerated = [];
@@ -379,6 +442,106 @@ test("특정 콘셉트 하나만 부적합하면 그 유형만 한 번 재생성
     result.every((item) => item.valid),
     true
   );
+});
+
+test("여러 콘셉트가 부적합해도 통과한 유형은 보존하고 실패 유형만 재생성한다", async () => {
+  const regenerated = [];
+  const preserved = [];
+  const concepts = archetypes.map((conceptArchetype) => ({
+    conceptArchetype,
+    marker: `original-${conceptArchetype}`,
+    valid: !["real-review", "secret-benefit"].includes(conceptArchetype),
+  }));
+  const result = await requestFourVideoConcepts({
+    requestBatch: async () => concepts,
+    requestOne: async (conceptArchetype, _correction, preservedRows) => {
+      regenerated.push(conceptArchetype);
+      preserved.push(...preservedRows.map((row) => row.conceptArchetype));
+      return {
+        conceptArchetype,
+        marker: `repaired-${conceptArchetype}`,
+        valid: true,
+      };
+    },
+    findInvalidArchetypes: (rows) => rows.filter((item) => !item.valid).map((item) => item.conceptArchetype),
+  });
+  assert.deepEqual(regenerated.sort(), ["real-review", "secret-benefit"]);
+  assert.equal(result.find((item) => item.conceptArchetype === "parody"), concepts[0]);
+  assert.equal(result.find((item) => item.conceptArchetype === "usp-focus"), concepts[2]);
+  assert.equal(preserved.length, 4);
+});
+
+test("필수 유형이 여러 개 누락돼도 중복 결과를 버리고 누락 유형만 채운다", async () => {
+  const regenerated = [];
+  const result = await requestFourVideoConcepts({
+    requestBatch: async () => [
+      { conceptArchetype: "parody", marker: "keep-parody" },
+      { conceptArchetype: "parody", marker: "drop-duplicate" },
+      { conceptArchetype: "real-review", marker: "keep-review" },
+      { conceptArchetype: "real-review", marker: "drop-duplicate" },
+    ],
+    requestOne: async (conceptArchetype) => {
+      regenerated.push(conceptArchetype);
+      return { conceptArchetype, marker: `filled-${conceptArchetype}` };
+    },
+  });
+  assert.deepEqual(regenerated, ["usp-focus", "secret-benefit"]);
+  assert.equal(hasExactVideoConceptArchetypes(result), true);
+  assert.equal(result[0].marker, "keep-parody");
+  assert.equal(result[1].marker, "keep-review");
+});
+
+test("표적 보정을 두 번 통과하지 못하면 실패 유형 진단을 남긴다", async () => {
+  const concepts = archetypes.map((conceptArchetype) => ({
+    conceptArchetype,
+    valid: conceptArchetype !== "usp-focus",
+  }));
+  await assert.rejects(
+    () =>
+      requestFourVideoConcepts({
+        requestBatch: async () => concepts,
+        requestOne: async (conceptArchetype) => ({ conceptArchetype, valid: false }),
+        findInvalidArchetypes: (rows) => rows.filter((item) => !item.valid).map((item) => item.conceptArchetype),
+      }),
+    (error) => {
+      assert.equal(error instanceof VideoConceptBatchValidationError, true);
+      assert.deepEqual(error.invalidArchetypes, ["usp-focus"]);
+      assert.equal(error.repairRounds, 2);
+      return true;
+    }
+  );
+});
+
+test("일부 유형 재생성이 계속 실패해도 통과한 기획안과 진행 상태를 돌려준다", async () => {
+  const progress = [];
+  const concepts = archetypes.map((conceptArchetype) => ({
+    conceptArchetype,
+    valid: conceptArchetype !== "usp-focus",
+  }));
+  await assert.rejects(
+    () =>
+      requestFourVideoConcepts({
+        requestBatch: async () => concepts,
+        requestOne: async () => {
+          throw new Error("temporary model failure");
+        },
+        findInvalidArchetypes: (rows) =>
+          rows.filter((item) => !item.valid).map((item) => item.conceptArchetype),
+        onProgress: async (state) => progress.push(state),
+      }),
+    (error) => {
+      assert.equal(error instanceof VideoConceptBatchValidationError, true);
+      assert.deepEqual(error.invalidArchetypes, ["usp-focus"]);
+      assert.deepEqual(
+        error.preservedRows.map((item) => item.conceptArchetype),
+        ["parody", "real-review", "secret-benefit"]
+      );
+      return true;
+    }
+  );
+  assert.equal(progress.length, 3);
+  assert.deepEqual(progress.at(-1).unresolvedArchetypes, ["usp-focus"]);
+  assert.equal(progress.at(-1).preservedRows.length, 3);
 });
 
 test("상세 대본 자동 보정은 검증 실패 때 최대 한 번만 요청한다", async () => {
@@ -494,14 +657,14 @@ test("CTA가 앞 구간에만 있으면 마지막 CTA로 오인하지 않는다"
 
 test("긴 CTA는 단어를 자르지 않고 자막 길이에 맞춘다", () => {
   const cta = compactPlanningCta("지금 상세페이지에서 추석 선물 가격과 배송 조건을 빠짐없이 직접 확인해 보세요", "구매 조건을 확인하세요");
-  assert.ok(cta.length <= 34);
+  assert.ok(cta.replace(/\s/g, "").length <= 34);
   assert.doesNotMatch(cta, /빠짐없$/);
   assert.match(cta, /확인|구매|주문|예약/);
 });
 
 test("행동이 없는 CTA는 읽을 수 있는 길이의 완결된 행동 문장으로 보완한다", () => {
   const cta = compactPlanningCta("기름파도 담백파도 멈췄다면 추석 사전예약 찰진등심 1kg", "상품 정보를 지금 확인하세요", 24);
-  assert.ok(cta.length <= 24);
+  assert.ok(cta.replace(/\s/g, "").length <= 24);
   assert.match(cta, /확인하세요|구매하세요|예약하세요/);
 });
 
@@ -536,10 +699,27 @@ test("동일 상세 생성 요청은 서버 in-flight lock에서 한 번만 실�
 
 test("유효한 저장 상세안은 자동 재생성 대상이 아니다", () => {
   const concept = {
+    conceptArchetype: "usp-focus",
     detailStatus: "ready",
     cuts: Array.from({ length: 15 }, (_, index) => ({ id: `cut-${index}` })),
     validation: { valid: true },
+    distinctiveCharacter: "매일 막차 직전 오래된 동네 체육관에서 마지막으로 샤워하는 야근 많은 직장인",
+    socialWorld: "밤 10시 막차를 앞둔 20년 된 동네 체육관의 습기 찬 공동 샤워실",
+    storyTrigger: "막차까지 12분 남은 순간 쓰던 샤워젤이 비어 가방 속 새 상품을 꺼낸다.",
+    truthBridge: "검증된 민트와 티트리 특징을 급한 운동 후 샤워 장면의 선택 이유로 연결한다.",
+    dramatizationBoundary: "직장인과 체육관 사건은 창작 상황극이며 민트와 티트리는 검증된 상품 사실이다.",
   };
   assert.equal(hasReusableDetailedVideoPlan(concept, 15), true);
   assert.equal(hasReusableDetailedVideoPlan({ ...concept, validation: { valid: false } }, 15), false);
+  assert.equal(
+    hasReusableDetailedVideoPlan({
+      ...concept,
+      distinctiveCharacter: undefined,
+      socialWorld: undefined,
+      storyTrigger: undefined,
+      truthBridge: undefined,
+      dramatizationBoundary: undefined,
+    }, 15),
+    false
+  );
 });

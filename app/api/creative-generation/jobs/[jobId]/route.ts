@@ -42,6 +42,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ jobId
     if (!body.action || !["cancel", "resume"].includes(body.action)) {
       return NextResponse.json({ ok: false, error: "cancel 또는 resume 액션이 필요합니다." }, { status: 400 });
     }
+    const existing = await creativeGenerationJobStore.get(jobId);
+    if (!existing) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
+    if (body.action === "resume" && !isServerRunnableGenerationJob(existing)) {
+      return NextResponse.json(
+        { ok: false, error: "구버전 작업은 조회·다운로드만 가능합니다. 현재 상품을 다시 분석해 최신 제작 작업으로 시작해 주세요." },
+        { status: 409 }
+      );
+    }
     const runnerWasActive = isGenerationJobRunnerActive(jobId);
     const job = await creativeGenerationJobStore.update(jobId, (current) => {
       if (body.action === "cancel") {

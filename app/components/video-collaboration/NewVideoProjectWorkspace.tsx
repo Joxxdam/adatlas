@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
-import { VIDEO_DESIGNER_OPTIONS, type BrandGuideline, type ProductAnalysisSnapshot, type VideoDuration, type VideoDurationMode, type VideoReferenceAsset } from "../../lib/video-collaboration/types";
+import type { BrandGuideline, ProductAnalysisSnapshot, VideoDuration, VideoReferenceAsset } from "../../lib/video-collaboration/types";
 import { useVideoPlanningOptions } from "../video-planning/useVideoPlanningOptions";
 import styles from "../video-planning/VideoPlanning.module.css";
 
@@ -19,14 +19,9 @@ function guidelineFor(analysis: ProductAnalysisSnapshot, additional: string): Br
   };
 }
 
-const durationOptions: Array<{ value: VideoDurationMode | `${VideoDuration}`; label: string }> = [
-  { value: "auto", label: "AI 자동 추천" },
-  { value: "15", label: "15초" },
-  { value: "20", label: "20초" },
-  { value: "30", label: "30초" },
-  { value: "45", label: "45초" },
-  { value: "60", label: "60초" },
-];
+function automaticDuration(referenceAssets: VideoReferenceAsset[]): VideoDuration {
+  return referenceAssets.some((asset) => asset.mimeType.startsWith("video/")) ? 45 : 30;
+}
 
 export function NewVideoProjectWorkspace() {
   const router = useRouter();
@@ -41,9 +36,6 @@ export function NewVideoProjectWorkspace() {
   const [additional, setAdditional] = useState("");
   const [requiredContent, setRequiredContent] = useState("");
   const [excludedContent, setExcludedContent] = useState("");
-  const [durationChoice, setDurationChoice] = useState<VideoDurationMode | `${VideoDuration}`>("auto");
-  const [designerName, setDesignerName] = useState("");
-  const [deadline, setDeadline] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -100,16 +92,11 @@ export function NewVideoProjectWorkspace() {
       setError("업체명을 입력해 주세요. 광고주 구분과 업체별 문구 말투에 사용됩니다.");
       return;
     }
-    if (!designerName) {
-      setError("담당 디자이너를 조이 또는 애니 중에서 선택해 주세요.");
-      return;
-    }
     setBusy(true);
     setError("");
     try {
       const referenceAssets = await uploadReferences();
-      const durationMode: VideoDurationMode = durationChoice === "auto" ? "auto" : "fixed";
-      const duration = durationChoice === "auto" ? (referenceAssets.some((asset) => asset.mimeType.startsWith("video/")) ? 45 : 30) : (Number(durationChoice) as VideoDuration);
+      const duration = automaticDuration(referenceAssets);
       setStage("상품 사실과 제작 조건 저장 중");
       const response = await fetch("/api/video-projects", {
         method: "POST",
@@ -119,10 +106,9 @@ export function NewVideoProjectWorkspace() {
           advertiserName: advertiserName.trim(),
           productUrl,
           marketerName: "마케터",
-          designerName,
+          designerName: "",
           duration,
-          durationMode,
-          planningMode: "four-concepts",
+          durationMode: "auto",
           format: "short-form",
           objective: "new-customer-hook",
           platform: "meta",
@@ -131,7 +117,7 @@ export function NewVideoProjectWorkspace() {
           additionalRequests: additional,
           requiredContent,
           excludedContent,
-          deadline,
+          deadline: "",
           referenceAssets,
           productAnalysis: analysis,
           brandGuideline: guidelineFor(analysis, additional),
@@ -239,8 +225,8 @@ export function NewVideoProjectWorkspace() {
             <div className={styles.sectionHead}>
               <div>
                 <p className={styles.eyebrow}>PROJECT INFO</p>
-                <h2>업체명과 제작 조건</h2>
-                <p>업체명을 확인하고, 필요한 제작 조건만 추가하세요.</p>
+                <h2>업체명과 참고자료</h2>
+                <p>업체명만 확인하고 필요하면 참고 이미지·영상·PDF를 선택하세요. 길이와 장면 수는 자동으로 정합니다.</p>
               </div>
             </div>
             <div className={styles.formGrid}>
@@ -257,55 +243,35 @@ export function NewVideoProjectWorkspace() {
                 />
                 <small>상품 분석 결과가 자동 입력됩니다. 광고주 구분과 업체별 문구 말투에 사용할 정확한 이름으로 수정할 수 있습니다.</small>
               </label>
-              <label>
-                상품에 관해 추가로 알려줄 내용
-                <textarea value={additional} onChange={(event) => setAdditional(event.target.value)} />
-              </label>
-              <label>
-                반드시 넣을 내용
-                <textarea value={requiredContent} onChange={(event) => setRequiredContent(event.target.value)} />
-              </label>
-              <label>
-                제외할 내용
-                <textarea value={excludedContent} onChange={(event) => setExcludedContent(event.target.value)} />
-              </label>
-              <label>
-                영상 길이
-                <select value={durationChoice} onChange={(event) => setDurationChoice(event.target.value as typeof durationChoice)}>
-                  {durationOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                담당 디자이너
-                <select required value={designerName} onChange={(event) => setDesignerName(event.target.value)}>
-                  <option value="">담당 디자이너 선택</option>
-                  {VIDEO_DESIGNER_OPTIONS.map((designer) => (
-                    <option key={designer} value={designer}>
-                      {designer}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                제작 마감일
-                <input type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} />
-              </label>
               <label className={styles.wide}>
                 참고 이미지·영상·PDF
                 <input accept="image/png,image/jpeg,image/webp,application/pdf,video/mp4,video/quicktime,video/webm" multiple type="file" onChange={(event) => setFiles(Array.from(event.target.files || []))} />
                 <small>{files.length ? `${files.length}개 선택됨 · 원문 복제 없이 구조와 편집 원리만 참고` : "선택하지 않아도 정상 생성됩니다."}</small>
               </label>
             </div>
+            <details className={styles.optionalProjectInfo}>
+              <summary>필요할 때만 추가 요청 입력</summary>
+              <div className={styles.formGrid}>
+                <label>
+                  상품에 관해 추가로 알려줄 내용
+                  <textarea value={additional} onChange={(event) => setAdditional(event.target.value)} />
+                </label>
+                <label>
+                  반드시 넣을 내용
+                  <textarea value={requiredContent} onChange={(event) => setRequiredContent(event.target.value)} />
+                </label>
+                <label className={styles.wide}>
+                  제외할 내용
+                  <textarea value={excludedContent} onChange={(event) => setExcludedContent(event.target.value)} />
+                </label>
+              </div>
+            </details>
             <div className={styles.stickyAction}>
               <div>
-                <strong>사건·상황극 · 리얼 사용/후기 · USP 집중 · 시크릿 혜택</strong>
-                <span>첫 자막, 사건, 화자, 소구, 결말이 서로 다르게 생성됩니다.</span>
+                <strong>특정 인물·세계관 · 관계 경험담 · 비교·발견 · 상품 의인화</strong>
+                <span>한 명의 화자가 시청자에게 전하며, 네 안의 사건과 전개 방식은 서로 다르게 생성됩니다.</span>
               </div>
-              <button className={styles.primaryButton} disabled={busy || !advertiserName.trim() || !designerName} onClick={createFourConcepts}>
+              <button className={styles.primaryButton} disabled={busy || !advertiserName.trim()} onClick={createFourConcepts}>
                 {busy ? stage || "생성 중…" : "4개 콘셉트 생성"}
               </button>
             </div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { DaywizBrand } from "./DaywizBrand";
 
-export type AppFeatureKey = "store-analysis" | "creative-production" | "category-creative" | "video-planning" | "performance" | "archive" | "auto-production" | "advertisers" | "references";
+export type AppFeatureKey = "store-analysis" | "creative-production" | "category-creative" | "video-planning" | "performance" | "archive" | "auto-production" | "advertisers" | "references" | "codex-sessions";
 
 export const PERFORMANCE_FEATURE = {
   key: "performance" as const,
@@ -55,6 +55,7 @@ export const MANAGEMENT_FEATURES = [
   { key: "auto-production" as const, href: "/admin/auto-production", label: "자동 제작 관리" },
   { key: "advertisers" as const, href: "/admin/advertisers", label: "광고주 설정" },
   { key: "references" as const, href: "/admin/references", label: "레퍼런스 관리" },
+  { key: "codex-sessions" as const, href: "/admin/codex-sessions", label: "Codex 세션 정리" },
 ];
 
 export function AppFeatureNavigation({ activeFeature }: { activeFeature?: AppFeatureKey }) {

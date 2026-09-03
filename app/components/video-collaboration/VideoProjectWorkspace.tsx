@@ -457,7 +457,7 @@ export function VideoProjectWorkspace({ projectId, basePath = "/video-collaborat
                 <div className={styles.cardTop}>
                   <span className={styles.hookBadge}>{VIDEO_HOOK_LABELS[concept.hookType]}</span>
                   <small>
-                    rev.{concept.revision} · {concept.generationSource === "openai" ? "AI" : "근거 기반"}
+                    rev.{concept.revision} · {concept.generationSource === "openai" ? "OpenAI" : "Codex 로컬"}
                   </small>
                 </div>
                 <h3>{concept.title}</h3>

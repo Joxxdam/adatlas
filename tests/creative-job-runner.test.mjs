@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import { cancelGenerationJob, resumeGenerationJob, selectRunnableResult, selectRunnableResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { cancelGenerationJob, CURRENT_REFERENCE_COPY_POLICY_VERSION, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, resumeGenerationJob, selectRunnableResult, selectRunnableResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -16,8 +16,27 @@ function job(statuses = ["pending", "pending", "pending"]) {
     id: "creative-job-runner-test-12345678",
     status: "pending",
     engine: "codex_local",
-    version: "generation-job-v6-ai-native-final",
-    results: sixStatuses.map((status, index) => result(`h0${index + 1}`, status)),
+    version: CURRENT_REFERENCE_EDIT_JOB_VERSION,
+    pipeline: CURRENT_REFERENCE_EDIT_PIPELINE,
+    copyPlanMode: "reference-adapted",
+    templateRegistryVersion: CURRENT_REFERENCE_COPY_POLICY_VERSION,
+    results: sixStatuses.map((status, index) => ({
+      ...result(`h0${index + 1}`, status),
+      nativeCreative: { adReference: { id: `reference-${index + 1}` } },
+      referenceAdaptedCopyPlan: {
+        creativePremise: {
+          policyVersion: "image-creative-premise-v2",
+          kind: index === 0 ? "everyday-relationship" : index === 1 ? "everyday-question-answer" : "usp-focus",
+          fictionalContext: true,
+          character: `테스트 인물 ${index + 1}`,
+          situation: `테스트 상황 ${index + 1}`,
+          tension: `테스트 긴장 ${index + 1}`,
+          productBridge: `검증된 상품 특성 ${index + 1}`,
+          supportingFactIds: [],
+          factBoundary: "생활 장면은 광고용 창작 맥락이며 상품 사실은 검증된 ProductTruth만 사용한다.",
+        },
+      },
+    })),
     retryLimit: 2,
     updatedAt: "2026-08-19T00:00:00.000Z",
     createdAt: "2026-08-19T00:00:00.000Z",
@@ -99,6 +118,24 @@ test("4-1. 취소된 중복 대기 작업을 제거하고 최신 작업을 우�
   await runner.wait("latest");
 });
 
+test("4-2. 실행 함수가 영구 정지해도 watchdog이 슬롯을 반환해 다음 작업을 실행한다", async () => {
+  const started = [];
+  const timedOut = [];
+  const runner = createIdempotentJobRunner(async (jobId) => {
+    started.push(jobId);
+    if (jobId === "stuck") await new Promise(() => undefined);
+  }, 1, {
+    executionTimeoutMs: 20,
+    onExecutionTimeout: (jobId) => timedOut.push(jobId),
+  });
+  runner.enqueue("stuck");
+  runner.enqueue("next");
+  await assert.rejects(runner.wait("stuck"), /실행 슬롯을 반환/);
+  await runner.wait("next");
+  assert.deepEqual(started, ["stuck", "next"]);
+  assert.deepEqual(timedOut, ["stuck"]);
+});
+
 test("5. 완료된 후킹은 재실행하지 않고 pending/허용된 failed만 선택한다", () => {
   const current = job(["success", "approved", "pending", "failed"]);
   assert.equal(selectRunnableResult(current, new Set())?.id, "h03");
@@ -132,14 +169,11 @@ test("7-1. 고속 제작은 서로 다른 후킹 세 개를 동시에 선택하�
   assert.equal(selectRunnableResults(current, new Set(), 9).length, 3);
 });
 
-test("7-2. 빠른 로컬 합성 v7 작업도 서버 runner가 복구·실행할 수 있다", () => {
+test("7-2. 빠른 로컬 합성 v7 구버전은 조회용으로만 남고 서버 runner가 실행하지 않는다", () => {
   const current = job(["pending", "pending", "pending"]);
   current.version = "generation-job-v7-fast-local-composition";
   current.concurrency = 3;
-  assert.deepEqual(
-    selectRunnableResults(current, new Set()).map((item) => item.id),
-    ["h01", "h02", "h03"]
-  );
+  assert.deepEqual(selectRunnableResults(current, new Set()), []);
 });
 
 test("8. resume은 완료 결과를 유지하고 미완료 결과만 pending으로 되돌린다", () => {

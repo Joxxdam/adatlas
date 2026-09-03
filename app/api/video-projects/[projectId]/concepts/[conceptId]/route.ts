@@ -3,6 +3,7 @@ import { videoProjectRepository } from "../../../../../lib/video-collaboration/r
 import { generateDetailedVideoScriptAi, regeneratePlanningSegmentAi } from "../../../../../lib/video-collaboration/videoPlanningGenerator.server";
 import { VideoPlanningGenerationError, videoPlanningFailureHttpStatus } from "../../../../../lib/video-collaboration/videoPlanningAi.server";
 import { hasReusableDetailedVideoPlan, videoPlanningGenerationKey, withVideoPlanningGenerationLock } from "../../../../../lib/video-collaboration/videoPlanningRequestGuards";
+import { isCurrentVideoPlanningConcept } from "../../../../../lib/video-collaboration/videoPlanningVersion";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,9 @@ export async function POST(request: Request, context: { params: Promise<{ projec
     const project = await videoProjectRepository.get(projectId);
     const concept = project?.concepts.find((item) => item.id === conceptId);
     if (!project || !concept) throw new Error("영상 기획안을 찾지 못했습니다.");
+    if (!isCurrentVideoPlanningConcept(concept)) {
+      throw new Error("이 기획안은 구버전 형식입니다. 최신 기획안 4안을 다시 생성한 뒤 상세 자막·장면을 만들어 주세요.");
+    }
     const action = body.action || "generate-detail";
     if (action === "generate-detail" && !body.feedback?.trim() && hasReusableDetailedVideoPlan(concept, project.duration)) {
       return NextResponse.json({ ok: true, project, concept, reused: true });

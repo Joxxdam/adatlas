@@ -9,7 +9,7 @@ import { CreativeAssetActions, markCreativeAssetExported } from "../creative-ass
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import { CREATIVE_PLANNER_VERSION, type CopyPlan, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
 import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
-import { failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
+import { CURRENT_REFERENCE_EDIT_JOB_VERSION, failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
 import { numberedProductImageFileName, productDownloadStem } from "../../../lib/creative-generation/downloadNaming";
 
@@ -109,12 +109,13 @@ function hasGenerationWorkRemaining(job: GenerationJob) {
 }
 
 function shouldPersistGenerationJob(job: GenerationJob) {
-  return hasGenerationWorkRemaining(job) || job.results.some((result) => !result.imagePath);
+  return hasGenerationWorkRemaining(job);
 }
 
 export function ReferenceFirstCreativeGenerator(props: Props) {
   const [job, setJob] = useState<GenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
+  const [startError, setStartError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [referenceCategoryOverride, setReferenceCategoryOverride] = useState<ReferenceCategoryChoice>("");
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
@@ -125,15 +126,26 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const [providerStatus, setProviderStatus] = useState("로컬 Codex 상태 확인 중…");
   const [latestCompletedResultId, setLatestCompletedResultId] = useState<string>();
   const [runnerActive, setRunnerActive] = useState(false);
-  const previousPlanConfirmed = useRef(props.planConfirmed);
   const previousAnalysisRevision = useRef(props.analysisRevision);
   const creatingJob = useRef(false);
   const restoreRequestVersion = useRef(0);
   const restoredReferenceCategoryJobId = useRef("");
   const dismissedJobIds = useRef(new Set<string>());
+  const activeJobIdRef = useRef("");
   const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl);
   const previousAnalyzedProductUrl = useRef(currentProductUrl);
-  const canGenerate = Boolean(props.product.productName.trim() && props.productImagePaths.length);
+  const availableProductImagePaths = useMemo(
+    () => Array.from(new Set([
+      ...props.productImagePaths,
+      ...(props.product.confirmedProductImagePaths || []),
+      ...(props.product.productImagePaths || []),
+      props.product.productImagePath,
+      props.product.extractedMainImage,
+      props.product.selectedSourceImagePath,
+    ].filter((value): value is string => Boolean(value?.trim())))),
+    [props.product, props.productImagePaths]
+  );
+  const canGenerate = Boolean(props.product.productName.trim() && availableProductImagePaths.length);
   const canStart = canGenerate && props.planConfirmed;
   const progress = useMemo(() => {
     if (!job) return { completed: 0, total: 6, success: 0, failed: 0 };
@@ -162,6 +174,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       })
       .catch(() => setProviderStatus("연결 상태를 확인하지 못했습니다."));
   }, []);
+
+  useEffect(() => {
+    activeJobIdRef.current = job?.id || "";
+  }, [job?.id]);
+
   async function fetchJob(jobId: string) {
     const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(jobId)}`, {
       cache: "no-store",
@@ -178,6 +195,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
 
   function commitFetchedJob(payload: { job: GenerationJob; runnerActive: boolean }) {
     if (dismissedJobIds.current.has(payload.job.id)) return;
+    activeJobIdRef.current = payload.job.id;
     setJob(payload.job);
     setRunnerActive(payload.runnerActive);
     if (restoredReferenceCategoryJobId.current !== payload.job.id) {
@@ -213,7 +231,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     const recentResponse = await fetch("/api/creative-generation/jobs/recent?limit=10", { cache: "no-store" });
     const recentPayload = (await recentResponse.json()) as { jobs?: GenerationJobSummary[] };
     if (!recentResponse.ok) return null;
-    const restorable = (recentPayload.jobs || []).filter((candidate) => candidate.sourceType !== "auto-production" && candidate.status !== "cancelled" && candidate.generatedCount < candidate.totalCount);
+    const restorable = (recentPayload.jobs || []).filter((candidate) => candidate.sourceType !== "auto-production" && ["pending", "running"].includes(candidate.status) && candidate.generatedCount < candidate.totalCount);
     return (productUrl ? restorable.find((candidate) => normalizeCreativeProductUrl(candidate.productUrl) === productUrl) : restorable[0])?.jobId || null;
   }
 
@@ -272,21 +290,25 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     previousAnalysisRevision.current = props.analysisRevision;
     const previousUrl = previousAnalyzedProductUrl.current;
     previousAnalyzedProductUrl.current = currentProductUrl;
-    if (previousUrl === currentProductUrl) {
-      setMessage("같은 상품 분석이 갱신되어 진행 중인 광고 작업을 그대로 유지합니다.");
-      return;
-    }
+    // 사용자가 URL 분석을 다시 눌렀다는 것은 같은 URL 여부와 관계없이 새
+    // 제작 흐름을 시작한다는 명시적 신호다. 기존 서버 작업은 기록·백그라운드
+    // 실행을 보존하지만 이 화면에서는 다시 복원하지 않는다.
     restoreRequestVersion.current += 1;
+    if (activeJobIdRef.current) dismissedJobIds.current.add(activeJobIdRef.current);
+    activeJobIdRef.current = "";
     window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
-    if (currentProductUrl) window.localStorage.removeItem(activeCreativeProductJobStorageKey(currentProductUrl));
+    for (const productUrl of new Set([previousUrl, currentProductUrl].filter(Boolean))) {
+      window.localStorage.removeItem(activeCreativeProductJobStorageKey(productUrl));
+    }
     setJob(null);
+    setStartError("");
     setRunnerActive(false);
     setFeedbacks({});
     setCopyEdits({});
     setReferenceCategoryOverride("");
     restoredReferenceCategoryJobId.current = "";
     setLatestCompletedResultId(undefined);
-    setMessage("상품 분석이 완료됐습니다. 이 상품으로 새 광고 6장을 제작합니다.");
+    setMessage("상품 분석을 다시 완료해 이전 제작 카드를 비웠습니다. 이 상품으로 새 광고 6장을 제작합니다.");
   }, [currentProductUrl, props.analysisRevision]);
 
   useEffect(() => {
@@ -298,6 +320,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     window.localStorage.removeItem(activeCreativeProductJobStorageKey(jobUrl));
     const resetTimer = window.setTimeout(() => {
       setJob(null);
+      setStartError("");
       setFeedbacks({});
       setCopyEdits({});
       setReferenceCategoryOverride("");
@@ -413,6 +436,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     creatingJob.current = true;
     restoreRequestVersion.current += 1;
     setLoading(true);
+    setStartError("");
     setJob(null);
     setFeedbacks({});
     setMessage(mode === "scene" ? "호환 레퍼런스 6장을 새로 추첨해 전체 광고를 다시 만들고 있어요." : "상품에 어울리는 광고 이미지를 만들고 있어요.");
@@ -423,7 +447,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
         body: JSON.stringify({
           product: props.product,
           adBrief: props.adBrief,
-          productImagePaths: props.productImagePaths,
+          productImagePaths: availableProductImagePaths,
           selectedAdImages: props.selectedAdImages,
           logoPath: props.logoPath,
           source: props.source,
@@ -444,6 +468,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       };
       if (!response.ok || !payload.job) throw new Error(payload.error || "광고 제작을 시작하지 못했습니다.");
       setJob(payload.job);
+      setStartError("");
       setRunnerActive(Boolean(payload.runnerActive));
       if (mode === "scene") setStrategyVariation((current) => current + 1);
       window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
@@ -452,21 +477,14 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       }
       setMessage(payload.runnerActive ? "광고 콘텐츠 생성을 시작했습니다. 호환 레퍼런스를 고정한 뒤 최대 3장을 병렬 처리하며 완성되는 즉시 한 장씩 표시합니다." : "광고 작업은 저장됐지만 생성기가 아직 연결되지 않았습니다. 중단 지점부터 재개해 주세요.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "광고 제작에 실패했습니다.");
+      const errorMessage = error instanceof Error ? error.message : "광고 제작에 실패했습니다.";
+      setStartError(errorMessage);
+      setMessage(errorMessage);
     } finally {
       creatingJob.current = false;
       setLoading(false);
     }
   }
-
-  useEffect(() => {
-    const becameConfirmed = !previousPlanConfirmed.current && props.planConfirmed;
-    previousPlanConfirmed.current = props.planConfirmed;
-    if (!becameConfirmed || loading || !canGenerate) return;
-    void startOrResumeGeneration();
-    // The confirmation edge starts a new job or resumes the matching interrupted job.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canGenerate, loading, props.planConfirmed]);
 
   async function cancelJob() {
     if (!job) return;
@@ -498,6 +516,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       }
 
       setJob(null);
+      setStartError("");
       setRunnerActive(false);
       setFeedbacks({});
       setCopyEdits({});
@@ -537,9 +556,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     const jobUrl = normalizeCreativeProductUrl(job?.productTruth.product.landingUrl || "");
     const matchesCurrentProduct = Boolean(job && currentProductUrl && jobUrl === currentProductUrl);
     const usesRandomReferencePipeline =
-      job?.pipeline === "reference-first-adapted-copy" ||
-      job?.pipeline === "reference-staged-edit" ||
-      job?.version === "generation-job-v12-category-reference-edit";
+      job?.version === CURRENT_REFERENCE_EDIT_JOB_VERSION &&
+      job?.pipeline === "reference-first-adapted-copy";
     const resumableStatus = Boolean(job && usesRandomReferencePipeline && ["pending", "running", "cancelled", "partial", "failed"].includes(job.status) && job.results.some((result) => ["pending", "running", "cancelled", "failed"].includes(result.status)));
     if (mode === "new" && matchesCurrentProduct && resumableStatus && !runnerActive) {
       await resumeJob();
@@ -643,8 +661,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     }
   }
 
-  if ((!props.productLoaded || !props.planConfirmed) && !job) return null;
-  const recoverable = Boolean(job && ["generation-job-v12-category-reference-edit", "generation-job-v13-reference-first-adapted-copy"].includes(job.version) && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
+  if (!props.productLoaded && !job) return null;
+  const awaitingReferenceConfirmation = Boolean(!job && !props.planConfirmed);
+  const recoverable = Boolean(job && job.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
   const generationInProgress = Boolean(job && ["pending", "running"].includes(job.status) && runnerActive);
   const storedReference = job?.results.find((result) => result.nativeCreative?.adReference)?.nativeCreative?.adReference;
   const selectedCategoryLabel = job?.referenceCategoryOverride
@@ -663,32 +682,51 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const currentOrder = activeResults[0]?.order || nextPendingResult?.order || Math.min(progress.completed + 1, progress.total);
   const allCreativesReady = Boolean(job && progress.total === 6 && completedResults.length === progress.total);
   const referenceAdapted = job?.copyPlanMode === "reference-adapted";
-  const currentStage = activeResults[0] ? generationStageLabels[activeResults[0].generationStage || "planned"] : generationInProgress ? "다음 광고 준비 중" : "";
-  const progressHeadline = allCreativesReady ? "광고 6장이 모두 완성됐습니다" : activeResults.length ? `${currentOrder}장째 광고를 제작 중입니다` : generationInProgress ? `${currentOrder}장째 광고 제작을 준비 중입니다` : recoverable ? "광고 생성이 잠시 멈췄습니다" : attentionResultsWithoutImage.length ? "다시 제작할 광고가 있습니다" : loading || !job ? "광고 제작을 준비하고 있습니다" : message;
+  const copyPlanning = job?.referenceCopyPlanning?.status;
+  const currentStage = copyPlanning === "pending" || copyPlanning === "running"
+    ? "레퍼런스 OCR·상품 조사 근거로 6장 문구 기획·검수 중"
+    : activeResults[0]
+      ? generationStageLabels[activeResults[0].generationStage || "planned"]
+      : generationInProgress
+        ? "다음 광고 준비 중"
+        : "";
+  const progressHeadline = loading && !job ? "광고 제작 작업을 등록하고 있습니다" : allCreativesReady ? "광고 6장이 모두 완성됐습니다" : activeResults.length ? `${currentOrder}장째 광고를 제작 중입니다` : generationInProgress ? copyPlanning === "pending" || copyPlanning === "running" ? "최신 문구를 먼저 준비하고 있습니다" : `${currentOrder}장째 광고 제작을 준비 중입니다` : recoverable ? "광고 생성이 잠시 멈췄습니다" : attentionResultsWithoutImage.length ? "다시 제작할 광고가 있습니다" : startError ? "광고 제작을 시작하지 못했습니다" : awaitingReferenceConfirmation ? "자동 매칭을 확인·수정해 주세요" : !job ? "이 매칭으로 제작할 준비가 됐습니다" : message;
 
   return (
     <section className="six-creative-generator" id="creative-results">
-      <div className={`simple-generation-status ${allCreativesReady ? "complete" : generationInProgress || loading || !job ? "working" : ""}`} role="status" aria-live="polite">
+      <div className={`simple-generation-status ${allCreativesReady ? "complete" : generationInProgress || loading ? "working" : ""}`} role="status" aria-live="polite">
         <div className="simple-generation-status-icon" aria-hidden="true">
-          {allCreativesReady ? "✓" : generationInProgress || loading || !job ? <i /> : "!"}
+          {allCreativesReady ? "✓" : generationInProgress || loading ? <i /> : !job ? "⇄" : "!"}
         </div>
         <div>
           <p className="eyebrow">레퍼런스 기반 광고 콘텐츠 6장 제작</p>
           <h4>{progressHeadline}</h4>
-          <p>{allCreativesReady ? "완성된 광고를 확인한 뒤 한 번에 ZIP으로 내려받으세요." : currentStage ? `${currentStage}${activeResults.length > 1 ? ` · ${activeResults.length}장 동시 처리 중` : ""}` : message}</p>
+          <p>
+            {allCreativesReady
+              ? "완성된 광고를 확인한 뒤 한 번에 ZIP으로 내려받으세요."
+              : currentStage
+                ? `${currentStage}${activeResults.length > 1 ? ` · ${activeResults.length}장 동시 처리 중` : ""}`
+                : startError
+                  ? startError
+                  : awaitingReferenceConfirmation
+                  ? "아래에서 자동 매칭을 그대로 쓰거나 다른 상품군으로 바꾼 뒤, 상품 선택을 완료해 주세요."
+                  : !job
+                    ? loading ? message : "선택한 레퍼런스 상품군을 확인한 뒤 제작 시작 버튼을 눌러주세요."
+                    : message}
+          </p>
         </div>
-        <strong>{allCreativesReady ? "완료 6/6 · 다운로드 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${visibleGeneratedResults.length}/${progress.total}`}</strong>
+        <strong>{allCreativesReady ? "완료 6/6 · 다운로드 가능" : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${visibleGeneratedResults.length}/${progress.total}`}</strong>
       </div>
       <div className="simple-reference-category-picker">
         <div>
           <strong>참고할 레퍼런스 상품군</strong>
-          <small>자동 매칭을 기본으로 사용하거나, 이번 6장에 사용할 레퍼런스 풀을 직접 바꿀 수 있습니다.</small>
+          <small>제작 시작 전까지 자동 매칭을 그대로 쓰거나, 이번 6장에 사용할 레퍼런스 풀을 직접 바꿀 수 있습니다.</small>
         </div>
         <label>
           <span className="sr-only">참고할 레퍼런스 상품군 선택</span>
           <select
             aria-label="참고할 레퍼런스 상품군"
-            disabled={loading || generationInProgress}
+            disabled={loading || Boolean(job)}
             onChange={(event) => setReferenceCategoryOverride(event.target.value as ReferenceCategoryChoice)}
             value={referenceCategoryOverride}
           >
@@ -701,7 +739,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           </select>
         </label>
         <p>
-          {generationInProgress
+          {job
             ? `현재 작업은 ${selectedCategoryLabel || referenceCategoryLabel(referenceCategoryOverride)} 풀로 고정되어 있습니다.`
             : referenceCategoryOverride
               ? `${referenceCategoryLabel(referenceCategoryOverride)} 풀 안에서 상품 형태가 맞는 6장을 선택합니다.`
@@ -953,9 +991,13 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           </details>
         </>
       ) : (
-        <button className="simple-generation-start" disabled={!canStart || loading} onClick={() => void startOrResumeGeneration()} type="button">
-          {loading ? "광고 제작 준비 중…" : "광고 제작 시작"}
-        </button>
+        <div className="simple-generation-preflight">
+          <p>{props.planConfirmed ? `선택값 · ${referenceCategoryLabel(referenceCategoryOverride)}. 제작을 시작하면 이번 6장에는 이 설정이 고정됩니다.` : "위 상품 카드에서 ‘이 상품으로 광고 만들기’를 눌러 상품 선택을 완료하면 제작을 시작할 수 있습니다."}</p>
+          {startError ? <p className="simple-generation-start-error" role="alert">{startError}</p> : null}
+          <button className="simple-generation-start" disabled={!canStart || loading} onClick={() => void startOrResumeGeneration()} type="button">
+            {loading ? "광고 제작 준비 중…" : props.planConfirmed ? "이 매칭으로 광고 6장 제작 시작" : "상품 선택 후 제작 가능"}
+          </button>
+        </div>
       )}
     </section>
   );

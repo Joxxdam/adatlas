@@ -38,7 +38,10 @@
     "crawl:watchlist:schedule": "node scripts/schedule-watchlist-crawler.mjs",
     "auto-production:run": "node scripts/run-daily-auto-production.mjs run",
     "auto-production:preview": "node scripts/run-daily-auto-production.mjs preview",
-    "auto-production:status": "node scripts/run-daily-auto-production.mjs status"
+    "auto-production:status": "node scripts/run-daily-auto-production.mjs status",
+    "codex:sessions:preview": "node scripts/cleanup-legacy-adatlas-image-sessions.mjs",
+    "codex:sessions:cleanup": "node scripts/cleanup-legacy-adatlas-image-sessions.mjs --execute",
+    "video-references:build": "node scripts/build-video-reference-library.mjs"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^9.0.2",

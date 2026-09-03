@@ -2,15 +2,18 @@ import "server-only";
 import { readFile, stat } from "node:fs/promises";
 import { Codex, type Input, type Thread, type TurnOptions } from "@openai/codex-sdk";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "../codexLocalRuntime.server.ts";
-import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
 import { resolveFastCreativeRuntime } from "../fastCreativeRuntime";
 import { codexCreativeGate } from "../asyncConcurrencyGate";
 import { resolveRuntimeTimeout } from "../fastCreativeRuntime";
 import { normalizeNativeCreativeValidation } from "../nativeCreativeValidation";
+import { resolveMeatPresentationContract, resolveProductRenderingPolicy } from "../productRenderingPolicy.ts";
+import { closeCodexImageSession, trackCodexImageSession, type CodexImageSessionPurpose } from "../codexImageSessionRetention.server";
 
 const DEFAULT_IMAGE_GENERATION_IDLE_TIMEOUT_MS = 12 * 60 * 1000;
+const DEFAULT_IMAGE_GENERATION_HARD_TIMEOUT_MS = 40 * 60 * 1000;
 
 type StreamedTurnResult = {
   finalResponse: string;
@@ -27,11 +30,13 @@ async function runThreadWithIdleTimeout(
   thread: Thread,
   input: Input,
   options: Omit<TurnOptions, "signal">,
-  idleTimeoutMs: number
+  idleTimeoutMs: number,
+  hardTimeoutMs = Math.max(idleTimeoutMs, DEFAULT_IMAGE_GENERATION_HARD_TIMEOUT_MS)
 ): Promise<StreamedTurnResult> {
   const controller = new AbortController();
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let idleTimedOut = false;
+  let hardTimedOut = false;
   let finalResponse = "";
   let completed = false;
   let lastStreamError = "";
@@ -45,6 +50,11 @@ async function runThreadWithIdleTimeout(
   };
 
   armIdleTimer();
+  const hardTimer = setTimeout(() => {
+    hardTimedOut = true;
+    controller.abort();
+  }, hardTimeoutMs);
+  hardTimer.unref?.();
   try {
     const { events } = await thread.runStreamed(input, { ...options, signal: controller.signal });
     for await (const event of events) {
@@ -66,12 +76,15 @@ async function runThreadWithIdleTimeout(
     if (!completed) throw new Error(lastStreamError || "Codex 작업이 완료 이벤트 없이 종료되었습니다.");
     return { finalResponse };
   } catch (error) {
-    if (!idleTimedOut) throw error;
-    const timeoutError = new Error(`Codex 작업이 ${Math.round(idleTimeoutMs / 1000)}초 동안 진행 이벤트 없이 멈춰 중단되었습니다.`);
+    if (!idleTimedOut && !hardTimedOut) throw error;
+    const timeoutError = new Error(hardTimedOut
+      ? `Codex 작업이 최종 ${Math.round(hardTimeoutMs / 60_000)}분 상한을 넘어 중단되었습니다.`
+      : `Codex 작업이 ${Math.round(idleTimeoutMs / 1000)}초 동안 진행 이벤트 없이 멈춰 중단되었습니다.`);
     timeoutError.name = "TimeoutError";
     throw timeoutError;
   } finally {
     if (idleTimer) clearTimeout(idleTimer);
+    if (hardTimer) clearTimeout(hardTimer);
   }
 }
 
@@ -99,7 +112,7 @@ async function waitForStableGeneratedOutput(file: string) {
 const validationSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "sourcePersonDetected", "sourcePersonReplaced", "humanCompositionChanged", "humanSceneBackgroundRebuilt", "humanSceneBackgroundFindings", "targetAudienceFit", "humanReplacementFindings", "humanCopyAligned", "humanCopyAlignmentFindings", "sourceAnimalDetected", "sourceAnimalReplaced", "animalReplacementFindings", "sourceContextualBackgroundDetected", "contextualBackgroundRebuilt", "contextualBackgroundFindings", "sceneProductInteractionAligned", "sceneProductInteractionFindings", "unrelatedFoodOrIngredientDetected", "unrelatedFoodOrIngredientFindings", "sourceBrandRegionCleared", "sourceBrandRegionFindings", "comparisonSemanticAligned", "comparisonSemanticFindings", "failures", "recommendation"],
+  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "detachedProductCutoutDetected", "detachedProductCutoutFindings", "sourcePersonDetected", "sourcePersonReplaced", "humanCompositionChanged", "humanSceneBackgroundRebuilt", "humanSceneBackgroundFindings", "targetAudienceFit", "humanReplacementFindings", "humanCopyAligned", "humanCopyAlignmentFindings", "sourceAnimalDetected", "sourceAnimalReplaced", "animalReplacementFindings", "sourceContextualBackgroundDetected", "contextualBackgroundRebuilt", "contextualBackgroundFindings", "sceneProductInteractionAligned", "sceneProductInteractionFindings", "unrelatedFoodOrIngredientDetected", "unrelatedFoodOrIngredientFindings", "meatCutIdentityAccurate", "meatTextureNatural", "meatArtificialPatternDetected", "meatArtificialPatternFindings", "meatGrotesqueDetailDetected", "meatGrotesqueDetailFindings", "meatPresentationModeAligned", "meatPresentationFindings", "meatCookedPresentationDetected", "meatCookedEvidenceSatisfied", "meatSetCompositionAccurate", "meatObservedPackCount", "sourceBrandRegionCleared", "sourceBrandRegionFindings", "comparisonSemanticAligned", "comparisonSemanticFindings", "failures", "recommendation"],
   properties: {
     hookAlignment: { type: "integer", minimum: 0, maximum: 100 },
     productIdentity: { type: "integer", minimum: 0, maximum: 100 },
@@ -119,6 +132,8 @@ const validationSchema = {
     observedKoreanText: { type: "array", items: { type: "string" } },
     standaloneLogoDetected: { type: "boolean" },
     standaloneLogoFindings: { type: "array", items: { type: "string" } },
+    detachedProductCutoutDetected: { type: "boolean" },
+    detachedProductCutoutFindings: { type: "array", items: { type: "string" } },
     sourcePersonDetected: { type: "boolean" },
     sourcePersonReplaced: { type: "boolean" },
     humanCompositionChanged: { type: "boolean" },
@@ -138,6 +153,18 @@ const validationSchema = {
     sceneProductInteractionFindings: { type: "array", items: { type: "string" } },
     unrelatedFoodOrIngredientDetected: { type: "boolean" },
     unrelatedFoodOrIngredientFindings: { type: "array", items: { type: "string" } },
+    meatCutIdentityAccurate: { type: "boolean" },
+    meatTextureNatural: { type: "boolean" },
+    meatArtificialPatternDetected: { type: "boolean" },
+    meatArtificialPatternFindings: { type: "array", items: { type: "string" } },
+    meatGrotesqueDetailDetected: { type: "boolean" },
+    meatGrotesqueDetailFindings: { type: "array", items: { type: "string" } },
+    meatPresentationModeAligned: { type: "boolean" },
+    meatPresentationFindings: { type: "array", items: { type: "string" } },
+    meatCookedPresentationDetected: { type: "boolean" },
+    meatCookedEvidenceSatisfied: { type: "boolean" },
+    meatSetCompositionAccurate: { type: "boolean" },
+    meatObservedPackCount: { type: "integer", minimum: 0, maximum: 99 },
     sourceBrandRegionCleared: { type: "boolean" },
     sourceBrandRegionFindings: { type: "array", items: { type: "string" } },
     comparisonSemanticAligned: { type: "boolean" },
@@ -213,13 +240,23 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
       modelReasoningEffort: runtime.imageReasoning,
     });
+    let trackedThreadId: string | undefined;
+    let trackingContext: { jobId: string; resultId: string; purpose: CodexImageSessionPurpose } | undefined;
 
     const activeThread = () => {
       if (!thread) throw new Error("이미 종료된 Codex 이미지 제작 세션입니다.");
       return thread;
     };
 
+    const syncThreadTracking = async () => {
+      const threadId = thread?.id;
+      if (!threadId || !trackingContext) return;
+      trackedThreadId = threadId;
+      await trackCodexImageSession({ threadId, ...trackingContext }).catch(() => undefined);
+    };
+
     const generate = async (input: NativeGenerationInput) => {
+      trackingContext = { jobId: input.job.id, resultId: input.result.id, purpose: "image-generation" };
       const stage = input.stage || "copy-replacement";
       const productReferences = input.productReferencePaths || input.referencePaths;
       const stageSource = stage === "structure-recreation" ? input.adReferencePath || input.sourceImagePath : input.sourceImagePath;
@@ -227,14 +264,19 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       const attachments = [stageSource, ...(stage === "structure-recreation" ? [] : productReferences.slice(0, 4)), ...(stage === "structure-recreation" || !input.adReferencePath ? [] : [input.adReferencePath])].filter((file, index, files) => Boolean(file) && files.indexOf(file) === index).slice(0, 6);
       const prompt = buildNativeStagePrompt(stage, input.job, input.result, input.outputPath, input.feedback);
       const content = [{ type: "text" as const, text: prompt }, ...attachments.map((file) => ({ type: "local_image" as const, path: file }))];
-      await codexCreativeGate.run(() =>
-        runThreadWithIdleTimeout(
-          activeThread(),
-          content,
-          {},
-          resolveRuntimeTimeout(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS, DEFAULT_IMAGE_GENERATION_IDLE_TIMEOUT_MS, 60_000)
-        )
-      );
+      try {
+        await codexCreativeGate.run(() =>
+          runThreadWithIdleTimeout(
+            activeThread(),
+            content,
+            {},
+            resolveRuntimeTimeout(process.env.ADATLAS_CODEX_IMAGE_TIMEOUT_MS, DEFAULT_IMAGE_GENERATION_IDLE_TIMEOUT_MS, 60_000),
+            resolveRuntimeTimeout(process.env.ADATLAS_CODEX_IMAGE_HARD_TIMEOUT_MS, DEFAULT_IMAGE_GENERATION_HARD_TIMEOUT_MS, 15 * 60_000)
+          )
+        );
+      } finally {
+        await syncThreadTracking();
+      }
       // ImageGen 하위 작업이 최종 응답 직전에 파일을 복사·리사이즈할 수 있다.
       // 존재 여부만 한 번 확인하지 않고 크기가 안정된 완성 파일까지 기다린다.
       await waitForStableGeneratedOutput(input.outputPath);
@@ -242,16 +284,23 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
     };
 
     const validate = async (input: NativeValidationInput) => {
+      trackingContext = { jobId: input.job.id, resultId: input.result.id, purpose: "image-generation" };
       const validationReferences = [input.adReferencePath, ...input.referencePaths].filter((file, index, files): file is string => Boolean(file) && files.indexOf(file) === index).slice(0, 5);
       const content = [{ type: "text" as const, text: buildNativeValidationPrompt(input.job, input.result) }, { type: "local_image" as const, path: input.imagePath }, ...validationReferences.map((file) => ({ type: "local_image" as const, path: file }))];
-      const response = await codexCreativeGate.run(() =>
-        runThreadWithIdleTimeout(
-          activeThread(),
-          content,
-          { outputSchema: validationSchema },
-          resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS, 150_000, 30_000)
-        )
-      );
+      let response: StreamedTurnResult;
+      try {
+        response = await codexCreativeGate.run(() =>
+          runThreadWithIdleTimeout(
+            activeThread(),
+            content,
+            { outputSchema: validationSchema },
+            resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS, 150_000, 30_000),
+            resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_HARD_TIMEOUT_MS, 10 * 60_000, 60_000)
+          )
+        );
+      } finally {
+        await syncThreadTracking();
+      }
       const parsed = JSON.parse(response.finalResponse) as Omit<NativeCreativeValidation, "checkedAt">;
       return normalizeNativeCreativeValidation(
         { ...parsed, checkedAt: new Date().toISOString() },
@@ -260,8 +309,10 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
           exportComplianceVerified: input.exportComplianceVerified,
           requiresHumanReplacement: nativeReferenceRequiresHumanReplacement(input.result),
           requiresHumanSceneBackgroundRebuild: nativeReferenceRequiresHumanReplacement(input.result),
+          requiresContextualBackgroundRebuild: nativeReferenceRequiresContextualBackgroundRebuild(input.result),
           requiresSourceBrandRegionClear: nativeReferenceRequiresSourceBrandRegionClear(input.result),
           requiresComparisonSemanticAlignment: nativeReferenceRequiresComparisonSemantics(input.result),
+          meatPresentationContract: resolveProductRenderingPolicy(input.job) === "natural-meat-reference" ? resolveMeatPresentationContract(input.job, input.result) : undefined,
         }
       );
     };
@@ -270,9 +321,12 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       generate,
       validate,
       async close() {
-        // The current SDK exposes no archive/delete API. Dropping the only
-        // in-memory reference prevents accidental reuse after this H result.
+        const threadId = thread?.id || trackedThreadId;
+        await syncThreadTracking();
         thread = undefined;
+        // The SDK has no archive/delete method. The private retention registry
+        // passes only this exact AdAtlas-created UUID to the Codex CLI after 7 days.
+        await closeCodexImageSession(threadId).catch(() => undefined);
       },
     };
   }
@@ -292,20 +346,29 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
       modelReasoningEffort: "high",
     });
-    const response = await codexCreativeGate.run(() =>
-      runThreadWithIdleTimeout(
-        groupThread,
-        [
-          { type: "text" as const, text: buildNativeGroupValidationPrompt(input.job) },
-          { type: "local_image" as const, path: input.contactSheetPath },
-        ],
-        { outputSchema: groupValidationSchema },
-        resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS, 150_000, 30_000)
-      )
-    );
-    return {
-      ...(JSON.parse(response.finalResponse) as Omit<NativeGroupValidation, "checkedAt">),
-      checkedAt: new Date().toISOString(),
-    };
+    try {
+      const response = await codexCreativeGate.run(() =>
+        runThreadWithIdleTimeout(
+          groupThread,
+          [
+            { type: "text" as const, text: buildNativeGroupValidationPrompt(input.job) },
+            { type: "local_image" as const, path: input.contactSheetPath },
+          ],
+          { outputSchema: groupValidationSchema },
+          resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_TIMEOUT_MS, 150_000, 30_000),
+          resolveRuntimeTimeout(process.env.ADATLAS_CODEX_VALIDATION_HARD_TIMEOUT_MS, 10 * 60_000, 60_000)
+        )
+      );
+      return {
+        ...(JSON.parse(response.finalResponse) as Omit<NativeGroupValidation, "checkedAt">),
+        checkedAt: new Date().toISOString(),
+      };
+    } finally {
+      const threadId = groupThread.id;
+      if (threadId) {
+        await trackCodexImageSession({ threadId, jobId: input.job.id, resultId: "group-validation", purpose: "group-validation" }).catch(() => undefined);
+        await closeCodexImageSession(threadId).catch(() => undefined);
+      }
+    }
   }
 }

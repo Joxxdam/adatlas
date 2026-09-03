@@ -15,6 +15,14 @@ export type VideoParodyGenreOption = {
 
 export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   {
+    id: "historical-world-parody",
+    label: "시대·사회 세계관극",
+    direction:
+      "현재 상품과 의외로 연결되는 과거·미래 또는 특징적인 사회를 하나 고르고, 이름·관계·직업·습관이 기억되는 인물이 그 세계의 문제를 겪게 한다. 익숙하지만 실패한 해결과 반대편 인물이 아는 비밀을 거쳐 현재 상품의 검증된 USP로 시간과 장소를 전환한다. 실제 역사라고 단정하지 않고 광고용 창작 세계관으로 관리한다.",
+    signals: /중세|조선|왕실|왕족|귀족|궁궐|과거|미래|시대|세기|년대|옛날|역사|마을|세계관|타임슬립/i,
+    categoryAffinity: ["meat", "food", "beauty", "general"],
+  },
+  {
     id: "price-negotiation",
     label: "가격 협상·흥정",
     direction: "구매자와 판매자가 확인된 가격·구성을 두고 밀고 당기며 상품 근거로 합의한다.",
@@ -219,6 +227,9 @@ export function videoParodyGenrePrompt(genre?: VideoParodyGenre, recentGenres: V
     `연출 규칙: ${selected.direction}`,
     "패러디 기획안은 처음부터 끝까지 이 장르의 인물 관계·사건·화면 문법만 사용한다.",
     "다른 장르의 대표 소품·직함·결말 문법을 섞지 않는다.",
+    selected.id === "historical-world-parody"
+      ? "시대 배경 자체는 창작할 수 있지만 상품의 성분·효능·가격·수치·순위는 현재 ProductTruth에 있는 사실만 사용한다. 레퍼런스의 중세·왕실·레몬을 복사하지 말고 현재 상품에서만 나올 수 있는 세계와 인물로 바꾼다."
+      : "인물과 사회적 배경은 상품에 맞게 구체화하되 실제 후기·경력·자격을 사칭하지 않는다.",
     excluded.length ? `최근 사용으로 금지된 장르: ${excluded.join(" · ")}` : "최근 사용으로 금지된 장르: 없음",
     selected.id !== "courtroom"
       ? "법정·재판·판사·판결·변호사·검사·청문회·증거 제출 장면과 표현은 사용하지 않는다."

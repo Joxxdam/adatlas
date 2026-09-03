@@ -35,8 +35,10 @@ const terminalStatuses = new Set(["success", "failed", "cancelled", "korean-revi
 
 export function summarizeGenerationJobStatus(job: GenerationJob): GenerationJob {
   if (job.status === "cancelled") return job;
-  const statuses = executionResults(job).map((result) => result.status);
+  const results = executionResults(job);
+  const statuses = results.map((result) => result.status);
   const successCount = statuses.filter((status) => successfulStatuses.has(status)).length;
+  const renderedCount = results.filter((result) => Boolean(result.imagePath || result.nativeCreative?.finalPath)).length;
   const running = statuses.some((status) => status === "running");
   const pending = statuses.some((status) => status === "pending");
   const allTerminal = statuses.length > 0 && statuses.every((status) => terminalStatuses.has(status));
@@ -45,7 +47,7 @@ export function summarizeGenerationJobStatus(job: GenerationJob): GenerationJob 
   if (successCount === statuses.length && statuses.length > 0) status = "completed";
   else if (running) status = "running";
   else if (pending) status = job.startedAt ? "running" : "pending";
-  else if (allTerminal && successCount > 0) status = "partial";
+  else if (allTerminal && (successCount > 0 || renderedCount > 0)) status = "partial";
   else if (allTerminal) status = "failed";
 
   const finished = status === "completed" || status === "failed" || status === "partial";

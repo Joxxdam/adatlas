@@ -2,6 +2,7 @@ import "server-only";
 
 import { creativeAssetRepository } from "../creative-assets/repository.server";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
+import { deleteClosedCodexImageSessionsForResults } from "../creative-generation/codexImageSessionRetention.server";
 import { buildCreativeArchiveEntries } from "./archive";
 import { creativeArchiveMetadataRepository } from "./metadataRepository.server";
 
@@ -24,6 +25,10 @@ export async function deleteCreativeArchiveEntries(entryIds: string[]) {
   const available = new Set(current.map((entry) => entry.id));
   const deletedIds = requested.filter((id) => available.has(id));
   if (!deletedIds.length) throw new Error("삭제할 아카이브 이미지 콘텐츠를 찾지 못했습니다.");
+  const deletedEntries = current.filter((entry) => deletedIds.includes(entry.id));
   await creativeArchiveMetadataRepository.hide(deletedIds);
-  return { deletedIds, entries: await listCreativeArchiveEntries() };
+  const sessionCleanup = await deleteClosedCodexImageSessionsForResults(
+    deletedEntries.flatMap((entry) => (entry.jobId && entry.resultId ? [{ jobId: entry.jobId, resultId: entry.resultId }] : []))
+  ).catch(() => ({ deletedCount: 0, reclaimedBytes: 0, skippedActiveCount: 0, errorCount: 1 }));
+  return { deletedIds, sessionCleanup, entries: await listCreativeArchiveEntries() };
 }

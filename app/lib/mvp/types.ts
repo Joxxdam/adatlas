@@ -83,6 +83,8 @@ export type ProductInfoForPrompt = {
   productImagePath: string;
   secondaryProductImagePath?: string;
   productImagePaths?: string[];
+  /** 대표 이미지·JSON-LD·사용자 선택처럼 현재 상품으로 확정된 원본만 포함합니다. */
+  confirmedProductImagePaths?: string[];
   backgroundImagePath: string;
   extractedDescription?: string;
   extractedMainImage?: string;
@@ -379,7 +381,15 @@ export type ProductImageCandidate = {
   alt?: string;
   width?: number;
   height?: number;
+  /** HTML 안에서의 원래 위치입니다. 상세페이지 앞부분만 OCR하는 편향을 막는 데 사용합니다. */
+  pageOrder?: number;
+  /** 상품 이미지 선택과 별개로, 이 이미지를 OCR할 때 기대하는 근거 유형입니다. */
+  evidenceRoles?: ProductDetailOcrEvidenceRole[];
+  /** 구조화 대표 이미지와 상세 본문·일반 갤러리를 OCR 후보에서 구분합니다. */
+  evidenceScope?: "structured-main" | "product-detail" | "gallery";
 };
+
+export type ProductDetailOcrEvidenceRole = "identity" | "offer" | "composition" | "benefit" | "ingredient" | "usage" | "unknown";
 
 export type SourceImageSelectionState = {
   candidates: SourceImageCandidate[];
@@ -454,6 +464,8 @@ export type ProductDetailImageOcrInsight = {
   copyFacts: string[];
   /** 광고에는 쓰지 않지만 상품을 과장하지 않도록 생성기에 전달할 조건입니다. */
   productConstraints: string[];
+  /** 패키지 동일성 확인에만 쓰고 광고 문구로는 승격하지 않는 라벨·인증·영문 마이크로카피입니다. */
+  identityOnlyLabels?: string[];
   /** 배송·CS·양해·판매원·부정 표현처럼 광고 근거에서 폐기한 문장입니다. */
   discardedNotices: string[];
   warnings: string[];
@@ -672,6 +684,8 @@ export type ExtractedProductInfo = {
   categoryKeywords?: string[];
   mainImage: string;
   galleryImages: string[];
+  /** 자동 수집 갤러리와 분리된 현재 상품 확정 이미지입니다. */
+  confirmedProductImages?: string[];
   description: string;
   extractedDescription?: string;
   mainBenefit?: string;

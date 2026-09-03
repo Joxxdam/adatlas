@@ -32,11 +32,26 @@ function analysis(overrides = {}) {
   };
 }
 
-test("사건·상황극은 10개 세부 장르를 유지한다", () => {
-  assert.equal(VIDEO_PARODY_GENRE_OPTIONS.length, 10);
-  assert.equal(new Set(VIDEO_PARODY_GENRE_OPTIONS.map((option) => option.id)).size, 10);
+test("사건·상황극은 시대·사회 세계관극을 포함한 11개 세부 장르를 유지한다", () => {
+  assert.equal(VIDEO_PARODY_GENRE_OPTIONS.length, 11);
+  assert.equal(new Set(VIDEO_PARODY_GENRE_OPTIONS.map((option) => option.id)).size, 11);
+  assert.ok(VIDEO_PARODY_GENRE_OPTIONS.some((option) => option.id === "historical-world-parody"));
   assert.ok(VIDEO_PARODY_GENRE_OPTIONS.some((option) => option.id === "courtroom"));
   assert.ok(VIDEO_PARODY_GENRE_OPTIONS.some((option) => option.id === "blind-test"));
+});
+
+test("시대·사회 세계관극은 창작 세계와 검증 상품 사실을 분리하도록 지시한다", () => {
+  const prompt = videoParodyGenrePrompt("historical-world-parody", []);
+  assert.match(prompt, /선택 장르: 시대·사회 세계관극/);
+  assert.match(prompt, /창작할 수 있지만/);
+  assert.match(prompt, /ProductTruth/);
+  assert.equal(
+    matchesVideoParodyGenre(
+      "1990년대 월급날 식탁의 아버지가 고기 반찬을 기다리는 시대 상황극",
+      "historical-world-parody",
+    ),
+    true,
+  );
 });
 
 test("과거 법정 기획은 명시적 필드가 없어도 법정 장르로 인식한다", () => {

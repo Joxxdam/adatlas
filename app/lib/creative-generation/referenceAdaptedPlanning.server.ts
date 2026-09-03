@@ -12,15 +12,18 @@ import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
 import { applyReferenceCopyGroupRules } from "./referenceCopyDiversity";
 import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "./referenceCopyNaturalness";
-import { isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
+import { hasExplicitMerchantCredentialAttribution, isAmbiguousMerchantCredentialCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
+import { CURRENT_REFERENCE_COPY_POLICY_VERSION } from "./jobRunnerPolicy";
 import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 import { isApprovedReferenceNativeCopy, normalizeReferenceRawLines, type ReferenceTextRegion } from "./referenceLibraryManagement";
+import { findProductCopySemanticErrors, resolveProductCopyDomain } from "./productCopySemantics";
+import { buildImageCreativePremiseSeed, buildImageCreativePremiseSeeds, findImageCreativePremiseCopyErrors, findImageCreativePremiseErrors, IMAGE_CREATIVE_PREMISE_POLICY_VERSION, normalizeImageCreativePremise } from "./imageCreativePremise.ts";
 import { loadCopyGuideForProduct, type LoadedCopyGuide } from "../mvp/copyGuideLoader";
 import type { AdBrief } from "../mvp/types";
-import type { CreativeBlueprintId, CreativePlan, HookPlan, ProductFact, ProductTruth, ReferenceAdaptedCopyPlan, ReferenceCopyProfile, ScenePlan } from "./types";
+import type { CreativeBlueprintId, CreativePlan, HookPlan, ImageCreativePremise, ProductFact, ProductTruth, ReferenceAdaptedCopyPlan, ReferenceCopyProfile, ScenePlan } from "./types";
 
 export const REFERENCE_COPY_PROFILE_VERSION = "reference-copy-profile-v1";
-export const REFERENCE_ADAPTED_PLANNER_VERSION = "reference-native-copy-adapter-v21-meat-only-origin";
+export const REFERENCE_ADAPTED_PLANNER_VERSION = CURRENT_REFERENCE_COPY_POLICY_VERSION;
 
 const NATURALNESS_PASS_SCORE = 80;
 const REFERENCE_FIT_PASS_SCORE = 80;
@@ -36,7 +39,32 @@ function sheetClaimPolicy(truth: ProductTruth) {
   return `- 이 상품에는 사용자가 제공한 업체 조사 시트가 매칭되어 있다. ProductTruth의 source가 vendor-research인 fact는 이 업체·현재 상품에 한해 승인된 광고 근거다. 수치, 원료 효능 이야기, 쿨링·보습·피부 고민 표현도 해당 fact의 value와 copyEligibility 범위 안이면 약화하거나 임의로 위험 표현으로 판정하지 않는다.
 - 시트 근거를 보고서 문장으로 복사하지 말고 소비자 문제·손실 회피·반전·질문·사용 순간으로 번역한다. 최종 문구에 '소개됨', '방향', '활용', '콘셉트', '이미지' 같은 조사 메타 표현을 남기지 않는다.
 - 번호형 레퍼런스에는 서로 다른 시트 근거를 사용해 실제 구매 이유 목록을 만든다. 같은 상품명·향·용량을 번호만 바꿔 반복하지 않는다.
+- 향 외의 vendor-research 근거가 있으면 6개 중 최소 4개는 서로 다른 수치·원료 스토리·추출 방식·제형·사용 순간을 중심 USP로 사용한다. '향이 좋다', '향으로 기분 전환'처럼 향만 바꾼 소재는 최대 2개다.
+- 골라담기 상품은 각 선택지에 연결된 사실을 현재 선택지 이름과 함께 사용한다. 서로 다른 단품의 사실을 한 제품의 단일 성분·효능처럼 합치지 않는다.
 - 이 허용은 현재 ProductTruth에 들어온 vendor-research fact에만 적용된다. 시트에 공개되지 않음·추정·반대 사실로 적힌 내용을 뒤집어 주장하거나 다른 오리지널소스 향의 근거를 섞어서는 안 된다.`;
+}
+
+function resolvedVendorCopyExamples(truth: ProductTruth) {
+  const factIdByKey = new Map(truth.facts.map((fact) => [fact.key, fact.id]));
+  return (truth.product.vendorResearch?.adCopyExamples || [])
+    .map((example) => {
+      // ProductTruth의 공개 id에는 중복 방지 해시가 붙으므로 원본 조사 id를
+      // 문자열로 추측하지 않고 안정적인 fact.key를 통해 실제 id로 해석한다.
+      const factIds = example.factIds
+        .map((id) => factIdByKey.get(`vendor-${id}`))
+        .filter((id): id is string => Boolean(id));
+      return { ...example, factIds };
+    })
+    .filter((example, index) => {
+      const source = truth.product.vendorResearch?.adCopyExamples?.[index];
+      return !source?.factIds.length || example.factIds.length === source.factIds.length;
+    });
+}
+
+function vendorCopyExamplePromptBlock(truth: ProductTruth) {
+  const examples = resolvedVendorCopyExamples(truth);
+  if (!examples.length) return "이 상품에 미리 정리된 광고 문구 후보가 없다.";
+  return `다음 문구는 현재 상품 조사에서 미리 검수한 광고용 표현 후보다. 레퍼런스의 줄 수·문장 관계·말투를 우선하면서 상품 사실을 소비자 언어로 바꿀 때 사용한다. 한 소재에 최대 한 후보만 사용하고, 여섯 소재가 같은 후보를 반복하지 않게 한다. factIds가 있는 후보는 해당 근거를 plan.factIds에 포함한다. 예문은 새 사실의 근거가 아니며 현재 레퍼런스 문법에 맞게 자연스럽게 변환한다.\n${JSON.stringify(examples, null, 2)}`;
 }
 
 const cachePath = path.resolve(process.cwd(), ".data", "creative-generation", "reference-copy-profiles.json");
@@ -45,7 +73,7 @@ let profileCacheWriteQueue: Promise<void> = Promise.resolve();
 
 type PlannerPayload = {
   profiles: Array<Omit<ReferenceCopyProfile, "id" | "referenceHash" | "profileVersion" | "createdAt" | "analysisSource">>;
-  plans: Array<Pick<ReferenceAdaptedCopyPlan, "resultCode" | "referenceId" | "adaptedLines" | "headline" | "subCopy" | "proof" | "offer" | "cta" | "factIds" | "tone" | "sentenceStyle" | "naturalnessScore" | "referenceFitScore" | "factualSafetyScore" | "validationErrors"> & { observedSourceLines: string[] }>;
+  plans: Array<Pick<ReferenceAdaptedCopyPlan, "resultCode" | "referenceId" | "creativePremise" | "adaptedLines" | "headline" | "subCopy" | "proof" | "offer" | "cta" | "factIds" | "tone" | "sentenceStyle" | "naturalnessScore" | "referenceFitScore" | "factualSafetyScore" | "validationErrors"> & { observedSourceLines: string[] }>;
 };
 
 type ProfilePayload = { profiles: PlannerPayload["profiles"] };
@@ -88,9 +116,21 @@ const plannerSchema = {
       type: "array", minItems: 1, maxItems: 6,
       items: {
         type: "object", additionalProperties: false,
-        required: ["resultCode", "referenceId", "observedSourceLines", "adaptedLines", "headline", "subCopy", "proof", "offer", "cta", "factIds", "tone", "sentenceStyle", "naturalnessScore", "referenceFitScore", "factualSafetyScore", "validationErrors"],
+        required: ["resultCode", "referenceId", "creativePremise", "observedSourceLines", "adaptedLines", "headline", "subCopy", "proof", "offer", "cta", "factIds", "tone", "sentenceStyle", "naturalnessScore", "referenceFitScore", "factualSafetyScore", "validationErrors"],
         properties: {
           resultCode: { type: "string" }, referenceId: { type: "string" }, observedSourceLines: { type: "array", items: { type: "string" }, maxItems: 20 }, adaptedLines: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 20 }, headline: { type: "string" }, subCopy: { type: "string" }, proof: { type: "string" }, offer: { type: "string" }, cta: { type: "string" }, factIds: { type: "array", items: { type: "string" } }, tone: { type: "string" }, sentenceStyle: { type: "string", enum: sentenceStyles },
+          creativePremise: {
+            type: "object", additionalProperties: false,
+            required: ["policyVersion", "kind", "fictionalContext", "character", "situation", "tension", "productBridge", "supportingFactIds", "factBoundary"],
+            properties: {
+              policyVersion: { type: "string", enum: [IMAGE_CREATIVE_PREMISE_POLICY_VERSION] },
+              kind: { type: "string", enum: ["everyday-question-answer", "everyday-relationship", "obvious-ad-metaphor", "usp-focus", "comparison-benefit"] },
+              fictionalContext: { type: "boolean", enum: [true] },
+              character: { type: "string" }, situation: { type: "string" }, tension: { type: "string" }, productBridge: { type: "string" },
+              supportingFactIds: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
+              factBoundary: { type: "string" },
+            },
+          },
           naturalnessScore: { type: "integer", minimum: 0, maximum: 100 }, referenceFitScore: { type: "integer", minimum: 0, maximum: 100 }, factualSafetyScore: { type: "integer", minimum: 0, maximum: 100 }, validationErrors: { type: "array", items: { type: "string" }, maxItems: 8 },
         },
       },
@@ -178,10 +218,38 @@ async function writeProfileCache(profiles: ReferenceCopyProfile[]) {
   await profileCacheWriteQueue;
 }
 
+function productFactPlanningPriority(fact: ProductFact) {
+  if (fact.evidenceType === "merchant-proof") return 5;
+  if (fact.source === "vendor-research") {
+    if (fact.evidenceType === "quantity" || fact.evidenceType === "numeric") return 155;
+    if (fact.evidenceType === "ingredient" || fact.evidenceType === "composition") return 148;
+    if (fact.evidenceType === "usage" || fact.evidenceType === "review") return 140;
+    if (fact.evidenceType === "usp") return 136;
+    if (/향(?:이|만|으로|의)?\s*(?:좋|상쾌|달콤|산뜻|포근)|향의\s*(?:특징|흐름|인상)/u.test(`${fact.label} ${fact.value}`)) return 106;
+    return 130;
+  }
+  if (fact.key === "main-benefit" || fact.key === "verified-descriptor") return 120;
+  if (fact.key.startsWith("title-benefit") || fact.key.startsWith("verified-benefit")) return 112;
+  if (fact.evidenceType === "usp") return 108;
+  if (fact.evidenceType === "ingredient" || fact.evidenceType === "composition") return 98;
+  if (fact.evidenceType === "usage" || fact.evidenceType === "review") return 92;
+  if (fact.evidenceType === "quantity" || fact.evidenceType === "numeric") return 82;
+  if (fact.evidenceType === "offer" || fact.evidenceType === "price") return 72;
+  if (fact.evidenceType === "identity") return 20;
+  return 55;
+}
+
+function prioritizedPlanningFacts(truth: ProductTruth) {
+  return truth.facts
+    .filter((fact) => fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked")
+    .filter((fact) => !isMalformedProductSignal(fact.value) && !isIncompleteOcrCopyFragment(fact.value))
+    .sort((left, right) => productFactPlanningPriority(right) - productFactPlanningPriority(left));
+}
+
 function factsForPlanning(truth: ProductTruth) {
   const seen = new Set<string>();
-  return truth.facts
-    .filter((fact) => fact.key !== "brand-name" && fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked")
+  return prioritizedPlanningFacts(truth)
+    .filter((fact) => fact.key !== "brand-name")
     .filter((fact) => !isProhibitedAdCopySignal(fact.value) && fact.evidenceType !== "shipping" && !isShippingCreativeSignal(fact.value) && !isNonDomesticOriginCreativeSignal(fact.value))
     .filter((fact) => {
       const signature = comparableCopy(fact.value);
@@ -189,7 +257,15 @@ function factsForPlanning(truth: ProductTruth) {
       seen.add(signature);
       return true;
     })
-    .map((fact) => ({ id: fact.id, label: fact.label, value: fact.value, copyHint: consumerFacingFactHint(fact.value), role: fact.copyEligibility || "headlineEligible" }));
+    .map((fact) => ({
+      id: fact.id,
+      label: fact.label,
+      value: fact.value,
+      copyHint: consumerFacingFactHint(fact.value),
+      role: fact.copyEligibility || "headlineEligible",
+      scope: fact.evidenceType === "merchant-proof" ? "merchant" : fact.copyEligibility === "offerOnly" ? "offer" : "product",
+      priority: productFactPlanningPriority(fact),
+    }));
 }
 
 function comparableCopy(value: string) {
@@ -293,7 +369,7 @@ function resolvedPlanFactIds(
 }
 
 function plannerDeclaredSafetyErrors(errors: string[]) {
-  return errors.filter((error) => /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|수치|가격|할인|혜택|효능|함량|원산지|후기|배송/u.test(error));
+  return errors.filter((error) => /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|수치|가격|할인|혜택|효능|함량|원산지|후기|배송|상품 카테고리 의미 충돌/u.test(error));
 }
 
 function fallbackSlotRoles(reference: NativeAdReference, profile: ReferenceCopyProfile, hasOffer: boolean) {
@@ -375,8 +451,8 @@ function reasonTextForFact(fact: ProductFact, identity: string, truth?: ProductT
   const foodProduct = /식품|음식|간식|스낵|과일|농산|육류|snack|food|fruit|meat/iu.test(productContext);
   const sensory = clean.match(/^(?:식감|맛|풍미)(?:은|는|이|가)?\s*(.+?)(?:\s*(?:합니다|입니다))?$/u)?.[1]?.trim();
   if (sensory) return `한입부터 ${sensory}`;
-  const usage = clean.match(/^(?:사용감|향)(?:은|는|이|가)?\s*(.+?)(?:\s*(?:합니다|입니다))?$/u)?.[1]?.trim();
-  if (usage) return `${usage}, 직접 느껴보세요`;
+  const usage = clean.match(/^(?:사용감|향)(?:(?:은|는|이|가)\s*|\s+)(.+?)(?:\s*(?:합니다|입니다))?$/u)?.[1]?.trim();
+  if (usage && !/^(?:으?로|기(?:로)?)(?:\s|,|$)/u.test(usage)) return `${usage}, 직접 느껴보세요`;
   if (fact.key === "title-composition") {
     const pack = clean.match(/(\d[\d,.]*\s*(?:g|kg|ml|l))\s*[×x]\s*(\d+)\s*팩/iu);
     return pack ? `${pack[1].replace(/\s+/g, "")}씩 ${pack[2]}팩 구성` : clean;
@@ -443,46 +519,65 @@ function referenceAwareFallbackText(input: {
 }
 
 function contextualFallbackCandidates(truth: ProductTruth, identity: string, index: number) {
-  const context = `${truth.product.category || ""} ${truth.product.detectedProductType || ""} ${truth.normalized.cleanProductName || ""}`;
-  const food = /식품|음식|간식|스낵|과일|농산|육류|수산|반찬|김치|food|snack|fruit|meat/iu.test(context);
-  const snack = /간식|스낵|과자|전병|과일|사과|배|복숭아|무화과|곶감|견과|디저트|빵|떡|snack|fruit|dessert/iu.test(context);
-  const beauty = /화장품|뷰티|스킨|로션|크림|세럼|샴푸|바디|세정|beauty|cosmetic|personal\s*care/iu.test(context);
-  const candidates = snack
+  const domain = resolveProductCopyDomain(truth.product);
+  const productContext = [truth.product.productName, truth.product.category, truth.product.productSubCategory, truth.product.detectedProductType].filter(Boolean).join(" ");
+  const meat = /고기|갈비|한우|소고기|돼지|육류|정육|meat|beef|pork/iu.test(productContext);
+  const candidates = domain === "snack"
     ? [
-        `간식 생각날 때 꺼내는 ${identity}`,
-        `오늘 간식으로 ${identity} 어때요?`,
-        `집에 두고 하나씩 즐기는 ${identity}`,
-        `가족과 나눠 먹기 좋은 ${identity}`,
-        `출출한 오후, ${identity} 한입`,
-        `간식 고를 때 ${identity}부터`,
+        "오늘 간식은 또 뭘 먹을까요?",
+        `간식 생각날 때 ${identity} 어때요?`,
+        "간식만 꺼내면 같이 모이는 우리 가족",
+        "주말 간식 시간의 주인공",
+        "출출한 오후에 한입",
+        "간식 고를 때 이 식감부터",
       ]
-    : food
-      ? [
-          `오늘 식탁에 ${identity} 어때요?`,
-          `메뉴 고민될 때 꺼내는 ${identity}`,
-          `가족과 함께 즐기는 ${identity}`,
-          `한 끼 생각날 때 ${identity}`,
-          `오늘 메뉴는 ${identity}로`,
-          `식탁 위에 더하는 ${identity}`,
-        ]
-      : beauty
+    : domain === "food"
+      ? meat
+        ? [
+            "고기 없으면 서운한 울 아버지",
+            "고기 사러 멀리 가세요?",
+            "오늘은 집에서 편하게 골라요",
+            "오늘 밥상의 진짜 주인공",
+            `오늘 저녁 ${identity} 어때요?`,
+            "좋은 날엔 좋은 고기",
+          ]
+        : [
+            "오늘 저녁은 또 뭘 먹을까요?",
+            `오늘 식탁에 ${identity} 어때요?`,
+            "우리 가족 메뉴 고민은 여기까지",
+            "오늘 식탁의 진짜 주인공",
+            "퇴근한 저녁, 간단하게 골라요",
+            "식탁 위에 바로 더해보세요",
+          ]
+      : domain === "personal-care" || domain === "beauty"
         ? [
             `매일 손이 가는 ${identity}`,
-            `오늘 루틴에 ${identity} 어때요?`,
-            `바쁜 일상에 더하는 ${identity}`,
-            `나를 위한 루틴, ${identity}`,
-            `매일 쓰는 만큼 ${identity}`,
-            `필요한 순간 꺼내는 ${identity}`,
+            "오늘 샤워 루틴에 어때요?",
+            "바쁜 하루에 더하는 리셋",
+            "나를 위한 개운한 루틴",
+            "매일 쓰는 만큼 사용감부터",
+            "필요한 순간 바로 꺼내세요",
           ]
         : [
             `오늘 필요한 ${identity}`,
-            `일상에 더하는 ${identity}`,
-            `고민될 때 고르는 ${identity}`,
-            `매일 함께하는 ${identity}`,
-            `지금 살펴볼 ${identity}`,
-            `필요한 순간의 ${identity}`,
+            "일상에 자연스럽게 더해보세요",
+            "고민될 때 이 특징부터",
+            "매일 함께하기 좋은 선택",
+            "지금 핵심부터 살펴보세요",
+            "필요한 순간 바로 꺼내세요",
           ];
   return [...candidates.slice(index % candidates.length), ...candidates.slice(0, index % candidates.length)];
+}
+
+function premiseFallbackCandidates(premise: ImageCreativePremise, identity: string) {
+  if (premise.kind === "everyday-question-answer") return [premise.situation, premise.tension, premise.productBridge, identity];
+  if (premise.kind === "everyday-relationship") return [premise.character, `${identity}, 오늘 자연스럽게 챙겨요`, premise.productBridge, identity];
+  if (premise.kind === "obvious-ad-metaphor") return [premise.situation, premise.productBridge, identity];
+  if (premise.kind === "comparison-benefit") {
+    return [`일반 상품과 비교해 ${premise.productBridge}`, premise.productBridge, `비슷해 보여도 ${identity}는 달라요`, identity];
+  }
+  if (premise.kind === "usp-focus") return [premise.productBridge, `${identity}, 이 장점부터 보세요`, identity];
+  return [premise.character, premise.situation, premise.tension, premise.productBridge];
 }
 
 function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], identity: string, offerText: string, index: number) {
@@ -490,6 +585,7 @@ function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], ident
   const singles = uniqueFacts(facts)
     .filter((fact) => !["category", "target", "season-event", "package-option", "quantity"].includes(fact.key))
     .filter((fact) => fact.copyEligibility !== "blocked" && fact.copyEligibility !== "offerOnly")
+    .filter((fact) => fact.evidenceType !== "merchant-proof")
     .filter((fact) => fact.evidenceType !== "price" && fact.evidenceType !== "offer" && fact.evidenceType !== "numeric")
     .map((fact) => reasonTextForFact(fact, identity, truth))
     .filter((value) => value && factCharacterCount(value) <= 32);
@@ -531,6 +627,7 @@ function buildNumberedReasonFallback(truth: ProductTruth, reference: NativeAdRef
                 fact.key.startsWith("verified-benefit") ? 68 : 40;
   const candidates = uniqueFacts(facts)
     .filter((fact) => !excludedKeys.has(fact.key) && fact.copyEligibility !== "offerOnly" && fact.copyEligibility !== "identityOnly")
+    .filter((fact) => fact.evidenceType !== "merchant-proof")
     .map((fact) => ({ fact, text: reasonTextForFact(fact, identity, truth) }))
     .filter(({ text }) => text && factCharacterCount(text) >= 4 && factCharacterCount(text) <= 38)
     .sort((left, right) => priority(right.fact) - priority(left.fact));
@@ -564,10 +661,12 @@ function buildNumberedReasonFallback(truth: ProductTruth, reference: NativeAdRef
   return { lines, selectedFacts };
 }
 
-function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number): ReferenceAdaptedCopyPlan {
-  const facts = truth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked" && fact.evidenceType !== "shipping" && !isShippingCreativeSignal(fact.value) && !isNonDomesticOriginCreativeSignal(fact.value) && !isProhibitedAdCopySignal(fact.value));
+function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number, assignedPremise?: ImageCreativePremise): ReferenceAdaptedCopyPlan {
+  const creativePremise = assignedPremise || buildImageCreativePremiseSeed(truth, reference, index);
+  const facts = prioritizedPlanningFacts(truth).filter((fact) => fact.evidenceType !== "shipping" && !isShippingCreativeSignal(fact.value) && !isNonDomesticOriginCreativeSignal(fact.value) && !isProhibitedAdCopySignal(fact.value));
   const headlineCandidates = uniqueFacts(facts.filter((fact) => isCleanFallbackHeadlineFact(fact, truth, profile.headlineCharacterBudget)));
   const prioritizedHeadlineCandidates = uniqueFacts([
+    ...headlineCandidates.filter((fact) => fact.source === "vendor-research" && !/향(?:이|만|으로|의)?\s*(?:좋|상쾌|달콤|산뜻|포근)|향의\s*(?:특징|흐름|인상)/u.test(`${fact.label} ${fact.value}`)),
     ...headlineCandidates.filter((fact) => fact.key === "verified-descriptor"),
     ...headlineCandidates.filter((fact) => fact.key === "main-benefit"),
     ...headlineCandidates.filter((fact) => fact.evidenceType === "usp"),
@@ -581,6 +680,7 @@ function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile
     : headlineCandidates.find((fact) => fact.id !== headlineFact?.id);
   const proofFacts = uniqueFacts(facts.filter((fact) =>
     fact.copyEligibility === "proofOnly" &&
+    fact.evidenceType !== "merchant-proof" &&
     !["base-product-name", "category", "target"].includes(fact.key) &&
     factCharacterCount(fact.value) <= 38
   ));
@@ -590,19 +690,28 @@ function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile
   const offer = index % 6 < 2 ? automaticOfferLine(facts) : { text: "", facts: [] as ProductFact[] };
   const offerFact = offer.facts[0];
   const identity = shortProductIdentity(truth);
-  const contextualCandidates = contextualFallbackCandidates(truth, identity, index);
+  // 사전 조사 예문은 첫 세 소재에만 한 번씩 배정합니다. 나머지는 다른 검증
+  // 사실과 사용 맥락을 사용해 6장이 같은 문구 세 개를 반복하지 않게 합니다.
+  const vendorExample = resolvedVendorCopyExamples(truth)[index];
+  const vendorExampleFacts = (vendorExample?.factIds || [])
+    .map((id) => facts.find((fact) => fact.id === id))
+    .filter((fact): fact is ProductFact => Boolean(fact));
+  const contextualCandidates = [...premiseFallbackCandidates(creativePremise, identity), ...contextualFallbackCandidates(truth, identity, index)];
   const sourceLines = reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.rawLines || [];
   const contentFacts = uniqueFacts([headlineFact, supportFact, proofFact, ...prioritizedHeadlineCandidates, ...proofFacts]
     .filter((fact): fact is ProductFact => Boolean(fact))
     .filter((fact) => !["category", "target", "season-event", "package-option", "quantity"].includes(fact.key))
     .filter((fact) => factCharacterCount(consumerFacingFactHint(fact.value)) <= 32));
   const usedFacts = new Map<string, ProductFact>();
+  vendorExampleFacts.forEach((fact) => usedFacts.set(fact.id, fact));
   const numberedFallback = sourceLines.length ? buildNumberedReasonFallback(truth, reference, sourceLines, facts) : null;
   numberedFallback?.selectedFacts.forEach((fact) => usedFacts.set(fact.id, fact));
   let contentIndex = 0;
   let offerIndex = 0;
+  const roleUseCounts = new Map<NonNullable<ReferenceAdaptedCopyPlan["copySlots"]>[number]["role"], number>();
   const fallbackOfferFacts = uniqueFacts(facts.filter((fact) => fact.copyEligibility === "offerOnly"));
-  const contentFallbackCandidates = fallbackTextCandidates(truth, facts, identity, "", index)
+  const contentFallbackCandidates = [vendorExample?.headline, vendorExample?.support, ...fallbackTextCandidates(truth, facts, identity, "", index)]
+    .filter((candidate): candidate is string => Boolean(candidate))
     .filter((candidate) => !offer.facts.some((fact) => comparableCopy(candidate).includes(comparableCopy(fact.value))));
   const offerFallbackCandidates = [offer.text, ...offer.facts.map((fact) => fact.value)].filter(Boolean);
   const usedTargetSignatures = new Set<string>();
@@ -614,8 +723,8 @@ function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile
       if ((literal.length >= 3 && signature.includes(literal)) || (hint.length >= 3 && signature.includes(hint))) usedFacts.set(fact.id, fact);
     });
   };
-  const headlineFallbackText = headlineFact ? reasonTextForFact(headlineFact, identity, truth) || contextualCandidates[0] : contextualCandidates[0];
-  const supportFallbackText = supportFact ? reasonTextForFact(supportFact, identity, truth) || contextualCandidates[1] : contextualCandidates[1];
+  const headlineFallbackText = vendorExample?.headline || (headlineFact ? reasonTextForFact(headlineFact, identity, truth) || contextualCandidates[0] : contextualCandidates[0]);
+  const supportFallbackText = vendorExample?.support || (supportFact ? reasonTextForFact(supportFact, identity, truth) || contextualCandidates[1] : contextualCandidates[1]);
   const proofFallbackText = proofFact && !["quantity", "numeric", "price", "offer"].includes(proofFact.evidenceType || "")
     ? reasonTextForFact(proofFact, identity, truth) || contextualCandidates[2]
     : contextualCandidates[2];
@@ -639,10 +748,24 @@ function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile
           recordFactsForTarget(target);
           return target;
         }
+        const roleUseCount = roleUseCounts.get(role) || 0;
+        roleUseCounts.set(role, roleUseCount + 1);
         const fact = role === "offer" && offerFact ? offerFact : contentFacts[contentIndex++ % Math.max(1, contentFacts.length)];
         if (fact) usedFacts.set(fact.id, fact);
+        // AI 문구가 검수에서 탈락해도 사전 조사에서 사람이 정리한 광고용
+        // 후보를 범용 상황문보다 먼저 사용한다. 같은 역할의 두 번째 줄부터는
+        // 다른 ProductTruth 사실·상황 후보로 회전해 한 이미지 안의 반복을 막는다.
+        const researchedPreferred = roleUseCount === 0
+          ? role === "headline"
+            ? headlineFallbackText
+            : role === "support"
+              ? supportFallbackText
+              : role === "proof" || role === "badge"
+                ? proofFallbackText
+                : ""
+          : "";
         const contextualPreferred = role === "headline" ? contextualCandidates[0] : role === "support" ? contextualCandidates[1] : "";
-        const preferred = contextualPreferred || (fact ? reasonTextForFact(fact, identity, truth) : contextualCandidates[2]);
+        const preferred = researchedPreferred || (fact ? reasonTextForFact(fact, identity, truth) : contextualPreferred || contextualCandidates[2]);
         const target = referenceAwareFallbackText({ sourceLine, preferred: preferred || identity, candidates: contentFallbackCandidates, role, identity, usedSignatures: usedTargetSignatures });
         recordFactsForTarget(target);
         return target;
@@ -699,6 +822,7 @@ function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile
     resultCode: `H${String(index + 1).padStart(2, "0")}`,
     referenceId: reference.id,
     referenceCopyProfileId: profile.id,
+    creativePremise,
     referenceRawCopy: sourceLines.join("\n"),
     referenceRawLines: sourceLines,
     adaptedLines,
@@ -712,19 +836,43 @@ function fallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile
     sourceFactValues: selected.map((fact) => fact.value),
     tone: profile.tone,
     sentenceStyle: profile.sentenceStyle,
-    naturalnessScore: numberedFallback ? 90 : 82,
-    referenceFitScore: numberedFallback ? 88 : 82,
-    factualSafetyScore: 100,
-    validationStatus: "valid",
+    naturalnessScore: 0,
+    referenceFitScore: 0,
+    factualSafetyScore: 0,
+    validationStatus: "needs-review",
     validationErrors: [],
     repairCount: 0,
     generationSource: "reference-best-effort",
   };
   const validationErrors = [...new Set(validatePlan(candidate, truth, profile))];
+  const naturalnessErrors = findReferenceCopyNaturalnessErrors(candidate);
+  const copyText = [candidate.headline, candidate.subCopy, candidate.proof, candidate.offer, candidate.cta, ...adaptedLines].filter(Boolean).join("\n");
+  const incompleteFragments = adaptedLines.filter((line) => isIncompleteOcrCopyFragment(line)).length;
+  const naturalnessScore = Math.max(0, Math.min(100,
+    96 - naturalnessErrors.length * 12 - incompleteFragments * 24 - (candidate.headline.trim() ? 0 : 35) - (copySlots.some((slot) => slot.targetText.trim()) ? 0 : 35)
+  ));
+  const sourceNonBlank = sourceLines.filter((line) => line.trim()).length;
+  const targetNonBlank = adaptedLines.filter((line) => line.trim()).length;
+  const lineCoverage = sourceNonBlank ? Math.min(1, targetNonBlank / sourceNonBlank) : Math.min(1, targetNonBlank / Math.max(1, fallbackSlotRoles(reference, profile, Boolean(offer.text)).length));
+  const sourceCharacters = Math.max(1, sourceLines.join("").replace(/\s/g, "").length);
+  const targetCharacters = adaptedLines.join("").replace(/\s/g, "").length;
+  const densityRatio = sourceLines.length ? Math.min(1, targetCharacters / sourceCharacters) : Math.min(1, targetCharacters / Math.max(12, profile.headlineCharacterBudget + profile.supportCharacterBudget));
+  const roleCoverage = Math.min(1, new Set(copySlots.filter((slot) => slot.targetText.trim()).map((slot) => slot.role)).size / Math.max(1, new Set(fallbackSlotRoles(reference, profile, Boolean(offer.text))).size));
+  const referenceFitScore = Math.max(0, Math.min(100, Math.round(45 + lineCoverage * 25 + densityRatio * 20 + roleCoverage * 10 - validationErrors.filter((error) => /레퍼런스|슬롯|문구 정보 밀도|헤드라인 길이|축약/u.test(error)).length * 10)));
+  const factualValidation = validateCopyAgainstTruth(copyText, truth);
+  const factualErrors = validationErrors.filter((error) => /ProductTruth|근거|확인되지|허위|수치|차단|배송|원산지|판매주체|상품 카테고리 의미 충돌/u.test(error)).length;
+  const factualSafetyScore = Math.max(0, 100 - (factualValidation.valid ? 0 : 45) - factualErrors * 20);
+  const scoredErrors = [...validationErrors];
+  if (naturalnessScore < NATURALNESS_PASS_SCORE) scoredErrors.push(`결정적 문장 완결성 검수 ${NATURALNESS_PASS_SCORE}점 기준을 통과하지 못했습니다.`);
+  if (referenceFitScore < REFERENCE_FIT_PASS_SCORE) scoredErrors.push(`결정적 레퍼런스 구조 적합도 ${REFERENCE_FIT_PASS_SCORE}점 기준을 통과하지 못했습니다.`);
+  if (factualSafetyScore < 90) scoredErrors.push("결정적 상품 사실 안전성 기준을 통과하지 못했습니다.");
   return {
     ...candidate,
-    validationStatus: validationErrors.length ? "invalid" : "valid",
-    validationErrors,
+    naturalnessScore,
+    referenceFitScore,
+    factualSafetyScore,
+    validationStatus: scoredErrors.length ? "invalid" : "valid",
+    validationErrors: [...new Set(scoredErrors)],
   };
 }
 
@@ -744,7 +892,7 @@ export function hasExecutableReferenceCopyContract(plan: ReferenceAdaptedCopyPla
   );
   if (blankNonBrandSlots.length) return false;
   const groundingErrors = (plan.validationErrors || []).filter((error) =>
-    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지(?:\s*특가)?\s*근거|배송/u.test(error)
+    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지(?:\s*특가)?\s*근거|배송|상품 카테고리 의미 충돌/u.test(error)
   );
   if (groundingErrors.length) return false;
   const renderedCopy = [plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta, ...targetLines]
@@ -756,11 +904,15 @@ export function hasExecutableReferenceCopyContract(plan: ReferenceAdaptedCopyPla
 
 export function hasPublishableReferenceCopyContract(plan: ReferenceAdaptedCopyPlan | undefined) {
   if (!hasExecutableReferenceCopyContract(plan) || !plan) return false;
+  const renderedCopy = [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].filter(Boolean).join(" ");
   return plan.validationStatus === "valid" &&
+    plan.generationSource !== "reference-best-effort" &&
+    plan.generationSource !== "safe-minimal" &&
     plan.naturalnessScore >= NATURALNESS_PASS_SCORE &&
     plan.referenceFitScore >= REFERENCE_FIT_PASS_SCORE &&
     plan.factualSafetyScore >= 90 &&
-    !(plan.validationErrors || []).length;
+    !(plan.validationErrors || []).length &&
+    findImageCreativePremiseCopyErrors(plan.creativePremise, renderedCopy).length === 0;
 }
 
 export async function createBestEffortReferenceCopyPlan(input: {
@@ -773,8 +925,20 @@ export async function createBestEffortReferenceCopyPlan(input: {
   // 사실이 매우 적거나 원본 레퍼런스가 고밀도여도 이미지 제작을 포기하지
   // 않도록 서로 다른 안전 사용 맥락을 최대 6번 회전해 완전한 문구 계약을 찾는다.
   // 가격 토큰을 반복하는 방식이 아니라 상품군별 자연스러운 기본 문장만 회전한다.
-  const candidates = Array.from({ length: 6 }, (_, offset) => fallbackPlan(input.truth, input.reference, profile, input.index + offset));
-  const fallback = candidates.find((candidate) => hasPublishableReferenceCopyContract(candidate)) || candidates[0];
+  const assignedPremise = input.previous?.creativePremise || buildImageCreativePremiseSeed(input.truth, input.reference, input.index);
+  const candidates = Array.from({ length: 6 }, (_, offset) => fallbackPlan(input.truth, input.reference, profile, input.index + offset, assignedPremise));
+  const fallbackPenalty = (candidate: ReferenceAdaptedCopyPlan) => {
+    const errors = candidate.validationErrors || [];
+    const critical = errors.filter((error) => /ProductTruth|근거|확인되지|허위|원산지|배송|상품 카테고리 의미 충돌|빈 문구/u.test(error)).length;
+    const repetition = errors.filter((error) => /반복|같은 핵심 문구|같은 상품명/u.test(error)).length;
+    const generic = errors.filter((error) => /범용 광고 문구|단순 상품명|단순화/u.test(error)).length;
+    return critical * 10_000 + repetition * 1_000 + generic * 500 + errors.length * 25 - candidate.naturalnessScore - candidate.referenceFitScore;
+  };
+  // 여섯 회전안이 모두 엄격 검수에 미달하더라도 첫 번째 안을 무조건 쓰지
+  // 않는다. 치명적 사실 오류·반복·범용화가 가장 적은 안을 고르면 이미지
+  // 제작을 계속하면서도 검수용 문구의 품질 하한을 지킬 수 있다.
+  const rankedCandidates = [...candidates].sort((left, right) => fallbackPenalty(left) - fallbackPenalty(right));
+  const fallback = candidates.find((candidate) => hasPublishableReferenceCopyContract(candidate)) || rankedCandidates.find((candidate) => hasExecutableReferenceCopyContract(candidate)) || rankedCandidates[0];
   return {
     ...fallback,
     id: input.previous?.id || `reference-copy-${input.truth.productId}-${input.index + 1}`,
@@ -795,11 +959,12 @@ function ensureRenderableReferencePlans(input: {
   references: NativeAdReference[];
   profiles: ReferenceCopyProfile[];
   plans: ReferenceAdaptedCopyPlan[];
+  premiseSeeds?: ImageCreativePremise[];
 }) {
   return input.references.map((reference, index) => {
     const plan = input.plans[index];
     if (hasPublishableReferenceCopyContract(plan)) return plan;
-    const fallback = fallbackPlan(input.truth, reference, input.profiles[index], index);
+    const fallback = fallbackPlan(input.truth, reference, input.profiles[index], index, input.premiseSeeds?.[index] || plan?.creativePremise);
     return {
       ...fallback,
       repairCount: Math.max(plan?.repairCount || 0, fallback.repairCount),
@@ -809,7 +974,16 @@ function ensureRenderableReferencePlans(input: {
 
 function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profile: ReferenceCopyProfile) {
   const errors: string[] = [];
+  errors.push(...findImageCreativePremiseErrors(plan.creativePremise, truth));
+  errors.push(...findImageCreativePremiseCopyErrors(
+    plan.creativePremise,
+    [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].filter(Boolean).join(" ")
+  ));
   errors.push(...findReferenceCopyNaturalnessErrors(plan));
+  errors.push(...findProductCopySemanticErrors(
+    [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" "),
+    truth.product
+  ));
   const facts = new Map(truth.facts.map((fact) => [fact.id, fact]));
   const selectedFacts = plan.factIds.map((id) => facts.get(id)).filter((fact): fact is ProductFact => Boolean(fact));
   if (!plan.headline.trim()) errors.push("헤드라인이 비어 있습니다.");
@@ -818,9 +992,56 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
   if (plan.factIds.some((id) => !facts.has(id))) errors.push("존재하지 않는 ProductTruth fact id가 포함됐습니다.");
   if (selectedFacts.some((fact) => fact.copyEligibility === "blocked" || !fact.usableInCopy)) errors.push("문구 사용이 차단된 사실이 포함됐습니다.");
   if (selectedFacts.some((fact) => fact.evidenceType === "shipping" || isShippingCreativeSignal(fact.value))) errors.push("배송 관련 정보는 광고 문구로 사용할 수 없습니다.");
+  if (selectedFacts.some((fact) => isMalformedProductSignal(fact.value))) errors.push("OCR로 훼손된 상품 문구는 광고 사실로 사용할 수 없습니다.");
   if (selectedFacts.some((fact) => fact.copyEligibility === "offerOnly" && `${plan.headline} ${plan.subCopy} ${plan.proof}`.includes(fact.value))) errors.push("가격·혜택 사실이 offer 이외 영역에 사용됐습니다.");
   if (plan.offer && !selectedFacts.some((fact) => fact.copyEligibility === "offerOnly")) errors.push("offer 문구에 연결된 가격·혜택 사실이 없습니다.");
   if (plan.proof && !selectedFacts.some((fact) => ["headlineEligible", "proofOnly"].includes(fact.copyEligibility || "headlineEligible"))) errors.push("proof 문구에 연결된 근거 사실이 없습니다.");
+  const renderedPlanCopy = [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].filter(Boolean).join(" ");
+  const renderedPlanSignature = comparableCopy(renderedPlanCopy);
+  const usedPackageOptions = selectedFacts.filter((fact) =>
+    fact.key === "package-option" && comparableCopy(fact.value).length >= 3 && renderedPlanSignature.includes(comparableCopy(fact.value))
+  );
+  const usedPriceFacts = selectedFacts.filter((fact) =>
+    ["price", "original-price"].includes(fact.key) && extractNumericTokens(fact.value).some((token) => renderedPlanCopy.includes(token))
+  );
+  if (usedPackageOptions.length && usedPriceFacts.length) {
+    const optionAndPriceBoundInOneFact = truth.facts.some((fact) => {
+      const signature = comparableCopy(fact.value);
+      return usedPackageOptions.some((option) => signature.includes(comparableCopy(option.value))) &&
+        usedPriceFacts.some((price) => extractNumericTokens(price.value).some((token) => fact.value.includes(token)));
+    });
+    if (!optionAndPriceBoundInOneFact) errors.push("선택 옵션과 가격의 직접 연결 근거가 없어 같은 소재에 함께 표시할 수 없습니다.");
+  }
+  const merchantNames = [truth.product.advertiserName, truth.product.brandName, truth.normalized.brandName];
+  const merchantSlots = (plan.copySlots?.length
+    ? plan.copySlots.map((slot) => ({ role: slot.role, text: slot.targetText }))
+    : [
+        { role: "headline", text: plan.headline },
+        { role: "support", text: plan.subCopy },
+        { role: "proof", text: plan.proof },
+        { role: "offer", text: plan.offer },
+        { role: "cta", text: plan.cta },
+      ])
+    .filter(({ text }) => isMerchantCredentialCreativeSignal(text));
+  for (const slot of merchantSlots) {
+    if (!hasExplicitMerchantCredentialAttribution(slot.text, merchantNames)) {
+      errors.push("업체 순위·수상·업력 문구에 현재 업체·브랜드 주체가 명시되지 않았습니다.");
+    }
+    if (!["proof", "badge"].includes(slot.role)) {
+      errors.push("업체 순위·수상·업력은 상품 USP가 아니라 보조 proof·badge에만 사용할 수 있습니다.");
+    }
+    const normalizedSlot = comparableCopy(slot.text);
+    const combinesProductFact = selectedFacts.some((fact) => {
+      if (fact.evidenceType === "merchant-proof" || fact.evidenceType === "identity") return false;
+      const literal = comparableCopy(fact.value);
+      const hint = comparableCopy(consumerFacingFactHint(fact.value));
+      return (literal.length >= 4 && normalizedSlot.includes(literal)) || (hint.length >= 4 && normalizedSlot.includes(hint));
+    });
+    if (combinesProductFact) errors.push("업체 실적과 상품 USP를 같은 문구 블록에 이어 붙일 수 없습니다.");
+  }
+  if ([...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].some((text) => isAmbiguousMerchantCredentialCreativeSignal(text))) {
+    errors.push("주체·평가 범위가 없는 업체 실적 OCR 조각은 광고 문구로 사용할 수 없습니다.");
+  }
   const factual = validateCopyAgainstTruth([...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" "), truth);
   if (!factual.valid) errors.push("ProductTruth에 없는 수치 또는 차단 표현이 포함됐습니다.");
   const sourceCopy = plan.referenceRawCopy || "";
@@ -865,6 +1086,7 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
   const flattenedTarget = comparableCopy(targetLines.join(" "));
   if (targetLines.length && normalizedHeadline && !flattenedTarget.includes(normalizedHeadline)) errors.push("최종 헤드라인이 줄별 편집 계약에 포함되지 않았습니다.");
   const copy = [...targetLines, plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" ");
+  if ([...targetLines, plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].some((text) => isIncompleteOcrCopyFragment(text))) errors.push("조사·관형형에서 끊긴 불완전한 문구 조각이 포함됐습니다.");
   if (isShippingCreativeSignal(copy)) errors.push("배송·출고·도착 관련 표현은 광고 문구에서 제외해야 합니다.");
   if (isProhibitedAdCopySignal(copy)) errors.push("부정·배송·CS·양해·판매주체 또는 상세페이지 운영 문구가 광고 문구에 포함됐습니다.");
   const bannedGenericPhrases = ["구매 조건 보기", "이 선택", "핵심 이유", "고를 이유", "한눈에", "새로운 사용 이유", "지금 확인하세요"];
@@ -905,8 +1127,22 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
   return errors;
 }
 
-function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number, source: "codex-local" | "repaired-codex-local"): ReferenceAdaptedCopyPlan {
-  if (!raw || raw.referenceId !== reference.id) return fallbackPlan(truth, reference, profile, index);
+function applyMerchantCredentialGroupRule(plans: ReferenceAdaptedCopyPlan[]) {
+  let used = false;
+  return plans.map((plan) => {
+    const copy = (plan.copySlots?.length ? plan.copySlots.map((slot) => slot.targetText) : [plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta]).join(" ");
+    if (!isMerchantCredentialCreativeSignal(copy)) return plan;
+    if (!used) {
+      used = true;
+      return plan;
+    }
+    const validationErrors = [...new Set([...plan.validationErrors, "업체 순위·수상·업력 보조 문구는 6장 중 최대 1장만 사용할 수 있습니다."])];
+    return { ...plan, validationStatus: "invalid" as const, validationErrors };
+  });
+}
+
+function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number, assignedPremise: ImageCreativePremise, source: "codex-local" | "repaired-codex-local"): ReferenceAdaptedCopyPlan {
+  if (!raw || raw.referenceId !== reference.id) return fallbackPlan(truth, reference, profile, index, assignedPremise);
   const known = new Map(truth.facts.map((fact) => [fact.id, fact]));
   const storedSourceLines = reference.nativeCopy?.useForCopyAdaptation === false ? [] : normalizeReferenceRawLines(reference.nativeCopy?.rawLines || []);
   const referenceRawLines = storedSourceLines;
@@ -920,6 +1156,7 @@ function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: 
     resultCode: `H${String(index + 1).padStart(2, "0")}`,
     referenceId: reference.id,
     referenceCopyProfileId: profile.id,
+    creativePremise: normalizeImageCreativePremise(raw.creativePremise, assignedPremise, truth),
     referenceRawCopy: reference.nativeCopy?.useForCopyAdaptation === false ? "" : reference.nativeCopy?.rawText || "",
     referenceRawLines,
     adaptedLines,
@@ -946,7 +1183,7 @@ function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: 
   return { ...plan, validationStatus: errors.length ? "invalid" : "valid", validationErrors: [...new Set(errors)] };
 }
 
-function planningPrompt(input: { truth: ProductTruth; references: NativeAdReference[]; profiles: ReferenceCopyProfile[]; missingProfileIds: string[]; copyGuide?: LoadedCopyGuide | null; repairPlans?: ReferenceAdaptedCopyPlan[] }) {
+function planningPrompt(input: { truth: ProductTruth; references: NativeAdReference[]; profiles: ReferenceCopyProfile[]; premiseSeeds: ImageCreativePremise[]; missingProfileIds: string[]; copyGuide?: LoadedCopyGuide | null; repairPlans?: ReferenceAdaptedCopyPlan[] }) {
   const productionDate = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   return `한국 광고 제작용 레퍼런스 원문 적응 문구를 한 번의 배치로 작성한다. 레퍼런스와 무관한 별도 후킹 전략·성과 가설·장면 콘셉트는 만들지 않되, 레퍼런스의 수사 골격 안에서 상품 사실을 소비자가 반응할 광고 후킹으로 번역한다.
 
@@ -958,6 +1195,14 @@ ${copyGuidePromptBlock(input.copyGuide)}
 작업 원칙:
 - 목표는 맞춤법만 통과하는 안전 문구가 아니라 사람의 추가 수정 없이 광고에 넣을 수 있는 최소 7/10 이상의 문장력이다. 각 안은 자연스러움과 레퍼런스 수사 적합도 모두 80점 이상을 목표로 하고, 상품명·특징·가격을 단순 나열한 문구는 통과시키지 않는다.
 - 각 레퍼런스의 rawText/rawLines가 유일한 문구 출발점이다. 일반화된 청사진이나 새 후킹을 만들지 않는다.
+- creativePremise는 rawLines의 수사 골격 안에서 사용할 가벼운 소비자 말투 방향이다. 별도 세계관·인물 서사·레이아웃·새 슬롯을 만드는 콘셉트가 아니며, 원문의 질문→대답·비교→결론·경험→추천 관계를 해치지 않는다.
+- 6장에 인물형·시대극·상품 1인칭·USP·비교 역할별 장수를 강제하지 않는다. 각 레퍼런스 원문이 실제로 가진 질문·관계·비유·비교·정보 구조에 가장 자연스러운 kind를 선택한다. 원문에 필요하지 않으면 인물과 장소를 새로 넣지 않는다.
+- everyday-relationship은 ‘울 아버지’, ‘우리 가족’, ‘남편’, ‘엄마’, ‘퇴근한 나’처럼 바로 이해되는 관계나 생활 주체 하나와 익숙한 장면 하나만 사용한다. 직업·성격·경력·말버릇·시대 배경을 덧붙여 뒷이야기를 만들지 않는다.
+- everyday-question-answer는 소비자가 실제로 할 법한 짧은 질문 뒤에 짧은 해결이나 상품 제안을 둔다. 예: ‘아침마다 고기 사러 마장동 가세요? / 여기서 그냥 시켜요’. 질문만 던지고 답을 상품정보 나열로 바꾸지 않는다.
+- obvious-ad-metaphor는 ‘임금님도 감동할 진짜 특급한우’, ‘오늘 밥상의 주인공’처럼 누구나 사실이 아닌 광고 비유로 이해할 수 있는 한 줄만 허용한다. ‘임금님이 먹던 한우’, ‘전문가가 인정한 1위’처럼 실제 이력·보증·인증으로 오해되는 주장은 금지한다.
+- ‘수라간 감별관’, ‘상품 큐레이터’, ‘구매 담당’, ‘저녁밥 총무’, ‘욕실 집사’처럼 기획서에서 만든 직업형 인물, 상품이 직접 말하는 1인칭 화자, 설명이 필요한 시대극·세계관을 소비자 문구에 사용하지 않는다.
+- 관계·생활 장면·비유는 광고용 창작 맥락이며 상품의 실제 성분·효능·수치·가격·구성·후기인 것처럼 쓰지 않는다. 알레르기·질병·치료·의사/전문가 추천, 실제 고객 후기처럼 들리는 설정은 금지한다.
+- creativePremise의 productBridge와 상품 관련 문구는 supportingFactIds의 ProductTruth 근거만 사용한다. ‘가상’, ‘상황극’, ‘ProductTruth’, ‘검증된 설정’ 같은 내부 관리어는 소비자용 adaptedLines에 노출하지 않는다.
 - observedSourceLines에는 저장된 rawLines를 글자와 빈 줄까지 그대로 복사한다. 이 단계에서는 이미지 파일을 열거나 OCR하지 않는다.
 - adaptedLines는 rawLines와 같은 개수·순서·빈 줄을 유지하고, 각 줄에서 상품에 맞지 않는 사실만 교체한다.
 - textRegions의 sourceType이 source-brand이거나 replacePolicy가 remove인 줄은 예외적으로 adaptedLines를 빈 문자열로 둔다. '연출 이미지', '예시 이미지', '이해를 돕기 위한 이미지', 원본 AI 활용 고지처럼 레퍼런스에 붙은 출처성 이미지 고지도 remove 영역으로 취급한다. 이 영역에는 현재 상품명·브랜드명·광고 문구를 넣지 않고 주변 배경만 복원한다. 실제 결과의 AI 고지는 사용자가 선택한 별도 후처리에서만 적용한다.
@@ -965,8 +1210,13 @@ ${copyGuidePromptBlock(input.copyGuide)}
 - source-brand/remove 영역을 제외한 원본의 모든 비어 있지 않은 문구 블록은 최종 문구에서도 비어 있지 않아야 한다. 가격·할인·증정처럼 현재 상품에 근거가 없는 슬롯은 삭제하거나 수치를 만들지 말고, 비슷한 길이의 검증된 USP·사용 사실·상품 식별 문구로 역할을 바꿔 시각적 밀도를 유지한다.
 - 원문의 단어 순서, 줄 수, 문장부호, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ, ;;, .., ㄷㄷ, 헐, 뭐임, 겨 같은 구어체를 최대한 그대로 둔다.
 - 기존 상품·가격·혜택·업체·상품별 근거만 ProductTruth의 현재 상품 사실로 치환한다. 다만 레퍼런스의 수사 의도와 말투를 보존하는 것이 목적이지, 명사를 슬롯처럼 바꾸는 것이 목적이 아니다.
+- 문구의 첫 선택 기준은 현재 상품의 구체 USP·식감/사용감·원료·구성·사용 순간이다. 가격·혜택은 offer 역할에서만 그다음으로 사용한다. 업체의 업력·순위·수상은 상품 USP를 대신할 수 없고, 상품 근거가 충분할 때는 선택하지 않는다.
+- scope가 merchant인 업체 실적을 꼭 사용할 때만 6장 중 최대 1장의 proof 또는 badge에 배치한다. 반드시 현재 업체·브랜드명을 주어로 적고 평가 분야를 함께 쓴다. 예: '국대한우, 축산물 쇼핑몰 브랜드 파워 1위'. '한국 1위 국가대표'처럼 주체와 평가 범위가 끊긴 OCR 조각은 금지한다. 업체 실적과 '어린소라 연해요' 같은 상품 USP를 한 슬롯·한 문장에 이어 붙이지 않는다.
 - 업체별 문구 가이드는 레퍼런스 구조 안에서 어떤 상품 사실을 어떤 소비자 언어로 강조할지 결정하는 품질 기준이다. 가이드의 강한 문제 제기·손실 회피·감각 표현을 사실 범위 안에서 충분히 살리고, 무난한 상품 소개문으로 순화하지 않는다.
 ${sheetClaimPolicy(input.truth)}
+- 최종 상품 카테고리는 ${resolveProductCopyDomain(input.truth.product)}이다. 상세페이지 원료명에 과일·먹거리 단어가 있어도 바디워시·샤워젤·화장품을 간식이나 음식처럼 말하면 치명적인 상품 카테고리 의미 충돌이다. 반대로 실제 식품을 피부·샤워용 제품처럼 말하지 않는다.
+- 미리 정리된 광고 문구 후보:
+${vendorCopyExamplePromptBlock(input.truth)}
 - ${CREATIVE_CONTEXT_POLICY}
 - 계절·시즌 맥락은 위 제작 날짜와 맞아야 한다. 유행 표현은 모델이 의미와 사용 맥락을 확실히 아는 경우에만 사용하고, 모르는 신조어를 지어내지 않는다.
 - 창작 맥락은 상품명을 꾸미는 계절 단어 하나로 끝내지 말고, 소비자가 실제로 겪는 질문·선택·먹는 순간·선물 상황·유행과의 비교처럼 문장 안에서 역할을 갖게 한다. 상품과 연결이 억지스럽거나 소비자가 관계를 추측해야 하면 naturalness 오류로 본다.
@@ -1008,6 +1258,9 @@ ${sheetClaimPolicy(input.truth)}
 상품 사실:
 ${JSON.stringify({ productName: shortProductIdentity(input.truth), facts: factsForPlanning(input.truth), productConstraints: input.truth.productCopyConstraints || [] }, null, 2)}
 
+6장 CreativePremise 초안(역할 수를 맞추지 말고 레퍼런스 원문에 더 자연스러운 현재 v2 kind로 바꿀 수 있다. productBridge와 supportingFactIds는 바꾸지 않는다):
+${JSON.stringify(input.references.map((reference, index) => ({ resultCode: `H${String(index + 1).padStart(2, "0")}`, referenceId: reference.id, creativePremise: input.premiseSeeds[index] })), null, 2)}
+
 레퍼런스:
 ${JSON.stringify(input.references.map((reference, index) => ({ resultCode: `H${String(index + 1).padStart(2, "0")}`, referenceId: reference.id, layoutFamily: reference.layoutFamily, textDensity: reference.textDensity, compositionType: reference.compositionType, productSlotCount: reference.productSlotCount, semanticComparison: referenceRequiresComparisonSemantics(reference), rawText: reference.nativeCopy?.useForCopyAdaptation === false ? "" : reference.nativeCopy?.rawText || "", rawLines: reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.rawLines || [], textRegions: reference.nativeCopy?.useForCopyAdaptation === false ? [] : reference.nativeCopy?.textRegions || [] })), null, 2)}
 
@@ -1024,7 +1277,7 @@ function profilePrompt(references: NativeAdReference[]) {
 }
 
 function criticPrompt(input: { truth: ProductTruth; profiles: ReferenceCopyProfile[]; plans: ReferenceAdaptedCopyPlan[]; copyGuide?: LoadedCopyGuide | null }) {
-  return `아래 6개 한국 광고 문구를 한 번에 독립 검수한다. 새 문구를 만들지 말고 점수와 오류만 반환한다.\n창작 맥락 허용 규칙: ${CREATIVE_CONTEXT_POLICY} 따라서 자연스럽게 연결된 계절·시즌·유행·밈·사용 상황이 ProductTruth에 없다는 이유만으로 factualSafety를 감점하거나 오류로 판정하지 않는다.\n${sheetClaimPolicy(input.truth)}\n업체별 문구 품질 기준:\n${copyGuidePromptBlock(input.copyGuide)}\n검수 기준: 자연스러운 한국어, 업체별 가이드에 맞는 판매 강도와 최소 7/10 문장력, referenceRawCopy/referenceRawLines의 줄 수·기호·구어체와 수사 의도 보존, source-brand/remove를 제외한 원본 문구 블록과 정보 밀도 보존, 질문→대답·문제→해결·비교→결론·경험→추천 같은 줄 사이 관계 보존, 질문·반전·비교·문제 제기·긴급성 같은 헤드라인 판매 강도 보존, 상품의 사실 주장만 ProductTruth 안에 있는지, ProductTruth 밖 수치·혜택·효능 금지, 후기 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터 금지, 장면과 문구의 일치, 여섯 결과의 의미 중복 억제. ProductTruth에 승인된 vendor-research fact가 있으면 그 수치·효능·사용 상황은 정당한 근거이며 강하게 썼다는 이유만으로 감점하지 않는다. source-brand/remove 슬롯은 빈 targetText가 정답이며 현재 상품명·브랜드명으로 채우거나 새 로고 문구로 바꾸면 치명 오류다. 원문 어순을 기계적으로 유지하는 것보다 현재 상품 문장의 주어·서술어·조사·수식 관계·완결성이 우선이다. adaptedLines를 줄바꿈 없이 이어 읽어도 하나의 자연스러운 소비자 문장이 되어야 한다. 사람 주어를 추석·명절·가격·상품 같은 무생물 명사로 단순 치환하거나, 연결 조사·쉼표에서 문장이 끊기거나, 소비자가 의미를 추측해야 하면 naturalness 치명 오류다. ‘명절 메뉴 없더니...’처럼 상황과 주체가 빠진 문구, 계절 단어와 범용 판매어를 이어 붙인 문구도 naturalness 실패다. 처음 보는 소비자가 1초 안에 누가 어떤 상황에서 무엇을 말하는지 이해할 수 있어야 한다. ‘명절 갈비, 언제 손질해요...’, ‘명절 음식 언제 만들어요...’처럼 실제 질문·고민 장면으로 재구성한 문장은 좋은 방향이다. ‘먹어본 사람은 계속 달라고 졸라요’ 같은 반응·후기 문구는 ProductTruth에 후기 근거가 있을 때만 factualSafety를 통과시킨다. 강한 원문 헤드라인을 단순 상품명으로 바꾸거나, 레퍼런스 문장 관계를 버리고 상품 스펙 목록으로 바꾸거나, 동일 상품명·중량을 여러 블록에 반복하거나, 근거 없는 가격·혜택 슬롯을 빈칸으로 지우거나, 전체 문구량을 과도하게 줄이면 referenceFit 실패다. 원문의 말투와 수사 의도를 자연스럽게 보존한 사실 자체는 오류가 아니다. valid는 naturalness ${NATURALNESS_PASS_SCORE}, referenceFit ${REFERENCE_FIT_PASS_SCORE}, factualSafety 90 이상이고 치명 오류가 없을 때만 true다.\nProductTruth: ${JSON.stringify(factsForPlanning(input.truth))}\nPlans: ${JSON.stringify(input.plans)}\nJSON 스키마만 반환한다.`;
+  return `아래 6개 한국 광고 문구를 한 번에 독립 검수한다. 새 문구를 만들지 말고 점수와 오류만 반환한다.\n창작 맥락 허용 규칙: ${CREATIVE_CONTEXT_POLICY} 따라서 자연스럽게 연결된 계절·시즌·유행·밈·사용 상황이 ProductTruth에 없다는 이유만으로 factualSafety를 감점하거나 오류로 판정하지 않는다.\nCreativePremise 검수 규칙: creativePremise는 레퍼런스 구조를 대체하는 새 청사진이나 인물 세계관이 아니라 그 구조 안에서 사용할 가벼운 소비자 말투 방향이다. 여섯 장에 역할별 장수를 강제하지 않는다. everyday-relationship은 익숙한 관계 또는 생활 주체 하나와 바로 이해되는 장면 하나면 충분하며 직업·경력·성격·시대 배경을 덧붙이면 naturalness 실패다. everyday-question-answer는 실제 소비자가 할 법한 짧은 질문과 짧은 해결을 유지한다. obvious-ad-metaphor는 ‘임금님도 감동할’, ‘오늘 밥상의 주인공’처럼 명백한 비유만 허용하고 실제 이력·인증·전문가 보증처럼 들리면 factualSafety 실패다. ‘수라간 감별관’, ‘상품 큐레이터’, ‘구매 담당’, ‘저녁밥 총무’, ‘욕실 집사’와 상품 1인칭 화자는 naturalness 실패다. usp-focus는 하나의 구체 USP가, comparison-benefit은 같은 상품군의 익명 일반 대안→현재 상품 이점이 보여야 한다. 의료·알레르기·전문가 보증·실제 고객 증언처럼 오인되는 설정은 factualSafety 실패다. ProductTruth 상품 사실은 supportingFactIds 안에서만 쓰되 '가상', '상황극', 'ProductTruth' 같은 내부어는 광고 문구에 노출하지 않는다.\n${sheetClaimPolicy(input.truth)}\n최종 상품 카테고리: ${resolveProductCopyDomain(input.truth.product)}. 상세페이지 원료명에 과일·먹거리 단어가 있어도 바디워시·샤워젤·화장품을 간식이나 음식처럼 말하면 '상품 카테고리 의미 충돌' 치명 오류다. 반대로 실제 식품을 피부·샤워용 제품처럼 말해도 같은 오류다.\n현재 상품에서 미리 정리된 광고 문구 후보:\n${vendorCopyExamplePromptBlock(input.truth)}\n업체별 문구 품질 기준:\n${copyGuidePromptBlock(input.copyGuide)}\n검수 기준: 자연스러운 한국어, 업체별 가이드에 맞는 판매 강도와 최소 7/10 문장력, referenceRawCopy/referenceRawLines의 줄 수·기호·구어체와 수사 의도 보존, source-brand/remove를 제외한 원본 문구 블록과 정보 밀도 보존, 질문→대답·문제→해결·비교→결론·경험→추천 같은 줄 사이 관계 보존, 질문·반전·비교·문제 제기·긴급성 같은 헤드라인 판매 강도 보존, 상품의 사실 주장만 ProductTruth 안에 있는지, ProductTruth 밖 수치·혜택·효능 금지, 후기 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터 금지, 장면과 문구의 일치, 여섯 결과의 의미 중복 억제. 상품의 구체 USP·식감/사용감·원료·구성·사용 순간이 업체 업력·순위·수상보다 우선이다. 업체 실적은 6장 중 최대 1장의 proof/badge에만 쓰고 현재 업체·브랜드 주체와 평가 분야를 명시해야 하며 상품 USP와 한 문구 블록에 합치면 치명 오류다. '한국 1위 국가대표'처럼 주체·범위가 없는 조각도 치명 오류다. ProductTruth에 승인된 vendor-research fact가 있으면 그 수치·효능·사용 상황은 정당한 근거이며 강하게 썼다는 이유만으로 감점하지 않는다. source-brand/remove 슬롯은 빈 targetText가 정답이며 현재 상품명·브랜드명으로 채우거나 새 로고 문구로 바꾸면 치명 오류다. 원문 어순을 기계적으로 유지하는 것보다 현재 상품 문장의 주어·서술어·조사·수식 관계·완결성이 우선이다. adaptedLines를 줄바꿈 없이 이어 읽어도 하나의 자연스러운 소비자 문장이 되어야 한다. 사람 주어를 추석·명절·가격·상품 같은 무생물 명사로 단순 치환하거나, 연결 조사·쉼표에서 문장이 끊기거나, 소비자가 의미를 추측해야 하면 naturalness 치명 오류다. ‘명절 메뉴 없더니...’처럼 상황과 주체가 빠진 문구, 계절 단어와 범용 판매어를 이어 붙인 문구도 naturalness 실패다. 처음 보는 소비자가 1초 안에 상황과 제안을 이해할 수 있어야 한다. ‘고기 없이는 못 사는 울 아버지.. 오늘은 이거 드세요’, ‘아침마다 고기 사러 마장동 가세요? 여기서 그냥 시켜요’, ‘임금님도 감동할 진짜 특급한우’처럼 관계 하나·생활 질문 하나·명백한 비유 하나로 끝나는 문장이 좋은 방향이다. 예문을 다른 상품에 그대로 복사하거나 확인되지 않은 특급·등급 사실로 확장하지 않는다. ‘먹어본 사람은 계속 달라고 졸라요’ 같은 반응·후기 문구는 ProductTruth에 후기 근거가 있을 때만 factualSafety를 통과시킨다. 강한 원문 헤드라인을 단순 상품명으로 바꾸거나, 레퍼런스 문장 관계를 버리고 상품 스펙 목록으로 바꾸거나, 동일 상품명·중량을 여러 블록에 반복하거나, 근거 없는 가격·혜택 슬롯을 빈칸으로 지우거나, 전체 문구량을 과도하게 줄이면 referenceFit 실패다. 원문의 말투와 수사 의도를 자연스럽게 보존한 사실 자체는 오류가 아니다. valid는 naturalness ${NATURALNESS_PASS_SCORE}, referenceFit ${REFERENCE_FIT_PASS_SCORE}, factualSafety 90 이상이고 치명 오류가 없을 때만 true다.\nProductTruth: ${JSON.stringify(factsForPlanning(input.truth))}\nPlans: ${JSON.stringify(input.plans)}\nJSON 스키마만 반환한다.`;
 }
 
 async function runCodexJson<T>(prompt: string, outputSchema: object) {
@@ -1086,6 +1339,41 @@ export async function prewarmReferenceCopyProfiles(references: NativeAdReference
   return { profiles: resolved, analyzedCount: created.filter((profile) => profile.analysisSource === "codex-local").length, fallbackCount: created.filter((profile) => profile.analysisSource === "safe-minimal").length };
 }
 
+/**
+ * 작업 생성 요청은 사용자가 누른 버튼에 즉시 응답해야 한다. AI 문구 기획은
+ * 서버 러너가 이어서 수행하고, 그 전까지는 레퍼런스 OCR 구조와 ProductTruth만
+ * 사용한 렌더 가능한 초안을 저장한다. 이 초안은 이미지 생성에 바로 사용하지
+ * 않고 referenceCopyPlanning 상태가 ready가 된 뒤에만 실행된다.
+ */
+export async function prepareReferenceAdaptedCopyScaffold(input: { truth: ProductTruth; references: NativeAdReference[] }) {
+  const profiles = await Promise.all(input.references.map(async (reference) => {
+    const profile = fallbackProfile(reference, await referenceHash(reference));
+    const raw = reference.nativeCopy?.useForCopyAdaptation === false ? "" : reference.nativeCopy?.rawText || "";
+    return {
+      ...profile,
+      tone: /ㅋㅋ|;;|\.\.|\?!|!\?/.test(raw) ? "레퍼런스 원문 구어체" : "레퍼런스 원문 말투",
+      headlineLineBudget: Math.max(1, Math.min(4, reference.nativeCopy?.textRegions.find((region) => region.role === "headline")?.lines.length || 2)),
+      supportLineBudget: Math.max(0, Math.min(5, reference.nativeCopy?.rawLines.length || 2)),
+      prohibitedLiteralPhrases: [],
+      analysisSource: reference.nativeCopy?.extractionSource === "codex-local" ? "codex-local" as const : "safe-minimal" as const,
+    };
+  }));
+  const premiseSeeds = buildImageCreativePremiseSeeds(input.truth, input.references);
+  const fallbackPlans = input.references.map((reference, index) => fallbackPlan(input.truth, reference, profiles[index], index, premiseSeeds[index]));
+  return {
+    profiles,
+    plans: ensureRenderableReferencePlans({
+      truth: input.truth,
+      references: input.references,
+      profiles,
+      plans: fallbackPlans,
+      premiseSeeds,
+    }),
+    provider: "fallback" as const,
+    warnings: ["작업을 먼저 저장하고 최신 문구 기획을 서버 대기열에서 준비합니다."],
+  };
+}
+
 export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; references: NativeAdReference[] }) {
   const copyGuide = await loadCopyGuideForProduct({
     brandName: input.truth.product.brandName,
@@ -1110,21 +1398,23 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
   const readyEntries = input.references
     .map((reference, index) => ({ reference, profile: profiles[index], index }))
     .filter(({ reference }) => isApprovedReferenceNativeCopy(reference.nativeCopy));
-  const fallbackPlans = input.references.map((reference, index) => fallbackPlan(input.truth, reference, profiles[index], index));
+  const premiseSeeds = buildImageCreativePremiseSeeds(input.truth, input.references);
+  const fallbackPlans = input.references.map((reference, index) => fallbackPlan(input.truth, reference, profiles[index], index, premiseSeeds[index]));
   if (!readyEntries.length) {
     return {
       profiles,
-      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans }),
+      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds }),
       provider: "fallback" as const,
       warnings: ["저장·자동 검증된 레퍼런스 OCR 원문이 없어 레퍼런스 구성 태그와 상품 사실로 최선 문구를 만들고 제작을 계속합니다. 제작 중 즉석 OCR은 실행하지 않았습니다."],
     };
   }
   const readyReferences = readyEntries.map(({ reference }) => reference);
   const readyProfiles = readyEntries.map(({ profile }) => profile);
+  const readyPremiseSeeds = readyEntries.map(({ index }) => premiseSeeds[index]);
   try {
     const planningWarnings: string[] = [];
-    const response = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, missingProfileIds: [], copyGuide }));
-    let readyPlans = readyEntries.map(({ reference, profile, index }) => normalizePlan(response.plans.find((plan) => plan.referenceId === reference.id), input.truth, reference, profile, index, "codex-local"));
+    const response = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, missingProfileIds: [], copyGuide }));
+    let readyPlans = readyEntries.map(({ reference, profile, index }, readyIndex) => normalizePlan(response.plans.find((plan) => plan.referenceId === reference.id), input.truth, reference, profile, index, readyPremiseSeeds[readyIndex], "codex-local"));
     try {
       readyPlans = await reviewPlans({ truth: input.truth, profiles: readyProfiles, plans: readyPlans, copyGuide });
     } catch (error) {
@@ -1140,14 +1430,14 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
     }
     // 묶음 중복·가격 반복 오류도 1회 보정 배치에 포함한다. 과거에는 보정이
     // 끝난 뒤 처음 발견되어 고칠 기회 없이 규칙 문구로 교체되던 문제를 막는다.
-    readyPlans = applyReferenceCopyGroupRules(readyPlans, input.truth);
+    readyPlans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(readyPlans, input.truth));
     const failed = readyPlans.filter((plan) => plan.validationStatus === "invalid");
     if (failed.length) {
       try {
-        const repaired = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, missingProfileIds: [], copyGuide, repairPlans: failed }));
+        const repaired = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, missingProfileIds: [], copyGuide, repairPlans: failed }));
         readyPlans = readyPlans.map((plan, readyIndex) => {
           const entry = readyEntries[readyIndex];
-          return plan.validationStatus === "invalid" ? normalizePlan(repaired.plans.find((candidate) => candidate.referenceId === plan.referenceId), input.truth, entry.reference, entry.profile, entry.index, "repaired-codex-local") : plan;
+          return plan.validationStatus === "invalid" ? normalizePlan(repaired.plans.find((candidate) => candidate.referenceId === plan.referenceId), input.truth, entry.reference, entry.profile, entry.index, readyPremiseSeeds[readyIndex], "repaired-codex-local") : plan;
         });
         const repairedReferenceIds = new Set(failed.map((plan) => plan.referenceId));
         const repairedPlans = readyPlans.filter((plan) => repairedReferenceIds.has(plan.referenceId));
@@ -1166,7 +1456,7 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
               }
             : plan);
         }
-        readyPlans = applyReferenceCopyGroupRules(readyPlans, input.truth);
+        readyPlans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(readyPlans, input.truth));
       } catch (error) {
         const message = error instanceof Error ? error.message : "문구 1회 보정에 실패했습니다.";
         readyPlans = readyPlans.map((plan) => plan.validationStatus === "invalid" ? { ...plan, validationErrors: [...plan.validationErrors, message], repairCount: 1 } : plan);
@@ -1174,20 +1464,14 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
     }
     const plannedByReference = new Map(readyPlans.map((plan) => [plan.referenceId, plan]));
     let plans = input.references.map((reference, index) => plannedByReference.get(reference.id) || fallbackPlans[index]);
-    plans = applyReferenceCopyGroupRules(plans, input.truth);
-    plans = ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans });
-    // AI 보정 실패 항목을 fallback으로 바꾼 뒤에도 6장 가격·핵심 문구 반복을
-    // 다시 검사한다. 제작은 계속하지만 최종 계획과 경고에 품질 상태를 남긴다.
-    plans = applyReferenceCopyGroupRules(plans, input.truth);
+    plans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(plans, input.truth));
+    // AI 보정 실패 상태는 결과의 품질 경고로 보존한다. 이미지 실행 단계는
+    // 사실상 안전하고 편집 가능한 계획이면 우선 생성하고, 빈 슬롯·사실 오류가
+    // 있는 계획만 ProductTruth best-effort 문구로 교체한다.
+    plans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(plans, input.truth));
     return { profiles, plans, provider: "codex-local" as const, warnings: [...planningWarnings, ...plans.flatMap((plan) => plan.validationErrors)] };
   } catch (error) {
-    const plans = ensureRenderableReferencePlans({
-      truth: input.truth,
-      references: input.references,
-      profiles,
-      plans: fallbackPlans,
-    });
-    return { profiles, plans, provider: "fallback" as const, warnings: [error instanceof Error ? error.message : "레퍼런스 문구 계획 응답이 없어 원문 구조 기반 최선 문구로 제작을 계속합니다."] };
+    return { profiles, plans: fallbackPlans, provider: "fallback" as const, warnings: [error instanceof Error ? error.message : "최신 레퍼런스 문구 계획을 준비하지 못해 이미지 생성을 시작하지 않습니다."] };
   }
 }
 
@@ -1208,7 +1492,7 @@ export function buildReferenceAdaptedCreativePlan(input: { truth: ProductTruth; 
       offer: plan.offer,
       cta: plan.cta,
       audience: input.truth.product.targetCustomer || "상품 고객",
-      sceneIntent: `선택된 레퍼런스 ${reference.id}의 구도와 문구 구조를 유지한 상품 교체 소재`,
+      sceneIntent: `선택된 레퍼런스 ${reference.id}의 구도와 문구 구조 안에서 ${plan.creativePremise?.situation || "현재 상품 사용 순간"}을 표현한 상품 교체 소재`,
       factIds: plan.factIds,
       numericTokens: extractNumericTokens([plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" ")),
       hookCode: plan.resultCode,

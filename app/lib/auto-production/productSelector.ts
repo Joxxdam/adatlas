@@ -31,7 +31,10 @@ export function eligibleAutoProductionCandidates(candidates: AutoProductionProdu
   const identityKeys = new Set<string>();
   return candidates.filter((candidate) => {
     if (!candidate.productUrl || !candidate.imageUrl || candidate.soldOut) return false;
-    if (candidate.imageVerificationStatus === "rejected" || candidate.imageVerificationStatus === "needs-review") return false;
+    // `needs-review`는 상품 이미지가 없는 상태가 아니라, 세트 전체 구성처럼
+    // 보조 확인이 필요한 상태다. 실제 상품으로 판별된 대표 이미지가 한 장이라도
+    // 있으면 경고를 남기고 제작을 계속한다. 완전히 쓸 수 없는 `rejected`만 제외한다.
+    if (candidate.imageVerificationStatus === "rejected") return false;
     if (!candidate.productInfo.verifiedBenefits?.length && !candidate.productInfo.mainBenefit) return false;
     if ([candidate.id, candidate.externalId, candidate.productCode, candidate.sku].some((value) => Boolean(value && config.excludedProductIds.includes(value)))) return false;
     if (config.excludedCategories.some((category) => candidate.category.includes(category))) return false;

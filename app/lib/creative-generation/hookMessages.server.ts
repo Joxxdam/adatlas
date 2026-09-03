@@ -235,7 +235,7 @@ function fallbackCopy(truth: ProductTruth, hookType: string, fact: ProductFact |
     "packaged-food": "바쁜 아침, 뭘 챙길지 고민이라면",
     agriculture: "제철 과일, 맛과 가격이 고민이라면",
     fashion: "출근룩과 주말룩이 고민이라면",
-    "personal-care": targetNeed.includes("운동") ? "운동 후 샤워, 개운함이 아쉽다면" : "샤워 뒤 개운함이 아쉽다면",
+    "personal-care": targetNeed.includes("운동") ? "운동 후, 상쾌한 샤워가 필요할 때" : "샤워로 기분을 바꾸고 싶을 때",
     "household-goods": "좁은 공간, 수납이 늘 고민이라면",
     "generic-commerce": targetNeed ? `${targetNeed}가 고민이라면` : "고르는 기준이 필요하다면",
   };

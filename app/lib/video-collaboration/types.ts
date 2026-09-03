@@ -26,6 +26,7 @@ export const VIDEO_HOOK_TYPES = [
   "seasonal-situation",
   "myth-busting",
   "user-monologue",
+  "product-self-introduction",
 ] as const;
 
 export type VideoHookType = (typeof VIDEO_HOOK_TYPES)[number];
@@ -58,6 +59,8 @@ export const VIDEO_CONCEPT_FORMATS = [
 export type VideoConceptFormat = (typeof VIDEO_CONCEPT_FORMATS)[number];
 
 export const VIDEO_CONCEPT_ARCHETYPES = [
+  // These IDs are persisted in existing projects. Keep them stable while the
+  // user-facing meanings follow the current story-mechanism taxonomy below.
   "parody",
   "real-review",
   "usp-focus",
@@ -66,6 +69,7 @@ export const VIDEO_CONCEPT_ARCHETYPES = [
 export type VideoConceptArchetype = (typeof VIDEO_CONCEPT_ARCHETYPES)[number];
 
 export const VIDEO_PARODY_GENRES = [
+  "historical-world-parody",
   "price-negotiation",
   "audition-interview",
   "news-report",
@@ -87,29 +91,31 @@ export const VIDEO_CONCEPT_ARCHETYPE_OPTIONS: Array<{
 }> = [
   {
     id: "parody",
-    label: "사건·상황극형",
-    description: "상품과 최근 제작 이력에 맞는 예능·상황극 장르를 골라 사건과 갈등으로 시작합니다.",
+    label: "특정 인물·세계관형",
+    description: "기억 가능한 인물과 시대·장소에서 벌어진 일을 한 명의 화자가 시청자에게 들려줍니다.",
     direction:
-      "특정 작품·대사·인물은 복제하지 않는다. 서버가 선택한 하나의 세부 장르만 사용하고 최근 사용한 장르를 반복하지 않는다.",
+      "관계·직업·지역·습관이 구체적인 인물과 한 장면이 떠오르는 사회·시대 배경을 만든다. 인물끼리 주고받는 드라마 대본보다 한 명의 화자가 시청자에게 그 사건을 구어체로 전하는 방식을 기본으로 한다. 특정 작품·대사·인물은 복제하지 않는다.",
   },
   {
     id: "real-review",
-    label: "리얼 사용·후기형",
-    description: "소비자의 의심과 실제 사용 상황, 솔직한 반응을 중심으로 전개합니다.",
-    direction: "실존 후기인 것처럼 꾸미지 않고 광고용 UGC 상황극임이 자연스럽게 드러나게 한다.",
+    label: "관계·생활 경험 전달형",
+    description: "아버지·배우자·친구처럼 구체적인 주변 인물에게 벌어진 일을 화자가 시청자에게 제보하듯 전달합니다.",
+    direction:
+      "가족끼리 긴 대사를 주고받지 않는다. ‘아니 여러분, 명절마다 고깃값 비교에 신나시는 저희 아버지가 발견한 곳인데요’처럼 주 화자가 카메라 너머 시청자에게 관계·습관·발견·직접 써본 결과를 이어 말한다. ‘팀장님, 진짜 이거 싸게 팔아요?’처럼 팀장·사장·직원의 업무 관계 자체가 훅인 경우에만 짧은 문답을 1~2회 허용한다.",
   },
   {
     id: "usp-focus",
-    label: "USP 집중형",
-    description: "확인된 수치·원료·산지·제조방식·구성 중 가장 강한 하나를 장면으로 증명합니다.",
+    label: "비교·실험·발견형",
+    description: "블라인드 테스트, 예상 밖 비교, 추적과 발견으로 상품의 차이를 눈앞에서 확인합니다.",
     direction:
-      "특징을 나열하지 않고 하나의 질문이나 의외의 사실에서 출발해 검증 근거를 시각화한다.",
+      "관련 없는 경쟁 상품을 세우거나 검증되지 않은 우열을 단정하지 않는다. 하나의 질문·실험·발견에서 출발해 확인된 수치·원료·공정·구성을 관찰 가능한 장면으로 증명한다.",
   },
   {
     id: "secret-benefit",
-    label: "시크릿 혜택형",
-    description: "확인된 가격·구성·배송·증정 혜택을 협상이나 공개 사건처럼 풀어냅니다.",
-    direction: "확인된 혜택이 없으면 임의 생성하지 말고 정보 부족 상태를 명시한다.",
+    label: "상품 의인화·비밀 공개형",
+    description: "상품이 ‘나 ○○인데!’라고 직접 말하거나, 숨겨진 사용 이유와 강한 사실을 단계적으로 공개합니다.",
+    direction:
+      "가격 혜택의 유무와 관계없이 상품의 정체·오해·쓰임·강한 사실을 이야기로 만든다. 상품 1인칭이면 시점을 끝까지 유지하고, 비밀 공개형이면 궁금증 뒤에 검증된 사실만 보상으로 공개한다.",
   },
 ];
 
@@ -455,7 +461,7 @@ export type VideoConcept = {
   cta: string;
   productionCautions: string[];
   materialCode: string;
-  generationSource: "openai" | "codex-local" | "grounded-rules";
+  generationSource: "openai" | "codex-local";
   generationWarnings: string[];
   revision: number;
   createdAt: string;
@@ -488,8 +494,35 @@ export type VideoConcept = {
   targetCallout?: string;
   benefitAvailability?: "verified" | "insufficient";
   blueprintSelection?: VideoPlanningBlueprintSelection;
-  /** 사건·상황극형에서 자동 선택되어 요약과 상세 대본을 끝까지 고정하는 세부 장르. */
+  /** 특정 인물·세계관형에서 자동 선택되어 요약과 상세 대본을 끝까지 고정하는 세부 장르. */
   parodyGenre?: VideoParodyGenre;
+  /** 이름·관계·직업·습관·경력 중 두 가지 이상이 드러나는 기억 가능한 창작 인물. */
+  distinctiveCharacter?: string;
+  /** 현재 생활 또는 과거·미래 시대를 포함한 구체적인 장소와 사회적 배경. */
+  socialWorld?: string;
+  /** 상품이 등장하기 전에 인물과 배경에서 실제로 벌어지는 한 가지 창작 사건. */
+  storyTrigger?: string;
+  /** 창작 사건을 상세페이지의 검증된 USP 두세 가지로 설득하는 연결 방식. */
+  truthBridge?: string;
+  /** 상황극 설정과 검증된 상품 사실을 제작 과정에서 혼동하지 않기 위한 내부 경계. */
+  dramatizationBoundary?: string;
+};
+
+export type VideoConceptSlotStatus = "pending" | "generating" | "ready" | "failed";
+
+/**
+ * Four fixed summary slots let a project expose valid concepts immediately
+ * without pretending that a failed archetype is a completed concept.
+ * The actual ready payload remains in `project.concepts` for backwards
+ * compatibility with selection, detailed-script and production flows.
+ */
+export type VideoConceptSlot = {
+  archetype: VideoConceptArchetype;
+  status: VideoConceptSlotStatus;
+  conceptId?: string;
+  failure?: VideoGenerationFailure;
+  attempts: number;
+  updatedAt: string;
 };
 
 export type VideoScriptRevision = {
@@ -582,7 +615,12 @@ export type VideoProject = {
   aspectRatio?: "9:16";
   creativeStyle?: VideoCreativeStyle;
   conceptFormat?: VideoConceptFormat;
-  planningMode?: "legacy" | "four-concepts";
+  planningMode?: "four-concepts";
+  videoPlanningEngineVersion?:
+    | "story-mechanism-v4"
+    | "reference-dialogue-v3"
+    | "specific-world-v2"
+    | "legacy";
   durationMode?: VideoDurationMode;
   advancedTarget?: string;
   advancedTone?: string;
@@ -599,6 +637,7 @@ export type VideoProject = {
   brandGuideline: BrandGuideline;
   status: VideoProjectStatus;
   concepts: VideoConcept[];
+  conceptSlots?: VideoConceptSlot[];
   hookCandidates?: VideoHookCandidate[];
   pipelineProgress?: VideoPipelineProgress[];
   selectedConceptId?: string;
@@ -654,7 +693,6 @@ export type CreateVideoProjectInput = Pick<
   | "aspectRatio"
   | "creativeStyle"
   | "conceptFormat"
-  | "planningMode"
   | "durationMode"
   | "advancedTarget"
   | "advancedTone"

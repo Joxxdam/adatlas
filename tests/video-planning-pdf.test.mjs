@@ -13,6 +13,11 @@ function fixture() {
     openingHook: "첫 자막 <확인>",
     centralIncident: "선물 상자를 여는 사건",
     keyAppeal: "실제 상품 구성",
+    distinctiveCharacter: "명절마다 선물 상자의 구성을 먼저 세는 큰이모",
+    socialWorld: "1990년대 명절 전날 네 식구가 모인 거실",
+    storyTrigger: "큰이모가 올해 선물 상자를 열고 구성품을 하나씩 세기 시작한다",
+    truthBridge: "확인된 실제 상품 구성으로 큰이모의 선택 기준을 설득한다",
+    dramatizationBoundary: "큰이모와 명절 사건은 창작 상황극이며 상품 구성만 검증된 사실이다",
     speakerPointOfView: "구매자 시점",
     targetCallout: "선물 고르는 분들",
     coreTarget: "선물 구매자",
@@ -51,6 +56,8 @@ test("영상 기획 PDF HTML은 한글 자막·장면·촬영 정보를 안전�
   assert.match(html, /이 구성, 잠깐 보세요/);
   assert.match(html, /상자 정면 클로즈업/);
   assert.match(html, /첫 자막 &lt;확인&gt;/);
+  assert.match(html, /1990년대 명절 전날/);
+  assert.match(html, /창작 상황극이며 상품 구성만 검증된 사실/);
   assert.doesNotMatch(html, /첫 자막 <확인>/);
 });
 

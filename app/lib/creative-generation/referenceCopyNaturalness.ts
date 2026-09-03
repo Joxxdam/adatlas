@@ -15,6 +15,9 @@ const CORRUPTED_RESEARCH_WORD = /(?:소거됨|소거된|소거한|소거되는)/
 const AMBIGUOUS_STANDALONE_REACTION = /^(?:향|맛|느낌|사용감|보습|상쾌함)\s*그대로(?:네요|예요|입니다|다)[.!?~]*$/u;
 const SINGLE_VOLUME_AS_COMPOSITION = /^총\s*\d[\d,.]*\s*(?:ml|mL|l|L|g|kg)\s*구성[.!?~]*$/u;
 const RESEARCH_STYLE_HEADLINE = /(?:뉘앙스가\s*섞인|선호하는\s*(?:사람|분)|열을\s*가하지\s*않고|어울리는\s*방향)/u;
+const ORPHANED_FACT_FRAGMENT = /^(?:기로|기|으로|로)\s*[,，]?\s*(?:직접\s*)?(?:느껴|만나|경험|확인)(?:보세요|해보세요|하세요|해요)?[.!?~]*$/u;
+const PLANNING_ROLE_PERSONA = /수라간\s*감별관|상품\s*큐레이터|욕실\s*집사|까다로운\s*구매자|구매\s*담당|선택\s*담당|저녁밥\s*총무|메뉴\s*총무|간식\s*담당|메이크업\s*담당|조선시대\s*수라간|중세\s*유럽의\s*욕실|백화점\s*첫\s*개장|흑백영화\s*촬영장/u;
+const PRODUCT_FIRST_PERSON = /(?:^|[.!?~]\s*)(?:난|나는|내가|저는|제가)\s*[,，]?\s*(?:숙성|한우|갈비|안심|등심|고기|상품|제품|샤워젤|바디워시|크림|세럼|간식|전병|떡볶이)/u;
 
 function cleanLine(value: string | undefined) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -69,6 +72,9 @@ export function findReferenceCopyNaturalnessErrors(plan: CopyPlanLike) {
     }
     if (CORRUPTED_RESEARCH_WORD.test(target)) errors.push(`${index + 1}번째 문구에 상품 조사 원문을 잘못 변형한 단어가 포함됐습니다.`);
     if (RESEARCH_REPORT_ENDING.test(target)) errors.push(`${index + 1}번째 문구가 조사 보고서 서술형으로 끝납니다. 소비자에게 직접 말하는 광고 문장으로 바꿔야 합니다.`);
+    if (ORPHANED_FACT_FRAGMENT.test(target)) errors.push(`${index + 1}번째 문구가 상품 사실의 조사·어미만 남은 문장 조각입니다.`);
+    if (PLANNING_ROLE_PERSONA.test(target)) errors.push(`${index + 1}번째 문구에 소비자가 이해할 필요 없는 직업·세계관형 기획 인물이 포함됐습니다.`);
+    if (PRODUCT_FIRST_PERSON.test(target)) errors.push(`${index + 1}번째 문구가 상품을 사람처럼 말하게 하는 부자연스러운 1인칭 문장입니다.`);
     if (AMBIGUOUS_STANDALONE_REACTION.test(target)) errors.push(`${index + 1}번째 문구의 '그대로'가 무엇을 가리키는지 알 수 없습니다.`);
     if (SINGLE_VOLUME_AS_COMPOSITION.test(target)) errors.push(`${index + 1}번째 문구가 단일 용량을 세트 구성처럼 표현했습니다. 용량은 작은 근거로만 사용해야 합니다.`);
     if (/간편해결/u.test(target)) {
