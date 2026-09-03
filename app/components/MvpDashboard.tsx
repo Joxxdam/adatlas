@@ -65,9 +65,11 @@ type RecentProductSummary = {
 
 const recentProductsStorageKey = "adatlas-recent-products";
 const productAnalysisStorageKeyPrefix = "adatlas-product-analysis:";
+const productAnalysisStorageVersion = "product-analysis-v2-product-source-safety";
 const legacyManualProductionToolsAvailable = false;
 
 type StoredProductAnalysis = {
+  version: string;
   productInfo: ProductInfoForPrompt;
   selectedAdvertiserName: string;
   generationPlanConfirmed: boolean;
@@ -96,10 +98,11 @@ function readStoredProductAnalysis(productUrl: string): StoredProductAnalysis | 
     const raw = window.localStorage.getItem(productAnalysisStorageKey(productUrl));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredProductAnalysis>;
-    if (!parsed.productInfo?.productName || normalizeStoredProductUrl(parsed.productInfo.landingUrl || "") !== normalizeStoredProductUrl(productUrl)) {
+    if (parsed.version !== productAnalysisStorageVersion || !parsed.productInfo?.productName || normalizeStoredProductUrl(parsed.productInfo.landingUrl || "") !== normalizeStoredProductUrl(productUrl)) {
       return null;
     }
     return {
+      version: parsed.version,
       productInfo: parsed.productInfo,
       selectedAdvertiserName: parsed.selectedAdvertiserName || "",
       generationPlanConfirmed: Boolean(parsed.generationPlanConfirmed),
@@ -1163,6 +1166,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
     if (!currentProductLoaded || !productInfo.productName.trim()) return;
     try {
       const stored: StoredProductAnalysis = {
+        version: productAnalysisStorageVersion,
         productInfo: {
           ...productInfo,
           landingUrl: lastLoadedProductUrl,

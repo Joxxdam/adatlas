@@ -67,5 +67,9 @@ export type CreativeArchiveEntry = {
 export type CreativeArchiveResponse = {
   ok: true;
   entries: CreativeArchiveEntry[];
+  total?: number;
+  offset?: number;
+  limit?: number;
+  hasMore?: boolean;
   generatedAt: string;
 };

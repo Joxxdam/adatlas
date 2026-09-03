@@ -379,6 +379,8 @@ export type ProductImageCandidate = {
   score: number;
   reason?: string;
   alt?: string;
+  /** 이미지 태그 주변의 공개 상세페이지 문맥입니다. 상품 사진과 판매자 배너를 구분할 때만 사용합니다. */
+  context?: string;
   width?: number;
   height?: number;
   /** HTML 안에서의 원래 위치입니다. 상세페이지 앞부분만 OCR하는 편향을 막는 데 사용합니다. */

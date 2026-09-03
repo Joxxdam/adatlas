@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteCreativeArchiveEntries, listCreativeArchiveEntries } from "../../lib/creative-archive/service.server";
+import { deleteCreativeArchiveEntries, listCreativeArchiveEntries, listCreativeArchivePage } from "../../lib/creative-archive/service.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../lib/creative-generation/localGenerationAccess.server";
 
 export const runtime = "nodejs";
@@ -8,8 +8,17 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     verifyLocalGenerationAccess(request);
+    const url = new URL(request.url);
+    const paginated = url.searchParams.has("limit") || url.searchParams.has("offset");
+    if (paginated) {
+      const page = await listCreativeArchivePage({
+        offset: Number(url.searchParams.get("offset") || 0),
+        limit: Number(url.searchParams.get("limit") || 48),
+      });
+      return NextResponse.json({ ok: true, ...page, generatedAt: new Date().toISOString() });
+    }
     const entries = await listCreativeArchiveEntries();
-    return NextResponse.json({ ok: true, entries, generatedAt: new Date().toISOString() });
+    return NextResponse.json({ ok: true, entries, total: entries.length, offset: 0, limit: entries.length, hasMore: false, generatedAt: new Date().toISOString() });
   } catch (error) {
     return NextResponse.json(
       {

@@ -619,7 +619,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           !options.replaceConceptId &&
           (concepts.length !== 4 || !validateConceptDiversity(concepts).valid)
         ) {
-          throw new Error("특정 인물·세계관·관계 경험담·비교·발견·상품 의인화의 서로 다른 기획안 4개가 필요합니다.");
+          throw new Error("생활 사건·가족 반응·직접 확인·구매 고민의 서로 다른 기획안 4개가 필요합니다.");
         }
         if (options.replaceConceptId) {
           const index = project.concepts.findIndex(
@@ -781,7 +781,7 @@ export function createVideoProjectRepository(options: { dataDirectory?: string }
           (project.concepts.length !== VIDEO_CONCEPT_ARCHETYPES.length ||
             !validateConceptDiversity(project.concepts).valid)
         ) {
-          throw new Error("특정 인물·세계관·관계 경험담·비교·발견·상품 의인화의 서로 다른 기획안 4개가 필요합니다.");
+          throw new Error("생활 사건·가족 반응·직접 확인·구매 고민의 서로 다른 기획안 4개가 필요합니다.");
         }
         project.conceptSlots = VIDEO_CONCEPT_ARCHETYPES.map((archetype) => {
           const previous = project.conceptSlots?.find((slot) => slot.archetype === archetype);

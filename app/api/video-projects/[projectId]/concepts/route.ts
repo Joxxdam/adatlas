@@ -139,6 +139,7 @@ export async function POST(request: Request, context: { params: Promise<{ projec
             excludedContent: project.excludedContent,
             requestedArchetype,
             recentParodyGenres,
+            selectionSeed: project.id,
             onConceptProgress: requestedArchetype
               ? undefined
               : async ({ concepts, unresolvedArchetypes }) => {

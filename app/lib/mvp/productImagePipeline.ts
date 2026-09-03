@@ -2,6 +2,30 @@ import type { ProductExtractionScope, ProductRepresentation, ProductRepresentati
 
 export const PRODUCT_IMAGE_PIPELINE_VERSION = "sales-unit-v1";
 
+const merchantCredentialPatterns = [
+  /브랜드\s*(?:파워|대상)/i,
+  /(?:쇼핑몰|몰)\s*(?:브랜드\s*)?(?:파워\s*)?1위/i,
+  /(?:국가대표|업계\s*1위|전국\s*1위)/i,
+  /(?:수상|선정|인증)\s*(?:업체|기업|브랜드)?/i,
+  /(?:총\s*)?(?:회원|소비자|리뷰|판매량|누적\s*판매)/i,
+  /(?:판매|매출)[^\n]{0,30}(?:신화|돌파)/i,
+  /(?:감사패|트로피|메달|award)/i,
+];
+
+/**
+ * 상세페이지 상단의 수상·회원·누적판매 배너를 실제 상품 사진으로 오인하지
+ * 않게 합니다. 단일 단어만으로 제외하면 상품 사진 주변 설명까지 막을 수 있어
+ * 서로 다른 판매자 실적 단서가 두 개 이상인 경우에만 적용합니다.
+ */
+export function isMerchantCredentialImageCandidate(candidate: { url: string; alt?: string; reason?: string; context?: string }) {
+  const context = `${candidate.alt || ""} ${candidate.context || ""}`.replace(/\s+/g, " ");
+  const explicitAssetLabel = /(?:merchant|credential|award|trophy|medal|brand[-_ ]?(?:power|award)|수상|인증|브랜드[-_ ]?(?:파워|대상))/i.test(
+    `${candidate.url} ${candidate.alt || ""} ${candidate.reason || ""}`
+  );
+  const cueCount = merchantCredentialPatterns.reduce((count, pattern) => count + Number(pattern.test(context)), 0);
+  return explicitAssetLabel || cueCount >= 2;
+}
+
 export function productCutoutCacheDescriptor(input: { contentHash: string; provider: string; representationType?: ProductRepresentationType; extractionScope?: ProductExtractionScope; selectedObjectIds?: string[]; cropBox?: { x: number; y: number; width: number; height: number }; cleanupStrength?: string }) {
   return JSON.stringify({
     source: input.contentHash,

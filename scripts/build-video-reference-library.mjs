@@ -37,6 +37,15 @@ const sources = [
   },
 ];
 
+const relationshipNotes = {
+  "meat-video-06": "고기영상6·고기영상9: 핵심 조리·가격·도매가 본문은 같고 도입과 가족 후기만 다름",
+  "meat-video-09": "고기영상6·고기영상9: 핵심 조리·가격·도매가 본문은 같고 도입과 가족 후기만 다름",
+  "calamansi-video-04": "깔라만시4·깔라만시5: 핵심 USP·공정 본문은 같고 술자리 질문형/동창회 반전형 도입이 다름",
+  "calamansi-video-05": "깔라만시4·깔라만시5: 핵심 USP·공정 본문은 같고 술자리 질문형/동창회 반전형 도입이 다름",
+  "original-source-video-01": "오리지널소스영상1·오리지널소스영상3: 본문 구조는 같고 최종 혜택·CTA가 다름",
+  "original-source-video-03": "오리지널소스영상1·오리지널소스영상3: 본문 구조는 같고 최종 혜택·CTA가 다름",
+};
+
 function section(markdown, heading) {
   const startToken = `## ${heading}`;
   const start = markdown.indexOf(startToken);
@@ -130,6 +139,9 @@ function buildReference(source) {
     sceneCount: scenes.length,
     structureAnalysis: section(markdown, "전체 구조 분석"),
     similarityAnalysis: section(markdown, "유사 영상 비교") || undefined,
+    relationshipNotes: relationshipNotes[source.slug]
+      ? [relationshipNotes[source.slug]]
+      : [],
     automationRules: numberedItems(automationSection),
     riskNotes: bulletItems(section(markdown, "사실 검증·표현 위험")),
     sourceAnalysisPath: `/data/video-planning-references/${source.slug}/source-analysis.md`,

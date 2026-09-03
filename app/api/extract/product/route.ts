@@ -581,6 +581,7 @@ function pushCandidate(
     score,
     reason,
     alt: input.alt,
+    context: input.context?.replace(/\s+/g, " ").trim().slice(0, 2400),
     width: input.width,
     height: input.height,
     pageOrder: input.order,

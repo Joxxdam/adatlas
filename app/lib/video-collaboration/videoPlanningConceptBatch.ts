@@ -251,7 +251,7 @@ export async function requestFourVideoConcepts<T extends ArchetypedConcept>(inpu
       (archetype) =>
         input.requestOne(
           archetype,
-          `첫 응답에서 누락·중복되었거나 서버 검수에서 이 ${archetype} 기획안만 부적합했습니다. 검수를 통과한 다른 유형은 그대로 보존합니다. 다른 기획안과 첫 자막·특정 인물·관계·사회 또는 시대·중심 사건·갈등·상품 등장·핵심 소구·결말·화면 스타일이 겹치지 않도록 이 유형만 다시 작성하세요. 일반 사용자·일상 공간처럼 요약하지 말고 현재 상품에만 맞는 distinctiveCharacter, socialWorld, storyTrigger, truthBridge와 창작/상품사실 경계를 모두 구체적으로 작성하세요.`,
+          `첫 응답에서 누락·중복되었거나 서버 검수에서 이 ${archetype} 기획안만 부적합했습니다. 검수를 통과한 다른 유형은 그대로 보존합니다. 다른 기획안과 첫 자막·인물·관계·장소 또는 시대·첫 사건·상품 증거 순서·결말이 겹치지 않도록 이 유형만 다시 작성하세요. 일반 사용자·일상 공간처럼 요약하지 말고 선택된 세부 장르에 맞는 distinctiveCharacter, socialWorld, storyTrigger, truthBridge와 창작 연출/상품사실 경계를 구체적으로 작성하세요. 가상의 의사 가족 추천은 허용하지만 의학적 효능·치료·보증은 만들지 마세요.`,
           preservedSnapshot
         ),
       persistEachSettledConcept ? handleSettledRepair : undefined

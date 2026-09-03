@@ -205,7 +205,8 @@ test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제�
   assert.match(runner, /isApprovedReferenceNativeCopy/);
   assert.doesNotMatch(selector, /nativeReferenceLibraryRepository\.extractNativeCopy/);
   assert.doesNotMatch(selector, /nativeCopy\?\.analysisStatus\s*===/);
-  assert.match(selector, /등록 풀 전체에서/);
+  assert.match(selector, /호환 풀/);
+  assert.match(selector, /pickCompatibleRandomItems/);
   assert.match(planner, /제작 중 즉석 OCR은 실행하지 않았습니다/);
   assert.doesNotMatch(planner, /imagePath 이미지를 직접 읽어 전사한다/);
   assert.match(planner, /isApprovedReferenceNativeCopy\(reference\.nativeCopy\)/);

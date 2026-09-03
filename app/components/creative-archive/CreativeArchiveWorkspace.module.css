@@ -1338,6 +1338,33 @@
   text-decoration: none;
 }
 
+.loadMore {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.loadMore button {
+  min-width: 220px;
+  border: 1px solid #176bd1;
+  border-radius: 12px;
+  padding: 12px 20px;
+  background: #fff;
+  color: #176bd1;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.loadMore button:hover {
+  background: #eef6ff;
+}
+
+.loadMore span {
+  color: #718198;
+  font-size: 11px;
+}
+
 @media (max-width: 1280px) {
   .brandingTargets {
     grid-template-columns: minmax(190px, 1fr) auto minmax(190px, 1fr) auto;

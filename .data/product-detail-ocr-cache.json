@@ -5106,5 +5106,151 @@
       "warnings": []
     },
     "createdAt": "2026-09-03T04:43:40.789Z"
+  },
+  {
+    "key": "a67603f95034a0f50d3589d8d316e2f18c9512a3764b5a90f61d01ba329dba0c",
+    "insight": {
+      "id": "detail-ocr-1baf1423b100",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903072752736383f4c4d9ea-0328-4171-800d-ce9d0f52262a.jpg",
+      "contentHash": "1baf1423b100c7cc250f345050f23338a567337282b3acb684d91ae3d5f50ab5",
+      "ocrText": "\"\n탑브랜드\n탐브랜드\nTOP BRAND\nTOP BRAND\n\"\n\"\n탑브랜드\n탑브렌드\nTUF BKAND\nTOP BRAND",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5818181850693442,
+      "copyFacts": [
+        "탑브랜드"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TOP BRAND",
+        "TUF BKAND"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T07:43:27.040Z"
+  },
+  {
+    "key": "77315f6393ee4294d69d00ed76c4943bbc7a529dae3e59b5a48aadbafea39bbe",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T07:43:27.079Z"
+  },
+  {
+    "key": "d5f6488996fa01a2267de1a9c3baf445c47ffc7beff0181c6a259a5eef5f4ec3",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T07:43:29.470Z"
+  },
+  {
+    "key": "57c974f6cb22fbf77c694f884bb7a12423f6bad5caff19fcc19c8272656cd8f5",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T09:10:52.626Z"
+  },
+  {
+    "key": "97e289e1b706f27f635df6bac21e5c35617acd56951d135536c06efe5764b873",
+    "insight": {
+      "id": "detail-ocr-3c3e98ad9b77",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202605240548598821245da86e77-c14c-4f60-8c2f-d5ed51a0ebfc.jpg",
+      "contentHash": "3c3e98ad9b7751fd70ff07d5d24d7c2d9a09acdcbf97f1d462adacc33e82725c",
+      "ocrText": "설록우 찰진등심 1kg 박스\n(어린소라 잡내안남)\n알등심 / 특마블 옵션 선택가능\n특등심 / 실속 도매팩\n실속가성비포\n어린소라\n잡내안남\n초위생\n가공\n손질완벽\n가성비 도매가격\n프리미엄\n설록우\n초신선\n1kg\n빠른배송\n대용량\n단골용\n1일 300팩한정\n기존가\n148,000원\n부드러움의\n파격\n49,800원\n끝판왕\n특가\n가성비 1등 상품\n3중선별 우수상품\n8 신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.648275862480032,
+      "copyFacts": [
+        "설록우 찰진등심 1kg 박스",
+        "특등심 / 실속 도매팩",
+        "148,000원",
+        "49,800원",
+        "가성비 1등 상품",
+        "3중선별 우수상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "알등심 / 특마블 옵션 선택가능",
+        "빠른배송",
+        "1일 300팩한정",
+        "부드러움의",
+        "8 신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T09:10:53.587Z"
+  },
+  {
+    "key": "4d186c2088445ee99bba559a8309d64b349d2c7e6b7843b9c5ac11ed15b512f3",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [
+        "국대한우 쇼핑몰",
+        "국대한우!",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T09:10:54.177Z"
   }
 ]

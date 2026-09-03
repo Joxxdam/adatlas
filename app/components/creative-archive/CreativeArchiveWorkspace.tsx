@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CreativeArchiveEntry, CreativeArchiveResponse } from "../../lib/creative-archive/types";
 import { advertiserLogoNeedsWhiteOutline, AI_GENERATED_IMAGE_DISCLOSURE, advertiserLogos, findAdvertiserLogo } from "../../lib/creative-generation/deliveryBranding";
 import { isArchivePerformanceEligible, prepareArchivePerformanceSelection } from "../../lib/meta/archivePerformanceSelection";
@@ -22,6 +22,8 @@ const statusLabels: Record<string, string> = {
   "quality-review": "품질 확인 필요",
   "group-review": "세트 확인 필요",
 };
+
+const ARCHIVE_RENDER_PAGE_SIZE = 48;
 
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((left, right) => left.localeCompare(right, "ko"));
@@ -249,14 +251,17 @@ function ArchiveCard({ entry, downloadSequence, selected, deletionSelected, bran
   );
 }
 
-export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: CreativeArchiveEntry[] }) {
+export function CreativeArchiveWorkspace({ initialEntries, initialTotal = initialEntries.length }: { initialEntries: CreativeArchiveEntry[]; initialTotal?: number }) {
   const [entries, setEntries] = useState(initialEntries);
+  const [archiveTotal, setArchiveTotal] = useState(initialTotal);
+  const [loadingRemaining, setLoadingRemaining] = useState(initialEntries.length < initialTotal);
+  const [displayLimit, setDisplayLimit] = useState(ARCHIVE_RENDER_PAGE_SIZE);
   const [query, setQuery] = useState("");
   const [advertiser, setAdvertiser] = useState("");
   const [product, setProduct] = useState("");
   const [hook, setHook] = useState("");
   const [referencesOnly, setReferencesOnly] = useState(false);
-  const [notice, setNotice] = useState("생성 결과를 복제하지 않고 원본 작업과 소재코드에 연결해 보관합니다.");
+  const [notice, setNotice] = useState(initialEntries.length < initialTotal ? `최근 ${initialEntries.length}개를 먼저 표시했습니다. 나머지 기록을 불러오는 중입니다.` : "생성 결과를 복제하지 않고 원본 작업과 소재코드에 연결해 보관합니다.");
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deletionIds, setDeletionIds] = useState<string[]>([]);
@@ -270,6 +275,37 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
   const [brandingApplying, setBrandingApplying] = useState(false);
   const [downloadingProductKey, setDownloadingProductKey] = useState("");
 
+  useEffect(() => {
+    if (initialEntries.length >= initialTotal) return;
+    let cancelled = false;
+    async function loadRemainingEntries() {
+      try {
+        const offsets = Array.from({ length: Math.ceil((initialTotal - initialEntries.length) / 100) }, (_, index) => initialEntries.length + index * 100);
+        const pages = await Promise.all(
+          offsets.map(async (offset) => {
+            const response = await fetch(`/api/creative-archive?offset=${offset}&limit=100`, { cache: "no-store" });
+            const payload = (await response.json()) as Partial<CreativeArchiveResponse> & { error?: string };
+            if (!response.ok || !payload.entries) throw new Error(payload.error || "추가 아카이브 기록을 불러오지 못했습니다.");
+            return payload;
+          })
+        );
+        if (cancelled) return;
+        const merged = [...initialEntries, ...pages.flatMap((page) => page.entries || [])].filter((entry, index, all) => all.findIndex((candidate) => candidate.id === entry.id) === index);
+        setEntries(merged);
+        setArchiveTotal(pages[0]?.total || initialTotal);
+        setNotice(`전체 이미지 콘텐츠 ${merged.length}개의 목록을 준비했습니다. 화면에는 최근 항목부터 표시합니다.`);
+      } catch (error) {
+        if (!cancelled) setNotice(error instanceof Error ? error.message : "추가 아카이브 기록을 불러오지 못했습니다.");
+      } finally {
+        if (!cancelled) setLoadingRemaining(false);
+      }
+    }
+    void loadRemainingEntries();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialEntries, initialTotal]);
+
   const advertisers = useMemo(() => unique(entries.map((entry) => entry.advertiserName)), [entries]);
   const products = useMemo(() => unique(entries.filter((entry) => !advertiser || entry.advertiserName === advertiser).map((entry) => entry.productName)), [advertiser, entries]);
   const hooks = useMemo(() => unique(entries.map((entry) => entry.hookCode)), [entries]);
@@ -280,24 +316,27 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       return (!normalizedQuery || haystack.includes(normalizedQuery)) && (!advertiser || entry.advertiserName === advertiser) && (!product || entry.productName === product) && (!hook || entry.hookCode === hook) && (!referencesOnly || entry.savedAsReference);
     });
   }, [advertiser, entries, hook, product, query, referencesOnly]);
+  const displayedEntries = useMemo(() => visible.slice(0, displayLimit), [displayLimit, visible]);
   const groups = useMemo(() => {
-    const grouped = new Map<string, { advertiserName: string; productName: string; entries: CreativeArchiveEntry[] }>();
+    const displayedIds = new Set(displayedEntries.map((entry) => entry.id));
+    const grouped = new Map<string, { advertiserName: string; productName: string; entries: CreativeArchiveEntry[]; displayedEntries: CreativeArchiveEntry[] }>();
     for (const entry of visible) {
       const key = `${entry.advertiserName}\u0000${entry.productName}`;
-      const current = grouped.get(key) || { advertiserName: entry.advertiserName, productName: entry.productName, entries: [] };
+      const current = grouped.get(key) || { advertiserName: entry.advertiserName, productName: entry.productName, entries: [], displayedEntries: [] };
       current.entries.push(entry);
+      if (displayedIds.has(entry.id)) current.displayedEntries.push(entry);
       grouped.set(key, current);
     }
-    return Array.from(grouped.values());
-  }, [visible]);
+    return Array.from(grouped.values()).filter((group) => group.displayedEntries.length > 0);
+  }, [displayedEntries, visible]);
   const stats = useMemo(
     () => ({
-      total: entries.length,
+      total: archiveTotal,
       references: entries.filter((entry) => entry.savedAsReference).length,
       advertisers: unique(entries.map((entry) => entry.advertiserName)).length,
       products: unique(entries.map((entry) => `${entry.advertiserName}:${entry.productName}`)).length,
     }),
-    [entries]
+    [archiveTotal, entries]
   );
   const selectedEntries = useMemo(() => selectedIds.map((id) => entries.find((entry) => entry.id === id)).filter((entry): entry is CreativeArchiveEntry => Boolean(entry)), [entries, selectedIds]);
   const performanceSelection = useMemo(() => prepareArchivePerformanceSelection(selectedEntries), [selectedEntries]);
@@ -453,6 +492,8 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       if (!response.ok || !payload.entries || !payload.deletedIds) throw new Error(payload.error || "선택한 이미지를 삭제하지 못했습니다.");
       const removed = new Set(payload.deletedIds);
       setEntries(payload.entries);
+      setArchiveTotal(payload.total || payload.entries.length);
+      setLoadingRemaining(false);
       setDeletionIds((current) => current.filter((id) => !removed.has(id)));
       setSelectedIds((current) => current.filter((id) => !removed.has(id)));
       setBrandingIds((current) => current.filter((id) => !removed.has(id)));
@@ -501,6 +542,9 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       const payload = (await response.json()) as Partial<CreativeArchiveResponse> & { error?: string };
       if (!response.ok || !payload.entries) throw new Error(payload.error || "아카이브를 새로고침하지 못했습니다.");
       setEntries(payload.entries);
+      setArchiveTotal(payload.total || payload.entries.length);
+      setLoadingRemaining(false);
+      setDisplayLimit(ARCHIVE_RENDER_PAGE_SIZE);
       const availableIds = new Set(payload.entries.map((entry) => entry.id));
       setDeletionIds((current) => current.filter((id) => availableIds.has(id)));
       setSelectedIds((current) => current.filter((id) => availableIds.has(id)));
@@ -629,7 +673,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
               ))}
             </select>
           </label>
-          <button disabled={!brandingAdvertiser || !brandingAdvertiserEntries.length} onClick={() => toggleBrandingScope(brandingAdvertiserEntries, brandingAdvertiser)} type="button">
+          <button disabled={loadingRemaining || !brandingAdvertiser || !brandingAdvertiserEntries.length} onClick={() => toggleBrandingScope(brandingAdvertiserEntries, brandingAdvertiser)} type="button">
             {brandingAdvertiser && brandingAdvertiserEntries.every((entry) => brandingIds.includes(entry.id)) ? `업체 ${brandingAdvertiserEntries.length}장 선택 해제` : `업체 ${brandingAdvertiserEntries.length}장 선택`}
           </button>
           <label>
@@ -643,7 +687,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
               ))}
             </select>
           </label>
-          <button disabled={!brandingProduct || !brandingProductEntries.length} onClick={() => toggleBrandingScope(brandingProductEntries, brandingProduct)} type="button">
+          <button disabled={loadingRemaining || !brandingProduct || !brandingProductEntries.length} onClick={() => toggleBrandingScope(brandingProductEntries, brandingProduct)} type="button">
             {brandingProduct && brandingProductEntries.every((entry) => brandingIds.includes(entry.id)) ? `상품 ${brandingProductEntries.length}장 선택 해제` : `상품 ${brandingProductEntries.length}장 선택`}
           </button>
         </div>
@@ -764,7 +808,14 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
       <section className={styles.filters} aria-label="아카이브 검색과 필터">
         <label className={styles.search}>
           <span>검색</span>
-          <input onChange={(event) => setQuery(event.target.value)} placeholder="업체·상품·소재 순번·문구·소재코드 검색" value={query} />
+          <input
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setDisplayLimit(ARCHIVE_RENDER_PAGE_SIZE);
+            }}
+            placeholder="업체·상품·소재 순번·문구·소재코드 검색"
+            value={query}
+          />
         </label>
         <label>
           <span>광고주</span>
@@ -772,6 +823,7 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
             onChange={(event) => {
               setAdvertiser(event.target.value);
               setProduct("");
+              setDisplayLimit(ARCHIVE_RENDER_PAGE_SIZE);
             }}
             value={advertiser}
           >
@@ -785,7 +837,13 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         </label>
         <label>
           <span>상품</span>
-          <select onChange={(event) => setProduct(event.target.value)} value={product}>
+          <select
+            onChange={(event) => {
+              setProduct(event.target.value);
+              setDisplayLimit(ARCHIVE_RENDER_PAGE_SIZE);
+            }}
+            value={product}
+          >
             <option value="">전체 상품</option>
             {products.map((name) => (
               <option key={name} value={name}>
@@ -796,7 +854,13 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
         </label>
         <label>
           <span>소재 순번</span>
-          <select onChange={(event) => setHook(event.target.value)} value={hook}>
+          <select
+            onChange={(event) => {
+              setHook(event.target.value);
+              setDisplayLimit(ARCHIVE_RENDER_PAGE_SIZE);
+            }}
+            value={hook}
+          >
             <option value="">전체 소재 순번</option>
             {hooks.map((name) => (
               <option key={name} value={name}>
@@ -806,18 +870,25 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
           </select>
         </label>
         <label className={styles.referenceToggle}>
-          <input checked={referencesOnly} onChange={(event) => setReferencesOnly(event.target.checked)} type="checkbox" />
+          <input
+            checked={referencesOnly}
+            onChange={(event) => {
+              setReferencesOnly(event.target.checked);
+              setDisplayLimit(ARCHIVE_RENDER_PAGE_SIZE);
+            }}
+            type="checkbox"
+          />
           <span>업체 레퍼런스만</span>
         </label>
       </section>
 
       <div className={styles.resultSummary}>
         <div>
-          <strong>{visible.length}개 콘텐츠</strong>
-          <span>{groups.length}개 업체·상품 묶음</span>
+          <strong>{loadingRemaining ? `${entries.length}/${archiveTotal}개 목록 준비 중` : `${visible.length}개 콘텐츠`}</strong>
+          <span>{displayedEntries.length}개 표시 중 · {groups.length}개 업체·상품 묶음</span>
         </div>
         <button
-          disabled={!visible.length}
+          disabled={loadingRemaining || !visible.length}
           onClick={() => {
             const visibleIds = visible.map((entry) => entry.id);
             const allSelected = visibleIds.every((id) => deletionIds.includes(id));
@@ -881,19 +952,19 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
                   <h2>{group.productName}</h2>
                 </div>
                 <div className={styles.groupActions}>
-                  <button className={styles.productZipButton} disabled={Boolean(downloadingProductKey)} onClick={() => void downloadProductZip(group.advertiserName, group.productName)} type="button">
+                  <button className={styles.productZipButton} disabled={loadingRemaining || Boolean(downloadingProductKey)} onClick={() => void downloadProductZip(group.advertiserName, group.productName)} type="button">
                     {downloadingProductKey === `${group.advertiserName}\u0000${group.productName}` ? "상품 ZIP 준비 중…" : "상품 전체 ZIP"}
                   </button>
                   <label className={styles.groupBrandingSelect}>
-                    <input checked={group.entries.filter((entry) => entry.brandingEligible).length > 0 && group.entries.filter((entry) => entry.brandingEligible).every((entry) => brandingIds.includes(entry.id))} disabled={!group.entries.some((entry) => entry.brandingEligible)} onChange={() => toggleBrandingScope(group.entries, group.productName)} type="checkbox" />
+                    <input checked={group.entries.filter((entry) => entry.brandingEligible).length > 0 && group.entries.filter((entry) => entry.brandingEligible).every((entry) => brandingIds.includes(entry.id))} disabled={loadingRemaining || !group.entries.some((entry) => entry.brandingEligible)} onChange={() => toggleBrandingScope(group.entries, group.productName)} type="checkbox" />
                     <span>로고·AI: 이 상품 전체</span>
                   </label>
                   <label className={styles.groupDeletionSelect}>
-                    <input checked={group.entries.every((entry) => deletionIds.includes(entry.id))} onChange={() => toggleGroupDeletionSelection(group.entries)} type="checkbox" />
+                    <input checked={group.entries.every((entry) => deletionIds.includes(entry.id))} disabled={loadingRemaining} onChange={() => toggleGroupDeletionSelection(group.entries)} type="checkbox" />
                     <span>이 상품 전체 선택</span>
                   </label>
                   <button
-                    disabled={deleting || !group.entries.some((entry) => deletionIds.includes(entry.id))}
+                    disabled={loadingRemaining || deleting || !group.entries.some((entry) => deletionIds.includes(entry.id))}
                     onClick={() =>
                       void deleteEntries(
                         group.entries.filter((entry) => deletionIds.includes(entry.id)).map((entry) => entry.id),
@@ -908,8 +979,8 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
                 </div>
               </header>
               <div className={styles.grid}>
-                {group.entries.map((entry, index) => (
-                  <ArchiveCard entry={entry} downloadSequence={index + 1} key={entry.id} brandingSelected={brandingIds.includes(entry.id)} deletionSelected={deletionIds.includes(entry.id)} onDelete={(target) => void deleteEntries([target.id], target.productName)} onNotice={setNotice} onPrepareDownload={prepareEntryForDownload} onReleaseTemporaryBranding={releaseTemporaryBranding} onSelect={togglePerformanceSelection} onToggleDeletion={toggleDeletionSelection} onToggleBranding={toggleBrandingSelection} onUpdate={updateEntry} previewAiDisclosure={includeAiDisclosure} previewLogo={selectedDeliveryLogo} selected={selectedIds.includes(entry.id)} />
+                {group.displayedEntries.map((entry) => (
+                  <ArchiveCard entry={entry} downloadSequence={group.entries.findIndex((candidate) => candidate.id === entry.id) + 1} key={entry.id} brandingSelected={brandingIds.includes(entry.id)} deletionSelected={deletionIds.includes(entry.id)} onDelete={(target) => void deleteEntries([target.id], target.productName)} onNotice={setNotice} onPrepareDownload={prepareEntryForDownload} onReleaseTemporaryBranding={releaseTemporaryBranding} onSelect={togglePerformanceSelection} onToggleDeletion={toggleDeletionSelection} onToggleBranding={toggleBrandingSelection} onUpdate={updateEntry} previewAiDisclosure={includeAiDisclosure} previewLogo={selectedDeliveryLogo} selected={selectedIds.includes(entry.id)} />
                 ))}
               </div>
             </section>
@@ -922,6 +993,14 @@ export function CreativeArchiveWorkspace({ initialEntries }: { initialEntries: C
           <Link href="/create-product?step=product">광고 제작으로 이동</Link>
         </section>
       )}
+      {!loadingRemaining && displayedEntries.length < visible.length ? (
+        <div className={styles.loadMore}>
+          <button onClick={() => setDisplayLimit((current) => current + ARCHIVE_RENDER_PAGE_SIZE)} type="button">
+            다음 {Math.min(ARCHIVE_RENDER_PAGE_SIZE, visible.length - displayedEntries.length)}개 더 보기
+          </button>
+          <span>전체 {visible.length}개 중 {displayedEntries.length}개를 표시했습니다.</span>
+        </div>
+      ) : null}
     </main>
   );
 }

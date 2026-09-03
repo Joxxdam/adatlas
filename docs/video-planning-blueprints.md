@@ -5,7 +5,7 @@
 ## 적용 방식
 
 1. 상품명·카테고리·USP로 뷰티, 육류, 과일·농산물, 일반 식품을 판별합니다.
-2. 패러디, 리얼 후기, USP 집중, 시크릿 혜택의 네 콘셉트마다 주 레퍼런스를 하나씩 배정합니다.
+2. 새 자동 제작은 생활 사건, 가족·지인 반응, 직접 확인·조리·사용, 구매 고민·가격 발견의 네 콘셉트마다 주 레퍼런스를 하나씩 배정합니다. 내부 ID는 과거 프로젝트 호환을 위해 유지합니다.
 3. 주 레퍼런스에서는 5단계 요약보다 저장된 전체 장면 순서와 각 장면의 자막·화면·역할·분석을 우선합니다.
 4. 보조 레퍼런스에서는 훅 또는 CTA 장치 하나만 참고합니다.
 5. 상세 장면을 만들 때 각 장면에 화면·구도, 연출, 전환, 필요 소스를 함께 기록합니다.
@@ -18,6 +18,7 @@
 - 상품과 직접 맞는 카테고리의 사용·질감 장면을 우선하되, 다른 카테고리는 훅·증거·CTA 구조만 전용합니다.
 - 사용자가 별도로 업로드해 분석한 영상 레퍼런스는 큐레이션 블루프린트와 함께 보조 신호로 유지합니다.
 - 22개 레퍼런스를 범용 `훅 → USP → CTA` 공식으로 합치거나 대표 몇 개만 상세본으로 대체하지 않습니다.
+- 자동 4안은 현재의 촬영 가능한 생활 장소·관계·행동을 기본으로 하며 역사·판타지·법정·뉴스·오디션·경매·탐정극과 상품 의인화는 자동 선택하지 않습니다.
 - `고기영상2`는 `고기영상3`과 파일 내용이 완전히 같아 전달 분석본에서 의도적으로 제외된 중복본입니다.
 
 ## 데이터 위치
@@ -25,6 +26,7 @@
 - 블루프린트: `app/lib/video-collaboration/videoPlanningBlueprints.ts`
 - 상세 정본 manifest: `data/video-planning-references/library.json`
 - 원본 상세 분석·CSV: `data/video-planning-references/*/`
+- 전달본 전체 목록·관계 메모: `data/video-planning-references/source-index.csv`, `data/video-planning-references/source-guide.md`
 - 장면 캡처: `public/video-planning-references/*/`
 - 정본 재생성: `npm run video-references:build`
 - 영상 기획 생성: `app/lib/video-collaboration/videoPlanningGenerator.server.ts`

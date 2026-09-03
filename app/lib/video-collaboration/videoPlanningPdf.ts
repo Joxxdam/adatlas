@@ -132,9 +132,9 @@ export function buildVideoPlanningPdfHtml(input: {
     <p class="section-title">CONCEPT SUMMARY · 콘셉트 요약</p>
     <div class="summary">
       <div class="wide"><b>첫 자막</b><p>${text(concept.openingHook)}</p></div>
-      <div><b>특정 인물</b><p>${text(concept.distinctiveCharacter || concept.speakerPointOfView || concept.speaker)}</p></div>
-      <div><b>사회·시대 배경</b><p>${text(concept.socialWorld || concept.centralIncident)}</p></div>
-      <div><b>핵심 사건</b><p>${text(concept.storyTrigger || concept.centralIncident || concept.narrativeStructure)}</p></div>
+      <div><b>생활 인물</b><p>${text(concept.distinctiveCharacter || concept.speakerPointOfView || concept.speaker)}</p></div>
+      <div><b>실생활 배경</b><p>${text(concept.socialWorld || concept.centralIncident)}</p></div>
+      <div><b>첫 행동·한마디</b><p>${text(concept.storyTrigger || concept.centralIncident || concept.narrativeStructure)}</p></div>
       <div><b>상품 사실 연결</b><p>${text(concept.truthBridge || concept.keyAppeal || concept.usp)}</p></div>
       <div><b>화자·시점</b><p>${text(concept.speakerPointOfView || concept.speaker)}</p></div>
       <div><b>타깃 호명</b><p>${text(concept.targetCallout || concept.coreTarget)}</p></div>

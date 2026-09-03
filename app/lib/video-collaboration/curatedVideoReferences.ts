@@ -25,6 +25,7 @@ export type CuratedVideoReference = {
   sceneCount: number;
   structureAnalysis: string;
   similarityAnalysis?: string;
+  relationshipNotes: string[];
   automationRules: string[];
   riskNotes: string[];
   sourceAnalysisPath: string;
@@ -58,6 +59,7 @@ export function curatedVideoReferencePrompt(id?: string) {
     sceneCount: reference.sceneCount,
     sourceStructureAnalysis: reference.structureAnalysis,
     sourceSimilarityAnalysis: reference.similarityAnalysis,
+    sourceRelationshipNotes: reference.relationshipNotes,
     sourceAutomationRules: reference.automationRules,
     sourceRiskNotes: reference.riskNotes,
     sourceTranscriptAndScenes: reference.scenes,

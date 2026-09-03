@@ -1,6 +1,6 @@
 import type { VideoConcept } from "./types.ts";
 
-export const CURRENT_VIDEO_PLANNING_ENGINE_VERSION = "story-mechanism-v4" as const;
+export const CURRENT_VIDEO_PLANNING_ENGINE_VERSION = "reference-imaginative-v6" as const;
 
 type CreativePremise = Pick<
   VideoConcept,
@@ -37,7 +37,7 @@ export function currentVideoCreativePremiseIssue(concept: CreativePremise) {
   if (character.length < 12 || GENERIC_CHARACTER.test(character))
     return "인물이 관계·직업·지역·습관 중 두 가지 이상으로 특정되지 않았습니다.";
   if (world.length < 12 || GENERIC_WORLD.test(world))
-    return "시대·장소·사회적 배경이 한 장면으로 떠오를 만큼 구체적이지 않습니다.";
+    return "장소·시대·사회 또는 사용 맥락이 한 장면으로 떠오를 만큼 구체적이지 않습니다.";
   if (trigger.length < 18)
     return "인물에게 실제로 벌어지는 중심 사건이 부족합니다.";
   if (bridge.length < 18)
@@ -49,12 +49,14 @@ export function currentVideoCreativePremiseIssue(concept: CreativePremise) {
     )
   )
     return "창작 설정과 상품 사실의 내부 경계가 명시되지 않았습니다.";
+  const premise = `${character} ${world} ${trigger} ${bridge}`;
+  if (/(알레르기|질병|치료|완치|실제\s*고객|(?:실제|실존)\s*(?:의사|전문의))/i.test(premise))
+    return "창작 설정에 질병·치료 주장, 실존 전문가 또는 실제 고객 사칭 위험이 있습니다.";
   if (
-    /(알레르기|질병|치료|완치|의사\s*(?:남편|아내|친구|추천|보증)|실제\s*고객)/i.test(
-      `${character} ${world} ${trigger} ${bridge}`
-    )
+    /의사|전문의/i.test(premise) &&
+    !/(?:의사|전문의).*(?:가상|창작|상황극)|(?:가상|창작|상황극).*(?:의사|전문의)/i.test(boundary)
   )
-    return "창작 설정에 의료·전문가 보증 또는 실제 고객 사칭 위험이 있습니다.";
+    return "가상의 의사 가족 추천은 허용되지만 창작 인물임을 연출·사실 경계에 명시해야 합니다.";
   return "";
 }
 

@@ -520,11 +520,11 @@ export function VideoPlanningConceptWorkspace({
         <details className={styles.conceptDetails}>
           <summary>타깃·화자·자막 말투 상세보기</summary>
           <div className={styles.conceptDetailsGrid}>
-            <span>특정 인물</span>
+            <span>생활 인물</span>
             <strong>{concept.distinctiveCharacter || concept.speakerPointOfView || concept.speaker}</strong>
-            <span>사회·시대 배경</span>
+            <span>실생활 배경</span>
             <strong>{concept.socialWorld || concept.centralIncident || concept.narrativeStructure}</strong>
-            <span>사건 발화점</span>
+            <span>첫 행동·한마디</span>
             <strong>{concept.storyTrigger || concept.centralIncident}</strong>
             <span>상품 사실 연결</span>
             <strong>{concept.truthBridge || concept.keyAppeal || concept.usp}</strong>

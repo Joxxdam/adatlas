@@ -752,8 +752,8 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
         ),
       message:
         concept.conceptArchetype === "parody" && concept.parodyGenre
-          ? `특정 인물·세계관형은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 장르의 인물·사건·화면 문법을 상세 대본 끝까지 유지해야 합니다.`
-          : "특정 인물·세계관형은 자동 선택된 세부 장르를 상세 대본 끝까지 유지해야 합니다.",
+          ? `창작 인물·상황극형은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 장르의 인물·사건·화면 흐름을 상세 대본 끝까지 유지해야 합니다.`
+          : "창작 인물·상황극형은 자동 선택된 세부 장르를 상세 대본 끝까지 유지해야 합니다.",
     },
     {
       key: "timeline",
@@ -861,7 +861,7 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
     {
       key: "policy-safety",
       passed: !concept.conceptArchetype || !/(치료|완치|질병을? 예방|무조건 낫|의사가 보증|실제 고객 인터뷰)/i.test(audienceCopy),
-      message: "근거 없는 의학적 효능이나 실제 고객을 사칭하는 표현은 사용할 수 없습니다.",
+      message: "가상의 의사 가족 추천은 허용하지만 의학적 효능·치료·보증이나 실제 고객 사칭은 사용할 수 없습니다.",
     },
     {
       key: "cta",

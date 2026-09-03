@@ -4,7 +4,7 @@ import sharp from "sharp";
 
 import { inspectCutoutQuality } from "../app/lib/mvp/cutoutQuality.ts";
 import { removeBackgroundToPng } from "../app/lib/mvp/imageEffects.ts";
-import { inferExpectedUnitCount, inferProductRepresentation, normalizeProductImageUrl, productCutoutCacheDescriptor } from "../app/lib/mvp/productImagePipeline.ts";
+import { inferExpectedUnitCount, inferProductRepresentation, isMerchantCredentialImageCandidate, normalizeProductImageUrl, productCutoutCacheDescriptor } from "../app/lib/mvp/productImagePipeline.ts";
 import { refineProductCutoutAlpha } from "../app/lib/mvp/productMaskPostprocess.ts";
 
 async function pixel(buffer, x, y) {
@@ -33,6 +33,23 @@ test("이미지 URL의 추적·리사이즈 변형은 동일 원본 키로 정�
   const left = normalizeProductImageUrl("https://cdn.example.com/product/a.jpg?w=400&utm_source=meta&q=70");
   const right = normalizeProductImageUrl("https://cdn.example.com/product/a.jpg");
   assert.equal(left, right);
+});
+
+test("판매자 수상·회원·누적판매 배너는 실제 상품 이미지 후보로 취급하지 않는다", () => {
+  assert.equal(
+    isMerchantCredentialImageCandidate({
+      url: "https://cdn.example.com/userfiles/shop/thumb/store-intro.jpg",
+      context: "축산물 쇼핑몰 브랜드 파워 1위, 브랜드 대상 수상, 총회원수 167만 명, 총판매량 950만 세트",
+    }),
+    true
+  );
+  assert.equal(
+    isMerchantCredentialImageCandidate({
+      url: "https://cdn.example.com/userfiles/shop/thumb/raw-beef.jpg",
+      context: "한우 안창살 원육 실사진입니다. 마블링과 실제 판매 부위를 확인하세요.",
+    }),
+    false
+  );
 });
 
 test("누끼 캐시는 상품 유형·추출 범위·객체 그룹·크롭을 구분한다", () => {

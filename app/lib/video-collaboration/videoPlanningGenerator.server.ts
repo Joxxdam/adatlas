@@ -183,15 +183,16 @@ const PRODUCT_SELF_INTRODUCTION_RULES = `상품 자기소개형(‘나 ~인데�
 6) 감각 결과 또는 선택 이유를 회수하고, 확인된 가격·구성·증정이 있을 때만 혜택 CTA로 닫는다.
 상품명이 길면 브랜드·수량·프로모션을 덜어낸 자연스러운 정체명으로 말한다. 같은 ‘나’를 매 자막에 반복하지 않고, 제품의 1인칭 시점을 끝까지 유지한다. ‘링크 여기에서 공개할게’, ‘장면 전환’, ‘연출 이미지’ 같은 메타·제작 문구는 광고 자막에 쓰지 않는다.`;
 
-const SPECIFIC_CREATIVE_WORLD_RULES = `상세페이지는 사실을 확인하는 자료이지 이야기의 범위를 제한하는 자료가 아니다. 모든 기획안은 상품 설명보다 먼저 기억 가능한 인물과 세계를 창작하되, 이를 여러 인물이 연기하는 드라마 대본이 아니라 한 명의 주 화자가 시청자에게 들려줄 이야기 재료로 사용한다.
-1) distinctiveCharacter에는 관계·직업·지역·습관·경력·말버릇 중 최소 두 가지를 결합한다. ‘일반 사용자’, ‘한 고객’, ‘20~40대 여성’, ‘가족’만으로 끝내지 않는다. 상품 자기소개형이면 상품 자체에 구체적인 성격·불만·생활 습관을 부여한다.
-2) socialWorld에는 현재의 구체적인 생활 장소와 사회적 맥락 또는 과거·미래 시대를 쓴다. ‘집’, ‘주방’, ‘욕실’, ‘일상 공간’만 쓰지 말고 마장동 새벽시장, 1990년대 월급날 식탁, 조선시대 수라간, 장거리 출퇴근 뒤 헬스장 샤워실처럼 한 장면이 떠오르게 한다.
-3) storyTrigger에는 그 인물만 겪을 법한 한 가지 행동·갈등·실수·내기를 쓴다. 상품 설명을 듣거나 USP를 확인하는 것을 사건이라고 부르지 않는다.
-4) truthBridge에는 창작 사건이 verifiedFacts의 어떤 두세 가지 사실 때문에 해결·반전되는지 적는다. 창작 세계와 ProductTruth를 한 문장 안에서 뒤섞지 않는다.
-5) dramatizationBoundary에는 무엇이 창작 설정이고 무엇이 검증된 상품 사실인지 명시한다. 이 문장은 내부 제작 정보이며 광고 자막으로 읽지 않는다.
-6) 네 기획안은 각각 인물·관계·시대 또는 장소·갈등·해결 장치가 달라야 한다. 단순히 말투나 첫 문장만 바꾸지 않는다.
-7) 창작 가능한 것: 가상의 가족 습관, 직업, 지역 생활, 명절·월급날·시장·학교·회사 같은 사회 상황, 역사·미래 세계관, 코믹한 관계와 대사. 창작 금지: 실제 고객 후기인 척하기, 실존 전문가·의사 보증, 질병·알레르기·치료 설정, 확인되지 않은 경력·성과·숫자·판매 순위·상품 효능.
-좋은 인물 수준: ‘반찬 열 개를 차려도 고기 없으면 숟가락부터 내려놓고 명절마다 마장동 시세를 보는 아버지’. 나쁜 수준: ‘고기를 좋아하는 아버지’, ‘가족 고객’. 좋은 세계 수준: ‘소고기는 월급날에만 먹던 1990년대 네 식구의 저녁’. 나쁜 수준: ‘따뜻한 가족 식탁’. 예시는 구조와 구체성만 참고하고 현재 상품에 맞는 새 설정으로 바꾼다.`;
+const SPECIFIC_CREATIVE_WORLD_RULES = `상세페이지는 상품 사실의 상한선이고, 레퍼런스 원문은 광고의 말 흐름·인물 관계·사건·장면 진행을 만드는 창작 기준이다. 인물과 세계는 상세페이지에 없어도 자유롭게 상상하되 상품에 관한 객관 사실과 섞지 않는다.
+1) distinctiveCharacter에는 이름·가족/지인 관계·직업·지역·습관·경력·말버릇 중 최소 두 가지를 결합한다. ‘일반 사용자’, ‘한 고객’, ‘20~40대 여성’, ‘가족’만으로 끝내지 않는다.
+2) socialWorld에는 현재의 생활 장소뿐 아니라 과거·미래·가상 사회를 사용할 수 있다. 출근 전 냉장고 앞, 새벽시장, 왕실 수라간, 미래 식품 심사장처럼 선택 장르의 화면이 바로 떠오르게 쓴다. 실존 작품·캐릭터·사건은 복제하지 않는다.
+3) storyTrigger에는 그 인물과 세계에서만 벌어질 한 가지 행동·갈등·실수·발견·내기·심문·협상을 만든다. 상품 설명을 듣거나 USP를 확인하는 것 자체를 사건이라고 부르지 않는다.
+4) truthBridge에는 창작 사건이 verifiedFacts의 어떤 두세 가지 가격·구성·품질·원료·공정 사실 때문에 해결·반전되는지 적는다. 인물의 반응과 상품 사실을 같은 사실처럼 섞지 않는다.
+5) dramatizationBoundary에는 인물·관계·직업·시대·사건 중 무엇이 광고용 창작이고 어떤 상품 정보가 검증된 사실인지 명시한다. 이 문장은 내부 제작 정보이며 광고 자막으로 읽지 않는다.
+6) 가상의 의사 남편·아내·친구·가족이 개인적 취향이나 사용 경험으로 상품을 추천하는 설정은 허용한다. dramatizationBoundary와 sceneDescription의 작은 화면 고지에 가상 인물임을 명시한다. 의사라는 직업을 질병·치료·효능·안전성·성분 보증의 근거로 사용하지 않는다.
+7) 네 기획안은 인물·관계·시대 또는 장소·갈등·상품 등장 방식·증거 공개 순서·결말이 달라야 한다. 같은 상품의 필수 조리·사용 근거는 필요한 만큼 공유할 수 있다.
+8) 창작 가능: 가상의 가족·지인·직업·지역·역사·미래·판타지·법정·뉴스·오디션·퀴즈쇼·경매·탐정극·상품 의인화·코믹한 대사. 창작 금지: 실제 고객 후기 사칭, 실존 인물·전문가·기관의 허위 보증, 질병·치료 설정, 확인되지 않은 숫자·판매성과·순위·효능.
+좋은 구체성: ‘25년째 성분표부터 보는 가상의 의사 남편이 샤워젤을 먼저 챙긴 저녁’, ‘조선 수라간 감별관이 선물 상자의 구성을 심문하는 가상 청문회’. 나쁜 구체성: ‘전문가가 추천한 상품’, ‘가족 고객’. 예시는 복사하지 말고 선택된 레퍼런스와 현재 상품에 맞게 새로 만든다.`;
 
 const NATURAL_REFERENCE_DIALOGUE_RULES = `레퍼런스처럼 자연스러운 광고 구어체를 만드는 규칙:
 1) 대본 전체를 카메라 너머 시청자에게 말을 거는 한 명의 주 화자와 한 가지 실제 사건으로 연결한다. 등장인물끼리 연기하는 대사극이나 서로 무관한 후킹 문구·USP 표제·가격 문장의 나열로 만들지 않는다.
@@ -203,12 +204,12 @@ const NATURAL_REFERENCE_DIALOGUE_RULES = `레퍼런스처럼 자연스러운 광
 7) 마지막에는 첫 인물의 습관이나 첫 사건을 다시 불러온 뒤 화자가 시청자에게 자연스럽게 권하는 구매 행동으로 닫는다. ‘지금 만나보세요’, ‘특별한 선택’, ‘일상의 변화’ 같은 어느 상품에도 붙는 CTA는 금지한다.
 8) 레퍼런스의 원문, 인물, 상품, 허위 후기, 의료·건강 효능은 복사하지 않는다. 자연스러운 말의 연결 방식만 가져오고 사실은 현재 ProductTruth로 제한한다.`;
 
-const FOUR_CONCEPT_STORY_MECHANISM_RULES = `네 콘셉트는 USP 종류가 아니라 서로 다른 이야기 작동 방식으로 나눈다. 내부 conceptArchetype 코드는 과거 저장 데이터 호환용이며 아래 의미가 최신 기준이다.
-1) parody = 특정 인물·세계관형: 관계·직업·지역·습관 중 두 가지 이상이 드러나는 인물과 구체적인 시대·장소·사회 상황을 만든다. 사건은 선명하게 두되 한 명의 주 화자가 ‘그때 이런 일이 있었는데요’처럼 시청자에게 들려주는 구어체로 전개한다.
-2) real-review = 관계·생활 경험 전달형: 아버지·배우자·친구처럼 관계가 선명한 주변 인물의 습관이나 발견을 주 화자가 시청자에게 제보하듯 말한다. 가족끼리 대화하는 각본을 기본으로 삼지 않는다. 단, ‘팀장님, 진짜 이거 싸게 팔아요?’처럼 팀장·사장·직원의 업무 관계 자체가 훅이면 짧은 문답을 1~2회 넣고 곧바로 주 화자의 시청자 설명으로 돌아온다.
-3) usp-focus = 비교·실험·발견형: 주 화자가 직접 블라인드 테스트, 같은 상품군 안의 합리적인 비교, 수상한 차이 추적, 원료·공정 발견을 해보고 결과를 시청자에게 말한다. 관련 없는 물건을 비교 대상으로 쓰거나 검증되지 않은 우열·1위를 만들지 않는다.
-4) secret-benefit = 상품 의인화·비밀 공개형: ‘나 [상품]인데!’처럼 상품이 시청자에게 직접 말하거나, 한 명의 화자가 숨겨진 사용 이유와 강한 사실을 단계적으로 알려준다. 가격·할인·증정이 없어도 만들 수 있으며, 비밀의 보상은 검증된 원료·수치·공정·구성·쓰임 중 하나여야 한다.
-가격·구성·원료·공정·감각 USP는 위 네 유형과 별개의 공통 truthBridge다. 어떤 유형에서도 이야기가 먼저이고 사실은 의심을 푸는 근거로 들어간다. 네 콘셉트의 인물, 관계, 세계, 사건, 공개 순서와 화면 문법이 서로 겹치면 안 된다.`;
+const FOUR_CONCEPT_STORY_MECHANISM_RULES = `네 콘셉트는 같은 상품을 서로 다른 이야기 작동 방식으로 보여준다. 내부 conceptArchetype 코드는 과거 저장 데이터 호환용이며 아래 의미가 최신 기준이다.
+1) parody = 창작 인물·상황극형: 서버가 자동 선택한 역사·미래·가족·직장·법정·뉴스·오디션·퀴즈·경매·탐정·비교 같은 장르 하나를 끝까지 유지한다. 인물과 사건은 과감하게 창작하되 상품 사실은 ProductTruth로 제한한다.
+2) real-review = 가족·지인 생활 반응형: 아버지·배우자·아이·친구의 평소 습관과 이번 한마디를 주 화자가 제보하듯 전한다. 긴 가족 대화나 실제 후기 사칭은 쓰지 않는다.
+3) usp-focus = 직접 확인·조리·사용형: 포장 개봉, 구성 확인, 팬 조리, 절단, 한입, 제형과 손동작처럼 카메라로 확인할 수 있는 순서로 차이를 보여준다. 거창한 실험실·심사·대결을 자동 생성하지 않는다.
+4) secret-benefit = 구매 고민·가격 발견형: 외식비, 선물 가격, 판매 단위, 구성처럼 실제 구매 장벽을 먼저 말하고 확인된 가격·구성·품질 근거로 망설임을 푼다. 확인된 혜택이 없으면 할인·품절·비밀 링크를 만들지 않는다.
+가상의 의사 가족 추천은 parody 또는 real-review에서 사용할 수 있지만 의학적 효능·치료·보증으로 확장하지 않는다. 네 안의 인물·첫 사건·증거 공개 순서는 서로 다르게 하되 레퍼런스처럼 같은 조리·사용 근거 본문은 필요한 만큼 공유할 수 있다. 원문 장면의 역할과 말 연결을 살리고 범용 훅→USP→CTA 표제로 다시 요약하지 않는다.`;
 
 function referenceVoiceSignals(referenceAnalyses: ReferenceVideoAnalysis[] = []) {
   return referenceAnalyses
@@ -787,6 +788,7 @@ export async function generateVideoConceptSummariesAi(input: {
   excludedContent?: string;
   requestedArchetype?: VideoConceptArchetype;
   recentParodyGenres?: VideoParodyGenre[];
+  selectionSeed?: string;
   onConceptProgress?: (input: {
     concepts: VideoConcept[];
     unresolvedArchetypes: VideoConceptArchetype[];
@@ -794,7 +796,10 @@ export async function generateVideoConceptSummariesAi(input: {
   }) => void | Promise<void>;
 }) {
   const candidates = [...input.hooks]
-    .filter((hook) => !hook.rejectionReasons.length)
+    .filter(
+      (hook) =>
+        !hook.rejectionReasons.length && hook.hookType !== "product-self-introduction"
+    )
     .sort((left, right) => right.score.total - left.score.total)
     .slice(0, 10);
   const evidenceIds = new Set((input.analysis.verifiedFacts || []).map((fact) => fact.id));
@@ -817,6 +822,7 @@ export async function generateVideoConceptSummariesAi(input: {
     analysis: input.analysis,
     archetypes: input.requestedArchetype ? [input.requestedArchetype] : [...REQUIRED_VIDEO_CONCEPT_ARCHETYPES],
     parodyGenre: selectedParodyGenre.id,
+    selectionSeed: input.selectionSeed,
   });
   const request = async (archetypes: VideoConceptArchetype[] | undefined, correction = "") =>
     runVideoPlanningAi<{ concepts: AiConceptSummary[] }>({
@@ -858,7 +864,7 @@ ${clean(copyGuide?.content || input.guideline.toneAndManner, 3000)}
 ${JSON.stringify(referenceVoiceSignals(input.referenceAnalyses))}
 [레퍼런스 말투 전용 규칙]
 ${internetVoiceRules(input.analysis.category)}
-[모든 상품에 적용하는 인물·사회·시대 구체화 규칙]
+[모든 상품에 적용하는 창작 인물·세계·사건 구체화 규칙]
 ${SPECIFIC_CREATIVE_WORLD_RULES}
 [최신 4개 이야기 작동 방식]
 ${FOUR_CONCEPT_STORY_MECHANISM_RULES}
@@ -868,7 +874,7 @@ ${NATURAL_REFERENCE_DIALOGUE_RULES}
 ${JSON.stringify((archetypes || []).map((archetype) => ({ archetype, blueprint: blueprintPrompt(blueprintSelections[archetype]) })))}
 ${
   archetypes?.includes("parody")
-    ? `[특정 인물·세계관형의 자동 선택 세부 장르]
+    ? `[창작 인물·상황극형의 자동 선택 세부 장르]
 ${videoParodyGenrePrompt(selectedParodyGenre.id, input.recentParodyGenres)}`
     : ""
 }
@@ -879,10 +885,8 @@ ${clean(input.excludedContent, 1500) || "없음"}
 [이 프로젝트의 기존 기획안]
 ${JSON.stringify((input.existingConcepts || []).map((item) => ({ opening: item.openingHook, incident: item.centralIncident, speaker: item.speakerPointOfView || item.speaker, appeal: item.keyAppeal || item.usp })))}
 
-일반 후보는 첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 멈춰 볼 사건이나 자연스러운 한마디로 시작한다. openingHook·narrativeSummary·copyVoiceDirection은 독립 광고 표제의 모음이 아니라 주 화자가 카메라 너머 시청자에게 시작→궁금증→증거→반응→행동을 이어 말하는 흐름이어야 한다. speakerPointOfView와 speaker에는 ‘딸과 아버지의 대화’가 아니라 ‘명절마다 고깃값을 비교하는 아버지의 발견을 시청자에게 들려주는 딸’처럼 누가 누구에게 무엇을 전하는지 적는다. 단, hookType이 product-self-introduction이면 아래 상품 자기소개형 문법에 따라 상품이 직접 시청자에게 말하는 첫 문장으로 시작한다.
-[상품 자기소개형 전용]
-${PRODUCT_SELF_INTRODUCTION_RULES}
-title은 ‘정체를 확인합니다’, ‘차이를 알아봅니다’ 같은 설명형 제목이 아니라 distinctiveCharacter가 socialWorld에서 storyTrigger를 겪는 사건형 제목으로 쓴다. ProductTruth와 상세페이지 정보는 사용할 사실의 상한선이지 이야기의 상한선이나 자막 체크리스트가 아니다. 상세페이지 밖의 가상 인물·관계·지역·시대·사회 상황은 과감하게 만들되 dramatizationBoundary로 사실과 분리한다. 콘셉트 하나는 핵심 구매 이유 하나와 이를 받치는 가격·구성·품질 사실 두세 개만 골라 truthBridge로 연결하고 나머지는 버린다. 배송·배송비·도서산간·제주 추가비·배송지 안내는 기획 제목, 사건, 소구, CTA에서 완전히 제외한다. coreTarget은 분석용 고객 정의로 쓰고, targetCallout은 distinctiveCharacter의 행동·불편·욕망을 찌르는 첫 3초용 문장으로 쓴다. 첫 자막, 인물, 사회·시대 배경, 중심 사건, 갈등 원인, 상품 등장 방식, 핵심 소구, 결말·CTA, 화면 스타일을 기존 기획안과 다르게 만든다. copyVoiceDirection에는 이 콘셉트에서 실제로 사용할 호칭·문장 길이·직설 강도를 구체적으로 적고 ‘친근한 말투’, ‘자연스러운 구어체’처럼 일반화하지 않는다. 각 콘셉트는 배정된 주 블루프린트의 전체 전개를 우선하고 보조 블루프린트에서는 훅 또는 CTA 장치 하나만 가져온다. 블루프린트에 sourceReference가 있으면 요약보다 실제 sourceTranscriptAndScenes의 자막 진행과 화면 전환을 우선해서 읽는다. 특정 인물·세계관극은 서버가 지정한 세부 장르를 우선하며 다른 장르로 바꾸거나 혼합하지 않는다. 참고 영상의 인물·시대·원문 자막·상품 사실은 복제하지 않고, 현재 상품에만 맞는 같은 수준의 구체적인 새 설정으로 변환한다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓰고 확정 문구로 쓰지 않는다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다. 실제 이미지나 영상을 생성하지 않으며 상세 대본은 아직 만들지 않는다.
+첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 꺼낼 법한 한마디와 촬영 가능한 생활 행동으로 시작한다. openingHook·narrativeSummary·copyVoiceDirection은 독립 광고 표제의 모음이 아니라 주 화자가 카메라 너머 시청자에게 시작→궁금증→증거→반응→행동을 이어 말하는 흐름이어야 한다. speakerPointOfView와 speaker에는 ‘딸과 아버지의 대화’가 아니라 ‘고기 없으면 밥을 미루는 아버지의 이번 반응을 시청자에게 들려주는 딸’처럼 누가 누구에게 어떤 생활 장면을 전하는지 적는다. 신규 자동 4안에서는 product-self-introduction을 선택하지 않는다.
+title은 설명형 제목이 아니라 인물·세계·첫 사건이 바로 떠오르는 사건형 제목으로 쓴다. ProductTruth는 사용할 상품 사실의 상한선이며 레퍼런스 원문은 말의 연결과 화면 순서의 기준이다. 상세페이지 밖의 가상 인물·관계·직업·시대·세계·사건은 선택 장르에 맞게 과감하게 만들 수 있다. 가상의 의사 가족 추천도 허용하지만 가상 인물임을 dramatizationBoundary에 명시하고 의학적 효능·치료·보증으로 확대하지 않는다. 콘셉트 하나는 핵심 구매 이유 하나와 이를 받치는 가격·구성·품질 사실 두세 개만 골라 truthBridge로 연결한다. 배송·배송비·도서산간·제주 추가비·배송지 안내는 기획 제목, 사건, 소구, CTA에서 완전히 제외한다. coreTarget은 분석용 고객 정의로 쓰고 targetCallout은 그 사람의 행동·불편·욕망을 찌르는 첫 3초용 문장으로 쓴다. 네 안은 인물·세계·사건·증거 순서를 다르게 하되 같은 상품의 필수 조리·사용 장면까지 억지로 다르게 만들지 않는다. copyVoiceDirection에는 실제 호칭·문장 길이·직설 강도를 구체적으로 적고 ‘친근한 말투’처럼 일반화하지 않는다. 배정된 주 블루프린트의 sourceTranscriptAndScenes 전체에서 자막 연결·행동·증거·반응·CTA 순서를 읽고, 5비트 요약이나 범용 광고 공식으로 줄이지 않는다. 원문의 상품·가격·효능·인물·대사는 복제하지 않고 현재 ProductTruth와 새로운 창작 장면으로 치환한다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓴다. hookId와 evidenceIds는 입력에 존재하는 값만 쓰며 실제 이미지나 영상을 생성하지 않는다.
 ${correction} JSON만 반환한다.`,
     });
   const toConcepts = (rows: AiConceptSummary[]) => {
@@ -983,10 +987,10 @@ ${correction} JSON만 반환한다.`,
         [input.requestedArchetype],
         [
           initialSpecificityIssue
-            ? `이전 응답의 인물·사회·시대·사건이 일반적이었다: ${initialSpecificityIssue} distinctiveCharacter, socialWorld, storyTrigger, truthBridge를 모두 현재 상품에서만 나올 수 있는 수준으로 다시 구체화한다.`
+            ? `이전 응답의 인물·세계·사건이 일반적이었다: ${initialSpecificityIssue} distinctiveCharacter, socialWorld, storyTrigger, truthBridge를 선택 장르와 현재 상품에서만 나올 수 있는 수준으로 다시 구체화한다.`
             : "",
           initialGenreMismatch
-            ? `자동 선택 장르 '${selectedParodyGenre.label}'을 따르지 않았다. 법정 등 다른 장르를 섞지 말고 선택 장르의 사건·인물·화면 문법이 제목과 중심 사건에 명시적으로 드러나게 다시 작성한다.`
+            ? `자동 선택된 창작 장르 '${selectedParodyGenre.label}'을 따르지 않았다. 다른 장르를 섞지 말고 선택 장르의 인물·세계·사건·화면 진행이 제목과 중심 사건에 드러나게 다시 작성한다.`
             : "",
         ].filter(Boolean).join(" ")
       );
@@ -1012,7 +1016,7 @@ ${correction} JSON만 반환한다.`,
       throw new VideoPlanningGenerationError({
         stage: "schema-validation",
         code: "PARODY_GENRE_MISMATCH",
-        message: "사건·상황극 기획안이 자동 선택된 세부 장르를 따르지 않았습니다.",
+        message: "창작 인물·상황극 기획안이 자동 선택된 세부 장르를 따르지 않았습니다.",
         retryable: true,
         attempts: 2,
         failedAt: new Date().toISOString(),
@@ -1323,7 +1327,7 @@ ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === input.concept.conce
 }
 ${
   input.concept.conceptArchetype === "parody" && input.concept.parodyGenre
-    ? `[선택된 특정 인물·세계관형 세부 장르]
+    ? `[선택된 창작 인물·상황극형 세부 장르]
 ${videoParodyGenrePrompt(input.concept.parodyGenre)}`
     : ""
 }
@@ -1335,7 +1339,7 @@ ${stylePrinciples(input.analysis.category)}
 ${JSON.stringify(referenceVoiceSignals(input.referenceAnalyses))}
 [레퍼런스 말투 전용 규칙]
 ${internetVoiceRules(input.analysis.category)}
-[인물·사회·시대 구체화 규칙]
+[창작 인물·세계·사건 구체화 규칙]
 ${SPECIFIC_CREATIVE_WORLD_RULES}
 [최신 4개 이야기 작동 방식]
 ${FOUR_CONCEPT_STORY_MECHANISM_RULES}
@@ -1346,7 +1350,7 @@ ${blueprintPrompt(input.concept.blueprintSelection)}
 [사용자 수정 요청]
 ${clean(input.revisionFeedback, 1600) || "없음"}
 
-정확히 ${count}개 구간을 만든다. 첫 두 행이 0~1.2초와 1.2~3초를 맡고 두 화면 사이에 확실한 사건 변화가 있어야 한다. 첫 구간부터 distinctiveCharacter가 socialWorld 안에서 storyTrigger를 실제 행동으로 시작하고, 중반에는 truthBridge로 검증된 USP가 사건의 반전 또는 해결 이유가 되어야 한다. 인물과 세계를 첫 장면 장식으로만 쓰고 사라지게 하지 말며 마지막 직전 또는 CTA에서 첫 설정을 회수한다. 배정된 주 블루프린트에 sourceReference가 있으면 요약보다 실제 자막·장면 순서를 우선해서 변환한다. 특히 sourceTranscriptAndScenes의 자막을 독립 표제로 재요약하지 말고, 앞뒤 말이 연결되는 리듬·정보 공개 순서·첫 사건 회수 방식을 현재 상품의 새 이야기로 옮긴다. 선택 기획안의 한 가지 중심 사건이 시작→궁금증→증거→반응→행동으로 이어져야 하며 장면을 가격·구성·USP 카드의 나열로 만들지 않는다. 일반 기획은 첫 자막부터 상품명을 설명하지 않고 첫 두 자막 중 하나에 targetCallout을 자연스럽게 변형해 넣는다. hookType이 product-self-introduction이면 예외로 아래 문법을 적용하고 첫 두 자막을 상품 자기소개와 흔한 오해 부정으로 구성한다.
+정확히 ${count}개 구간을 만든다. 첫 두 행이 0~1.2초와 1.2~3초를 맡고 두 화면 사이에 실제 행동·갈등·발견 중 하나의 변화가 있어야 한다. 첫 구간부터 distinctiveCharacter가 socialWorld 안에서 storyTrigger를 시작하고, 중반에는 truthBridge의 검증된 USP가 사건의 반전·해결 또는 추천 이유가 되어야 한다. 인물과 세계를 도입 장식으로만 쓰고 사라지게 하지 말며 마지막 직전 또는 CTA에서 회수한다. 가상의 의사 가족 추천을 사용하면 sceneDescription에 광고용 가상 인물 고지를 넣고, 의학적 효능·치료·보증은 말하지 않는다. 배정된 주 블루프린트에 sourceReference가 있으면 5비트 요약보다 실제 자막·장면·역할·분석 전체를 순서대로 변환한다. sourceTranscriptAndScenes의 자막을 독립 표제로 재요약하지 말고, 앞뒤 말이 이어지는 리듬·정보 공개 순서·첫 사건 회수 방식을 현재 상품의 새 창작 장면으로 옮긴다. 하나의 사건이 시작→궁금증→직접 증거→반응→행동으로 이어져야 하며 장면을 가격·구성·USP 카드의 나열로 만들지 않는다. 일반 기획은 첫 자막부터 상품명을 설명하지 않고 첫 두 자막 중 하나에 targetCallout을 자연스럽게 변형해 넣는다. 신규 4안에서는 product-self-introduction을 사용하지 않으며, 과거 저장 기획이 그 유형일 때만 아래 하위 호환 문법을 적용한다.
 [상품 자기소개형 전용]
 ${PRODUCT_SELF_INTRODUCTION_RULES}
 
@@ -1383,7 +1387,7 @@ ${PRODUCT_SELF_INTRODUCTION_RULES}
 
 첫 3초에는 인물의 즉각적인 반응, 상품의 가장 먹고 싶거나 써 보고 싶은 순간, 또는 선택 기획안의 갈등 중 하나를 강하게 보여준다. 6초 전에는 그 반응의 이유가 되는 다른 피사체나 행동으로 전환한다. ${hasVerifiedVideoBenefit(input.analysis) ? "가격·할인·구성은 기획안의 중심 사건이 가격일 때만 초반 근거로 쓰고, 그 외에는 욕구와 이유가 먼저 납득된 뒤 최대 두 구간에서만 보조 근거로 쓴다. 가격·중량·할인을 서로 이어 붙인 정보 카드 장면은 금지한다." : "확인된 판매 혜택이 없으므로 가격·할인·구성을 창작하지 않고 상품 사용 장면을 초반부터 보여준다."}
 
-식품이라면 ‘맛있다’라는 결론만 말하지 않는다. 굽는 소리, 표면의 윤기·육즙, 잘리는 결, 밥이나 다음 한입을 찾는 생활 반응처럼 카메라로 확인 가능한 이유와 맥락을 먼저 만든다. 가족·친구의 반응은 distinctiveCharacter의 구체적인 습관과 관계에서 나오는 광고용 상황극으로 쓰고 실제 후기처럼 꾸미지 않는다. 발표자·원물·조리·먹는 반응·상품 정보를 중심 사건에 필요한 만큼만 교차한다. 배송 정보는 어떤 경우에도 사용하지 않는다. 원문 자막과 특정 인물·장면은 복제하지 않는다.
+식품이라면 ‘맛있다’라는 결론만 말하지 않는다. 굽는 소리, 표면의 자연스러운 윤기와 육즙, 실제 부위에 맞는 잘리는 결, 밥이나 다음 한입을 찾는 생활 반응처럼 카메라로 확인 가능한 이유와 맥락을 먼저 만든다. 가족·친구의 반응은 구체적인 습관과 관계에서 나오는 짧은 광고용 생활 연출로 쓰고 실제 후기처럼 꾸미지 않는다. 주 화자·원물·포장·조리·먹는 반응·상품 정보를 레퍼런스의 정확한 진행 순서에 맞춰 필요한 만큼 교차한다. 배송 정보는 어떤 경우에도 사용하지 않는다. 원문 자막과 특정 인물·장면은 복제하지 않는다.
 
 각 sceneDescription은 70~420자로, 촬영팀이 실행할 수 있을 만큼 구체적이되 체크리스트 문구를 반복하지 않는다. 장소와 주체, 이 구간에서 이야기가 바뀌는 한 가지 행동, 카메라가 먼저 잡는 시각 요소, 다음 구간으로 넘기는 전환을 자연스러운 2~3문장으로 쓴다. 사람이 없는 제품 B-roll은 표면 변화·윤기·색감·거품·수증기·질감처럼 카메라로 확인할 수 있는 반응을 쓴다. '고객의 문제 상황을 보여준다', 'USP를 클로즈업한다', '근거를 제시한다' 같은 추상 문장은 금지한다.
 
@@ -1426,7 +1430,7 @@ export async function generateDetailedVideoScriptAi(input: {
       failedAt: new Date().toISOString(),
     });
   }
-  const genreMatchedSelection = input.concept.conceptArchetype
+  const genreMatchedSelection = !input.concept.blueprintSelection?.primaryId && input.concept.conceptArchetype
     ? selectVideoPlanningBlueprints({ analysis: input.analysis, archetypes: [input.concept.conceptArchetype], parodyGenre: input.concept.parodyGenre })[input.concept.conceptArchetype]
     : undefined;
   const generationInput = { ...input, concept: genreMatchedSelection ? { ...input.concept, blueprintSelection: genreMatchedSelection } : input.concept };

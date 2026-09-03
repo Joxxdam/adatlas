@@ -24,8 +24,8 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   },
   {
     id: "price-negotiation",
-    label: "가격 협상·흥정",
-    direction: "구매자와 판매자가 확인된 가격·구성을 두고 밀고 당기며 상품 근거로 합의한다.",
+    label: "가격 확인·가벼운 실랑이",
+    direction: "현재의 판매 현장이나 사무실에서 구매자·직원이 확인된 가격·구성을 두고 짧게 한두 마디를 주고받은 뒤, 한 명의 화자가 상품 근거와 결론을 시청자에게 설명한다.",
     signals: /협상|흥정|깎아|판매자|구매자|조건을?\s*(?:맞추|제시)|딜\b/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
     benefitAffinity: true,
@@ -53,9 +53,9 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   },
   {
     id: "blind-test",
-    label: "블라인드 테스트",
-    direction: "브랜드나 조건을 가린 채 맛·질감·사용감 같은 관찰 가능한 차이를 먼저 체험하고 정체를 공개한다.",
-    signals: /블라인드|눈을\s*가리|가리고|정체\s*공개|비교\s*(?:시식|사용)|맞혀/i,
+    label: "직접 비교·사용 확인",
+    direction: "눈을 가리는 예능 장치 없이 실제 포장을 열고 조리하거나 사용하면서 맛·질감·구성·사용감처럼 카메라로 확인 가능한 차이를 보여준다.",
+    signals: /블라인드|눈을\s*가리|가리고|정체\s*공개|비교\s*(?:시식|사용)|맞혀|직접\s*(?:조리|사용|확인)|포장을?\s*(?:열|뜯)|개봉/i,
     categoryAffinity: ["meat", "food", "beauty"],
   },
   {
@@ -67,8 +67,8 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   },
   {
     id: "family-office-sitcom",
-    label: "가족·직장 시트콤",
-    direction: "가족이나 동료 사이의 현실적인 오해·부탁·눈치 싸움에 상품이 해결 장치로 등장한다.",
+    label: "가족·직장 생활 대화",
+    direction: "가족이나 동료의 평소 습관에서 나온 현실적인 한마디를 훅으로 쓰고, 긴 연기 대신 주 화자가 그 반응의 이유를 상품 장면과 함께 시청자에게 전한다.",
     signals: /시트콤|가족|부부|엄마|아빠|동료|상사|회사|사무실|회의실/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
   },
@@ -96,6 +96,13 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   },
 ];
 
+/** 새 자동 4안의 창작 인물·상황극 슬롯에서 회전 선택하는 전체 장르입니다. */
+export const AUTOMATIC_CREATIVE_GENRES: VideoParodyGenre[] =
+  VIDEO_PARODY_GENRE_OPTIONS.map((option) => option.id);
+
+/** 과거 import 호환용 별칭입니다. */
+export const AUTOMATIC_LIFESTYLE_GENRES = AUTOMATIC_CREATIVE_GENRES;
+
 function productCategory(analysis: ProductAnalysisSnapshot) {
   const text = `${analysis.productName} ${analysis.category} ${analysis.productType || ""}`.toLowerCase();
   if (/(고기|육우|한우|소고기|돼지|닭|갈비|등심|정육|육류)/u.test(text)) return "meat" as const;
@@ -106,12 +113,9 @@ function productCategory(analysis: ProductAnalysisSnapshot) {
 
 function hasBenefit(analysis: ProductAnalysisSnapshot) {
   return Boolean(
-    analysis.price ||
-      analysis.discountInfo ||
+    analysis.discountInfo ||
       analysis.originalPrice ||
-      analysis.promotion ||
-      analysis.composition?.length ||
-      analysis.shippingConditions?.length
+      analysis.promotion
   );
 }
 
@@ -161,27 +165,31 @@ export function selectVideoParodyGenre(input: {
 }) {
   const category = productCategory(input.analysis);
   const recent = (input.recentGenres || []).slice(0, 5);
-  const ranked = VIDEO_PARODY_GENRE_OPTIONS.map((option) => {
+  const benefitAvailable = hasBenefit(input.analysis);
+  const ranked = VIDEO_PARODY_GENRE_OPTIONS.filter(
+    (option) =>
+      AUTOMATIC_CREATIVE_GENRES.includes(option.id) &&
+      (!option.benefitAffinity || benefitAvailable)
+  ).map((option) => {
     const recentIndex = recent.indexOf(option.id);
     const affinity = option.categoryAffinity.includes(category) ? 8 : option.categoryAffinity.includes("general") ? 4 : 0;
-    const benefit = option.benefitAffinity && hasBenefit(input.analysis) ? 2 : 0;
+    const benefit = option.benefitAffinity && benefitAvailable ? 4 : 0;
     const sensory =
       hasSensoryOrUseEvidence(input.analysis) &&
       ["blind-test", "competition-judging"].includes(option.id)
-        ? 4
+        ? 3
         : 0;
+    const everydayRelationship = option.id === "family-office-sitcom" ? 1 : 0;
     const repeatPenalty = recentIndex < 0 ? 0 : 30 - recentIndex * 4;
-    // 법정은 선택 가능하지만, 다른 적합 장르가 있으면 기본적으로 뒤에 둔다.
-    const courtroomPenalty = option.id === "courtroom" ? 2 : 0;
     return {
       option,
       score:
         affinity +
         benefit +
-        sensory -
-        repeatPenalty -
-        courtroomPenalty +
-        stableTieBreak(input.seed || input.analysis.productName, option.id),
+        sensory +
+        everydayRelationship -
+        repeatPenalty +
+        stableTieBreak(input.seed || input.analysis.productName, option.id) * 10,
     };
   }).sort((left, right) => right.score - left.score);
   return ranked[0].option;
@@ -225,11 +233,12 @@ export function videoParodyGenrePrompt(genre?: VideoParodyGenre, recentGenres: V
   return [
     `선택 장르: ${selected.label}`,
     `연출 규칙: ${selected.direction}`,
-    "패러디 기획안은 처음부터 끝까지 이 장르의 인물 관계·사건·화면 문법만 사용한다.",
-    "다른 장르의 대표 소품·직함·결말 문법을 섞지 않는다.",
+    "자동 선택된 창작 장르의 인물 관계·사건·화면 문법을 처음부터 CTA까지 일관되게 사용한다. 시대·직업·관계는 자유롭게 창작하되 실제 인물이나 실제 사건으로 사칭하지 않는다.",
+    "선택하지 않은 장르의 대표 소품·직함·결말 문법을 섞지 않는다.",
     selected.id === "historical-world-parody"
       ? "시대 배경 자체는 창작할 수 있지만 상품의 성분·효능·가격·수치·순위는 현재 ProductTruth에 있는 사실만 사용한다. 레퍼런스의 중세·왕실·레몬을 복사하지 말고 현재 상품에서만 나올 수 있는 세계와 인물로 바꾼다."
       : "인물과 사회적 배경은 상품에 맞게 구체화하되 실제 후기·경력·자격을 사칭하지 않는다.",
+    "가상의 의사 가족이 개인적 취향이나 사용 경험으로 상품을 추천하는 설정은 허용한다. 해당 인물이 광고용 창작임을 dramatizationBoundary와 장면 고지에 명시하고, 의학적 효능·치료·보증의 근거로 사용하지 않는다.",
     excluded.length ? `최근 사용으로 금지된 장르: ${excluded.join(" · ")}` : "최근 사용으로 금지된 장르: 없음",
     selected.id !== "courtroom"
       ? "법정·재판·판사·판결·변호사·검사·청문회·증거 제출 장면과 표현은 사용하지 않는다."

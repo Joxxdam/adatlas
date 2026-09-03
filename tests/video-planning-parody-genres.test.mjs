@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  AUTOMATIC_CREATIVE_GENRES,
+  AUTOMATIC_LIFESTYLE_GENRES,
   VIDEO_PARODY_GENRE_OPTIONS,
   inferVideoParodyGenre,
   matchesVideoParodyGenre,
@@ -40,6 +42,41 @@ test("사건·상황극은 시대·사회 세계관극을 포함한 11개 세부
   assert.ok(VIDEO_PARODY_GENRE_OPTIONS.some((option) => option.id === "blind-test"));
 });
 
+test("새 자동 4안은 11개 창작 장르를 모두 회전 선택할 수 있다", () => {
+  assert.deepEqual(AUTOMATIC_LIFESTYLE_GENRES, AUTOMATIC_CREATIVE_GENRES);
+  assert.deepEqual(
+    [...AUTOMATIC_CREATIVE_GENRES].sort(),
+    VIDEO_PARODY_GENRE_OPTIONS.map((option) => option.id).sort()
+  );
+  const reached = new Set();
+  const categorySamples = [
+    { productName: "국내산 선별 등심", category: "식품/정육" },
+    { productName: "저지 우유", category: "식품/음료" },
+    { productName: "진정 세럼", category: "화장품/뷰티" },
+    { productName: "수납 바구니", category: "리빙" },
+  ];
+  for (const sample of categorySamples) {
+    for (let index = 0; index < 2_000; index += 1) {
+      const selected = selectVideoParodyGenre({
+        analysis: analysis(sample),
+        recentGenres: index % 2 ? ["price-negotiation"] : [],
+        seed: `${sample.category}:seed-${index}`,
+      });
+      reached.add(selected.id);
+    }
+  }
+  assert.deepEqual([...reached].sort(), [...AUTOMATIC_CREATIVE_GENRES].sort());
+});
+
+test("일반 판매가만 있는 상품은 억지 가격 실랑이를 기본 선택하지 않는다", () => {
+  const selected = selectVideoParodyGenre({
+    analysis: analysis({ originalPrice: "", discountInfo: "", promotion: "" }),
+    recentGenres: [],
+    seed: "ordinary-price",
+  });
+  assert.notEqual(selected.id, "price-negotiation");
+});
+
 test("시대·사회 세계관극은 창작 세계와 검증 상품 사실을 분리하도록 지시한다", () => {
   const prompt = videoParodyGenrePrompt("historical-world-parody", []);
   assert.match(prompt, /선택 장르: 시대·사회 세계관극/);
@@ -52,6 +89,13 @@ test("시대·사회 세계관극은 창작 세계와 검증 상품 사실을 �
     ),
     true,
   );
+});
+
+test("가상의 의사 가족 추천은 허용하되 의학적 효능 근거로 쓰지 않는다", () => {
+  const prompt = videoParodyGenrePrompt("family-office-sitcom", []);
+  assert.match(prompt, /가상의 의사 가족/);
+  assert.match(prompt, /허용/);
+  assert.match(prompt, /의학적 효능·치료·보증의 근거로 사용하지 않는다/);
 });
 
 test("과거 법정 기획은 명시적 필드가 없어도 법정 장르로 인식한다", () => {
@@ -73,7 +117,7 @@ test("최근 사용 장르는 다음 자동 선택에서 강하게 제외한다"
 
 test("선택 장르 프롬프트는 최근 장르와 법정 문법을 명시적으로 금지한다", () => {
   const prompt = videoParodyGenrePrompt("blind-test", ["courtroom", "news-report"]);
-  assert.match(prompt, /선택 장르: 블라인드 테스트/);
+  assert.match(prompt, /선택 장르: 직접 비교·사용 확인/);
   assert.match(prompt, /최근 사용으로 금지된 장르: 법정·청문회 · 뉴스 속보·현장 취재/);
   assert.match(prompt, /법정·재판·판사·판결/);
 });

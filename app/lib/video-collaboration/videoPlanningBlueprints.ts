@@ -912,11 +912,30 @@ export function selectVideoPlanningBlueprints(input: {
   analysis: ProductAnalysisSnapshot;
   archetypes: VideoConceptArchetype[];
   parodyGenre?: VideoParodyGenre;
+  /**
+   * 새 프로젝트마다 적합 후보의 우선순위를 회전하되, 같은 프로젝트의
+   * 재시도·상세 대본 생성에서는 같은 레퍼런스를 다시 선택하기 위한 값입니다.
+   */
+  selectionSeed?: string;
 }): Partial<Record<VideoConceptArchetype, VideoPlanningBlueprintSelection>> {
   const expected = preferredCategory(input.analysis);
   const used = new Set<string>();
   const usedFamilies = new Set<string>();
   const result: Partial<Record<VideoConceptArchetype, VideoPlanningBlueprintSelection>> = {};
+
+  function rotationScore(blueprintId: string, archetype: VideoConceptArchetype) {
+    if (!input.selectionSeed) return 0;
+    const value = `${input.selectionSeed}:${archetype}:${blueprintId}`;
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    // Keep category and archetype compatibility dominant. This only rotates
+    // candidates inside the same compatibility tier.
+    return ((hash >>> 0) / 0xffffffff) * 0.95;
+  }
+
   for (const archetype of input.archetypes) {
     const ranked = VIDEO_PLANNING_BLUEPRINTS.map((blueprint, index) => ({
       blueprint,
@@ -925,11 +944,12 @@ export function selectVideoPlanningBlueprints(input: {
         (blueprint.archetypes.includes(archetype) ? 6 : 0) -
         (used.has(blueprint.id) ? 2 : 0) -
         (usedFamilies.has(blueprintFamily(blueprint)) ? 1 : 0) -
-        index / 100 +
+        (input.selectionSeed ? index / 100_000 : index / 100) +
         // 22개 모두 실제 자막·장면 원문이 연결돼 있다. 이 가중치는 향후
         // 불완전한 운영자 등록본이 섞여도 상세 정본을 우선하기 위한 방어선이다.
         (blueprint.sourceReferenceId ? 0.5 : 0) +
-        (archetype === "parody" ? parodyGenreScore(blueprint, input.parodyGenre) : 0),
+        (archetype === "parody" ? parodyGenreScore(blueprint, input.parodyGenre) : 0) +
+        rotationScore(blueprint.id, archetype),
     })).sort((left, right) => right.score - left.score);
     const primary = ranked[0].blueprint;
     used.add(primary.id);
@@ -945,13 +965,14 @@ export function selectVideoPlanningBlueprints(input: {
       archetype !== "parody" ||
       !input.parodyGenre ||
       (input.parodyGenre === "price-negotiation" && PRICE_NEGOTIATION_BLUEPRINTS.has(primary.id)) ||
-      (input.parodyGenre === "historical-world-parody" && primary.sourceReferenceId === "original-source-history-problem-truth-bridge");
+      (input.parodyGenre === "historical-world-parody" && primary.sourceReferenceId === "original-source-history-problem-truth-bridge") ||
+      (input.parodyGenre === "family-office-sitcom" && primary.archetypes.includes("real-review"));
     result[archetype] = {
       primaryId: primary.id,
       secondaryId: secondary?.id,
       reason: hasDirectGenreReference
         ? `${primary.format}의 전개가 ${archetype} 콘셉트와 맞고, ${expected === primary.sourceCategory ? "상품군의 사용·증거 장면까지 직접 참고할 수 있습니다." : "카테고리는 달라도 훅·증거·CTA 구조를 안전하게 전용할 수 있습니다."}`
-        : `분석된 22개 영상에 '${input.parodyGenre}' 장르와 직접 일치하는 원본이 없어 가격 흥정 문법은 사용하지 않습니다. ${primary.format}에서 상품군의 증거·자막 리듬만 가져오고 선택 장르의 사건 문법은 별도로 적용합니다.`,
+        : `분석된 22개 영상에 '${input.parodyGenre}' 전개와 직접 일치하는 원본이 없어 ${primary.format}의 실제 증거·자막 리듬만 가져옵니다. 원문에 없는 영화식 장치나 다른 장르 문법은 덧붙이지 않습니다.`,
       transferableRules: primary.transferableRules.slice(0, 4),
     };
   }

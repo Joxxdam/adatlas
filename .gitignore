@@ -121,6 +121,7 @@ public/video-collaboration/*
 /.data/ad-copy/
 /.data/generated/
 /.data/creative-generation/
+/.data/creative-archive/index.json
 /.data/site-candidates/
 /.data/creative-plan-cache/
 public/generated/

@@ -18,7 +18,7 @@ import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
 import { buildProductTruth, extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNativeAdReference, type NativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, createBestEffortReferenceCopyPlan, hasExecutableReferenceCopyContract, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, hasExecutableReferenceCopyContract, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
 import { enforceExactRenderedCopyValidation, enforceNoSourceDisclosureCopy, enforceOriginCopyPolicy, enforceReferenceCopyPlanValidity, enforceReferenceCopySlotCompleteness } from "./nativeCreativeValidation";
 import { resolveProductRenderingPolicy } from "./productRenderingPolicy";
 
@@ -128,7 +128,7 @@ export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation,
   if (validation.comparisonSemanticAligned === false) return true;
   if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
   if (isMeat && (validation.productIdentity < 82 || validation.foodAppetiteAppeal < 82)) return true;
-  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|원본\s*인물|같은\s*인물|인물\s*동일|인물\s*구도|원본\s*동물|같은\s*동물|동물\s*교체|원본\s*(?:장소|배경)|배경\s*(?:미교체|재구성)|타깃\s*(?:고객|인물)|포즈|시선|얼굴\s*복제|이전\s*문구|출처\s*문구|원산지|국내산|국산|연출\s*(?:이미지|사진)|예시\s*(?:이미지|사진)|이해를\s*돕기|(?:AI|인공지능)\s*(?:를|을)?\s*(?:활용|사용|생성)|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|프라이팬|후라이팬|불판|그릴|정육\s*(?:트레이|용기)|고기\s*(?:트레이|용기)|김치\s*(?:통|용기|트레이)|벌크\s*(?:통|용기)|절임\s*(?:통|용기)|조리\s*(?:도구|용기)|주방\s*도구|의미\s*(?:소품|용기|배경|캐릭터|아이콘|장식)|무관한\s*(?:캐릭터|아이콘|일러스트|재료)|엉뚱한\s*(?:캐릭터|아이콘|일러스트|재료)|카테고리\s*(?:소품|용기|불일치)|source\s*(?:brand|copy|price|person|animal|background)|same\s*(?:person|face|pose|animal)|face\s*(?:cop|swap)|recognizable\s*(?:face|identity)|human\s*(?:composition|pose|framing)|animal\s*(?:replacement|identity)|contextual\s*background|target\s*audience|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|semantic\s*(?:prop|carrier|container|vessel|motif)|decorative\s*(?:motif|character|icon|illustration)|unrelated\s*(?:character|mascot|icon|illustration|ingredient)|category[-\s]*(?:incompatible|mismatch)|cookware|frying\s*pan|meat\s*tray|kimchi\s*(?:tub|container)|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|marbling|meat\s*texture|thickness|fat-to-lean/i.test(failure));
+  return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|원본\s*인물|같은\s*인물|인물\s*동일|인물\s*구도|원본\s*동물|같은\s*동물|동물\s*교체|원본\s*(?:장소|배경)|배경\s*(?:미교체|재구성)|타깃\s*(?:고객|인물)|포즈|시선|얼굴\s*복제|이전\s*문구|출처\s*문구|원산지|국내산|국산|연출\s*(?:이미지|사진)|예시\s*(?:이미지|사진)|이해를\s*돕기|(?:AI|인공지능)\s*(?:를|을)?\s*(?:활용|사용|생성)|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|프라이팬|후라이팬|불판|그릴|정육\s*(?:트레이|용기)|고기\s*(?:트레이|용기)|김치\s*(?:통|용기|트레이)|벌크\s*(?:통|용기)|절임\s*(?:통|용기)|조리\s*(?:도구|용기)|주방\s*도구|의미\s*(?:소품|용기|배경|캐릭터|아이콘|장식)|무관한\s*(?:캐릭터|아이콘|일러스트|재료)|엉뚱한\s*(?:캐릭터|아이콘|일러스트|재료)|카테고리\s*(?:소품|용기|불일치)|source\s*(?:brand|copy|price|person|animal|background)|same\s*(?:person|face|pose|animal)|face\s*(?:cop|swap)|recognizable\s*(?:face|identity)|human\s*(?:composition|pose|framing)|animal\s*(?:replacement|identity)|contextual\s*background|target\s*audience|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|semantic\s*(?:prop|carrier|container|vessel|motif)|decorative\s*(?:motif|character|icon|illustration)|unrelated\s*(?:character|mascot|icon|illustration|ingredient)|category[-\s]*(?:incompatible|mismatch)|cookware|frying\s*pan|meat\s*tray|kimchi\s*(?:tub|container)|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|건조|말라|퍽퍽|매트|윤기\s*없|marbling|meat\s*texture|thickness|fat-to-lean|dry|chalky|matte|dehydrat/i.test(failure));
 }
 
 async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<CopyPlan>) {
@@ -141,6 +141,7 @@ async function updateCopy(job: GenerationJob, resultId: string, copy: Partial<Co
     offer: String(copy.offer ?? current.hookPlan.offer).trim(),
     cta: String(copy.cta ?? current.hookPlan.cta).trim(),
   };
+  assertBrandlessCreativeCopy(Object.values(next).join(" "), job);
   assertCreativeCopyAllowed(Object.values(next).join(" "));
   const factual = validateCopyAgainstTruth(Object.values(next).join(" "), job.productTruth);
   if (!factual.valid) {
@@ -238,6 +239,25 @@ async function validStageFile(file: string | undefined) {
 function isTimeoutLike(error: unknown) {
   const message = error instanceof Error ? error.message : String(error || "");
   return (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) || /(?:operation was aborted|timed?\s*out|timeout|시간.*초과|진행 이벤트 없이)/i.test(message);
+}
+
+function assertBrandlessCreativeCopy(copy: string, job: GenerationJob) {
+  const signature = String(copy || "")
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .toLocaleLowerCase("ko-KR");
+  const forbidden = Array.from(new Set([
+    job.productTruth.product.advertiserName,
+    job.productTruth.product.brandName,
+    job.productTruth.normalized.brandName,
+  ].map((value) => String(value || "").trim()).filter(Boolean)));
+  const matched = forbidden.find((name) => {
+    const normalized = name.normalize("NFKC").replace(/[^\p{L}\p{N}]+/gu, "").toLocaleLowerCase("ko-KR");
+    return normalized.length >= 2 && signature.includes(normalized);
+  });
+  if (matched || /(?:탑|top)\s*브랜드/iu.test(copy)) {
+    throw new Error(`브랜드·업체명은 광고 문구에 사용할 수 없습니다${matched ? `: ${matched}` : "."} 브랜드는 별도 로고 후처리에서만 적용해 주세요.`);
+  }
 }
 
 async function validStageFileWrittenSince(file: string, startedAt: number) {
@@ -412,68 +432,18 @@ async function runNativeResultGeneration(input: NativeResultInput) {
   if (!(await validStageFile(selectedAdReference.path))) {
     throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
   }
-  // 최신 문구 배치는 6장을 한 번에 만들고 실패 항목만 한 번 수정한다. 품질
-  // 미달은 이미지 생성을 막지 않고 결과의 확인 필요 사유로 남긴다. 다만 빈
-  // 비브랜드 슬롯이나 사실 안전성 문제가 있어 편집 자체가 불가능한 계획은
-  // ProductTruth 기반 best-effort 문구로 교체한 뒤 생성한다.
+  // 최신 문구 배치는 6장을 한 번에 만들고 실패 항목만 한 번 수정한다.
+  // 그 뒤에도 자연스러움·레퍼런스 구조·사실 안전성 중 하나라도 미달이면
+  // 비싼 이미지 단계를 열지 않는다. 실패 문구를 이미지에 구워 넣은 뒤
+  // 사람이 발견하는 방식은 허용하지 않는다.
   const userConfirmedCopy = action === "copy-update";
   if (!userConfirmedCopy && !hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
-    const previousPlan = initial.referenceAdaptedCopyPlan;
-    const executablePlan = hasExecutableReferenceCopyContract(previousPlan)
-      ? previousPlan
-      : await createBestEffortReferenceCopyPlan({
-          truth: job.productTruth,
-          reference: selectedAdReference,
-          index: Math.max(0, initial.order - 1),
-          previous: previousPlan,
-        });
-    if (!executablePlan || !hasExecutableReferenceCopyContract(executablePlan)) {
-      const reasons = executablePlan?.validationErrors?.slice(0, 3).join(" · ");
-      throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구에서 안전하게 대체할 수 없는 상품 사실 오류가 확인됐습니다.${reasons ? ` ${reasons}` : " ProductTruth를 다시 확인해 주세요."}`);
-    }
-    const usedFallback = executablePlan !== previousPlan;
-    const currentCode = initial.hookPlan.hookCode;
-    job = await creativeGenerationJobStore.update(job.id, (active) => ({
-      ...active,
-      errors: [
-        ...active.errors,
-        `${currentCode} 문구 품질 경고를 남기고 ${usedFallback ? "ProductTruth 안전 문구로 교체해 " : "현재 문구로 "}이미지 제작을 계속합니다.`,
-      ].slice(-20),
-      recoveryLog: [
-        ...(active.recoveryLog || []),
-        {
-          at: new Date().toISOString(),
-          message: usedFallback ? "편집 불가능 문구를 ProductTruth 안전 문구로 교체하고 이미지 생성 계속" : "문구 품질 경고를 보존하고 이미지 생성 계속",
-          resultIds: [initial.id],
-        },
-      ].slice(-20),
-      results: active.results.map((result) => result.id === initial.id
-        ? {
-            ...result,
-            referenceAdaptedCopyPlan: executablePlan,
-            hookPlan: {
-              ...result.hookPlan,
-              headline: executablePlan.headline,
-              body: executablePlan.subCopy,
-              proof: executablePlan.proof,
-              offer: executablePlan.offer,
-              cta: executablePlan.cta,
-              factIds: executablePlan.factIds,
-              numericTokens: extractNumericTokens([
-                executablePlan.headline,
-                executablePlan.subCopy,
-                executablePlan.proof,
-                executablePlan.offer,
-                executablePlan.cta,
-              ].join(" ")),
-              validationStatus: executablePlan.validationStatus === "valid" ? "valid" : "fallback",
-              validationErrors: executablePlan.validationErrors,
-              generationSource: usedFallback ? "fallback" : result.hookPlan.generationSource,
-            },
-          }
-        : result),
-    }));
-    initial = job.results.find((result) => result.id === input.resultId)!;
+    const reasons = initial.referenceAdaptedCopyPlan?.validationErrors?.slice(0, 3).join(" · ");
+    throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구가 제작 품질 기준을 통과하지 못해 이미지 생성을 시작하지 않았습니다.${reasons ? ` ${reasons}` : " 문구를 다시 준비해 주세요."}`);
+  }
+  if (userConfirmedCopy && !hasExecutableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
+    const reasons = initial.referenceAdaptedCopyPlan?.validationErrors?.slice(0, 3).join(" · ");
+    throw new Error(`수정한 문구에 빈 슬롯·상품 사실·브랜드 사용 오류가 있어 이미지에 반영하지 않았습니다.${reasons ? ` ${reasons}` : " 문구를 다시 확인해 주세요."}`);
   }
   referenceMs = Date.now() - referenceStarted;
   const directory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, initial.hookPlan.hookCode);

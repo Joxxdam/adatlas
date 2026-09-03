@@ -3,7 +3,7 @@ import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 import type { CreativeImageAsset, CreativeImageRole, FactVerification, ProductFact, ProductEvidenceType, ProductTruth } from "./types";
 import { isAmbiguousMerchantCredentialCreativeSignal, isDomesticOriginCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMeatProductContext, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal, isPackageLabelOcrCopyNoise, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim, removeOriginCreativePhrases } from "./productSignalHygiene.ts";
 
-export const PRODUCT_TRUTH_VERSION = "product-truth-v10-product-image-identity-and-copy-quality";
+export const PRODUCT_TRUTH_VERSION = "product-truth-v11-brandless-copy-and-clean-title";
 
 function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
@@ -24,8 +24,12 @@ export function cleanProductTitle(rawTitle: string, brandName = "") {
     // 아래 titleBackedClaims에서 별도 사실로 보존하고 상품명에서는 분리한다.
     .replace(/^\s*(?:\d+\s*일\s*)?(?:(?:추석|설날?|명절)\s*맞이\s*)?(?:웻\s*에이징\s*)?숙성한\s*(?:(?:미친\s*맛|왕\s*도매\s*가격)\s*)?[-:–—!]?\s*/iu, " ")
     .replace(/[★☆*✅⚡💥]+/gu, " ")
+    .replace(/^\s*(?:(?:첫\s*출시|신규\s*출시|출시\s*기념|입점\s*기념|런칭\s*기념|오픈\s*기념|신상품)\s*[-:–—·/]?\s*)+/giu, " ")
     .replace(/\s*[&＆]\s*/g, " · ")
     .replace(/(?:오르기\s*전\s*가격에|가격\s*오르기\s*전|추석\s*사전\s*예약\s*가능|후기\s*1등|왕\s*도매\s*가격|파격\s*특가|당일\s*생산)/giu, " ")
+    // SEO 상품명 앞에 붙은 출시·입점 캠페인 토큰은 상품 정체성이 아니다.
+    // 하이픈에 붙어 있어도 광고 문구로 흘러가지 않도록 정규화 단계에서 제거한다.
+    .replace(/^(?:(?:첫\s*출시|신규\s*출시|출시\s*기념|입점\s*기념|런칭\s*기념|오픈\s*기념|신상품)\s*[-:–—·/]?\s*)+/giu, " ")
     .replace(/\([^)]*(?:실속\s*도매팩|사전\s*예약|후기\s*1등|선별\s*숙성|당일\s*생산)[^)]*\)/giu, " ")
     .replace(/(?:지방\s*손질\s*[·&＆/+]?\s*로스\s*제거|대한\s*선별|\d+중\s*선별한?|하이\s*마블\s*특|실속\s*도매팩|선별\s*상품|왕\s*도매\s*가격|프리미엄)/giu, " ")
     .replace(/(?:^|\s)(?:재구매|최고의\s*간식|인기\s*간식|추천\s*상품|대용량|괴물\s*용량)(?=\s|$)/giu, " ")
@@ -38,8 +42,14 @@ export function cleanProductTitle(rawTitle: string, brandName = "") {
     .replace(/\s*\(\d+\)\s*$/g, " ");
   if (brandName.trim()) {
     const escaped = brandName.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    value = value.replace(new RegExp(`(?:^|\\s)${escaped}(?:\\s|$)`, "giu"), " ");
+    value = value.replace(new RegExp(escaped, "giu"), " ");
   }
+  value = value
+    // 판매자가 브랜드 필드를 분리하지 못한 경우에도 `탑브랜드한우`처럼
+    // 카테고리명 앞에 붙은 브랜드성 토큰만 제거하고 `한우`는 보존한다.
+    .replace(/(?:^|[\s\-:–—])[^\s/]{1,20}?브랜드(?=(?:한우|소고기|쇠고기|돼지고기|육우|화장품|건강기능식품|영양제))/giu, " ")
+    // 같은 부위를 SEO용 슬래시로 반복한 표현은 한 번만 남긴다.
+    .replace(/(^|\s)([^\s/]{2,20})\s*\/\s*\2(?=\s|$)/giu, "$1$2");
   if (/웻\s*에이징/iu.test(value)) value = value.replace(/숙성한(?=\s|$)/giu, " ");
   return (
     value.replace(/^\s*[-:–—]+|[-:–—]+\s*$/gu, " ").replace(/\s+/g, " ").trim() ||
@@ -198,7 +208,7 @@ function stableId(value: string) {
   return (hash >>> 0).toString(36);
 }
 
-function imageAsset(params: { path: string | undefined; role: CreativeImageRole; source: CreativeImageAsset["source"]; verified: boolean; reason: string; hasText?: boolean; transparent?: boolean; validationStatus?: CreativeImageAsset["validationStatus"]; classificationSignals?: string[] }): CreativeImageAsset | null {
+function imageAsset(params: { path: string | undefined; role: CreativeImageRole; source: CreativeImageAsset["source"]; verified: boolean; reason: string; width?: number; height?: number; hasText?: boolean; transparent?: boolean; validationStatus?: CreativeImageAsset["validationStatus"]; classificationSignals?: string[]; productFocusRatio?: number }): CreativeImageAsset | null {
   const imagePath = String(params.path || "").trim();
   if (!imagePath) return null;
   return {
@@ -208,10 +218,13 @@ function imageAsset(params: { path: string | undefined; role: CreativeImageRole;
     source: params.source,
     verified: params.verified,
     reason: params.reason,
+    width: params.width,
+    height: params.height,
     hasText: params.hasText,
     transparent: params.transparent,
     validationStatus: params.validationStatus || (params.verified ? "confirmed" : "excluded"),
     classificationSignals: params.classificationSignals,
+    productFocusRatio: params.productFocusRatio,
   };
 }
 
@@ -289,9 +302,12 @@ function buildImageAssets(input: { product: ProductInfoForPrompt; productImagePa
       verified: finalVerified,
       validationStatus: finalVerified ? classification.validationStatus : classification.validationStatus === "excluded" ? "excluded" : "needs-confirmation",
       reason: finalVerified ? reason : classification.validationStatus === "excluded" ? classification.reason : "자동 수집 갤러리라 상품 이미지로 확정되지 않음",
+      width: candidate?.width,
+      height: candidate?.height,
       hasText: candidate?.hasText,
       transparent: candidate?.alreadyTransparent,
       classificationSignals: classification.signals,
+      productFocusRatio: candidate?.salesUnitMatchScore,
     });
   };
   // Explicit role assignments come from the product workbench or the known
@@ -472,7 +488,12 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
     ...detailOcrFacts,
     fact("base-product-name", "정제 상품명", normalizedTruth.baseProductName || normalizedTruth.cleanProductName, verification, source, product.landingUrl),
     fact("verified-descriptor", "확인된 상품 표현", normalizedTruth.verifiedDescriptor, verification, source, product.landingUrl),
-    fact("brand-name", "브랜드", product.brandName || product.advertiserName, verification, source, product.landingUrl),
+    // 브랜드는 상품 동일성·후처리 로고 선택에만 보존한다. 기본 광고 문구에는
+    // 절대 사용하지 않으므로 ProductTruth 단계에서 copyEligibility를 차단한다.
+    fact("brand-name", "브랜드", product.brandName || product.advertiserName, verification, source, product.landingUrl, {
+      copyEligibility: "blocked",
+      evidenceType: "identity",
+    }),
     fact("category", "카테고리", product.category, verification, source, product.landingUrl),
     fact("price", "판매가", product.price, verification, source, product.landingUrl),
     fact("original-price", "기존가", product.originalPrice || product.oldPrice, verification, source, product.landingUrl),

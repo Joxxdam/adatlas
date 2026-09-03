@@ -7,7 +7,15 @@ import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter.ts";
 import { isMeatProductContext } from "./productSignalHygiene.ts";
 import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 
-export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v35-meat-presentation-contract";
+export const NATIVE_FINAL_PROMPT_VERSION = "reference-native-copy-v36-reference-intent-appetite-brandless";
+
+function forbiddenBrandNames(job: GenerationJob) {
+  return Array.from(new Set([
+    job.productTruth.product.advertiserName,
+    job.productTruth.product.brandName,
+    job.productTruth.normalized.brandName,
+  ].map((value) => String(value || "").trim()).filter(Boolean)));
+}
 
 function materialLabel(result: GenerationResult) {
   return `소재 ${String(result.order).padStart(2, "0")}`;
@@ -215,6 +223,7 @@ function originalSourceResearchSceneContract(job: GenerationJob, result: Generat
 
 /** Native generation creates the complete advertisement, never a background plate. */
 export function buildNativeFinalCreativePrompt(job: GenerationJob, result: GenerationResult, outputPath: string, feedback?: string, brandMemory?: AdvertiserBrandMemory) {
+  const excludedBrands = forbiddenBrandNames(job);
   const brief = result.hookPlan.creativeBrief;
   const layout = buildAdaptiveLayoutPlan({ truth: job.productTruth, result, groupResults: job.results });
   const grammar = referenceCreativeGrammars.find((item) => item.id === layout.grammarId);
@@ -270,6 +279,7 @@ ${exactCopy}
 
 COPY RULES
 - Render the exact strings above in Korean; do not translate, paraphrase, duplicate or invent extra claims.
+- BRANDLESS COPY IS MANDATORY: do not render any advertiser, seller or brand name in ad copy, proof, badge, CTA or decorative typography. Forbidden names: ${JSON.stringify(excludedBrands)}. Branding may be applied only by the separate user-selected logo post-process.
 - Main hook: dominant 1-2 lines, immediately readable on mobile. Sub copy/proof: at most 1-2 compact supporting lines.
 - Offer and price may appear only when supplied above. Never invent discounts, review counts, ratings, temperature changes, efficacy figures, origin, grade, quantity, urgency or endorsements.
 - Prefer fewer, larger text groups. Do not cover the scene with a giant pale/white translucent UI panel.
@@ -312,7 +322,7 @@ ABSOLUTE EXCLUSIONS
 - No locally composited-looking product, detached drop shadow, duplicated label, fake packaging, deformed logo or changed sales unit.
 - No huge white copy sheet covering the central product/scene, no receipt roll unless the verified hook specifically requires a price-receipt visual, and no prior-ad fragments.
 - No unsupported scientific dashboard, thermal image, review screenshot, chat identity or rating graphic.
-- No newly generated standalone logo, wordmark, calligraphic brand name, initials, monogram, emblem, crest, seal, certification badge, signature or stamp anywhere outside the physical target product/package. When the exact ad copy contains a brand or product name, render it only as ordinary copy in its assigned text zone, never as a logo-like mark. Optional advertiser branding is a separate user-selected delivery post-process and must not be created in this raster.
+- No newly generated standalone logo, wordmark, calligraphic brand name, initials, monogram, emblem, crest, seal, certification badge, signature or stamp anywhere outside the physical target product/package. Advertiser, seller and brand names are forbidden even as ordinary ad copy. Optional advertiser branding is a separate user-selected delivery post-process and must not be created in this raster.
 
 ${feedback ? `REVISION DIRECTION\n${feedback}\nRegenerate the ENTIRE final advertisement. Do not patch only the background or overlay only the copy.` : ""}`;
 }
@@ -362,6 +372,7 @@ export function buildNativeStagePrompt(stage: NativeCreativeGenerationStage, job
   const foodObjectPolicy = comparisonReference
     ? `- This is a semantic comparison reference. The unfavorable/problem side may contain exactly one generic, unbranded SAME-CATEGORY alternative to the current product. It must look ordinary, sparse or poor-value but still safe and edible—never spoiled, contaminated or a named competitor. The favorable/solution side must show the authoritative current product. Every other edible object must be the current product or a verified ingredient/component; remove all unrelated source foods and garnishes.`
     : `- For a food product, every visible edible object must be the current product itself or an ingredient/component explicitly proven by ProductTruth or the authoritative product images. Never retain or invent unrelated mushrooms, vegetables, fruit, meat, garnish, side dishes or ingredient piles merely because they existed in the source reference or look decorative.`;
+  const excludedBrands = forbiddenBrandNames(job);
   const shared = `
 OUTPUT CONTRACT
 - Use the image generation skill to EDIT or CREATE exactly one complete square raster and save it to: ${outputPath}
@@ -369,10 +380,11 @@ OUTPUT CONTRACT
 - Final composition target is a Korean performance advertisement for ${productName}, exported later as 1200x1200 JPEG.
 - Never invent price, discount, origin, grade, quantity, review, efficacy, certification or urgency. Verified facts: ${facts.length ? facts.join("; ") : "none beyond the supplied copy and visible product identity"}.
 - Never render shipping, free-shipping, shipping-fee, dispatch, arrival-date, courier or delivery copy, even if the source advertisement contains it.
+- BRANDLESS COPY IS MANDATORY: never render an advertiser, seller or brand name in headline, support, proof, offer, badge, CTA or decorative text. Forbidden names: ${JSON.stringify(excludedBrands)}. Remove source branding completely; optional target branding is added only by the later user-selected logo post-process.
 - ${originCopyPolicy}
 ${foodObjectPolicy}
 - Keep all important content inside a generous square safe area. No clipping, broken anatomy, fake UI, illegible Hangul or accidental overlaps.
-- Preserve a real logo only when it is physically printed on the authoritative target product/package. Everywhere else, never generate a standalone logo, wordmark, calligraphic brand/product name, initials, monogram, emblem, crest, seal, certification badge, signature or stamp. A brand/product name required by the exact copy is ordinary ad typography only. User-selected advertiser branding is applied later as a separate delivery post-process, not in this raster.
+- Preserve a real logo only when it is physically printed on the authoritative target product/package and visually supported by that exact package reference. Everywhere else, never generate a standalone logo, wordmark, calligraphic brand/product name, initials, monogram, emblem, crest, seal, certification badge, signature or stamp. Brand names are not permitted in the exact ad copy. User-selected advertiser branding is applied later as a separate delivery post-process, not in this raster.
 - ${materialLabel(result)} uses its own randomly assigned ZIP reference. H01-H06 is only an internal ordering code; do not invent or impose a separate hook concept.
 
 ${productContract}
@@ -549,6 +561,7 @@ export function buildNativeValidationPrompt(job: GenerationJob, result: Generati
     : result.referenceAdaptedCopyPlan?.referenceRawLines?.filter((line) => line.trim()).length || 0;
   const targetCustomer = targetCustomerForHuman(job, result);
   const premiseContract = creativePremisePromptContract(result);
+  const excludedBrands = forbiddenBrandNames(job);
   return `Inspect the attached COMPLETE Korean performance advertisement.
 Attachment order after the finished advertisement: first the randomly selected ZIP advertisement reference for composition fidelity when present, then authoritative URL product reference images.
 Product: ${job.productTruth.normalized.cleanProductName || job.productTruth.product.productName}
@@ -557,6 +570,7 @@ Required sub copy: ${result.hookPlan.body}
 Required offer: ${result.hookPlan.offer || "none"}
 Required CTA: ${result.hookPlan.cta || "none"}
 Required target lines in order: ${JSON.stringify(adaptedLines)}
+Forbidden advertiser/seller/brand names in all advertisement copy: ${JSON.stringify(excludedBrands)}. If any appears as a headline, proof, badge, CTA or decorative typography, require revise. Only a real mark physically printed on an authoritative package may remain; do not treat that exception as permission to invent package text.
 Required visible source-copy slot count to preserve: ${copySlots.length ? sourceSlotCount : sourceSlotCount || "read from the reference image"}
 Source-brand/remove slots that must be text-free background after removal: ${JSON.stringify(sourceBrandRemovalSlots)}
 Source-brand region clear required: ${sourceBrandRegionClearRequired}. Every listed source-brand region must lose both its text/logo and its associated visual container; an empty badge/capsule/ribbon/button/colored panel is not cleared background.
@@ -574,10 +588,10 @@ ${originCopyPolicy} Transcribe any visible origin wording into observedKoreanTex
 
 MANDATORY FOOD-OBJECT AUDIT: inspect the complete canvas and enumerate every visible edible object, ingredient, garnish, side dish and food-shaped decorative motif. Compare each one with the current product, ProductTruth and authoritative product images. Set unrelatedFoodOrIngredientDetected=true if even one edible object cannot be verified as the current product or a real ingredient/component; list it precisely in unrelatedFoodOrIngredientFindings and require revise. For example, mushrooms beside apples, bell peppers beside crackers, meat-table garnishes beside dried fruit, or unrelated produce characters are critical failures. For non-food products set the field false unless food is incorrectly present in the scene.
 
-MANDATORY STRUCTURED MEAT AUDIT: ${meatPresentation ? `this material's resolved meat mode is ${meatPresentation.mode}${meatPresentation.verifiedPackCount ? ` with exactly ${meatPresentation.verifiedPackCount} verified packs` : ""}. Cooked presentation allowed=${meatPresentation.cookedSceneAllowed}; seller-provided cooked reference present=${meatPresentation.hasAuthoritativeCookedEvidence}; hook needs cooked/sensory payoff=${meatPresentation.hookNeedsCookedScene}.` : "this is not a meat product; return neutral passing meat fields, meatCookedPresentationDetected=false and meatObservedPackCount=0."}
-For meat, always return every structured meat field. Set meatCutIdentityAccurate=true only when the seller-proven cut outline, median width-to-thickness ratio, fat cap/distribution and marbling range remain identifiable. Set meatTextureNatural=false or meatArtificialPatternDetected=true for cloned/mirrored/symmetrical/grid-like/spiderweb/worm-like grain, repeated vein maps, embossed/printed surface patterns, plastic/waxy/rubbery gloss or impossible fibers, and list exact regions in meatArtificialPatternFindings. Set meatGrotesqueDetailDetected=true for exaggerated pores, torn wet fibers, blood, sinew, connective tissue or anatomical macro detail that is unappetizing; list it in meatGrotesqueDetailFindings. A clean commercial close-up may be detailed, but it must remain appetizing and photographic.
+MANDATORY STRUCTURED MEAT AUDIT: ${meatPresentation ? `this material's resolved meat mode is ${meatPresentation.mode}${meatPresentation.verifiedPackCount ? ` with exactly ${meatPresentation.verifiedPackCount} verified packs` : ""}. Cooked presentation allowed=${meatPresentation.cookedSceneAllowed}; seller-provided cooked reference present=${meatPresentation.hasAuthoritativeCookedEvidence}; hook needs cooked/sensory payoff=${meatPresentation.hookNeedsCookedScene}; inherited reference needs cooked state transition=${meatPresentation.referenceNeedsCookedScene}.` : "this is not a meat product; return neutral passing meat fields, meatCookedPresentationDetected=false and meatObservedPackCount=0."}
+For meat, always return every structured meat field. Set meatCutIdentityAccurate=true only when the seller-proven cut outline, median width-to-thickness ratio, fat cap/distribution and marbling range remain identifiable. Set meatTextureNatural=false or meatArtificialPatternDetected=true for cloned/mirrored/symmetrical/grid-like/spiderweb/worm-like grain, repeated vein maps, embossed/printed surface patterns, plastic/waxy/rubbery gloss or impossible fibers, and list exact regions in meatArtificialPatternFindings. Set meatGrotesqueDetailDetected=true for exaggerated pores, torn wet fibers, blood, sinew, connective tissue or anatomical macro detail that is unappetizing; list it in meatGrotesqueDetailFindings. A clean commercial close-up may be detailed, but it must remain appetizing and photographic. Natural appetite appeal requires warm directional food light, credible rich lean color, creamy fat, local contrast/depth and small varied specular moisture highlights. Matte, chalky, gray, dry, dehydrated or visibly tough meat is a critical foodAppetiteAppeal failure even when anatomy is plausible. Equally reject slimy, lacquered, glassy or uniformly wet meat.
 Set meatCookedPresentationDetected=true whenever the hero meat is visibly seared, browned, grilled, cut-open after cooking, served hot or actively cooking. Cooked meat is allowed without a seller-provided cooked photograph only when the authoritative raw/cut evidence establishes the same sold cut AND cookedSceneAllowed=true because the exact hook/scene calls for cooking, eating, serving, searing or juiciness. In that case meatCookedEvidenceSatisfied=true only if the cooked result preserves the verified raw cut through plausible shrinkage and the visual directly proves the hook. It must show appetizing irregular searing, rendered fat, moist cut surfaces and abundant but physically believable juices—not dry/burned meat, orange glaze, pooled artificial liquid or a generic stock steak. Product-name words such as steak, grill or barbecue alone are not hook alignment.
-Set meatPresentationModeAligned=true only when the result follows the resolved mode. clean-retail-cut forbids cooked meat and favors the verified raw/chilled cut or one retail unit. hook-supported-cooked-scene requires a clearly legible cooking/eating/juiciness payoff that matches the exact copy. verified-set-composition requires one coherent seller-faithful package arrangement with every pack separately countable. For the set mode, count only visibly complete sales units, put that integer in meatObservedPackCount and set meatSetCompositionAccurate=true only when it exactly equals the verified count and tray/vacuum-pack/label format is preserved. For other modes, set meatSetCompositionAccurate=true and meatObservedPackCount=0. Explain any mode mismatch in meatPresentationFindings. Any false required meat field or detected artificial/grotesque condition requires revise.
+Set meatPresentationModeAligned=true only when the result follows the resolved mode. clean-retail-cut forbids cooked meat and also forbids an invented gift box, gold tray, retail pack or readable package label. hook-supported-cooked-scene requires a clearly legible cooking/eating/juiciness payoff that matches the exact copy or inherited before/after state transition; its cooked/served slot must never be replaced by packaging. verified-set-composition requires one coherent seller-faithful package arrangement with every pack separately countable. For the set mode, count only visibly complete sales units, put that integer in meatObservedPackCount and set meatSetCompositionAccurate=true only when it exactly equals the verified count and tray/vacuum-pack/label format is preserved. Any package brand, wording, badge or label not literally supported by the authoritative seller image—including generic phrases such as TOP BRAND/탑브랜드—is a fake-label critical failure. For other modes, set meatSetCompositionAccurate=true and meatObservedPackCount=0. Explain any mode mismatch or package hallucination in meatPresentationFindings and failures. Any false required meat field or detected artificial/grotesque condition requires revise.
 
 If the selected advertisement reference contains a person, treat that source person only as evidence that the composition needs a human—not as an identity, pose, action, expression, wardrobe, location or category-story reference. The final must contain a clearly different fictional adult suitable for the verified target customer (${targetCustomer}) and must visibly change at least TWO of: body orientation, pose/action, hand gesture or product grip, gaze, camera angle/height, crop, or position. The target person, action, styling, location, surrounding props, lighting and complete photographic background must form one newly generated coherent scene; person-only patching onto the old background is a critical failure. Compare concrete background landmarks between the reference and final—desk objects, pencils, bottles, glasses, wall art, furniture edges, windows, shelves, tile seams, plants and lighting patterns. If several distinctive landmarks remain in the same positions, set humanSceneBackgroundRebuilt=false even when the face, hands or product changed, and list those landmarks in humanSceneBackgroundFindings. A deleted person, the same face or biometric likeness, a face swap on the same body, a near-identical pose/framing, or an obviously unrelated target model is also a critical failure. Set sourcePersonDetected=true whenever the reference contains any visible person, partial body, model-led hand or recognizable face. Set sourcePersonReplaced=true only when a new person remains in the final and the source identity is fully gone. Set humanCompositionChanged=true only when at least two listed human-composition attributes visibly changed and the human scene is not a person-only patch. Set humanSceneBackgroundRebuilt=true only when the old location pixels and distinctive background landmark arrangement are genuinely gone. Score targetAudienceFit from 0–100 and explain failures in humanReplacementFindings. Independently set humanCopyAligned=false when the new person's action, expression, styling or situation does not visually support the exact target copy, or still tells the source advertisement's story; explain this in humanCopyAlignmentFindings.
 

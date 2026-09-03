@@ -72,7 +72,7 @@ function pickDiverseCompatibleReferences<T extends ManagedNativeReferenceItem>(i
 
 const packagedForms = new Set<NativeReferenceProductForm>(["bottle", "tube", "pouch", "box", "tray", "jar", "can", "bundle", "universal-packshot"]);
 const safePackagedCompositions = new Set<NativeReferenceCompositionType>(["product-packshot", "price-card", "product-lineup", "lifestyle-scene", "review-card", "sensory-closeup"]);
-const safeNaturalCompositions = new Set<NativeReferenceCompositionType>(["product-packshot", "price-card", "lifestyle-scene", "sensory-closeup", "natural-food-scene"]);
+const safeNaturalCompositions = new Set<NativeReferenceCompositionType>(["product-packshot", "price-card", "lifestyle-scene", "sensory-closeup", "natural-food-scene", "before-after", "comparison"]);
 
 function productFormScore(product: ProductReferenceCompatibilityProfile, item: ManagedNativeReferenceItem) {
   if (item.productForm === product.productForm) return 28;
@@ -89,16 +89,6 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
   const reasons: string[] = [];
   if (!referenceBelongsToSelectionPool(item, profile.categoryGroup, profile.foodSubcategory)) return { item, score: -100, reasons: ["상품군·추가 제작 풀 불일치"] };
   if (item.compatibilityConfidence === "low") return { item, score: -100, reasons: ["호환 태그 신뢰도 낮음"] };
-  // 일반 음식은 관리자가 음식으로 분류한 광고 디자인 전체를 하나의 선택
-  // 풀로 사용한다. 간식은 별도 하위 풀을 사용하되, 그 안에서는 원본 상품
-  // 형태나 조리 소품 때문에 추가로 제외하지 않는다.
-  if (profile.categoryGroup === "food" && !profile.foodSubcategory) {
-    return {
-      item,
-      score: 60,
-      reasons: ["음식 상품군 일치", "음식 카테고리 전체 무작위 풀"],
-    };
-  }
   if (profile.packagedProduct && !item.supportsPackagedProduct) return { item, score: -100, reasons: ["패키지 상품 미지원"] };
   if (profile.naturalFood && !item.supportsNaturalFood && !profile.foodSubcategory) {
     return { item, score: -100, reasons: ["자연 식품 장면 미지원"] };
@@ -107,7 +97,8 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
   // 화장품 패키지는 같은 단품을 여러 각도·크기로 반복하거나 제품과 사용
   // 장면을 함께 배치해도 실제 판매 수량을 바꾸지 않는다. 복수 슬롯이라는
   // 이유만으로 레퍼런스를 버리지 않고 생성 단계에서 동일 상품만 반복한다.
-  if (profile.categoryGroup !== "beauty" && profile.productCount === 1 && (item.productSlotCount || 1) > 1 && item.supportsMultipleProducts) {
+  const multiSlotRepresentsStates = item.compositionType === "before-after" || item.compositionType === "comparison";
+  if (profile.categoryGroup !== "beauty" && profile.productCount === 1 && (item.productSlotCount || 1) > 1 && item.supportsMultipleProducts && !multiSlotRepresentsStates) {
     return { item, score: -100, reasons: ["복수 상품 전용 구성"] };
   }
 
@@ -141,9 +132,6 @@ export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(
   if (compatible.length < count) {
     const categoryPath = profile.foodSubcategory ? `${profile.categoryGroup} > 간식` : profile.categoryGroup;
     throw new Error(`호환되는 광고 레퍼런스가 부족합니다. ${categoryPath} · ${profile.productForm} 상품에 필요 ${count}장, 사용 가능 ${compatible.length}장입니다. 레퍼런스 관리에서 상품군과 호환 태그를 보완해 주세요.`);
-  }
-  if (profile.categoryGroup === "food" && !profile.foodSubcategory) {
-    return pickUniqueRandomItems(compatible, count, nextIndex);
   }
   // 점수는 비호환 항목을 거르는 안전선으로만 쓴다. 통과 후 다시 상위 12점
   // 밴드로 줄이면 bottle 같은 특정 태그만 반복되어, 같은 화장품 레퍼런스가

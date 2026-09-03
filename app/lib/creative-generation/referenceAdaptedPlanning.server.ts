@@ -12,7 +12,7 @@ import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
 import { applyReferenceCopyGroupRules } from "./referenceCopyDiversity";
 import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "./referenceCopyNaturalness";
-import { hasExplicitMerchantCredentialAttribution, isAmbiguousMerchantCredentialCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
+import { isAmbiguousMerchantCredentialCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
 import { CURRENT_REFERENCE_COPY_POLICY_VERSION } from "./jobRunnerPolicy";
 import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 import { isApprovedReferenceNativeCopy, normalizeReferenceRawLines, type ReferenceTextRegion } from "./referenceLibraryManagement";
@@ -249,7 +249,7 @@ function prioritizedPlanningFacts(truth: ProductTruth) {
 function factsForPlanning(truth: ProductTruth) {
   const seen = new Set<string>();
   return prioritizedPlanningFacts(truth)
-    .filter((fact) => fact.key !== "brand-name")
+    .filter((fact) => fact.key !== "brand-name" && fact.evidenceType !== "merchant-proof")
     .filter((fact) => !isProhibitedAdCopySignal(fact.value) && fact.evidenceType !== "shipping" && !isShippingCreativeSignal(fact.value) && !isNonDomesticOriginCreativeSignal(fact.value))
     .filter((fact) => {
       const signature = comparableCopy(fact.value);
@@ -263,7 +263,7 @@ function factsForPlanning(truth: ProductTruth) {
       value: fact.value,
       copyHint: consumerFacingFactHint(fact.value),
       role: fact.copyEligibility || "headlineEligible",
-      scope: fact.evidenceType === "merchant-proof" ? "merchant" : fact.copyEligibility === "offerOnly" ? "offer" : "product",
+      scope: fact.copyEligibility === "offerOnly" ? "offer" : "product",
       priority: productFactPlanningPriority(fact),
     }));
 }
@@ -581,7 +581,6 @@ function premiseFallbackCandidates(premise: ImageCreativePremise, identity: stri
 }
 
 function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], identity: string, offerText: string, index: number) {
-  const brand = String(truth.normalized.brandName || truth.product.brandName || truth.product.advertiserName || "").trim();
   const singles = uniqueFacts(facts)
     .filter((fact) => !["category", "target", "season-event", "package-option", "quantity"].includes(fact.key))
     .filter((fact) => fact.copyEligibility !== "blocked" && fact.copyEligibility !== "offerOnly")
@@ -590,7 +589,7 @@ function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], ident
     .map((fact) => reasonTextForFact(fact, identity, truth))
     .filter((value) => value && factCharacterCount(value) <= 32);
   const contexts = contextualFallbackCandidates(truth, identity, index);
-  const values = [...contexts, ...singles, identity, brand && !comparableCopy(identity).includes(comparableCopy(brand)) ? `${brand} ${identity}` : "", offerText]
+  const values = [...contexts, ...singles, identity, offerText]
     .map((value) => String(value || "").replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const combined: string[] = [];
@@ -892,7 +891,7 @@ export function hasExecutableReferenceCopyContract(plan: ReferenceAdaptedCopyPla
   );
   if (blankNonBrandSlots.length) return false;
   const groundingErrors = (plan.validationErrors || []).filter((error) =>
-    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지(?:\s*특가)?\s*근거|배송|상품 카테고리 의미 충돌/u.test(error)
+    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지(?:\s*특가)?\s*근거|배송|브랜드|업체명|판매자명|상품 카테고리 의미 충돌/u.test(error)
   );
   if (groundingErrors.length) return false;
   const renderedCopy = [plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta, ...targetLines]
@@ -1012,7 +1011,13 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
     });
     if (!optionAndPriceBoundInOneFact) errors.push("선택 옵션과 가격의 직접 연결 근거가 없어 같은 소재에 함께 표시할 수 없습니다.");
   }
-  const merchantNames = [truth.product.advertiserName, truth.product.brandName, truth.normalized.brandName];
+  const merchantNames = [truth.product.advertiserName, truth.product.brandName, truth.normalized.brandName]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const merchantSignatures = merchantNames.map(comparableCopy).filter((value) => value.length >= 2);
+  if (merchantSignatures.some((merchant) => renderedPlanSignature.includes(merchant))) {
+    errors.push("브랜드·업체명은 광고 문구에서 제외해야 합니다.");
+  }
   const merchantSlots = (plan.copySlots?.length
     ? plan.copySlots.map((slot) => ({ role: slot.role, text: slot.targetText }))
     : [
@@ -1024,20 +1029,8 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
       ])
     .filter(({ text }) => isMerchantCredentialCreativeSignal(text));
   for (const slot of merchantSlots) {
-    if (!hasExplicitMerchantCredentialAttribution(slot.text, merchantNames)) {
-      errors.push("업체 순위·수상·업력 문구에 현재 업체·브랜드 주체가 명시되지 않았습니다.");
-    }
-    if (!["proof", "badge"].includes(slot.role)) {
-      errors.push("업체 순위·수상·업력은 상품 USP가 아니라 보조 proof·badge에만 사용할 수 있습니다.");
-    }
-    const normalizedSlot = comparableCopy(slot.text);
-    const combinesProductFact = selectedFacts.some((fact) => {
-      if (fact.evidenceType === "merchant-proof" || fact.evidenceType === "identity") return false;
-      const literal = comparableCopy(fact.value);
-      const hint = comparableCopy(consumerFacingFactHint(fact.value));
-      return (literal.length >= 4 && normalizedSlot.includes(literal)) || (hint.length >= 4 && normalizedSlot.includes(hint));
-    });
-    if (combinesProductFact) errors.push("업체 실적과 상품 USP를 같은 문구 블록에 이어 붙일 수 없습니다.");
+    void slot;
+    errors.push("업체 순위·수상·업력 문구는 브랜드 없는 상품 광고 문구에 사용할 수 없습니다.");
   }
   if ([...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].some((text) => isAmbiguousMerchantCredentialCreativeSignal(text))) {
     errors.push("주체·평가 범위가 없는 업체 실적 OCR 조각은 광고 문구로 사용할 수 없습니다.");
@@ -1211,7 +1204,7 @@ ${copyGuidePromptBlock(input.copyGuide)}
 - 원문의 단어 순서, 줄 수, 문장부호, 이모지, ㅋㅋ, ㅎㅎ, ㅠㅠ, ;;, .., ㄷㄷ, 헐, 뭐임, 겨 같은 구어체를 최대한 그대로 둔다.
 - 기존 상품·가격·혜택·업체·상품별 근거만 ProductTruth의 현재 상품 사실로 치환한다. 다만 레퍼런스의 수사 의도와 말투를 보존하는 것이 목적이지, 명사를 슬롯처럼 바꾸는 것이 목적이 아니다.
 - 문구의 첫 선택 기준은 현재 상품의 구체 USP·식감/사용감·원료·구성·사용 순간이다. 가격·혜택은 offer 역할에서만 그다음으로 사용한다. 업체의 업력·순위·수상은 상품 USP를 대신할 수 없고, 상품 근거가 충분할 때는 선택하지 않는다.
-- scope가 merchant인 업체 실적을 꼭 사용할 때만 6장 중 최대 1장의 proof 또는 badge에 배치한다. 반드시 현재 업체·브랜드명을 주어로 적고 평가 분야를 함께 쓴다. 예: '국대한우, 축산물 쇼핑몰 브랜드 파워 1위'. '한국 1위 국가대표'처럼 주체와 평가 범위가 끊긴 OCR 조각은 금지한다. 업체 실적과 '어린소라 연해요' 같은 상품 USP를 한 슬롯·한 문장에 이어 붙이지 않는다.
+- 브랜드명·업체명·판매자명과 업체 업력·순위·수상·브랜드 파워 문구는 모든 광고 문구에서 제외한다. 브랜드는 사용자가 선택한 별도 로고 후처리에서만 적용하며, 상품명이나 proof/badge에 섞지 않는다.
 - 업체별 문구 가이드는 레퍼런스 구조 안에서 어떤 상품 사실을 어떤 소비자 언어로 강조할지 결정하는 품질 기준이다. 가이드의 강한 문제 제기·손실 회피·감각 표현을 사실 범위 안에서 충분히 살리고, 무난한 상품 소개문으로 순화하지 않는다.
 ${sheetClaimPolicy(input.truth)}
 - 최종 상품 카테고리는 ${resolveProductCopyDomain(input.truth.product)}이다. 상세페이지 원료명에 과일·먹거리 단어가 있어도 바디워시·샤워젤·화장품을 간식이나 음식처럼 말하면 치명적인 상품 카테고리 의미 충돌이다. 반대로 실제 식품을 피부·샤워용 제품처럼 말하지 않는다.
@@ -1256,7 +1249,7 @@ ${vendorCopyExamplePromptBlock(input.truth)}
 - 결과 코드는 내부 순번 H01~H06일 뿐 후킹 유형이 아니다.
 
 상품 사실:
-${JSON.stringify({ productName: shortProductIdentity(input.truth), facts: factsForPlanning(input.truth), productConstraints: input.truth.productCopyConstraints || [] }, null, 2)}
+${JSON.stringify({ productName: shortProductIdentity(input.truth), facts: factsForPlanning(input.truth), forbiddenBrandNames: [input.truth.product.advertiserName, input.truth.product.brandName, input.truth.normalized.brandName].filter(Boolean), productConstraints: input.truth.productCopyConstraints || [] }, null, 2)}
 
 6장 CreativePremise 초안(역할 수를 맞추지 말고 레퍼런스 원문에 더 자연스러운 현재 v2 kind로 바꿀 수 있다. productBridge와 supportingFactIds는 바꾸지 않는다):
 ${JSON.stringify(input.references.map((reference, index) => ({ resultCode: `H${String(index + 1).padStart(2, "0")}`, referenceId: reference.id, creativePremise: input.premiseSeeds[index] })), null, 2)}
@@ -1277,7 +1270,7 @@ function profilePrompt(references: NativeAdReference[]) {
 }
 
 function criticPrompt(input: { truth: ProductTruth; profiles: ReferenceCopyProfile[]; plans: ReferenceAdaptedCopyPlan[]; copyGuide?: LoadedCopyGuide | null }) {
-  return `아래 6개 한국 광고 문구를 한 번에 독립 검수한다. 새 문구를 만들지 말고 점수와 오류만 반환한다.\n창작 맥락 허용 규칙: ${CREATIVE_CONTEXT_POLICY} 따라서 자연스럽게 연결된 계절·시즌·유행·밈·사용 상황이 ProductTruth에 없다는 이유만으로 factualSafety를 감점하거나 오류로 판정하지 않는다.\nCreativePremise 검수 규칙: creativePremise는 레퍼런스 구조를 대체하는 새 청사진이나 인물 세계관이 아니라 그 구조 안에서 사용할 가벼운 소비자 말투 방향이다. 여섯 장에 역할별 장수를 강제하지 않는다. everyday-relationship은 익숙한 관계 또는 생활 주체 하나와 바로 이해되는 장면 하나면 충분하며 직업·경력·성격·시대 배경을 덧붙이면 naturalness 실패다. everyday-question-answer는 실제 소비자가 할 법한 짧은 질문과 짧은 해결을 유지한다. obvious-ad-metaphor는 ‘임금님도 감동할’, ‘오늘 밥상의 주인공’처럼 명백한 비유만 허용하고 실제 이력·인증·전문가 보증처럼 들리면 factualSafety 실패다. ‘수라간 감별관’, ‘상품 큐레이터’, ‘구매 담당’, ‘저녁밥 총무’, ‘욕실 집사’와 상품 1인칭 화자는 naturalness 실패다. usp-focus는 하나의 구체 USP가, comparison-benefit은 같은 상품군의 익명 일반 대안→현재 상품 이점이 보여야 한다. 의료·알레르기·전문가 보증·실제 고객 증언처럼 오인되는 설정은 factualSafety 실패다. ProductTruth 상품 사실은 supportingFactIds 안에서만 쓰되 '가상', '상황극', 'ProductTruth' 같은 내부어는 광고 문구에 노출하지 않는다.\n${sheetClaimPolicy(input.truth)}\n최종 상품 카테고리: ${resolveProductCopyDomain(input.truth.product)}. 상세페이지 원료명에 과일·먹거리 단어가 있어도 바디워시·샤워젤·화장품을 간식이나 음식처럼 말하면 '상품 카테고리 의미 충돌' 치명 오류다. 반대로 실제 식품을 피부·샤워용 제품처럼 말해도 같은 오류다.\n현재 상품에서 미리 정리된 광고 문구 후보:\n${vendorCopyExamplePromptBlock(input.truth)}\n업체별 문구 품질 기준:\n${copyGuidePromptBlock(input.copyGuide)}\n검수 기준: 자연스러운 한국어, 업체별 가이드에 맞는 판매 강도와 최소 7/10 문장력, referenceRawCopy/referenceRawLines의 줄 수·기호·구어체와 수사 의도 보존, source-brand/remove를 제외한 원본 문구 블록과 정보 밀도 보존, 질문→대답·문제→해결·비교→결론·경험→추천 같은 줄 사이 관계 보존, 질문·반전·비교·문제 제기·긴급성 같은 헤드라인 판매 강도 보존, 상품의 사실 주장만 ProductTruth 안에 있는지, ProductTruth 밖 수치·혜택·효능 금지, 후기 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터 금지, 장면과 문구의 일치, 여섯 결과의 의미 중복 억제. 상품의 구체 USP·식감/사용감·원료·구성·사용 순간이 업체 업력·순위·수상보다 우선이다. 업체 실적은 6장 중 최대 1장의 proof/badge에만 쓰고 현재 업체·브랜드 주체와 평가 분야를 명시해야 하며 상품 USP와 한 문구 블록에 합치면 치명 오류다. '한국 1위 국가대표'처럼 주체·범위가 없는 조각도 치명 오류다. ProductTruth에 승인된 vendor-research fact가 있으면 그 수치·효능·사용 상황은 정당한 근거이며 강하게 썼다는 이유만으로 감점하지 않는다. source-brand/remove 슬롯은 빈 targetText가 정답이며 현재 상품명·브랜드명으로 채우거나 새 로고 문구로 바꾸면 치명 오류다. 원문 어순을 기계적으로 유지하는 것보다 현재 상품 문장의 주어·서술어·조사·수식 관계·완결성이 우선이다. adaptedLines를 줄바꿈 없이 이어 읽어도 하나의 자연스러운 소비자 문장이 되어야 한다. 사람 주어를 추석·명절·가격·상품 같은 무생물 명사로 단순 치환하거나, 연결 조사·쉼표에서 문장이 끊기거나, 소비자가 의미를 추측해야 하면 naturalness 치명 오류다. ‘명절 메뉴 없더니...’처럼 상황과 주체가 빠진 문구, 계절 단어와 범용 판매어를 이어 붙인 문구도 naturalness 실패다. 처음 보는 소비자가 1초 안에 상황과 제안을 이해할 수 있어야 한다. ‘고기 없이는 못 사는 울 아버지.. 오늘은 이거 드세요’, ‘아침마다 고기 사러 마장동 가세요? 여기서 그냥 시켜요’, ‘임금님도 감동할 진짜 특급한우’처럼 관계 하나·생활 질문 하나·명백한 비유 하나로 끝나는 문장이 좋은 방향이다. 예문을 다른 상품에 그대로 복사하거나 확인되지 않은 특급·등급 사실로 확장하지 않는다. ‘먹어본 사람은 계속 달라고 졸라요’ 같은 반응·후기 문구는 ProductTruth에 후기 근거가 있을 때만 factualSafety를 통과시킨다. 강한 원문 헤드라인을 단순 상품명으로 바꾸거나, 레퍼런스 문장 관계를 버리고 상품 스펙 목록으로 바꾸거나, 동일 상품명·중량을 여러 블록에 반복하거나, 근거 없는 가격·혜택 슬롯을 빈칸으로 지우거나, 전체 문구량을 과도하게 줄이면 referenceFit 실패다. 원문의 말투와 수사 의도를 자연스럽게 보존한 사실 자체는 오류가 아니다. valid는 naturalness ${NATURALNESS_PASS_SCORE}, referenceFit ${REFERENCE_FIT_PASS_SCORE}, factualSafety 90 이상이고 치명 오류가 없을 때만 true다.\nProductTruth: ${JSON.stringify(factsForPlanning(input.truth))}\nPlans: ${JSON.stringify(input.plans)}\nJSON 스키마만 반환한다.`;
+  return `아래 6개 한국 광고 문구를 한 번에 독립 검수한다. 새 문구를 만들지 말고 점수와 오류만 반환한다.\n창작 맥락 허용 규칙: ${CREATIVE_CONTEXT_POLICY} 따라서 자연스럽게 연결된 계절·시즌·유행·밈·사용 상황이 ProductTruth에 없다는 이유만으로 factualSafety를 감점하거나 오류로 판정하지 않는다.\nCreativePremise 검수 규칙: creativePremise는 레퍼런스 구조를 대체하는 새 청사진이나 인물 세계관이 아니라 그 구조 안에서 사용할 가벼운 소비자 말투 방향이다. 여섯 장에 역할별 장수를 강제하지 않는다. everyday-relationship은 익숙한 관계 또는 생활 주체 하나와 바로 이해되는 장면 하나면 충분하며 직업·경력·성격·시대 배경을 덧붙이면 naturalness 실패다. everyday-question-answer는 실제 소비자가 할 법한 짧은 질문과 짧은 해결을 유지한다. obvious-ad-metaphor는 ‘임금님도 감동할’, ‘오늘 밥상의 주인공’처럼 명백한 비유만 허용하고 실제 이력·인증·전문가 보증처럼 들리면 factualSafety 실패다. ‘수라간 감별관’, ‘상품 큐레이터’, ‘구매 담당’, ‘저녁밥 총무’, ‘욕실 집사’와 상품 1인칭 화자는 naturalness 실패다. usp-focus는 하나의 구체 USP가, comparison-benefit은 같은 상품군의 익명 일반 대안→현재 상품 이점이 보여야 한다. 의료·알레르기·전문가 보증·실제 고객 증언처럼 오인되는 설정은 factualSafety 실패다. ProductTruth 상품 사실은 supportingFactIds 안에서만 쓰되 '가상', '상황극', 'ProductTruth' 같은 내부어는 광고 문구에 노출하지 않는다.\n${sheetClaimPolicy(input.truth)}\n최종 상품 카테고리: ${resolveProductCopyDomain(input.truth.product)}. 상세페이지 원료명에 과일·먹거리 단어가 있어도 바디워시·샤워젤·화장품을 간식이나 음식처럼 말하면 '상품 카테고리 의미 충돌' 치명 오류다. 반대로 실제 식품을 피부·샤워용 제품처럼 말해도 같은 오류다.\n현재 상품에서 미리 정리된 광고 문구 후보:\n${vendorCopyExamplePromptBlock(input.truth)}\n업체별 문구 품질 기준:\n${copyGuidePromptBlock(input.copyGuide)}\n검수 기준: 자연스러운 한국어, 업체별 가이드에 맞는 판매 강도와 최소 7/10 문장력, referenceRawCopy/referenceRawLines의 줄 수·기호·구어체와 수사 의도 보존, source-brand/remove를 제외한 원본 문구 블록과 정보 밀도 보존, 질문→대답·문제→해결·비교→결론·경험→추천 같은 줄 사이 관계 보존, 질문·반전·비교·문제 제기·긴급성 같은 헤드라인 판매 강도 보존, 상품의 사실 주장만 ProductTruth 안에 있는지, ProductTruth 밖 수치·혜택·효능 금지, 후기 작성 날짜·시각·작성자·닉네임 같은 UI 메타데이터 금지, 장면과 문구의 일치, 여섯 결과의 의미 중복 억제. 브랜드명·업체명·판매자명과 업체 업력·순위·수상·브랜드 파워는 한 줄이라도 나오면 치명 오류다. 브랜드는 별도 로고 후처리에서만 허용한다. ProductTruth에 승인된 vendor-research fact가 있으면 그 수치·효능·사용 상황은 정당한 근거이며 강하게 썼다는 이유만으로 감점하지 않는다. source-brand/remove 슬롯은 빈 targetText가 정답이며 현재 상품명·브랜드명으로 채우거나 새 로고 문구로 바꾸면 치명 오류다. 원문 어순을 기계적으로 유지하는 것보다 현재 상품 문장의 주어·서술어·조사·수식 관계·완결성이 우선이다. adaptedLines를 줄바꿈 없이 이어 읽어도 하나의 자연스러운 소비자 문장이 되어야 한다. 사람 주어를 추석·명절·가격·상품 같은 무생물 명사로 단순 치환하거나, 연결 조사·쉼표에서 문장이 끊기거나, 소비자가 의미를 추측해야 하면 naturalness 치명 오류다. ‘명절 메뉴 없더니...’처럼 상황과 주체가 빠진 문구, 계절 단어와 범용 판매어를 이어 붙인 문구도 naturalness 실패다. 처음 보는 소비자가 1초 안에 상황과 제안을 이해할 수 있어야 한다. ‘고기 없이는 못 사는 울 아버지.. 오늘은 이거 드세요’, ‘아침마다 고기 사러 마장동 가세요? 여기서 그냥 시켜요’, ‘임금님도 감동할 진짜 특급한우’처럼 관계 하나·생활 질문 하나·명백한 비유 하나로 끝나는 문장이 좋은 방향이다. 예문을 다른 상품에 그대로 복사하거나 확인되지 않은 특급·등급 사실로 확장하지 않는다. ‘먹어본 사람은 계속 달라고 졸라요’ 같은 반응·후기 문구는 ProductTruth에 후기 근거가 있을 때만 factualSafety를 통과시킨다. 강한 원문 헤드라인을 단순 상품명으로 바꾸거나, 레퍼런스 문장 관계를 버리고 상품 스펙 목록으로 바꾸거나, 동일 상품명·중량을 여러 블록에 반복하거나, 근거 없는 가격·혜택 슬롯을 빈칸으로 지우거나, 전체 문구량을 과도하게 줄이면 referenceFit 실패다. 원문의 말투와 수사 의도를 자연스럽게 보존한 사실 자체는 오류가 아니다. valid는 naturalness ${NATURALNESS_PASS_SCORE}, referenceFit ${REFERENCE_FIT_PASS_SCORE}, factualSafety 90 이상이고 치명 오류가 없을 때만 true다.\n금지 브랜드·업체명: ${JSON.stringify([input.truth.product.advertiserName, input.truth.product.brandName, input.truth.normalized.brandName].filter(Boolean))}\nProductTruth: ${JSON.stringify(factsForPlanning(input.truth))}\nPlans: ${JSON.stringify(input.plans)}\nJSON 스키마만 반환한다.`;
 }
 
 async function runCodexJson<T>(prompt: string, outputSchema: object) {

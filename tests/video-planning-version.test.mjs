@@ -41,7 +41,7 @@ const guideline = {
   designerNotes: "",
 };
 
-test("최신 기획 계약은 구체적 인물·사회 세계·사건·상품 사실 경계를 모두 요구한다", () => {
+test("최신 기획 계약은 구체적 창작 인물·세계·사건·상품 사실 경계를 모두 요구한다", () => {
   const latest = {
     conceptArchetype: "usp-focus",
     distinctiveCharacter: "막차 전 오래된 동네 체육관에서 마지막으로 샤워하는 야근 많은 직장인",
@@ -53,6 +53,25 @@ test("최신 기획 계약은 구체적 인물·사회 세계·사건·상품 �
   assert.equal(isCurrentVideoPlanningConcept(latest), true);
   assert.equal(currentVideoCreativePremiseIssue({ ...latest, distinctiveCharacter: "일반 사용자" }).length > 0, true);
   assert.equal(currentVideoCreativePremiseIssue({ ...latest, socialWorld: "욕실" }).length > 0, true);
+});
+
+test("가상의 의사 가족 추천은 창작 경계를 명시하면 최신 기획으로 허용한다", () => {
+  const fictionalDoctor = {
+    conceptArchetype: "real-review",
+    distinctiveCharacter: "성분표부터 읽는 가상의 의사 남편과 신제품을 먼저 써 보는 아내",
+    socialWorld: "야간 진료를 마치고 돌아온 부부가 욕실 선반을 정리하는 늦은 저녁",
+    storyTrigger: "가상의 의사 남편이 향을 맡아 보고 이번에는 자기가 먼저 쓰겠다고 추천한다.",
+    truthBridge: "검증된 민트와 티트리 특징을 남편이 개인적으로 고른 이유와 연결한다.",
+    dramatizationBoundary: "의사 남편과 부부의 추천 장면은 광고용 가상 상황극이며 민트와 티트리만 검증된 상품 사실이다.",
+  };
+  assert.equal(isCurrentVideoPlanningConcept(fictionalDoctor), true);
+  assert.match(
+    currentVideoCreativePremiseIssue({
+      ...fictionalDoctor,
+      dramatizationBoundary: "부부의 추천 장면은 창작 상황극이며 상품 원료만 검증된 사실이다.",
+    }),
+    /의사 가족 추천/
+  );
 });
 
 test("새 프로젝트는 외부 입력과 무관하게 최신 4안 엔진으로 고정된다", async () => {

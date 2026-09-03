@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import sharp from "sharp";
 import { validatePublicHttpUrl } from "../store-analysis/urlSafety";
-import { hammingDistance, normalizeProductImageUrl } from "./productImagePipeline";
+import { hammingDistance, isMerchantCredentialImageCandidate, normalizeProductImageUrl } from "./productImagePipeline";
 import type { DetectedProductObject, NormalizedImageBox, ProductImageCandidate, ProductRepresentation, SourceImageCandidate } from "./types";
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
@@ -291,7 +291,8 @@ async function analyzeCandidate(candidate: ProductImageCandidate, representation
     1,
     components.reduce((sum, item) => sum + item.area, 0)
   );
-  const hasText = /배너|광고|할인|특가|event|banner|promotion|상세/i.test(`${candidate.alt || ""} ${candidate.reason || ""} ${candidate.url}`);
+  const merchantCredentialOnly = isMerchantCredentialImageCandidate(candidate);
+  const hasText = merchantCredentialOnly || /배너|광고|할인|특가|event|banner|promotion|상세/i.test(`${candidate.alt || ""} ${candidate.reason || ""} ${candidate.url}`);
   const useCentralPrimary = representation.type === "single-product" && Boolean(foregroundDetection.centralProductBox);
   const detectedObjects: DetectedProductObject[] = [
     ...(useCentralPrimary && foregroundDetection.centralProductBox
@@ -328,11 +329,14 @@ async function analyzeCandidate(candidate: ProductImageCandidate, representation
     sourceScore: candidate.score,
     imageUrl: candidate.url,
   });
-  const salesMatch = salesMatchScore(representation, objectCount, candidate);
-  const recommendationScore = Math.max(0, Math.min(1, quality * 0.54 + salesMatch * 0.38 + representation.confidence * 0.08 + (candidate.type === "main" ? 0.16 : candidate.type === "gallery" ? 0.05 : 0)));
+  const salesMatch = merchantCredentialOnly ? 0 : salesMatchScore(representation, objectCount, candidate);
+  const recommendationScore = merchantCredentialOnly
+    ? 0
+    : Math.max(0, Math.min(1, quality * 0.54 + salesMatch * 0.38 + representation.confidence * 0.08 + (candidate.type === "main" ? 0.16 : candidate.type === "gallery" ? 0.05 : 0)));
   const warnings: string[] = [];
   if (Math.min(width, height) < 500) warnings.push("해상도가 낮습니다.");
   if (hasText) warnings.push("문구 또는 프로모션 그래픽이 포함될 수 있습니다.");
+  if (merchantCredentialOnly) warnings.push("판매자 수상·실적 배너이므로 상품 원본 후보에서 제외합니다.");
   if (touchesEdges) warnings.push("상품이 이미지 가장자리에서 잘렸을 수 있습니다.");
   if (!objectCount) warnings.push("상품 영역을 안정적으로 감지하지 못했습니다.");
   return {

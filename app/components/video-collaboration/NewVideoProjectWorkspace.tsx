@@ -268,8 +268,8 @@ export function NewVideoProjectWorkspace() {
             </details>
             <div className={styles.stickyAction}>
               <div>
-                <strong>특정 인물·세계관 · 관계 경험담 · 비교·발견 · 상품 의인화</strong>
-                <span>한 명의 화자가 시청자에게 전하며, 네 안의 사건과 전개 방식은 서로 다르게 생성됩니다.</span>
+                <strong>창작 인물·상황극 · 가족·지인 반응 · 직접 확인·사용 · 구매 고민</strong>
+                <span>22개 레퍼런스의 617개 원문 장면을 직접 활용해, 창작 인물·세계·사건은 넓게 만들고 상품 사실은 상세페이지 근거 안에서 지키는 네 안을 만듭니다.</span>
               </div>
               <button className={styles.primaryButton} disabled={busy || !advertiserName.trim()} onClick={createFourConcepts}>
                 {busy ? stage || "생성 중…" : "4개 콘셉트 생성"}

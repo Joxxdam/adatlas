@@ -12,6 +12,7 @@ import {
   CURATED_VIDEO_REFERENCES,
   getCuratedVideoReference,
 } from "../app/lib/video-collaboration/curatedVideoReferences.ts";
+import { VIDEO_PARODY_GENRES } from "../app/lib/video-collaboration/types.ts";
 import { buildCurrentProductSelfIntroductionHook } from "../app/lib/video-collaboration/videoPlanningHookFallback.ts";
 
 const archetypes = ["parody", "real-review", "usp-focus", "secret-benefit"];
@@ -75,6 +76,17 @@ test("오리지널소스영상1과 나중에 전달된 오리지널소스1은 �
   assert.match(history?.structureAnalysis || "", /중세 유럽의 악취 문제/);
 });
 
+test("전달본에 적힌 A/B 관계는 합치지 않고 차이 메모로 보존한다", () => {
+  const meat6 = getCuratedVideoReference("meat-video-06-natural-dialogue");
+  const meat9 = getCuratedVideoReference("meat-video-09");
+  const original1 = getCuratedVideoReference("original-source-video-01");
+  const original3 = getCuratedVideoReference("original-source-video-03");
+  assert.notEqual(meat6?.id, meat9?.id);
+  assert.notEqual(original1?.id, original3?.id);
+  assert.match(meat6?.relationshipNotes[0] || "", /본문은 같고 도입과 가족 후기만 다름/);
+  assert.match(original3?.relationshipNotes[0] || "", /최종 혜택·CTA가 다름/);
+});
+
 test("같은 A/B family를 주·보조 블루프린트로 동시에 선택하지 않는다", () => {
   const selected = selectVideoPlanningBlueprints({ analysis: analysis(), archetypes: ["parody"] });
   const primary = getVideoPlanningBlueprint(selected.parody?.primaryId);
@@ -82,6 +94,48 @@ test("같은 A/B family를 주·보조 블루프린트로 동시에 선택하지
   assert.ok(primary);
   assert.ok(secondary);
   assert.notEqual(primary.familyId || primary.id, secondary.familyId || secondary.id);
+});
+
+test("프로젝트 seed는 적합 레퍼런스를 고정하면서 22개 전체가 자동 선택에 도달하게 한다", () => {
+  const categories = [
+    analysis({ productName: "한우 등심", category: "식품·육류" }),
+    analysis({ productName: "깔라만시 원액", category: "과일·농산" }),
+    analysis({ productName: "수제 쿠키", category: "식품" }),
+    analysis({ productName: "민트 샤워젤", category: "생활·뷰티" }),
+  ];
+  const reached = new Set();
+  for (let seedIndex = 0; seedIndex < 512; seedIndex += 1) {
+    for (const candidate of categories) {
+      for (const parodyGenre of VIDEO_PARODY_GENRES) {
+        const selected = selectVideoPlanningBlueprints({
+          analysis: candidate,
+          archetypes,
+          parodyGenre,
+          selectionSeed: `video-project-${seedIndex}`,
+        });
+        for (const selection of Object.values(selected)) {
+          if (selection?.primaryId) reached.add(selection.primaryId);
+          if (selection?.secondaryId) reached.add(selection.secondaryId);
+        }
+      }
+    }
+  }
+  assert.deepEqual(
+    [...reached].sort(),
+    VIDEO_PLANNING_BLUEPRINTS.map((blueprint) => blueprint.id).sort()
+  );
+
+  const first = selectVideoPlanningBlueprints({
+    analysis: categories[0],
+    archetypes,
+    selectionSeed: "video-project-stable",
+  });
+  const retry = selectVideoPlanningBlueprints({
+    analysis: categories[0],
+    archetypes,
+    selectionSeed: "video-project-stable",
+  });
+  assert.deepEqual(retry, first);
 });
 
 test("자동 길이는 상품 근거 밀도와 업로드 영상 유무로 서버에서 결정한다", () => {
@@ -162,7 +216,8 @@ test("블라인드 테스트는 가격 흥정 레퍼런스를 주 블루프린�
   assert.ok(primary);
   assert.equal(primary.sourceCategory, "meat");
   assert.doesNotMatch(primary.format, /협상|흥정/);
-  assert.match(selected.parody.reason, /직접 일치하는 원본이 없어 가격 흥정 문법은 사용하지 않습니다/);
+  assert.match(selected.parody.reason, /직접 일치하는 원본이 없어/);
+  assert.match(selected.parody.reason, /영화식 장치나 다른 장르 문법은 덧붙이지 않습니다/);
 });
 
 test("시대·사회 세계관극은 오리지널소스 실제 20개 자막·장면 레퍼런스를 직접 전달한다", () => {

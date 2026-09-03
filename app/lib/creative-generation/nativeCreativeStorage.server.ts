@@ -55,7 +55,7 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
     ["product-detail", 350],
   ]);
   const truthSources = job.productTruth.imageAssets
-    .filter((asset) => asset.role !== "ad-reference" && asset.verified)
+    .filter((asset) => asset.role !== "ad-reference" && asset.verified && asset.validationStatus !== "excluded")
     .filter((asset) => !isForbiddenNativeCutoutAsset(asset));
   const profileSources: CreativeImageAsset[] = (job.productReferenceProfile?.referenceImages || [])
     .filter((image) => image.usableForGeneration && !image.duplicateOf && !image.watermarkRisk)
@@ -73,6 +73,9 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
       source: "product-page" as const,
       verified: true,
       reason: image.description,
+      width: image.width,
+      height: image.height,
+      hasText: image.hasText,
       validationStatus: "confirmed" as const,
     }));
   // imageAssets의 순서는 사용자가 확인한 대표 이미지 우선순위다. 상세페이지
@@ -80,21 +83,36 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
   // 실제 대표 상품 이미지를 밀어내지 못하게 한다.
   const unique = [...truthSources, ...profileSources, ...job.productTruth.referenceImages].filter((asset, index, all) => all.findIndex((item) => item.path === asset.path) === index);
   const originals = unique.filter((asset) => !isForbiddenNativeCutoutAsset(asset));
+  const sourceCandidates = new Map((job.productTruth.product.sourceImageCandidates || []).map((candidate) => [candidate.imagePath, candidate]));
+  const truthPaths = new Set(truthSources.map((asset) => asset.path));
   const productScore = (asset: CreativeImageAsset) => {
-    if (asset.role === "product-packshot") return 500;
-    if (asset.role === "product-lifestyle") return 420;
-    if (asset.role === "detail-image") return 340;
-    return 0;
+    const candidate = sourceCandidates.get(asset.path);
+    const width = asset.width || candidate?.width || 0;
+    const height = asset.height || candidate?.height || 0;
+    const minDimension = width && height ? Math.min(width, height) : 0;
+    const aspectRatio = width && height ? Math.max(width / height, height / width) : 1;
+    const roleScore = asset.role === "product-packshot" ? 500 : asset.role === "product-lifestyle" ? 430 : asset.role === "detail-image" ? 360 : 0;
+    const sourceScore = asset.source === "known-product" ? 140 : asset.source === "user-confirmed" ? 110 : asset.source === "product-page" ? 60 : 0;
+    const resolutionScore = minDimension >= 1000 ? 100 : minDimension >= 700 ? 70 : minDimension >= 500 ? 30 : minDimension > 0 ? -160 : 0;
+    const wideBannerPenalty = aspectRatio >= 1.8 ? -180 : 0;
+    const signals = [asset.reason, ...(asset.classificationSignals || []), ...(candidate?.warnings || [])].join(" ");
+    const promotionalPenalty = /광고|프로모션|배너|쿠폰|이벤트|성과|수상|입점|banner|promo|campaign/i.test(signals) ? -320 : 0;
+    const textPenalty = (asset.hasText || candidate?.hasText) && asset.role !== "product-packshot" ? -260 : 0;
+    const focus = Math.max(0, Math.min(1, Number(asset.productFocusRatio ?? candidate?.salesUnitMatchScore ?? 0)));
+    const productTruthBonus = truthPaths.has(asset.path) ? 240 : 0;
+    return roleScore + sourceScore + productTruthBonus + resolutionScore + wideBannerPenalty + promotionalPenalty + textPenalty + focus * 100;
   };
   const productSources = originals.filter((asset) => asset.role !== "ad-reference" && asset.verified).sort((left, right) => productScore(right) - productScore(left));
-  const primary = truthSources.find((asset) => productSources.some((candidate) => candidate.path === asset.path)) || productSources[0];
+  // 사용자 확정 배열의 첫 항목을 무조건 대표 원본으로 쓰지 않는다. 낮은 해상도
+  // 성과 배너나 텍스트가 많은 완성 광고가 첫 칸에 섞여도 실제 상품 중심 사진이
+  // 해상도·초점·역할 점수로 대표 근거가 된다.
+  const primary = productSources[0];
   if (!primary) return [];
   const sortSupporting = (assets: CreativeImageAsset[]) =>
     assets.sort((left, right) => {
       const roleBonus = (asset: CreativeImageAsset) => (asset.role === "product-lifestyle" ? 30 : asset.role === "detail-image" ? 20 : 0);
       return productScore(right) + roleBonus(right) - productScore(left) - roleBonus(left);
     });
-  const truthPaths = new Set(truthSources.map((asset) => asset.path));
   const supporting = [
     ...sortSupporting(productSources.filter((asset) => asset.path !== primary.path && truthPaths.has(asset.path))),
     ...sortSupporting(productSources.filter((asset) => asset.path !== primary.path && !truthPaths.has(asset.path))),

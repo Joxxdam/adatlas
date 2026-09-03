@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import path from "node:path";
 import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
-import { defaultCompositionTypes, pickUniqueRandomItems, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
+import { defaultCompositionTypes, pickCompatibleRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
 import { inferNativeReferenceFoodSubcategoryFromText, normalizeNativeReferenceCompatibility, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
@@ -199,18 +199,14 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const categoryName = categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
   const eligibleItems = referenceItems.filter((item) => referenceBelongsToSelectionPool(item, categoryGroup, profile.foodSubcategory));
-  // OCR 준비 상태, 상품 형태, 슬롯 수, 인물 포함 여부, 호환 점수와 최근 사용
-  // 여부로 다시 거르지 않는다. 단, 간식 상품은 음식 전체가 아니라 간식으로
-  // 직접 지정된 하위 풀만 사용한다. 일반 음식은 간식 항목까지 포함한 전체다.
-  void recentReferenceIds;
-  if (eligibleItems.length < count) {
-    const poolName = profile.foodSubcategory === "snack" ? "간식" : categoryName;
-    throw new Error(`${poolName}에 등록된 광고 레퍼런스가 부족합니다. 필요 ${count}장, 등록 ${eligibleItems.length}장입니다.`);
-  }
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
-  const poolName = profile.foodSubcategory === "snack" ? "음식 > 간식 전용 풀" : `${categoryName} 등록 풀 전체`;
-  const selected = pickUniqueRandomItems(eligibleItems, count, nextIndex);
-  return selected.map((item, index) => toNativeAdReference(item, `${selectionMode} · ${poolName}에서 ${index + 1}번째 레퍼런스로 순수 무작위 선택했습니다. 일반 음식은 간식 레퍼런스를 포함한 음식 전체 풀을 사용하고, 간식은 간식 전용 풀만 사용합니다. OCR·형태·슬롯·인물·점수·최근 사용 여부는 추가 선택 제한으로 사용하지 않습니다. 선택 결과는 작업에 고정되며, 원상품의 의미 소품과 상차림은 현재 상품에 맞게 다시 구성합니다.`));
+  const poolName = profile.foodSubcategory === "snack" ? "음식 > 간식 전용 풀" : `${categoryName} 호환 풀`;
+  const unusedItems = eligibleItems.filter((item) => !recentReferenceIds.has(item.id));
+  const usableItems = unusedItems.filter((item) => scoreReferenceCompatibility(profile, item).score >= 60).length >= count
+    ? unusedItems
+    : eligibleItems;
+  const selected = pickCompatibleRandomItems(usableItems, count, profile, nextIndex);
+  return selected.map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${poolName}에서 상품 형태·구도·슬롯 호환 점수 ${candidate.score}점으로 통과한 후보 중 ${index + 1}번째로 무작위 선택했습니다. ${candidate.reasons.join(" · ")}. 선택 결과는 작업에 고정됩니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */
@@ -218,10 +214,12 @@ export function selectNativeAdReference(job: GenerationJob, result: GenerationRe
   const allReferenceItems = readReferenceItems();
   const profile = buildProductReferenceCompatibilityProfile(job);
   if (!allReferenceItems.length) throw new Error("등록된 고품질 광고 레퍼런스가 없습니다.");
-  const categoryItems = allReferenceItems.filter((item) => referenceBelongsToSelectionPool(item, profile.categoryGroup, profile.foodSubcategory));
+  const categoryItems = allReferenceItems
+    .map((item) => scoreReferenceCompatibility(profile, item))
+    .filter((candidate) => candidate.score >= 60);
   if (!categoryItems.length) {
     throw new Error(`${categoryLabel(profile.categoryGroup)}에 등록된 복구용 레퍼런스가 없습니다.`);
   }
   const selected = categoryItems[stableHash(`${job.id}:${job.productTruth.productId}:${result.id}`) % categoryItems.length];
-  return toNativeAdReference(selected, `과거 작업 복구를 위해 ${categoryLabel(profile.categoryGroup)} 등록 풀 전체에서 결정적으로 선택했습니다.`);
+  return toNativeAdReference(selected.item, `과거 작업 복구를 위해 ${categoryLabel(profile.categoryGroup)} 호환 풀에서 ${selected.score}점으로 통과한 레퍼런스를 결정적으로 선택했습니다.`);
 }

@@ -671,7 +671,7 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(detailPage, /VideoPlanningConceptWorkspace/);
   assert.match(newWorkspace, /4개 콘셉트 생성/);
   assert.doesNotMatch(newWorkspace, /planningMode/);
-  assert.match(newWorkspace, /특정 인물·세계관 · 관계 경험담 · 비교·발견 · 상품 의인화/);
+  assert.match(newWorkspace, /창작 인물·상황극 · 가족·지인 반응 · 직접 확인·사용 · 구매 고민/);
   assert.match(typesSource, /VIDEO_DESIGNER_OPTIONS = \["조이", "애니"\]/);
   assert.doesNotMatch(newWorkspace, /VIDEO_DESIGNER_OPTIONS\.map|durationOptions|durationChoice|영상 길이\s*<select|담당 디자이너 선택|제작 마감일/);
   assert.match(newWorkspace, /automaticDuration\(referenceAssets\)/);
@@ -875,12 +875,12 @@ test("네 콘셉트의 사용자 표시 분류는 이야기 작동 방식으로 
   const { VIDEO_CONCEPT_ARCHETYPE_OPTIONS } = await import("../app/lib/video-collaboration/types.ts");
   assert.deepEqual(
     VIDEO_CONCEPT_ARCHETYPE_OPTIONS.map(({ label }) => label),
-    ["특정 인물·세계관형", "관계·생활 경험 전달형", "비교·실험·발견형", "상품 의인화·비밀 공개형"]
+    ["창작 인물·상황극형", "가족·지인 생활 반응형", "직접 확인·조리·사용형", "구매 고민·가격 발견형"]
   );
   const relationship = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(({ id }) => id === "real-review");
-  assert.match(relationship?.direction || "", /팀장님, 진짜 이거 싸게 팔아요/);
+  assert.match(relationship?.direction || "", /한 팩 더 없냐/);
   const reveal = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(({ id }) => id === "secret-benefit");
-  assert.match(reveal?.direction || "", /가격 혜택의 유무와 관계없이/);
+  assert.match(reveal?.direction || "", /상품 의인화는 자동 생성하지 않는다/);
 });
 
 test("관계형 상세 대본은 가족끼리 번갈아 말하는 각본을 차단하고 시청자 전달형을 허용한다", () => {

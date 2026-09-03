@@ -247,6 +247,7 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   const entryRoute = await readFile("app/api/creative-archive/[entryId]/route.ts", "utf8");
   const productZipRoute = await readFile("app/api/creative-archive/product-zip/route.ts", "utf8");
   const productZipService = await readFile("app/lib/creative-archive/productZip.server.ts", "utf8");
+  const archiveService = await readFile("app/lib/creative-archive/service.server.ts", "utf8");
   assert.match(navigation, /ARCHIVE_FEATURE[\s\S]*href: "\/archive"[\s\S]*label: "아카이브"/);
   assert.match(navigation, /ASSET LIBRARY/);
   assert.match(page, /CreativeArchiveWorkspace/);
@@ -266,6 +267,11 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /visibleLogos\.map/);
   assert.match(workspace, /선택한 \$\{brandingIds\.length\}장에 저장 적용/);
   assert.match(workspace, /다운로드로 적용한 로고와 AI 고지는 파일에만 들어가고 화면과 AI 고지 선택은 자동으로 원본 상태로 돌아옵니다/);
+  assert.match(workspace, /ARCHIVE_RENDER_PAGE_SIZE = 48/);
+  assert.match(workspace, /다음 \{Math\.min\(ARCHIVE_RENDER_PAGE_SIZE/);
+  assert.match(archiveService, /creative-archive-index-v1/);
+  assert.match(archiveService, /listCreativeArchivePage/);
+  assert.match(collectionRoute, /url\.searchParams\.has\("limit"\)/);
   assert.doesNotMatch(workspace, /현재 목록 선택(?: 해제)?/);
   assert.match(collectionRoute, /export async function DELETE/);
   assert.match(entryRoute, /export async function DELETE/);
