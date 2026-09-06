@@ -9,7 +9,7 @@ import { isMerchantCredentialOnlyDetailImage } from "../../../lib/creative-gener
 import { normalizeCafe24BundlePricingClaims, resolveCafe24RequiredBundlePricing } from "../../../lib/store-analysis/extractors/cafe24Pricing";
 import { applyOriginalSourceVendorResearch, matchOriginalSourceVendorResearch } from "../../../lib/product-research/originalSourceResearch";
 import { evaluateProductImageIdentity, filterCurrentProductImages, isDifferentProductImage, stripDifferentProductLinkBlocks } from "../../../lib/mvp/productImageIdentity.ts";
-import { decodeHtmlResponse, isSafeHttpUrl } from "../../../lib/mvp/productPageResponse.server";
+import { safeFetchHtml } from "../../../lib/store-analysis/urlSafety";
 import {
   absoluteUrl,
   extractCategory,
@@ -54,55 +54,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Enter a valid product URL." }, { status: 400 });
     }
 
-    if (!isSafeHttpUrl(url.toString())) {
-      return NextResponse.json({ ok: false, error: "Only http and https URLs are supported." }, { status: 400 });
-    }
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "User-Agent": "Mozilla/5.0 (compatible; AdAtlasProductExtractor/1.0)",
-      },
-      cache: "no-store",
+    // 공용 SSRF 경계에서 DNS·리디렉션을 매번 재검증하고, 응답 전체를 메모리에
+    // 받은 뒤 자르는 대신 네트워크 단계에서 2MB와 12초를 강제합니다.
+    const fetchedPage = await safeFetchHtml(url.toString(), {
+      timeoutMs: 12_000,
+      maxBytes: 2_000_000,
+      userAgent: "Mozilla/5.0 (compatible; AdAtlasProductExtractor/1.0)",
     });
-
-    if (!response.ok) {
-      return NextResponse.json({ ok: false, error: `Product page request failed: HTTP ${response.status}` }, { status: 502 });
-    }
-
-    const html = decodeHtmlResponse(await response.arrayBuffer(), response.headers.get("content-type")).slice(0, 2_000_000);
+    const html = fetchedPage.html;
     const invalidPageMessage = invalidProductPageMessage(html, url);
     if (invalidPageMessage) {
       return NextResponse.json({ ok: false, error: invalidPageMessage }, { status: 422 });
     }
 
-    const jsonLd = extractJsonLd(html, url.toString());
-    const productName = jsonLd.name || metaContent(html, "og:title") || metaContent(html, "twitter:title") || titleContent(html);
-    // 추천상품 카드의 다른 goodsNo가 본문 문구·OCR 후보·상품 이미지에 함께
-    // 들어오는 것을 도메인별 클래스명이 아니라 상품번호 경계로 먼저 차단합니다.
+    // 추천·연관상품 영역은 상품명·가격·문구·이미지·OCR 후보 중 어느 쪽에도
+    // 들어오지 않도록 모든 상품정보 추출보다 먼저 공통 HTML 경계에서 제거합니다.
     const productScopedHtml = stripDifferentProductLinkBlocks(url.toString(), html);
-    const fallbackPrice = extractPrice(html, jsonLd.price);
-    const fallbackOriginalPrice = extractOriginalPrice(html, fallbackPrice);
-    const cafe24BundlePricing = resolveCafe24RequiredBundlePricing(html, productName);
+    const jsonLd = extractJsonLd(productScopedHtml, url.toString());
+    const productName = jsonLd.name || metaContent(productScopedHtml, "og:title") || metaContent(productScopedHtml, "twitter:title") || titleContent(productScopedHtml);
+    const fallbackPrice = extractPrice(productScopedHtml, jsonLd.price);
+    const fallbackOriginalPrice = extractOriginalPrice(productScopedHtml, fallbackPrice);
+    const cafe24BundlePricing = resolveCafe24RequiredBundlePricing(productScopedHtml, productName);
     const price = cafe24BundlePricing?.price || fallbackPrice;
     const originalPrice = cafe24BundlePricing?.originalPrice || fallbackOriginalPrice;
-    const rawBaseDescription = jsonLd.description || metaContent(html, "og:description") || metaContent(html, "description") || metaContent(html, "twitter:description");
+    const rawBaseDescription = jsonLd.description || metaContent(productScopedHtml, "og:description") || metaContent(productScopedHtml, "description") || metaContent(productScopedHtml, "twitter:description");
     const baseDescription = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawBaseDescription, cafe24BundlePricing) : rawBaseDescription;
     const rawExtractedDescription = extractProductUspDescription(productScopedHtml, baseDescription, productName);
     const extractedDescription = cafe24BundlePricing ? normalizeCafe24BundlePricingClaims(rawExtractedDescription, cafe24BundlePricing) : rawExtractedDescription;
     const structuredSignals = extractStructuredProductSignals(extractedDescription);
     const mainBenefit = selectMainBenefit(structuredSignals.verifiedBenefits, extractedDescription, productName);
     const structuredProductImages = filterCurrentProductImages(url.toString(), jsonLd.images ?? [], (image) => image);
-    const openGraphImage = absoluteUrl(metaContent(html, "og:image") || metaContent(html, "twitter:image"), url.toString());
+    const openGraphImage = absoluteUrl(metaContent(productScopedHtml, "og:image") || metaContent(productScopedHtml, "twitter:image"), url.toString());
     const fallbackMainImage = [...structuredProductImages, openGraphImage]
       .find((image) => image && !isDifferentProductImage(url.toString(), image)) || "";
     const collectedGalleryImages = collectGalleryImages(productScopedHtml, url.toString(), [fallbackMainImage, ...structuredProductImages]);
     const rawGalleryImages = filterCurrentProductImages(url.toString(), collectedGalleryImages, (image) => image);
     const collectedEnhancedCandidates = extractEnhancedImageCandidates(productScopedHtml, url.toString(), [fallbackMainImage, ...structuredProductImages]);
     const enhancedCandidates = filterCurrentProductImages(url.toString(), collectedEnhancedCandidates, (candidate) => candidate.url);
-    const extractedCategory = extractCategory(html, jsonLd.category);
+    const extractedCategory = extractCategory(productScopedHtml, jsonLd.category);
     const normalizedCategory = normalizeProductCategory(extractedCategory, [productName, baseDescription, extractedDescription].join(" "));
-    const productTextForType = [jsonLd.name, jsonLd.description, normalizedCategory, metaContent(html, "og:title"), metaContent(html, "og:description")].join(" ");
+    const productTextForType = [jsonLd.name, jsonLd.description, normalizedCategory, metaContent(productScopedHtml, "og:title"), metaContent(productScopedHtml, "og:description")].join(" ");
     const detected = classifyProductType(productTextForType);
     const candidateUrls = enhancedCandidates.map((candidate) => candidate.url);
     const mergedGalleryCandidates = mergeImageUrls([...candidateUrls, ...rawGalleryImages]);
@@ -163,7 +154,7 @@ export async function POST(request: Request) {
             category: normalizedCategory,
             price,
             originalPrice,
-            discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(html, price, originalPrice),
+            discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(productScopedHtml, price, originalPrice),
             description: extractedDescription,
             verifiedBenefits: structuredSignals.verifiedBenefits,
             ingredients: structuredSignals.ingredients,
@@ -318,7 +309,7 @@ export async function POST(request: Request) {
       price,
       originalPrice,
       oldPrice: originalPrice,
-      discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(html, price, originalPrice),
+      discountInfo: cafe24BundlePricing?.discountInfo || extractDiscountInfo(productScopedHtml, price, originalPrice),
       brandName: jsonLd.brandName,
       detectedProductType: detected.type,
       categoryKeywords: detected.keywords,

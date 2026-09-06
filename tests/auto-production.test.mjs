@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
 import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, CURRENT_REFERENCE_COPY_POLICY_VERSION, executionResults, isCurrentAutoProductionGenerationJob, isCurrentReferenceEditGenerationJob, isServerRunnableGenerationJob, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { CODEX_DIRECT_TEST_PROMPT_VERSION, CODEX_DIRECT_TEST_STAGE_ORDER, CODEX_DIRECT_TEST_WORKFLOW } from "../app/lib/creative-generation/codexDirectTest.ts";
 import { hasDuplicateRunKey, isProductRecentlyProduced, selectFreshHook, textSimilarity } from "../app/lib/auto-production/duplicateGuard.ts";
 import { allHookCodes, hookHypothesesFromJob, resultIdsForHookCodes } from "../app/lib/auto-production/hookSelector.ts";
 import { eligibleAutoProductionCandidates, plannedImageCount, selectAutoProductionCandidates } from "../app/lib/auto-production/productSelector.ts";
@@ -435,15 +436,16 @@ test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성
   assert.match(runner, /assignedReferences/);
   assert.doesNotMatch(runner, /config\.creativesPerProduct|fullHookTestForNewProducts/);
   assert.match(factory, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6/);
-  assert.match(factory, /prepareReferenceAdaptedCopyScaffold/);
-  assert.match(generationRunner, /planReferenceAdaptedCopies/);
-  assert.match(generationRunner, /ensureReferenceCopyPlanning/);
-  assert.match(factory, /result\.nativeCreative\?\.promptVersion === NATIVE_FINAL_PROMPT_VERSION/);
-  assert.match(factory, /수동·자동 공통 최신 이미지 정책/);
+  assert.match(factory, /buildDefaultCodexGenerationPlan/);
+  assert.doesNotMatch(factory, /prepareReferenceAdaptedCopyScaffold|buildReferenceAdaptedCreativePlan|analyzeProductReferences/);
+  assert.match(factory, /job\.pipeline = DEFAULT_CODEX_GENERATION_PIPELINE/);
+  assert.match(factory, /assertDefaultCodexGenerationJob\(job\)/);
+  assert.match(generationRunner, /isDefaultCodexGenerationJob/);
+  assert.doesNotMatch(generationRunner, /planReferenceAdaptedCopies|ensureReferenceCopyPlanning/);
   assert.doesNotMatch(factory, /planHooksWithCodexLocal|buildExplorationCreativePlan/);
 });
 
-test("구형 4장 자동제작은 실행·복구하지 않고 현재 레퍼런스 우선 6장만 허용한다", () => {
+test("구형 자동제작은 실행·복구하지 않고 현재 Codex 직접 제작 6장만 허용한다", () => {
   const base = job();
   const referenceResults = base.results.map((result, index) => ({
     ...result,
@@ -462,21 +464,33 @@ test("구형 4장 자동제작은 실행·복구하지 않고 현재 레퍼런�
       },
     },
   }));
+  const directResults = referenceResults.map((result) => ({
+    ...result,
+    nativeCreative: {
+      ...result.nativeCreative,
+      engine: "codex_local",
+      workflow: CODEX_DIRECT_TEST_WORKFLOW,
+      stageOrder: CODEX_DIRECT_TEST_STAGE_ORDER,
+      promptVersion: CODEX_DIRECT_TEST_PROMPT_VERSION,
+    },
+  }));
   const current = {
     ...base,
     sourceType: "auto-production",
     version: CURRENT_AUTO_PRODUCTION_JOB_VERSION,
     pipeline: CURRENT_AUTO_PRODUCTION_PIPELINE,
+    engine: "codex_local",
+    codexDirectTest: { prompt: "레퍼런스에 맞게 상품 광고 생성", productImagePath: "/product.jpg" },
     templateRegistryVersion: CURRENT_REFERENCE_COPY_POLICY_VERSION,
     copyPlanMode: "reference-adapted",
-    results: referenceResults,
-    executionResultIds: referenceResults.map((result) => result.id),
+    results: directResults,
+    executionResultIds: directResults.map((result) => result.id),
   };
   assert.equal(isCurrentAutoProductionGenerationJob(current), true);
   assert.equal(isServerRunnableGenerationJob(current), true);
-  const manual = { ...current, sourceType: "manual", executionResultIds: undefined };
+  const manual = { ...current, sourceType: "manual", pipeline: "reference-first-adapted-copy", results: referenceResults, executionResultIds: undefined };
   assert.equal(isCurrentReferenceEditGenerationJob(manual), true);
-  assert.equal(isServerRunnableGenerationJob(manual), true);
+  assert.equal(isServerRunnableGenerationJob(manual), false);
   assert.equal(isCurrentReferenceEditGenerationJob({ ...manual, results: manual.results.slice(0, 5) }), false);
   assert.equal(isCurrentReferenceEditGenerationJob({ ...manual, templateRegistryVersion: "reference-native-copy-adapter-v22-live-research-semantic-gate" }), false);
   assert.equal(isCurrentAutoProductionGenerationJob({ ...current, version: "generation-job-v9-ai-native-complete-ad", pipeline: undefined, executionResultIds: current.executionResultIds.slice(0, 4) }), false);
@@ -532,13 +546,13 @@ test("17-1. 취소된 자동제작은 느린 상품 분석 뒤 새 작업을 등
   assert.match(scheduledBlock, /if \(isCancellationError\(error\)\) break/);
 });
 
-test("18. 후킹별 단일 세션을 분리하고 한 상품에서 최대 3장을 병렬 처리한다", async () => {
+test("18. 소재별 단일 세션을 분리하고 한 상품에서 최대 3장을 병렬 처리한다", async () => {
   const [generation, provider, runner] = await Promise.all([read("app/lib/creative-generation/nativeResultGeneration.server.ts"), read("app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts"), read("app/lib/creative-generation/jobRunner.server.ts")]);
   assert.doesNotMatch(generation, /codexProductThreadKey|resumeThread|saveAdvertiserThread/);
   assert.doesNotMatch(generation, /advertiserLocks/);
   assert.match(generation, /withNativeCreativeSession\(provider/);
   assert.match(generation, /session\.generate/);
-  assert.match(generation, /session\.validate/);
+  assert.doesNotMatch(generation, /session\.validate|validateGroup/);
   assert.doesNotMatch(generation, /provider\.(?:generate|validate)\(/);
   const sessionBlock = provider.slice(provider.indexOf("async openSession"), provider.indexOf("async validateGroup"));
   assert.equal((sessionBlock.match(/codex\.startThread/g) || []).length, 1);
@@ -706,9 +720,17 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   ]);
   assert.match(workspace, /plannedUrlDrafts/);
   assert.match(workspace, /adminProductUrls: urls/);
+  assert.match(workspace, /productImageSelections/);
+  assert.match(workspace, /2번 상품 원본은 필수/);
+  assert.match(workspace, /3번 라벨·분위기와 4번 포장상품 이미지는 선택/);
+  assert.match(workspace, /packagingImagePath/);
+  assert.match(workspace, /추가\/강조 사항/);
+  assert.match(workspace, /additionalInstructions: draft\.additionalInstructions\.trim\(\) \|\| undefined/);
+  assert.match(workspace, /\/api\/extract\/product/);
   assert.match(workspace, /urls\.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
   assert.doesNotMatch(workspace, /urls\.length < 1 \|\| urls\.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
-  assert.match(workspace, /const planSavable = enteredUrls\.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);
+  assert.match(workspace, /const requiredProductImagesReady = currentImageSelections\.length === enteredUrls\.length/);
+  assert.match(workspace, /const planSavable = enteredUrls\.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT[^\n]*requiredProductImagesReady/);
   assert.match(workspace, /const planChanged = !sameProductUrls\(enteredUrls, advertiser\.adminProductUrls\)/);
   assert.match(workspace, /const \[backgroundPreviewCount, setBackgroundPreviewCount\] = useState\(0\)/);
   assert.match(workspace, /const previewBlocksPlanEdits = applyingPreviewCount > 0/);
@@ -733,6 +755,11 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(route, /directProductInfo/);
   assert.match(route, /runAutoProductionForProduct/);
   assert.match(runner, /createNativeGenerationJob/);
+  assert.match(runner, /buildDefaultCodexGenerationPrompt/);
+  assert.match(runner, /codexDirectTest:/);
+  assert.match(runner, /additionalInstructions: savedImageSelection\?\.additionalInstructions/);
+  assert.doesNotMatch(runner, /generationModePreference:/);
+  assert.match(runner, /savedImageSelection\?\.productImagePath/);
   assert.match(runner, /config\.adminProductUrls\.length/);
   assert.match(runner, /plannedRunQuota/);
   assert.match(runner, /AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT/);

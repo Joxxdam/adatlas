@@ -2,6 +2,7 @@ import "server-only";
 import type { GenerationJob, GenerationJobSummary } from "./types";
 import { executionResults, failedGenerationResultStatuses, terminalGenerationResultStatuses } from "./jobRunnerPolicy";
 import { nativeResultImageUrl } from "./nativeCreativeStorage.server";
+import { DEFAULT_CODEX_GENERATION_PIPELINE } from "./codexDirectTest";
 
 const localPathPattern = /(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s"']+/g;
 const secretPattern = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/gi;
@@ -84,6 +85,15 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
   };
   const publicJob = {
     ...job,
+    codexDirectTest: job.codexDirectTest
+      ? {
+          prompt: job.codexDirectTest.prompt,
+          productImagePath: safeWebPath(job.codexDirectTest.productImagePath),
+          supportingImagePath: safeWebPath(job.codexDirectTest.supportingImagePath) || undefined,
+          packagingImagePath: safeWebPath(job.codexDirectTest.packagingImagePath) || undefined,
+          additionalInstructions: job.codexDirectTest.additionalInstructions,
+        }
+      : undefined,
     paidApiAuthorization: undefined,
     adCopy: job.adCopy
       ? {
@@ -262,6 +272,7 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     productName: job.productTruth.product.productName,
     productUrl: job.productTruth.product.landingUrl,
     sourceType: job.sourceType || "manual",
+    pipeline: job.pipeline,
     totalCount: scopedResults.length,
     completedCount: scopedResults.filter((result) => terminalGenerationResultStatuses.has(result.status)).length,
     generatedCount: scopedResults.filter((result) => Boolean(result.imagePath)).length,
@@ -269,7 +280,7 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     failedCount: scopedResults.filter((result) => failedGenerationResultStatuses.has(result.status)).length,
     currentHookCode: (() => {
       const running = scopedResults.find((result) => result.status === "running");
-      return running ? (job.copyPlanMode === "reference-adapted" ? `소재 ${String(running.order).padStart(2, "0")}` : running.hookPlan.hookCode) : undefined;
+      return running ? (job.pipeline === DEFAULT_CODEX_GENERATION_PIPELINE || job.copyPlanMode === "reference-adapted" ? `소재 ${String(running.order).padStart(2, "0")}` : running.hookPlan.hookCode) : undefined;
     })(),
     status: job.status,
     runnerActive,

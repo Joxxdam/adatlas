@@ -20,7 +20,15 @@ function usableFacts(truth: ProductTruth) {
 }
 
 export function hasVerifiedPriceFact(truth: ProductTruth) {
-  return usableFacts(truth).some((fact) => fact.evidenceType === "price" || fact.key === "price") && Boolean(truth.normalized.price || truth.product.price);
+  const verifiedPrice = String(truth.normalized.price || truth.product.price || "").replace(/\s+/g, "").trim();
+  if (!verifiedPrice) return false;
+  // 상세 이미지 OCR의 동일 판매가가 먼저 들어오면 값 중복 제거 과정에서
+  // 구조화 price fact 대신 offer fact가 남을 수 있습니다. 타입명이 아니라
+  // 실제 확정 판매가 토큰과 사용 가능한 근거가 일치하는지를 확인합니다.
+  return usableFacts(truth).some((fact) =>
+    ["price", "offer"].includes(fact.evidenceType || "") &&
+    fact.value.replace(/\s+/g, "").includes(verifiedPrice)
+  );
 }
 
 export function hasVerifiedSensoryFact(truth: ProductTruth) {

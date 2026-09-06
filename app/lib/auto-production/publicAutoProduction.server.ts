@@ -15,20 +15,9 @@ export function toPublicAutoProductionRun(run: AutoProductionRun): AutoProductio
       ...task,
       hookHypotheses: [],
       candidate: publicCandidate(task.candidate),
-      adCopy: task.adCopy
-        ? {
-            ...task.adCopy,
-            primaryText: task.adCopy.status === "needs-review" ? undefined : task.adCopy.primaryText,
-            adTitle: task.adCopy.status === "needs-review" ? undefined : task.adCopy.adTitle,
-            verifiedFacts: [],
-            languageTraits: [],
-            promptVersion: "",
-            sourceFingerprint: "",
-            qa: undefined,
-            approvalReason: undefined,
-            performanceData: undefined,
-          }
-        : undefined,
+      // 과거 실행의 상품 단위 문구는 저장 호환만 유지합니다. 신규 문구는
+      // 아카이브에서 완성 이미지 한 장을 선택했을 때만 별도 조회합니다.
+      adCopy: undefined,
     })),
   };
   const serialized = JSON.stringify(safe).replace(localPathPattern, "로컬 파일").replace(secretPattern, "[비공개 인증정보]");

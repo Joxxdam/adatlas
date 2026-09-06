@@ -72,6 +72,8 @@ function displayMaterialCode(entry: CreativeArchiveEntry) {
 function ArchiveCard({ entry, downloadSequence, selected, deletionSelected, brandingSelected, previewLogo, previewAiDisclosure, onSelect, onToggleDeletion, onToggleBranding, onPrepareDownload, onReleaseTemporaryBranding, onDelete, onUpdate, onNotice }: { entry: CreativeArchiveEntry; downloadSequence: number; selected: boolean; deletionSelected: boolean; brandingSelected: boolean; previewLogo?: ReturnType<typeof findAdvertiserLogo>; previewAiDisclosure: boolean; onSelect: (entry: CreativeArchiveEntry) => void; onToggleDeletion: (entry: CreativeArchiveEntry) => void; onToggleBranding: (entry: CreativeArchiveEntry) => void; onPrepareDownload: (entry: CreativeArchiveEntry) => Promise<{ entry: CreativeArchiveEntry; temporaryBrandingIds: string[] }>; onReleaseTemporaryBranding: (entryIds: string[]) => Promise<void>; onDelete: (entry: CreativeArchiveEntry) => void; onUpdate: (entry: CreativeArchiveEntry) => void; onNotice: (message: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [copyBusy, setCopyBusy] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(Boolean(entry.adCopy?.primaryText));
   const [note, setNote] = useState(entry.note);
   const [tags, setTags] = useState(entry.tags.join(", "));
 
@@ -125,6 +127,38 @@ function ArchiveCard({ entry, downloadSequence, selected, deletionSelected, bran
         });
       }
       setBusy(false);
+    }
+  }
+
+  async function copyToClipboard(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      onNotice(`${label}을 복사했습니다.`);
+    } catch {
+      onNotice(`${label}을 복사하지 못했습니다.`);
+    }
+  }
+
+  async function generateAdCopy(regenerate = false) {
+    if (copyBusy || !entry.jobId || !entry.resultId) return;
+    setCopyBusy(true);
+    setCopyOpen(true);
+    onNotice(`${entry.productName} 소재 한 장을 읽어 광고 문구와 제목을 생성하고 있습니다.`);
+    try {
+      const response = await fetch(`/api/creative-archive/${encodeURIComponent(entry.id)}/ad-copy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: regenerate ? "regenerate" : "generate" }),
+      });
+      const payload = (await response.json()) as { adCopy?: CreativeArchiveEntry["adCopy"]; error?: string };
+      if (!response.ok || !payload.adCopy) throw new Error(payload.error || "광고 문구와 제목을 생성하지 못했습니다.");
+      onUpdate({ ...entry, adCopy: payload.adCopy });
+      if (payload.adCopy.primaryText && payload.adCopy.adTitle) onNotice("선택한 이미지에 맞는 광고 문구와 제목을 생성했습니다.");
+      else onNotice(payload.adCopy.qa?.failures?.[0] || "문구 검수를 통과하지 못했습니다. 다시 생성해 주세요.");
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "광고 문구와 제목을 생성하지 못했습니다.");
+    } finally {
+      setCopyBusy(false);
     }
   }
 
@@ -210,6 +244,16 @@ function ArchiveCard({ entry, downloadSequence, selected, deletionSelected, bran
             다운로드
           </button>
           {entry.resultUrl ? <Link href={entry.resultUrl}>제작 결과 열기</Link> : null}
+          {entry.jobId && entry.resultId ? (
+            <button
+              className={styles.adCopyAction}
+              disabled={copyBusy}
+              onClick={() => (entry.adCopy?.primaryText ? setCopyOpen((current) => !current) : void generateAdCopy(Boolean(entry.adCopy)))}
+              type="button"
+            >
+              {copyBusy ? "문구 생성 중…" : entry.adCopy?.primaryText ? (copyOpen ? "문구·제목 닫기" : "문구·제목 보기") : "문구·제목 생성"}
+            </button>
+          ) : null}
           <button onClick={() => setEditing((current) => !current)} type="button">
             태그·메모
           </button>
@@ -217,6 +261,36 @@ function ArchiveCard({ entry, downloadSequence, selected, deletionSelected, bran
             개별 삭제
           </button>
         </div>
+        {copyOpen ? (
+          <section className={styles.adCopyPanel} aria-label={`${entry.productName} 개별 광고 문구와 제목`}>
+            {copyBusy ? (
+              <p className={styles.adCopyLoading}>이 완성 이미지를 직접 읽고 있습니다. 다른 소재의 문구는 함께 생성하지 않습니다.</p>
+            ) : entry.adCopy?.primaryText ? (
+              <>
+                <div className={styles.adCopyTitle}>
+                  <span>광고 제목</span>
+                  <strong>{entry.adCopy.adTitle}</strong>
+                  {entry.adCopy.adTitle ? <button onClick={() => void copyToClipboard(entry.adCopy!.adTitle!, "광고 제목")} type="button">복사</button> : null}
+                </div>
+                <div className={styles.adCopyText}>
+                  <span>광고 문구</span>
+                  <pre>{entry.adCopy.primaryText}</pre>
+                  <button onClick={() => void copyToClipboard(entry.adCopy!.primaryText!, "광고 문구")} type="button">문구 복사</button>
+                </div>
+                <div className={styles.adCopyFooter}>
+                  <small>이 소재 한 장과 확인된 상품 정보만 기준으로 생성됨</small>
+                  <button disabled={copyBusy} onClick={() => void generateAdCopy(true)} type="button">다시 생성</button>
+                </div>
+              </>
+            ) : (
+              <div className={styles.adCopyFailure}>
+                <strong>문구를 확정하지 못했습니다.</strong>
+                <p>{entry.adCopy?.qa?.failures?.[0] || "생성 버튼을 눌러 이 이미지의 문구와 제목을 만들어 주세요."}</p>
+                <button disabled={copyBusy} onClick={() => void generateAdCopy(Boolean(entry.adCopy))} type="button">{entry.adCopy ? "다시 생성" : "문구·제목 생성"}</button>
+              </div>
+            )}
+          </section>
+        ) : null}
         {editing ? (
           <div className={styles.editor}>
             <label>

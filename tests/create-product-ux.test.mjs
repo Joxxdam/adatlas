@@ -129,7 +129,7 @@ test("광고 제작 전 자동 매칭을 수정하고 명시적으로 제작을 
   assert.match(generator, /if \(!props\.productLoaded && !job\) return null/);
   assert.match(generator, /제작 시작 전까지 자동 매칭을 그대로 쓰거나/);
   assert.match(generator, /disabled=\{loading \|\| Boolean\(job\)\}/);
-  assert.match(generator, /이 매칭으로 광고 6장 제작 시작/);
+  assert.match(generator, /광고 6장 생성 시작/);
   assert.match(generator, /availableProductImagePaths/);
   assert.match(generator, /confirmedProductImagePaths/);
   assert.match(generator, /extractedMainImage/);
@@ -162,7 +162,10 @@ test("reference creatives are server-driven and deliver each completed card imme
   assert.match(generator, /품질 확인 필요 · 다운로드 가능/);
   assert.doesNotMatch(generator, /latest-creative-delivery/);
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
-  assert.match(generator, /copyEdits|수정 문구로 전체 광고 재생성|문구 수정·제작 정보/);
+  assert.doesNotMatch(generator, /copyEdits|수정 문구로 전체 광고 재생성|ProductAdCopyPanel/);
+  assert.match(generator, /추가\/강조 사항/);
+  assert.match(generator, /숨겨진 기본 프롬프트의 맨 아래에 추가/);
+  assert.doesNotMatch(generator, />Codex에 전달할 프롬프트</);
   assert.match(generator, /수정 반영하기/);
   for (const label of ["후킹", "소재코드", "권장 광고명", "UTM", "최종 랜딩 URL", "이미지 다운로드"]) {
     assert.match(assetActions, new RegExp(label));

@@ -5414,5 +5414,691 @@
       "warnings": []
     },
     "createdAt": "2026-09-04T08:57:54.950Z"
+  },
+  {
+    "key": "fb68e1769e5621e9acdeecbcb31d10584099bcb40744da6bed53e061ed5b1be3",
+    "insight": {
+      "id": "detail-ocr-a98c26797d56",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260904063735331670be6e1217-4058-4189-b7fd-8d029f192a11.jpg",
+      "contentHash": "a98c26797d56f4b424bf7070fa5068bd58dbfb6b736ad505c5a72174bfa7bfc3",
+      "ocrText": "싸게 드릴려고\n50%3\n200톤 구매했어요\n할인 선\n(대량 구매해서 가격을 반으로 낮춤)\n_ 특별기획가\n설록우\n찰진등심\n1kg 박스\n(어린소라 잡내안남)\n1kg\n알등심 / 특마블\n옵션 선택가능\n대용량\n부드러움의\n끝판왕!\n기존가\n148,000원\n59,800원\n파격특가\n오' 가성비 1등 상품\n3종선별 우수상품\n68 신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7086956526922144,
+      "copyFacts": [
+        "찰진등심",
+        "1kg 박스",
+        "알등심 / 특마블",
+        "148,000원",
+        "59,800원",
+        "오' 가성비 1등 상품",
+        "3종선별 우수상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "200톤 구매했어요",
+        "특별기획가",
+        "옵션 선택가능",
+        "부드러움의",
+        "파격특가",
+        "68 신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T06:37:22.414Z"
+  },
+  {
+    "key": "b5f1e2c1d8540490fac8c905b6bffb7788ed7bde6be861f7c412c6d1e86159d6",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [
+        "국대한우 쇼핑몰",
+        "국대한우!",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T06:37:23.182Z"
+  },
+  {
+    "key": "752443d55dfa56120b9ebca8dd45243ec5125d1175f65b4b76a875d0a618534b",
+    "insight": {
+      "id": "detail-ocr-a98c26797d56",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260904063735331670be6e1217-4058-4189-b7fd-8d029f192a11.jpg",
+      "contentHash": "a98c26797d56f4b424bf7070fa5068bd58dbfb6b736ad505c5a72174bfa7bfc3",
+      "ocrText": "싸게 드릴려고\n50%3\n200톤 구매했어요\n할인 선\n(대량 구매해서 가격을 반으로 낮춤)\n_ 특별기획가\n설록우\n찰진등심\n1kg 박스\n(어린소라 잡내안남)\n1kg\n알등심 / 특마블\n옵션 선택가능\n대용량\n부드러움의\n끝판왕!\n기존가\n148,000원\n59,800원\n파격특가\n오' 가성비 1등 상품\n3종선별 우수상품\n68 신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7086956526922144,
+      "copyFacts": [
+        "찰진등심",
+        "1kg 박스",
+        "알등심 / 특마블",
+        "148,000원",
+        "59,800원",
+        "오' 가성비 1등 상품",
+        "3종선별 우수상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "200톤 구매했어요",
+        "특별기획가",
+        "옵션 선택가능",
+        "부드러움의",
+        "파격특가",
+        "68 신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:30:08.007Z"
+  },
+  {
+    "key": "8cddf80aca1db66ea3a4cacc3c13e9cee15f016548ed524ce8353baad8c13b5a",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [
+        "국대한우 쇼핑몰",
+        "국대한우!",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:30:08.644Z"
+  },
+  {
+    "key": "8403a746bf5fb817fb0d4c5bf72f7f3e1e7034c56893ff232b63de2f59d1704a",
+    "insight": {
+      "id": "detail-ocr-a98c26797d56",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260904063735331670be6e1217-4058-4189-b7fd-8d029f192a11.jpg",
+      "contentHash": "a98c26797d56f4b424bf7070fa5068bd58dbfb6b736ad505c5a72174bfa7bfc3",
+      "ocrText": "싸게 드릴려고\n50%3\n200톤 구매했어요\n할인 선\n(대량 구매해서 가격을 반으로 낮춤)\n_ 특별기획가\n설록우\n찰진등심\n1kg 박스\n(어린소라 잡내안남)\n1kg\n알등심 / 특마블\n옵션 선택가능\n대용량\n부드러움의\n끝판왕!\n기존가\n148,000원\n59,800원\n파격특가\n오' 가성비 1등 상품\n3종선별 우수상품\n68 신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7086956526922144,
+      "copyFacts": [
+        "찰진등심",
+        "1kg 박스",
+        "알등심 / 특마블",
+        "148,000원",
+        "59,800원",
+        "오' 가성비 1등 상품",
+        "3종선별 우수상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "200톤 구매했어요",
+        "특별기획가",
+        "옵션 선택가능",
+        "부드러움의",
+        "파격특가",
+        "68 신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:31:23.868Z"
+  },
+  {
+    "key": "ddfca4acbbc15ccad32547be75109e6455cac361f4fcf8fd64ca08ffc0209cc6",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [
+        "국대한우 쇼핑몰",
+        "국대한우!",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:31:24.462Z"
+  },
+  {
+    "key": "9471a245aa60217a48944812c02653c0b20ac5e0af3516941c6cf0f9ad4757df",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609030118203728453de614c3-e369-4f0e-9a9d-09567d880382.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:51:11.927Z"
+  },
+  {
+    "key": "e06c0e1740852a76f5aa0d3897925a8ed2b9294148cc9dca24ccae0414700ee5",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903011833448980626d6550-6b90-4bf3-9709-f55bea61f63b.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:51:11.929Z"
+  },
+  {
+    "key": "010755837df1ad79b7506a63b7e9d9f30dc69c2129985f27bccc4160795acb35",
+    "insight": {
+      "id": "detail-ocr-46cf8d2c58ff",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020904373338203958c37046-1bd0-46ac-8b49-2843848cd9cb.png",
+      "contentHash": "46cf8d2c58ffd03cbfcf11f39b366bbea752ceccd050afcaba09d74d32ce1817",
+      "ocrText": "remium Segr\n국내한유 프리디앙 비드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "remium Segr"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:51:12.571Z"
+  },
+  {
+    "key": "1373f6962884cf0d2d4787f978d4f42a933f1b4dc6577291b699b1a8f4750b03",
+    "insight": {
+      "id": "detail-ocr-a80fb0713ed1",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026083106231787421880280977-a604-42a8-aff3-bf51673f42d3.jpg",
+      "contentHash": "a80fb0713ed15cdfd6f616ed77438c1fcfd80efae96f3b018cc0fc52605476f1",
+      "ocrText": "주석 스페셜 루부의 5등트\n어린소라 너무 연해요\nPREMIUM\nPREMIUM\n69%\n88,000원\n기획특가\n할인!\n정상가\n288,000원\n프리미엄 비프 추석 스페셜 특수부위 5종세트\n*",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7916666666666666,
+      "copyFacts": [
+        "주석 스페셜 루부의 5등트",
+        "어린소라 너무 연해요",
+        "88,000원",
+        "288,000원",
+        "프리미엄 비프 추석 스페셜 특수부위 5종세트"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM"
+      ],
+      "discardedNotices": [
+        "기획특가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:52:47.360Z"
+  },
+  {
+    "key": "36db91e905ff97ab6655e165d9b46cc7dce892282e5aad93899a4a756250f042",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T10:52:48.517Z"
+  },
+  {
+    "key": "6176ad810dc2c348e91c0b6a9f2ba787d58e05ea2fd9a12511bccfe4cce9935a",
+    "insight": {
+      "id": "detail-ocr-a98c26797d56",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260904063735331670be6e1217-4058-4189-b7fd-8d029f192a11.jpg",
+      "contentHash": "a98c26797d56f4b424bf7070fa5068bd58dbfb6b736ad505c5a72174bfa7bfc3",
+      "ocrText": "싸게 드릴려고\n50%3\n200톤 구매했어요\n할인 선\n(대량 구매해서 가격을 반으로 낮춤)\n_ 특별기획가\n설록우\n찰진등심\n1kg 박스\n(어린소라 잡내안남)\n1kg\n알등심 / 특마블\n옵션 선택가능\n대용량\n부드러움의\n끝판왕!\n기존가\n148,000원\n59,800원\n파격특가\n오' 가성비 1등 상품\n3종선별 우수상품\n68 신선 포장 빠른 배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7086956526922144,
+      "copyFacts": [
+        "찰진등심",
+        "1kg 박스",
+        "148,000원",
+        "59,800원",
+        "오' 가성비 1등 상품",
+        "3종선별 우수상품"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "200톤 구매했어요",
+        "특별기획가",
+        "옵션 선택가능",
+        "부드러움의",
+        "파격특가",
+        "68 신선 포장 빠른 배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T12:06:18.152Z"
+  },
+  {
+    "key": "54cc2bdcf97300e7ed3fb163d954a22db18361bfc1d63b9b1f0455dc02d1aef8",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T12:06:18.748Z"
+  },
+  {
+    "key": "47532a510e7989e8f87b0883de3e3c6b7a1ee263e352ba19c3e0e6827e164f12",
+    "insight": {
+      "id": "detail-ocr-a80fb0713ed1",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026083106231787421880280977-a604-42a8-aff3-bf51673f42d3.jpg",
+      "contentHash": "a80fb0713ed15cdfd6f616ed77438c1fcfd80efae96f3b018cc0fc52605476f1",
+      "ocrText": "주석 스페셜 루부의 5등트\n어린소라 너무 연해요\nPREMIUM\nPREMIUM\n69%\n88,000원\n기획특가\n할인!\n정상가\n288,000원\n프리미엄 비프 추석 스페셜 특수부위 5종세트\n*",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7916666666666666,
+      "copyFacts": [
+        "주석 스페셜 루부의 5등트",
+        "어린소라 너무 연해요",
+        "88,000원",
+        "288,000원",
+        "프리미엄 비프 추석 스페셜 특수부위 5종세트"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM"
+      ],
+      "discardedNotices": [
+        "기획특가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T13:37:32.184Z"
+  },
+  {
+    "key": "c01149ca41ae42a4b2c23171c9cebfd2cc37a6d759c636210504a5b7b83a74f4",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903011833448980626d6550-6b90-4bf3-9709-f55bea61f63b.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T13:37:32.215Z"
+  },
+  {
+    "key": "e670122880a83c40bbaf20db6ecbfa23e5298a71ada4352faec7e11dff356552",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609030118203728453de614c3-e369-4f0e-9a9d-09567d880382.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T13:37:32.234Z"
+  },
+  {
+    "key": "5066654b0dfc733400c070a65615d78a53080afd844f17ad987a87e5031fa43b",
+    "insight": {
+      "id": "detail-ocr-46cf8d2c58ff",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020904373338203958c37046-1bd0-46ac-8b49-2843848cd9cb.png",
+      "contentHash": "46cf8d2c58ffd03cbfcf11f39b366bbea752ceccd050afcaba09d74d32ce1817",
+      "ocrText": "remium Segr\n국내한유 프리디앙 비드",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "remium Segr"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T13:37:33.088Z"
+  },
+  {
+    "key": "b733a6847e1323188f546a44f78c1d3473d66ea77c4086faabee2854138b5753",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T13:37:33.321Z"
+  },
+  {
+    "key": "9b38944b668832fadab327f5b176743d4d1a02a6e614017b368c0f8e7926a13c",
+    "insight": {
+      "id": "detail-ocr-41727f3ac973",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20250112035941068807dc3da260-f353-4b49-92ee-08eb316f42fc.jpg",
+      "contentHash": "41727f3ac973e322740badd260a8778f4a50289a474bb7908602cb243746416e",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T14:40:54.487Z"
+  },
+  {
+    "key": "7a5c16146a08f9c73349cafd08e45bb0e8425f1bf5fc41db476a8dae2b425038",
+    "insight": {
+      "id": "detail-ocr-80dda506686c",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903014217202001e0fe5d80-88f1-47d6-a455-a8740af508e7.jpg",
+      "contentHash": "80dda506686c08d22ca844d37629cb2d40f301732ba4b4deb9eba87f46eafe29",
+      "ocrText": "추석사전예약시 50% 저렴\n.*☆*.\n어린소만\n드디어 나왔어요-미친가성비\n3중선별한\n우수상품\n마블링 좋은 특등심 5팩세트\n어린소라\n엄청연해요\nPREMIUM\n파격특가 88,000원\n50%\n할인!\n188,000원\n파격특가 88,000원\n어린소라\n전문가의 손질\n신선 냉장 포장\n신선 포장\n엄청 연한소고기\n착한손질\n최상의 신선도\n빠른배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6956521739130435,
+      "copyFacts": [
+        "마블링 좋은 특등심 5팩세트",
+        "파격특가 88,000원",
+        "188,000원",
+        "신선 냉장 포장",
+        "신선 포장",
+        "최상의 신선도"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM"
+      ],
+      "discardedNotices": [
+        "추석사전예약시 50% 저렴",
+        "3중선별한",
+        "빠른배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T14:40:54.561Z"
+  },
+  {
+    "key": "73f6c7e42b55ca0174bd41de873eff56b35cd1ed008320bc1c85c1d5f9225ba7",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T14:40:55.209Z"
+  },
+  {
+    "key": "3f846432fc95e726c25a6861c6447e29561446f061c6998e981d0ead671b373b",
+    "insight": {
+      "id": "detail-ocr-1e121e2b57ec",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202609020920387108641be4f155-611b-4d8a-ac61-a18bc69ff1a0.png",
+      "contentHash": "1e121e2b57ec8e898a338f800c38be9228525c38d7ce9bdae949acaca8eb9ec9",
+      "ocrText": "쥬스용(혼합과)반품 불가 안내\n해당 상품의 쥬스용 혼합과는\n파지용으로 반품이 불가 함으로\n구매에 참고하시길 바랍니다.\n※ 조금만 기다려주시면 맛 좋은 상품으로\n빠르게 배송드릴 수 있도록 하겠습니다!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "쥬스용(혼합과)반품 불가 안내",
+        "해당 상품의 쥬스용 혼합과는",
+        "파지용으로 반품이 불가 함으로",
+        "조금만 기다려주시면 맛 좋은 상품으로",
+        "빠르게 배송드릴 수 있도록 하겠습니다!"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T15:27:09.504Z"
+  },
+  {
+    "key": "e8493d2c76b275631c3638c11d2f84537cfa0749c3c9cead5a247efb11dfe3cc",
+    "insight": {
+      "id": "detail-ocr-6ba463f69468",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202607010914320204708b4e5941-5901-4350-aa68-c0256c52ed1a.jpg",
+      "contentHash": "6ba463f6946820a5af3a109e73c3e5fb9ccbfa7b149335ecc230324e93e90c7d",
+      "ocrText": "toss pay\n토스페이 결제 시\n최대 4천원 혜택\n26.07.01~26.09.30\nEVENT 1\n1천원 즉시 할인\n5만원 이상 결제 시\n1천원\nEVENT 2\n생애 첫 결제 시\n토스포인트 3천원 추가 적립\n3천원\n* 토스페이 최초 결제 유저 대상, ID당 1회\n결제 혜택 적용 방법\n결제수단에서\nSTEP 1\nSTEP 2\n토스페이 클릭하기\n토스페이 결제창에서\n혜택 적용 확인하기\n@ 신용카드\n~ 휴대폰\n✓ 신용카드 (수기결제)\n•pay 카카오페이\n15,000원\nO 무통정입금\nsspo》 토스페이\n01000%\n[혜택 1: 일반 프로모션 유의사항]\n• 할인을 적용 가능 횟수만큼 모두 받았더라도, 이미 할인 받은 결제내역을 전액 취소하면 그만큼 더 받을 수 있어요.\n• 할인 받은 결제를 부분 취소할 경우, 부분 취소 비율만큼 혜택이 줄어들어 최종 환불 금액이 정해져요.\n• 환불은 할인을 적용한 후 실제 결제한 금액만큼 받을 수 있어요.\n[혜택 2:생애 첫 결제 프로모션 유의사항]\n단, 이전 결제가 제대로 취소되지 않으면 할인 받을 수 없어요.\n• 결제를 취소하면 지급된 토스포인트가 회수돼요.\n• 토스 결제 화면에서 생애 첫 결제 혜택이 보이지 않을 경우 대상이 아니에요. (토스 1D당 1회)\n• 생애 첫 결제 프로모션은 토스 전체 가맹점에서 결제 이력이 없는 경우에만 적용되어요.\n• 적립은 1원 단위로 받을 수 있어요.\n• 적립을 적용 가능 횟수만큼 모두 받았더라도, 이미 적립 받은 결제내역을 전액 취소하면 그만큼 더 받을 수 있어요.\n단, 이전 길제가 취소되어 지급된 포인트가 회수된 이후 재결제 해야 다시 적립을 받을 수 있어요.\n[혜택 1& 2: 프로모션 공통 유의사항]\n• 본 프로모션은 제휴사 사정에 따라 타 혜택과 중복적용이 되지 않을 수 있어요.\n• 예산 소진 및 이벤트 사정에 따라 조기 마감될 수 있으니, 결제 전 혜택 적용 여부를 꼭 확인해주세요.\n• 토스 계좌 및 토스페이머니로 결제 시, 토스페이 충전 결제의 한도에 따라 최대 200만원까지만 결제할 수 있어요.\n• 최종 결제 금액이 최소 결제 금액보다 커야 혜택을 받을 수 있어요.\n• 결제처에서 하나카드를 선택하고 토스뱅크카드로 결제한 경우 혜택 적용 대상이 아니에요.\n단, 최종 결제 금액은 토스포인트 차감 후 실 결제 금액이에요.\n• 상품권, 순금 등 일부 상품은 혜택을 받을 수 없어요!\n• 할인/적립 혜택은 1원 단위로 적용돼요.\n• 후불결제(BNPL), 법인카드로 결제하면 혜택을 받을 수 없어요.\n• 행사 내용은 토스페이 및 제휴사의 사정으로 중단 또는 변동될 수 있어요.\n• 본 프로모션이 종료된 후에 결제를 전액 취소한 경우, 해당 혜택을 다시 받을 수 없어요. (직접 취소, 업체 사정에 따른 취소\n• 관련 문의는 토스 고객센터(1599-4905)로 문의 부탁드려요.\n모두 포함돼요.)",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8796296296296297,
+      "copyFacts": [
+        "본 프로모션은 제휴사 사정에 따라 타 혜택과 중복적용이 되지 않을 수 있어요.",
+        "최종 결제 금액이 최소 결제 금액보다 커야 혜택을 받을 수 있어요.",
+        "행사 내용은 토스페이 및 제휴사의 사정으로 중단 또는 변동될 수 있어요."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "toss pay",
+        "EVENT 1",
+        "EVENT 2"
+      ],
+      "discardedNotices": [
+        "최대 4천원 혜택",
+        "26.07.01~26.09.30",
+        "1천원 즉시 할인",
+        "5만원 이상 결제 시",
+        "토스포인트 3천원 추가 적립",
+        "토스페이 최초 결제 유저 대상, ID당 1회",
+        "결제수단에서",
+        "STEP 1",
+        "STEP 2",
+        "토스페이 결제창에서",
+        "pay 카카오페이",
+        "15,000원",
+        "sspo》 토스페이",
+        "01000%",
+        "[혜택 1: 일반 프로모션 유의사항]",
+        "할인을 적용 가능 횟수만큼 모두 받았더라도, 이미 할인 받은 결제내역을 전액 취소하면 그만큼 더 받을 수 있어요.",
+        "할인 받은 결제를 부분 취소할 경우, 부분 취소 비율만큼 혜택이 줄어들어 최종 환불 금액이 정해져요.",
+        "환불은 할인을 적용한 후 실제 결제한 금액만큼 받을 수 있어요.",
+        "[혜택 2:생애 첫 결제 프로모션 유의사항]",
+        "단, 이전 결제가 제대로 취소되지 않으면 할인 받을 수 없어요.",
+        "결제를 취소하면 지급된 토스포인트가 회수돼요.",
+        "토스 결제 화면에서 생애 첫 결제 혜택이 보이지 않을 경우 대상이 아니에요. (토스 1D당 1회)",
+        "적립은 1원 단위로 받을 수 있어요.",
+        "적립을 적용 가능 횟수만큼 모두 받았더라도, 이미 적립 받은 결제내역을 전액 취소하면 그만큼 더 받을 수 있어요."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T15:27:09.998Z"
+  },
+  {
+    "key": "3bddc7624fb617eb961c055d6fc162c961f369e0fb7dec3f0f414753ec4e5052",
+    "insight": {
+      "id": "detail-ocr-1e6c17e18480",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/front/moment/img/banner/171fd35a5860c594f2c48330fd33bf1d_42198.jpg",
+      "contentHash": "1e6c17e1848098d0cb2bc276323860e1906f147302245ed549a405960c33e2e9",
+      "ocrText": "푸딩 직배송 서비스\n주문 다음 날 새벽\n매장 냉동고까지 편하게",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "매장 냉동고까지 편하게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "푸딩 직배송 서비스"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T15:36:37.797Z"
+  },
+  {
+    "key": "8193ad79b0453b5a3fcf5d41baf15684b7e483ea7467554ad859a53cf70d9d12",
+    "insight": {
+      "id": "detail-ocr-4a8383e02aea",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/front/moment/img/banner/28799eefea10c7e339e9458d500d8de9_43284.jpg",
+      "contentHash": "4a8383e02aea9257d092c5ca200d75f57d57f8c837d0fd5ae2546f00ad160ca7",
+      "ocrText": "지금 가입해 보세요\n놓칠 수 없는 놀라운 사업자 혜택!\n무료샘플신청, 13만원 상당 쿠폰, 1팩도 도매가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "놓칠 수 없는 놀라운 사업자 혜택!",
+        "무료샘플신청, 13만원 상당 쿠폰, 1팩도 도매가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T15:36:37.809Z"
+  },
+  {
+    "key": "d113c881e27730c9afcdbb01c22b8be17552380e292a6395c45a321f856e4e9c",
+    "insight": {
+      "id": "detail-ocr-cd78e5410f54",
+      "imageUrl": "https://img.bizthenaum.co.kr/data/contents/202604/ori/202604_DniLblzxK1QGIiDhRBLS.jpg",
+      "contentHash": "cd78e5410f54b3cbfea5c3c5f8d3001cd02034d4fbf7e9846fa768a53572dbd0",
+      "ocrText": "Pich!\n무당!\nFOODINGFACTORY\n10분\n조리\n쉿! 전문가 없이도 굴러가는 주방\n셰프 비법을 그대로 담아\n가성비는 미치도록 높인 푸딩픽!\n요리 기본의 맛은 푸딩이 채웠습니다!\n셰프가 완성한 베이스에 사장님의 한끗만 더하세요.\n누구도 흉내 낼 수 없는 우리 매장만의 시그니처가 탄생합니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7727272727272727,
+      "copyFacts": [
+        "셰프 비법을 그대로 담아",
+        "가성비는 미치도록 높인 푸딩픽!",
+        "요리 기본의 맛은 푸딩이 채웠습니다!",
+        "셰프가 완성한 베이스에 사장님의 한끗만 더하세요."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!",
+        "FOODINGFACTORY"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-06T15:36:39.004Z"
   }
 ]

@@ -1,6 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { createNativeGenerationJob } from "../creative-generation/createNativeGenerationJob.server";
+import { buildDefaultCodexGenerationPrompt } from "../creative-generation/codexDirectTest.ts";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { enqueueGenerationJob, recoverGenerationJob } from "../creative-generation/jobRunner.server";
 import { CURRENT_AUTO_PRODUCTION_JOB_VERSION, CURRENT_AUTO_PRODUCTION_PIPELINE, executionResults, isCurrentAutoProductionGenerationJob } from "../creative-generation/jobRunnerPolicy";
@@ -196,29 +197,72 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       }));
     }
   }
-  const productionTask = { ...task, candidate: productionCandidate };
-  const productionProductImagePaths = Array.from(
+  const productLandingUrl = productionCandidate.productUrl || productionCandidate.canonicalProductUrl || productionCandidate.productInfo.landingUrl;
+  const savedImageSelection = (config.productImageSelections || []).find((selection) => selection.productUrl === productLandingUrl);
+  const discoveredProductImagePaths = Array.from(
     new Set(
       [
         ...(productionCandidate.productInfo.confirmedProductImagePaths || []),
         ...(productionCandidate.productInfo.productImagePaths || []),
         productionCandidate.productInfo.productImagePath || "",
+        productionCandidate.productInfo.secondaryProductImagePath || "",
         productionCandidate.productInfo.extractedMainImage || "",
+        ...(productionCandidate.productInfo.extractedGalleryImages || []),
+        ...(productionCandidate.productInfo.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
         productionCandidate.imageUrl || "",
       ].filter(Boolean)
     )
-  ).slice(0, 6);
+  );
+  const selectedProductImagePath = savedImageSelection?.productImagePath || discoveredProductImagePaths[0] || "";
+  if (!selectedProductImagePath) {
+    throw new Error("자동제작에 사용할 2번 상품 원본 이미지를 찾지 못했습니다. 예정 상품에서 원본 이미지를 선택해 주세요.");
+  }
+  const selectedSupportingImagePath = savedImageSelection?.supportingImagePath && savedImageSelection.supportingImagePath !== selectedProductImagePath
+    ? savedImageSelection.supportingImagePath
+    : undefined;
+  const selectedPackagingImagePath = savedImageSelection?.packagingImagePath
+    && savedImageSelection.packagingImagePath !== selectedProductImagePath
+    && savedImageSelection.packagingImagePath !== selectedSupportingImagePath
+    ? savedImageSelection.packagingImagePath
+    : undefined;
+  const productionProductImagePaths = Array.from(new Set([
+    selectedProductImagePath,
+    selectedSupportingImagePath || "",
+    selectedPackagingImagePath || "",
+    ...discoveredProductImagePaths,
+  ].filter(Boolean)));
+  const directProduct = {
+    ...productionCandidate.productInfo,
+    productImagePath: selectedProductImagePath,
+    secondaryProductImagePath: selectedSupportingImagePath || productionCandidate.productInfo.secondaryProductImagePath,
+    productImagePaths: productionProductImagePaths,
+    confirmedProductImagePaths: Array.from(new Set([
+      selectedProductImagePath,
+      selectedSupportingImagePath || "",
+      selectedPackagingImagePath || "",
+      ...(productionCandidate.productInfo.confirmedProductImagePaths || []),
+    ].filter(Boolean))),
+  };
+  const productionTask = { ...task, candidate: { ...productionCandidate, productInfo: directProduct } };
   const job = await createNativeGenerationJob(
     {
-      product: productionCandidate.productInfo,
-      // 자동 검증에서 현재 상품으로 판별된 대표 이미지가 있으면 세트 전체
-      // 구성이 보이지 않는다는 이유만으로 1분 내 건너뛰지 않는다. 다른 상품
-      // 번호와 배너는 앞선 검증 단계에서 이미 제외된다.
+      product: directProduct,
       productImagePaths: productionProductImagePaths,
       selectedAdImages: productionProductImagePaths,
       source: "landing-page",
       adBrief: adBrief(config, productionTask),
       engine: "codex_local",
+      codexDirectTest: {
+        prompt: buildDefaultCodexGenerationPrompt({
+          landingUrl: productLandingUrl,
+          hasSupportingImage: Boolean(selectedSupportingImagePath),
+          hasPackagingImage: Boolean(selectedPackagingImagePath),
+        }),
+        productImagePath: selectedProductImagePath,
+        supportingImagePath: selectedSupportingImagePath,
+        packagingImagePath: selectedPackagingImagePath,
+        additionalInstructions: savedImageSelection?.additionalInstructions,
+      },
     },
     {
       autoStart: false,
@@ -244,7 +288,7 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       errors: [...current.errors, "최신 자동제작 6장 계약을 충족하지 않아 실행을 차단했습니다."].slice(-20),
       results: current.results.map((result) => (result.status === "pending" ? { ...result, status: "cancelled" as const } : result)),
     }));
-    throw new Error("자동제작은 최신 공통 레퍼런스 편집 경로와 서로 다른 카테고리 레퍼런스 6장이 모두 준비된 경우에만 실행합니다.");
+    throw new Error("자동제작은 Codex 직접 제작 프롬프트와 서로 다른 카테고리 레퍼런스 6장이 모두 준비된 경우에만 실행합니다.");
   }
   const queuedJob = await creativeGenerationJobStore.update(job.id, (current) => ({
     ...current,
@@ -253,7 +297,7 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
     status: "pending",
   }));
   if (!isCurrentAutoProductionGenerationJob(queuedJob)) {
-    throw new Error("자동제작 작업의 공통 레퍼런스 편집·6장 실행 계약 검증에 실패했습니다.");
+    throw new Error("자동제작 작업의 Codex 직접 제작·6장 실행 계약 검증에 실패했습니다.");
   }
   let registered = false;
   await autoProductionRepository.update(run.id, (current) => {
@@ -439,7 +483,7 @@ export async function syncAutoProductionRun(runId: string) {
   if (run.status === "cancelled") return run;
   const tasks = await Promise.all(
     run.tasks.map(async (task) => {
-      if (!task.generationJobId || (terminalProductStatuses.has(task.status) && task.adCopy && task.adCopy.status !== "generating")) return task;
+      if (!task.generationJobId || terminalProductStatuses.has(task.status)) return task;
       const job = await creativeGenerationJobStore.get(task.generationJobId);
       if (!job) return { ...task, status: "failed" as const, error: "연결된 광고 생성 작업을 찾지 못했습니다.", updatedAt: new Date().toISOString() };
       if (job.status === "cancelled") {
@@ -447,7 +491,6 @@ export async function syncAutoProductionRun(runId: string) {
           ...task,
           status: "cancelled" as const,
           results: resultsFromJob(job),
-          adCopy: job.adCopy,
           error: undefined,
           updatedAt: new Date().toISOString(),
         };
@@ -456,14 +499,11 @@ export async function syncAutoProductionRun(runId: string) {
       const generated = scoped.filter((result) => Boolean(result.imagePath)).length;
       const failed = scoped.filter((result) => result.status === "failed" && !result.imagePath).length;
       const imagePending = scoped.some((result) => ["pending", "running"].includes(result.status));
-      // 상품 설명 문구는 러너가 상품당 한 번 별도로 생성한다. 문구 생성 지연이나
-      // 내부 진단은 이미 만들어진 광고 이미지의 완료·다운로드를 막지 않는다.
       const pending = imagePending;
       return {
         ...task,
         status: pending ? (scoped.some((result) => result.status === "running") ? ("generating" as const) : ("queued" as const)) : generated ? ("completed" as const) : failed ? ("failed" as const) : task.status,
         results: resultsFromJob(job),
-        adCopy: job.adCopy,
         error: failed && !generated ? scoped.find((result) => result.error)?.error : task.error,
         updatedAt: new Date().toISOString(),
       };
@@ -535,7 +575,7 @@ export async function recoverAutoProductionRuns() {
       if (!task.generationJobId || terminalProductStatuses.has(task.status)) continue;
       const stored = await creativeGenerationJobStore.get(task.generationJobId);
       if (stored && stored.sourceType === "auto-production" && !isCurrentAutoProductionGenerationJob(stored)) {
-        const message = "구형 자동제작 작업은 재개하지 않았습니다. 다음 예약부터 최신 레퍼런스 원본 → 상품 교체 → 문구 교체 6장 경로로 새로 제작합니다.";
+        const message = "구형 자동제작 작업은 재개하지 않았습니다. 다음 예약부터 랜덤 레퍼런스 + 선택 상품 원본 + 선택 참고 이미지를 새 Codex 스레드에 직접 전달하는 6장 경로로 제작합니다.";
         await creativeGenerationJobStore.update(stored.id, (current) => ({
           ...current,
           status: "cancelled",

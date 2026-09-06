@@ -1,26 +1,14 @@
 import "server-only";
 
-import { Codex } from "@openai/codex-sdk";
-import { resolveRuntimeTimeout } from "./fastCreativeRuntime";
-import { createHash } from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
-import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
 import { selectMasterCreativeDirection } from "./masterDesign";
 import { matchBrandProfile, matchCategoryProfile, withRequestedLogo } from "./profiles";
-import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
+import { extractNumericTokens } from "./productTruth";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
-import { applyReferenceCopyGroupRules } from "./referenceCopyDiversity";
-import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "./referenceCopyNaturalness";
-import { isAmbiguousMerchantCredentialCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
-import { CURRENT_REFERENCE_COPY_POLICY_VERSION } from "./jobRunnerPolicy";
-import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
-import { isApprovedReferenceNativeCopy, normalizeReferenceRawLines, type ReferenceTextRegion } from "./referenceLibraryManagement";
-import { findProductCopySemanticErrors, resolveProductCopyDomain } from "./productCopySemantics";
-import { buildImageCreativePremiseSeed, buildImageCreativePremiseSeeds, findImageCreativePremiseCopyErrors, findImageCreativePremiseErrors, IMAGE_CREATIVE_PREMISE_POLICY_VERSION, normalizeImageCreativePremise } from "./imageCreativePremise.ts";
-import { loadCopyGuideForProduct, type LoadedCopyGuide } from "../mvp/copyGuideLoader";
+import { isApprovedReferenceNativeCopy } from "./referenceLibraryManagement";
+import { buildImageCreativePremiseSeeds } from "./imageCreativePremise.ts";
+import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader";
 import type { AdBrief } from "../mvp/types";
-import type { CreativeBlueprintId, CreativePlan, HookPlan, ImageCreativePremise, ProductFact, ProductTruth, ReferenceAdaptedCopyPlan, ReferenceCopyProfile, ScenePlan } from "./types";
+import type { CreativePlan, HookPlan, ProductTruth, ReferenceAdaptedCopyPlan, ScenePlan } from "./types";
 
 import {
   REFERENCE_ADAPTED_PLANNER_VERSION,
@@ -35,7 +23,7 @@ import {
   ensureRenderableReferencePlans,
   normalizePlan,
 } from "./referenceCopyPlanningCore";
-import { hydrateLeanPlannerPayload, planningPrompt, reviewPlans, runPlanner, selectPlannerCandidates } from "./referenceCopyPlannerRuntime.server";
+import { hydrateLeanPlannerPayload, planningPrompt, reviewPlans, runPlanner } from "./referenceCopyPlannerRuntime.server";
 import { normalizeReferenceCopyPlanMetadata } from "./referenceCopyCandidates.ts";
 import { alignPremiseSeedsToEvidenceAssignments, buildReferenceCopyEvidenceAssignments, referenceRhetoricalMechanism } from "./referenceCopyAngles.ts";
 
@@ -47,6 +35,57 @@ export {
   hasPublishableReferenceCopyContract,
 } from "./referenceCopyPlanningCore";
 export { prepareReferenceAdaptedCopyScaffold, prewarmReferenceCopyProfiles } from "./referenceCopyPlannerRuntime.server";
+
+function planCopyText(plan: ReferenceAdaptedCopyPlan | undefined) {
+  return (plan?.adaptedLines || []).filter(Boolean).join("\n") || [plan?.headline, plan?.subCopy, plan?.proof, plan?.offer, plan?.cta].filter(Boolean).join("\n");
+}
+
+function copyFailureCategory(errors: string[]) {
+  const message = errors.join(" ");
+  if (/timeout|시간\s*초과/i.test(message)) return "timeout" as const;
+  if (/schema|JSON|parse|형식/i.test(message)) return "schema" as const;
+  if (/ProductTruth|근거|수치|가격|할인|혜택|효능|함량|원산지/i.test(message)) return "factual" as const;
+  if (/슬롯|줄 수|빈 문구|밀도/i.test(message)) return "slot-contract" as const;
+  if (/자연|불완전|연결어|문장 조각|괄호/i.test(message)) return "naturalness" as const;
+  if (/network|transport|fetch|연결|ECONN|404|5\d\d/i.test(message)) return "transport" as const;
+  return "unknown" as const;
+}
+
+function attachPlanningTrace(input: {
+  final: ReferenceAdaptedCopyPlan;
+  initial?: ReferenceAdaptedCopyPlan;
+  repaired?: ReferenceAdaptedCopyPlan;
+  repairErrors?: string[];
+  missingReferenceCopy?: boolean;
+  missingPlannerResponse?: boolean;
+  executionError?: string;
+}) {
+  const initialErrors = input.executionError
+    ? [input.executionError]
+    : input.missingReferenceCopy
+      ? ["저장·승인된 레퍼런스 광고 문구가 없습니다."]
+      : input.missingPlannerResponse
+        ? ["문구 배치 응답에서 해당 소재가 누락됐습니다."]
+      : input.initial?.validationErrors || [];
+  const fellBack = input.final.generationSource === "safe-minimal" || input.final.generationSource === "validated-fallback" || input.final.generationSource === "reference-best-effort";
+  const finalSource = input.final.generationSource === "repaired-codex-local"
+    ? "repaired-codex-local" as const
+    : fellBack ? "safe-minimal" as const : "codex-local" as const;
+  return {
+    ...input.final,
+    planningTrace: {
+      firstFailureStage: input.executionError ? "generation" as const : input.missingReferenceCopy ? "input" as const : input.missingPlannerResponse ? "generation" as const : initialErrors.length ? "validation" as const : undefined,
+      firstFailureCategory: input.missingReferenceCopy ? "missing-reference-copy" as const : input.missingPlannerResponse ? "schema" as const : initialErrors.length ? copyFailureCategory(initialErrors) : undefined,
+      firstErrors: initialErrors.slice(0, 8),
+      repairAttempted: Boolean(input.repaired) || Boolean(input.initial && input.initial.validationStatus === "invalid"),
+      repairErrors: input.repairErrors?.slice(0, 8),
+      initialCopy: planCopyText(input.initial) || undefined,
+      repairedCopy: planCopyText(input.repaired) || undefined,
+      fallbackCopy: fellBack ? planCopyText(input.final) || undefined : undefined,
+      finalSource,
+    },
+  };
+}
 
 export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; references: NativeAdReference[] }) {
   const copyGuide = await loadCopyGuideForProduct({
@@ -78,9 +117,11 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
   const premiseSeeds = alignPremiseSeedsToEvidenceAssignments(input.truth, buildImageCreativePremiseSeeds(input.truth, input.references), evidenceAssignments);
   const fallbackPlans = input.references.map((reference, index) => createEvidenceSafeMinimalPlan(input.truth, reference, profiles[index], index, premiseSeeds[index], evidenceAssignments[index]));
   if (!readyEntries.length) {
+    const plans = ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds, evidenceAssignments })
+      .map((plan) => attachPlanningTrace({ final: plan, missingReferenceCopy: true }));
     return {
       profiles,
-      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds, evidenceAssignments }),
+      plans,
       provider: "fallback" as const,
       warnings: ["저장·자동 검증된 레퍼런스 OCR 원문이 없어 레퍼런스 구성 태그와 상품 사실로 최선 문구를 만들고 제작을 계속합니다. 제작 중 즉석 OCR은 실행하지 않았습니다."],
     };
@@ -92,48 +133,66 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
     const planningWarnings: string[] = [];
     const readyEvidenceAssignments = readyEntries.map(({ index }) => evidenceAssignments[index]);
     const leanResponse = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments, missingProfileIds: [], copyGuide }));
-    let response = hydrateLeanPlannerPayload({ payload: leanResponse, truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments });
-    response = await selectPlannerCandidates({ truth: input.truth, references: readyReferences, evidenceAssignments: readyEvidenceAssignments, payload: response });
+    const initialResponseReferenceIds = new Set(leanResponse.copies.map((copy) => copy.referenceId));
+    const missingPlannerResponseIds = new Set(readyReferences.filter((reference) => !initialResponseReferenceIds.has(reference.id)).map((reference) => reference.id));
+    const response = hydrateLeanPlannerPayload({ payload: leanResponse, truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments });
     let readyPlans = readyEntries.map(({ reference, profile, index }, readyIndex) => normalizePlan(response.plans.find((plan) => plan.referenceId === reference.id), input.truth, reference, profile, index, readyPremiseSeeds[readyIndex], "codex-local", readyEvidenceAssignments[readyIndex]));
     readyPlans = reviewPlans({ truth: input.truth, profiles: readyProfiles, plans: readyPlans, copyGuide });
-    // 묶음 중복·가격 반복 오류도 1회 보정 배치에 포함한다. 과거에는 보정이
-    // 끝난 뒤 처음 발견되어 고칠 기회 없이 규칙 문구로 교체되던 문제를 막는다.
-    readyPlans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(readyPlans, input.truth));
-    const failed = readyPlans.filter((plan) => plan.validationStatus === "invalid");
+    readyPlans = applyMerchantCredentialGroupRule(readyPlans);
+    const initialPlansByReference = new Map(readyPlans.map((plan) => [plan.referenceId, plan]));
+    const repairedPlansByReference = new Map<string, ReferenceAdaptedCopyPlan>();
+    const repairErrorsByReference = new Map<string, string[]>();
+    const failed = readyPlans.filter((plan) => plan.validationStatus === "invalid" || missingPlannerResponseIds.has(plan.referenceId));
     if (failed.length) {
       try {
         const leanRepair = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments, missingProfileIds: [], copyGuide, repairPlans: failed }));
-        let repaired = hydrateLeanPlannerPayload({ payload: leanRepair, truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments });
-        repaired = await selectPlannerCandidates({ truth: input.truth, references: readyReferences, evidenceAssignments: readyEvidenceAssignments, payload: repaired });
+        const repairResponseReferenceIds = new Set(leanRepair.copies.map((copy) => copy.referenceId));
+        const repaired = hydrateLeanPlannerPayload({ payload: leanRepair, truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments });
+        const repairedReferenceIds = new Set(failed.map((plan) => plan.referenceId));
         readyPlans = readyPlans.map((plan, readyIndex) => {
           const entry = readyEntries[readyIndex];
-          return plan.validationStatus === "invalid" ? normalizePlan(repaired.plans.find((candidate) => candidate.referenceId === plan.referenceId), input.truth, entry.reference, entry.profile, entry.index, readyPremiseSeeds[readyIndex], "repaired-codex-local", readyEvidenceAssignments[readyIndex]) : plan;
+          return repairedReferenceIds.has(plan.referenceId) ? normalizePlan(repaired.plans.find((candidate) => candidate.referenceId === plan.referenceId), input.truth, entry.reference, entry.profile, entry.index, readyPremiseSeeds[readyIndex], "repaired-codex-local", readyEvidenceAssignments[readyIndex]) : plan;
         });
-        const repairedReferenceIds = new Set(failed.map((plan) => plan.referenceId));
         const repairedPlans = readyPlans.filter((plan) => repairedReferenceIds.has(plan.referenceId));
         const reviewedRepairs = reviewPlans({ truth: input.truth, profiles: readyProfiles.filter((profile) => repairedReferenceIds.has(profile.referenceId)), plans: repairedPlans, copyGuide });
         const reviewedByReference = new Map(reviewedRepairs.map((plan) => [plan.referenceId, plan]));
         readyPlans = readyPlans.map((plan) => reviewedByReference.get(plan.referenceId) || plan);
-        readyPlans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(readyPlans, input.truth));
+        readyPlans = applyMerchantCredentialGroupRule(readyPlans);
+        readyPlans.filter((plan) => repairedReferenceIds.has(plan.referenceId)).forEach((plan) => {
+          repairedPlansByReference.set(plan.referenceId, plan);
+          if (!repairResponseReferenceIds.has(plan.referenceId)) repairErrorsByReference.set(plan.referenceId, ["1회 보정 응답에도 해당 소재가 누락됐습니다."]);
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : "문구 1회 보정에 실패했습니다.";
+        failed.forEach((plan) => repairErrorsByReference.set(plan.referenceId, [message]));
         readyPlans = readyPlans.map((plan) => plan.validationStatus === "invalid" ? { ...plan, validationErrors: [...plan.validationErrors, message], repairCount: 1 } : plan);
       }
     }
     const plannedByReference = new Map(readyPlans.map((plan) => [plan.referenceId, plan]));
     let plans = input.references.map((reference, index) => plannedByReference.get(reference.id) || fallbackPlans[index]);
-    plans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(plans, input.truth));
+    plans = applyMerchantCredentialGroupRule(plans);
     // AI 보정 이후에도 publishable 계약에 미달한 항목은 검증된 결정적
     // ProductTruth fallback으로 교체한다. 검증되지 않은 best-effort는 실행하지 않는다.
     plans = ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans, premiseSeeds, evidenceAssignments });
-    plans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(plans, input.truth));
+    plans = applyMerchantCredentialGroupRule(plans);
+    plans = plans.map((plan) => attachPlanningTrace({
+      final: plan,
+      initial: initialPlansByReference.get(plan.referenceId),
+      repaired: repairedPlansByReference.get(plan.referenceId),
+      repairErrors: repairErrorsByReference.get(plan.referenceId),
+      missingReferenceCopy: !readyEntries.some((entry) => entry.reference.id === plan.referenceId),
+      missingPlannerResponse: missingPlannerResponseIds.has(plan.referenceId),
+    }));
     return { profiles, plans, provider: "codex-local" as const, warnings: [...planningWarnings, ...plans.flatMap((plan) => plan.validationErrors)] };
   } catch (error) {
+    const message = error instanceof Error ? error.message : "최신 레퍼런스 문구 계획을 준비하지 못했습니다.";
+    const plans = ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds, evidenceAssignments })
+      .map((plan) => attachPlanningTrace({ final: plan, executionError: message }));
     return {
       profiles,
-      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds, evidenceAssignments }),
+      plans,
       provider: "fallback" as const,
-      warnings: [error instanceof Error ? error.message : "최신 레퍼런스 문구 계획을 준비하지 못해 이미지 생성을 시작하지 않습니다."],
+      warnings: [message],
     };
   }
 }
@@ -155,7 +214,9 @@ export function buildReferenceAdaptedCreativePlan(input: { truth: ProductTruth; 
       offer: plan.offer,
       cta: plan.cta,
       audience: input.truth.product.targetCustomer || "상품 고객",
-      sceneIntent: `선택된 레퍼런스 ${reference.id}의 구도와 문구 구조 안에서 ${plan.creativePremise?.situation || "현재 상품 사용 순간"}을 표현한 상품 교체 소재`,
+      sceneIntent: plan.sceneAdaptation
+        ? `${plan.sceneAdaptation.expressionPrinciple} · ${plan.sceneAdaptation.subjectMode} · ${plan.sceneAdaptation.action} · ${plan.sceneAdaptation.setting}`
+        : `선택된 레퍼런스 ${reference.id}의 구도·문구 슬롯·시각 위계를 보존한 상품 및 문구 교체 소재`,
       factIds: plan.factIds,
       numericTokens: extractNumericTokens([plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" ")),
       hookCode: plan.resultCode,
@@ -201,6 +262,8 @@ export function buildReferenceScenes(references: NativeAdReference[], copyPlans:
     generated: false,
     paidGenerationAllowed: false,
     generationMode: "reference-guided-full-scene",
-    reason: reference.selectionReason,
+    reason: copyPlans[index].sceneAdaptation
+      ? `${reference.selectionReason} · ${copyPlans[index].sceneAdaptation!.subjectMode} · ${copyPlans[index].sceneAdaptation!.action}`
+      : reference.selectionReason,
   }));
 }

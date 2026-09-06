@@ -34,7 +34,7 @@ test("배송·출고·도착 정보는 광고 문구 후보와 최종 검증에�
 });
 
 test("불완전 OCR 조각과 보관·사업자 운영정보를 광고 USP에서 분리한다", () => {
-  for (const value of ["풍미를 살린 원료의", "한입에 느껴지는 고소한", "정성스러운 공정으로"]) {
+  for (const value of ["풍미를 살린 원료의", "한입에 느껴지는 고소한", "정성스러운 공정으로", "국대 특수부위 스페셜 모듬 구이세트는"]) {
     assert.equal(isIncompleteOcrCopyFragment(value), true, value);
   }
   assert.equal(isIncompleteOcrCopyFragment("정성스러운 공정으로 완성했습니다."), false);

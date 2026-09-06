@@ -6,11 +6,22 @@ import { cancelGenerationJob, executionResults, normalizeCreativeProductUrl } fr
 
 const jobsDirectory = path.join(process.cwd(), ".data", "creative-generation", "jobs");
 const globalKey = Symbol.for("daywiz.creative-generation.job-store-locks");
+const activeIndexKey = Symbol.for("daywiz.creative-generation.active-job-index-v1");
 const globalState = globalThis as typeof globalThis & {
   [globalKey]?: Map<string, Promise<unknown>>;
+  [activeIndexKey]?: {
+    checkedAt: number;
+    jobs: GenerationJob[];
+    pending?: Promise<GenerationJob[]>;
+  };
 };
 const jobLocks = globalState[globalKey] ?? new Map<string, Promise<unknown>>();
 globalState[globalKey] = jobLocks;
+const activeIndex = globalState[activeIndexKey] ?? { checkedAt: 0, jobs: [] };
+globalState[activeIndexKey] = activeIndex;
+
+const ACTIVE_INDEX_TTL_MS = 1_000;
+const ACTIVE_JOB_STATUSES = new Set<GenerationJobStatus>(["pending", "running"]);
 
 function validJobId(jobId: string) {
   return /^creative-job-[a-z0-9-]{8,96}$/i.test(jobId);
@@ -27,6 +38,9 @@ async function writeJobFile(job: GenerationJob) {
   const temporary = `${target}.${process.pid}.${Date.now()}.tmp`;
   await fs.writeFile(temporary, `${JSON.stringify(job, null, 2)}\n`, "utf8");
   await fs.rename(temporary, target);
+  // 다음 상태 조회가 종료된 작업을 계속 반환하거나 새 작업을 놓치지 않게
+  // 쓰기 직후 경량 active index만 무효화합니다.
+  activeIndex.checkedAt = 0;
   return job;
 }
 
@@ -72,6 +86,63 @@ async function listJobFiles() {
   }
 }
 
+async function fileHasActiveTopLevelStatus(file: string) {
+  let handle: Awaited<ReturnType<typeof fs.open>> | undefined;
+  try {
+    handle = await fs.open(file, "r");
+    // JSON은 id/status로 시작해 저장됩니다. 전체 15MB 파일을 읽지 않고 헤더만
+    // 확인하므로 전역 상태 표시의 2.5초 polling이 작업 이력 전체를 재파싱하지
+    // 않습니다.
+    const buffer = Buffer.allocUnsafe(2_048);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    const header = buffer.toString("utf8", 0, bytesRead);
+    const status = header.match(/^\s*\{[\s\S]{0,1024}?"status"\s*:\s*"([^"]+)"/u)?.[1] as GenerationJobStatus | undefined;
+    return Boolean(status && ACTIVE_JOB_STATUSES.has(status));
+  } catch {
+    return false;
+  } finally {
+    await handle?.close().catch(() => undefined);
+  }
+}
+
+async function readActiveJobsFromDisk() {
+  const files = await listJobFiles();
+  const activeFiles: string[] = [];
+  // 한 번에 수백 개의 파일 핸들을 열지 않으면서도 헤더 확인은 병렬화합니다.
+  for (let index = 0; index < files.length; index += 32) {
+    const chunk = files.slice(index, index + 32);
+    const matches = await Promise.all(chunk.map(fileHasActiveTopLevelStatus));
+    chunk.forEach((file, chunkIndex) => {
+      if (matches[chunkIndex]) activeFiles.push(file);
+    });
+  }
+  const jobs = await Promise.all(activeFiles.map(async (file) => {
+    try {
+      return JSON.parse(await fs.readFile(file, "utf8")) as GenerationJob;
+    } catch {
+      return null;
+    }
+  }));
+  return jobs
+    .filter((job): job is GenerationJob => Boolean(job && ACTIVE_JOB_STATUSES.has(job.status)))
+    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+}
+
+async function cachedActiveJobs() {
+  if (Date.now() - activeIndex.checkedAt < ACTIVE_INDEX_TTL_MS) return activeIndex.jobs;
+  if (activeIndex.pending) return activeIndex.pending;
+  const pending = readActiveJobsFromDisk();
+  activeIndex.pending = pending;
+  try {
+    const jobs = await pending;
+    activeIndex.jobs = jobs;
+    activeIndex.checkedAt = Date.now();
+    return jobs;
+  } finally {
+    if (activeIndex.pending === pending) activeIndex.pending = undefined;
+  }
+}
+
 export const creativeGenerationJobStore = {
   async create(job: GenerationJob) {
     return writeJobFile(job);
@@ -114,7 +185,7 @@ export const creativeGenerationJobStore = {
   },
 
   async active(limit = 20) {
-    return this.list({ statuses: ["pending", "running"], limit });
+    return (await cachedActiveJobs()).slice(0, Math.max(1, Math.min(500, limit)));
   },
 
   async recentFor(input: { advertiserId?: string; productId?: string; limit?: number }) {

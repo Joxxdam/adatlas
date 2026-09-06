@@ -4,7 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { nextScheduledAt } from "./schedule";
 import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "./policy";
-import type { AutoProductionAdvertiserConfig, AutoProductionRole } from "./types";
+import type { AutoProductionAdvertiserConfig, AutoProductionProductImageSelection, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types";
 
 const seedFile = path.join(process.cwd(), "data", "auto-production", "advertiser-seed.json");
@@ -47,11 +47,41 @@ function numeric(value: unknown, fallback: number, min: number, max: number) {
   return Number.isFinite(number) ? Math.max(min, Math.min(max, Math.round(number))) : fallback;
 }
 
+function normalizeProductImageSelections(value: unknown, productUrls: string[]) {
+  if (!Array.isArray(value)) return [];
+  const allowedUrls = new Set(productUrls);
+  const seen = new Set<string>();
+  return value.flatMap((entry): AutoProductionProductImageSelection[] => {
+    if (!entry || typeof entry !== "object") return [];
+    const candidate = entry as Partial<AutoProductionProductImageSelection>;
+    const productUrl = String(candidate.productUrl || "").trim().slice(0, 2_000);
+    const productImagePath = String(candidate.productImagePath || "").trim().slice(0, 4_000);
+    const supportingImagePath = String(candidate.supportingImagePath || "").trim().slice(0, 4_000);
+    const packagingImagePath = String(candidate.packagingImagePath || "").trim().slice(0, 4_000);
+    const additionalInstructions = String(candidate.additionalInstructions || "").normalize("NFKC").trim().slice(0, 2_000);
+    if (!allowedUrls.has(productUrl) || !productImagePath || seen.has(productUrl)) return [];
+    seen.add(productUrl);
+    return [{
+      productUrl,
+      productImagePath,
+      supportingImagePath: supportingImagePath && supportingImagePath !== productImagePath ? supportingImagePath : undefined,
+      packagingImagePath: packagingImagePath
+        && packagingImagePath !== productImagePath
+        && packagingImagePath !== supportingImagePath
+        ? packagingImagePath
+        : undefined,
+      additionalInstructions: additionalInstructions || undefined,
+    }];
+  }).slice(0, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT);
+}
+
 export function normalizeAdvertiserConfig(input: Partial<AutoProductionAdvertiserConfig> & Pick<AutoProductionAdvertiserConfig, "advertiserName">, current?: AutoProductionAdvertiserConfig, now = new Date()): AutoProductionAdvertiserConfig {
   const createdAt = current?.createdAt || now.toISOString();
   const scheduleTime = /^\d{2}:\d{2}$/.test(input.scheduleTime || "") ? input.scheduleTime! : current?.scheduleTime || AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME;
   const scheduleDays = (Array.isArray(input.scheduleDays) ? input.scheduleDays : current?.scheduleDays || [0, 1, 2, 3, 4, 5, 6]).map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
   const priorities = (Array.isArray(input.selectionPriorities) ? input.selectionPriorities : current?.selectionPriorities || autoProductionRoles).filter((role): role is AutoProductionRole => autoProductionRoles.includes(role as AutoProductionRole));
+  const adminProductUrls = textList(input.adminProductUrls ?? current?.adminProductUrls, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT);
+  const productImageSelections = normalizeProductImageSelections(input.productImageSelections ?? current?.productImageSelections, adminProductUrls);
   const base: AutoProductionAdvertiserConfig = {
     advertiserId: safeId(input.advertiserId || current?.advertiserId || input.advertiserName),
     advertiserName: String(input.advertiserName || current?.advertiserName || "")
@@ -79,7 +109,8 @@ export function normalizeAdvertiserConfig(input: Partial<AutoProductionAdvertise
     excludedProductIds: textList(input.excludedProductIds ?? current?.excludedProductIds),
     excludedCategories: textList(input.excludedCategories ?? current?.excludedCategories),
     requiredProductIds: textList(input.requiredProductIds ?? current?.requiredProductIds),
-    adminProductUrls: textList(input.adminProductUrls ?? current?.adminProductUrls, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT),
+    adminProductUrls,
+    productImageSelections,
     productVisibilityMode: input.productVisibilityMode || current?.productVisibilityMode || "site-visible-only",
     selectionPriorities: priorities.length ? Array.from(new Set(priorities)) : [...autoProductionRoles],
     adObjective: input.adObjective || current?.adObjective || "purchase",

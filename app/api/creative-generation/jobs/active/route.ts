@@ -13,6 +13,10 @@ export async function GET(request: Request) {
     verifyLocalGenerationAccess(request);
     const requestedProductUrl = normalizeCreativeProductUrl(new URL(request.url).searchParams.get("productUrl") || "");
     const candidates = (await creativeGenerationJobStore.active(requestedProductUrl ? 200 : 20)).filter((candidate) => {
+      // 과거 단계형 작업은 조회·다운로드용으로만 남긴다. 먼저 실행 가능한
+      // 기본 Codex 작업만 거른 뒤 최신 작업을 선택해야 구버전 작업이 새 작업을
+      // 가리거나 같은 상품의 현재 작업을 잘못 취소하지 않는다.
+      if (!isServerRunnableGenerationJob(candidate)) return false;
       if (!requestedProductUrl) return true;
       return candidate.sourceType !== "auto-production" && normalizeCreativeProductUrl(candidate.productTruth.product.landingUrl) === requestedProductUrl;
     });
@@ -23,7 +27,6 @@ export async function GET(request: Request) {
     }
     const activeJobs = [];
     for (const candidate of selectedCandidates) {
-      if (!isServerRunnableGenerationJob(candidate)) continue;
       let job = await recoverGenerationJob(candidate.id);
       if (!job || !["pending", "running"].includes(job.status)) continue;
       const runnerWasActive = isGenerationJobRunnerActive(job.id);

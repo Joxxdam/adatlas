@@ -2,9 +2,24 @@ import "server-only";
 import type { ApprovedAdCopyMemory } from "./types";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 
-export const AD_COPY_PROMPT_VERSION = "meta-primary-copy-v4-compact-context";
+export const AD_COPY_PROMPT_VERSION = "archive-image-primary-copy-api-v2";
 
-export function buildAdCopyPrompt(input: { job: GenerationJob; result: GenerationResult; approvedCopies: ApprovedAdCopyMemory[]; copyGuideContent?: string; retryFailures?: string[] }) {
+type ArchiveCopyContext = {
+  entryId: string;
+  headline: string;
+  subCopy: string;
+  mainMessage: string;
+  visualDirection: string;
+};
+
+export function buildAdCopyPrompt(input: {
+  job: GenerationJob;
+  result: GenerationResult;
+  approvedCopies: ApprovedAdCopyMemory[];
+  copyGuideContent?: string;
+  retryFailures?: string[];
+  archiveContext?: ArchiveCopyContext;
+}) {
   const { job, result } = input;
   const seenFacts = new Set<string>();
   const facts = job.productTruth.facts
@@ -25,9 +40,11 @@ export function buildAdCopyPrompt(input: { job: GenerationJob; result: Generatio
     adTitle: copy.adTitle,
     approvalReason: copy.approvalReason,
   }));
-  return `당신은 한국 Meta 퍼포먼스 광고의 시니어 카피라이터다. 이미지 제작을 기다리지 않고 검증된 ProductTruth와 대표 후킹을 분석해 이 상품의 Meta '기본 문구(primaryText)' 하나와 짧은 '광고 제목(adTitle)' 하나를 작성한다.
+  return `당신은 한국 Meta 퍼포먼스 광고의 시니어 카피라이터다. ${input.archiveContext ? "첫 번째 입력으로 첨부된 아카이브 완성 광고 이미지 한 장을 직접 읽고, 그 이미지에 이어 붙여 Meta에 등록할" : "검증된 ProductTruth와 대표 후킹을 분석해 이 상품의"} '기본 문구(primaryText)' 하나와 짧은 '광고 제목(adTitle)' 하나를 작성한다.
 
 출력 규칙:
+- 첨부 이미지가 있으면 이미지에 실제로 보이는 상품 표현, 헤드라인의 화법, 강조 순서, 사용 상황과 감정 온도가 가장 중요한 기획 기준이다. 저장된 텍스트 메타데이터와 충돌하면 실제 이미지를 우선한다.
+- 이미지 속 문구를 그대로 길게 옮겨 적지 말고, 같은 광고를 본 사람이 자연스럽게 다음 내용을 읽는 것처럼 후킹을 확장한다. 다른 콘셉트의 범용 상품 설명으로 바꾸지 않는다.
 - primaryText는 3~5개의 짧고 완결된 문장 줄로 쓰고 전체 260자를 넘지 않는다. 각 줄은 공백 포함 68자 이내로 쓴다. 의미 단락 사이의 빈 줄은 최대 1개만 사용한다.
 - 첫 줄은 "이게 이 가격이라고?!", "괜히 1등이 아니라니까?"처럼 상품에 맞는 놀람·질문·반전형 구어체로 강하게 시작한다. 이 예문 자체나 확인되지 않은 사실은 복사하지 않는다.
 - 이어지는 줄은 확인된 가격·중량·구성·혜택 중 가장 강한 사실 2~3개만 고른다. 같은 상품명·중량·특가 표현을 여러 줄에서 반복하지 않는다.
@@ -37,7 +54,7 @@ export function buildAdCopyPrompt(input: { job: GenerationJob; result: Generatio
 - 상품명에 있던 행사형 SEO 문장을 그대로 광고 문장으로 옮기지 않는다. '소값 가격', '가격 오르기 전 파격특가로 쏩니다'처럼 주어·목적어가 어색하거나 판매자 내부 표현처럼 들리는 문장은 금지한다.
 - 추천 대상 fact가 없으면 임의의 고객군을 만들지 않는다. 상품과 사람의 행동 관계가 불명확하면 짧은 상품 사실과 실제 사용 상황만 쓴다.
 - 식품은 가격 놀람·맛과 식감·먹는 상황·구성·준비 편의를 연결한다. 강한 감탄형 말투는 허용하되 근거 없는 도매가·최저가·잡내 없음·신선도·등급을 만들지 않는다.
-- 퍼스널케어·화장품은 대담한 질문형 첫 문장 뒤에 향·사용 상황·확인된 원료나 USP를 연결한다. 근거 없는 국가 1위·체취 제거·효능·체감온도·임상 표현은 만들지 않는다.
+- 퍼스널케어·화장품은 이미지와 상세페이지에서 실제로 강조한 사용 상황·제형·원료·사용감·USP 중 가장 강한 근거를 연결한다. 향을 자동으로 주제로 삼지 말고, 이미지나 확인된 상품 근거에서 향이 핵심일 때만 사용한다. 근거 없는 국가 1위·체취 제거·효능·체감온도·임상 표현은 만들지 않는다.
 - adTitle은 6~24자 정도의 한 줄 제목이다. 상품명 반복보다 클릭 이유가 되는 호기심형 문구로 만들고, 가격·수치·1위 표현은 확인된 경우에만 쓴다.
 - primaryText와 adTitle 모두 '지금 만나보세요', '새로운 경험', '일상을 바꾸는', '특별한 선택', '당신을 위한', '프리미엄 라이프', '더 나은 내일', '스마트한 선택' 같은 일반적인 AI 문구를 쓰지 않는다.
 - 확인되지 않은 가격, 할인율, 구성, 수량, 배송, 리뷰, 판매량, 효능, 인증, 원산지, 기간 한정, 품절 임박을 만들지 않는다.
@@ -49,6 +66,11 @@ ${JSON.stringify(
     productName: job.productTruth.normalized.baseProductName || job.productTruth.normalized.cleanProductName || job.productTruth.product.productName,
     brandName: job.productTruth.product.brandName || job.advertiserName,
     category,
+    authoritativeCommercialFacts: {
+      price: job.productTruth.product.price || "",
+      originalPrice: job.productTruth.product.originalPrice || job.productTruth.product.oldPrice || "",
+      discountInfo: job.productTruth.product.discountInfo || "",
+    },
     verifiedFacts: facts,
     verifiedClaims: job.productTruth.verifiedClaims,
     prohibitedClaims: [...job.productTruth.blockedClaimPatterns, ...(brief?.prohibitedClaims || [])],
@@ -57,9 +79,15 @@ ${JSON.stringify(
   2
 )}
 
-대표 후킹과 제작 브리프:
+가격 충돌 처리:
+- authoritativeCommercialFacts의 현재 판매가·기존가·할인 정보가 최우선이다.
+- 첨부 이미지, 레퍼런스 문구, 상세 이미지 OCR 또는 승인 문구에 다른 가격이 보여도 절대 복사하지 않는다.
+- 현재 판매가가 비어 있으면 가격을 쓰지 않는다. 판매 단위 환산가는 별도로 검증된 fact가 없으면 계산하거나 만들지 않는다.
+
+선택한 완성 소재와 제작 기록:
 ${JSON.stringify(
   {
+    archiveEntry: input.archiveContext,
     hookId: result.hookPlan.id,
     hookCode: result.hookPlan.hookCode,
     headline: result.hookPlan.headline,
@@ -101,9 +129,9 @@ ${input.retryFailures?.length ? `직전 안의 검수 실패를 모두 수정한
 JSON 스키마에 맞춰 primaryText, adTitle, languageTraits만 반환한다.`;
 }
 
-export function buildAdCopyQaPrompt(input: { job: GenerationJob; result: GenerationResult; primaryText: string; adTitle: string }) {
+export function buildAdCopyQaPrompt(input: { job: GenerationJob; result: GenerationResult; primaryText: string; adTitle: string; archiveContext?: ArchiveCopyContext }) {
   const facts = input.job.productTruth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").map((fact) => `${fact.label}: ${fact.value}`);
-  return `Meta 기본 문구를 이미지 생성과 분리해 독립 검수한다.
+  return `Meta 기본 문구를 이미지 생성과 분리해 독립 검수한다. 첨부된 아카이브 완성 이미지가 있으면 이미지의 실제 후킹·상황·톤과 문구가 한 광고처럼 이어지는지 직접 확인한다.
 - ProductTruth에 없는 가격·할인·수량·구성·배송·리뷰·효능·수치·긴급성을 찾는다.
 - 대표 후킹과 같은 메시지를 이어가는지 확인한다.
 - primaryText가 3~5개의 짧은 문장 줄, 전체 260자 이하, 줄당 68자 이하이고 adTitle이 6~24자 정도의 자연스러운 한 줄인지 확인한다.
@@ -112,6 +140,7 @@ export function buildAdCopyQaPrompt(input: { job: GenerationJob; result: Generat
 - 일반적인 AI 문구나 기존 승인 문구의 기계적 복제로 보이면 실패다.
 
 대표 후킹: ${input.result.hookPlan.headline} / ${input.result.hookPlan.body}
+아카이브 소재 기록: ${JSON.stringify(input.archiveContext || null)}
 확인된 사실: ${JSON.stringify(facts)}
 검수 문구:\n${input.primaryText}
 광고 제목: ${input.adTitle}

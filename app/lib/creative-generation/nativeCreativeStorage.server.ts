@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { readCreativeRasterAsset } from "./assets.server.ts";
-import type { CreativeImageAsset, GenerationJob } from "./types.ts";
+import type { CreativeImageAsset, GenerationJob, GenerationResult } from "./types.ts";
 import { buildNativeStagePrompt, NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt.ts";
 
 type PromptBrandMemory = import("./codexRegistry.server.ts").AdvertiserBrandMemory;
@@ -63,7 +63,7 @@ export function selectNativeReferenceSources(job: GenerationJob): CreativeImageA
     // banners. Feeding them back into image generation causes the model to
     // reproduce old copy panels and embedded ad fragments. Product labels are
     // still available through the separately verified ProductTruth assets.
-    .filter((image) => !image.hasText)
+    .filter((image) => !image.hasText || ["primary-product", "front-package", "side-package", "back-package"].includes(image.role))
     .filter((image) => !NATIVE_CUTOUT_PATH_PATTERN.test(image.url))
     .sort((left, right) => (rolePriority.get(right.role) || 0) + right.importance - (rolePriority.get(left.role) || 0) - left.importance)
     .map((image) => ({
@@ -153,11 +153,21 @@ async function containsCutoutTransparency(buffer: Buffer) {
   return transparentPixels / total >= 0.0025;
 }
 
-export async function prepareNativeReferenceImages(job: GenerationJob) {
+export async function prepareNativeReferenceImages(job: GenerationJob, result?: GenerationResult) {
   const advertiserId = job.advertiserId || "unknown-advertiser";
-  const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references");
+  const directory = path.join(nativeJobDirectory(advertiserId, job.id), "references", result ? segment(result.id) : "legacy-shared");
   await mkdir(directory, { recursive: true });
-  const sources = selectNativeReferenceSources(job);
+  const assignedSources: CreativeImageAsset[] = (result?.nativeCreative?.productSourceAssignments || []).map((assignment) => ({
+    id: assignment.imageId,
+    path: assignment.sourcePath,
+    role: assignment.kind === "packaged" ? "product-packshot" : "detail-image",
+    source: "product-page",
+    verified: true,
+    reason: assignment.reason,
+    hasText: assignment.protectPhysicalLabel,
+    validationStatus: "confirmed",
+  }));
+  const sources = assignedSources.length ? assignedSources : selectNativeReferenceSources(job);
   if (!sources.length || sources[0].role === "ad-reference") {
     throw new Error("AI 제작에 사용할 검증된 원본 상품 이미지가 없습니다.");
   }
@@ -170,7 +180,9 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
     // actual pixels and reject any alpha-backed/background-removed source.
     // Flattening it onto white would only disguise the cutout and is forbidden.
     if (await containsCutoutTransparency(buffer)) continue;
-    const file = path.join(directory, `reference-${files.length + 1}.png`);
+    const assignment = result?.nativeCreative?.productSourceAssignments?.find((entry) => entry.sourcePath === source.path);
+    const sourceKind = assignment?.kind || "legacy";
+    const file = path.join(directory, `product-${files.length + 1}-${sourceKind}.png`);
     // Codex local_image가 확장자로 MIME을 추론해도 실제 파일 포맷과 일치하도록
     // 모든 상품 근거 이미지를 진짜 PNG로 정규화한다.
     const normalized = await sharp(buffer, { limitInputPixels: 50_000_000 }).rotate().flatten({ background: "#ffffff" }).toColorspace("srgb").png({ compressionLevel: 9 }).toBuffer();
@@ -180,6 +192,39 @@ export async function prepareNativeReferenceImages(job: GenerationJob) {
   if (!files.length) throw new Error("AI 광고 제작에 사용할 상세페이지 원본 상품 이미지를 준비하지 못했습니다. 위 원본 이미지에서 실제 상품 사진을 선택해 주세요.");
   return files;
 }
+
+/**
+ * 기본 Codex 제작은 자동 점수나 역할 재분류 없이 사용자가 고른 이미지만
+ * 첨부합니다. 저장 순서가 곧 Codex 첨부 순서이므로 절대 재정렬하지 않습니다.
+ */
+export async function prepareDefaultCodexGenerationImages(job: GenerationJob, result: GenerationResult) {
+  const request = job.codexDirectTest;
+  if (!request?.productImagePath) throw new Error("기본 제작의 선택 상품 이미지가 없습니다.");
+  const sources = [request.productImagePath, request.supportingImagePath, request.packagingImagePath].filter((value): value is string => Boolean(value));
+  const directory = path.join(nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id), "references", segment(result.id), "direct-test");
+  await mkdir(directory, { recursive: true });
+  const files: string[] = [];
+  for (let index = 0; index < sources.length; index += 1) {
+    const buffer = await readCreativeRasterAsset(sources[index]);
+    const file = path.join(directory, index === 0
+      ? "02-selected-product.png"
+      : request.supportingImagePath && sources[index] === request.supportingImagePath
+        ? "03-selected-supporting.png"
+        : "04-selected-packaging.png");
+    const normalized = await sharp(buffer, { limitInputPixels: 50_000_000 })
+      .rotate()
+      .flatten({ background: "#ffffff" })
+      .toColorspace("srgb")
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    await writeFile(file, normalized);
+    files.push(file);
+  }
+  return files;
+}
+
+/** 저장된 테스트 작업과 기존 import를 읽기 위한 호환 별칭입니다. */
+export const prepareCodexDirectTestImages = prepareDefaultCodexGenerationImages;
 
 export async function optimizeNativeFinalImage(inputFile: string, outputFile: string) {
   const source = await readFile(inputFile);
@@ -263,9 +308,24 @@ async function writeNativeJobArtifacts(job: GenerationJob, brandMemory?: PromptB
     atomicJson(path.join(directory, "diversity-matrix.json"), job.visualDiversityMatrix || []),
     ...job.results.flatMap((result) => {
       const hookDirectory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, result.hookPlan.hookCode);
+      const directTestWorkflow = job.pipeline === "codex-direct-test" && job.codexDirectTest;
       const files: Promise<void>[] = [
         atomicJson(path.join(hookDirectory, "creative-brief.json"), result.hookPlan.creativeBrief || null),
-        atomicJson(path.join(hookDirectory, "generation-prompt.json"), {
+        atomicJson(path.join(hookDirectory, "generation-prompt.json"), directTestWorkflow ? {
+          promptVersion: result.nativeCreative?.promptVersion,
+          workflow: [{
+            stage: "codex-direct-test",
+            attachmentOrder: [
+              result.nativeCreative?.adReference,
+              directTestWorkflow.productImagePath,
+              directTestWorkflow.supportingImagePath,
+              directTestWorkflow.packagingImagePath,
+            ].filter(Boolean),
+            output: result.nativeCreative?.originalPath || "codex-direct-test.png",
+            prompt: directTestWorkflow.prompt,
+            productUrl: job.productTruth.product.landingUrl,
+          }],
+        } : {
           promptVersion: NATIVE_FINAL_PROMPT_VERSION,
           workflow: [
             {

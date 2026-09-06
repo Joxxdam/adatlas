@@ -288,6 +288,137 @@
   border-color: #287ce3;
   outline: 3px solid rgba(40, 124, 227, 0.12);
 }
+.productImageChooser {
+  grid-column: 2 / -1;
+  min-width: 0;
+  border: 1px solid #d8e4f4;
+  border-radius: 12px;
+  padding: 11px;
+  background: #f8fbff;
+}
+.productImageChooserHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.productImageChooserHeader > div {
+  min-width: 0;
+}
+.productImageChooserHeader strong,
+.productImageChooserHeader small {
+  display: block;
+}
+.productImageChooserHeader strong {
+  color: #233552;
+  font-size: 12px;
+}
+.productImageChooserHeader small,
+.productImageEmpty {
+  margin-top: 3px;
+  color: #718099;
+  font-size: 10px;
+}
+.productImageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
+  max-height: 330px;
+  margin-top: 10px;
+  overflow: auto;
+}
+.productImageGrid article {
+  min-width: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(42, 75, 117, 0.1);
+}
+.productImageGrid article.productImageSelected {
+  border-color: #2780e9;
+}
+.productImageGrid img {
+  display: block;
+  width: 100%;
+  height: 92px;
+  object-fit: contain;
+  background: #f0f3f7;
+}
+.productImageGrid article > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 5px;
+}
+.productImageGrid button {
+  min-width: 0;
+  border: 1px solid #c6d6eb;
+  border-radius: 6px;
+  padding: 5px 2px;
+  background: #fff;
+  color: #4b607f;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.productImageGrid button.imageRoleActive {
+  border-color: #1764d8;
+  background: #1764d8;
+  color: #fff;
+}
+.productImageGrid button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+.productAdditionalInstructions {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.productAdditionalInstructions span {
+  color: #233552;
+  font-size: 11px;
+  font-weight: 900;
+}
+.productAdditionalInstructions em {
+  color: #718099;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+.productAdditionalInstructions textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: 1px solid #bfd0e7;
+  border-radius: 9px;
+  padding: 9px 11px;
+  background: #fff;
+  color: #17243d;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.productAdditionalInstructions textarea:focus {
+  border-color: #287ce3;
+  outline: 3px solid rgba(40, 124, 227, 0.12);
+}
+.productAdditionalInstructions small {
+  color: #718099;
+  font-size: 10px;
+  line-height: 1.45;
+}
+.productImageError {
+  margin: 8px 0 0;
+  color: #b5473c;
+  font-size: 11px;
+  font-weight: 700;
+}
+.productImageEmpty {
+  display: block;
+  margin-top: 8px;
+}
 .plannedMallFooter {
   border-top: 1px solid #e5ebf4;
   background: #f8fbff;
@@ -1021,49 +1152,6 @@
   color: #5c806f;
   font-size: 10px;
 }
-.taskAdCopy {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.35fr) minmax(0, 1fr);
-  gap: 12px;
-  margin: 12px 0;
-  padding: 13px 14px;
-  border: 1px solid #c8dfd5;
-  border-radius: 12px;
-  background: #f5fbf8;
-}
-.taskAdCopy > div {
-  min-width: 0;
-}
-.taskAdCopy span {
-  display: block;
-  margin-bottom: 5px;
-  color: #56806e;
-  font-size: 10px;
-  font-weight: 900;
-}
-.taskAdCopy strong {
-  display: block;
-  color: #173f31;
-  font-size: 14px;
-}
-.taskAdCopy pre {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: #25483b;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.65;
-}
-.adCopyPending {
-  margin: 12px 0;
-  padding: 11px 13px;
-  border-radius: 10px;
-  background: #f1f7ff;
-  color: #3c668f;
-  font-size: 12px;
-  font-weight: 750;
-}
 .imageResults {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -1162,6 +1250,9 @@
   .plannedRow label {
     grid-column: 2 / -1;
   }
+  .productImageChooser {
+    grid-column: 2 / -1;
+  }
   .stats {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1215,6 +1306,13 @@
     width: 42px;
     height: 42px;
   }
+  .productImageChooserHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .productImageGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .stats,
   .grid,
   .tasks,
@@ -1248,9 +1346,6 @@
   .taskActions {
     grid-column: 1 / -1;
     justify-content: flex-start;
-  }
-  .taskAdCopy {
-    grid-template-columns: 1fr;
   }
   .imageResults {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -11,9 +11,15 @@ export type AdCopyQa = {
   checkedAt: string;
 };
 
-/** 상품 하나에 하나만 존재하는 Meta 기본 문구 레코드입니다. */
+/**
+ * Meta 광고 등록용 문구 레코드입니다.
+ *
+ * archiveEntryId가 있으면 아카이브 이미지 한 장에 귀속되는 신규 레코드이고,
+ * 값이 없으면 과거 상품 작업 단위 레코드로 읽습니다.
+ */
 export type ProductAdCopy = {
   id: string;
+  archiveEntryId?: string;
   jobId: string;
   advertiserId: string;
   productId: string;

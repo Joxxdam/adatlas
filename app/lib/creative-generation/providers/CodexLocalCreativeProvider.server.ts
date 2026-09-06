@@ -2,7 +2,7 @@ import "server-only";
 import { readFile, stat } from "node:fs/promises";
 import { Codex, type Input, type Thread, type TurnOptions } from "@openai/codex-sdk";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "../codexLocalRuntime.server.ts";
-import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativePlannedSubjectMode, nativeReferenceContainsPerson, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
 import { resolveFastCreativeRuntime } from "../fastCreativeRuntime";
@@ -11,6 +11,7 @@ import { resolveRuntimeTimeout } from "../fastCreativeRuntime";
 import { normalizeNativeCreativeValidation } from "../nativeCreativeValidation";
 import { resolveMeatPresentationContract, resolveProductRenderingPolicy } from "../productRenderingPolicy.ts";
 import { closeCodexImageSession, trackCodexImageSession, type CodexImageSessionPurpose } from "../codexImageSessionRetention.server";
+import { buildDefaultCodexGenerationExecutionNote } from "../codexDirectTest.ts";
 
 const DEFAULT_IMAGE_GENERATION_IDLE_TIMEOUT_MS = 12 * 60 * 1000;
 const DEFAULT_IMAGE_GENERATION_HARD_TIMEOUT_MS = 40 * 60 * 1000;
@@ -112,7 +113,7 @@ async function waitForStableGeneratedOutput(file: string) {
 const validationSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "detachedProductCutoutDetected", "detachedProductCutoutFindings", "sourcePersonDetected", "sourcePersonReplaced", "humanCompositionChanged", "humanSceneBackgroundRebuilt", "humanSceneBackgroundFindings", "targetAudienceFit", "humanReplacementFindings", "humanCopyAligned", "humanCopyAlignmentFindings", "sourceAnimalDetected", "sourceAnimalReplaced", "animalReplacementFindings", "sourceContextualBackgroundDetected", "contextualBackgroundRebuilt", "contextualBackgroundFindings", "sceneProductInteractionAligned", "sceneProductInteractionFindings", "unrelatedFoodOrIngredientDetected", "unrelatedFoodOrIngredientFindings", "meatCutIdentityAccurate", "meatTextureNatural", "meatArtificialPatternDetected", "meatArtificialPatternFindings", "meatGrotesqueDetailDetected", "meatGrotesqueDetailFindings", "meatPresentationModeAligned", "meatPresentationFindings", "meatCookedPresentationDetected", "meatCookedEvidenceSatisfied", "meatSetCompositionAccurate", "meatObservedPackCount", "sourceBrandRegionCleared", "sourceBrandRegionFindings", "comparisonSemanticAligned", "comparisonSemanticFindings", "failures", "recommendation"],
+  required: ["hookAlignment", "productIdentity", "factualAccuracy", "koreanTextAccuracy", "readability", "composition", "diversity", "commercialQuality", "exportCompliance", "productVisibility", "humanNaturalness", "categoryFit", "foodAppetiteAppeal", "sensoryExpression", "mobileReadability", "observedKoreanText", "standaloneLogoDetected", "standaloneLogoFindings", "detachedProductCutoutDetected", "detachedProductCutoutFindings", "sourcePersonDetected", "sourcePersonReplaced", "humanCompositionChanged", "humanSceneBackgroundRebuilt", "humanSceneBackgroundFindings", "targetAudienceFit", "humanReplacementFindings", "humanCopyAligned", "humanCopyAlignmentFindings", "plannedSubjectModeAligned", "plannedSubjectModeFindings", "sourceAnimalDetected", "sourceAnimalReplaced", "animalReplacementFindings", "sourceContextualBackgroundDetected", "contextualBackgroundRebuilt", "contextualBackgroundFindings", "sceneProductInteractionAligned", "sceneProductInteractionFindings", "unrelatedFoodOrIngredientDetected", "unrelatedFoodOrIngredientFindings", "meatCutIdentityAccurate", "meatTextureNatural", "meatArtificialPatternDetected", "meatArtificialPatternFindings", "meatGrotesqueDetailDetected", "meatGrotesqueDetailFindings", "meatPresentationModeAligned", "meatPresentationFindings", "meatCookedPresentationDetected", "meatCookedEvidenceSatisfied", "meatSetCompositionAccurate", "meatObservedPackCount", "sourceBrandRegionCleared", "sourceBrandRegionFindings", "comparisonSemanticAligned", "comparisonSemanticFindings", "failures", "recommendation"],
   properties: {
     hookAlignment: { type: "integer", minimum: 0, maximum: 100 },
     productIdentity: { type: "integer", minimum: 0, maximum: 100 },
@@ -143,6 +144,8 @@ const validationSchema = {
     humanReplacementFindings: { type: "array", items: { type: "string" } },
     humanCopyAligned: { type: "boolean" },
     humanCopyAlignmentFindings: { type: "array", items: { type: "string" } },
+    plannedSubjectModeAligned: { type: "boolean" },
+    plannedSubjectModeFindings: { type: "array", items: { type: "string" } },
     sourceAnimalDetected: { type: "boolean" },
     sourceAnimalReplaced: { type: "boolean" },
     animalReplacementFindings: { type: "array", items: { type: "string" } },
@@ -237,6 +240,10 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       sandboxMode: "workspace-write",
       approvalPolicy: "never",
       networkAccessEnabled: false,
+      // 기본 제작 프롬프트에 사용자가 확정한 상세페이지 URL이 포함됩니다.
+      // 셸 네트워크는 계속 막고, Codex의 읽기 전용 웹 검색만 열어 채팅에서와
+      // 같이 상세페이지 문구·상품 특성을 참고할 수 있게 합니다.
+      webSearchMode: "live",
       model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol",
       modelReasoningEffort: runtime.imageReasoning,
     });
@@ -259,11 +266,34 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       trackingContext = { jobId: input.job.id, resultId: input.result.id, purpose: "image-generation" };
       const stage = input.stage || "copy-replacement";
       const productReferences = input.productReferencePaths || input.referencePaths;
-      const stageSource = stage === "structure-recreation" ? input.adReferencePath || input.sourceImagePath : input.sourceImagePath;
+      const directGeneration = stage === "codex-direct-test";
+      const stageSource = directGeneration ? input.adReferencePath : stage === "structure-recreation" ? input.adReferencePath || input.sourceImagePath : input.sourceImagePath;
       if (!stageSource) throw new Error(`${stage} 단계의 첫 번째 편집 소스가 없습니다.`);
-      const attachments = [stageSource, ...(stage === "structure-recreation" ? [] : productReferences.slice(0, 4)), ...(stage === "structure-recreation" || !input.adReferencePath ? [] : [input.adReferencePath])].filter((file, index, files) => Boolean(file) && files.indexOf(file) === index).slice(0, 6);
-      const prompt = buildNativeStagePrompt(stage, input.job, input.result, input.outputPath, input.feedback);
-      const content = [{ type: "text" as const, text: prompt }, ...attachments.map((file) => ({ type: "local_image" as const, path: file }))];
+      const attachments = directGeneration
+        ? [stageSource, ...productReferences.slice(0, 3)]
+        : [stageSource, ...(stage === "structure-recreation" ? [] : productReferences.slice(0, 4)), ...(stage === "structure-recreation" || !input.adReferencePath ? [] : [input.adReferencePath])];
+      const uniqueAttachments = attachments.filter((file, index, files) => Boolean(file) && files.indexOf(file) === index).slice(0, 6);
+      const content = directGeneration
+        ? [
+            { type: "text" as const, text: input.directPrompt?.trim() || input.job.codexDirectTest?.prompt.trim() || "" },
+            {
+              type: "text" as const,
+              text: buildDefaultCodexGenerationExecutionNote({
+                landingUrl: input.job.productTruth.product.landingUrl,
+                outputPath: input.outputPath,
+                hasSupportingImage: Boolean(input.job.codexDirectTest?.supportingImagePath),
+                hasPackagingImage: Boolean(input.job.codexDirectTest?.packagingImagePath),
+              }),
+            },
+            ...uniqueAttachments.map((file) => ({ type: "local_image" as const, path: file })),
+          ]
+        : [
+            { type: "text" as const, text: buildNativeStagePrompt(stage, input.job, input.result, input.outputPath, input.feedback) },
+            ...uniqueAttachments.map((file) => ({ type: "local_image" as const, path: file })),
+          ];
+      if (directGeneration && !input.directPrompt?.trim() && !input.job.codexDirectTest?.prompt.trim()) {
+        throw new Error("기본 Codex 제작 프롬프트가 비어 있습니다.");
+      }
       try {
         await codexCreativeGate.run(() =>
           runThreadWithIdleTimeout(
@@ -308,7 +338,9 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
           category: input.job.creativePlan.categoryCreativeProfile?.category || "general",
           exportComplianceVerified: input.exportComplianceVerified,
           requiresHumanReplacement: nativeReferenceRequiresHumanReplacement(input.result),
-          requiresHumanSceneBackgroundRebuild: nativeReferenceRequiresHumanReplacement(input.result),
+          sourceContainsPerson: nativeReferenceContainsPerson(input.result),
+          plannedSubjectMode: nativePlannedSubjectMode(input.result),
+          requiresHumanSceneBackgroundRebuild: nativeReferenceContainsPerson(input.result),
           requiresContextualBackgroundRebuild: nativeReferenceRequiresContextualBackgroundRebuild(input.result),
           requiresSourceBrandRegionClear: nativeReferenceRequiresSourceBrandRegionClear(input.result),
           requiresComparisonSemanticAlignment: nativeReferenceRequiresComparisonSemantics(input.result),
@@ -325,7 +357,7 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
         await syncThreadTracking();
         thread = undefined;
         // The SDK has no archive/delete method. The private retention registry
-        // passes only this exact AdAtlas-created UUID to the Codex CLI after 7 days.
+        // passes only this exact AdAtlas-created UUID to the Codex CLI after 2 days.
         await closeCodexImageSession(threadId).catch(() => undefined);
       },
     };

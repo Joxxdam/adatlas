@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AutoProductionAdvertiserConfig, AutoProductionDashboardStatus, AutoProductionPreview, AutoProductionProductTask, AutoProductionRun } from "../../lib/auto-production/types";
+import type { AutoProductionAdvertiserConfig, AutoProductionDashboardStatus, AutoProductionPreview, AutoProductionProductImageSelection, AutoProductionProductTask, AutoProductionRun } from "../../lib/auto-production/types";
+import type { ExtractedProductInfo, ProductInfoForPrompt } from "../../lib/mvp/types";
 import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "../../lib/auto-production/policy";
 import styles from "./AutoProductionWorkspace.module.css";
 
@@ -12,6 +13,18 @@ type GlobalSettings = {
 };
 
 type RunPeriod = "today" | "yesterday" | "seven-days" | "custom" | "all";
+
+type ProductImageDraft = {
+  productUrl: string;
+  productName: string;
+  imagePaths: string[];
+  productImagePath: string;
+  supportingImagePath: string;
+  packagingImagePath: string;
+  additionalInstructions: string;
+  loading: boolean;
+  error: string;
+};
 
 type FormState = {
   advertiserName: string;
@@ -62,7 +75,7 @@ const runStatusLabels: Record<AutoProductionRun["status"], string> = {
   scheduled: "예약됨",
   "selecting-products": "상품 선정 중",
   "analyzing-products": "상품 분석 중",
-  "generating-hooks": "광고 문구 준비 중",
+  "generating-hooks": "Codex 프롬프트 준비 중",
   queued: "제작 대기",
   "generating-creatives": "콘텐츠 제작 중",
   completed: "완료",
@@ -77,7 +90,7 @@ const terminalRunStatuses = new Set<AutoProductionRun["status"]>(["completed", "
 const productStatusLabels: Record<AutoProductionProductTask["status"], string> = {
   selected: "상품 선정",
   analyzing: "상품 분석 중",
-  "hooks-ready": "광고 문구 준비 완료",
+  "hooks-ready": "제작 입력 준비 완료",
   queued: "이미지 제작 대기",
   generating: "이미지 제작 중",
   completed: "완료",
@@ -138,6 +151,39 @@ function sameProductUrls(left: string[], right: string[]) {
   const normalizedLeft = confirmedProductUrls(left);
   const normalizedRight = confirmedProductUrls(right);
   return normalizedLeft.length === normalizedRight.length && normalizedLeft.every((value, index) => value === normalizedRight[index]);
+}
+
+function imageDraftKey(advertiserId: string, index: number) {
+  return `${advertiserId}:${index}`;
+}
+
+function uniqueImagePaths(product?: Partial<ExtractedProductInfo & ProductInfoForPrompt>) {
+  if (!product) return [];
+  return Array.from(new Set([
+    ...(product.confirmedProductImages || []),
+    ...(product.confirmedProductImagePaths || []),
+    product.mainImage || "",
+    product.heroImage || "",
+    product.productImagePath || "",
+    product.secondaryProductImagePath || "",
+    product.extractedMainImage || "",
+    ...(product.productImagePaths || []),
+    ...(product.galleryImages || []),
+    ...(product.detailImages || []),
+    ...(product.extractedGalleryImages || []),
+    ...(product.sourceImageCandidates || []).flatMap((candidate) => [candidate.imagePath, candidate.originalUrl || ""]),
+    ...(product.imageCandidates || []).map((candidate) => candidate.url),
+  ].map((value) => String(value || "").trim()).filter(Boolean)));
+}
+
+function sameImageSelections(left: AutoProductionProductImageSelection[], right: AutoProductionProductImageSelection[]) {
+  return left.length === right.length && left.every((value, index) =>
+    value.productUrl === right[index]?.productUrl &&
+    value.productImagePath === right[index]?.productImagePath &&
+    (value.supportingImagePath || "") === (right[index]?.supportingImagePath || "") &&
+    (value.packagingImagePath || "") === (right[index]?.packagingImagePath || "") &&
+    (value.additionalInstructions || "") === (right[index]?.additionalInstructions || "")
+  );
 }
 
 function toForm(config: AutoProductionAdvertiserConfig): FormState {
@@ -232,6 +278,7 @@ export function AutoProductionWorkspace() {
   const [customTo, setCustomTo] = useState(() => seoulBusinessDate());
   const [expandedRunIds, setExpandedRunIds] = useState<Set<string> | null>(null);
   const [plannedUrlDrafts, setPlannedUrlDrafts] = useState<Record<string, string[]>>({});
+  const [productImageDrafts, setProductImageDrafts] = useState<Record<string, ProductImageDraft>>({});
   const plannedPreviewRequested = useRef(false);
   const [savedPlanId, setSavedPlanId] = useState("");
 
@@ -278,6 +325,29 @@ export function AutoProductionWorkspace() {
         api<{ runs: AutoProductionRun[] }>(`/api/auto-production/runs?${runQuery}`),
       ]);
       setAdvertisers(configPayload.advertisers);
+      setProductImageDrafts((current) => {
+        const next = { ...current };
+        for (const advertiser of configPayload.advertisers) {
+          advertiser.adminProductUrls.forEach((productUrl, index) => {
+            const key = imageDraftKey(advertiser.advertiserId, index);
+            if (next[key]) return;
+            const selection = (advertiser.productImageSelections || []).find((item) => item.productUrl === productUrl);
+            const imagePaths = [selection?.productImagePath || "", selection?.supportingImagePath || "", selection?.packagingImagePath || ""].filter(Boolean);
+            next[key] = {
+              productUrl,
+              productName: "",
+              imagePaths,
+              productImagePath: selection?.productImagePath || "",
+              supportingImagePath: selection?.supportingImagePath || "",
+              packagingImagePath: selection?.packagingImagePath || "",
+              additionalInstructions: selection?.additionalInstructions || "",
+              loading: false,
+              error: "",
+            };
+          });
+        }
+        return next;
+      });
       setSettings(configPayload.settings);
       setStatus(statusPayload.status);
       setRuns(runPayload.runs);
@@ -376,10 +446,161 @@ export function AutoProductionWorkspace() {
       urls[index] = value;
       return { ...current, [advertiserId]: urls };
     });
+    const key = imageDraftKey(advertiserId, index);
+    const saved = advertisers.find((advertiser) => advertiser.advertiserId === advertiserId)?.productImageSelections?.find((selection) => selection.productUrl === value.trim());
+    setProductImageDrafts((current) => ({
+      ...current,
+      [key]: {
+        productUrl: value.trim(),
+        productName: "",
+        imagePaths: [saved?.productImagePath || "", saved?.supportingImagePath || "", saved?.packagingImagePath || ""].filter(Boolean),
+        productImagePath: saved?.productImagePath || "",
+        supportingImagePath: saved?.supportingImagePath || "",
+        packagingImagePath: saved?.packagingImagePath || "",
+        additionalInstructions: saved?.additionalInstructions || "",
+        loading: false,
+        error: "",
+      },
+    }));
+  }
+
+  async function loadPlannedProductImages(advertiserId: string, index: number, productUrl: string) {
+    const key = imageDraftKey(advertiserId, index);
+    if (!validProductUrl(productUrl)) {
+      setError("먼저 올바른 상품 상세페이지 URL을 입력해주세요.");
+      return;
+    }
+    setError("");
+    setProductImageDrafts((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] || { productUrl, productName: "", imagePaths: [], productImagePath: "", supportingImagePath: "", packagingImagePath: "", additionalInstructions: "" }),
+        productUrl,
+        loading: true,
+        error: "",
+      },
+    }));
+    try {
+      const payload = await api<{ productInfo: ExtractedProductInfo }>("/api/extract/product", {
+        method: "POST",
+        body: JSON.stringify({ productUrl }),
+      });
+      const imagePaths = uniqueImagePaths(payload.productInfo);
+      if (!imagePaths.length) throw new Error("상세페이지에서 선택할 원본 이미지를 찾지 못했습니다.");
+      setProductImageDrafts((current) => {
+        const active = current[key];
+        if (active?.productUrl !== productUrl) return current;
+        const productImagePath = active.productImagePath && imagePaths.includes(active.productImagePath)
+          ? active.productImagePath
+          : imagePaths[0];
+        const supportingImagePath = active.supportingImagePath && active.supportingImagePath !== productImagePath && imagePaths.includes(active.supportingImagePath)
+          ? active.supportingImagePath
+          : "";
+        const packagingImagePath = active.packagingImagePath
+          && active.packagingImagePath !== productImagePath
+          && active.packagingImagePath !== supportingImagePath
+          && imagePaths.includes(active.packagingImagePath)
+          ? active.packagingImagePath
+          : "";
+        return {
+          ...current,
+          [key]: {
+            productUrl,
+            productName: payload.productInfo.productName || "",
+            imagePaths,
+            productImagePath,
+            supportingImagePath,
+            packagingImagePath,
+            additionalInstructions: active.additionalInstructions || "",
+            loading: false,
+            error: "",
+          },
+        };
+      });
+      setSavedPlanId("");
+    } catch (loadError) {
+      const message = loadError instanceof Error ? loadError.message : "상품 이미지를 불러오지 못했습니다.";
+      setProductImageDrafts((current) => ({
+        ...current,
+        [key]: {
+          ...(current[key] || { productUrl, productName: "", imagePaths: [], productImagePath: "", supportingImagePath: "", packagingImagePath: "", additionalInstructions: "" }),
+          loading: false,
+          error: message,
+        },
+      }));
+    }
+  }
+
+  function selectPlannedProductImage(advertiserId: string, index: number, productUrl: string, imagePath: string, role: "product" | "supporting" | "packaging") {
+    const key = imageDraftKey(advertiserId, index);
+    setSavedPlanId("");
+    setProductImageDrafts((current) => {
+      const draft = current[key];
+      if (!draft || draft.productUrl !== productUrl) return current;
+      if (role === "product") {
+        return {
+          ...current,
+          [key]: {
+            ...draft,
+            productImagePath: imagePath,
+            supportingImagePath: draft.supportingImagePath === imagePath ? "" : draft.supportingImagePath,
+            packagingImagePath: draft.packagingImagePath === imagePath ? "" : draft.packagingImagePath,
+          },
+        };
+      }
+      if (role === "supporting") return {
+        ...current,
+        [key]: {
+          ...draft,
+          supportingImagePath: draft.supportingImagePath === imagePath ? "" : imagePath,
+          packagingImagePath: draft.packagingImagePath === imagePath ? "" : draft.packagingImagePath,
+        },
+      };
+      return {
+        ...current,
+        [key]: {
+          ...draft,
+          packagingImagePath: draft.packagingImagePath === imagePath ? "" : imagePath,
+          supportingImagePath: draft.supportingImagePath === imagePath ? "" : draft.supportingImagePath,
+        },
+      };
+    });
+  }
+
+  function updatePlannedProductAdditionalInstructions(advertiserId: string, index: number, productUrl: string, value: string) {
+    const key = imageDraftKey(advertiserId, index);
+    setSavedPlanId("");
+    setProductImageDrafts((current) => {
+      const draft = current[key];
+      if (!draft || draft.productUrl !== productUrl) return current;
+      return {
+        ...current,
+        [key]: { ...draft, additionalInstructions: value.slice(0, 2_000) },
+      };
+    });
+  }
+
+  function plannedImageSelections(advertiserId: string, urls: string[]) {
+    const advertiser = advertisers.find((item) => item.advertiserId === advertiserId);
+    return urls.flatMap((productUrl): AutoProductionProductImageSelection[] => {
+      const draft = Object.entries(productImageDrafts).find(([key, value]) => key.startsWith(`${advertiserId}:`) && value.productUrl === productUrl)?.[1];
+      if (draft?.productUrl === productUrl && draft.productImagePath) {
+        return [{
+          productUrl,
+          productImagePath: draft.productImagePath,
+          supportingImagePath: draft.supportingImagePath || undefined,
+          packagingImagePath: draft.packagingImagePath || undefined,
+          additionalInstructions: draft.additionalInstructions.trim() || undefined,
+        }];
+      }
+      const saved = (advertiser?.productImageSelections || []).find((selection) => selection.productUrl === productUrl);
+      return saved ? [saved] : [];
+    });
   }
 
   async function savePlannedProducts(advertiserId: string, runAfterSave = false) {
     const urls = confirmedProductUrls(plannedUrlDrafts[advertiserId] || []);
+    const productImageSelections = plannedImageSelections(advertiserId, urls);
     if (urls.length > AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT || urls.some((value) => !validProductUrl(value)) || new Set(urls).size !== urls.length) {
       setError(`상품 상세페이지 URL은 서로 다른 유효한 주소로 ${AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT}개 이하까지 저장할 수 있습니다. 모두 비운 상태도 저장할 수 있습니다.`);
       return;
@@ -388,10 +609,14 @@ export function AutoProductionWorkspace() {
       setError("지금 제작하려면 상품 상세페이지 URL을 1개 이상 입력해주세요.");
       return;
     }
+    if (urls.length && productImageSelections.length !== urls.length) {
+      setError("각 상품의 전체 이미지를 불러온 뒤 필수 2번 상품 이미지를 선택해 주세요.");
+      return;
+    }
     await runAction(`plan:${advertiserId}`, async () => {
       await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiserId)}`, {
         method: "PATCH",
-        body: JSON.stringify({ adminProductUrls: urls }),
+        body: JSON.stringify({ adminProductUrls: urls, productImageSelections }),
       });
       setSavedPlanId(advertiserId);
       if (runAfterSave) {
@@ -409,7 +634,7 @@ export function AutoProductionWorkspace() {
     await runAction(`reset-plan:${advertiserId}`, async () => {
       await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiserId)}`, {
         method: "PATCH",
-        body: JSON.stringify({ adminProductUrls: [] }),
+        body: JSON.stringify({ adminProductUrls: [], productImageSelections: [] }),
       });
       const payload = await api<{ previews: AutoProductionPreview[] }>("/api/auto-production/preview", {
         method: "POST",
@@ -421,6 +646,7 @@ export function AutoProductionWorkspace() {
         ...current,
         [advertiserId]: Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => nextPreview?.candidates[index]?.productUrl || ""),
       }));
+      setProductImageDrafts((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${advertiserId}:`))));
       setSavedPlanId("");
     });
   }
@@ -429,12 +655,13 @@ export function AutoProductionWorkspace() {
     await runAction(`clear-plan:${advertiserId}`, async () => {
       await api(`/api/auto-production/advertisers/${encodeURIComponent(advertiserId)}`, {
         method: "PATCH",
-        body: JSON.stringify({ adminProductUrls: [] }),
+        body: JSON.stringify({ adminProductUrls: [], productImageSelections: [] }),
       });
       setPlannedUrlDrafts((current) => ({
         ...current,
         [advertiserId]: Array(AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT).fill(""),
       }));
+      setProductImageDrafts((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${advertiserId}:`))));
       setSavedPlanId("");
     });
   }
@@ -498,9 +725,11 @@ export function AutoProductionWorkspace() {
             const urls = plannedUrlDrafts[advertiser.advertiserId] || Array(AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT).fill("");
             const enteredUrls = confirmedProductUrls(urls);
             const validCount = enteredUrls.filter(validProductUrl).length;
-            const planReady = enteredUrls.length >= 1 && enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length;
-            const planSavable = enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length;
-            const planChanged = !sameProductUrls(enteredUrls, advertiser.adminProductUrls);
+            const currentImageSelections = plannedImageSelections(advertiser.advertiserId, enteredUrls);
+            const requiredProductImagesReady = currentImageSelections.length === enteredUrls.length;
+            const planReady = enteredUrls.length >= 1 && enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length && requiredProductImagesReady;
+            const planSavable = enteredUrls.length <= AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT && validCount === enteredUrls.length && new Set(enteredUrls).size === enteredUrls.length && requiredProductImagesReady;
+            const planChanged = !sameProductUrls(enteredUrls, advertiser.adminProductUrls) || !sameImageSelections(currentImageSelections, advertiser.productImageSelections || []);
             const isSaved = savedPlanId === advertiser.advertiserId;
             const hasManuallyChangedUrl = enteredUrls.some((url, index) => url !== previewItem?.candidates[index]?.productUrl);
             const previewProductNames = previewItem?.candidates
@@ -553,6 +782,9 @@ export function AutoProductionWorkspace() {
                   {Array.from({ length: AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT }, (_, index) => {
                     const candidate = previewItem?.candidates[index];
                     const changed = Boolean(candidate?.productUrl && urls[index] && candidate.productUrl !== urls[index]);
+                    const productUrl = String(urls[index] || "").trim();
+                    const draft = productImageDrafts[imageDraftKey(advertiser.advertiserId, index)];
+                    const activeDraft = draft?.productUrl === productUrl ? draft : undefined;
                     return (
                       <div className={styles.plannedRow} key={`${advertiser.advertiserId}:${index}`}>
                         <span className={styles.planNumber}>{index + 1}</span>
@@ -572,6 +804,63 @@ export function AutoProductionWorkspace() {
                             value={urls[index] || ""}
                           />
                         </label>
+                        {productUrl ? (
+                          <div className={styles.productImageChooser}>
+                            <div className={styles.productImageChooserHeader}>
+                              <div>
+                                <strong>Codex 첨부 이미지</strong>
+                                <small>2번 상품 원본은 필수, 3번 라벨·분위기와 4번 포장상품 이미지는 선택입니다.</small>
+                              </div>
+                              <button
+                                className={styles.smallButton}
+                                disabled={activeDraft?.loading || !validProductUrl(productUrl)}
+                                onClick={() => void loadPlannedProductImages(advertiser.advertiserId, index, productUrl)}
+                                type="button"
+                              >
+                                {activeDraft?.loading ? "전체 이미지 불러오는 중…" : activeDraft?.imagePaths.length ? "전체 이미지 다시 불러오기" : "전체 이미지 불러오기"}
+                              </button>
+                            </div>
+                            {activeDraft?.error ? <p className={styles.productImageError}>{activeDraft.error}</p> : null}
+                            {activeDraft?.imagePaths.length ? (
+                              <div className={styles.productImageGrid}>
+                                {activeDraft.imagePaths.map((imagePath, imageIndex) => {
+                                  const primary = activeDraft.productImagePath === imagePath;
+                                  const supporting = activeDraft.supportingImagePath === imagePath;
+                                  const packaging = activeDraft.packagingImagePath === imagePath;
+                                  return (
+                                    <article className={primary || supporting || packaging ? styles.productImageSelected : ""} key={`${imagePath}:${imageIndex}`}>
+                                      <img alt={`${activeDraft.productName || candidate?.productName || "상품"} 원본 ${imageIndex + 1}`} loading="lazy" src={imagePath} />
+                                      <div>
+                                        <button className={primary ? styles.imageRoleActive : ""} onClick={() => selectPlannedProductImage(advertiser.advertiserId, index, productUrl, imagePath, "product")} type="button">
+                                          {primary ? "✓ 2번 상품" : "2번 상품"}
+                                        </button>
+                                        <button className={supporting ? styles.imageRoleActive : ""} disabled={primary} onClick={() => selectPlannedProductImage(advertiser.advertiserId, index, productUrl, imagePath, "supporting")} type="button">
+                                          {supporting ? "✓ 3번 참고" : "3번 참고"}
+                                        </button>
+                                        <button className={packaging ? styles.imageRoleActive : ""} disabled={primary} onClick={() => selectPlannedProductImage(advertiser.advertiserId, index, productUrl, imagePath, "packaging")} type="button">
+                                          {packaging ? "✓ 4번 포장" : "4번 포장"}
+                                        </button>
+                                      </div>
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <small className={styles.productImageEmpty}>버튼을 눌러 상세페이지의 전체 원본을 불러온 뒤 필수 2번 상품 이미지를 골라 주세요.</small>
+                            )}
+                            <label className={styles.productAdditionalInstructions}>
+                              <span>추가/강조 사항 <em>선택</em></span>
+                              <textarea
+                                maxLength={2_000}
+                                onChange={(event) => updatePlannedProductAdditionalInstructions(advertiser.advertiserId, index, productUrl, event.target.value)}
+                                placeholder="예: 선물용 구성을 더 강조해줘. 인물 대신 상품 마스코트 캐릭터로 표현해줘."
+                                rows={3}
+                                value={activeDraft?.additionalInstructions || ""}
+                              />
+                              <small>입력한 내용은 이 상품의 숨겨진 기본 프롬프트 맨 아래에 추가되어 6장 생성에 함께 전달됩니다.</small>
+                            </label>
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -1054,20 +1343,6 @@ export function AutoProductionWorkspace() {
                             {task.candidate.verifiedEvidence.length ? <small>확인 근거 · {task.candidate.verifiedEvidence.slice(0, 3).join(" · ")}</small> : null}
                           </div>
                         </div>
-                        {task.adCopy?.primaryText ? (
-                          <section className={styles.taskAdCopy} aria-label={`${task.candidate.productName} 광고 등록 문구`}>
-                            <div>
-                              <span>광고 제목</span>
-                              <strong>{task.adCopy.adTitle || "제목 준비 중"}</strong>
-                            </div>
-                            <div>
-                              <span>광고 문구</span>
-                              <pre>{task.adCopy.primaryText}</pre>
-                            </div>
-                          </section>
-                        ) : task.adCopy?.status === "generating" ? (
-                          <p className={styles.adCopyPending}>이미지 제작 결과를 바탕으로 광고 문구와 제목을 만들고 있습니다.</p>
-                        ) : null}
                         {task.results.length ? (
                           <div className={styles.imageResults} aria-label={`${task.candidate.productName} 자동제작 이미지`}>
                             {task.results.map((result, resultIndex) => (

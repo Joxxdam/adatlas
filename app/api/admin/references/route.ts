@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
 import { startReferenceOcrRun } from "../../../lib/creative-generation/referenceOcrRunner.server";
-import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
+import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ function publicLibrary() {
     updatedAt: manifest.updatedAt || manifest.importedAt,
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [category, manifest.items.filter((item) => item.categoryGroup === category).length])),
-    foodSnackCount: manifest.items.filter((item) => referenceBelongsToSelectionPool(item, "food", "snack")).length,
+    foodSubcategoryCounts: Object.fromEntries(nativeReferenceFoodSubcategories.map((foodSubcategory) => [foodSubcategory, manifest.items.filter((item) => referenceBelongsToSelectionPool(item, "food", foodSubcategory)).length])),
   };
 }
 
@@ -80,6 +80,7 @@ export async function PATCH(request: Request) {
       patch.additionalSelectionPools = normalizeNativeReferenceSelectionPools(body.additionalSelectionPools);
     }
     if (nativeReferenceProductForms.includes(body.productForm)) patch.productForm = body.productForm;
+    if (nativeReferenceProductPresentations.includes(body.productPresentation)) patch.productPresentation = body.productPresentation;
     if (nativeReferenceCompositionTypes.includes(body.compositionType)) patch.compositionType = body.compositionType;
     if (nativeReferenceSlotShapes.includes(body.productSlotShape)) patch.productSlotShape = body.productSlotShape;
     if (nativeReferencePhotographyTypes.includes(body.photographyType)) patch.photographyType = body.photographyType;

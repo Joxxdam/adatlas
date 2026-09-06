@@ -1,4 +1,4 @@
-import { referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceCategoryGroup, type NativeReferenceCompositionType, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement.ts";
+import { nativeReferenceCategoryLabel, nativeReferenceFoodSubcategoryLabel, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceCategoryGroup, type NativeReferenceCompositionType, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement.ts";
 
 export function pickUniqueRandomItems<T>(items: readonly T[], count: number, nextIndex: (maxExclusive: number) => number) {
   if (!Number.isInteger(count) || count < 0) {
@@ -76,8 +76,8 @@ const safeNaturalCompositions = new Set<NativeReferenceCompositionType>(["produc
 
 function productFormScore(product: ProductReferenceCompatibilityProfile, item: ManagedNativeReferenceItem) {
   if (item.productForm === product.productForm) return 28;
-  // 간식은 운영자가 실제 디자인을 보고 직접 지정한 풀을 신뢰한다.
-  // 과거 자동 형태 태그가 달라도 간식 하위 태그가 일치하면 사용할 수 있어야 한다.
+  // 식품 하위분류는 운영자가 실제 디자인을 보고 직접 지정한 풀을 신뢰한다.
+  // 과거 자동 형태 태그가 달라도 하위 태그가 일치하면 사용할 수 있어야 한다.
   if (product.foodSubcategory && referenceBelongsToSelectionPool(item, product.categoryGroup, product.foodSubcategory)) return 22;
   if (item.productForm === "universal-packshot") return 20;
   if (product.packagedProduct && item.productForm && packagedForms.has(item.productForm)) return 12;
@@ -106,7 +106,7 @@ export function scoreReferenceCompatibility<T extends ManagedNativeReferenceItem
   reasons.push("상품군 일치");
   if (profile.foodSubcategory) {
     score += 12;
-    reasons.push("간식 수동 태그 일치");
+    reasons.push(`${nativeReferenceFoodSubcategoryLabel(profile.foodSubcategory)} 하위분류 일치`);
   }
   const formScore = productFormScore(profile, item);
   if (formScore < 0) return { item, score: -100, reasons: [...reasons, "상품 형태 불일치"] };
@@ -130,7 +130,9 @@ export function pickCompatibleRandomItems<T extends ManagedNativeReferenceItem>(
     .filter((candidate) => candidate.score >= minimumScore)
     .sort((left, right) => right.score - left.score);
   if (compatible.length < count) {
-    const categoryPath = profile.foodSubcategory ? `${profile.categoryGroup} > 간식` : profile.categoryGroup;
+    const categoryPath = profile.foodSubcategory
+      ? `${nativeReferenceCategoryLabel(profile.categoryGroup)} > ${nativeReferenceFoodSubcategoryLabel(profile.foodSubcategory)}`
+      : nativeReferenceCategoryLabel(profile.categoryGroup);
     throw new Error(`호환되는 광고 레퍼런스가 부족합니다. ${categoryPath} · ${profile.productForm} 상품에 필요 ${count}장, 사용 가능 ${compatible.length}장입니다. 레퍼런스 관리에서 상품군과 호환 태그를 보완해 주세요.`);
   }
   // 점수는 비호환 항목을 거르는 안전선으로만 쓴다. 통과 후 다시 상위 12점

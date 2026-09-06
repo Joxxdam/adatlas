@@ -8,7 +8,18 @@ export function isCompositableImageRole(role: CreativeImageRole) {
   return compositableRoles.has(role);
 }
 
-async function inspectImage(asset: CreativeImageAsset) {
+function isPhysicalPackageLabelImage(truth: ProductTruth, asset: CreativeImageAsset) {
+  if (asset.role !== "product-packshot") return false;
+  const candidate = truth.product.sourceImageCandidates?.find((item) => item.imagePath === asset.path);
+  const packageRepresentation = ["packaged-product", "product-package-group", "bundle-components", "multi-unit-set"].includes(candidate?.expectedRepresentationType || "");
+  const packageObject = candidate?.detectedObjects?.some((object) => object.role === "package" && object.selected !== false);
+  const packageSignals = [asset.reason, ...(asset.classificationSignals || []), candidate?.label, candidate?.analysisReason, truth.product.packageType]
+    .filter(Boolean)
+    .join(" ");
+  return Boolean(packageRepresentation || packageObject || candidate?.expectedExtractionScope === "product-and-package" || /포장|패키지|라벨|용기|보틀|병|캔|파우치|봉지|트레이|박스|상자|package|label|bottle|can|pouch|tray|box/i.test(packageSignals));
+}
+
+async function inspectImage(truth: ProductTruth, asset: CreativeImageAsset) {
   const buffer = await readCreativeRasterAsset(asset.path);
   const { data, info } = await sharp(buffer)
     .rotate()
@@ -32,7 +43,8 @@ async function inspectImage(asset: CreativeImageAsset) {
   const aspectRatio = metadata.width && metadata.height ? Math.max(metadata.width / metadata.height, metadata.height / metadata.width) : 0;
   const longDetail = aspectRatio >= 3.2;
   const largeEnough = Boolean(metadata.width && metadata.height) && Math.min(metadata.width || 0, metadata.height || 0) >= 180;
-  const confirmed = asset.validationStatus !== "needs-confirmation" && asset.validationStatus !== "excluded" && asset.verified && largeEnough && !asset.hasText && !longDetail;
+  const physicalPackageLabel = Boolean(asset.hasText && isPhysicalPackageLabelImage(truth, asset));
+  const confirmed = asset.validationStatus !== "needs-confirmation" && asset.validationStatus !== "excluded" && asset.verified && largeEnough && (!asset.hasText || physicalPackageLabel) && !longDetail;
   return {
     ...asset,
     role: longDetail ? ("detail-image" as const) : transparent && asset.role === "product-packshot" ? ("product-cutout" as const) : asset.role,
@@ -42,7 +54,7 @@ async function inspectImage(asset: CreativeImageAsset) {
     productFocusRatio,
     verified: confirmed,
     validationStatus: confirmed ? "confirmed" : asset.validationStatus === "needs-confirmation" ? "needs-confirmation" : "excluded",
-    reason: longDetail ? "지나치게 긴 상세페이지형 이미지 비율이 확인되어 상품 합성에서 제외" : Math.min(metadata.width || 0, metadata.height || 0) < 180 ? "상품 이미지 해상도가 너무 작아 합성에서 제외" : asset.hasText ? "글자가 포함된 상세·광고 이미지는 상품 합성에서 제외" : asset.reason,
+    reason: longDetail ? "지나치게 긴 상세페이지형 이미지 비율이 확인되어 상품 합성에서 제외" : Math.min(metadata.width || 0, metadata.height || 0) < 180 ? "상품 이미지 해상도가 너무 작아 합성에서 제외" : asset.hasText && !physicalPackageLabel ? "글자가 포함된 상세·광고 이미지는 상품 합성에서 제외" : physicalPackageLabel ? "실제 패키지 라벨을 상품 정체성 근거로 보존" : asset.reason,
     classificationSignals: [...(asset.classificationSignals || []), ...(longDetail ? ["상세페이지형 긴 이미지 비율"] : []), ...(transparent ? ["투명 배경"] : [])],
   } satisfies CreativeImageAsset;
 }
@@ -52,7 +64,7 @@ export async function inspectProductTruthImages(truth: ProductTruth): Promise<Pr
     truth.imageAssets.map(async (asset) => {
       if (!isCompositableImageRole(asset.role)) return asset;
       try {
-        return await inspectImage(asset);
+        return await inspectImage(truth, asset);
       } catch {
         return {
           ...asset,

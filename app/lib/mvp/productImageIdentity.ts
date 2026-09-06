@@ -105,13 +105,161 @@ export function filterCurrentProductImages<T>(productUrl: string | undefined, va
 }
 
 /**
+ * 상품 상세와 무관한 추천·연관상품 섹션은 텍스트, 이미지, OCR 후보를 만들기
+ * 전에 통째로 제거합니다. 일부 쇼핑몰은 상품 링크를 href가 아닌
+ * data-mgcode/onclick으로 렌더링하므로 개별 링크 검사만으로는 충분하지 않습니다.
+ */
+const recommendationLabelPattern = /(?:오늘의\s*추천상품|추천\s*상품|관련\s*상품|함께\s*구매|최근\s*본\s*상품|recommended\s*products?|related\s*products?)/iu;
+const recommendationAttributePattern = /(?:추천|연관|관련|함께|recommen(?:d)?|related|cross[-_\s]?sell|recent)/iu;
+
+type RecommendationContainerTag = "aside" | "nav" | "section" | "div";
+
+type HtmlRange = { start: number; end: number };
+
+function mergeHtmlRanges(ranges: HtmlRange[]) {
+  const sorted = ranges
+    .filter((range) => range.start >= 0 && range.end > range.start)
+    .sort((left, right) => left.start - right.start || left.end - right.end);
+  const merged: HtmlRange[] = [];
+  for (const range of sorted) {
+    const previous = merged.at(-1);
+    if (!previous || range.start > previous.end) merged.push({ ...range });
+    else previous.end = Math.max(previous.end, range.end);
+  }
+  return merged;
+}
+
+function removeHtmlRanges(html: string, ranges: HtmlRange[]) {
+  const merged = mergeHtmlRanges(ranges);
+  if (!merged.length) return html;
+  const chunks: string[] = [];
+  let cursor = 0;
+  for (const range of merged) {
+    chunks.push(html.slice(cursor, range.start), " ");
+    cursor = range.end;
+  }
+  chunks.push(html.slice(cursor));
+  return chunks.join("");
+}
+
+function findTagEnd(html: string, start: number) {
+  const end = html.indexOf(">", start);
+  return end < 0 ? html.length : end + 1;
+}
+
+/**
+ * 정규식의 `.*? ... </동일태그>`가 2MB HTML 전체를 반복 탐색하면 잘못
+ * 중첩된 쇼핑몰 마크업에서 catastrophic backtracking이 발생할 수 있습니다.
+ * 태그 경계만 정규식으로 찾고 본문 이동은 index 기반으로 수행해 입력 크기에
+ * 비례하는 시간 안에 끝냅니다.
+ */
+function findMatchingContainerEnd(html: string, contentStart: number, tagName: RecommendationContainerTag) {
+  const tagPattern = new RegExp(`<\\/?${tagName}\\b`, "giu");
+  tagPattern.lastIndex = contentStart;
+  let depth = 1;
+  let match: RegExpExecArray | null;
+  while ((match = tagPattern.exec(html))) {
+    const tagEnd = findTagEnd(html, match.index);
+    const token = html.slice(match.index, Math.min(tagEnd, match.index + 24));
+    if (/^<\//u.test(token)) depth -= 1;
+    else if (!/\/\s*>$/u.test(html.slice(match.index, tagEnd))) depth += 1;
+    if (depth === 0) return tagEnd;
+    tagPattern.lastIndex = Math.max(tagPattern.lastIndex, tagEnd);
+  }
+  // 닫는 태그가 깨진 경우 페이지 나머지를 통째로 지우지 않습니다.
+  return contentStart;
+}
+
+function openingTagSignalsRecommendation(openingTag: string) {
+  const attributes = openingTag.match(/(?:aria-label|id|class)\s*=\s*["']([^"']*)["']/giu) || [];
+  return attributes.some((attribute) => recommendationAttributePattern.test(attribute));
+}
+
+function firstHeadingSignalsRecommendation(html: string, contentStart: number) {
+  // 컨테이너 시작부만 확인하므로 하단의 우연한 추천 문구 때문에 상품 본문
+  // 전체가 제거되지 않습니다. 길이도 제한해 정규식 비용을 고정합니다.
+  const prefix = html.slice(contentStart, Math.min(html.length, contentStart + 1_200));
+  const withoutLeadingComments = prefix.replace(/^(?:\s|<!--[\s\S]{0,400}?-->)*/u, "").trimStart();
+  const heading = withoutLeadingComments.match(/^<(h[1-6]|header)\b[^>]{0,500}>([\s\S]{0,500}?)(?:<\/\1\s*>|$)/iu);
+  return Boolean(heading?.[2] && recommendationLabelPattern.test(heading[2].replace(/<[^>]{0,300}>/gu, " ")));
+}
+
+function commentDelimitedRecommendationRanges(html: string) {
+  const comments = Array.from(html.matchAll(/<!--[\s\S]{0,400}?-->/gu));
+  const ranges: HtmlRange[] = [];
+  for (let index = 0; index < comments.length; index += 1) {
+    const comment = comments[index];
+    const text = comment[0];
+    if (!recommendationLabelPattern.test(text) || /<!--\s*\/\//u.test(text)) continue;
+    for (let closingIndex = index + 1; closingIndex < comments.length; closingIndex += 1) {
+      const closing = comments[closingIndex];
+      if (!/<!--\s*\/\//u.test(closing[0]) || !recommendationLabelPattern.test(closing[0])) continue;
+      ranges.push({ start: comment.index, end: closing.index + closing[0].length });
+      index = closingIndex;
+      break;
+    }
+  }
+  return ranges;
+}
+
+function semanticRecommendationRanges(html: string) {
+  const ranges: HtmlRange[] = [];
+  // 운영 쇼핑몰은 추천 목록을 semantic section이 아니라 일반 div로 감쌉니다.
+  // opening tag 속성만 먼저 검사하므로 div 전체를 닫는 태그까지 탐색하지 않습니다.
+  const openingPattern = /<(aside|nav|section|div)\b/giu;
+  let match: RegExpExecArray | null;
+  while ((match = openingPattern.exec(html))) {
+    const start = match.index;
+    const openingEnd = findTagEnd(html, start);
+    const openingTag = html.slice(start, openingEnd);
+    if (!openingTagSignalsRecommendation(openingTag) && !firstHeadingSignalsRecommendation(html, openingEnd)) {
+      openingPattern.lastIndex = Math.max(openingPattern.lastIndex, openingEnd);
+      continue;
+    }
+    const tagName = match[1].toLowerCase() as RecommendationContainerTag;
+    const end = findMatchingContainerEnd(html, openingEnd, tagName);
+    if (end > openingEnd) {
+      ranges.push({ start, end });
+      openingPattern.lastIndex = end;
+    }
+  }
+  return ranges;
+}
+
+function stripRecommendationSections(html: string) {
+  return removeHtmlRanges(html, [
+    ...commentDelimitedRecommendationRanges(html),
+    ...semanticRecommendationRanges(html),
+  ]);
+}
+
+function stripDifferentProductAnchors(productUrl: string, html: string) {
+  const ranges: HtmlRange[] = [];
+  const lowerHtml = html.toLowerCase();
+  const openingPattern = /<a\b/giu;
+  let match: RegExpExecArray | null;
+  while ((match = openingPattern.exec(html))) {
+    const start = match.index;
+    const openingEnd = findTagEnd(html, start);
+    const openingTag = html.slice(start, openingEnd);
+    const href = openingTag.match(/\bhref\s*=\s*["']([^"']+)["']/iu)?.[1];
+    openingPattern.lastIndex = Math.max(openingPattern.lastIndex, openingEnd);
+    if (!href || !isDifferentProductImage(productUrl, href)) continue;
+    const closingStart = lowerHtml.indexOf("</a", openingEnd);
+    if (closingStart < 0) continue;
+    ranges.push({ start, end: findTagEnd(html, closingStart) });
+  }
+  return removeHtmlRanges(html, ranges);
+}
+
+/**
  * 상품 상세 HTML 안에 추천·연관상품 카드가 섞여 있어도 다른 상품 링크 블록은
  * 텍스트와 이미지 수집 전에 제거합니다. 클래스명에 의존하지 않고 URL의 명시적
  * 상품번호만 비교하므로 쇼핑몰이 추천 영역 이름을 바꿔도 같은 경계가 유지됩니다.
  */
 export function stripDifferentProductLinkBlocks(productUrl: string | undefined, html: string) {
-  if (!extractDeclaredProductIds(productUrl).length || !html) return html;
-  return html.replace(/<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>[\s\S]*?<\/a>/giu, (block, href: string) =>
-    isDifferentProductImage(productUrl, href) ? " " : block
-  );
+  if (!html) return html;
+  const withoutRecommendationSections = stripRecommendationSections(html);
+  if (!extractDeclaredProductIds(productUrl).length) return withoutRecommendationSections;
+  return stripDifferentProductAnchors(productUrl || "", withoutRecommendationSections);
 }

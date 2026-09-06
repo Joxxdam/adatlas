@@ -28,9 +28,8 @@ export async function GET(request: Request) {
     });
     const synced = [];
     for (const run of runs) {
-      const copyPending = run.tasks.some((task) => task.generationJobId && task.results.some((result) => Boolean(result.imageUrl)) && (!task.adCopy || task.adCopy.status === "generating"));
       const packagePending = run.completedImages > 0 && run.packageStatus !== "ready";
-      synced.push(["queued", "generating-creatives"].includes(run.status) || copyPending || packagePending ? await syncAutoProductionRun(run.id) : run);
+      synced.push(["queued", "generating-creatives"].includes(run.status) || packagePending ? await syncAutoProductionRun(run.id) : run);
     }
     return NextResponse.json({ ok: true, runs: synced.filter(Boolean).map((run) => toPublicAutoProductionRun(run!)) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

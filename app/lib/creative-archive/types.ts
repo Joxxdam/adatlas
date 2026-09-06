@@ -1,5 +1,6 @@
 import type { CreativeAssetStatus } from "../creative-assets/types";
 import type { GenerationResultStatus } from "../creative-generation/types";
+import type { ProductAdCopy } from "../ad-copy/types";
 
 export type CreativeArchiveSource = "creative-asset" | "generation-result";
 
@@ -62,6 +63,8 @@ export type CreativeArchiveEntry = {
   note: string;
   brandingEligible: boolean;
   deliveryBranding?: CreativeArchiveDeliveryBranding;
+  /** 사용자가 이 이미지에서 개별 생성한 Meta 광고 문구와 제목입니다. */
+  adCopy?: ProductAdCopy;
 };
 
 export type CreativeArchiveResponse = {

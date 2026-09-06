@@ -7,7 +7,7 @@ export type ProviderStatus = {
   paidApiUsed: boolean;
   detail: string;
 };
-export type NativeCreativeGenerationStage = "structure-recreation" | "product-replacement" | "copy-replacement" | "qa-repair";
+export type NativeCreativeGenerationStage = "structure-recreation" | "product-replacement" | "copy-replacement" | "qa-repair" | "codex-direct-test";
 export type NativeGenerationInput = {
   job: GenerationJob;
   result: GenerationResult;
@@ -18,6 +18,8 @@ export type NativeGenerationInput = {
   adReferencePath?: string;
   goldenReferencePaths?: string[];
   feedback?: string;
+  /** 기본 Codex 제작에서 사용자가 확인한 문구. 구형 단계별 프롬프트 빌더를 우회합니다. */
+  directPrompt?: string;
   /** Previous stage raster. It is always the first edit source after structure recreation. */
   sourceImagePath?: string;
   stage?: NativeCreativeGenerationStage;

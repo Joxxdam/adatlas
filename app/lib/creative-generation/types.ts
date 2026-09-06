@@ -4,7 +4,9 @@ import type { CreativeNoteCompliance } from "../creative-content-notes/types";
 import type { ProductAdCopy } from "../ad-copy/types";
 import type { PerformanceTemplateId } from "./performanceTemplateRegistry";
 
-export const CREATIVE_PLANNER_VERSION = "creative-planner-v8-reference-adapted-copy";
+import { NATIVE_CREATIVE_VERSION } from "./nativeCreativeVersion.ts";
+
+export const CREATIVE_PLANNER_VERSION = NATIVE_CREATIVE_VERSION;
 
 export const creativeBlueprintIds = ["problem-solution-split", "editorial-story", "chat-ugc", "comparison-versus", "product-hero-lifestyle", "proof-data"] as const;
 
@@ -111,6 +113,36 @@ export type ImageCreativePremise = {
   factBoundary: string;
 };
 
+export type ReferenceSceneSubjectMode = "none" | "new-adult" | "product-character";
+
+/**
+ * 확정 문구가 어떤 장면으로 보일지에 대한 최소 계약입니다. 레퍼런스의
+ * 거시 디자인은 보존하되, 원본 인물 존재 여부만으로 새 인물을 강제하지
+ * 않고 문구의 표현 원리와 현재 상품에 맞는 주체·행동·소품을 고정합니다.
+ */
+export type ReferenceSceneAdaptation = {
+  expressionPrinciple: string;
+  subjectMode: ReferenceSceneSubjectMode;
+  subjectRole: string;
+  action: string;
+  setting: string;
+  preserveElements: string[];
+  replaceElements: string[];
+  verifiedMotifs: string[];
+};
+
+export type ReferenceCopyPlanningTrace = {
+  firstFailureStage?: "input" | "generation" | "validation" | "repair";
+  firstFailureCategory?: "missing-reference-copy" | "transport" | "timeout" | "schema" | "factual" | "naturalness" | "slot-contract" | "unknown";
+  firstErrors: string[];
+  repairAttempted: boolean;
+  repairErrors?: string[];
+  initialCopy?: string;
+  repairedCopy?: string;
+  fallbackCopy?: string;
+  finalSource: "codex-local" | "repaired-codex-local" | "safe-minimal";
+};
+
 export const creativeAngles = [
   "price-shock",
   "family-reaction",
@@ -204,6 +236,10 @@ export type ReferenceAdaptedCopyPlan = {
   referenceCopyProfileId: string;
   /** 과거 저장 작업 호환을 위해 optional이며, 최신 작업은 버전 게이트에서 필수입니다. */
   creativePremise?: ImageCreativePremise;
+  /** 확정 문구와 상품 교체·문구 교체·QA가 함께 읽는 장면 계약입니다. */
+  sceneAdaptation?: ReferenceSceneAdaptation;
+  /** 최초 실패부터 1회 보정·안전 대체까지의 실제 경로입니다. */
+  planningTrace?: ReferenceCopyPlanningTrace;
   /** 아래 필드는 과거 저장 계획에는 없을 수 있으며 normalize 단계에서 안전하게 생략됩니다. */
   creativeAngle?: CreativeAngle;
   hookIdea?: ReferenceCopyHookIdea;
@@ -230,6 +266,8 @@ export type ReferenceAdaptedCopyPlan = {
     role: "headline" | "support" | "proof" | "offer" | "cta" | "badge" | "other";
     sourceType?: "ad-copy" | "source-brand" | "source-product-label" | "decorative" | "uncertain";
     replacePolicy?: "adapt" | "remove" | "product-replacement" | "preserve" | "review";
+    /** 이 슬롯을 바꾸거나 지울지에 대한 단일 실행 기준입니다. */
+    action?: "replace" | "remove";
     sourceText: string;
     targetText: string;
     emphasis: "none" | "light" | "strong";
@@ -341,6 +379,22 @@ export type ProductReferenceProfile = {
   referenceImages: ProductReferenceImage[];
   referenceSufficiency: "high" | "medium" | "low";
   createdAt: string;
+};
+
+export type NativeProductSourceKind = "packaged" | "unpackaged";
+
+/**
+ * 새 레퍼런스 우선 작업에서 한 결과가 실제로 사용할 상품 원본입니다.
+ * 작업 생성 시 저장되므로 재시도·복구에서도 다른 사진으로 바뀌지 않습니다.
+ */
+export type NativeProductSourceAssignment = {
+  kind: NativeProductSourceKind;
+  imageId: string;
+  sourcePath: string;
+  sourceRole: ProductReferenceRole;
+  /** 실제 포장 라벨·로고·용량 표기를 상품 정체성으로 보호해야 하는 원본입니다. */
+  protectPhysicalLabel: boolean;
+  reason: string;
 };
 
 export const masterSceneConcepts = ["sensory-impact", "problem-solution", "premium-editorial", "price-impact", "review-trust", "usage-moment", "ingredient-origin", "brand-story", "target-lifestyle"] as const;
@@ -696,6 +750,10 @@ export type NativeCreativeValidation = {
   /** 새 인물의 행동·표정·상황이 최종 광고 문구의 의미를 직접 뒷받침하는지 여부입니다. */
   humanCopyAligned?: boolean;
   humanCopyAlignmentFindings?: string[];
+  /** 확정된 none/new-adult/product-character 장면 주체 계약과 일치하는지 확인합니다. */
+  plannedSubjectMode?: ReferenceSceneSubjectMode;
+  plannedSubjectModeAligned?: boolean;
+  plannedSubjectModeFindings?: string[];
   /** 레퍼런스에 실제 동물·동물 캐릭터·마스코트가 포함됐는지에 대한 시각 QA 결과입니다. */
   sourceAnimalDetected?: boolean;
   /** 원본 동물의 구도적 역할을 유지하면서 상품 관련성이 있는 다른 동물로 교체했는지 여부입니다. */
@@ -763,8 +821,8 @@ export type NativeGroupValidation = {
 export type NativeCreativeArtifact = {
   engine: CreativeGenerationEngine;
   /** 수동·자동 신규 작업이 공유하는 고정 레퍼런스 편집 계약입니다. */
-  workflow?: "reference-lock-product-then-copy";
-  stageOrder?: readonly ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"];
+  workflow?: "reference-lock-product-then-copy" | "codex-direct-test";
+  stageOrder?: readonly ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"] | readonly ["codex-direct-test"];
   /** One of the unique advertisements randomly selected from the matching ZIP category for this result. */
   adReference?: {
     id: string;
@@ -777,11 +835,14 @@ export type NativeCreativeArtifact = {
     categoryLabel?: string;
     selectionReason: string;
     productForm?: import("./referenceLibraryManagement").NativeReferenceProductForm;
+    productPresentation?: import("./referenceLibraryManagement").NativeReferenceProductPresentation;
     compositionType?: import("./referenceLibraryManagement").NativeReferenceCompositionType;
     productSlotCount?: number;
     productSlotShape?: import("./referenceLibraryManagement").NativeReferenceSlotShape;
     photographyType?: import("./referenceLibraryManagement").NativeReferencePhotographyType;
     textDensity?: import("./referenceLibraryManagement").NativeReferenceTextDensity;
+    supportsPackagedProduct?: boolean;
+    supportsNaturalFood?: boolean;
     compatibilityConfidence?: import("./referenceLibraryManagement").NativeReferenceCompatibilityConfidence;
     nativeCopy?: import("./referenceLibraryManagement").ReferenceNativeCopy;
   };
@@ -794,6 +855,8 @@ export type NativeCreativeArtifact = {
   };
   /** Exact URL-product reference set supplied to this result's staged advertisement edits. */
   referencePaths?: string[];
+  /** One fixed source per result, or packaged + unpackaged for a genuinely mixed reference. */
+  productSourceAssignments?: NativeProductSourceAssignment[];
   /** Legacy text-free scene path. New ai-native-final results leave this empty. */
   backgroundPath?: string;
   originalPath?: string;
@@ -802,9 +865,18 @@ export type NativeCreativeArtifact = {
   promptVersion: string;
   revisionCount: number;
   validation?: NativeCreativeValidation;
+  /** AI 편집 뒤 OCR 영역 경계를 로컬에서 결정적으로 잠근 기록입니다. */
+  rasterProtection?: {
+    version: "reference-region-lock-v1";
+    productTextLockApplied: boolean;
+    copyOutsideLockApplied: boolean;
+    copyRegionCoverageComplete: boolean;
+    copyRegionCount: number;
+    reason?: string;
+  };
   provenance?: {
-    workflow?: "reference-lock-product-then-copy";
-    stageOrder?: readonly ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"];
+    workflow?: "reference-lock-product-then-copy" | "codex-direct-test";
+    stageOrder?: readonly ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"] | readonly ["codex-direct-test"];
     referenceId: string;
     referenceSourcePath: string;
     referenceRawCopy?: string;
@@ -1292,7 +1364,7 @@ export type GenerationResult = {
   scenePlan: ScenePlan;
   creativeDesign?: MasterCreativeDirection;
   masterScene?: MasterSceneArtifact;
-  generationStage?: "planned" | "reference-preparing" | "reference-selecting" | "structure-recreating" | "product-replacing" | "copy-replacing" | "qa-repairing" | "ai-generating" | "ai-revising" | "quality-check" | "exporting" | "completed" | "scene-generating" | "compositing" | "copy-rendering";
+  generationStage?: "planned" | "reference-preparing" | "reference-selecting" | "structure-recreating" | "product-replacing" | "copy-replacing" | "qa-repairing" | "codex-direct-generating" | "ai-generating" | "ai-revising" | "quality-check" | "exporting" | "completed" | "scene-generating" | "compositing" | "copy-rendering";
   renderPlan?: RenderPlan;
   imagePath?: string;
   downloadName?: string;
@@ -1316,10 +1388,11 @@ export type GenerationJobStatus = "pending" | "running" | "partial" | "completed
 
 /**
  * 수동 제작에서 자동 상품군 판정을 덮어쓸 때만 저장하는 레퍼런스 풀입니다.
- * `food-snack`은 별도 대분류가 아니라 음식 안의 간식 전용 풀입니다.
- * `food-produce`는 저장된 과거 작업을 읽기 위한 호환 값이며 신규 UI에는 노출하지 않습니다.
+ * 신규 UI는 일반 식품 `food`, 육류 `food-meat`, 간식 `food-snack`만 사용합니다.
+ * `food-other`와 `food-produce`는 저장된 과거 작업을 읽기 위한 호환 값이며
+ * 각각 일반 식품과 간식으로 해석합니다.
  */
-export type ReferenceCategoryOverride = "fashion" | "food" | "food-snack" | "food-produce" | "beauty";
+export type ReferenceCategoryOverride = "fashion" | "food" | "food-meat" | "food-snack" | "food-other" | "food-produce" | "beauty";
 
 export type GenerationJob = {
   id: string;
@@ -1341,7 +1414,7 @@ export type GenerationJob = {
   errors: string[];
   version: string;
   /** Semantic pipeline name. Older v12 jobs may omit it and remain readable. */
-  pipeline?: "reference-staged-edit" | "reference-first-adapted-copy";
+  pipeline?: "reference-staged-edit" | "reference-first-adapted-copy" | "codex-direct-test";
   engine?: CreativeGenerationEngine;
   /** 서버 저장용 작업별 유료 API 승인. 기본 Codex 작업에는 존재하지 않는다. */
   paidApiAuthorization?: PaidApiAuthorization;
@@ -1385,6 +1458,14 @@ export type GenerationJob = {
     nextRetryAt?: string;
     updatedAt: string;
   };
+  /** 신규 기본 제작에서 그대로 전달할 사용자 지시와 선택 상품 첨부입니다. 필드명은 저장 데이터 호환을 위해 유지합니다. */
+  codexDirectTest?: {
+    prompt: string;
+    productImagePath: string;
+    supportingImagePath?: string;
+    packagingImagePath?: string;
+    additionalInstructions?: string;
+  };
 };
 
 export type GenerationJobSummary = {
@@ -1395,6 +1476,8 @@ export type GenerationJobSummary = {
   productName: string;
   productUrl: string;
   sourceType?: "manual" | "auto-production";
+  /** 진행 중 작업 복원 시 구버전 실행 계약을 제외하기 위한 공개 식별자입니다. */
+  pipeline?: GenerationJob["pipeline"];
   totalCount: number;
   completedCount: number;
   generatedCount: number;
@@ -1424,7 +1507,15 @@ export type CreateGenerationJobInput = {
   preserveBackgroundAssetId?: string;
   excludedMasterDesignIds?: CreativeBlueprintId[];
   testCode?: `T${string}`;
-  generationModePreference?: "auto" | "actual-product" | "ai-full-scene" | "reference-staged-edit" | "reference-first-adapted-copy";
+  generationModePreference?: "auto" | "actual-product" | "ai-full-scene" | "reference-staged-edit" | "reference-first-adapted-copy" | "codex-direct-test";
+  /** 수동·자동 신규 제작이 공유하는 기본 Codex 입력입니다. 필드명은 기존 저장/API 호환을 위해 유지합니다. */
+  codexDirectTest?: {
+    prompt: string;
+    productImagePath: string;
+    supportingImagePath?: string;
+    packagingImagePath?: string;
+    additionalInstructions?: string;
+  };
   forceSceneRevision?: boolean;
   strategyVariation?: number;
   mode?: CreativeExplorationMode;

@@ -1,6 +1,6 @@
 import type { ProductInfoForPrompt } from "../mvp/types.ts";
 import { isDomesticOriginCreativeSignal, isMeatProductContext, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal } from "./productSignalHygiene.ts";
-import type { CategoryCreativeProfileId, NativeCreativeValidation, NativeGroupValidation, ReferenceAdaptedCopyPlan } from "./types.ts";
+import type { CategoryCreativeProfileId, NativeCreativeValidation, NativeGroupValidation, ReferenceAdaptedCopyPlan, ReferenceSceneSubjectMode } from "./types.ts";
 import type { MeatPresentationContract } from "./productRenderingPolicy.ts";
 
 type NativeCreativeQaScores = {
@@ -44,6 +44,8 @@ export function normalizeNativeCreativeValidation(
     category?: CategoryCreativeProfileId;
     exportComplianceVerified?: boolean;
     requiresHumanReplacement?: boolean;
+    sourceContainsPerson?: boolean;
+    plannedSubjectMode?: ReferenceSceneSubjectMode;
     requiresHumanSceneBackgroundRebuild?: boolean;
     requiresContextualBackgroundRebuild?: boolean;
     requiresSourceBrandRegionClear?: boolean;
@@ -62,7 +64,7 @@ export function normalizeNativeCreativeValidation(
   normalized.standaloneLogoFindings = Array.isArray(validation.standaloneLogoFindings) ? validation.standaloneLogoFindings.map(String).slice(0, 10) : [];
   normalized.detachedProductCutoutDetected = validation.detachedProductCutoutDetected === true;
   normalized.detachedProductCutoutFindings = Array.isArray(validation.detachedProductCutoutFindings) ? validation.detachedProductCutoutFindings.map(String).slice(0, 10) : [];
-  normalized.sourcePersonDetected = options.requiresHumanReplacement === true || validation.sourcePersonDetected === true;
+  normalized.sourcePersonDetected = options.sourceContainsPerson === true || validation.sourcePersonDetected === true;
   normalized.sourcePersonReplaced = validation.sourcePersonReplaced === true;
   normalized.humanCompositionChanged = validation.humanCompositionChanged === true;
   normalized.humanSceneBackgroundRebuilt = options.requiresHumanSceneBackgroundRebuild ? validation.humanSceneBackgroundRebuilt === true : validation.humanSceneBackgroundRebuilt !== false;
@@ -71,6 +73,9 @@ export function normalizeNativeCreativeValidation(
   normalized.humanReplacementFindings = Array.isArray(validation.humanReplacementFindings) ? validation.humanReplacementFindings.map(String).slice(0, 10) : [];
   normalized.humanCopyAligned = validation.humanCopyAligned !== false;
   normalized.humanCopyAlignmentFindings = Array.isArray(validation.humanCopyAlignmentFindings) ? validation.humanCopyAlignmentFindings.map(String).slice(0, 10) : [];
+  normalized.plannedSubjectMode = options.plannedSubjectMode || (options.requiresHumanReplacement ? "new-adult" : "none");
+  normalized.plannedSubjectModeAligned = validation.plannedSubjectModeAligned !== false;
+  normalized.plannedSubjectModeFindings = Array.isArray(validation.plannedSubjectModeFindings) ? validation.plannedSubjectModeFindings.map(String).slice(0, 10) : [];
   normalized.sourceAnimalDetected = validation.sourceAnimalDetected === true;
   normalized.sourceAnimalReplaced = validation.sourceAnimalReplaced === true;
   normalized.animalReplacementFindings = Array.isArray(validation.animalReplacementFindings) ? validation.animalReplacementFindings.map(String).slice(0, 10) : [];
@@ -117,7 +122,7 @@ export function normalizeNativeCreativeValidation(
     normalized.composition = Math.min(normalized.composition, 35);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 30);
   }
-  const humanReplacementFailed = normalized.sourcePersonDetected && (!normalized.sourcePersonReplaced || !normalized.humanCompositionChanged || normalized.targetAudienceFit < 75);
+  const humanReplacementFailed = options.requiresHumanReplacement === true && (!normalized.sourcePersonReplaced || !normalized.humanCompositionChanged || normalized.targetAudienceFit < 75);
   if (humanReplacementFailed) {
     normalized.failures = [...new Set([
       ...normalized.failures,
@@ -137,7 +142,7 @@ export function normalizeNativeCreativeValidation(
     normalized.categoryFit = Math.min(normalized.categoryFit, 50);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 50);
   }
-  const humanCopyAlignmentFailed = normalized.sourcePersonDetected && normalized.humanCopyAligned === false;
+  const humanCopyAlignmentFailed = options.requiresHumanReplacement === true && normalized.humanCopyAligned === false;
   if (humanCopyAlignmentFailed) {
     normalized.failures = [...new Set([
       ...normalized.failures,
@@ -146,6 +151,16 @@ export function normalizeNativeCreativeValidation(
     normalized.hookAlignment = Math.min(normalized.hookAlignment, 40);
     normalized.humanNaturalness = Math.min(normalized.humanNaturalness, 60);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 50);
+  }
+  const plannedSubjectModeFailed = normalized.plannedSubjectModeAligned === false;
+  if (plannedSubjectModeFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      `확정된 장면 주체(${normalized.plannedSubjectMode})·행동·배경 계약과 결과가 다릅니다${normalized.plannedSubjectModeFindings.length ? `: ${normalized.plannedSubjectModeFindings.join(" / ")}` : "."}`,
+    ])].slice(0, 20);
+    normalized.hookAlignment = Math.min(normalized.hookAlignment, 40);
+    normalized.composition = Math.min(normalized.composition, 50);
+    normalized.commercialQuality = Math.min(normalized.commercialQuality, 45);
   }
   const animalReplacementFailed = normalized.sourceAnimalDetected && !normalized.sourceAnimalReplaced;
   if (animalReplacementFailed) {
@@ -264,7 +279,7 @@ export function normalizeNativeCreativeValidation(
   // Vision이 failures에 실제 문구·상품 오류를 기록하고도 점수만 높게 주는
   // 응답이 있습니다. 발견된 실패가 하나라도 있으면 approve로 정규화하지 않습니다.
   const reportedFailure = normalized.failures.length > 0;
-  normalized.recommendation = normalized.standaloneLogoDetected || normalized.detachedProductCutoutDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed || unverifiedMultiPackFailed || meatQualityThresholdFailed || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
+  normalized.recommendation = normalized.standaloneLogoDetected || normalized.detachedProductCutoutDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || plannedSubjectModeFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed || unverifiedMultiPackFailed || meatQualityThresholdFailed || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
   return normalized;
 }
 
@@ -382,8 +397,7 @@ export function enforceReferenceCopySlotCompleteness(
 ): NativeCreativeValidation {
   const blankSlots = copySlots.filter((slot) =>
     slot.sourceText.trim() &&
-    slot.sourceType !== "source-brand" &&
-    slot.replacePolicy !== "remove" &&
+    (slot.action || (slot.sourceType === "source-brand" || slot.replacePolicy === "remove" ? "remove" : "replace")) === "replace" &&
     !slot.targetText.trim()
   );
   if (!blankSlots.length) return validation;

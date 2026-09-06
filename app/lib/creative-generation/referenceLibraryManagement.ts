@@ -4,18 +4,23 @@ export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty"] as co
 
 export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups)[number];
 
-export const nativeReferenceFoodSubcategories = ["snack"] as const;
+export const nativeReferenceFoodSubcategories = ["meat", "snack"] as const;
 export type NativeReferenceFoodSubcategory = (typeof nativeReferenceFoodSubcategories)[number];
 
 /**
  * 기본 분류를 바꾸지 않고 같은 레퍼런스를 다른 제작 후보군에서도 함께
- * 활용하기 위한 추가 풀입니다. food-snack은 음식 전체 풀에도 포함됩니다.
+ * 활용하기 위한 추가 풀입니다. food는 과거 전체 식품 풀 호환용이고,
+ * 신규 제작은 일반 식품(food) 또는 food-meat/food-snack 중 하나를 사용합니다.
  */
-export const nativeReferenceSelectionPools = ["fashion", "food", "food-snack", "beauty"] as const;
+export const nativeReferenceSelectionPools = ["fashion", "food", "food-meat", "food-snack", "beauty"] as const;
 export type NativeReferenceSelectionPool = (typeof nativeReferenceSelectionPools)[number];
 
 export const nativeReferenceProductForms = ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] as const;
 export type NativeReferenceProductForm = (typeof nativeReferenceProductForms)[number];
+
+/** 레퍼런스 안에 실제로 보이는 상품 표현입니다. 지원 가능성이 아니라 화면 관찰값입니다. */
+export const nativeReferenceProductPresentations = ["packaged", "unpackaged", "mixed"] as const;
+export type NativeReferenceProductPresentation = (typeof nativeReferenceProductPresentations)[number];
 
 export const nativeReferenceCompositionTypes = ["product-packshot", "price-card", "product-lineup", "lifestyle-scene", "before-after", "comparison", "review-card", "sensory-closeup", "human-use", "natural-food-scene"] as const;
 export type NativeReferenceCompositionType = (typeof nativeReferenceCompositionTypes)[number];
@@ -30,6 +35,7 @@ export type NativeReferenceCompatibilityConfidence = (typeof nativeReferenceComp
 
 export type NativeReferenceCompatibility = {
   productForm: NativeReferenceProductForm;
+  productPresentation: NativeReferenceProductPresentation;
   compositionType: NativeReferenceCompositionType;
   productSlotCount: number;
   productSlotShape: NativeReferenceSlotShape;
@@ -173,6 +179,7 @@ export type ManagedNativeReferenceItem = {
   uploadedAt?: string;
   classificationMethod?: "codex-local" | "filename-rule" | "imported" | "manual";
   productForm?: NativeReferenceProductForm;
+  productPresentation?: NativeReferenceProductPresentation;
   compositionType?: NativeReferenceCompositionType;
   productSlotCount?: number;
   productSlotShape?: NativeReferenceSlotShape;
@@ -223,32 +230,54 @@ function compositionFromLayout(layoutFamily: string): NativeReferenceComposition
  * 범용 fallback으로 사용하는 일을 막는다. 수동 태그가 있으면 항상 우선한다.
  */
 export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferenceItem): ManagedNativeReferenceItem & NativeReferenceCompatibility {
+  const referenceIdentityText = [
+    item.sourceFile,
+    item.nativeCopy?.rawText,
+    ...(item.nativeCopy?.rawLines || []),
+  ].filter(Boolean).join(" ");
+  const inferredFoodSubcategory = item.categoryGroup === "food"
+    ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) || inferNativeReferenceFoodSubcategoryFromText(referenceIdentityText)
+    : undefined;
   const packagedFoodProfile = item.categoryGroup === "food" ? verifiedPackagedFoodProfiles.get(item.ordinal) : undefined;
   const isPackagedFood = Boolean(packagedFoodProfile);
   const isNaturalFood = item.categoryGroup === "food" && !isPackagedFood;
-  const inferredForm: NativeReferenceProductForm = item.categoryGroup === "fashion" ? "fashion-item" : isNaturalFood ? "meat-cut" : isPackagedFood ? packagedFoodProfile!.productForm : "universal-packshot";
+  const inferredForm: NativeReferenceProductForm = item.categoryGroup === "fashion"
+    ? "fashion-item"
+    : inferredFoodSubcategory === "meat"
+      ? "meat-cut"
+      : isNaturalFood
+        ? "natural-food"
+        : isPackagedFood
+          ? packagedFoodProfile!.productForm
+          : "universal-packshot";
   const semanticComparison = referenceRequiresComparisonSemantics(item);
   const inferredComposition = semanticComparison ? ("comparison" as const) : packagedFoodProfile?.compositionType || (isNaturalFood ? (item.layoutFamily === "sensory-editorial" || item.layoutFamily === "situation-story" ? ("natural-food-scene" as const) : compositionFromLayout(item.layoutFamily)) : compositionFromLayout(item.layoutFamily));
   const inferredCount = packagedFoodProfile?.productSlotCount || (/(?:2\s*\+\s*1|세트|묶음|라인업)/i.test(item.sourceFile) ? 2 : 1);
-  const inferredFoodSubcategory = item.categoryGroup === "food"
-    ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) || inferNativeReferenceFoodSubcategoryFromText([
-        item.sourceFile,
-        item.nativeCopy?.rawText,
-        ...(item.nativeCopy?.rawLines || []),
-      ].filter(Boolean).join(" "))
-    : undefined;
+  const supportsPackagedProduct = item.supportsPackagedProduct ?? !isNaturalFood;
+  const supportsNaturalFood = item.supportsNaturalFood ?? isNaturalFood;
+  const inferredPresentation: NativeReferenceProductPresentation = supportsPackagedProduct && supportsNaturalFood
+    ? "mixed"
+    : supportsPackagedProduct
+      ? "packaged"
+      : "unpackaged";
   const redundantPools = new Set<NativeReferenceSelectionPool>([
     item.categoryGroup,
-    ...(item.categoryGroup === "food" && inferredFoodSubcategory === "snack" ? (["food-snack"] as const) : []),
+    ...(item.categoryGroup === "food" && inferredFoodSubcategory ? ([`food-${inferredFoodSubcategory}`] as NativeReferenceSelectionPool[]) : []),
   ]);
   const additionalSelectionPools = normalizeNativeReferenceSelectionPools(item.additionalSelectionPools).filter((pool) => !redundantPools.has(pool));
   return {
     ...item,
-    // 과거 등록분에 하위 태그가 비어 있어도 저장 OCR과 파일명에 명백한
-    // 간식 신호가 있으면 읽는 시점에 간식 풀로 복구한다. 수동 태그는 우선한다.
+    // 과거 등록분에 하위 태그가 비어 있어도 저장 OCR과 파일명으로 육류·간식을
+    // 복구한다. 둘 다 아니면 별도 '기타' 풀을 만들지 않고 식품에만 둔다.
     foodSubcategory: inferredFoodSubcategory,
     additionalSelectionPools: additionalSelectionPools.length ? additionalSelectionPools : undefined,
-    productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm) ? (item.productForm as NativeReferenceProductForm) : inferredForm,
+    productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm)
+      && !(item.productForm === "meat-cut" && inferredFoodSubcategory !== "meat")
+      ? (item.productForm as NativeReferenceProductForm)
+      : inferredForm,
+    productPresentation: nativeReferenceProductPresentations.includes(item.productPresentation as NativeReferenceProductPresentation)
+      ? (item.productPresentation as NativeReferenceProductPresentation)
+      : inferredPresentation,
     compositionType: semanticComparison ? "comparison" : nativeReferenceCompositionTypes.includes(item.compositionType as NativeReferenceCompositionType) ? (item.compositionType as NativeReferenceCompositionType) : inferredComposition,
     // VS 구도는 판매 상품이 하나여도 불리한 대안과 현재 상품이라는 서로 다른
     // 시각 역할 두 개를 가진다. 복수 구성 상품으로 해석하지는 않는다.
@@ -256,8 +285,8 @@ export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferen
     productSlotShape: nativeReferenceSlotShapes.includes(item.productSlotShape as NativeReferenceSlotShape) ? (item.productSlotShape as NativeReferenceSlotShape) : isNaturalFood ? "wide" : item.categoryGroup === "fashion" ? "tall" : "flexible",
     photographyType: nativeReferencePhotographyTypes.includes(item.photographyType as NativeReferencePhotographyType) ? (item.photographyType as NativeReferencePhotographyType) : isNaturalFood ? "natural-food" : inferredComposition === "lifestyle-scene" ? "lifestyle" : "packshot",
     textDensity: nativeReferenceTextDensities.includes(item.textDensity as NativeReferenceTextDensity) ? (item.textDensity as NativeReferenceTextDensity) : ["price-offer", "usp-evidence", "social-proof"].includes(item.layoutFamily) ? "dense" : "medium",
-    supportsPackagedProduct: item.supportsPackagedProduct ?? !isNaturalFood,
-    supportsNaturalFood: item.supportsNaturalFood ?? isNaturalFood,
+    supportsPackagedProduct,
+    supportsNaturalFood,
     supportsHumanModel: item.supportsHumanModel ?? item.categoryGroup === "fashion",
     supportsMultipleProducts: item.supportsMultipleProducts ?? packagedFoodProfile?.supportsMultipleProducts ?? inferredCount > 1,
     compatibilityConfidence: item.compatibilityConfidence || (item.categoryGroup === "food" ? "high" : "medium"),
@@ -270,31 +299,35 @@ export function normalizeNativeReferenceCategory(value: unknown): NativeReferenc
 
 export function nativeReferenceCategoryLabel(value: NativeReferenceCategoryGroup) {
   if (value === "fashion") return "패션";
-  if (value === "food") return "음식";
+  if (value === "food") return "식품";
   return "화장품";
 }
 
 export function normalizeNativeReferenceFoodSubcategory(value: unknown): NativeReferenceFoodSubcategory | undefined {
   // 기존 과일/농산물 전용 풀은 간식 전용 풀로 이관한다. 저장된 과거 manifest를
   // 읽거나 진행 중인 개발 서버가 이전 값을 보내도 같은 간식 풀로 복구한다.
+  // 과거 other/none은 별도 풀로 유지하지 않고 식품 대분류만 남긴다.
   if (value === "produce-agriculture") return "snack";
+  if (value === "other" || value === "none") return undefined;
   return nativeReferenceFoodSubcategories.includes(value as NativeReferenceFoodSubcategory) ? (value as NativeReferenceFoodSubcategory) : undefined;
 }
 
 export function nativeReferenceFoodSubcategoryLabel(value: NativeReferenceFoodSubcategory) {
-  if (value === "snack") return "간식";
-  return value;
+  if (value === "meat") return "육류";
+  return "간식";
 }
 
 export function normalizeNativeReferenceSelectionPools(value: unknown): NativeReferenceSelectionPool[] {
   if (!Array.isArray(value)) return [];
-  return [...new Set(value.filter((pool): pool is NativeReferenceSelectionPool => nativeReferenceSelectionPools.includes(pool as NativeReferenceSelectionPool)))];
+  const migrated = value.map((pool) => pool === "food-other" ? "food" : pool === "food-produce" ? "food-snack" : pool);
+  return [...new Set(migrated.filter((pool): pool is NativeReferenceSelectionPool => nativeReferenceSelectionPools.includes(pool as NativeReferenceSelectionPool)))];
 }
 
 export function nativeReferenceSelectionPoolLabel(value: NativeReferenceSelectionPool) {
   if (value === "fashion") return "패션";
-  if (value === "food") return "음식";
-  if (value === "food-snack") return "간식";
+  if (value === "food") return "식품";
+  if (value === "food-meat") return "식품 · 육류";
+  if (value === "food-snack") return "식품 · 간식";
   return "화장품";
 }
 
@@ -305,19 +338,26 @@ export function referenceBelongsToSelectionPool(
   foodSubcategory?: NativeReferenceFoodSubcategory
 ) {
   const additional = new Set(normalizeNativeReferenceSelectionPools(item.additionalSelectionPools));
-  if (categoryGroup === "food" && foodSubcategory === "snack") {
-    return (item.categoryGroup === "food" && item.foodSubcategory === "snack") || additional.has("food-snack");
+  if (categoryGroup === "food" && foodSubcategory) {
+    return (item.categoryGroup === "food" && item.foodSubcategory === foodSubcategory)
+      || additional.has(`food-${foodSubcategory}` as NativeReferenceSelectionPool);
   }
   if (categoryGroup === "food") {
-    return item.categoryGroup === "food" || additional.has("food") || additional.has("food-snack");
+    return (item.categoryGroup === "food" && !item.foodSubcategory) || additional.has("food");
   }
   return item.categoryGroup === categoryGroup || additional.has(categoryGroup);
 }
 
 export function inferNativeReferenceFoodSubcategoryFromText(value: string): NativeReferenceFoodSubcategory | undefined {
   const normalized = String(value || "").normalize("NFC").toLowerCase();
-  if (/떡갈비|갈비|육류|고기|한우|소고기|돼지고기|닭고기|김치|반찬|찌개|국(?:\s|[._-]|$)|탕(?:\s|[._-]|$)|전골|밀키트|간편식|즉석식|식사|meal|meat|beef|pork|chicken|kimchi|soup/u.test(normalized)) return undefined;
-  return /간식|스낵|과자|전병|쿠키|비스킷|초콜릿|캔디|사탕|젤리|견과|건과|말랭이|건조|반건조|곶감|무화과|약과|한과|떡(?!갈비)|빵|베이커리|도넛|디저트|아이스크림|과일|사과|복숭아|자두|포도|수박|감귤|오렌지|딸기|멜론|참외|snack|dessert|fruit/u.test(normalized) ? "snack" : undefined;
+  // 육포·고기맛 과자처럼 육류 단어를 포함한 간식도 실제 판매 형태를 우선한다.
+  if (/간식|스낵|과자|칩(?:\s|[._-]|$)|전병|쿠키|비스킷|초콜릿|캔디|사탕|젤리|육포|견과|건과|말랭이|건조|반건조|곶감|무화과|약과|한과|떡(?!갈비)|빵|베이커리|도넛|디저트|아이스크림|과일|사과|복숭아|자두|포도|수박|감귤|오렌지|딸기|멜론|참외|레몬|라임|깔라만시|자몽|바나나|망고|키위|체리|블루베리|snack|dessert|fruit/u.test(normalized)) return "snack";
+  // 고기가 재료로 들어가더라도 볶음밥·김치·반찬·소스가 판매 상품이면
+  // 육류 레퍼런스가 아니라 하위 태그 없는 일반 식품으로 둔다.
+  if (/볶음밥|주먹밥|김치(?:찜)?|겉절이|고춧가루|반찬|샐러드|카레|파스타\s*소스|음료|스파클링/u.test(normalized)
+    && !/닭강정|제육|불고기|바베큐|바비큐/u.test(normalized)) return undefined;
+  if (/떡갈비|갈비|갈비살|가짜갈비|육류|고기|한우|한돈|설록우|암소|소고기|쇠고기|돼지고기|닭고기|닭가슴살|닭강정|오리고기|양고기|등뼈|안창살|안창|도가니|등심|안심|채끝|살치살|차돌|토시살|부채살|치마살|업진살|양지|사태|우둔|삼겹|목살|정육|축산|스테이크|불고기|제육|바베큐|바비큐|직화육|육즙|meat|beef|pork|chicken|steak|barbecue|bbq/u.test(normalized)) return "meat";
+  return undefined;
 }
 
 export function inferNativeReferenceCategoryFromText(value: string): NativeReferenceCategoryGroup {

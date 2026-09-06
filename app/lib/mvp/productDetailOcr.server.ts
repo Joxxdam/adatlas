@@ -8,6 +8,7 @@ import {
   isDomesticOriginCreativeSignal,
   isAmbiguousMerchantCredentialCreativeSignal,
   isIncompleteOcrCopyFragment,
+  isMerchantCredentialCreativeSignal,
   isNonDomesticOriginCreativeSignal,
   isPackageLabelOcrCopyNoise,
   isProhibitedAdCopySignal,
@@ -17,7 +18,7 @@ import { ocrRasterImage } from "./reviewImageAnalysis.server.ts";
 import { selectProductDetailOcrCandidates } from "./productDetailOcrSelection.ts";
 import type { ProductDetailImageOcrInsight, ProductImageCandidate } from "./types.ts";
 
-const DETAIL_OCR_VERSION = "product-detail-ocr-v4-complete-ad-facts-only";
+const DETAIL_OCR_VERSION = "product-detail-ocr-v5-product-facts-without-merchant-copy";
 const CACHE_PATH = path.join(process.cwd(), ".data", "product-detail-ocr-cache.json");
 const MAX_CONCURRENCY = 2;
 let cacheWriteQueue = Promise.resolve();
@@ -30,7 +31,7 @@ type DetailOcrCacheRecord = {
 
 const operationalNoticePattern = /(?:배송|택배|출고|도착|파손|압상|눌림|멍(?:이|은|을)?\s*(?:생길|발생)|교환|환불|반품|취소|CS\s*처리|고객\s*센터|고객센터|문의|보상|수령|송장|도서\s*산간|제주\s*추가|출고\s*수량|주문(?:하신|량|수량)|옵션\s*\(?사이즈\)?|상위\s*사이즈|대체\s*출고|처리(?:는|가)?\s*어려|처리\s*불가)/iu;
 const apologyOrCautionPattern = /(?:양해\s*(?:부탁|바랍니다|해주세요)|유의\s*(?:바랍니다|해주세요)|주의\s*(?:바랍니다|해주세요)|확인\s*(?:부탁|바랍니다|해주세요)|참고\s*(?:부탁|바랍니다|해주세요)|미리\s*알려|공지\s*(?:드립니다|사항)|어려운\s*점|불가(?:합니다|한\s*점)|책임지지|감안\s*(?:바랍니다|해주세요))/iu;
-const sellerDisclosurePattern = /(?:판매원|판매자|제조원|공급원|공급자|유통\s*전문\s*판매원|책임\s*판매업자|수입원|소분원|사업자|대표자|통신\s*판매|고객\s*상담|전화\s*번호|소재지|주소\s*[:：])/iu;
+const sellerDisclosurePattern = /(?:판매원|판매자|제조원|공급원|공급자|유통\s*전문\s*판매원|책임\s*판매업자|수입원|소분원|사업자|대표자|통신\s*판매|고객\s*상담|전화\s*번호|소재지|주소\s*[:：]|(?:공급|제공)하겠습니다)/iu;
 const productConstraintPattern = /(?:못난이|흠과|흠집|상처|쭈글|외관(?:이|은|상)?\s*(?:고르지|균일하지)|모양(?:이|은)?\s*(?:고르지|균일하지)|크기\s*(?:편차|차이)|색상\s*(?:편차|차이)|혼합과|주스용|가공용|비정형|표면\s*반점|자연\s*흠집|상품\s*특성상[^.!?]{0,24}(?:교환|환불|외관|모양|크기))/iu;
 const negativeExperiencePattern = /(?:맛(?:이)?\s*없|효과(?:가)?\s*없|별로|실망|불만|최악|아쉽|불편|문제|하자|불량|상했|썩은|냄새(?:가)?\s*나|거부감|품질(?:이)?\s*떨어|추천하지\s*않)/iu;
 const usableFactPattern = /(?:국내산|국산|원산지|산지|품종|제철|수확|당도|고당도|과즙|맛|향|풍미|식감|아삭|쫄깃|쫀득|달콤|고소|부드|촉촉|신선|숙성|건조|반건조|냉장|냉동|원재료|원료|성분|함량|무첨가|선별|제조|공정|구성|중량|용량|대용량|개입|인분|섭취|조리|활용|곁들|함께\s*먹|간식|식사|다과|선물|캠핑|가족|아이|어른|보관|포장|\d[\d,.]*\s*(?:kg|g|ml|l|개|팩|봉|병|박스|원|%))/iu;
@@ -95,7 +96,7 @@ export function classifyProductDetailOcrLines(input: { lines: string[]; authorit
       discardedNotices.push(value);
       continue;
     }
-    if (isAmbiguousMerchantCredentialCreativeSignal(value)) {
+    if (isAmbiguousMerchantCredentialCreativeSignal(value) || isMerchantCredentialCreativeSignal(value)) {
       discardedNotices.push(value);
       continue;
     }

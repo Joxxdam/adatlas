@@ -62,7 +62,26 @@ test("수동과 자동제작은 동일한 상품 추출·OCR 선택·ProductTrut
   assert.match(dashboard, /fetch\("\/api\/extract\/product"/);
   assert.match(extractRoute, /resolveProductDetailOcrBudget/);
   assert.match(extractRoute, /maxCandidates: detailOcrBudget/);
+  const scopedHtmlBoundary = extractRoute.indexOf("const productScopedHtml = stripDifferentProductLinkBlocks");
+  assert.ok(scopedHtmlBoundary >= 0);
+  for (const collector of [
+    "extractJsonLd(productScopedHtml",
+    "extractPrice(productScopedHtml",
+    "extractProductUspDescription(productScopedHtml",
+    "collectGalleryImages(productScopedHtml",
+    "extractEnhancedImageCandidates(productScopedHtml",
+    "collectReviewImageCandidates(productScopedHtml",
+  ]) {
+    assert.ok(extractRoute.indexOf(collector) > scopedHtmlBoundary, `${collector} must use recommendation-free HTML`);
+  }
   assert.match(directRun, /POST as extractProduct/);
   assert.match(productSource, /POST as extractProduct/);
   assert.match(jobFactory, /buildProductTruth/);
+});
+
+test("Cafe24 상세 에디터의 ec-data-src 원본도 갤러리와 상세 후보에서 수집한다", async () => {
+  const extractionSource = await read("app/lib/mvp/productImageCandidateExtraction.server.ts");
+  assert.match(extractionSource, /const attrNames = \[[^\]]*"ec-data-src"/);
+  assert.match(extractionSource, /src\|data-src\|ec-data-src\|data-original/);
+  assert.match(extractionSource, /collectCafe24EditorDetailImages\(html, baseUrl\)\.forEach/);
 });

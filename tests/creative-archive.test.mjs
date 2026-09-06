@@ -170,6 +170,36 @@ test("과거 작업에 도메인으로 저장된 광고주는 브랜드 표시�
   );
 });
 
+test("광고 문구와 제목은 작업 전체가 아니라 아카이브 이미지 한 장에만 연결된다", () => {
+  const first = result({ id: "result-h01", hookCode: "H01", imagePath: "/generated-ads/mint-h01.jpg" });
+  const second = result({ id: "result-h02", hookCode: "H02", imagePath: "/generated-ads/mint-h02.jpg" });
+  const firstEntryId = "result:creative-job-archive-test-001:result-h01";
+  const adCopy = {
+    id: "ad-copy-result-h01",
+    archiveEntryId: firstEntryId,
+    jobId: "creative-job-archive-test-001",
+    advertiserId: "original-source",
+    productId: "mint-shower",
+    creativeId: "result-h01",
+    representativeResultId: "result-h01",
+    basedOnHookId: "hook-H01",
+    basedOnCreativeBriefId: "result-h01",
+    primaryText: "샤워 장면을 본 뒤 이어지는 광고 문구입니다.\n확인된 상품 사실만 담았습니다.\n이미지와 같은 분위기로 선택을 권합니다.",
+    adTitle: "샤워 뒤 산뜻한 선택",
+    verifiedFacts: [],
+    languageTraits: ["질문형", "구어체"],
+    generatedAt: createdAt,
+    updatedAt: createdAt,
+    status: "ready",
+    revision: 0,
+    promptVersion: "archive-image-primary-copy-v1",
+    sourceFingerprint: "fingerprint-h01",
+  };
+  const entries = buildCreativeArchiveEntries({ assets: [], jobs: [job([first, second])], metadata: {}, adCopies: [adCopy] });
+  assert.equal(entries.find((entry) => entry.id === firstEntryId)?.adCopy?.adTitle, "샤워 뒤 산뜻한 선택");
+  assert.equal(entries.find((entry) => entry.resultId === "result-h02")?.adCopy, undefined);
+});
+
 test("아카이브 레퍼런스 메타데이터는 태그와 메모를 정리해 영구 저장한다", async (context) => {
   const directory = await mkdtemp(path.join(tmpdir(), "adatlas-creative-archive-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
@@ -245,6 +275,7 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   const workspace = await readFile("app/components/creative-archive/CreativeArchiveWorkspace.tsx", "utf8");
   const collectionRoute = await readFile("app/api/creative-archive/route.ts", "utf8");
   const entryRoute = await readFile("app/api/creative-archive/[entryId]/route.ts", "utf8");
+  const adCopyRoute = await readFile("app/api/creative-archive/[entryId]/ad-copy/route.ts", "utf8");
   const productZipRoute = await readFile("app/api/creative-archive/product-zip/route.ts", "utf8");
   const productZipService = await readFile("app/lib/creative-archive/productZip.server.ts", "utf8");
   const archiveService = await readFile("app/lib/creative-archive/service.server.ts", "utf8");
@@ -256,6 +287,8 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /제작 결과 열기/);
   assert.match(workspace, /선택 소재로 성과 설정/);
   assert.match(workspace, /개별 삭제/);
+  assert.match(workspace, /문구·제목 생성/);
+  assert.match(workspace, /이 소재 한 장과 확인된 상품 정보만 기준으로 생성됨/);
   assert.match(workspace, /이 상품 전체 선택/);
   assert.match(workspace, /선택한 이미지 모두 삭제/);
   assert.match(workspace, /상품 전체 ZIP/);
@@ -269,12 +302,15 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /다운로드로 적용한 로고와 AI 고지는 파일에만 들어가고 화면과 AI 고지 선택은 자동으로 원본 상태로 돌아옵니다/);
   assert.match(workspace, /ARCHIVE_RENDER_PAGE_SIZE = 48/);
   assert.match(workspace, /다음 \{Math\.min\(ARCHIVE_RENDER_PAGE_SIZE/);
-  assert.match(archiveService, /creative-archive-index-v1/);
+  assert.match(archiveService, /creative-archive-index-v2/);
+  assert.match(archiveService, /adCopyRepository\.list/);
   assert.match(archiveService, /listCreativeArchivePage/);
   assert.match(collectionRoute, /url\.searchParams\.has\("limit"\)/);
   assert.doesNotMatch(workspace, /현재 목록 선택(?: 해제)?/);
   assert.match(collectionRoute, /export async function DELETE/);
   assert.match(entryRoute, /export async function DELETE/);
+  assert.match(adCopyRoute, /export async function POST/);
+  assert.match(adCopyRoute, /ensureArchiveEntryAdCopy/);
   assert.match(productZipRoute, /createCreativeArchiveProductZip/);
   assert.match(productZipRoute, /Content-Disposition/);
   assert.match(productZipService, /resolveValidatedNativeDownload/);

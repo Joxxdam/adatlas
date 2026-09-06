@@ -3,7 +3,7 @@ import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 import type { CreativeImageAsset, CreativeImageRole, FactVerification, ProductFact, ProductEvidenceType, ProductTruth } from "./types";
 import { isAmbiguousMerchantCredentialCreativeSignal, isDomesticOriginCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMeatProductContext, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal, isPackageLabelOcrCopyNoise, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim, removeOriginCreativePhrases } from "./productSignalHygiene.ts";
 
-export const PRODUCT_TRUTH_VERSION = "product-truth-v12-explicit-option-safety";
+export const PRODUCT_TRUTH_VERSION = "product-truth-v13-reference-copy-input-hygiene";
 
 function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
@@ -138,7 +138,7 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
   const cleanProductName = isMeatProductContext(product) ? cleanedTitle : removeOriginCreativePhrases(cleanedTitle);
   const description = [product.extractedDescription, product.mainBenefit, ...(product.verifiedBenefits || [])].filter((value): value is string => Boolean(value) && !isProhibitedAdCopySignal(value)).join(" · ");
   const ingredientValues = compact(product.ingredients || []).filter((value) => !isOriginLike(value) && !isPromotionLike(value) && !isMalformedProductSignal(value) && !isProhibitedAdCopySignal(value));
-  const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value) && !isPriceOnlyCreativeSignal(value) && !isMalformedProductSignal(value) && !isProhibitedAdCopySignal(value) && !isOriginLike(value) && !isNonDomesticOriginCreativeSignal(value));
+  const verifiedBenefits = compact([product.mainBenefit, ...(product.verifiedBenefits || [])]).filter((value) => !isPromotionLike(value) && !isPriceOnlyCreativeSignal(value) && !isMerchantCredentialCreativeSignal(value) && !isMalformedProductSignal(value) && !isProhibitedAdCopySignal(value) && !isOriginLike(value) && !isNonDomesticOriginCreativeSignal(value));
   const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg)/i);
   const salesUnit = firstMatch(`${cleanProductName} ${description}`, /(?:\d[\d,.]*\s*(?:봉지|개입|개|팩|병|박스|세트|종)|\d+\s*[~-]\s*\d+\s*인분)(?!\s*(?:구성|세트))/i);
   const backedByTitle = titleBackedClaims(rawProductTitle);
@@ -471,7 +471,7 @@ function detailOcrFactPolicy(value: string): { evidenceType: ProductEvidenceType
 
 function freeTextClaims(product: ProductInfoForPrompt) {
   return compact([product.mainBenefit, ...(product.verifiedBenefits || []), ...(product.ingredients || []).filter((ingredient) => !isOriginLike(ingredient) && !isPromotionLike(ingredient)).map((ingredient) => `${ingredient} 함유`)])
-    .filter((value) => !isPromotionLike(value) && !isMalformedProductSignal(value) && !isProhibitedAdCopySignal(value) && !isNonDomesticOriginCreativeSignal(value))
+    .filter((value) => !isPromotionLike(value) && !isMerchantCredentialCreativeSignal(value) && !isMalformedProductSignal(value) && !isProhibitedAdCopySignal(value) && !isNonDomesticOriginCreativeSignal(value))
     .filter((value) => isMeatProductContext(product) || !isOriginCreativeSignal(value));
 }
 
@@ -570,8 +570,12 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
   const allowedNumericTokens = compact(candidates.filter((item) => item.usableInCopy && !unverifiedClaims.includes(item.value)).flatMap((item) => item.numericTokens));
   const images = buildImageAssets(input);
   const imagePaths = images.productImages.map((asset) => asset.path);
+  const merchantSignatures = compact([product.advertiserName, product.brandName, normalizedTruth.brandName])
+    .map(comparableSignal)
+    .filter((value) => value.length >= 2);
   const coreEvidence = candidates
     .filter((item) => item.usableInCopy && item.evidenceType !== "merchant-proof")
+    .filter((item) => !merchantSignatures.some((merchant) => comparableSignal(item.value).includes(merchant)))
     .map((item) => ({
       factId: item.id,
       summary: `${item.label}: ${item.value}`,

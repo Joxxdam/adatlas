@@ -4,18 +4,20 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { creativeAssetRepository } from "../creative-assets/repository.server";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
+import { adCopyRepository, adCopyStoreFilePath } from "../ad-copy/adCopyRepository.server";
 import { deleteClosedCodexImageSessionsForResults } from "../creative-generation/codexImageSessionRetention.server";
 import { buildCreativeArchiveEntries } from "./archive";
 import { creativeArchiveMetadataRepository } from "./metadataRepository.server";
 import type { CreativeArchiveEntry } from "./types";
 
-const archiveIndexVersion = "creative-archive-index-v1";
+const archiveIndexVersion = "creative-archive-index-v2";
 const archiveDirectory = path.join(process.cwd(), ".data", "creative-archive");
 const archiveIndexPath = path.join(archiveDirectory, "index.json");
 const sourcePaths = [
   path.join(process.cwd(), ".data", "creative-generation", "jobs"),
   path.join(process.cwd(), "data", "creative-assets", "assets.json"),
   path.join(archiveDirectory, "metadata.json"),
+  adCopyStoreFilePath(),
 ];
 
 type CreativeArchiveIndex = {
@@ -31,7 +33,7 @@ type CreativeArchiveCache = {
   pending?: Promise<CreativeArchiveEntry[]>;
 };
 
-const cacheKey = Symbol.for("adatlas.creative-archive-index-cache-v1");
+const cacheKey = Symbol.for("adatlas.creative-archive-index-cache-v2");
 const archiveGlobal = globalThis as typeof globalThis & { [cacheKey]?: CreativeArchiveCache };
 const archiveCache = archiveGlobal[cacheKey] || {};
 archiveGlobal[cacheKey] = archiveCache;
@@ -75,12 +77,13 @@ async function rebuildArchiveIndex(initialSignature: string) {
   // A generation result can finish while the archive is being indexed. Rebuild
   // once when that happens so a mixed snapshot is never kept as the fresh index.
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const [assets, jobs, metadata] = await Promise.all([
+    const [assets, jobs, metadata, adCopies] = await Promise.all([
       creativeAssetRepository.list({ limit: 500 }),
       creativeGenerationJobStore.list({ limit: 500 }),
       creativeArchiveMetadataRepository.list(),
+      adCopyRepository.list(),
     ]);
-    entries = buildCreativeArchiveEntries({ assets, jobs, metadata });
+    entries = buildCreativeArchiveEntries({ assets, jobs, metadata, adCopies });
     const latestSignature = await sourceSignature();
     signature = latestSignature;
     if (latestSignature === initialSignature || attempt === 1) break;
@@ -131,6 +134,10 @@ export async function listCreativeArchivePage(input: { offset?: number; limit?: 
     limit,
     hasMore: offset + pageEntries.length < entries.length,
   };
+}
+
+export async function getCreativeArchiveEntry(entryId: string) {
+  return (await listCreativeArchiveEntries()).find((entry) => entry.id === entryId) || null;
 }
 
 export async function updateCreativeArchiveEntry(entryId: string, input: { savedAsReference?: boolean; tags?: string[]; note?: string }) {

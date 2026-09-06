@@ -2,29 +2,26 @@ import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createGenerationJob } from "./planner";
 import { buildProductTruth, cleanProductTitle, isPlausibleTargetCustomer, isPromotionLike } from "./productTruth";
-import { assertNativeProductReferenceReady, inspectProductTruthImages } from "./productImages.server";
-import { analyzeProductReferences } from "./referenceAnalyzer.server";
-import { hasExplicitPaidApiAuthorization, type CreateGenerationJobInput, type GenerationJob, type ReferenceCategoryOverride } from "./types";
+import { type CreateGenerationJobInput, type GenerationJob, type ReferenceCategoryOverride } from "./types";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
-import { resolveAdvertiserIdentity } from "./advertiserIdentity";
-import { buildVisualDiversityMatrix } from "./visualDiversity";
+import { canonicalAdvertiserDisplayName, resolveAdvertiserIdentity } from "./advertiserIdentity";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import { defaultAdBrief } from "../mvp/adBrief";
 import type { AdBrief } from "../mvp/types";
 import { cancelQueuedGenerationJob, enqueueGenerationJob } from "./jobRunner.server";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { buildCreativePlanFingerprint } from "./creativePlanCache.server";
-import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences } from "./referenceCreativeLibrary.server";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, prepareReferenceAdaptedCopyScaffold, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
-import { assertCurrentReferenceEditGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, CURRENT_REFERENCE_EDIT_WORKFLOW, REFERENCE_EDIT_STAGE_ORDER } from "./jobRunnerPolicy";
-import { isMalformedProductSignal, isNonDomesticOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim } from "./productSignalHygiene.ts";
+import { assertDefaultCodexGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION } from "./jobRunnerPolicy";
+import { isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim } from "./productSignalHygiene.ts";
 import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 import { applyOriginalSourceVendorResearch } from "../product-research/originalSourceResearch.ts";
+import { appendCodexGenerationAdditionalInstructions, buildDefaultCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE, DEFAULT_CODEX_GENERATION_PROMPT_VERSION, DEFAULT_CODEX_GENERATION_STAGE_ORDER, DEFAULT_CODEX_GENERATION_WORKFLOW, normalizeCodexGenerationAdditionalInstructions, normalizeDefaultCodexGenerationPrompt } from "./codexDirectTest.ts";
+import { buildDefaultCodexGenerationPlan } from "./defaultCodexGenerationPlan.server";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
-const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["fashion", "food", "food-snack", "food-produce", "beauty"]);
+const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty"]);
 const internalStrategyText = /(?:T0\d|주력\s*상품|우승\s*소재|판매[·ㆍ,\s-]*노출[·ㆍ,\s-]*구매\s*근거|기존\s*우수\s*소재|광고\s*가설|성과\s*학습|USP[·ㆍ,\s-]*가격[·ㆍ,\s-]*랜딩\s*조건\s*점검|랜딩\s*(?:조건|페이지)\s*(?:점검|확인)|내부\s*(?:전략|점검|검토))/i;
 
 export type NativeGenerationJobOptions = {
@@ -65,7 +62,7 @@ function conciseVerifiedBenefit(value: string) {
 }
 
 function sanitizeProductForCreative(product: CreateGenerationJobInput["product"]) {
-  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isProhibitedAdCopySignal(value) || isMalformedProductSignal(value) || isPriceOnlyCreativeSignal(value) || isShippingCreativeSignal(value) || isNonDomesticOriginCreativeSignal(value) || isPromotionLike(value)));
+  const unsafe = (value: string | undefined) => Boolean(value && (internalStrategyText.test(value) || isProhibitedAdCopySignal(value) || isMerchantCredentialCreativeSignal(value) || isMalformedProductSignal(value) || isPriceOnlyCreativeSignal(value) || isShippingCreativeSignal(value) || isNonDomesticOriginCreativeSignal(value) || isPromotionLike(value)));
   const cleanList = (values?: string[]) => (values || []).map((value) => value.trim()).filter((value) => value && !unsafe(value));
   const ingredients = cleanList(product.ingredients);
   const verifiedBenefits = Array.from(new Set(cleanList(product.verifiedBenefits).map(conciseVerifiedBenefit).filter(Boolean)));
@@ -140,11 +137,11 @@ function normalizeReferenceCategoryOverride(value: unknown): ReferenceCategoryOv
 export async function createNativeGenerationJob(input: CreateGenerationJobInput, options: NativeGenerationJobOptions = {}) {
   const started = Date.now();
   if (!input.product?.productName?.trim()) throw new Error("먼저 상품정보를 불러와 주세요.");
-  const engine = input.engine === "openai_api" ? "openai_api" : "codex_local";
-  const explicitPaidApiAuthorization = hasExplicitPaidApiAuthorization(input.paidApiAuthorization);
-  const imageProvider = createCreativeGenerationProvider(engine, {
-    explicitPaidApiAuthorization,
-  });
+  if (input.engine === "openai_api") {
+    throw new Error("기본 이미지 제작은 로컬 Codex 로그인 엔진만 사용합니다.");
+  }
+  const engine = "codex_local" as const;
+  const imageProvider = createCreativeGenerationProvider(engine);
   const providerStatus = await imageProvider.status();
   if (!providerStatus.available) {
     throw new Error(`${providerStatus.detail} 다른 엔진이나 기존 배경으로 자동 전환하지 않습니다.`);
@@ -153,15 +150,54 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   // 넘겨도 작업 생성 직전에 최신 업체 조사본을 다시 결합한다. 수동·자동 모두
   // 이 한 지점을 통과하므로 OCR/시트 근거가 생성 작업에서 누락되지 않는다.
   const researchedProduct = applyOriginalSourceVendorResearch(input.product, input.product.landingUrl);
-  const rawProductTitle = researchedProduct.productName;
-  const product = sanitizeProductForCreative(researchedProduct);
+  // 수동 URL 분석은 광고주명이 비어 들어오는 경우가 많습니다. 도메인에 이미
+  // 등록된 광고주명은 ProductTruth를 만들기 전에 결합해야 상세 OCR의 쇼핑몰명·
+  // 브랜드명이 상품 USP나 헤드라인으로 승격되지 않습니다.
+  const resolvedAdvertiser = resolveAdvertiserIdentity(researchedProduct);
+  const canonicalAdvertiserName = canonicalAdvertiserDisplayName({
+    advertiserId: researchedProduct.creativeContext?.advertiserId || resolvedAdvertiser.id,
+    advertiserName: researchedProduct.advertiserName,
+    brandName: researchedProduct.brandName,
+    landingUrl: researchedProduct.landingUrl,
+  });
+  const identifiedProduct = researchedProduct.advertiserName?.trim()
+    ? researchedProduct
+    : { ...researchedProduct, advertiserName: canonicalAdvertiserName };
+  const rawProductTitle = identifiedProduct.productName;
+  const product = sanitizeProductForCreative(identifiedProduct);
   const resolvedPaths = currentProductImagePaths(input, product);
-  const allPaths = resolvedPaths.allPaths.slice(0, 20);
-  const originals = allPaths.filter((value) => !isAutomaticCutoutPath(value));
+  const originals = resolvedPaths.allPaths.filter((value) => !isAutomaticCutoutPath(value));
   if (!originals.length) {
     throw new Error("광고 제작에 사용할 상세페이지 원본 상품 이미지가 없습니다. 상품을 다시 분석하거나 위 원본 이미지에서 실제 상품 사진을 선택해 주세요.");
   }
-  const productReferencePaths = allPaths.slice(0, 12);
+  const directProductImagePath = normalizedImagePath(input.codexDirectTest?.productImagePath);
+  const directSupportingImagePath = normalizedImagePath(input.codexDirectTest?.supportingImagePath);
+  const directPackagingImagePath = normalizedImagePath(input.codexDirectTest?.packagingImagePath);
+  const directBasePrompt = normalizeDefaultCodexGenerationPrompt(input.codexDirectTest?.prompt) || buildDefaultCodexGenerationPrompt({
+    landingUrl: product.landingUrl,
+    hasSupportingImage: Boolean(directSupportingImagePath),
+    hasPackagingImage: Boolean(directPackagingImagePath),
+  });
+  const directAdditionalInstructions = normalizeCodexGenerationAdditionalInstructions(input.codexDirectTest?.additionalInstructions);
+  const directPrompt = appendCodexGenerationAdditionalInstructions(directBasePrompt, directAdditionalInstructions);
+  // 화면에서 선택한 2·3·4번 첨부는 자동 역할 분류·점수화 없이 그대로 사용합니다.
+  // 전체 상세페이지 후보를 기준으로 검증하므로 뒤쪽 이미지를 골라도 잘리지 않습니다.
+  const currentPathSet = new Set(resolvedPaths.allPaths);
+  if (!directProductImagePath || !currentPathSet.has(directProductImagePath)) {
+    throw new Error("상품 이미지는 현재 선택한 상품의 상세페이지 이미지에서 골라 주세요.");
+  }
+  if (directSupportingImagePath && (!currentPathSet.has(directSupportingImagePath) || directSupportingImagePath === directProductImagePath)) {
+    throw new Error("라벨·추가 참고 이미지는 같은 상품의 다른 상세페이지 이미지에서 골라 주세요.");
+  }
+  if (directPackagingImagePath && (
+    !currentPathSet.has(directPackagingImagePath)
+    || directPackagingImagePath === directProductImagePath
+    || directPackagingImagePath === directSupportingImagePath
+  )) {
+    throw new Error("포장상품 이미지는 같은 상품의 다른 상세페이지 이미지에서 골라 주세요.");
+  }
+  const directReferencePaths = [directProductImagePath, directSupportingImagePath, directPackagingImagePath].filter((value): value is string => Boolean(value));
+  const productReferencePaths = directReferencePaths;
   const allowedProductPaths = new Set(productReferencePaths);
   const currentProductAssets = (input.imageAssets || []).filter((asset) =>
     allowedProductPaths.has(normalizedImagePath(asset.path)) && asset.role !== "ad-reference"
@@ -171,15 +207,16 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
     rawProductTitle,
     // 다른 상품 번호를 배제하고 현재 ProductInfo 소유 경로와 교집합을 통과한
     // 대표·상세 원본만 제작 근거로 전달합니다.
-    productImagePaths: resolvedPaths.userConfirmedPaths,
+    productImagePaths: directReferencePaths,
     selectedAdImages: [],
     imageAssets: currentProductAssets,
     source: input.source === "landing-page" ? "landing-page" : "user-input",
   });
-  const truth = await inspectProductTruthImages(rawTruth);
-  assertNativeProductReferenceReady(truth);
+  // 사용자가 고른 원본을 그대로 첨부한다. 기존 합성용 자동 역할·텍스트·세로
+  // 비율 검사를 다시 적용하면 명시적으로 고른 라벨/상세 원본이 탈락할 수 있다.
+  const truth = rawTruth;
   const adBrief = resolveAdBrief(input.adBrief);
-  const paidImageGenerationEnabled = engine === "openai_api";
+  const paidImageGenerationEnabled = false;
   const runtime = resolveFastCreativeRuntime();
   const configuredConcurrency = runtime.concurrency;
   const advertiser = resolveAdvertiserIdentity(product);
@@ -190,22 +227,12 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const selectedAdReferences = await ensureNativeReferenceCopies(
     selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6)
   );
-  // 버튼 클릭 요청 안에서 수분이 걸릴 수 있는 Codex 기획·독립 검수를 기다리지
-  // 않는다. 렌더 가능한 초안으로 작업 ID를 먼저 저장한 뒤 공통 서버 러너가
-  // 6장 문구를 한 번에 최신 정책으로 기획하고 나서 이미지 생성을 시작한다.
-  const referencePlanning = await prepareReferenceAdaptedCopyScaffold({ truth, references: selectedAdReferences });
-  const creativePlan = buildReferenceAdaptedCreativePlan({
+  const { creativePlan, scenes } = buildDefaultCodexGenerationPlan({
     truth,
     references: selectedAdReferences,
-    copyPlans: referencePlanning.plans,
     logoPath: input.logoPath,
     adBrief,
-    testCode: input.testCode,
-    provider: referencePlanning.provider,
-    warnings: referencePlanning.warnings,
   });
-  const scenes = buildReferenceScenes(selectedAdReferences, referencePlanning.plans);
-  const productReferenceProfile = await analyzeProductReferences(truth);
   const configuredRetries = runtime.autoRevisionLimit;
   const job = createGenerationJob({
     truth,
@@ -214,7 +241,7 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
     concurrency: configuredConcurrency,
     retryLimit: configuredRetries,
     paidImageGenerationEnabled,
-    productReferenceProfile,
+    productReferenceProfile: undefined,
     planningMs: Date.now() - started,
   });
   job.engine = engine;
@@ -222,48 +249,47 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.results = job.results.map((result, index) => ({
     ...result,
     materialCode: `M${String(index + 1).padStart(2, "0")}`,
-    // 서버 러너의 공통 문구 계획이 끝나기 전 scaffold다. 최신 상황형 문구가
-    // 품질 기준에 미달해도 사실상 안전한 문구로 보완해 이미지 제작은 진행한다.
     status: result.status,
     error: undefined,
     completedAt: undefined,
-    referenceAdaptedCopyPlan: referencePlanning.plans[index],
+    referenceAdaptedCopyPlan: undefined,
     nativeCreative: {
       engine,
-      workflow: CURRENT_REFERENCE_EDIT_WORKFLOW,
-      stageOrder: REFERENCE_EDIT_STAGE_ORDER,
+      workflow: DEFAULT_CODEX_GENERATION_WORKFLOW,
+      stageOrder: DEFAULT_CODEX_GENERATION_STAGE_ORDER,
       adReference: selectedAdReferences[index],
       referencePaths: [],
       revisionPaths: [],
-      promptVersion: NATIVE_FINAL_PROMPT_VERSION,
+      promptVersion: DEFAULT_CODEX_GENERATION_PROMPT_VERSION,
       revisionCount: 0,
     },
   }));
-  if (!job.results.every((result) => result.nativeCreative?.promptVersion === NATIVE_FINAL_PROMPT_VERSION)) {
-    throw new Error("수동·자동 공통 최신 이미지 정책을 작업 결과 6장에 적용하지 못했습니다.");
-  }
-  job.paidApiAuthorization = engine === "openai_api" && explicitPaidApiAuthorization ? input.paidApiAuthorization : undefined;
-  job.paidApiUsed = engine === "openai_api";
+  job.paidApiAuthorization = undefined;
+  job.paidApiUsed = false;
   job.advertiserId = advertiserId;
   job.advertiserName = advertiserName;
-  job.visualDiversityMatrix = buildVisualDiversityMatrix(job.results);
+  job.visualDiversityMatrix = undefined;
   job.sourceType = options.sourceType || "manual";
   job.autoProductionRunId = options.autoProductionRunId;
   job.autoProductionTaskId = options.autoProductionTaskId;
   job.hookLearningApplied = false;
   job.representativeResultId = job.results[0]?.id;
   job.planningFingerprint = planningFingerprint;
-  job.templateRegistryVersion = REFERENCE_ADAPTED_PLANNER_VERSION;
+  job.templateRegistryVersion = CURRENT_REFERENCE_EDIT_JOB_VERSION;
   job.unusedPerformanceTemplateIds = [];
-  job.referenceCopyProfiles = referencePlanning.profiles;
-  job.referenceCopyPlanning = {
-    status: "pending",
-    updatedAt: new Date().toISOString(),
-  };
-  job.copyPlanMode = "reference-adapted";
+  job.referenceCopyProfiles = [];
+  job.referenceCopyPlanning = undefined;
+  job.copyPlanMode = undefined;
   job.version = CURRENT_REFERENCE_EDIT_JOB_VERSION;
-  job.pipeline = CURRENT_REFERENCE_EDIT_PIPELINE;
-  assertCurrentReferenceEditGenerationJob(job);
+  job.pipeline = DEFAULT_CODEX_GENERATION_PIPELINE;
+  job.codexDirectTest = {
+    prompt: directPrompt,
+    productImagePath: directProductImagePath,
+    supportingImagePath: directSupportingImagePath || undefined,
+    packagingImagePath: directPackagingImagePath || undefined,
+    additionalInstructions: directAdditionalInstructions || undefined,
+  };
+  assertDefaultCodexGenerationJob(job);
   if (job.sourceType === "manual") {
     // 수동 새 작업은 같은 상품의 이전 수동 작업만 교체한다. 자정 자동 제작과
     // 수동 제작이 겹쳐도 서로의 서버 작업을 취소하지 않는다.

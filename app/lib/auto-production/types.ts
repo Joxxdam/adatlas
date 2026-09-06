@@ -8,6 +8,18 @@ export type AutoProductionRole = (typeof autoProductionRoles)[number];
 export type AutoProductionDataSource = "auto" | "bigquery" | "crema" | "site" | "admin";
 export type AutoProductionVisibilityMode = "site-visible-only" | "include-crema-ad" | "admin-only";
 
+export type AutoProductionProductImageSelection = {
+  productUrl: string;
+  /** Codex 직접 제작 프롬프트의 두 번째 첨부 이미지 */
+  productImagePath: string;
+  /** 선택 사항: 라벨 또는 분위기 참고용 세 번째 첨부 이미지 */
+  supportingImagePath?: string;
+  /** 선택 사항: 포장상품 참고용 네 번째 첨부 이미지 */
+  packagingImagePath?: string;
+  /** 선택 사항: 기본 이미지 생성 프롬프트 마지막에 덧붙일 상품별 지시 */
+  additionalInstructions?: string;
+};
+
 export type AutoProductionAdvertiserConfig = {
   advertiserId: string;
   advertiserName: string;
@@ -30,6 +42,7 @@ export type AutoProductionAdvertiserConfig = {
   excludedCategories: string[];
   requiredProductIds: string[];
   adminProductUrls: string[];
+  productImageSelections: AutoProductionProductImageSelection[];
   productVisibilityMode: AutoProductionVisibilityMode;
   selectionPriorities: AutoProductionRole[];
   adObjective: "purchase" | "signup" | "awareness" | "retargeting";

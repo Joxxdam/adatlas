@@ -1279,6 +1279,108 @@
   color: #a23030;
 }
 
+.actions > .adCopyAction {
+  border-color: #6f61d9;
+  background: #f3f0ff;
+  color: #5142b7;
+}
+
+.adCopyPanel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #cfc8f2;
+  border-radius: 12px;
+  padding: 12px;
+  background: linear-gradient(145deg, #fbfaff, #f5f3ff);
+}
+
+.adCopyTitle,
+.adCopyText {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.adCopyTitle span,
+.adCopyText span {
+  color: #7065a8;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.adCopyTitle strong {
+  padding-right: 42px;
+  color: #28204f;
+  font-size: 14px;
+}
+
+.adCopyText pre {
+  margin: 0;
+  color: #3d365f;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.adCopyTitle > button,
+.adCopyText > button,
+.adCopyFooter > button,
+.adCopyFailure > button {
+  border: 1px solid #bcb3e9;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  color: #5142b7;
+  font-size: 9px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.adCopyTitle > button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.adCopyText > button {
+  justify-self: start;
+}
+
+.adCopyFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #e0dcf6;
+  padding-top: 9px;
+}
+
+.adCopyFooter small,
+.adCopyLoading,
+.adCopyFailure p {
+  margin: 0;
+  color: #77708f;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.adCopyFailure {
+  display: grid;
+  gap: 7px;
+}
+
+.adCopyFailure strong {
+  color: #7b3a4a;
+  font-size: 11px;
+}
+
+.adCopyFailure > button {
+  justify-self: start;
+}
+
 .editor {
   display: grid;
   gap: 9px;

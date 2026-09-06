@@ -1,5 +1,7 @@
 import type { GenerationJob, GenerationResult } from "./types";
 import { hasCurrentImageCreativePremiseSet } from "./imageCreativePremise.ts";
+import { NATIVE_CREATIVE_VERSION } from "./nativeCreativeVersion.ts";
+import { DEFAULT_CODEX_GENERATION_PIPELINE, DEFAULT_CODEX_GENERATION_PROMPT_VERSION, DEFAULT_CODEX_GENERATION_WORKFLOW } from "./codexDirectTest.ts";
 
 export const terminalGenerationResultStatuses = new Set<GenerationResult["status"]>(["success", "failed", "korean-review", "product-review", "quality-review", "group-review", "approved", "excluded"]);
 
@@ -8,13 +10,13 @@ export const failedGenerationResultStatuses = new Set<GenerationResult["status"]
  * 수동·자동 제작이 함께 사용하는 유일한 신규 제작 계약입니다.
  * AUTO 별칭은 저장된 자동제작 코드와 테스트의 하위 호환을 위해 유지합니다.
  */
-export const CURRENT_REFERENCE_COPY_POLICY_VERSION = "reference-native-copy-adapter-v34-lean-copy-contract";
-export const CURRENT_REFERENCE_EDIT_JOB_VERSION = "generation-job-v17-deferred-copy-zero-overlay";
+export const CURRENT_REFERENCE_COPY_POLICY_VERSION = NATIVE_CREATIVE_VERSION;
+export const CURRENT_REFERENCE_EDIT_JOB_VERSION = NATIVE_CREATIVE_VERSION;
 export const CURRENT_REFERENCE_EDIT_PIPELINE = "reference-first-adapted-copy";
 export const CURRENT_REFERENCE_EDIT_WORKFLOW = "reference-lock-product-then-copy" as const;
 export const REFERENCE_EDIT_STAGE_ORDER = ["reference-copy", "product-replacement", "copy-replacement", "qa-repair"] as const;
 export const CURRENT_AUTO_PRODUCTION_JOB_VERSION = CURRENT_REFERENCE_EDIT_JOB_VERSION;
-export const CURRENT_AUTO_PRODUCTION_PIPELINE = CURRENT_REFERENCE_EDIT_PIPELINE;
+export const CURRENT_AUTO_PRODUCTION_PIPELINE = DEFAULT_CODEX_GENERATION_PIPELINE;
 
 export function normalizeCreativeProductUrl(value: string) {
   try {
@@ -28,10 +30,38 @@ export function normalizeCreativeProductUrl(value: string) {
 }
 
 export function isServerRunnableGenerationJob(job: GenerationJob) {
-  // 과거 작업은 아카이브 조회·다운로드만 허용한다. 재개·개별 재생성까지
-  // 허용하면 이전 프롬프트/문구 정책이 다시 실행되어 품질이 회귀할 수 있다.
-  return isCurrentReferenceEditGenerationJob(job);
+  // 신규 실행은 수동·자동 모두 하나의 Codex 직접 제작 계약만 허용합니다.
+  // 과거 단계형 작업은 아카이브 조회·다운로드 호환만 유지합니다.
+  return isDefaultCodexGenerationJob(job);
 }
+
+export function isDefaultCodexGenerationJob(job: GenerationJob) {
+  if (
+    job.version !== CURRENT_REFERENCE_EDIT_JOB_VERSION ||
+    job.pipeline !== DEFAULT_CODEX_GENERATION_PIPELINE ||
+    job.engine !== "codex_local" ||
+    !["manual", "auto-production"].includes(job.sourceType || "") ||
+    job.results.length !== 6 ||
+    !job.codexDirectTest?.prompt.trim() ||
+    !job.codexDirectTest.productImagePath.trim()
+  ) return false;
+  const references = job.results.map((result) => result.nativeCreative?.adReference?.id).filter(Boolean);
+  return references.length === 6 && new Set(references).size === 6 && job.results.every((result) =>
+    result.nativeCreative?.workflow === DEFAULT_CODEX_GENERATION_WORKFLOW &&
+    result.nativeCreative.promptVersion === DEFAULT_CODEX_GENERATION_PROMPT_VERSION
+  );
+}
+
+export function assertDefaultCodexGenerationJob(job: GenerationJob) {
+  if (!isDefaultCodexGenerationJob(job)) {
+    throw new Error("기본 Codex 제작의 프롬프트·상품 이미지·고정 레퍼런스 6장을 확인해 주세요.");
+  }
+  return job;
+}
+
+/** 저장된 테스트 작업과 기존 import를 읽기 위한 호환 별칭입니다. */
+export const isCodexDirectTestGenerationJob = isDefaultCodexGenerationJob;
+export const assertCodexDirectTestGenerationJob = assertDefaultCodexGenerationJob;
 
 export function usesCurrentReferenceEditPipeline(job: Pick<GenerationJob, "version" | "pipeline">) {
   return job.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && job.pipeline === CURRENT_REFERENCE_EDIT_PIPELINE;
@@ -58,7 +88,7 @@ export function assertCurrentReferenceEditGenerationJob(job: GenerationJob) {
 }
 
 export function isCurrentAutoProductionGenerationJob(job: GenerationJob) {
-  if (job.sourceType !== "auto-production" || !isCurrentReferenceEditGenerationJob(job)) return false;
+  if (job.sourceType !== "auto-production" || !isDefaultCodexGenerationJob(job)) return false;
   const requested = job.executionResultIds || [];
   const resultIds = new Set(job.results.map((result) => result.id));
   return requested.length === 6 && new Set(requested).size === 6 && requested.every((id) => resultIds.has(id));

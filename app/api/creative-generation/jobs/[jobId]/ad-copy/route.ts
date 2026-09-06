@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { approveProductAdCopy, ensureProductAdCopy, excludeProductAdCopy } from "../../../../../lib/ad-copy/adCopyGenerator.server";
 import { buildAdCopyCsv } from "../../../../../lib/ad-copy/adCopyValidator";
 import { creativeGenerationJobStore } from "../../../../../lib/creative-generation/jobStore.server";
 import { verifyLocalGenerationAccess, localAccessError } from "../../../../../lib/creative-generation/localGenerationAccess.server";
@@ -61,14 +60,11 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
 export async function POST(request: Request, context: { params: Promise<{ jobId: string }> }) {
   try {
     verifyLocalGenerationAccess(request);
-    const { jobId } = await context.params;
-    const body = (await request.json().catch(() => ({}))) as { action?: "regenerate" | "approve" | "exclude"; reason?: string; performanceData?: Record<string, number> };
-    let job;
-    if (body.action === "regenerate") job = await ensureProductAdCopy(jobId, { force: true });
-    else if (body.action === "approve") job = await approveProductAdCopy(jobId, { reason: body.reason, performanceData: body.performanceData });
-    else if (body.action === "exclude") job = await excludeProductAdCopy(jobId);
-    else return NextResponse.json({ ok: false, error: "regenerate, approve 또는 exclude 액션이 필요합니다." }, { status: 400 });
-    return NextResponse.json({ ok: true, job: toPublicGenerationJob(job), adCopy: toPublicGenerationJob(job).adCopy });
+    await context.params;
+    return NextResponse.json(
+      { ok: false, error: "상품 전체 문구 생성은 종료되었습니다. 아카이브에서 원하는 이미지의 ‘문구·제목 생성’을 사용해 주세요." },
+      { status: 410 }
+    );
   } catch (error) {
     return NextResponse.json({ ok: false, error: toPublicGenerationError(error, "광고문구 요청을 처리하지 못했습니다.") }, { status: localAccessError(error) ? 403 : 409 });
   }

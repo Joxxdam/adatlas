@@ -7,11 +7,11 @@ import JSZip from "jszip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
-import { CREATIVE_PLANNER_VERSION, type CopyPlan, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
-import { ProductAdCopyPanel } from "../../ad-copy/ProductAdCopyPanel";
+import { CREATIVE_PLANNER_VERSION, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
 import { CURRENT_REFERENCE_EDIT_JOB_VERSION, failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
 import { numberedProductImageFileName, productDownloadStem } from "../../../lib/creative-generation/downloadNaming";
+import { buildDefaultCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE } from "../../../lib/creative-generation/codexDirectTest";
 
 type Props = {
   analysisRevision: number;
@@ -32,13 +32,22 @@ type ReferenceCategoryChoice = "" | ReferenceCategoryOverride;
 
 const referenceCategoryOptions: Array<{ value: ReferenceCategoryOverride; label: string }> = [
   { value: "fashion", label: "패션" },
-  { value: "food", label: "음식" },
-  { value: "food-snack", label: "음식 · 간식" },
+  { value: "food", label: "식품" },
+  { value: "food-meat", label: "식품 · 육류" },
+  { value: "food-snack", label: "식품 · 간식" },
   { value: "beauty", label: "화장품 · 건강/웰니스" },
 ];
 
 function referenceCategoryLabel(value: ReferenceCategoryChoice) {
+  if (value === "food-produce") return "식품 · 간식(기존 작업)";
+  if (value === "food-other") return "식품(기존 작업)";
   return referenceCategoryOptions.find((option) => option.value === value)?.label || "자동 매칭";
+}
+
+function storedFoodSubcategoryLabel(value: string) {
+  if (value === "meat") return "육류";
+  if (value === "snack") return "간식";
+  return "일반 식품";
 }
 
 const resultStatusLabels: Record<GenerationResult["status"], string> = {
@@ -62,6 +71,7 @@ const generationStageLabels: Record<NonNullable<GenerationResult["generationStag
   "product-replacing": "상품 교체 중",
   "copy-replacing": "문구 교체 중",
   "qa-repairing": "품질 확인 중 · 치명 오류 1회 보정",
+  "codex-direct-generating": "Codex에 선택 이미지와 프롬프트 전달 중",
   "scene-generating": "이전 작업 호환 처리 중",
   compositing: "이전 작업 호환 처리 중",
   "copy-rendering": "이전 작업 호환 처리 중",
@@ -81,6 +91,7 @@ const generationStageProgress: Record<NonNullable<GenerationResult["generationSt
   "product-replacing": 52,
   "copy-replacing": 74,
   "qa-repairing": 86,
+  "codex-direct-generating": 55,
   "quality-check": 90,
   exporting: 96,
   completed: 100,
@@ -120,9 +131,10 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const [referenceCategoryOverride, setReferenceCategoryOverride] = useState<ReferenceCategoryChoice>("");
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
-  const [copyEdits, setCopyEdits] = useState<Record<string, Partial<CopyPlan>>>({});
-  const generationModePreference = "reference-first-adapted-copy" as const;
-  const [strategyVariation, setStrategyVariation] = useState(0);
+  const [directProductImagePath, setDirectProductImagePath] = useState("");
+  const [directSupportingImagePath, setDirectSupportingImagePath] = useState("");
+  const [directPackagingImagePath, setDirectPackagingImagePath] = useState("");
+  const [directAdditionalInstructionsOverride, setDirectAdditionalInstructionsOverride] = useState<{ productUrl: string; value: string } | null>(null);
   const [providerStatus, setProviderStatus] = useState("로컬 Codex 상태 확인 중…");
   const [latestCompletedResultId, setLatestCompletedResultId] = useState<string>();
   const [runnerActive, setRunnerActive] = useState(false);
@@ -142,11 +154,37 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       props.product.productImagePath,
       props.product.extractedMainImage,
       props.product.selectedSourceImagePath,
+      ...(props.product.extractedGalleryImages || []),
+      ...(props.product.sourceImageCandidates || []).map((candidate) => candidate.imagePath),
     ].filter((value): value is string => Boolean(value?.trim())))),
     [props.product, props.productImagePaths]
   );
+  const storedProductImagePath = job?.codexDirectTest?.productImagePath || "";
+  const storedSupportingImagePath = job?.codexDirectTest?.supportingImagePath || "";
+  const storedPackagingImagePath = job?.codexDirectTest?.packagingImagePath || "";
+  const storedAdditionalInstructions = job?.codexDirectTest?.additionalInstructions || "";
+  const selectedDirectProductImagePath = availableProductImagePaths.includes(directProductImagePath || storedProductImagePath)
+    ? directProductImagePath || storedProductImagePath
+    : availableProductImagePaths[0] || "";
+  const selectedDirectSupportingImagePath = availableProductImagePaths.includes(directSupportingImagePath || storedSupportingImagePath) && (directSupportingImagePath || storedSupportingImagePath) !== selectedDirectProductImagePath
+    ? directSupportingImagePath || storedSupportingImagePath
+    : "";
+  const selectedDirectPackagingImagePath = availableProductImagePaths.includes(directPackagingImagePath || storedPackagingImagePath)
+    && (directPackagingImagePath || storedPackagingImagePath) !== selectedDirectProductImagePath
+    && (directPackagingImagePath || storedPackagingImagePath) !== selectedDirectSupportingImagePath
+    ? directPackagingImagePath || storedPackagingImagePath
+    : "";
+  const directAdditionalInstructions = directAdditionalInstructionsOverride?.productUrl === currentProductUrl
+    ? directAdditionalInstructionsOverride.value
+    : storedAdditionalInstructions;
+  const directPrompt = buildDefaultCodexGenerationPrompt({
+    landingUrl: props.product.landingUrl || props.analyzedProductUrl,
+    hasSupportingImage: Boolean(selectedDirectSupportingImagePath),
+    hasPackagingImage: Boolean(selectedDirectPackagingImagePath),
+  });
   const canGenerate = Boolean(props.product.productName.trim() && availableProductImagePaths.length);
-  const canStart = canGenerate && props.planConfirmed;
+  const defaultGenerationReady = Boolean(selectedDirectProductImagePath);
+  const canStart = canGenerate && props.planConfirmed && defaultGenerationReady;
   const progress = useMemo(() => {
     if (!job) return { completed: 0, total: 6, success: 0, failed: 0 };
     return {
@@ -178,6 +216,18 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   useEffect(() => {
     activeJobIdRef.current = job?.id || "";
   }, [job?.id]);
+
+  function chooseDirectSupportingImage(imagePath: string) {
+    const next = selectedDirectSupportingImagePath === imagePath ? "" : imagePath;
+    setDirectSupportingImagePath(next);
+    if (next && selectedDirectPackagingImagePath === next) setDirectPackagingImagePath("");
+  }
+
+  function chooseDirectPackagingImage(imagePath: string) {
+    const next = selectedDirectPackagingImagePath === imagePath ? "" : imagePath;
+    setDirectPackagingImagePath(next);
+    if (next && selectedDirectSupportingImagePath === next) setDirectSupportingImagePath("");
+  }
 
   async function fetchJob(jobId: string) {
     const response = await fetch(`/api/creative-generation/jobs/${encodeURIComponent(jobId)}`, {
@@ -231,7 +281,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     const recentResponse = await fetch("/api/creative-generation/jobs/recent?limit=10", { cache: "no-store" });
     const recentPayload = (await recentResponse.json()) as { jobs?: GenerationJobSummary[] };
     if (!recentResponse.ok) return null;
-    const restorable = (recentPayload.jobs || []).filter((candidate) => candidate.sourceType !== "auto-production" && ["pending", "running"].includes(candidate.status) && candidate.generatedCount < candidate.totalCount);
+    const restorable = (recentPayload.jobs || []).filter((candidate) => candidate.sourceType !== "auto-production" && candidate.pipeline === DEFAULT_CODEX_GENERATION_PIPELINE && ["pending", "running"].includes(candidate.status) && candidate.generatedCount < candidate.totalCount);
     return (productUrl ? restorable.find((candidate) => normalizeCreativeProductUrl(candidate.productUrl) === productUrl) : restorable[0])?.jobId || null;
   }
 
@@ -304,7 +354,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     setStartError("");
     setRunnerActive(false);
     setFeedbacks({});
-    setCopyEdits({});
     setReferenceCategoryOverride("");
     restoredReferenceCategoryJobId.current = "";
     setLatestCompletedResultId(undefined);
@@ -322,7 +371,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setJob(null);
       setStartError("");
       setFeedbacks({});
-      setCopyEdits({});
       setReferenceCategoryOverride("");
       restoredReferenceCategoryJobId.current = "";
       setLatestCompletedResultId(undefined);
@@ -332,7 +380,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   }, [currentProductUrl, job]);
 
   useEffect(() => {
-    if (!job || (!["pending", "running"].includes(job.status) && job.adCopy?.status !== "generating" && !runnerActive)) return;
+    if (!job || (!["pending", "running"].includes(job.status) && !runnerActive)) return;
     let active = true;
     let consecutiveErrors = 0;
     const poll = async () => {
@@ -366,16 +414,15 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     };
     // 동일 작업의 진행 상태만 polling하며 페이지 이동 시 타이머만 정리한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.id, job?.status, job?.adCopy?.status, runnerActive]);
+  }, [job?.id, job?.status, runnerActive]);
 
   async function generateOne(
     activeJob: GenerationJob,
     resultId: string,
     options: {
       regenerateScene?: boolean;
-      action?: "generate" | "regenerate" | "regenerate-new-reference" | "revise" | "copy-update";
+      action?: "generate" | "regenerate" | "regenerate-new-reference" | "revise";
       feedback?: string;
-      copy?: Partial<CopyPlan>;
     } = {}
   ) {
     const generationRequestId = requestId();
@@ -387,7 +434,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
         regenerateScene: Boolean(options.regenerateScene),
         action: options.action || "generate",
         feedback: options.feedback,
-        copy: options.copy,
       }),
     });
     const payload = (await response.json()) as {
@@ -433,16 +479,26 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setMessage("상세페이지 상품 분석을 먼저 완료해 주세요.");
       return;
     }
+    if (!defaultGenerationReady) {
+      setMessage("Codex에 전달할 상품 이미지를 먼저 선택해 주세요.");
+      return;
+    }
     creatingJob.current = true;
     restoreRequestVersion.current += 1;
     setLoading(true);
     setStartError("");
     setJob(null);
     setFeedbacks({});
-    setMessage(mode === "scene" ? "호환 레퍼런스 6장을 새로 추첨해 전체 광고를 다시 만들고 있어요." : "상품에 어울리는 광고 이미지를 만들고 있어요.");
+    setMessage(mode === "scene"
+      ? "호환 레퍼런스 6장을 새로 추첨해 Codex 광고 작업을 등록하고 있어요."
+      : "선택한 상품 이미지와 프롬프트로 Codex 광고 작업을 등록하고 있어요.");
     try {
       const response = await fetch("/api/creative-generation/jobs", {
         method: "POST",
+        // 개발 서버나 네트워크가 비정상 상태여도 버튼이 영구 로딩으로 남지
+        // 않습니다. 정상 사전점검의 네트워크 상한보다 넉넉하게 두고, 서버가
+        // 뒤늦게 저장한 작업은 전역 active polling이 다시 복원합니다.
+        signal: AbortSignal.timeout(90_000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product: props.product,
@@ -453,11 +509,13 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           source: props.source,
           referenceCategoryOverride: referenceCategoryOverride || undefined,
           concurrency: 3,
-          testCode: job?.creativePlan.testCode || "T01",
-          generationModePreference,
-          strategyVariation: mode === "scene" ? strategyVariation + 1 : strategyVariation,
-          forceSceneRevision: mode === "scene",
-          mode: "reference-adapted-materials",
+          codexDirectTest: {
+            prompt: directPrompt,
+            productImagePath: selectedDirectProductImagePath,
+            supportingImagePath: selectedDirectSupportingImagePath || undefined,
+            packagingImagePath: selectedDirectPackagingImagePath || undefined,
+            additionalInstructions: directAdditionalInstructions.trim() || undefined,
+          },
         }),
       });
       const payload = (await response.json()) as {
@@ -470,14 +528,18 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setJob(payload.job);
       setStartError("");
       setRunnerActive(Boolean(payload.runnerActive));
-      if (mode === "scene") setStrategyVariation((current) => current + 1);
       window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
       if (currentProductUrl) {
         window.localStorage.setItem(activeCreativeProductJobStorageKey(currentProductUrl), payload.job.id);
       }
-      setMessage(payload.runnerActive ? "광고 콘텐츠 생성을 시작했습니다. 호환 레퍼런스를 고정한 뒤 최대 3장을 병렬 처리하며 완성되는 즉시 한 장씩 표시합니다." : "광고 작업은 저장됐지만 생성기가 아직 연결되지 않았습니다. 중단 지점부터 재개해 주세요.");
+      setMessage(payload.runnerActive
+        ? "Codex 광고 생성을 시작했습니다. 소재마다 새 스레드에 레퍼런스·상품·추가 참고 이미지와 프롬프트를 한 번 전달합니다."
+        : "광고 작업은 저장됐지만 생성기가 아직 연결되지 않았습니다. 중단 지점부터 재개해 주세요.");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "광고 제작에 실패했습니다.";
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError" || /timed?\s*out|시간.*초과/iu.test(error.message));
+      const errorMessage = timedOut
+        ? "서버가 90초 안에 작업 등록에 응답하지 못했습니다. 작업 등록 여부를 자동으로 다시 확인하며, 계속 표시되면 3000 서버 상태를 확인해 주세요."
+        : error instanceof Error ? error.message : "광고 제작에 실패했습니다.";
       setStartError(errorMessage);
       setMessage(errorMessage);
     } finally {
@@ -519,7 +581,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setStartError("");
       setRunnerActive(false);
       setFeedbacks({});
-      setCopyEdits({});
       setLatestCompletedResultId(undefined);
       restoredReferenceCategoryJobId.current = "";
       setMessage("진행 중 작업을 취소했습니다. 완료된 결과는 아카이브에 유지되며, 지금 새 광고 제작을 시작할 수 있습니다.");
@@ -555,9 +616,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   async function startOrResumeGeneration(mode: "new" | "scene" = "new") {
     const jobUrl = normalizeCreativeProductUrl(job?.productTruth.product.landingUrl || "");
     const matchesCurrentProduct = Boolean(job && currentProductUrl && jobUrl === currentProductUrl);
-    const usesRandomReferencePipeline =
-      job?.version === CURRENT_REFERENCE_EDIT_JOB_VERSION &&
-      job?.pipeline === "reference-first-adapted-copy";
+    const usesRandomReferencePipeline = job?.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && job?.pipeline === DEFAULT_CODEX_GENERATION_PIPELINE;
     const resumableStatus = Boolean(job && usesRandomReferencePipeline && ["pending", "running", "cancelled", "partial", "failed"].includes(job.status) && job.results.some((result) => ["pending", "running", "cancelled", "failed"].includes(result.status)));
     if (mode === "new" && matchesCurrentProduct && resumableStatus && !runnerActive) {
       await resumeJob();
@@ -589,23 +648,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setMessage(`소재 ${String(result.order).padStart(2, "0")}에 다른 호환 레퍼런스를 배정해 다시 생성했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "다른 레퍼런스 재생성 실패");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function applyCopyUpdate(result: GenerationResult) {
-    if (!job) return;
-    setLoading(true);
-    try {
-      await generateOne(job, result.id, {
-        action: "copy-update",
-        copy: copyEdits[result.id] || {},
-      });
-      await refreshJob(job.id);
-      setMessage(`소재 ${String(result.order).padStart(2, "0")}를 수정 문구로 다시 생성했습니다.`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "문구 적용 실패");
     } finally {
       setLoading(false);
     }
@@ -663,13 +705,15 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
 
   if (!props.productLoaded && !job) return null;
   const awaitingReferenceConfirmation = Boolean(!job && !props.planConfirmed);
-  const recoverable = Boolean(job && job.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
+  const defaultCodexJob = job?.pipeline === DEFAULT_CODEX_GENERATION_PIPELINE;
+  const historicalJob = Boolean(job && !defaultCodexJob);
+  const recoverable = Boolean(job && defaultCodexJob && job.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
   const generationInProgress = Boolean(job && ["pending", "running"].includes(job.status) && runnerActive);
   const storedReference = job?.results.find((result) => result.nativeCreative?.adReference)?.nativeCreative?.adReference;
   const selectedCategoryLabel = job?.referenceCategoryOverride
     ? referenceCategoryLabel(job.referenceCategoryOverride)
     : storedReference
-      ? `${storedReference.categoryLabel}${storedReference.foodSubcategory ? " · 간식" : ""} (자동)`
+      ? `${storedReference.categoryLabel}${storedReference.foodSubcategory ? ` · ${storedFoodSubcategoryLabel(storedReference.foodSubcategory)}` : ""} (자동)`
       : undefined;
   const activeResults = [...(job?.results || [])].filter((result) => result.status === "running").sort((left, right) => left.order - right.order);
   const completedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);
@@ -681,19 +725,32 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const nextPendingResult = job?.results.filter((result) => result.status === "pending").sort((left, right) => left.order - right.order)[0];
   const currentOrder = activeResults[0]?.order || nextPendingResult?.order || Math.min(progress.completed + 1, progress.total);
   const allCreativesReady = Boolean(job && progress.total === 6 && completedResults.length === progress.total);
-  const referenceAdapted = job?.copyPlanMode === "reference-adapted";
-  const copyPlanning = job?.referenceCopyPlanning?.status;
-  const copyPlanningInProgress = copyPlanning === "pending" || copyPlanning === "running";
-  const currentStage = copyPlanning === "retryable"
-    ? "문구 기획을 준비하지 못했습니다 · 명시적으로 재개해 주세요"
-    : copyPlanningInProgress
-      ? "레퍼런스 OCR·상품 조사 근거로 6장 문구 기획·검수 중"
-    : activeResults[0]
+  const currentStage = activeResults[0]
       ? generationStageLabels[activeResults[0].generationStage || "planned"]
       : generationInProgress
         ? "다음 광고 준비 중"
         : "";
-  const progressHeadline = loading && !job ? "광고 제작 작업을 등록하고 있습니다" : allCreativesReady ? "광고 6장이 모두 완성됐습니다" : activeResults.length ? `${currentOrder}장째 광고를 제작 중입니다` : generationInProgress ? copyPlanningInProgress ? "최신 문구를 먼저 준비하고 있습니다" : `${currentOrder}장째 광고 제작을 준비 중입니다` : recoverable ? "광고 생성이 잠시 멈췄습니다" : attentionResultsWithoutImage.length ? "다시 제작할 광고가 있습니다" : startError ? "광고 제작을 시작하지 못했습니다" : awaitingReferenceConfirmation ? "자동 매칭을 확인·수정해 주세요" : !job ? "이 매칭으로 제작할 준비가 됐습니다" : message;
+  const progressHeadline = loading && !job
+    ? "광고 제작 작업을 등록하고 있습니다"
+    : allCreativesReady
+      ? "광고 6장이 모두 완성됐습니다"
+      : activeResults.length
+        ? `${currentOrder}장째 광고를 제작 중입니다`
+        : generationInProgress
+          ? `${currentOrder}장째 광고 제작을 준비 중입니다`
+          : recoverable
+            ? "광고 생성이 잠시 멈췄습니다"
+            : attentionResultsWithoutImage.length
+              ? "다시 제작할 광고가 있습니다"
+              : startError
+                ? "광고 제작을 시작하지 못했습니다"
+                : historicalJob
+                  ? "구버전 제작 결과입니다"
+                  : awaitingReferenceConfirmation
+                    ? "자동 매칭을 확인·수정해 주세요"
+                    : !job
+                      ? "상품 이미지와 추가 사항을 확인해 주세요"
+                      : message;
 
   return (
     <section className="six-creative-generator" id="creative-results">
@@ -702,7 +759,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           {allCreativesReady ? "✓" : generationInProgress || loading ? <i /> : !job ? "⇄" : "!"}
         </div>
         <div>
-          <p className="eyebrow">레퍼런스 기반 광고 콘텐츠 6장 제작</p>
+          <p className="eyebrow">{historicalJob ? "이전 광고 제작 결과" : "기본 Codex 광고 제작 · 6장"}</p>
           <h4>{progressHeadline}</h4>
           <p>
             {allCreativesReady
@@ -713,13 +770,85 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                   ? startError
                   : awaitingReferenceConfirmation
                   ? "아래에서 자동 매칭을 그대로 쓰거나 다른 상품군으로 바꾼 뒤, 상품 선택을 완료해 주세요."
-                  : !job
-                    ? loading ? message : "선택한 레퍼런스 상품군을 확인한 뒤 제작 시작 버튼을 눌러주세요."
+                  : historicalJob
+                    ? "기존 결과는 그대로 열람·다운로드할 수 있습니다. 새 제작은 현재 기본 방식으로 시작됩니다."
+                    : !job
+                    ? loading ? message : "레퍼런스 상품군과 상품 이미지를 확인하고, 필요하면 추가/강조 사항을 입력한 뒤 제작 시작 버튼을 눌러주세요."
                     : message}
           </p>
         </div>
         <strong>{allCreativesReady ? "완료 6/6 · 다운로드 가능" : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${visibleGeneratedResults.length}/${progress.total}`}</strong>
       </div>
+      {!job ? (
+        <div className="codex-direct-test-panel">
+          <div className="codex-direct-test-heading">
+            <div>
+              <strong>Codex에 전달할 상품 이미지 선택</strong>
+              <small>첫 번째 첨부는 자동 추첨된 광고 레퍼런스입니다. 2번 상품 이미지는 필수이며, 3번 라벨·분위기와 4번 포장상품 이미지는 선택입니다.</small>
+            </div>
+            <span>수동·자동 공통 기본 방식</span>
+          </div>
+          <div className="codex-direct-test-images">
+            {availableProductImagePaths.map((imagePath, index) => {
+              const primary = selectedDirectProductImagePath === imagePath;
+              const supporting = selectedDirectSupportingImagePath === imagePath;
+              const packaging = selectedDirectPackagingImagePath === imagePath;
+              return (
+                <article className={primary || supporting || packaging ? "selected" : ""} key={`${imagePath}-${index}`}>
+                  <img alt={`상세페이지 상품 후보 ${index + 1}`} src={imagePath} />
+                  <div>
+                    <button
+                      className={primary ? "active" : ""}
+                      onClick={() => {
+                        setDirectProductImagePath(imagePath);
+                        if (supporting) chooseDirectSupportingImage(imagePath);
+                        if (packaging) chooseDirectPackagingImage(imagePath);
+                      }}
+                      type="button"
+                    >
+                      {primary ? "✓ 2번 상품 이미지" : "2번 상품 이미지"}
+                    </button>
+                    <button
+                      className={supporting ? "active" : ""}
+                      disabled={primary}
+                      onClick={() => chooseDirectSupportingImage(imagePath)}
+                      type="button"
+                    >
+                      {supporting ? "✓ 3번 추가 참고" : "3번 라벨·추가 참고"}
+                    </button>
+                    <button
+                      className={packaging ? "active" : ""}
+                      disabled={primary}
+                      onClick={() => chooseDirectPackagingImage(imagePath)}
+                      type="button"
+                    >
+                      {packaging ? "✓ 4번 포장상품" : "4번 포장상품"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+          <label className="codex-direct-test-url">
+            <span>선택 상품 URL · 자동 전달</span>
+            <input readOnly value={props.product.landingUrl || props.analyzedProductUrl} />
+          </label>
+          <label className="codex-direct-test-prompt">
+            <span>추가/강조 사항 <small>(선택)</small></span>
+            <textarea
+              maxLength={2_000}
+              onChange={(event) => {
+                setDirectAdditionalInstructionsOverride({ productUrl: currentProductUrl, value: event.target.value });
+              }}
+              placeholder="예: 선물용 구성을 더 강조해줘. 인물 대신 상품 마스코트 캐릭터로 표현해줘."
+              rows={3}
+              value={directAdditionalInstructions}
+            />
+            <small>입력한 내용은 숨겨진 기본 프롬프트의 맨 아래에 추가되어 이번 6장에 함께 전달됩니다.</small>
+          </label>
+          <p>실제 첨부 순서 · 1 광고 레퍼런스 → 2 상품 이미지{selectedDirectSupportingImagePath ? " → 3 라벨·추가 참고 이미지" : ""}{selectedDirectPackagingImagePath ? ` → ${selectedDirectSupportingImagePath ? "4" : "3"} 포장상품 이미지` : ""}</p>
+        </div>
+      ) : null}
       <div className="simple-reference-category-picker">
         <div>
           <strong>참고할 레퍼런스 상품군</strong>
@@ -787,7 +916,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               ) : null}
             </div>
           ) : null}
-          <ProductAdCopyPanel adCopy={job.adCopy} autoReady jobId={job.id} onChanged={(changed) => setJob(changed)} productName={job.productTruth.product.productName} />
           {visibleGeneratedResults.length ? (
             <div className="simple-completed-results">
               <div className="simple-completed-head">
@@ -805,7 +933,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                         <span>{result.order}</span>
                         <div>
                           <strong>소재 {String(result.order).padStart(2, "0")} 완성</strong>
-                          <small>{result.hookPlan.headline}</small>
+                          <small>{defaultCodexJob ? "레퍼런스·선택 상품 이미지 기반" : result.hookPlan.headline}</small>
                         </div>
                         <b>{["quality-review", "group-review"].includes(result.status) ? "품질 확인 필요 · 다운로드 가능" : "다운로드 가능"}</b>
                       </div>
@@ -814,12 +942,14 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                       </div>
                       <details className="six-creative-edit">
                         <summary>이 광고 수정·다운로드</summary>
-                        <div className="hook-hypothesis">
-                          <b>{referenceAdapted ? "메인 문구" : "메인 후킹"}</b>
-                          <strong>{result.hookPlan.headline}</strong>
-                          <b>서브 문구</b>
-                          <span>{result.hookPlan.body}</span>
-                        </div>
+                        {!defaultCodexJob ? (
+                          <div className="hook-hypothesis">
+                            <b>이전 작업 문구</b>
+                            <strong>{result.hookPlan.headline}</strong>
+                            <b>서브 문구</b>
+                            <span>{result.hookPlan.body}</span>
+                          </div>
+                        ) : null}
                         {result.creativeAsset ? (
                           <CreativeAssetActions asset={result.creativeAsset} compact landingUrl={job.productTruth.product.landingUrl} onMessage={setMessage} downloadUrl={`/api/creative-generation/jobs/${encodeURIComponent(job.id)}/results/${encodeURIComponent(result.id)}/download`} />
                         ) : (
@@ -838,10 +968,10 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                           </div>
                         )}
                         <div className="six-creative-card-actions">
-                          <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">
+                          <button disabled={loading || historicalJob || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">
                             동일 레퍼런스로 다시 만들기
                           </button>
-                          <button disabled={loading || job.status === "cancelled"} onClick={() => void retryResultWithNewReference(result)} type="button">
+                          <button disabled={loading || historicalJob || job.status === "cancelled"} onClick={() => void retryResultWithNewReference(result)} type="button">
                             다른 레퍼런스로 다시 만들기
                           </button>
                           <label>
@@ -859,7 +989,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                             />
                           </label>
                           <button
-                            disabled={loading || !feedbacks[result.id]?.trim()}
+                            disabled={loading || historicalJob || !feedbacks[result.id]?.trim()}
                             onClick={() =>
                               void generateOne(job, result.id, {
                                 action: "revise",
@@ -882,64 +1012,6 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                             <small>{result.nativeCreative.adReference.sourceFile || result.nativeCreative.adReference.id}</small>
                           </details>
                         ) : null}
-                        <div className="six-creative-copy-editor">
-                          <label>
-                            <span>{referenceAdapted ? "메인 문구" : "메인 후킹"}</span>
-                            <input
-                              value={copyEdits[result.id]?.headline ?? result.hookPlan.headline}
-                              onChange={(event) =>
-                                setCopyEdits((current) => ({
-                                  ...current,
-                                  [result.id]: {
-                                    ...current[result.id],
-                                    headline: event.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                          </label>
-                          <label>
-                            <span>서브 문구</span>
-                            <textarea
-                              rows={2}
-                              value={copyEdits[result.id]?.body ?? result.hookPlan.body}
-                              onChange={(event) =>
-                                setCopyEdits((current) => ({
-                                  ...current,
-                                  [result.id]: { ...current[result.id], body: event.target.value },
-                                }))
-                              }
-                            />
-                          </label>
-                          <label>
-                            <span>혜택·가격</span>
-                            <input
-                              value={copyEdits[result.id]?.offer ?? result.hookPlan.offer}
-                              onChange={(event) =>
-                                setCopyEdits((current) => ({
-                                  ...current,
-                                  [result.id]: { ...current[result.id], offer: event.target.value },
-                                }))
-                              }
-                            />
-                          </label>
-                          <label>
-                            <span>CTA</span>
-                            <input
-                              value={copyEdits[result.id]?.cta ?? result.hookPlan.cta}
-                              onChange={(event) =>
-                                setCopyEdits((current) => ({
-                                  ...current,
-                                  [result.id]: { ...current[result.id], cta: event.target.value },
-                                }))
-                              }
-                            />
-                          </label>
-                          <button disabled={loading || !result.imagePath} onClick={() => void applyCopyUpdate(result)} type="button">
-                            수정 문구로 전체 광고 재생성
-                          </button>
-                          <small>선택된 레퍼런스와 상품 교체 결과를 유지하고 ProductTruth 문구 단계부터 다시 편집합니다.</small>
-                        </div>
                         <div className="six-creative-card-actions">
                           <button disabled={!result.imagePath} onClick={() => void sendResultAction(result, "approve").catch((error) => setMessage(error instanceof Error ? error.message : "선호 결과 저장 실패"))} type="button">
                             선호 결과로 저장
@@ -987,10 +1059,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
             <summary>제작 정보와 고급 도구 보기</summary>
             <p>선택 카테고리 · {selectedCategoryLabel || "상품군 자동 분류"}</p>
             <p>{providerStatus}</p>
-            {job.groupValidation ? <p>그룹 다양성 검수 · {job.groupValidation.recommendation === "approve" ? "완료" : "확인 필요"}</p> : null}
-            <button disabled={loading || generationInProgress} onClick={() => void startGeneration("scene")} type="button">
-              호환 레퍼런스도 새로 뽑아 6장 전체 새로 만들기
-            </button>
+            {!historicalJob ? (
+              <button disabled={loading || generationInProgress} onClick={() => void startGeneration("scene")} type="button">
+                새 랜덤 레퍼런스로 6장 다시 만들기
+              </button>
+            ) : null}
           </details>
         </>
       ) : (
@@ -998,7 +1071,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           <p>{props.planConfirmed ? `선택값 · ${referenceCategoryLabel(referenceCategoryOverride)}. 제작을 시작하면 이번 6장에는 이 설정이 고정됩니다.` : "위 상품 카드에서 ‘이 상품으로 광고 만들기’를 눌러 상품 선택을 완료하면 제작을 시작할 수 있습니다."}</p>
           {startError ? <p className="simple-generation-start-error" role="alert">{startError}</p> : null}
           <button className="simple-generation-start" disabled={!canStart || loading} onClick={() => void startOrResumeGeneration()} type="button">
-            {loading ? "광고 제작 준비 중…" : props.planConfirmed ? "이 매칭으로 광고 6장 제작 시작" : "상품 선택 후 제작 가능"}
+            {loading ? "광고 제작 준비 중…" : props.planConfirmed ? "광고 6장 생성 시작" : "상품 선택 후 제작 가능"}
           </button>
         </div>
       )}
@@ -1006,5 +1079,5 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   );
 }
 
-// 과거 import 경로 호환용 별칭입니다. 신규 화면과 작업은 레퍼런스 우선 파이프라인을 사용합니다.
+// 과거 import 경로 호환용 별칭입니다. 신규 화면과 작업은 기본 Codex 파이프라인을 사용합니다.
 export const HookExperimentCreativeGenerator = ReferenceFirstCreativeGenerator;

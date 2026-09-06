@@ -1,12 +1,15 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { Codex } from "@openai/codex-sdk";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import OpenAI from "openai";
 import { creativeGenerationJobStore } from "../creative-generation/jobStore.server";
 import { executionResults } from "../creative-generation/jobRunnerPolicy";
-import { codexCreativeGate } from "../creative-generation/asyncConcurrencyGate";
-import { codexLocalEnvironment, requireFreshCodexLocalChatGptLogin } from "../creative-generation/codexLocalRuntime.server";
 import { resolveRuntimeTimeout } from "../creative-generation/fastCreativeRuntime";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
+import { getCreativeArchiveEntry } from "../creative-archive/service.server";
+import type { CreativeArchiveEntry } from "../creative-archive/types";
 import { loadCopyGuideForProduct } from "../mvp/copyGuideLoader";
 import { adCopyRepository } from "./adCopyRepository.server";
 import { AD_COPY_PROMPT_VERSION, buildAdCopyPrompt, buildAdCopyQaPrompt } from "./adCopyPromptBuilder.server";
@@ -39,6 +42,76 @@ const qaSchema = {
 type GeneratedCopy = { primaryText: string; adTitle: string; languageTraits: string[] };
 type QaResponse = Omit<AdCopyQa, "passed" | "checkedAt"> & { recommendation: "approve" | "revise" | "manual-review" };
 const locks = new Map<string, Promise<void>>();
+const openAiClientKey = Symbol.for("daywiz.ad-copy.openai-client-v1");
+const openAiClientGlobal = globalThis as typeof globalThis & { [openAiClientKey]?: OpenAI };
+
+function openAiClient() {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new Error("광고 문구 생성용 OPENAI_API_KEY가 설정되지 않았습니다.");
+  const client = openAiClientGlobal[openAiClientKey] || new OpenAI({ apiKey, maxRetries: 1 });
+  openAiClientGlobal[openAiClientKey] = client;
+  return client;
+}
+
+function adCopyModel() {
+  return process.env.CREATIVE_COPY_MODEL?.trim() || process.env.OPENAI_TEXT_MODEL?.trim() || "gpt-5.6-sol";
+}
+
+function adCopyReasoning(): "medium" | "high" {
+  const configured = process.env.ADATLAS_AD_COPY_REASONING?.trim().toLowerCase();
+  return configured === "high" || configured === "xhigh" ? "high" : "medium";
+}
+
+async function imageDataUrl(imagePath: string | undefined) {
+  if (!imagePath) return undefined;
+  const extension = path.extname(imagePath).toLowerCase();
+  const mediaType = extension === ".png" ? "image/png" : extension === ".webp" ? "image/webp" : "image/jpeg";
+  return `data:${mediaType};base64,${(await readFile(imagePath)).toString("base64")}`;
+}
+
+async function requestStructuredResponse<T>(input: {
+  prompt: string;
+  imageUrl?: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+  timeoutMs: number;
+  maxOutputTokens: number;
+}) {
+  const response = await openAiClient().responses.create(
+    {
+      model: adCopyModel(),
+      input: [
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: input.prompt },
+            ...(input.imageUrl ? [{ type: "input_image" as const, image_url: input.imageUrl, detail: "high" as const }] : []),
+          ],
+        },
+      ],
+      store: false,
+      tools: [],
+      reasoning: { effort: adCopyReasoning() },
+      max_output_tokens: input.maxOutputTokens,
+      text: {
+        verbosity: "medium",
+        format: {
+          type: "json_schema",
+          name: input.schemaName,
+          strict: true,
+          schema: input.schema,
+        },
+      },
+    },
+    { timeout: input.timeoutMs, maxRetries: 1 }
+  );
+  if (response.status && response.status !== "completed") {
+    const detail = response.incomplete_details?.reason ? ` (${response.incomplete_details.reason})` : "";
+    throw new Error(`광고 문구 API 응답이 완료되지 않았습니다: ${response.status}${detail}`);
+  }
+  if (!response.output_text?.trim()) throw new Error("광고 문구 API가 빈 응답을 반환했습니다.");
+  return JSON.parse(response.output_text) as T;
+}
 
 function representative(job: GenerationJob) {
   const scoped = executionResults(job);
@@ -47,13 +120,33 @@ function representative(job: GenerationJob) {
 }
 
 function sourceFingerprint(job: GenerationJob, result: GenerationResult) {
-  return adCopyFingerprint([AD_COPY_PROMPT_VERSION, job.productTruth.productId, ...job.productTruth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").map((fact) => `${fact.id}:${fact.value}`), result.id, result.hookPlan.id, result.hookPlan.headline, result.hookPlan.body, ...(result.nativeCreative?.validation?.observedKoreanText || [])]);
+  const product = job.productTruth.product;
+  return adCopyFingerprint([
+    AD_COPY_PROMPT_VERSION,
+    job.productTruth.productId,
+    product.price || "",
+    product.originalPrice || product.oldPrice || "",
+    product.discountInfo || "",
+    ...job.productTruth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").map((fact) => `${fact.id}:${fact.value}`),
+    result.id,
+    result.hookPlan.id,
+    result.hookPlan.headline,
+    result.hookPlan.body,
+    ...(result.nativeCreative?.validation?.observedKoreanText || []),
+  ]);
 }
 
-function placeholder(job: GenerationJob, result: GenerationResult, fingerprint: string, revision: number): ProductAdCopy {
+function placeholder(
+  job: GenerationJob,
+  result: GenerationResult,
+  fingerprint: string,
+  revision: number,
+  input: { archiveEntryId?: string; existing?: ProductAdCopy } = {}
+): ProductAdCopy {
   const now = new Date().toISOString();
   return {
-    id: job.adCopy?.id || `ad-copy-${randomUUID()}`,
+    id: input.archiveEntryId ? input.existing?.id || `ad-copy-${randomUUID()}` : job.adCopy?.id || `ad-copy-${randomUUID()}`,
+    archiveEntryId: input.archiveEntryId,
     jobId: job.id,
     advertiserId: job.advertiserId || "unknown-advertiser",
     productId: job.productTruth.productId,
@@ -75,10 +168,22 @@ function placeholder(job: GenerationJob, result: GenerationResult, fingerprint: 
   };
 }
 
-async function generateWithCodex(job: GenerationJob, result: GenerationResult, approvedCopies: Awaited<ReturnType<typeof adCopyRepository.approvedForAdvertiser>>) {
-  const executable = await requireFreshCodexLocalChatGptLogin();
-  const codex = new Codex({ env: codexLocalEnvironment(), codexPathOverride: executable });
-  const options = { workingDirectory: process.cwd(), sandboxMode: "workspace-write" as const, approvalPolicy: "never" as const, networkAccessEnabled: false, model: process.env.ADATLAS_CODEX_MODEL?.trim() || "gpt-5.6-sol", modelReasoningEffort: "high" as const };
+function archivePromptContext(entry: CreativeArchiveEntry) {
+  return {
+    entryId: entry.id,
+    headline: entry.headline,
+    subCopy: entry.subCopy,
+    mainMessage: entry.mainMessage,
+    visualDirection: entry.visualDirection,
+  };
+}
+
+async function generateWithOpenAI(
+  job: GenerationJob,
+  result: GenerationResult,
+  approvedCopies: Awaited<ReturnType<typeof adCopyRepository.approvedForAdvertiser>>,
+  input: { archiveEntry?: CreativeArchiveEntry; imagePath?: string } = {}
+) {
   const approvedTexts = approvedCopies.map((copy) => copy.primaryText || "").filter(Boolean);
   const product = job.productTruth.product;
   const loadedGuide = product.copyGuideContext
@@ -92,24 +197,30 @@ async function generateWithCodex(job: GenerationJob, result: GenerationResult, a
         copyGuideId: product.copyGuideId,
       });
   let failures: string[] = [];
-  for (let attempt = 0; attempt <= 2; attempt += 1) {
-    // A stored thread can belong to the account that was active before a CLI
-    // logout/login. Use a fresh thread for every attempt so account switches do
-    // not change access behavior or inherit hidden conversation state.
-    const thread = codex.startThread(options);
-    const prompt = buildAdCopyPrompt({ job, result, approvedCopies, copyGuideContent: loadedGuide?.content, retryFailures: failures });
-    const content = [{ type: "text" as const, text: prompt }, ...(result.nativeCreative?.finalPath ? [{ type: "local_image" as const, path: result.nativeCreative.finalPath }] : [])];
-    const response = await codexCreativeGate.run(() => thread.run(content, { outputSchema: generationSchema, signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_COPY_TIMEOUT_MS, 150_000, 30_000)) }));
-    const generated = JSON.parse(response.finalResponse) as GeneratedCopy;
-    const local = validateAdCopyAgainstTruth({ primaryText: generated.primaryText, adTitle: generated.adTitle, truth: job.productTruth, hookHeadline: result.hookPlan.headline, approvedCopies: approvedTexts });
-    const qaThread = codex.startThread(options);
-    const qaResponse = await codexCreativeGate.run(() =>
-      qaThread.run(buildAdCopyQaPrompt({ job, result, primaryText: generated.primaryText, adTitle: generated.adTitle }), {
-        outputSchema: qaSchema,
-        signal: AbortSignal.timeout(resolveRuntimeTimeout(process.env.ADATLAS_CODEX_COPY_QA_TIMEOUT_MS, 120_000, 30_000)),
-      })
-    );
-    const qa = JSON.parse(qaResponse.finalResponse) as QaResponse;
+  const archiveContext = input.archiveEntry ? archivePromptContext(input.archiveEntry) : undefined;
+  const imagePath = input.imagePath || result.nativeCreative?.finalPath;
+  const attachedImage = await imageDataUrl(imagePath);
+  const maxRetries = archiveContext ? 1 : 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const prompt = buildAdCopyPrompt({ job, result, approvedCopies, copyGuideContent: loadedGuide?.content, retryFailures: failures, archiveContext });
+    const generated = await requestStructuredResponse<GeneratedCopy>({
+      prompt,
+      imageUrl: attachedImage,
+      schemaName: "ad_copy_generation",
+      schema: generationSchema,
+      timeoutMs: resolveRuntimeTimeout(process.env.ADATLAS_OPENAI_COPY_TIMEOUT_MS, 150_000, 30_000),
+      maxOutputTokens: 3_200,
+    });
+    const local = validateAdCopyAgainstTruth({ primaryText: generated.primaryText, adTitle: generated.adTitle, truth: job.productTruth, hookHeadline: archiveContext ? "" : result.hookPlan.headline, approvedCopies: approvedTexts });
+    const qaPrompt = buildAdCopyQaPrompt({ job, result, primaryText: generated.primaryText, adTitle: generated.adTitle, archiveContext });
+    const qa = await requestStructuredResponse<QaResponse>({
+      prompt: qaPrompt,
+      imageUrl: attachedImage,
+      schemaName: "ad_copy_qa",
+      schema: qaSchema,
+      timeoutMs: resolveRuntimeTimeout(process.env.ADATLAS_OPENAI_COPY_QA_TIMEOUT_MS, 120_000, 30_000),
+      maxOutputTokens: 1_800,
+    });
     failures = [...new Set([...local.failures, ...qa.failures])];
     if (local.passed && qa.recommendation === "approve" && qa.factualAccuracy >= 95 && qa.hookAlignment >= 85 && qa.metaReadability >= 85) {
       return {
@@ -140,7 +251,7 @@ async function runEnsure(jobId: string, force: boolean) {
   job = await creativeGenerationJobStore.update(jobId, (current) => ({ ...current, representativeResultId: result.id, adCopy: pending }));
   try {
     const approved = await adCopyRepository.approvedForAdvertiser(pending.advertiserId);
-    const outcome = await generateWithCodex(job, result, approved);
+    const outcome = await generateWithOpenAI(job, result, approved);
     const now = new Date().toISOString();
     const record: ProductAdCopy = outcome.generated
       ? {
@@ -192,6 +303,110 @@ export async function ensureProductAdCopy(jobId: string, options: { force?: bool
   } finally {
     release();
     if (locks.get(jobId) === queued) locks.delete(jobId);
+  }
+}
+
+function archiveImagePath(result: GenerationResult) {
+  const candidate = [result.deliveryBranding?.imagePath, result.nativeCreative?.finalPath, result.imagePath]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .flatMap((value) => {
+      const direct = path.resolve(value);
+      const publicFile = value.startsWith("/") ? path.join(process.cwd(), "public", value.replace(/^\/+/, "")) : path.join(process.cwd(), "public", value);
+      return direct === publicFile ? [direct] : [direct, publicFile];
+    })
+    .find((value) => existsSync(value));
+  if (!candidate) throw new Error("선택한 아카이브 완성 이미지 파일을 찾지 못했습니다.");
+  return path.resolve(candidate);
+}
+
+async function runEnsureArchiveEntry(entryId: string, force: boolean) {
+  const entry = await getCreativeArchiveEntry(entryId);
+  if (!entry) throw new Error("아카이브에서 해당 이미지 콘텐츠를 찾지 못했습니다.");
+  if (!entry.jobId || !entry.resultId) throw new Error("이전 방식으로 저장된 소재라 상품 사실과 연결할 수 없어 개별 문구 생성을 지원하지 않습니다.");
+  const job = await creativeGenerationJobStore.get(entry.jobId);
+  if (!job) throw new Error("아카이브 이미지의 상품 작업을 찾지 못했습니다.");
+  const result = job.results.find((candidate) => candidate.id === entry.resultId);
+  if (!result) throw new Error("아카이브 이미지의 생성 결과를 찾지 못했습니다.");
+  const imagePath = archiveImagePath(result);
+  const fingerprint = adCopyFingerprint([
+    AD_COPY_PROMPT_VERSION,
+    entry.id,
+    entry.updatedAt,
+    imagePath,
+    job.productTruth.productId,
+    job.productTruth.product.price || "",
+    job.productTruth.product.originalPrice || job.productTruth.product.oldPrice || "",
+    job.productTruth.product.discountInfo || "",
+    ...job.productTruth.facts.filter((fact) => fact.usableInCopy && fact.verification !== "unverified").map((fact) => `${fact.id}:${fact.value}`),
+  ]);
+  const existing = await adCopyRepository.getByArchiveEntry(entry.id);
+  if (!force && existing?.sourceFingerprint === fingerprint && ["ready", "approved"].includes(existing.status)) return existing;
+  const pending = placeholder(job, result, fingerprint, (existing?.revision || 0) + (existing ? 1 : 0), {
+    archiveEntryId: entry.id,
+    existing,
+  });
+  await adCopyRepository.save(pending);
+  try {
+    const approved = await adCopyRepository.approvedForAdvertiser(pending.advertiserId);
+    const outcome = await generateWithOpenAI(job, result, approved, { archiveEntry: entry, imagePath });
+    const now = new Date().toISOString();
+    const record: ProductAdCopy = outcome.generated
+      ? {
+          ...pending,
+          primaryText: outcome.generated.primaryText,
+          adTitle: outcome.generated.adTitle,
+          languageTraits: outcome.generated.languageTraits,
+          status: "ready",
+          qa: outcome.qa,
+          generatedAt: now,
+          updatedAt: now,
+        }
+      : {
+          ...pending,
+          primaryText: undefined,
+          adTitle: undefined,
+          status: "needs-review",
+          qa: outcome.qa,
+          updatedAt: now,
+        };
+    return adCopyRepository.save(record);
+  } catch (error) {
+    const now = new Date().toISOString();
+    const failed: ProductAdCopy = {
+      ...pending,
+      status: "needs-review",
+      primaryText: undefined,
+      adTitle: undefined,
+      updatedAt: now,
+      qa: {
+        passed: false,
+        factualAccuracy: 0,
+        hookAlignment: 0,
+        metaReadability: 0,
+        failures: [(error instanceof Error ? error.message : "광고문구 생성 실패").replace(/(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 300)],
+        checkedAt: now,
+      },
+    };
+    return adCopyRepository.save(failed);
+  }
+}
+
+export async function ensureArchiveEntryAdCopy(entryId: string, options: { force?: boolean } = {}) {
+  const lockId = `archive:${entryId}`;
+  const previous = locks.get(lockId) || Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queued = previous.then(() => current);
+  locks.set(lockId, queued);
+  await previous;
+  try {
+    return await runEnsureArchiveEntry(entryId, Boolean(options.force));
+  } finally {
+    release();
+    if (locks.get(lockId) === queued) locks.delete(lockId);
   }
 }
 

@@ -74,8 +74,8 @@ export function consumerFacingFactHint(value: string) {
 
 /**
  * 사실·숫자 검수로는 잡히지 않는 명백한 한국어 비문을 결정적으로 탐지한다.
- * 최종 자연스러움 판단은 AI critic이 담당하고, 이 검사는 critic 점수가 잘못
- * 높게 나와도 주어 역할 붕괴·미완성 연결어 같은 치명 오류가 통과하지 않게 한다.
+ * 별도 AI critic 없이 주어 역할 붕괴·미완성 연결어 같은 치명 오류가
+ * 최초 배치 뒤 한 번의 선택적 보정 대상으로 남도록 한다.
  */
 export function findReferenceCopyNaturalnessErrors(plan: CopyPlanLike) {
   const errors: string[] = [];

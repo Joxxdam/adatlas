@@ -1,4 +1,5 @@
 import type { CreativeAsset } from "../creative-assets/types";
+import type { ProductAdCopy } from "../ad-copy/types";
 import { canonicalAdvertiserDisplayName } from "../creative-generation/advertiserIdentity.ts";
 import type { GenerationJob, GenerationResult } from "../creative-generation/types";
 import type { CreativeArchiveEntry, CreativeArchiveMetadata } from "./types";
@@ -56,8 +57,9 @@ function resultUrls(job: GenerationJob, result: GenerationResult) {
   };
 }
 
-export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jobs: GenerationJob[]; metadata?: Record<string, CreativeArchiveMetadata> }) {
+export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jobs: GenerationJob[]; metadata?: Record<string, CreativeArchiveMetadata>; adCopies?: ProductAdCopy[] }) {
   const metadata = input.metadata || {};
+  const adCopyByEntryId = new Map((input.adCopies || []).filter((copy) => copy.archiveEntryId).map((copy) => [copy.archiveEntryId!, copy]));
   const contexts = registeredResultContext(input.jobs);
   const entries: CreativeArchiveEntry[] = [];
   const registeredAssetIds = new Set<string>();
@@ -120,6 +122,7 @@ export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jo
       updatedAt: asset.updatedAt,
       brandingEligible: Boolean(context?.result.nativeCreative?.finalPath || publicImagePath(asset.generatedImageUrl)),
       deliveryBranding: deliveryBrandingSummary(activeBranding),
+      adCopy: adCopyByEntryId.get(id),
       ...metadataFor(id, metadata),
     });
   }
@@ -181,6 +184,7 @@ export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jo
         updatedAt: result.completedAt || job.updatedAt,
         brandingEligible: Boolean(result.nativeCreative?.finalPath || publicImagePath(result.imagePath)),
         deliveryBranding: deliveryBrandingSummary(hasNativeImage ? result.deliveryBranding : storedBranding),
+        adCopy: adCopyByEntryId.get(id),
         ...metadataFor(id, metadata),
       });
     }

@@ -1,33 +1,22 @@
 import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
-import { createNativeContactSheet, writeNativeManifest } from "./nativeCreativeStorage.server";
-import { hasExplicitPaidApiAuthorization, type GenerationJob } from "./types";
+import { writeNativeManifest } from "./nativeCreativeStorage.server";
+import type { GenerationJob } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
-import { CURRENT_REFERENCE_COPY_POLICY_VERSION, CURRENT_REFERENCE_EDIT_JOB_VERSION, executionResults, hasOrphanedRunningResult, isServerRunnableGenerationJob, migrateActiveJobToPromptVersion, resumeGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
+import { executionResults, hasOrphanedRunningResult, isDefaultCodexGenerationJob, isServerRunnableGenerationJob, resumeGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
-import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
-import { AD_COPY_PROMPT_VERSION } from "../ad-copy/adCopyPromptBuilder.server";
-import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
-import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
-import { buildVisualDiversityMatrix } from "./visualDiversity";
-import type { NativeAdReference } from "./referenceCreativeLibrary.server";
+import { DEFAULT_CODEX_GENERATION_PROMPT_VERSION } from "./codexDirectTest";
 
 // 개발 서버 HMR은 globalThis를 보존하므로 고정 키를 쓰면 새 프롬프트 코드가
 // 이전 runSafely 콜백을 가진 러너를 재사용할 수 있다. 실제 실행 계약 버전을
 // 키에 포함해 이미지/문구/작업 정책 중 하나라도 바뀌면 새 러너를 만들고,
 // 구버전 러너가 최신 작업을 다시 이전 버전으로 되돌리는 일을 막는다.
-const runnerPolicySignature = [
-  CURRENT_REFERENCE_EDIT_JOB_VERSION,
-  CURRENT_REFERENCE_COPY_POLICY_VERSION,
-  NATIVE_FINAL_PROMPT_VERSION,
-  "reference-copy-lean-contract-v3",
-].join(":");
+const runnerPolicySignature = DEFAULT_CODEX_GENERATION_PROMPT_VERSION;
 const runnerKey = Symbol.for(`daywiz.creative-generation.server-runner:${runnerPolicySignature}`);
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
-// 한 작업은 최대 6장 × 여러 편집·검수 단계를 포함하므로 개별 이미지 turn의
-// 40분 hard timeout보다 충분히 길게 둡니다. 목적은 정상 장기 작업 제한이
+// 한 작업은 서로 다른 Codex 세션으로 광고 6장을 생성하므로 개별 이미지 turn의
+// hard timeout보다 충분히 길게 둡니다. 목적은 정상 장기 작업 제한이
 // 아니라 수일간 남는 유령 Promise가 큐 전체를 막지 않게 하는 것입니다.
 const defaultRunnerWatchdogMs = 3 * 60 * 60 * 1000;
 
@@ -61,7 +50,7 @@ function staleAfterMs() {
 function runnerErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : "AI 광고 생성 중 알 수 없는 오류가 발생했습니다.";
   if ((error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) || /(?:operation was aborted|timed?\s*out|timeout)/i.test(message)) {
-    return "AI 광고 레퍼런스 편집의 진행 응답이 장시간 없어 중단되었습니다. 저장된 완료 단계부터 자동으로 재시도합니다.";
+    return "Codex 광고 생성의 진행 응답이 장시간 없어 중단되었습니다. 완료된 이미지는 유지하고 해당 소재만 자동으로 재시도합니다.";
   }
   return message.replace(/(?:\/Users|[A-Z]:\\)[^\s]+/g, "로컬 파일").slice(0, 600);
 }
@@ -92,14 +81,7 @@ export async function recoverPersistedGenerationJobs(limit = 200) {
 }
 
 export async function recoverGenerationJob(jobId: string, ignoreRunner = false): Promise<GenerationJob | null> {
-  let current = await creativeGenerationJobStore.get(jobId);
-  if (current) {
-    const migrated = migrateActiveJobToPromptVersion(current, NATIVE_FINAL_PROMPT_VERSION);
-    if (migrated !== current) {
-      current = await creativeGenerationJobStore.update(jobId, () => migrated);
-      await writeNativeManifest(current).catch(() => undefined);
-    }
-  }
+  const current = await creativeGenerationJobStore.get(jobId);
   if (!current || !isServerRunnableGenerationJob(current) || current.status === "cancelled" || (!ignoreRunner && isGenerationJobRunnerActive(jobId))) return current;
   const staleResults = staleRunningResultIds(current, Date.now(), staleAfterMs(), false);
   if (!staleResults.length) return current;
@@ -124,156 +106,13 @@ export async function recoverGenerationJob(jobId: string, ignoreRunner = false):
   }));
 }
 
-/**
- * 작업 생성 HTTP 요청에서는 빠른 scaffold만 저장하고, 실제 최신 문구 기획과
- * 독립 품질 검수는 서버 러너가 이미지 생성 전에 한 번 수행한다. 따라서 수동
- * 버튼은 즉시 작업 ID를 돌려받으면서도 수동·자동 모두 같은 최종 문구를 쓴다.
- */
-async function ensureReferenceCopyPlanning(jobId: string) {
-  let attemptedPlanning: Awaited<ReturnType<typeof planReferenceAdaptedCopies>> | undefined;
-  let current = await creativeGenerationJobStore.get(jobId);
-  if (!current || !isServerRunnableGenerationJob(current) || current.status === "cancelled") return current;
-  if (current.referenceCopyPlanning?.status === "ready") return current;
-  // 한 작업 안에서 최초 생성과 실패 항목 1회 배치 수정까지 이미 수행한다.
-  // 그 뒤에도 구조적으로 준비하지 못한 작업을 서버 폴링마다 처음부터 반복하지 않는다.
-  if (current.referenceCopyPlanning?.status === "retryable" && (current.referenceCopyPlanning.attempts || 0) >= 1) return current;
-  if (
-    current.referenceCopyPlanning?.status === "retryable" &&
-    current.referenceCopyPlanning.nextRetryAt &&
-    new Date(current.referenceCopyPlanning.nextRetryAt).getTime() > Date.now()
-  ) return current;
-
-  const planningAttempts = (current.referenceCopyPlanning?.attempts || 0) + 1;
-
-  current = await creativeGenerationJobStore.update(jobId, (job) => ({
-    ...job,
-    referenceCopyPlanning: {
-      status: "running",
-      attempts: planningAttempts,
-      updatedAt: new Date().toISOString(),
-    },
-  }));
-
-  try {
-    const references = current.results.map((result) => result.nativeCreative?.adReference);
-    if (
-      references.length !== 6 ||
-      references.some((reference) => !reference?.publicPath || !reference.sourceFile || !reference.categoryGroup || !reference.categoryLabel || !reference.selectionReason)
-    ) {
-      throw new Error("최신 문구 기획에 필요한 고정 레퍼런스 6장을 찾지 못했습니다.");
-    }
-    const verifiedReferences = references as NativeAdReference[];
-    const planning = await planReferenceAdaptedCopies({
-      truth: current.productTruth,
-      references: verifiedReferences,
-    });
-    attemptedPlanning = planning;
-    if (planning.plans.length !== 6) throw new Error("레퍼런스 6장에 대응하는 문구 계획을 모두 준비하지 못했습니다.");
-    const invalidReferenceIds = new Set(planning.plans.filter((plan) => !hasPublishableReferenceCopyContract(plan)).map((plan) => plan.referenceId));
-    const plannedCreative = buildReferenceAdaptedCreativePlan({
-      truth: current.productTruth,
-      references: verifiedReferences,
-      copyPlans: planning.plans,
-      adBrief: current.creativePlan.adBrief,
-      testCode: current.creativePlan.testCode,
-      provider: planning.provider,
-      warnings: planning.warnings,
-    });
-    const plannedScenes = buildReferenceScenes(
-      verifiedReferences,
-      planning.plans
-    );
-    const readyAt = new Date().toISOString();
-    current = await creativeGenerationJobStore.update(jobId, (job) => {
-      const nextResults = job.results.map((result, index) => {
-        const plannedHook = plannedCreative.hookPlans[index];
-        const plannedScene = plannedScenes[index];
-        const plannedCopy = planning.plans[index];
-        const copyUnavailable = invalidReferenceIds.has(plannedCopy.referenceId);
-        return {
-          ...result,
-          status: copyUnavailable ? "quality-review" as const : result.status,
-          error: copyUnavailable ? `안전 최소 문구도 제작 계약을 통과하지 못했습니다: ${plannedCopy.validationErrors.slice(0, 3).join(" · ")}` : result.error,
-          completedAt: copyUnavailable ? readyAt : result.completedAt,
-          blueprintId: plannedHook.blueprintId,
-          hookPlan: {
-            ...plannedHook,
-            id: result.hookPlan.id,
-            hookCode: result.hookPlan.hookCode,
-            title: result.hookPlan.title,
-          },
-          scenePlan: {
-            ...plannedScene,
-            id: result.scenePlan.id,
-            blueprintId: plannedHook.blueprintId,
-          },
-          referenceAdaptedCopyPlan: {
-            ...plannedCopy,
-            resultCode: result.hookPlan.hookCode,
-          },
-        };
-      });
-      return {
-        ...job,
-        creativePlan: {
-          ...plannedCreative,
-          id: job.creativePlan.id,
-          brandProfile: job.creativePlan.brandProfile,
-          hookPlans: nextResults.map((result) => result.hookPlan),
-          createdAt: job.creativePlan.createdAt,
-        },
-        referenceCopyProfiles: planning.profiles,
-        templateRegistryVersion: REFERENCE_ADAPTED_PLANNER_VERSION,
-        visualDiversityMatrix: buildVisualDiversityMatrix(nextResults),
-        referenceCopyPlanning: {
-          status: "ready",
-          provider: planning.provider,
-          error: [...planning.warnings, ...(invalidReferenceIds.size ? [`${invalidReferenceIds.size}장은 안전 최소 문구 검토가 필요하며 나머지 소재는 계속 제작합니다.`] : [])].join(" · ").slice(0, 1000) || undefined,
-          attempts: planningAttempts,
-          updatedAt: readyAt,
-        },
-        recoveryLog: [
-          ...(job.recoveryLog || []),
-          { at: readyAt, message: `최신 레퍼런스 문구 기획 완료 (${planning.provider})`, resultIds: nextResults.map((result) => result.id) },
-        ].slice(-20),
-        results: nextResults,
-      };
-    });
-    await writeNativeManifest(current).catch(() => undefined);
-    return current;
-  } catch (error) {
-    const message = runnerErrorMessage(error);
-    // 구조적으로 안전 최소 문구조차 만들지 못한 경우에만 사용자가 명시적으로
-    // 재개할 수 있는 상태로 남긴다. 자동 전체 기획 재시도는 하지 않는다.
-    current = await creativeGenerationJobStore.update(jobId, (job) => ({
-      ...job,
-      errors: [...job.errors, `최신 문구 기획: ${message}`].slice(-20),
-      referenceCopyProfiles: attemptedPlanning?.profiles || job.referenceCopyProfiles,
-      referenceCopyPlanning: {
-        status: "retryable",
-        provider: "fallback",
-        error: message,
-        attempts: planningAttempts,
-        updatedAt: new Date().toISOString(),
-      },
-      results: attemptedPlanning?.plans.length === 6
-        ? job.results.map((result, index) => ({
-            ...result,
-            referenceAdaptedCopyPlan: {
-              ...attemptedPlanning!.plans[index],
-              resultCode: result.hookPlan.hookCode,
-            },
-          }))
-        : job.results,
-    }));
-    await writeNativeManifest(current).catch(() => undefined);
-    return current;
-  }
-}
-
 async function markResultFailed(jobId: string, resultId: string, error: unknown) {
   const message = runnerErrorMessage(error);
   const failed = await creativeGenerationJobStore.update(jobId, (job) => {
+    const target = job.results.find((result) => result.id === resultId);
+    // 생성 함수가 이미 실패 상태와 공개용 오류를 기록했다면 같은 오류를
+    // 두 번 누적하지 않는다. 여기서는 생성 시작 전 예외만 보완한다.
+    if (target?.status === "failed") return job;
     if (job.status === "cancelled") {
       return {
         ...job,
@@ -308,43 +147,6 @@ async function markResultFailed(jobId: string, resultId: string, error: unknown)
   if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
 }
 
-async function validateCompletedReferenceGroup(jobId: string) {
-  const current = await creativeGenerationJobStore.get(jobId);
-  if (!current || current.groupValidation || executionResults(current).length !== 6) return;
-  if (!executionResults(current).every((result) => ["success", "approved"].includes(result.status) && Boolean(result.nativeCreative?.finalPath))) return;
-  try {
-    const contactSheetPath = await createNativeContactSheet(current);
-    const provider = createCreativeGenerationProvider(current.engine || "codex_local", {
-      explicitPaidApiAuthorization: hasExplicitPaidApiAuthorization(current.paidApiAuthorization),
-    });
-    const groupValidation = await provider.validateGroup({ job: current, contactSheetPath });
-    const passed = groupValidation.recommendation === "approve";
-    const updated = await creativeGenerationJobStore.update(jobId, (job) => ({
-      ...job,
-      groupValidation,
-      results: job.results.map((result) => ({
-        ...result,
-        nativeCreative: result.nativeCreative
-          ? {
-              ...result.nativeCreative,
-              provenance: result.nativeCreative.provenance
-                ? { ...result.nativeCreative.provenance, groupDiversityQa: passed ? "passed" : "manual-review" }
-                : result.nativeCreative.provenance,
-            }
-          : result.nativeCreative,
-      })),
-    }));
-    await writeNativeManifest(updated).catch(() => undefined);
-  } catch (error) {
-    const message = runnerErrorMessage(error);
-    const updated = await creativeGenerationJobStore.update(jobId, (job) => ({
-      ...job,
-      errors: [...job.errors, `6장 묶음 검수: ${message}`].slice(-20),
-    }));
-    await writeNativeManifest(updated).catch(() => undefined);
-  }
-}
-
 export async function runGenerationJob(jobId: string) {
   const attempted = new Set<string>();
   while (true) {
@@ -366,6 +168,17 @@ export async function runGenerationJob(jobId: string) {
         attempted.clear();
         continue;
       }
+      const scopedResults = executionResults(job);
+      if (scopedResults.length && scopedResults.every((result) => !["pending", "running"].includes(result.status))) {
+        const successCount = scopedResults.filter((result) => ["success", "approved"].includes(result.status)).length;
+        const finalized = await creativeGenerationJobStore.update(job.id, (current) => ({
+          ...current,
+          status: successCount === scopedResults.length ? "completed" : successCount > 0 ? "partial" : "failed",
+          completedAt: new Date().toISOString(),
+          timing: { ...current.timing, totalMs: Date.now() - new Date(current.createdAt).getTime() },
+        }));
+        await writeNativeManifest(finalized).catch(() => undefined);
+      }
       return;
     }
     batch.forEach((result) => attempted.add(result.id));
@@ -376,8 +189,8 @@ export async function runGenerationJob(jobId: string) {
             jobId,
             resultId: next.id,
             requestId: `server-runner:${jobId}:${next.id}:${next.attempts + 1}`,
-            // Automatic retries resume valid structure/product/copy checkpoints.
-            // Full regeneration is reserved for an explicit user action.
+            // 자동 재시도도 같은 고정 레퍼런스·상품·참고 이미지·프롬프트를
+            // 새 세션에 다시 전달하며, 다른 제작 방식으로 전환하지 않습니다.
             action: "generate",
             feedback: next.userFeedback,
           });
@@ -386,31 +199,15 @@ export async function runGenerationJob(jobId: string) {
         }
       })
     );
-    await validateCompletedReferenceGroup(jobId);
   }
 }
 
 async function runSafely(jobId: string) {
   try {
-    let recovered = await recoverGenerationJob(jobId, true);
+    const recovered = await recoverGenerationJob(jobId, true);
     if (!recovered || recovered.status === "cancelled") return;
-    recovered = await ensureReferenceCopyPlanning(jobId);
-    if (!recovered || recovered.status === "cancelled") return;
-    if (recovered.referenceCopyPlanning?.status !== "ready") return;
-    // 상품당 한 번 만드는 Meta 기본 문구·광고 제목은 완성 이미지를 기다리지
-    // 않는다. ProductTruth와 이미 준비된 대표 후킹으로 즉시 시작하고, 이미지
-    // 6장 서버 작업과 병렬로 저장한다.
-    const copyTask =
-      !recovered.adCopy || recovered.adCopy.status === "generating" || recovered.adCopy.promptVersion !== AD_COPY_PROMPT_VERSION
-        ? ensureProductAdCopy(jobId)
-        : Promise.resolve(recovered);
-    const generationTask = runGenerationJob(jobId);
-    const [copyOutcome, generationOutcome] = await Promise.allSettled([copyTask, generationTask]);
-    if (copyOutcome.status === "rejected") {
-      const copyMessage = runnerErrorMessage(copyOutcome.reason);
-      await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, `광고문구 생성: ${copyMessage}`].slice(-20) })).catch(() => undefined);
-    }
-    if (generationOutcome.status === "rejected") throw generationOutcome.reason;
+    if (!isDefaultCodexGenerationJob(recovered)) return;
+    await runGenerationJob(jobId);
   } catch (error) {
     const message = runnerErrorMessage(error);
     await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, message].slice(-20) })).catch(() => undefined);

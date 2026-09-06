@@ -1,87 +1,23 @@
 import "server-only";
 
-import { Codex } from "@openai/codex-sdk";
-import { resolveRuntimeTimeout } from "./fastCreativeRuntime";
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
-import { selectMasterCreativeDirection } from "./masterDesign";
-import { matchBrandProfile, matchCategoryProfile, withRequestedLogo } from "./profiles";
-import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
-import { applyReferenceCopyGroupRules } from "./referenceCopyDiversity";
-import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "./referenceCopyNaturalness";
-import { isAmbiguousMerchantCredentialCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
 import { CURRENT_REFERENCE_COPY_POLICY_VERSION } from "./jobRunnerPolicy";
-import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
-import { isApprovedReferenceNativeCopy, normalizeReferenceRawLines, type ReferenceTextRegion } from "./referenceLibraryManagement";
-import { findProductCopySemanticErrors, resolveProductCopyDomain } from "./productCopySemantics";
-import { buildImageCreativePremiseSeed, buildImageCreativePremiseSeeds, findImageCreativePremiseCopyErrors, findImageCreativePremiseErrors, IMAGE_CREATIVE_PREMISE_POLICY_VERSION, normalizeImageCreativePremise } from "./imageCreativePremise.ts";
-import { loadCopyGuideForProduct, type LoadedCopyGuide } from "../mvp/copyGuideLoader";
-import type { AdBrief } from "../mvp/types";
-import type { CreativeBlueprintId, CreativePlan, HookPlan, ImageCreativePremise, ProductFact, ProductTruth, ReferenceAdaptedCopyPlan, ReferenceCopyProfile, ScenePlan } from "./types";
+import type { CreativeBlueprintId, ReferenceCopyProfile } from "./types";
 
 export const REFERENCE_COPY_PROFILE_VERSION = "reference-copy-profile-v1";
 export const REFERENCE_ADAPTED_PLANNER_VERSION = CURRENT_REFERENCE_COPY_POLICY_VERSION;
 
 const NATURALNESS_PASS_SCORE = 80;
 const REFERENCE_FIT_PASS_SCORE = 80;
-const CREATIVE_CONTEXT_POLICY = `계절·시즌·명절·날씨·일상 상황·대중문화·밈·유행 먹거리(예: 두쫀쿠)처럼 상품 자체의 속성이 아닌 창작 맥락은 ProductTruth에 없어도 상품과 자연스럽게 연결해 사용할 수 있다. 이런 맥락은 factIds에 넣지 않으며, ProductTruth 밖 사실을 만들었다고 판정하지 않는다. 단, 맥락을 상품의 실제 성분·맛·효능·원산지·구성·가격·할인·재고·판매량·후기·인기 순위·공식 협업·기간 한정 사실처럼 단정하면 안 된다. '요즘 생각나는 간식', '두쫀쿠 다음엔 뭐 먹지?' 같은 관심·상황형 후킹은 허용하지만, 근거 없는 'SNS 1위', '요즘 제일 잘 팔리는', '오늘만 할인', '곧 품절'은 금지한다.`;
-
-function copyGuidePromptBlock(copyGuide?: LoadedCopyGuide | null) {
-  if (!copyGuide) return "적용할 업체별 카피 가이드가 없다. 레퍼런스 원문 구조와 ProductTruth만 따른다.";
-  return `다음 업체별 카피 가이드를 문장력·판매 강도·상품별 표현의 기준으로 적용한다. 단, 이 가이드는 레퍼런스의 줄 수·수사 관계·문구 역할을 버리고 새 콘셉트를 만드는 지시가 아니다.\n[${copyGuide.brandName} / ${copyGuide.id}]\n${copyGuide.content}`;
-}
-
-function sheetClaimPolicy(truth: ProductTruth) {
-  if (!truth.product.vendorResearch?.allowSheetClaimsInCopy) return "";
-  return `- 이 상품에는 사용자가 제공한 업체 조사 시트가 매칭되어 있다. ProductTruth의 source가 vendor-research인 fact는 이 업체·현재 상품에 한해 승인된 광고 근거다. 수치, 원료 효능 이야기, 쿨링·보습·피부 고민 표현도 해당 fact의 value와 copyEligibility 범위 안이면 약화하거나 임의로 위험 표현으로 판정하지 않는다.
-- 시트 근거를 보고서 문장으로 복사하지 말고 소비자 문제·손실 회피·반전·질문·사용 순간으로 번역한다. 최종 문구에 '소개됨', '방향', '활용', '콘셉트', '이미지' 같은 조사 메타 표현을 남기지 않는다.
-- 번호형 레퍼런스에는 서로 다른 시트 근거를 사용해 실제 구매 이유 목록을 만든다. 같은 상품명·향·용량을 번호만 바꿔 반복하지 않는다.
-- 향 외의 vendor-research 근거가 있으면 6개 중 최소 4개는 서로 다른 수치·원료 스토리·추출 방식·제형·사용 순간·인증을 중심 USP로 사용한다. 오리지널소스의 향은 기본 구매 이유가 아니며, '향이 좋다', '향으로 기분 전환'처럼 향이 중심인 소재는 최대 1개다.
-- 골라담기 상품은 각 선택지에 연결된 사실을 현재 선택지 이름과 함께 사용한다. 서로 다른 단품의 사실을 한 제품의 단일 성분·효능처럼 합치지 않는다.
-- 이 허용은 현재 ProductTruth에 들어온 vendor-research fact에만 적용된다. 시트에 공개되지 않음·추정·반대 사실로 적힌 내용을 뒤집어 주장하거나 다른 오리지널소스 향의 근거를 섞어서는 안 된다.`;
-}
-
-function resolvedVendorCopyExamples(truth: ProductTruth) {
-  const factIdByKey = new Map(truth.facts.map((fact) => [fact.key, fact.id]));
-  return (truth.product.vendorResearch?.adCopyExamples || [])
-    .map((example) => {
-      // ProductTruth의 공개 id에는 중복 방지 해시가 붙으므로 원본 조사 id를
-      // 문자열로 추측하지 않고 안정적인 fact.key를 통해 실제 id로 해석한다.
-      const factIds = example.factIds
-        .map((id) => factIdByKey.get(`vendor-${id}`))
-        .filter((id): id is string => Boolean(id));
-      return { ...example, factIds };
-    })
-    .filter((example, index) => {
-      const source = truth.product.vendorResearch?.adCopyExamples?.[index];
-      return !source?.factIds.length || example.factIds.length === source.factIds.length;
-    });
-}
-
-function vendorCopyExamplePromptBlock(truth: ProductTruth) {
-  const examples = resolvedVendorCopyExamples(truth);
-  if (!examples.length) return "이 상품에 미리 정리된 광고 문구 후보가 없다.";
-  return `다음 문구는 사용자가 제공한 품질 목표·비교 예문이지 복사 템플릿이 아니다. 상품명·명사·조사·어순만 바꿔 재사용하지 않는다. angle과 연결 factIds는 발상 신호로만 참고하고, 현재 소비자 상황·긴장·반응에서 의미적으로 다른 새 문장을 작성한다. 예문은 새 사실의 근거가 아니며, 새 후보가 실질적으로 유사하면 novelty 실패다.\n${JSON.stringify(examples, null, 2)}`;
-}
 
 const cachePath = path.resolve(process.cwd(), ".data", "creative-generation", "reference-copy-profiles.json");
 const sentenceStyles = ["question", "declaration", "dialogue", "contrast", "sensory", "urgency", "proof"] as const;
 let profileCacheWriteQueue: Promise<void> = Promise.resolve();
 
 type ProfilePayload = { profiles: Array<Omit<ReferenceCopyProfile, "id" | "referenceHash" | "profileVersion" | "createdAt" | "analysisSource">> };
-type CriticPayload = {
-  reviews: Array<{
-    referenceId: string;
-    naturalnessScore: number;
-    referenceFitScore: number;
-    factualSafetyScore: number;
-    valid: boolean;
-    errors: string[];
-  }>;
-};
 
 const profileProperties = {
   referenceId: { type: "string" }, tone: { type: "string" }, sentenceStyle: { type: "string", enum: sentenceStyles }, rhetoricalDevice: { type: "string" }, headlineRole: { type: "string" },
@@ -96,13 +32,6 @@ const profileRequired = ["referenceId", "tone", "sentenceStyle", "rhetoricalDevi
 const profileSchema = {
   type: "object", additionalProperties: false, required: ["profiles"],
   properties: { profiles: { type: "array", minItems: 1, maxItems: 20, items: { type: "object", additionalProperties: false, required: profileRequired, properties: profileProperties } } },
-} as const;
-
-const criticSchema = {
-  type: "object", additionalProperties: false, required: ["reviews"],
-  properties: { reviews: { type: "array", minItems: 1, maxItems: 6, items: { type: "object", additionalProperties: false, required: ["referenceId", "naturalnessScore", "referenceFitScore", "factualSafetyScore", "valid", "errors"], properties: {
-    referenceId: { type: "string" }, naturalnessScore: { type: "integer", minimum: 0, maximum: 100 }, referenceFitScore: { type: "integer", minimum: 0, maximum: 100 }, factualSafetyScore: { type: "integer", minimum: 0, maximum: 100 }, valid: { type: "boolean" }, errors: { type: "array", items: { type: "string" }, maxItems: 8 },
-  } } } },
 } as const;
 
 function blueprintForReference(reference: NativeAdReference): CreativeBlueprintId {
@@ -177,18 +106,12 @@ async function writeProfileCache(profiles: ReferenceCopyProfile[]) {
 export {
   NATURALNESS_PASS_SCORE,
   REFERENCE_FIT_PASS_SCORE,
-  CREATIVE_CONTEXT_POLICY,
-  copyGuidePromptBlock,
-  sheetClaimPolicy,
-  resolvedVendorCopyExamples,
-  vendorCopyExamplePromptBlock,
   sentenceStyles,
   profileSchema,
-  criticSchema,
   blueprintForReference,
   fallbackProfile,
   referenceHash,
   readProfileCache,
   writeProfileCache,
 };
-export type { ProfilePayload, CriticPayload };
+export type { ProfilePayload };

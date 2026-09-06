@@ -2,12 +2,12 @@ import "server-only";
 
 import { extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
-import { applyReferenceCopyGroupRules } from "./referenceCopyDiversity";
 import { consumerFacingFactHint, findReferenceCopyNaturalnessErrors } from "./referenceCopyNaturalness";
 import { isAmbiguousMerchantCredentialCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal } from "./productSignalHygiene";
 import { normalizeReferenceRawLines, type ReferenceTextRegion } from "./referenceLibraryManagement";
-import { findProductCopySemanticErrors, resolveProductCopyDomain } from "./productCopySemantics";
-import { buildImageCreativePremiseSeed, findImageCreativePremiseCopyErrors, findImageCreativePremiseErrors, normalizeImageCreativePremise } from "./imageCreativePremise.ts";
+import { findProductCopySemanticErrors } from "./productCopySemantics";
+import { buildImageCreativePremiseSeed, normalizeImageCreativePremise } from "./imageCreativePremise.ts";
+import { buildReferenceSceneAdaptation } from "./referenceSceneAdaptation.ts";
 import type { ImageCreativePremise, ProductFact, ProductTruth, ReferenceAdaptedCopyPlan, ReferenceCopyEvidenceAssignment, ReferenceCopyProfile } from "./types";
 
 import {
@@ -19,7 +19,7 @@ import {
 } from "./referenceCopyProfiles.server";
 import type { PlannerPayload } from "./referenceCopyCandidates.ts";
 import { reviewReferenceCopyClaims } from "./referenceCopyClaims.ts";
-import { availableCreativeAngles, buildReferenceCopyEvidenceAssignments, generateReferenceCopyHookIdeas } from "./referenceCopyAngles.ts";
+import { availableCreativeAngles, buildReferenceCopyEvidenceAssignments, generateReferenceCopyHookIdeas, referenceRhetoricalMechanism } from "./referenceCopyAngles.ts";
 import { isSafeMinimalFactCandidate, isSafeMinimalOfferFact } from "./referenceCopySafeMinimal.ts";
 
 function productFactPlanningPriority(fact: ProductFact) {
@@ -102,6 +102,24 @@ function isSourceBrandRemovalRegion(region: ReferenceTextRegion | undefined, sou
   return region?.sourceType === "source-brand" || region?.replacePolicy === "remove" || isSourceDisclosureText(sourceText || region?.text || "", region?.id);
 }
 
+/** 패키지 인쇄 라벨과 장식은 상품 교체 영역이며 광고 문구 생성 입력이 아닙니다. */
+export function isReferenceAdCopyRegion(region: ReferenceTextRegion) {
+  if (isSourceBrandRemovalRegion(region)) return true;
+  if (region.sourceType === "source-product-label" || region.sourceType === "decorative") return false;
+  if (region.replacePolicy === "product-replacement" || region.replacePolicy === "preserve") return false;
+  return region.sourceType === "ad-copy" || region.sourceType === "uncertain" || region.replacePolicy === "adapt" || region.replacePolicy === "review";
+}
+
+/** 저장된 OCR 중 실제 광고 문구와 제거 대상 브랜드 문구만 읽기 순서대로 반환합니다. */
+export function referenceCopySourceLines(reference: NativeAdReference) {
+  if (reference.nativeCopy?.useForCopyAdaptation === false) return [];
+  const regions = [...(reference.nativeCopy?.textRegions || [])]
+    .filter(isReferenceAdCopyRegion)
+    .sort((left, right) => (left.readingOrder ?? Number.MAX_SAFE_INTEGER) - (right.readingOrder ?? Number.MAX_SAFE_INTEGER));
+  const regionLines = normalizeReferenceRawLines(regions.flatMap((region) => region.lines));
+  return reference.nativeCopy?.textRegions?.length ? regionLines : normalizeReferenceRawLines(reference.nativeCopy?.rawLines || []);
+}
+
 function buildCopySlots(reference: NativeAdReference, sourceLines: string[], targetLines: string[]): NonNullable<ReferenceAdaptedCopyPlan["copySlots"]> {
   return sourceLines.map((sourceText, index) => {
     const role = sourceLineRole(reference, sourceText, index);
@@ -116,6 +134,7 @@ function buildCopySlots(reference: NativeAdReference, sourceLines: string[], tar
       role,
       sourceType: region?.sourceType,
       replacePolicy: removeSourceRegion ? "remove" as const : region?.replacePolicy,
+      action: removeSourceRegion ? "remove" as const : "replace" as const,
       sourceText,
       // 기존 광고주의 로고·워드마크는 현재 상품명으로 치환하지 않는다.
       // 빈 target은 생성 단계에서 이 작은 영역의 주변 배경 복원을 뜻하며,
@@ -183,6 +202,7 @@ function plannerDeclaredSafetyErrors(errors: string[]) {
 
 function fallbackSlotRoles(reference: NativeAdReference, profile: ReferenceCopyProfile, hasOffer: boolean) {
   const observedRoles = (reference.nativeCopy?.textRegions || [])
+    .filter(isReferenceAdCopyRegion)
     .map((region) => region.role)
     .filter((role, index, roles) => roles.indexOf(role) === index);
   if (observedRoles.length) return observedRoles;
@@ -316,12 +336,12 @@ function referenceAwareFallbackText(input: {
   const preferredSignature = comparableCopy(input.preferred);
   const strongSourceHook = /[?!]|왜|어떻게|찾|없다|아니|한정|마감|특가|할인|손해|놓치|역대급|미친|최고|%/iu.test(input.sourceLine);
   const shortRoleFallbacks = input.role === "cta"
-    ? ["자세히 보기"]
+    ? [`${input.identity} 만나보기`]
     : input.role === "offer"
-      ? ["한입부터 달라요", "오늘 저녁에 딱"]
+      ? [input.identity]
       : input.role === "support"
-        ? ["한입부터 달라요", "식탁에서 느껴보세요"]
-        : ["국내산", "차이는 분명해요", "오늘 식탁의 주인공"];
+        ? [input.identity]
+        : [input.identity];
   const candidates = [input.preferred, ...input.candidates, ...shortRoleFallbacks]
     .map((value) => String(value || "").replace(/\s+/g, " ").trim())
     .filter(Boolean)
@@ -361,106 +381,14 @@ function referenceAwareFallbackText(input: {
   return applyVisibleRhetoric(preserveRhetoricalEnding(input.sourceLine, selected));
 }
 
-function contextualFallbackCandidates(truth: ProductTruth, identity: string, index: number) {
-  const domain = resolveProductCopyDomain(truth.product);
-  const productContext = [truth.product.productName, truth.product.category, truth.product.productSubCategory, truth.product.detectedProductType].filter(Boolean).join(" ");
-  const meat = /고기|갈비|한우|소고기|돼지|육류|정육|meat|beef|pork/iu.test(productContext);
-  const candidates = domain === "snack"
-    ? [
-        "오늘 간식은 또 뭘 먹을까요?",
-        `간식 생각날 때 ${identity} 어때요?`,
-        "간식만 꺼내면 같이 모이는 우리 가족",
-        "주말 간식 시간의 주인공",
-        "출출한 오후에 한입",
-        "간식 고를 때 이 식감부터",
-      ]
-    : domain === "food"
-      ? meat
-        ? [
-            `${identity} 굽는 날엔 식탁이 먼저 바빠져요`,
-            "평소 고르던 고기, 오늘도 그대로 고르세요?",
-            `${identity}, 팬에 올릴 순간부터 기대되죠`,
-            "한 끼 먹고 끝내기엔 자꾸 아쉬워져요",
-            `오늘 저녁 메뉴, ${identity}에서 끝내볼까요?`,
-            "비슷해 보여도 먹는 순간의 인상은 다르죠",
-          ]
-        : [
-            "오늘 저녁은 또 뭘 먹을까요?",
-            `오늘 식탁에 ${identity} 어때요?`,
-            "우리 가족 메뉴 고민은 여기까지",
-            "오늘 식탁의 진짜 주인공",
-            "퇴근한 저녁, 간단하게 골라요",
-            "식탁 위에 바로 더해보세요",
-          ]
-      : domain === "personal-care" || domain === "beauty"
-        ? [
-            `하루 끝 샤워, ${identity}로 분위기부터 바꿔볼까요?`,
-            "늘 맡던 향과 뭐가 다른지 먼저 보세요",
-            "운동 뒤 남은 기분까지 씻어내고 싶은 순간",
-            "퇴근 뒤엔 평범한 샤워보다 선명한 이유가 필요하죠",
-            "매일 쓰는 제품일수록 원료와 사용감부터 따져요",
-            `${identity}, 욕실에 들어가는 순간이 기다려져요`,
-          ]
-        : [
-            `오늘 필요한 ${identity}`,
-            "일상에 자연스럽게 더해보세요",
-            "고민될 때 이 특징부터",
-            "매일 함께하기 좋은 선택",
-            "지금 핵심부터 살펴보세요",
-            "필요한 순간 바로 꺼내세요",
-          ];
-  return [...candidates.slice(index % candidates.length), ...candidates.slice(0, index % candidates.length)];
-}
-
 function fallbackCta(truth: ProductTruth, identity: string, index = 0) {
-  const domain = resolveProductCopyDomain(truth.product);
+  void truth;
   const shortIdentity = factCharacterCount(identity) <= 12 ? identity : "상품";
-  const options = domain === "food"
-    ? ["오늘 식탁에 담기", "오늘 메뉴로 고르기", "가격과 구성 보기", `${shortIdentity} 고르기`, "저녁 메뉴 확인하기", "판매 정보 확인하기"]
-    : domain === "snack"
-      ? ["오늘 간식으로 고르기", "간식 구성 확인하기", "한입 준비하러 가기", `${shortIdentity} 고르기`, "간식 시간에 담기", "판매 정보 확인하기"]
-      : domain === "personal-care" || domain === "beauty"
-        ? ["샤워 루틴에 담기", "향과 구성 확인하기", "오늘 루틴으로 고르기", `${shortIdentity} 확인하기`, "사용 정보 살펴보기", "내 루틴에 더하기"]
-        : ["차이 비교해보기", "구성 확인하기", "오늘 필요한지 보기", `${shortIdentity} 살펴보기`, "판매 정보 확인하기", "내 선택으로 담기"];
+  const options = [`${shortIdentity} 만나보기`, `${shortIdentity} 고르기`, "가격·구성 보기", `${shortIdentity} 자세히 보기`];
   return options[index % options.length];
 }
 
-function premiseFallbackCandidates(premise: ImageCreativePremise, identity: string) {
-  if (premise.kind === "everyday-question-answer") return [premise.situation, premise.tension, premise.productBridge, identity];
-  if (premise.kind === "everyday-relationship") return [premise.character, `${identity}, 오늘 자연스럽게 챙겨요`, premise.productBridge, identity];
-  if (premise.kind === "obvious-ad-metaphor") return [premise.situation, premise.productBridge, identity];
-  if (premise.kind === "comparison-benefit") {
-    return [`일반 상품과 비교해 ${premise.productBridge}`, premise.productBridge, `비슷해 보여도 ${identity}는 달라요`, identity];
-  }
-  if (premise.kind === "usp-focus") return [premise.productBridge, `${identity}, 이 장점부터 보세요`, identity];
-  return [premise.character, premise.situation, premise.tension, premise.productBridge];
-}
-
-function concisePremiseBridge(premise: ImageCreativePremise, identity: string) {
-  const rawBridge = String(premise.productBridge || "").replace(/\s+/g, " ").trim();
-  if (/저지방\s*부위/u.test(rawBridge)) return "저지방 부위";
-  if (/부드럽/u.test(rawBridge)) return "부드러운 식감";
-  if (/국내산/u.test(rawBridge)) return "국내산";
-  const words = rawBridge
-    .replace(/[★☆*✅⚡💥&＆·/+()[\]{}]+/gu, " ")
-    .split(/\s+/u)
-    .map((word) => word.trim().replace(/(?:으로|에서|부터|까지|처럼|보다|에게|한테|의|은|는|이|가|을|를|에|와|과)$/u, ""))
-    .filter((word) => word.length >= 2 && !/^(?:정말|오늘|현재|확인된|검증된|상품|제품|특징|구성|선택|이유)$/u.test(word));
-  const bridge = words[0] || "";
-  return factCharacterCount(bridge) >= 3 && factCharacterCount(bridge) <= 18 ? bridge : identity;
-}
-
-function premiseLedFallbackHeadline(premise: ImageCreativePremise, identity: string, factualHeadline: string) {
-  const bridge = concisePremiseBridge(premise, identity);
-  if (premise.kind === "everyday-question-answer") return "오늘도 같은 걸 고르세요?";
-  if (premise.kind === "everyday-relationship") return "오늘 저녁, 식탁이 먼저 바빠져요";
-  if (premise.kind === "obvious-ad-metaphor") return "오늘 식탁의 진짜 주인공";
-  if (premise.kind === "comparison-benefit") return `비슷해 보여도 ${bridge}, 달라요`;
-  if (premise.kind === "usp-focus") return `${bridge}, 차이부터 보세요`;
-  return factualHeadline;
-}
-
-function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], identity: string, offerText: string, index: number) {
+function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], identity: string, offerText: string) {
   const singles = uniqueFacts(facts)
     .filter((fact) => !["category", "target", "season-event", "package-option", "quantity"].includes(fact.key))
     .filter((fact) => fact.copyEligibility !== "blocked" && fact.copyEligibility !== "offerOnly")
@@ -468,8 +396,7 @@ function fallbackTextCandidates(truth: ProductTruth, facts: ProductFact[], ident
     .filter((fact) => fact.evidenceType !== "price" && fact.evidenceType !== "offer" && fact.evidenceType !== "numeric")
     .map((fact) => reasonTextForFact(fact, identity, truth))
     .filter((value) => value && factCharacterCount(value) <= 32);
-  const contexts = contextualFallbackCandidates(truth, identity, index);
-  const values = [...contexts, ...singles, identity, offerText]
+  const values = [...singles, identity, offerText]
     .map((value) => String(value || "").replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const combined: string[] = [];
@@ -543,15 +470,13 @@ function buildNumberedReasonFallback(truth: ProductTruth, reference: NativeAdRef
 /**
  * 모델 문구가 실패해도 레퍼런스의 OCR 줄 수·역할·수사 리듬을 보존해 모든
  * 비브랜드 슬롯을 채우는 결정적 fallback이다. 새 주장을 만들지 않고 검증된
- * ProductTruth와 일반적인 소비 상황만 사용한다.
+ * ProductTruth와 레퍼런스의 실제 수사 역할만 사용한다.
  */
 function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number, assignedPremise?: ImageCreativePremise, evidenceAssignment?: ReferenceCopyEvidenceAssignment): ReferenceAdaptedCopyPlan {
   const creativePremise = assignedPremise || buildImageCreativePremiseSeed(truth, reference, index);
   const facts = prioritizedPlanningFacts(truth).filter((fact) => fact.evidenceType !== "shipping" && !isShippingCreativeSignal(fact.value) && !isNonDomesticOriginCreativeSignal(fact.value) && !isProhibitedAdCopySignal(fact.value));
-  const assignedFact = evidenceAssignment?.primaryFactId ? facts.find((fact) => fact.id === evidenceAssignment.primaryFactId) : undefined;
   const headlineCandidates = uniqueFacts(facts.filter((fact) => isCleanFallbackHeadlineFact(fact, truth, profile.headlineCharacterBudget)));
   const prioritizedHeadlineCandidates = uniqueFacts([
-    ...(assignedFact?.copyEligibility === "headlineEligible" ? [assignedFact] : []),
     ...headlineCandidates.filter((fact) => fact.source === "vendor-research" && !/향(?:이|만|으로|의)?\s*(?:좋|상쾌|달콤|산뜻|포근)|향의\s*(?:특징|흐름|인상)/u.test(`${fact.label} ${fact.value}`)),
     ...headlineCandidates.filter((fact) => fact.key === "verified-descriptor"),
     ...headlineCandidates.filter((fact) => fact.key === "main-benefit"),
@@ -560,9 +485,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
   ]);
   // OCR 원문이 아직 없는 안전 fallback도 여섯 장이 같은 첫 사실만 반복하지
   // 않도록 결과 순번별로 검증된 사실을 회전한다. 사실을 새로 만들지는 않는다.
-  const headlineFact = assignedFact?.copyEligibility === "headlineEligible"
-    ? assignedFact
-    : prioritizedHeadlineCandidates[index % Math.max(1, prioritizedHeadlineCandidates.length)] || facts.find((fact) => fact.copyEligibility === "headlineEligible");
+  const headlineFact = prioritizedHeadlineCandidates[index % Math.max(1, prioritizedHeadlineCandidates.length)] || facts.find((fact) => fact.copyEligibility === "headlineEligible");
   const supportFact = prioritizedHeadlineCandidates.length > 1
     ? prioritizedHeadlineCandidates[(index + 1) % prioritizedHeadlineCandidates.length]
     : headlineCandidates.find((fact) => fact.id !== headlineFact?.id);
@@ -572,8 +495,8 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
     !["base-product-name", "category", "target"].includes(fact.key) &&
     factCharacterCount(fact.value) <= 38
   ));
-  const proofFact = assignedFact?.copyEligibility === "proofOnly" ? assignedFact : proofFacts[index % Math.max(1, proofFacts.length)] || supportFact;
-  const sourceLines = reference.nativeCopy?.useForCopyAdaptation === false ? [] : normalizeReferenceRawLines(reference.nativeCopy?.rawLines || []);
+  const proofFact = proofFacts[index % Math.max(1, proofFacts.length)] || supportFact;
+  const sourceLines = referenceCopySourceLines(reference);
   const sourceHasOfferSlot = sourceLines.some((line, lineIndex) => sourceLineRole(reference, line, lineIndex) === "offer");
   // 원본에 가격판·프로모션 슬롯이 있으면 순번과 무관하게 검증된 가격/혜택을
   // 사용한다. 직접 근거가 없을 때는 그 시각 슬롯을 없애지 않고 proof로 바꾼다.
@@ -586,8 +509,14 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
   const ctaFallbackText = fallbackCta(truth, identity, index);
   // 조사 예문은 모델 품질 비교 자료일 뿐 결정적 fallback의 문장 템플릿으로
   // 복사하지 않는다. fallback은 현재 ProductTruth와 소비 상황만 사용한다.
-  const contextualCandidates = [...premiseFallbackCandidates(creativePremise, identity), ...contextualFallbackCandidates(truth, identity, index)];
-  const contentFacts = uniqueFacts([assignedFact, headlineFact, supportFact, proofFact, ...prioritizedHeadlineCandidates, ...proofFacts]
+  // 최종 안전망은 상품군을 추측한 상황 문구를 만들지 않는다. 잘못 분류된
+  // detectedProductType 때문에 육류에 간식 문구가 섞였던 회귀를 막기 위해
+  // 현재 ProductTruth의 완결된 실제 사실과 상품 정체성만 사용한다.
+  const contextualCandidates = uniqueFacts([headlineFact, supportFact, proofFact, ...prioritizedHeadlineCandidates, ...proofFacts]
+    .filter((fact): fact is ProductFact => Boolean(fact)))
+    .map((fact) => reasonTextForFact(fact, identity, truth))
+    .filter(Boolean);
+  const contentFacts = uniqueFacts([headlineFact, supportFact, proofFact, ...prioritizedHeadlineCandidates, ...proofFacts]
     .filter((fact): fact is ProductFact => Boolean(fact))
     .filter((fact) => fact.copyEligibility !== "identityOnly")
     .filter((fact) => fact.key !== "base-product-name")
@@ -596,12 +525,12 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
   const usedFacts = new Map<string, ProductFact>();
   // 비교/질문/관계/비유 레퍼런스는 번호 목록으로 바꾸면 핵심 수사가 사라진다.
   // 단순 USP 목록형에서만 번호 구조를 보존한다.
-  const numberedFallback = sourceLines.length && creativePremise.kind === "usp-focus" ? buildNumberedReasonFallback(truth, reference, sourceLines, facts) : null;
+  const numberedFallback = sourceLines.length ? buildNumberedReasonFallback(truth, reference, sourceLines, facts) : null;
   numberedFallback?.selectedFacts.forEach((fact) => usedFacts.set(fact.id, fact));
   let contentIndex = 0;
   let offerIndex = 0;
   const roleUseCounts = new Map<NonNullable<ReferenceAdaptedCopyPlan["copySlots"]>[number]["role"], number>();
-  const contentFallbackCandidates = fallbackTextCandidates(truth, facts, identity, "", index)
+  const contentFallbackCandidates = fallbackTextCandidates(truth, facts, identity, "")
     .filter((candidate): candidate is string => Boolean(candidate))
     .filter((candidate) => !offer.facts.some((fact) => comparableCopy(candidate).includes(comparableCopy(fact.value))));
   const offerFallbackCandidates = [offer.text, ...offer.facts.map((fact) => fact.value)].filter(Boolean);
@@ -616,7 +545,8 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
       identityMentioned = true;
       return target;
     }
-    const neutral = ["한입부터 기대돼요", "오늘 저녁에 딱", "식탁이 먼저 바빠져요", "차이는 분명해요"][neutralReplacementIndex++ % 4];
+    const concreteAlternatives = contentFallbackCandidates.filter((candidate) => !comparableCopy(candidate).includes(identitySignature));
+    const neutral = concreteAlternatives[neutralReplacementIndex++ % Math.max(1, concreteAlternatives.length)] || identity;
     return preserveRhetoricalEnding(sourceLine, neutral);
   };
   const recordFactsForTarget = (target: string) => {
@@ -628,7 +558,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
     });
   };
   const factualHeadlineFallbackText = headlineFact ? reasonTextForFact(headlineFact, identity, truth) || contextualCandidates[0] : contextualCandidates[0];
-  const headlineFallbackText = premiseLedFallbackHeadline(creativePremise, identity, factualHeadlineFallbackText);
+  const headlineFallbackText = factualHeadlineFallbackText || identity;
   const supportFallbackText = supportFact ? reasonTextForFact(supportFact, identity, truth) || contextualCandidates[1] : contextualCandidates[1];
   const proofFallbackText = proofFact && !["quantity", "numeric", "price", "offer"].includes(proofFact.evidenceType || "")
     ? reasonTextForFact(proofFact, identity, truth) || contextualCandidates[2]
@@ -714,6 +644,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
       .map(({ role, targetText }, slotIndex) => ({
         index: slotIndex,
         role,
+        action: "replace" as const,
         sourceText: "",
         targetText,
         emphasis: role === "headline" || role === "offer" ? "strong" as const : "none" as const,
@@ -733,7 +664,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
   ];
   let primaryOfferAssigned = false;
   copySlots = copySlots.map((slot) => {
-    if (slot.sourceType === "source-brand" || slot.replacePolicy === "remove") return { ...slot, targetText: "" };
+    if ((slot.action || (slot.sourceType === "source-brand" || slot.replacePolicy === "remove" ? "remove" : "replace")) === "remove") return { ...slot, targetText: "" };
     const isPrimaryVerifiedOffer = slot.role === "offer" && Boolean(offer.text) && !primaryOfferAssigned;
     if (isPrimaryVerifiedOffer) primaryOfferAssigned = true;
     const effectiveRole = slot.role === "offer" && !isPrimaryVerifiedOffer ? "proof" as const : slot.role;
@@ -775,7 +706,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
     };
   });
   const headlineSlotIndexes = copySlots
-    .map((slot, slotIndex) => slot.role === "headline" && slot.replacePolicy !== "remove" ? slotIndex : -1)
+    .map((slot, slotIndex) => slot.role === "headline" && (slot.action || (slot.sourceType === "source-brand" || slot.replacePolicy === "remove" ? "remove" : "replace")) === "replace" ? slotIndex : -1)
     .filter((slotIndex) => slotIndex >= 0);
   if (headlineSlotIndexes.length) {
     const firstHeadlineIndex = headlineSlotIndexes[0];
@@ -787,7 +718,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
     // 여러 headline OCR 줄의 개별 길이는 맞아도 합친 헤드라인이 프로필 예산을
     // 넘을 수 있다. 첫 수사 문장을 보존하고 뒤 줄을 짧은 완결 문장으로 바꾼다.
     const headlineBudget = profile.headlineCharacterBudget + 8;
-    const compactHeadlineFillers = ["한입부터 달라요", "오늘 저녁에 딱", "차이는 분명해요"];
+    const compactHeadlineFillers = contentFallbackCandidates.filter((value) => comparableCopy(value) !== comparableCopy(copySlots[firstHeadlineIndex].targetText));
     let usedHeadlineCharacters = factCharacterCount(copySlots[firstHeadlineIndex].targetText);
     headlineSlotIndexes.slice(1).forEach((slotIndex, fillerIndex) => {
       const slot = copySlots[slotIndex];
@@ -800,9 +731,10 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
         usedHeadlineCharacters += factCharacterCount(slot.targetText);
         return;
       }
-      const replacement = compactHeadlineFillers
+      const usableFillers = compactHeadlineFillers.length ? compactHeadlineFillers : [identity];
+      const replacement = usableFillers
         .map((value) => preserveRhetoricalEnding(slot.sourceText, value))
-        .find((value) => factCharacterCount(value) <= remaining) || preserveRhetoricalEnding(slot.sourceText, compactHeadlineFillers[fillerIndex % compactHeadlineFillers.length]);
+        .find((value) => factCharacterCount(value) <= remaining) || preserveRhetoricalEnding(slot.sourceText, usableFillers[fillerIndex % usableFillers.length]);
       copySlots[slotIndex] = { ...slot, targetText: replacement };
       usedHeadlineCharacters += factCharacterCount(replacement);
     });
@@ -816,7 +748,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
   // 완결된 상세페이지 사실만 후보에 넣었으므로 여기서 문자열을 기계적으로
   // 자르지 않는다. 중간 잘림은 광고 문구 품질과 사실 전달을 함께 훼손한다.
   const headline = headlineLines.join(" ") || headlineFallbackText;
-  const selected = uniqueFacts([assignedFact, ...usedFacts.values()].filter((fact): fact is ProductFact => Boolean(fact)));
+  const selected = uniqueFacts([...usedFacts.values()]);
   if (!selected.length) [headlineFact, supportFact, proofFact, ...offer.facts].filter((fact): fact is ProductFact => Boolean(fact)).forEach((fact) => selected.push(fact));
   const fullCopy = copySlots.map((slot) => slot.targetText).filter(Boolean).join("\n");
   const claimReview = reviewReferenceCopyClaims({ text: fullCopy, truth, coreFactIds: selected.map((fact) => fact.id) });
@@ -826,6 +758,13 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
     referenceId: reference.id,
     referenceCopyProfileId: profile.id,
     creativePremise,
+    sceneAdaptation: buildReferenceSceneAdaptation({
+      truth,
+      reference,
+      premise: creativePremise,
+      mechanism: referenceRhetoricalMechanism(reference),
+      copy: fullCopy,
+    }),
     evidenceAssignment,
     creativeAngle,
     hookIdea,
@@ -835,7 +774,7 @@ function createReferenceNuanceFallbackPlan(truth: ProductTruth, reference: Nativ
     copyReviewRequired: claimReview.copyReviewRequired,
     fullCopy,
     copyBlocks: copySlots.map((slot) => ({ role: slot.role, text: slot.targetText, coreFactIds: selected.map((fact) => fact.id) })),
-    candidateSelectionReason: "AI 후보가 없을 때 ProductTruth 사실·소비 상황·사람 반응·레퍼런스 수사 역할을 결합한 결정적 대체안입니다.",
+    candidateSelectionReason: "AI 문구가 없을 때 ProductTruth 사실을 레퍼런스의 실제 수사 역할과 슬롯에 맞춘 결정적 대체안입니다.",
     referenceRawCopy: sourceLines.join("\n"),
     referenceRawLines: sourceLines,
     adaptedLines,
@@ -931,13 +870,21 @@ function createEvidenceSafeMinimalPlan(
     claimModes: claimReview.claimModes,
     copyRiskFlags: claimReview.copyRiskFlags,
     copyReviewRequired: claimReview.copyReviewRequired,
-    naturalnessScore: Math.max(NATURALNESS_PASS_SCORE, fallback.naturalnessScore),
-    referenceFitScore: Math.max(REFERENCE_FIT_PASS_SCORE, fallback.referenceFitScore),
+    // 안전 fallback은 사실 검증을 통과해 제작은 계속하지만, 창의 품질 점수를
+    // 인위적으로 상향하지 않는다. UI/로그에서 AI 원안과 구분할 수 있어야 한다.
+    naturalnessScore: fallback.naturalnessScore,
+    referenceFitScore: fallback.referenceFitScore,
     factualSafetyScore: 100,
     validationStatus: "valid",
     validationErrors: [],
     repairCount: Math.max(1, fallback.repairCount),
     generationSource: "safe-minimal",
+    planningTrace: {
+      firstErrors: fallback.validationErrors.slice(0, 8),
+      repairAttempted: false,
+      fallbackCopy: fullCopy,
+      finalSource: "safe-minimal",
+    },
   };
   const validationErrors = [...new Set([
     ...safeMinimalCriticalErrors(validatePlan(candidate, truth, profile)),
@@ -961,13 +908,12 @@ export function hasExecutableReferenceCopyContract(plan: ReferenceAdaptedCopyPla
   if (!plan.headline.trim() || !targetLines.length || !targetSlots.length) return false;
   const blankNonBrandSlots = (plan.copySlots || []).filter((slot) =>
     slot.sourceText.trim() &&
-    slot.sourceType !== "source-brand" &&
-    slot.replacePolicy !== "remove" &&
+    (slot.action || (slot.sourceType === "source-brand" || slot.replacePolicy === "remove" ? "remove" : "replace")) === "replace" &&
     !slot.targetText.trim()
   );
   if (blankNonBrandSlots.length) return false;
   const groundingErrors = (plan.validationErrors || []).filter((error) =>
-    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지(?:\s*특가)?\s*근거|배송|브랜드|업체명|판매자명|상품 카테고리 의미 충돌/u.test(error)
+    /ProductTruth|근거(?:가| 없이| 없는)|확인되지|허위|원산지|산지(?:\s*특가)?\s*근거|배송|브랜드|업체명|판매자명|상품 카테고리 의미 충돌|불완전한 문구|연결어에서 끝|문장 조각|괄호가/u.test(error)
   );
   if (groundingErrors.length) return false;
   const renderedCopy = [plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta, ...targetLines]
@@ -979,14 +925,10 @@ export function hasExecutableReferenceCopyContract(plan: ReferenceAdaptedCopyPla
 
 export function hasPublishableReferenceCopyContract(plan: ReferenceAdaptedCopyPlan | undefined) {
   if (!hasExecutableReferenceCopyContract(plan) || !plan) return false;
-  const renderedCopy = [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].filter(Boolean).join(" ");
-  return plan.validationStatus === "valid" &&
-    plan.generationSource !== "reference-best-effort" &&
-    plan.naturalnessScore >= NATURALNESS_PASS_SCORE &&
-    plan.referenceFitScore >= REFERENCE_FIT_PASS_SCORE &&
-    plan.factualSafetyScore >= 90 &&
-    !(plan.validationErrors || []).length &&
-    findImageCreativePremiseCopyErrors(plan.creativePremise, renderedCopy).length === 0;
+  // 문구 밀도·그룹 중복·특정 premise 같은 기획 점수는 생성 차단 조건이
+  // 아니다. 검증된 사실, 완결된 문장, 비어 있지 않은 렌더 슬롯만 지키면
+  // 레퍼런스의 실제 뉘앙스를 이미지 편집 단계가 이어서 활용한다.
+  return plan.factualSafetyScore >= 90;
 }
 
 export async function createBestEffortReferenceCopyPlan(input: {
@@ -1025,11 +967,7 @@ function ensureRenderableReferencePlans(input: {
   const selectedPlans: ReferenceAdaptedCopyPlan[] = [];
   input.references.forEach((reference, index) => {
     const plan = input.plans[index];
-    const remainsDiverse = (candidate: ReferenceAdaptedCopyPlan) => {
-      const checked = applyReferenceCopyGroupRules([...selectedPlans, candidate], input.truth).at(-1);
-      return checked?.validationStatus !== "invalid";
-    };
-    if (hasPublishableReferenceCopyContract(plan) && remainsDiverse(plan!)) {
+    if (hasPublishableReferenceCopyContract(plan)) {
       selectedPlans.push(plan!);
       return;
     }
@@ -1053,11 +991,6 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
     errors.push(...claimReview.errors);
     if (plan.copyReviewRequired || claimReview.copyReviewRequired) errors.push("자동 제작 후보에 사람의 검토가 필요한 dramatized-persona 원안이 남아 있습니다.");
   }
-  errors.push(...findImageCreativePremiseErrors(plan.creativePremise, truth));
-  errors.push(...findImageCreativePremiseCopyErrors(
-    plan.creativePremise,
-    [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].filter(Boolean).join(" ")
-  ));
   errors.push(...findReferenceCopyNaturalnessErrors(plan));
   errors.push(...findProductCopySemanticErrors(
     [...(plan.adaptedLines || []), plan.headline, plan.subCopy, plan.proof, plan.offer, plan.cta].join(" "),
@@ -1132,7 +1065,7 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
   const slots = plan.copySlots || [];
   const removalIndexes = new Set(
     slots
-      .filter((slot) => slot.sourceType === "source-brand" || slot.replacePolicy === "remove")
+      .filter((slot) => (slot.action || (slot.sourceType === "source-brand" || slot.replacePolicy === "remove" ? "remove" : "replace")) === "remove")
       .map((slot) => slot.index)
   );
   if (sourceLines.length && targetLines.length !== sourceLines.length) errors.push("레퍼런스 원문과 적응 문구의 줄 수가 다릅니다.");
@@ -1192,7 +1125,7 @@ function validatePlan(plan: ReferenceAdaptedCopyPlan, truth: ProductTruth, profi
   if (identityMentions.length > 1) errors.push("같은 상품명이 한 이미지의 여러 문구 블록에 반복됐습니다.");
   const slotSignatures = new Set<string>();
   for (const slot of plan.copySlots || []) {
-    if (slot.role === "cta" || slot.sourceType === "source-brand" || slot.replacePolicy === "remove") continue;
+    if (slot.role === "cta" || (slot.action || (slot.sourceType === "source-brand" || slot.replacePolicy === "remove" ? "remove" : "replace")) === "remove") continue;
     const signature = comparableCopy(slot.targetText);
     if (signature.length < 5) continue;
     if (slotSignatures.has(signature)) errors.push("같은 핵심 문구가 한 이미지의 여러 문구 블록에 반복됐습니다.");
@@ -1218,7 +1151,7 @@ function applyMerchantCredentialGroupRule(plans: ReferenceAdaptedCopyPlan[]) {
 function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: ProductTruth, reference: NativeAdReference, profile: ReferenceCopyProfile, index: number, assignedPremise: ImageCreativePremise, source: "codex-local" | "repaired-codex-local", evidenceAssignment?: ReferenceCopyEvidenceAssignment): ReferenceAdaptedCopyPlan {
   if (!raw || raw.referenceId !== reference.id) return createEvidenceSafeMinimalPlan(truth, reference, profile, index, assignedPremise, evidenceAssignment);
   const known = new Map(truth.facts.map((fact) => [fact.id, fact]));
-  const storedSourceLines = reference.nativeCopy?.useForCopyAdaptation === false ? [] : normalizeReferenceRawLines(reference.nativeCopy?.rawLines || []);
+  const storedSourceLines = referenceCopySourceLines(reference);
   const referenceRawLines = storedSourceLines;
   const proposedAdaptedLines = normalizeReferenceRawLines(raw.adaptedLines);
   const copySlots = buildCopySlots(reference, referenceRawLines, proposedAdaptedLines);
@@ -1231,6 +1164,13 @@ function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: 
     referenceId: reference.id,
     referenceCopyProfileId: profile.id,
     creativePremise: normalizeImageCreativePremise(raw.creativePremise, assignedPremise, truth),
+    sceneAdaptation: raw.sceneAdaptation || buildReferenceSceneAdaptation({
+      truth,
+      reference,
+      premise: normalizeImageCreativePremise(raw.creativePremise, assignedPremise, truth),
+      mechanism: referenceRhetoricalMechanism(reference),
+      copy: proposedAdaptedLines.join(" "),
+    }),
     evidenceAssignment,
     creativeAngle: raw.creativeAngle,
     hookIdea: raw.hookIdea,
@@ -1243,7 +1183,7 @@ function normalizePlan(raw: PlannerPayload["plans"][number] | undefined, truth: 
     candidateScore: raw.candidateScore,
     candidateSelectionReason: raw.candidateSelectionReason,
     copyCandidates: raw.copyCandidates || raw.candidates,
-    referenceRawCopy: reference.nativeCopy?.useForCopyAdaptation === false ? "" : reference.nativeCopy?.rawText || "",
+    referenceRawCopy: referenceRawLines.join("\n"),
     referenceRawLines,
     adaptedLines,
     copySlots,

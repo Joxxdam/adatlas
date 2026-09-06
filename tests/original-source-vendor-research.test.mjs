@@ -322,4 +322,8 @@ test("상품 용도가 원료 단어보다 우선해 화장품 간식 오분류�
   assert.equal(resolveProductCopyDomain(apple), "snack");
   assert.deepEqual(findProductCopySemanticErrors("오늘 간식으로 사과 한입", apple), []);
   assert.match(findProductCopySemanticErrors("욕실 샤워 루틴에 사과", apple).join(" "), /상품 카테고리 의미 충돌/u);
+
+  const meat = extracted({ productName: "48시간 숙성 특수부위 모듬 구이세트", category: "육류", subcategory: "소고기", detectedProductType: "fruit" });
+  assert.equal(resolveProductCopyDomain(meat), "food");
+  assert.match(findProductCopySemanticErrors("오늘 간식으로 고기 한입", meat).join(" "), /상품 카테고리 의미 충돌/u);
 });

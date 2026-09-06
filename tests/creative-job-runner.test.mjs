@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
-import { cancelGenerationJob, CURRENT_REFERENCE_COPY_POLICY_VERSION, CURRENT_REFERENCE_EDIT_JOB_VERSION, CURRENT_REFERENCE_EDIT_PIPELINE, resumeGenerationJob, selectRunnableResult, selectRunnableResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { cancelGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, resumeGenerationJob, selectRunnableResult, selectRunnableResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
+import { DEFAULT_CODEX_GENERATION_PIPELINE, DEFAULT_CODEX_GENERATION_PROMPT_VERSION, DEFAULT_CODEX_GENERATION_STAGE_ORDER, DEFAULT_CODEX_GENERATION_WORKFLOW } from "../app/lib/creative-generation/codexDirectTest.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -16,25 +17,19 @@ function job(statuses = ["pending", "pending", "pending"]) {
     id: "creative-job-runner-test-12345678",
     status: "pending",
     engine: "codex_local",
+    sourceType: "manual",
     version: CURRENT_REFERENCE_EDIT_JOB_VERSION,
-    pipeline: CURRENT_REFERENCE_EDIT_PIPELINE,
+    pipeline: DEFAULT_CODEX_GENERATION_PIPELINE,
+    codexDirectTest: { prompt: "레퍼런스를 참고해 상품 광고를 생성해 주세요.", productImagePath: "/product.jpg" },
     copyPlanMode: "reference-adapted",
-    templateRegistryVersion: CURRENT_REFERENCE_COPY_POLICY_VERSION,
     results: sixStatuses.map((status, index) => ({
       ...result(`h0${index + 1}`, status),
-      nativeCreative: { adReference: { id: `reference-${index + 1}` } },
-      referenceAdaptedCopyPlan: {
-        creativePremise: {
-          policyVersion: "image-creative-premise-v2",
-          kind: index === 0 ? "everyday-relationship" : index === 1 ? "everyday-question-answer" : "usp-focus",
-          fictionalContext: true,
-          character: `테스트 인물 ${index + 1}`,
-          situation: `테스트 상황 ${index + 1}`,
-          tension: `테스트 긴장 ${index + 1}`,
-          productBridge: `검증된 상품 특성 ${index + 1}`,
-          supportingFactIds: [],
-          factBoundary: "생활 장면은 광고용 창작 맥락이며 상품 사실은 검증된 ProductTruth만 사용한다.",
-        },
+      nativeCreative: {
+        engine: "codex_local",
+        workflow: DEFAULT_CODEX_GENERATION_WORKFLOW,
+        stageOrder: DEFAULT_CODEX_GENERATION_STAGE_ORDER,
+        promptVersion: DEFAULT_CODEX_GENERATION_PROMPT_VERSION,
+        adReference: { id: `reference-${index + 1}` },
       },
     })),
     retryLimit: 2,

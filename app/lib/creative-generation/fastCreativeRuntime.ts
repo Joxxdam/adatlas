@@ -27,6 +27,11 @@ function effort(value: string | undefined, fallback: FastCreativeRuntimeConfig["
   return value === "low" || value === "medium" || value === "high" ? value : fallback;
 }
 
+function plannerEffort(value: string | undefined): FastCreativeRuntimeConfig["plannerReasoning"] {
+  const configured = effort(value, "medium");
+  return configured === "low" ? "medium" : configured;
+}
+
 export function resolveFastCreativeRuntime(env: NodeJS.ProcessEnv = process.env): FastCreativeRuntimeConfig {
   return {
     enabled: flag(env.ADATLAS_FAST_CREATIVE_MODE, true),
@@ -35,7 +40,9 @@ export function resolveFastCreativeRuntime(env: NodeJS.ProcessEnv = process.env)
     // 그대로 저장하면 안 됩니다. 환경변수가 0이어도 치명 QA 보정 1회는 보장합니다.
     autoRevisionLimit: bounded(env.ADATLAS_AUTO_REVISION_LIMIT, 1, 1, 1),
     groupQaEnabled: flag(env.ADATLAS_BACKGROUND_GROUP_QA, false),
-    plannerReasoning: effort(env.ADATLAS_CODEX_PLANNER_REASONING, "medium"),
+    // 레퍼런스 6장의 OCR 역할과 상품 사실을 한 번에 전용하므로 문구 기획은
+    // 환경변수에 low가 남아 있어도 최소 medium으로 실행합니다.
+    plannerReasoning: plannerEffort(env.ADATLAS_CODEX_PLANNER_REASONING),
     imageReasoning: effort(env.ADATLAS_CODEX_IMAGE_REASONING, "low"),
     maxCreatives: bounded(env.ADATLAS_MAX_CREATIVES_PER_PRODUCT, 6, 1, 6),
   };

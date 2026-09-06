@@ -1,6 +1,6 @@
 import type { ProductImageCandidate } from "./types";
 import { inferProductDetailOcrEvidenceRoles } from "./productDetailOcrSelection";
-import { isMalformedProductSignal, isPriceOnlyCreativeSignal, isPromotionalProductSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../creative-generation/productSignalHygiene";
+import { isMalformedProductSignal, isMerchantCredentialCreativeSignal, isPriceOnlyCreativeSignal, isPromotionalProductSignal, isUnsafeProductCreativeSignal, isVagueStandaloneSensoryClaim } from "../creative-generation/productSignalHygiene";
 import { absoluteUrl, currentProductSummaryText, decodeHtml, metaContent } from "./productHtmlSignals.server";
 import { isPrivateHostname } from "./productPageResponse.server";
 
@@ -17,7 +17,10 @@ function looksLikeUsableProductImage(value: string) {
   const lower = value.toLowerCase();
   if (!/^https?:\/\//.test(lower)) return false;
   if (lower.startsWith("data:")) return false;
-  if (/(sprite|favicon|logo|icon|blank|placeholder|loading|tracking|pixel|badge|btn|button|coupon|event|header|footer|share|kakao|talk|qr|app|ad_|ads?\/|noimage|salelabel|main_floting|main_info|floating|whiteclose|floating_zoom|commonimg|reward|insertreview|qnaregist|alarm_customer|getstockchild)/.test(lower)) return false;
+  if (/(sprite|favicon|logo|icon|blank|placeholder|loading|tracking|pixel|badge|btn|button|coupon|event|header|footer|share|kakao|talk|qr|app|ad_|noimage|salelabel|main_floting|main_info|floating|whiteclose|floating_zoom|commonimg|reward|insertreview|qnaregist|alarm_customer|getstockchild)/.test(lower)) return false;
+  // `ads?/`를 경계 없이 검사하면 Cafe24의 `/upload/` 끝부분인 `ad/`까지
+  // 광고 디렉터리로 오인해 상세페이지 원본 전체를 버리게 됩니다.
+  if (/(?:^|[/_.-])ads?(?:[/_.-]|$)/.test(lower)) return false;
   if (/\.(svg)(?:[?#].*)?$/.test(lower)) return false;
   return /\.(jpg|jpeg|png|webp|avif|gif)(?:[?#].*)?$/.test(lower) || /image|img|product|detail|thumb|thumfull|thumbpc|photo|cdn|upload|editor|contents?\//.test(lower);
 }
@@ -108,6 +111,23 @@ function selectMainProductImage(candidates: ProductImageCandidate[], galleryImag
 function getTagAttribute(tag: string, name: string) {
   const pattern = new RegExp(`\\s${name}=["']([^"']*)["']`, "i");
   return decodeHtml(tag.match(pattern)?.[1] || "");
+}
+
+function collectCafe24EditorDetailImages(html: string, baseUrl: string) {
+  const images: Array<{ url: string; order: number }> = [];
+  const seen = new Set<string>();
+  const pattern = /<img\b[^>]*\sec-data-src=["']([^"']+)["'][^>]*>/gi;
+
+  for (const match of html.matchAll(pattern)) {
+    const url = toAbsoluteImageUrl(match[1] || "", baseUrl);
+    if (!url || !looksLikeUsableProductImage(url)) continue;
+    const key = normalizeImageUrlForDedup(url);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    images.push({ url, order: match.index ?? 0 });
+  }
+
+  return images;
 }
 
 function bestSrcsetImage(value: string, baseUrl: string) {
@@ -254,6 +274,14 @@ function extractEnhancedImageCandidates(html: string, baseUrl: string, seedImage
 
   const metaImages = [metaContent(html, "og:image"), metaContent(html, "og:image:secure_url"), metaContent(html, "twitter:image"), metaContent(html, "twitter:image:src"), metaContent(html, "image")];
   metaImages.filter(Boolean).forEach((url, index) => pushCandidate(candidates, { url, type: "main", order: 20 + index }, baseUrl));
+  collectCafe24EditorDetailImages(html, baseUrl).forEach((image) => {
+    pushCandidate(candidates, {
+      url: image.url,
+      type: "detail",
+      context: "Cafe24 product detail editor original image",
+      order: image.order,
+    }, baseUrl);
+  });
 
   const backgroundPattern = /url\((["']?)([^"')]+)\1\)/gi;
   for (const match of html.matchAll(backgroundPattern)) {
@@ -264,7 +292,11 @@ function extractEnhancedImageCandidates(html: string, baseUrl: string, seedImage
   }
 
   const imgPattern = /<img\b[^>]*>/gi;
-  const attrNames = ["src", "data-src", "data-original", "data-lazy", "data-lazy-src", "data-url", "data-image", "data-img", "data-zoom-image", "data-full"];
+  // Cafe24's product-detail editor keeps the original image URL in
+  // `ec-data-src` until its lazy loader hydrates the page. Server-side HTML
+  // extraction never runs that loader, so this attribute must be read
+  // directly or the entire detail body can disappear from the candidate set.
+  const attrNames = ["src", "data-src", "ec-data-src", "data-original", "data-lazy", "data-lazy-src", "data-url", "data-image", "data-img", "data-zoom-image", "data-full"];
   for (const match of html.matchAll(imgPattern)) {
     const tag = match[0];
     const index = match.index ?? 0;
@@ -356,7 +388,7 @@ function indexInRanges(index: number, ranges: Array<[number, number]>) {
 const productUspTextPattern = /(원산지|국내산|한우|등급|부위|등심|안심|채끝|갈비|마블링|선별|숙성|냉장|냉동|산지|직송|구성|중량|용량|식감|육즙|풍미|고소|부드|신선|원재료|함량|무첨가|저자극|향|세정|쿨링|보습|선물|캠핑|가족|실속|프리미엄|특마블|도매팩|사과|청사과|아오리|과일|제철|수확|한정|아삭|새콤달콤|청량|과즙|품종)/i;
 const productUspBoilerplatePattern = /(로그인|회원가입|장바구니|마이페이지|고객센터|상품문의|구매후기|리뷰쓰기|교환|반품|환불|배송안내|개인정보|이용약관|추천상품|관련상품|최근 본 상품|전체\s*리뷰|리뷰\s*목록|step\s*\d+|구성\s*선택|copyright|all rights reserved)/i;
 function isNoisyProductSignal(value: string) {
-  return isUnsafeProductCreativeSignal(value) || isMalformedProductSignal(value) || /[ㄱ-ㅎㅏ-ㅣ]|너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
+  return isUnsafeProductCreativeSignal(value) || isMerchantCredentialCreativeSignal(value) || isMalformedProductSignal(value) || /[ㄱ-ㅎㅏ-ㅣ]|너무[ㅜㅠㅋㅎ]*\s*좋|중요부위|샴푸\s*너무|리뷰.*리뷰.*리뷰/i.test(value);
 }
 
 function productDetailText(html: string) {
@@ -464,8 +496,11 @@ function collectGalleryImages(html: string, baseUrl: string, seedImages: string[
     order: 100_000 + index,
     inDetail: false,
   }));
+  collectCafe24EditorDetailImages(html, baseUrl).forEach((image) => {
+    candidates.push({ image: image.url, score: 100, order: image.order, inDetail: true });
+  });
   const imgPattern = /<img\b[^>]*>/gi;
-  const srcPattern = /\s(?:src|data-src|data-original|data-lazy|data-image|data-url)=["']([^"']+)["']/i;
+  const srcPattern = /\s(?:src|data-src|ec-data-src|data-original|data-lazy|data-image|data-url)=["']([^"']+)["']/i;
   const srcsetPattern = /\s(?:srcset|data-srcset)=["']([^"']+)["']/i;
   const dimensionPattern = /\s(?:width|height)=["']?(\d{2,5})["']?/gi;
   const contextPattern = /\s(?:class|id|alt|title)=["']([^"']+)["']/gi;

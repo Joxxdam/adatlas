@@ -2,7 +2,7 @@ import "server-only";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { editImageFromSource } from "../../mvp/openaiImageClient.ts";
-import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
+import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativePlannedSubjectMode, nativeReferenceContainsPerson, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import { readBrandMemory } from "../codexRegistry.server.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
 import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput } from "./CreativeGenerationProvider.ts";
@@ -54,6 +54,7 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
     const state = await this.status();
     if (!state.available) throw new Error(state.detail);
     const stage = input.stage || "copy-replacement";
+    if (stage === "codex-direct-test") throw new Error("기본 이미지 제작은 유료 API가 아니라 로컬 Codex에서만 실행합니다.");
     const productReferences = input.productReferencePaths || input.referencePaths;
     const sourceImagePath = stage === "structure-recreation" ? input.adReferencePath || input.sourceImagePath : input.sourceImagePath;
     if (!sourceImagePath) throw new Error(`${stage} 단계의 첫 번째 편집 소스가 없습니다.`);
@@ -97,7 +98,7 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
             content: [
               {
                 type: "input_text",
-                text: `${buildNativeValidationPrompt(input.job, input.result, { hasLockedProductStage: Boolean(input.lockedProductStagePath) })}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,sourcePersonDetected,sourcePersonReplaced,humanCompositionChanged,humanSceneBackgroundRebuilt,humanSceneBackgroundFindings,targetAudienceFit,humanReplacementFindings,humanCopyAligned,humanCopyAlignmentFindings,sourceAnimalDetected,sourceAnimalReplaced,animalReplacementFindings,sourceContextualBackgroundDetected,contextualBackgroundRebuilt,contextualBackgroundFindings,sceneProductInteractionAligned,sceneProductInteractionFindings,unrelatedFoodOrIngredientDetected,unrelatedFoodOrIngredientFindings,meatCutIdentityAccurate,meatTextureNatural,meatArtificialPatternDetected,meatArtificialPatternFindings,meatGrotesqueDetailDetected,meatGrotesqueDetailFindings,meatPresentationModeAligned,meatPresentationFindings,meatCookedPresentationDetected,meatCookedEvidenceSatisfied,meatSetCompositionAccurate,meatObservedPackCount,sourceBrandRegionCleared,sourceBrandRegionFindings,comparisonSemanticAligned,comparisonSemanticFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. 레퍼런스에 실제·일러스트 동물이 있으면 sourceAnimalDetected=true이며 상품 관련 다른 동물로 교체됐을 때만 sourceAnimalReplaced=true다. 실제 장소·생활 소품 맥락의 배경이 있으면 sourceContextualBackgroundDetected=true다. contextualBackgroundRebuilt는 인물 레퍼런스에서는 통합 장면을 재구성했을 때, 비인물 레퍼런스에서는 호환 배경을 보존하고 충돌 소품만 국소 교체했을 때 true다. 불필요하게 전체 배경을 바꿨거나 충돌 소품이 남으면 false다. 식품에서 현재 상품·확인된 재료 외 먹거리가 하나라도 보이면 unrelatedFoodOrIngredientDetected=true다. sourceBrandRegionCleared는 원본 브랜드 글자와 그 빈 배지 컨테이너가 모두 사라졌을 때만 true다. recommendation은 approve, revise, manual-review 중 하나다.`,
+                text: `${buildNativeValidationPrompt(input.job, input.result, { hasLockedProductStage: Boolean(input.lockedProductStagePath) })}\nJSON만 반환: {hookAlignment,productIdentity,factualAccuracy,koreanTextAccuracy,readability,composition,diversity,commercialQuality,exportCompliance,productVisibility,humanNaturalness,categoryFit,foodAppetiteAppeal,sensoryExpression,mobileReadability,observedKoreanText,standaloneLogoDetected,standaloneLogoFindings,sourcePersonDetected,sourcePersonReplaced,humanCompositionChanged,humanSceneBackgroundRebuilt,humanSceneBackgroundFindings,targetAudienceFit,humanReplacementFindings,humanCopyAligned,humanCopyAlignmentFindings,plannedSubjectModeAligned,plannedSubjectModeFindings,sourceAnimalDetected,sourceAnimalReplaced,animalReplacementFindings,sourceContextualBackgroundDetected,contextualBackgroundRebuilt,contextualBackgroundFindings,sceneProductInteractionAligned,sceneProductInteractionFindings,unrelatedFoodOrIngredientDetected,unrelatedFoodOrIngredientFindings,meatCutIdentityAccurate,meatTextureNatural,meatArtificialPatternDetected,meatArtificialPatternFindings,meatGrotesqueDetailDetected,meatGrotesqueDetailFindings,meatPresentationModeAligned,meatPresentationFindings,meatCookedPresentationDetected,meatCookedEvidenceSatisfied,meatSetCompositionAccurate,meatObservedPackCount,sourceBrandRegionCleared,sourceBrandRegionFindings,comparisonSemanticAligned,comparisonSemanticFindings,failures,recommendation}. standaloneLogoDetected는 실제 상품 패키지 밖에 새로 생성된 독립 로고·워드마크·엠블럼이 하나라도 있으면 true다. plannedSubjectModeAligned는 확정된 none/new-adult/product-character와 action/setting을 그대로 따랐을 때만 true다. 레퍼런스에 실제·일러스트 동물이 있으면 sourceAnimalDetected=true이며 상품 관련 다른 동물로 교체됐을 때만 sourceAnimalReplaced=true다. 실제 장소·생활 소품 맥락의 배경이 있으면 sourceContextualBackgroundDetected=true다. contextualBackgroundRebuilt는 원본 인물 영역을 계획대로 재구성했거나, 비인물 레퍼런스에서 호환 배경을 보존하고 충돌 소품만 국소 교체했을 때 true다. 식품에서 현재 상품·확인된 재료 외 먹거리가 하나라도 보이면 unrelatedFoodOrIngredientDetected=true다. sourceBrandRegionCleared는 원본 브랜드 글자와 그 빈 배지 컨테이너가 모두 사라졌을 때만 true다. recommendation은 approve, revise, manual-review 중 하나다.`,
               },
               {
                 type: "input_text",
@@ -162,6 +163,8 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         humanReplacementFindings: Array.isArray(parsed.humanReplacementFindings) ? parsed.humanReplacementFindings.map(String).slice(0, 10) : [],
         humanCopyAligned: parsed.humanCopyAligned !== false,
         humanCopyAlignmentFindings: Array.isArray(parsed.humanCopyAlignmentFindings) ? parsed.humanCopyAlignmentFindings.map(String).slice(0, 10) : [],
+        plannedSubjectModeAligned: parsed.plannedSubjectModeAligned !== false,
+        plannedSubjectModeFindings: Array.isArray(parsed.plannedSubjectModeFindings) ? parsed.plannedSubjectModeFindings.map(String).slice(0, 10) : [],
         sourceAnimalDetected: parsed.sourceAnimalDetected === true,
         sourceAnimalReplaced: parsed.sourceAnimalReplaced === true,
         animalReplacementFindings: Array.isArray(parsed.animalReplacementFindings) ? parsed.animalReplacementFindings.map(String).slice(0, 10) : [],
@@ -196,7 +199,9 @@ export class OpenAIFinalCreativeProvider implements CreativeGenerationProvider {
         category: input.job.creativePlan.categoryCreativeProfile?.category || "general",
         exportComplianceVerified: input.exportComplianceVerified,
         requiresHumanReplacement: nativeReferenceRequiresHumanReplacement(input.result),
-        requiresHumanSceneBackgroundRebuild: nativeReferenceRequiresHumanReplacement(input.result),
+        sourceContainsPerson: nativeReferenceContainsPerson(input.result),
+        plannedSubjectMode: nativePlannedSubjectMode(input.result),
+        requiresHumanSceneBackgroundRebuild: nativeReferenceContainsPerson(input.result),
         requiresContextualBackgroundRebuild: nativeReferenceRequiresContextualBackgroundRebuild(input.result),
         requiresSourceBrandRegionClear: nativeReferenceRequiresSourceBrandRegionClear(input.result),
         requiresComparisonSemanticAlignment: nativeReferenceRequiresComparisonSemantics(input.result),

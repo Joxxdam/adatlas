@@ -26,6 +26,10 @@ async function writeStore(store: Store) {
   await rename(temporary, file);
 }
 
+export function adCopyStoreFilePath() {
+  return storeFile();
+}
+
 async function serial<T>(work: () => Promise<T>) {
   const previous = state[lockKey] || Promise.resolve();
   let release!: () => void;
@@ -45,10 +49,25 @@ export const adCopyRepository = {
   async save(record: ProductAdCopy) {
     return serial(async () => {
       const store = await readStore();
-      store.records = [...store.records.filter((item) => item.id !== record.id && item.jobId !== record.jobId), record].slice(-500);
+      store.records = [
+        ...store.records.filter((item) => {
+          if (item.id === record.id) return false;
+          if (record.archiveEntryId) return item.archiveEntryId !== record.archiveEntryId;
+          return Boolean(item.archiveEntryId) || item.jobId !== record.jobId;
+        }),
+        record,
+      ].slice(-500);
       await writeStore(store);
       return record;
     });
+  },
+
+  async list() {
+    return (await readStore()).records;
+  },
+
+  async getByArchiveEntry(archiveEntryId: string) {
+    return (await readStore()).records.find((item) => item.archiveEntryId === archiveEntryId);
   },
 
   async getByJob(jobId: string) {
@@ -65,7 +84,7 @@ export const adCopyRepository = {
   async approve(jobId: string, input: { reason?: string; performanceData?: Record<string, number> } = {}) {
     return serial(async () => {
       const store = await readStore();
-      const index = store.records.findIndex((item) => item.jobId === jobId);
+      const index = store.records.findIndex((item) => item.jobId === jobId && !item.archiveEntryId);
       if (index < 0 || !store.records[index].primaryText) throw new Error("승인할 광고문구가 없습니다.");
       const now = new Date().toISOString();
       store.records[index] = {

@@ -287,21 +287,28 @@ test("문구 기획 전송은 timeout과 일시 HTTP 오류만 재시도한다",
   assert.equal(isRetryableReferenceCopyTransportError(new Error("로컬 Codex 로그인이 없습니다.")), false);
 });
 
-test("가벼운 문구 스키마는 모델에게 문구 필드만 요구한다", () => {
+test("가벼운 문구 스키마는 문구와 같은 호출에서 최소 장면 계약만 요구한다", () => {
   const copyItem = leanPlannerSchema.properties.copies.items;
-  assert.deepEqual(Object.keys(copyItem.properties), ["resultCode", "referenceId", "headline", "support", "proof", "offer", "cta"]);
+  assert.deepEqual(Object.keys(copyItem.properties), ["resultCode", "referenceId", "adaptedLines", "headline", "support", "proof", "offer", "cta", "factIds", "scene"]);
+  assert.deepEqual(copyItem.properties.scene.properties.subjectMode.enum, ["none", "new-adult", "product-character"]);
   assert.equal(copyItem.additionalProperties, false);
   assert.equal(leanPlannerSchema.properties.copies.maxItems, 6);
 });
 
-test("프롬프트와 가이드는 레퍼런스 구조 활용·문장 복사 금지·근거 경계를 명시한다", async () => {
+test("프롬프트와 가이드는 OCR 줄 직접 적응·자연스러운 재작성·근거 경계를 명시한다", async () => {
   const planner = await readFile(new URL("../app/lib/creative-generation/referenceCopyPlannerRuntime.server.ts", import.meta.url), "utf8");
-  assert.match(planner, /slots\.sourceLines와 sourceLinePattern은 저장·승인된 실제 OCR 원문/u);
+  assert.match(planner, /sourceLines와 slots\.sourceLines는 저장·승인된 실제 OCR 원문/u);
   assert.match(planner, /sourceLines: region\.lines\.slice/u);
   assert.match(planner, /처음 보는 사람이 1초 안에 이해할 사람 말투/u);
   assert.match(planner, /숫자·가격·구성·효능·원산지·인증은 사용 가능한 사실에 있을 때만 정확히 쓴다/u);
   assert.match(planner, /설명·점수·분석 없이 copies JSON만 반환/u);
   assert.match(planner, /hydrateLeanPlannerPayload/u);
+  assert.match(planner, /adaptedLines는 sourceLines와 정확히 같은 순서·개수/u);
+  assert.match(planner, /factIds에는 실제 문구에서 사용한 사용 가능한 사실의 id만/u);
+  assert.match(planner, /업체 문구 가이드\(핵심 규칙\):.*compactCopyGuide\(input\.copyGuide\)/su);
+  assert.match(planner, /source-product-label과 decorative OCR은 이미 제외됐다/u);
+  assert.match(planner, /sourceContainsPerson는 원본 인물의 존재일 뿐 새 인물을 반드시 유지하라는 뜻이 아니다/u);
+  assert.doesNotMatch(planner, /fitReferenceCopyBlocks|selectPlannerCandidates/u);
   for (const file of ["kookdae-hanwoo.md", "daehan-hanwoo.md", "fighting-farm.md", "original-source.md"]) {
     const guide = await readFile(new URL(`../data/copy-guides/${file}`, import.meta.url), "utf8");
     assert.match(guide, /표현 방식만 참고 가능/);
@@ -309,13 +316,16 @@ test("프롬프트와 가이드는 레퍼런스 구조 활용·문장 복사 금
   }
 });
 
-test("수동·자동 제작은 같은 reference-adapted 다중 후보 pipeline을 공유한다", async () => {
+test("수동·자동 제작은 같은 기본 Codex v1 pipeline을 공유한다", async () => {
   const [runner, factory, auto] = await Promise.all([
     readFile(new URL("../app/lib/creative-generation/jobRunner.server.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/auto-production/productionRunner.server.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(runner, /planReferenceAdaptedCopies/);
-  assert.match(factory, /copyPlanMode\s*=\s*"reference-adapted"/);
+  assert.match(runner, /isDefaultCodexGenerationJob/);
+  assert.doesNotMatch(runner, /planReferenceAdaptedCopies|ensureReferenceCopyPlanning/);
+  assert.match(factory, /job\.pipeline = DEFAULT_CODEX_GENERATION_PIPELINE/);
+  assert.match(factory, /assertDefaultCodexGenerationJob\(job\)/);
   assert.match(auto, /createNativeGenerationJob/);
+  assert.match(auto, /buildDefaultCodexGenerationPrompt/);
 });
