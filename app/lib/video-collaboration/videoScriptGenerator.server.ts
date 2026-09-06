@@ -234,7 +234,7 @@ ${VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find((item) => item.id === input.concept.conce
 }
 ${
   input.concept.conceptArchetype === "parody" && input.concept.parodyGenre
-    ? `[선택된 창작 인물·상황극형 세부 장르]
+    ? `[선택된 가벼운 콘셉트 장치형 세부 장르]
 ${videoParodyGenrePrompt(input.concept.parodyGenre)}`
     : ""
 }
@@ -246,7 +246,7 @@ ${stylePrinciples(input.analysis.category)}
 ${JSON.stringify(referenceVoiceSignals(input.referenceAnalyses))}
 [레퍼런스 말투 전용 규칙]
 ${internetVoiceRules(input.analysis.category)}
-[창작 인물·세계·사건 구체화 규칙]
+[상품 중심 UGC 구체화 규칙]
 ${SPECIFIC_CREATIVE_WORLD_RULES}
 [최신 4개 이야기 작동 방식]
 ${FOUR_CONCEPT_STORY_MECHANISM_RULES}
@@ -257,7 +257,7 @@ ${blueprintPrompt(input.concept.blueprintSelection)}
 [사용자 수정 요청]
 ${clean(input.revisionFeedback, 1600) || "없음"}
 
-정확히 ${count}개 구간을 만든다. 첫 두 행이 0~1.2초와 1.2~3초를 맡고 두 화면 사이에 실제 행동·갈등·발견 중 하나의 변화가 있어야 한다. 첫 구간부터 distinctiveCharacter가 socialWorld 안에서 storyTrigger를 시작하고, 중반에는 truthBridge의 검증된 USP가 사건의 반전·해결 또는 추천 이유가 되어야 한다. 인물과 세계를 도입 장식으로만 쓰고 사라지게 하지 말며 마지막 직전 또는 CTA에서 회수한다. 가상의 의사 가족 추천을 사용하면 sceneDescription에 광고용 가상 인물 고지를 넣고, 의학적 효능·치료·보증은 말하지 않는다. 배정된 주 블루프린트에 sourceReference가 있으면 5비트 요약보다 실제 자막·장면·역할·분석 전체를 순서대로 변환한다. sourceTranscriptAndScenes의 자막을 독립 표제로 재요약하지 말고, 앞뒤 말이 이어지는 리듬·정보 공개 순서·첫 사건 회수 방식을 현재 상품의 새 창작 장면으로 옮긴다. 하나의 사건이 시작→궁금증→직접 증거→반응→행동으로 이어져야 하며 장면을 가격·구성·USP 카드의 나열로 만들지 않는다. 일반 기획은 첫 자막부터 상품명을 설명하지 않고 첫 두 자막 중 하나에 targetCallout을 자연스럽게 변형해 넣는다. 신규 4안에서는 product-self-introduction을 사용하지 않으며, 과거 저장 기획이 그 유형일 때만 아래 하위 호환 문법을 적용한다.
+정확히 ${count}개 구간을 만든다. 첫 두 행이 0~1.2초와 1.2~3초를 맡고 두 화면 사이에 질문·손동작·상품 발견 중 하나의 변화가 있어야 한다. parody의 장르 장치는 이 첫 두 행과 마지막의 짧은 시각 회수에만 사용하며, 가상 세계를 설명하거나 등장인물끼리 연기하지 않는다. 전체 구간의 최소 70%는 실제 상품·포장 개봉·구성·조리·사용·질감·가격을 눈으로 확인하는 장면이어야 한다. 3초 이후에는 한 명의 주 화자가 truthBridge의 검증된 사실을 직접 확인하고 판단하는 UGC 흐름으로 진행한다. 가상의 의사 가족 추천을 사용하면 짧은 개인 반응 한 번만 쓰고 sceneDescription에 광고용 가상 인물 고지를 넣으며 의학적 효능·치료·보증은 말하지 않는다. 배정된 주 블루프린트에 sourceReference가 있으면 5비트 요약보다 실제 자막·장면·역할·분석 전체를 순서대로 변환하되, 원문의 드라마 강도는 낮추고 상품 증거 장면으로 대응시킨다. sourceTranscriptAndScenes의 자막을 독립 표제로 재요약하지 말고 앞뒤 말이 이어지는 리듬과 정보 공개 순서를 옮긴다. 장면을 가격·구성·USP 카드의 나열로 만들지 않는다. 일반 기획은 첫 자막부터 상품명을 설명하지 않고 첫 두 자막 중 하나에 targetCallout을 자연스럽게 변형해 넣는다. 신규 4안에서는 product-self-introduction을 사용하지 않으며, 과거 저장 기획이 그 유형일 때만 아래 하위 호환 문법을 적용한다.
 [상품 자기소개형 전용]
 ${PRODUCT_SELF_INTRODUCTION_RULES}
 
@@ -494,5 +494,4 @@ export async function regeneratePlanningSegmentAi(input: {
   concept.validation = validateDetailedPlanning(concept, input.analysis, input.duration);
   return concept;
 }
-
 

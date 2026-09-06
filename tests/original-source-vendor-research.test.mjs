@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { buildImageCreativePremiseSeeds, findImageCreativePremiseErrors, hasCurrentImageCreativePremiseSet } from "../app/lib/creative-generation/imageCreativePremise.ts";
 import { buildProductTruth, validateCopyAgainstTruth } from "../app/lib/creative-generation/productTruth.ts";
+import { alignPremiseSeedsToEvidenceAssignments, buildReferenceCopyEvidenceAssignments, referenceCopyEvidenceDimensionForFact } from "../app/lib/creative-generation/referenceCopyAngles.ts";
+import { applyReferenceCopyGroupRules } from "../app/lib/creative-generation/referenceCopyDiversity.ts";
+import { applySafeMinimalRhetoric, isSafeMinimalFactCandidate, isSafeMinimalOfferFact, safeMinimalCta, safeMinimalFactText } from "../app/lib/creative-generation/referenceCopySafeMinimal.ts";
 import { findProductCopySemanticErrors, resolveProductCopyDomain } from "../app/lib/creative-generation/productCopySemantics.ts";
 import { applyOriginalSourceVendorResearch } from "../app/lib/product-research/originalSourceResearch.ts";
 
@@ -22,6 +26,29 @@ function extracted(overrides = {}) {
     ingredients: [],
     ...overrides,
   };
+}
+
+function copyReferences() {
+  const raws = [
+    "시칠리아 레몬 10개가 이 한 통에!?",
+    "선수들이 선택한 바디워시\n땀으로 범벅된 몸을 식히는 방법",
+    "퇴근하고도 찝찝한 사람\n씻는 것부터 바꾸세요",
+    "열을 가한 추출과 뭐가 다를까요?",
+    "물과 만나면 거품이 어떻게 달라질까?",
+    "매일 쓰는 제품, 무엇을 확인하세요?",
+  ];
+  return raws.map((rawText, index) => ({
+    id: `original-source-reference-${index + 1}`,
+    path: `/tmp/original-source-reference-${index + 1}.jpg`,
+    publicPath: `/original-source-reference-${index + 1}.jpg`,
+    sourceFile: `original-source-reference-${index + 1}.jpg`,
+    layoutFamily: index === 1 ? "proof-data" : index === 2 ? "problem-objection" : "editorial-story",
+    compositionType: "product-packshot",
+    categoryGroup: "beauty",
+    categoryLabel: "화장품",
+    selectionReason: "fixture",
+    nativeCopy: { rawText, rawLines: rawText.split("\n"), textRegions: [], useForCopyAdaptation: true },
+  }));
 }
 
 test("오리지널소스 상품번호로 업체 제공 조사 자료를 매칭해 수동·자동 공통 상품정보를 보강한다", () => {
@@ -138,6 +165,73 @@ test("시칠리아 레몬은 일반 원산지가 아니라 오리지널소스 �
   assert.equal(sicilianFact?.usableInCopy, true);
   assert.notEqual(sicilianFact?.copyEligibility, "blocked");
   assert.ok(truth.facts.some((fact) => /레몬 10개 분량/.test(fact.value) && fact.usableInCopy));
+});
+
+test("오리지널소스 6장은 OCR 수사에 맞춰 비향 조사 근거를 먼저 배정하고 향 중심은 최대 1장이다", () => {
+  const enriched = applyOriginalSourceVendorResearch(
+    extracted({
+      productName: "오리지널소스 레몬 티트리 샤워젤 250ml",
+      landingUrl: "https://originalsource.co.kr/product/lemon/77/category/91/display/1/",
+    }),
+    "https://originalsource.co.kr/product/lemon/77/category/91/display/1/"
+  );
+  const truth = buildProductTruth({
+    product: { ...enriched, advertiserName: "오리지널소스", productImagePath: enriched.mainImage, productImagePaths: enriched.galleryImages, backgroundImagePath: "" },
+    productImagePaths: enriched.galleryImages,
+    source: "landing-page",
+  });
+  const assignments = buildReferenceCopyEvidenceAssignments(truth, copyReferences());
+  assert.equal(assignments.length, 6);
+  assert.equal(new Set(assignments.map((assignment) => assignment.primaryFactId)).size, 6);
+  assert.ok(assignments.filter((assignment) => assignment.sensoryLed).length <= 1);
+  assert.ok(new Set(assignments.filter((assignment) => !assignment.sensoryLed).map((assignment) => assignment.evidenceDimension)).size >= 4);
+  assert.equal(assignments[0].evidenceDimension, "numeric-proof");
+
+  const alignedPremises = alignPremiseSeedsToEvidenceAssignments(truth, buildImageCreativePremiseSeeds(truth, copyReferences()), assignments);
+  assert.equal(hasCurrentImageCreativePremiseSet(alignedPremises), true);
+  alignedPremises.forEach((premise, index) => {
+    assert.deepEqual(premise.supportingFactIds[0], assignments[index].primaryFactId);
+    assert.deepEqual(findImageCreativePremiseErrors(premise, truth), []);
+    assert.match(premise.factBoundary, /창작|비유/u);
+    assert.match(premise.factBoundary, /ProductTruth|상품\s*(?:사실|속성)|검증/u);
+  });
+
+  const sensoryFact = truth.facts.find((fact) => /향의 흐름/u.test(fact.label));
+  assert.ok(sensoryFact);
+  const scentPlans = [0, 1].map((index) => ({
+    referenceId: `scent-${index}`,
+    headline: sensoryFact.value,
+    subCopy: "",
+    proof: "",
+    offer: "",
+    cta: "",
+    factIds: [sensoryFact.id],
+    validationStatus: "valid",
+    validationErrors: [],
+    copySlots: [],
+    evidenceAssignment: { referenceId: `scent-${index}`, referenceMechanism: "감탄 → 구매 이유", primaryFactId: sensoryFact.id, supportingFactIds: [], evidenceDimension: "sensory", sensoryLed: true, assignmentReason: "fixture" },
+  }));
+  assert.match(applyReferenceCopyGroupRules(scentPlans, truth)[1].validationErrors.join(" "), /향 중심 소재는 6장 중 최대 1장/u);
+});
+
+test("안전 최소 문구는 사실을 자르거나 식품 표현을 만들지 않고 OCR 문장부호만 적용한다", () => {
+  const numeric = { id: "numeric", key: "public-evidence", label: "원료 함량 표현", value: "250ml 한 병에 시칠리아 레몬 10개 분량을 담았다고 소개됨", verification: "user-provided", source: "vendor-research", usableInCopy: true, numericTokens: ["250ml", "10개"], evidenceType: "numeric" };
+  const process = { id: "process", key: "public-evidence", label: "추출 방식", value: "레몬 껍질을 열 대신 물리적인 힘으로 눌러 오일을 얻는 냉압착 방식으로 소개됨", verification: "user-provided", source: "vendor-research", usableInCopy: true, numericTokens: [], evidenceType: "usp" };
+  const scent = { id: "scent", key: "public-evidence", label: "향료 정보", value: "100% 천연 향료를 사용한 제품으로 소개됨", verification: "user-provided", source: "vendor-research", usableInCopy: true, numericTokens: ["100%"], evidenceType: "ingredient" };
+  const reviewNoise = { ...process, id: "review", value: "레몬 티트리 리뷰", evidenceType: "ingredient" };
+  const brandedNoise = { ...process, id: "brand", value: "오리지널소스 레몬 티트리 샤워젤 250ml", evidenceType: "ingredient" };
+  const offer = { ...process, id: "offer", key: "detail-ocr-3", label: "상세 이미지에서 확인된 상품 사실", value: "특별기획특가 74,000원", evidenceType: "numeric", copyEligibility: "proofOnly" };
+
+  assert.equal(referenceCopyEvidenceDimensionForFact(numeric), "numeric-proof");
+  assert.equal(referenceCopyEvidenceDimensionForFact(scent), "sensory");
+  assert.equal(isSafeMinimalFactCandidate(reviewNoise, ["오리지널소스"]), false);
+  assert.equal(isSafeMinimalFactCandidate(brandedNoise, ["오리지널소스"]), false);
+  assert.equal(isSafeMinimalOfferFact(offer), true);
+  assert.match(safeMinimalFactText(numeric, "personal-care", ["오리지널소스"], 24), /레몬\s*10개\s*분량/u);
+  assert.match(safeMinimalFactText(process, "personal-care", ["오리지널소스"], 24), /냉압착/u);
+  assert.doesNotMatch(`${safeMinimalFactText(numeric, "personal-care")} ${safeMinimalFactText(process, "personal-care")}`, /한입|식탁|맛있|식감/u);
+  assert.equal(applySafeMinimalRhetoric("진짜 이 안에!?", "레몬 10개 분량"), "레몬 10개 분량!?");
+  assert.equal(safeMinimalCta("personal-care", 0), "원료 정보 보기");
 });
 
 test("라임 40개 오해와 루바브 미공개 추정 성분은 광고 근거에 들어오지 않는다", () => {

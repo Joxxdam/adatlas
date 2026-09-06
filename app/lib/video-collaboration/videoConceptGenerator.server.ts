@@ -28,6 +28,7 @@ import {
 import { createVideoMaterialCode, VIDEO_HOOK_LABELS, VIDEO_OBJECTIVE_LABELS } from "./workflow.ts";
 import {
   assignPlanningTimeline,
+  compactPlanningCta,
   hasVerifiedVideoBenefit,
   repairDetailedPlanningAudienceCopy,
   repairDetailedPlanningCommercialRestraint,
@@ -160,7 +161,7 @@ function conceptSummarySchema(options: { count: number; archetypes?: VideoConcep
             hookId: { type: "string" },
             hookType: hookTypeSchema,
             title: { type: "string", minLength: 6, maxLength: 70 },
-            openingHook: { type: "string", minLength: 8, maxLength: 70 },
+            openingHook: { type: "string", minLength: 8, maxLength: 48 },
             coreTarget: { type: "string", minLength: 4, maxLength: 100 },
             customerProblem: { type: "string", minLength: 4, maxLength: 120 },
             usp: { type: "string", minLength: 4, maxLength: 120 },
@@ -177,12 +178,12 @@ function conceptSummarySchema(options: { count: number; archetypes?: VideoConcep
                 "mixed",
               ],
             },
-            narrativeStructure: { type: "string", minLength: 12, maxLength: 180 },
-            narrativeSummary: { type: "string", minLength: 30, maxLength: 400 },
+            narrativeStructure: { type: "string", minLength: 12, maxLength: 150 },
+            narrativeSummary: { type: "string", minLength: 30, maxLength: 320 },
             recommendationReason: { type: "string", minLength: 20, maxLength: 300 },
             evidenceIds: { type: "array", maxItems: 6, items: { type: "string" } },
             claimsToVerify: { type: "array", maxItems: 6, items: { type: "string" } },
-            cta: { type: "string", minLength: 4, maxLength: 50 },
+            cta: { type: "string", minLength: 4, maxLength: 34 },
             centralIncident: { type: "string", minLength: 12, maxLength: 240 },
             speakerPointOfView: { type: "string", minLength: 4, maxLength: 100 },
             keyAppeal: { type: "string", minLength: 4, maxLength: 140 },
@@ -193,7 +194,7 @@ function conceptSummarySchema(options: { count: number; archetypes?: VideoConcep
               items: { type: "string", maxLength: 100 },
             },
             differenceFromPrevious: { type: "string", minLength: 8, maxLength: 180 },
-            copyVoiceDirection: { type: "string", minLength: 12, maxLength: 240 },
+            copyVoiceDirection: { type: "string", minLength: 12, maxLength: 180 },
             targetCallout: { type: "string", minLength: 8, maxLength: 60 },
             distinctiveCharacter: { type: "string", minLength: 12, maxLength: 220 },
             socialWorld: { type: "string", minLength: 12, maxLength: 220 },
@@ -333,7 +334,7 @@ ${clean(copyGuide?.content || input.guideline.toneAndManner, 3000)}
 ${JSON.stringify(referenceVoiceSignals(input.referenceAnalyses))}
 [레퍼런스 말투 전용 규칙]
 ${internetVoiceRules(input.analysis.category)}
-[모든 상품에 적용하는 창작 인물·세계·사건 구체화 규칙]
+[모든 상품에 적용하는 상품 중심 UGC 구체화 규칙]
 ${SPECIFIC_CREATIVE_WORLD_RULES}
 [최신 4개 이야기 작동 방식]
 ${FOUR_CONCEPT_STORY_MECHANISM_RULES}
@@ -343,7 +344,7 @@ ${NATURAL_REFERENCE_DIALOGUE_RULES}
 ${JSON.stringify((archetypes || []).map((archetype) => ({ archetype, blueprint: blueprintPrompt(blueprintSelections[archetype]) })))}
 ${
   archetypes?.includes("parody")
-    ? `[창작 인물·상황극형의 자동 선택 세부 장르]
+    ? `[가벼운 콘셉트 장치형의 자동 선택 세부 장르]
 ${videoParodyGenrePrompt(selectedParodyGenre.id, input.recentParodyGenres)}`
     : ""
 }
@@ -354,8 +355,8 @@ ${clean(input.excludedContent, 1500) || "없음"}
 [이 프로젝트의 기존 기획안]
 ${JSON.stringify((input.existingConcepts || []).map((item) => ({ opening: item.openingHook, incident: item.centralIncident, speaker: item.speakerPointOfView || item.speaker, appeal: item.keyAppeal || item.usp })))}
 
-첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 꺼낼 법한 한마디와 촬영 가능한 생활 행동으로 시작한다. openingHook·narrativeSummary·copyVoiceDirection은 독립 광고 표제의 모음이 아니라 주 화자가 카메라 너머 시청자에게 시작→궁금증→증거→반응→행동을 이어 말하는 흐름이어야 한다. speakerPointOfView와 speaker에는 ‘딸과 아버지의 대화’가 아니라 ‘고기 없으면 밥을 미루는 아버지의 이번 반응을 시청자에게 들려주는 딸’처럼 누가 누구에게 어떤 생활 장면을 전하는지 적는다. 신규 자동 4안에서는 product-self-introduction을 선택하지 않는다.
-title은 설명형 제목이 아니라 인물·세계·첫 사건이 바로 떠오르는 사건형 제목으로 쓴다. ProductTruth는 사용할 상품 사실의 상한선이며 레퍼런스 원문은 말의 연결과 화면 순서의 기준이다. 상세페이지 밖의 가상 인물·관계·직업·시대·세계·사건은 선택 장르에 맞게 과감하게 만들 수 있다. 가상의 의사 가족 추천도 허용하지만 가상 인물임을 dramatizationBoundary에 명시하고 의학적 효능·치료·보증으로 확대하지 않는다. 콘셉트 하나는 핵심 구매 이유 하나와 이를 받치는 가격·구성·품질 사실 두세 개만 골라 truthBridge로 연결한다. 배송·배송비·도서산간·제주 추가비·배송지 안내는 기획 제목, 사건, 소구, CTA에서 완전히 제외한다. coreTarget은 분석용 고객 정의로 쓰고 targetCallout은 그 사람의 행동·불편·욕망을 찌르는 첫 3초용 문장으로 쓴다. 네 안은 인물·세계·사건·증거 순서를 다르게 하되 같은 상품의 필수 조리·사용 장면까지 억지로 다르게 만들지 않는다. copyVoiceDirection에는 실제 호칭·문장 길이·직설 강도를 구체적으로 적고 ‘친근한 말투’처럼 일반화하지 않는다. 배정된 주 블루프린트의 sourceTranscriptAndScenes 전체에서 자막 연결·행동·증거·반응·CTA 순서를 읽고, 5비트 요약이나 범용 광고 공식으로 줄이지 않는다. 원문의 상품·가격·효능·인물·대사는 복제하지 않고 현재 ProductTruth와 새로운 창작 장면으로 치환한다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓴다. hookId와 evidenceIds는 입력에 존재하는 값만 쓰며 실제 이미지나 영상을 생성하지 않는다.
+첫 문장부터 상품명을 설명하지 말고 실제 숏폼에서 사람이 꺼낼 법한 짧은 한마디와 촬영 가능한 행동으로 시작한다. openingHook은 한 번에 말할 수 있는 8~32자의 완결문으로 쓰고, narrativeSummary·copyVoiceDirection은 주 화자가 카메라 너머 시청자에게 질문→상품 확인→보이는 증거→판단→행동을 이어 말하는 흐름이어야 한다. speakerPointOfView와 speaker는 장황한 인물 설정 대신 누가 어떤 상품 행동을 보여주는지만 적는다. 신규 자동 4안에서는 product-self-introduction을 선택하지 않는다.
+title은 드라마 제목이 아니라 첫 화면과 상품 확인 행동이 떠오르는 짧은 광고 제목으로 쓴다. ‘사건’, ‘위기’, ‘사라진’, ‘비밀 장부’, ‘운명’, ‘구출’ 같은 극적 제목은 쓰지 않는다. ProductTruth는 사용할 상품 사실의 상한선이며 레퍼런스 원문은 말의 연결과 화면 순서의 기준이다. 장르 장치는 첫 1~3초에만 가볍게 쓰고 3초 이후 전체의 최소 70%를 상품 실물·개봉·조리·사용·질감·구성·가격 확인에 배정한다. 고유 이름과 가상 지역은 꼭 필요할 때만 쓰며, 가상 세계 설명이나 여러 인물이 대화하는 드라마를 만들지 않는다. 가상의 의사 가족 추천은 real-review에서 한 번의 짧은 개인 반응으로 허용하지만 가상 인물임을 dramatizationBoundary에 명시하고 의학적 효능·치료·보증으로 확대하지 않는다. 콘셉트 하나는 핵심 구매 이유 하나와 이를 받치는 상품 사실 두세 개만 고른다. 배송 정보는 완전히 제외한다. 네 안은 첫 화면·장소·상품을 처음 만지는 행동·핵심 증거·결말을 다르게 하고, 가족·주방·불판 조합은 최대 한 안에만 쓴다. CTA는 공백 제외 24자 이내의 완결된 한 문장으로 쓰고 반드시 ‘확인하세요’, ‘비교하세요’, ‘구매하세요’, ‘예약하세요’ 같은 행동 동사로 끝낸다. 모든 텍스트 필드는 허용 길이를 채우려 하지 말고 반드시 문장을 끝낸다. 배정된 주 블루프린트의 sourceTranscriptAndScenes 전체에서 자막 연결·행동·증거·반응·CTA 순서를 읽되 원문의 드라마 강도는 낮추고 상품 증거 비중은 높인다. 원문의 상품·가격·효능·인물·대사는 복제하지 않는다. 확인되지 않은 수치나 효능은 claimsToVerify에만 쓴다. hookId와 evidenceIds는 입력에 존재하는 값만 쓴다.
 ${correction} JSON만 반환한다.`,
     });
   const toConcepts = (rows: AiConceptSummary[]) => {
@@ -377,7 +378,7 @@ ${correction} JSON만 반환한다.`,
         fullScript: "",
         cuts: [],
         requiredSources: [],
-        cta: clean(row.cta, 80),
+        cta: compactPlanningCta(row.cta, "상품 정보를 확인하세요", 28),
         productionCautions: compact(input.analysis.cautionPhrases, 8, 240),
         materialCode:
           previous?.materialCode ||
@@ -456,10 +457,10 @@ ${correction} JSON만 반환한다.`,
         [input.requestedArchetype],
         [
           initialSpecificityIssue
-            ? `이전 응답의 인물·세계·사건이 일반적이었다: ${initialSpecificityIssue} distinctiveCharacter, socialWorld, storyTrigger, truthBridge를 선택 장르와 현재 상품에서만 나올 수 있는 수준으로 다시 구체화한다.`
+            ? `이전 응답의 주 화자·촬영 환경·상품 확인 행동이 부적합했다: ${initialSpecificityIssue} 한 장소의 한 명 화자와 실제 상품 행동 중심으로 다시 구체화하고 드라마 서사는 만들지 않는다.`
             : "",
           initialGenreMismatch
-            ? `자동 선택된 창작 장르 '${selectedParodyGenre.label}'을 따르지 않았다. 다른 장르를 섞지 말고 선택 장르의 인물·세계·사건·화면 진행이 제목과 중심 사건에 드러나게 다시 작성한다.`
+            ? `자동 선택된 화면 장치 '${selectedParodyGenre.label}'가 보이지 않았다. 다른 장르나 드라마 줄거리를 섞지 말고 첫 1~3초의 소품·자막·말투에서만 이 장치를 분명하게 사용한다.`
             : "",
         ].filter(Boolean).join(" ")
       );
@@ -485,7 +486,7 @@ ${correction} JSON만 반환한다.`,
       throw new VideoPlanningGenerationError({
         stage: "schema-validation",
         code: "PARODY_GENRE_MISMATCH",
-        message: "창작 인물·상황극 기획안이 자동 선택된 세부 장르를 따르지 않았습니다.",
+        message: "가벼운 콘셉트 장치형 기획안이 자동 선택된 화면 문법을 따르지 않았습니다.",
         retryable: true,
         attempts: 2,
         failedAt: new Date().toISOString(),
@@ -570,7 +571,7 @@ ${JSON.stringify(
     cta: row.cta,
   }))
 )}
-위 기획안은 수정하거나 섞지 말고, 지금 요청한 ${archetype} 한 개만 완전히 다른 인물·세계·사건으로 작성한다.`
+위 기획안은 수정하거나 섞지 말고, 지금 요청한 ${archetype} 한 개만 완전히 다른 첫 화면·촬영 장소·상품 확인 행동·핵심 증거·결말로 작성한다. 인물 이름과 세계관을 바꾸는 방식으로만 차별화하지 않는다.`
           )
         ).concepts[0],
       initialStrategy: "per-archetype",
@@ -637,5 +638,4 @@ ${JSON.stringify(
   }
   return concepts;
 }
-
 

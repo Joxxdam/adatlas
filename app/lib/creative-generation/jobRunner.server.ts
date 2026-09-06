@@ -10,7 +10,7 @@ import { ensureProductAdCopy } from "../ad-copy/adCopyGenerator.server";
 import { AD_COPY_PROMPT_VERSION } from "../ad-copy/adCopyPromptBuilder.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
 import { NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt";
-import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
+import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies, REFERENCE_ADAPTED_PLANNER_VERSION } from "./referenceAdaptedPlanning.server";
 import { buildVisualDiversityMatrix } from "./visualDiversity";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
 
@@ -22,6 +22,7 @@ const runnerPolicySignature = [
   CURRENT_REFERENCE_EDIT_JOB_VERSION,
   CURRENT_REFERENCE_COPY_POLICY_VERSION,
   NATIVE_FINAL_PROMPT_VERSION,
+  "reference-copy-lean-contract-v3",
 ].join(":");
 const runnerKey = Symbol.for(`daywiz.creative-generation.server-runner:${runnerPolicySignature}`);
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
@@ -129,32 +130,46 @@ export async function recoverGenerationJob(jobId: string, ignoreRunner = false):
  * 버튼은 즉시 작업 ID를 돌려받으면서도 수동·자동 모두 같은 최종 문구를 쓴다.
  */
 async function ensureReferenceCopyPlanning(jobId: string) {
+  let attemptedPlanning: Awaited<ReturnType<typeof planReferenceAdaptedCopies>> | undefined;
   let current = await creativeGenerationJobStore.get(jobId);
   if (!current || !isServerRunnableGenerationJob(current) || current.status === "cancelled") return current;
   if (current.referenceCopyPlanning?.status === "ready") return current;
+  // 한 작업 안에서 최초 생성과 실패 항목 1회 배치 수정까지 이미 수행한다.
+  // 그 뒤에도 구조적으로 준비하지 못한 작업을 서버 폴링마다 처음부터 반복하지 않는다.
+  if (current.referenceCopyPlanning?.status === "retryable" && (current.referenceCopyPlanning.attempts || 0) >= 1) return current;
+  if (
+    current.referenceCopyPlanning?.status === "retryable" &&
+    current.referenceCopyPlanning.nextRetryAt &&
+    new Date(current.referenceCopyPlanning.nextRetryAt).getTime() > Date.now()
+  ) return current;
+
+  const planningAttempts = (current.referenceCopyPlanning?.attempts || 0) + 1;
 
   current = await creativeGenerationJobStore.update(jobId, (job) => ({
     ...job,
     referenceCopyPlanning: {
       status: "running",
+      attempts: planningAttempts,
       updatedAt: new Date().toISOString(),
     },
   }));
 
-  const references = current.results.map((result) => result.nativeCreative?.adReference);
-  if (
-    references.length !== 6 ||
-    references.some((reference) => !reference?.publicPath || !reference.sourceFile || !reference.categoryGroup || !reference.categoryLabel || !reference.selectionReason)
-  ) {
-    throw new Error("최신 문구 기획에 필요한 고정 레퍼런스 6장을 찾지 못했습니다.");
-  }
-  const verifiedReferences = references as NativeAdReference[];
-
   try {
+    const references = current.results.map((result) => result.nativeCreative?.adReference);
+    if (
+      references.length !== 6 ||
+      references.some((reference) => !reference?.publicPath || !reference.sourceFile || !reference.categoryGroup || !reference.categoryLabel || !reference.selectionReason)
+    ) {
+      throw new Error("최신 문구 기획에 필요한 고정 레퍼런스 6장을 찾지 못했습니다.");
+    }
+    const verifiedReferences = references as NativeAdReference[];
     const planning = await planReferenceAdaptedCopies({
       truth: current.productTruth,
       references: verifiedReferences,
     });
+    attemptedPlanning = planning;
+    if (planning.plans.length !== 6) throw new Error("레퍼런스 6장에 대응하는 문구 계획을 모두 준비하지 못했습니다.");
+    const invalidReferenceIds = new Set(planning.plans.filter((plan) => !hasPublishableReferenceCopyContract(plan)).map((plan) => plan.referenceId));
     const plannedCreative = buildReferenceAdaptedCreativePlan({
       truth: current.productTruth,
       references: verifiedReferences,
@@ -174,8 +189,12 @@ async function ensureReferenceCopyPlanning(jobId: string) {
         const plannedHook = plannedCreative.hookPlans[index];
         const plannedScene = plannedScenes[index];
         const plannedCopy = planning.plans[index];
+        const copyUnavailable = invalidReferenceIds.has(plannedCopy.referenceId);
         return {
           ...result,
+          status: copyUnavailable ? "quality-review" as const : result.status,
+          error: copyUnavailable ? `안전 최소 문구도 제작 계약을 통과하지 못했습니다: ${plannedCopy.validationErrors.slice(0, 3).join(" · ")}` : result.error,
+          completedAt: copyUnavailable ? readyAt : result.completedAt,
           blueprintId: plannedHook.blueprintId,
           hookPlan: {
             ...plannedHook,
@@ -209,7 +228,8 @@ async function ensureReferenceCopyPlanning(jobId: string) {
         referenceCopyPlanning: {
           status: "ready",
           provider: planning.provider,
-          error: planning.warnings.length ? planning.warnings.join(" · ").slice(0, 1000) : undefined,
+          error: [...planning.warnings, ...(invalidReferenceIds.size ? [`${invalidReferenceIds.size}장은 안전 최소 문구 검토가 필요하며 나머지 소재는 계속 제작합니다.`] : [])].join(" · ").slice(0, 1000) || undefined,
+          attempts: planningAttempts,
           updatedAt: readyAt,
         },
         recoveryLog: [
@@ -223,17 +243,28 @@ async function ensureReferenceCopyPlanning(jobId: string) {
     return current;
   } catch (error) {
     const message = runnerErrorMessage(error);
-    // 예상 밖 기획 오류에도 클릭해 둔 6장 제작을 버리지 않는다. 작업 생성 때
-    // 저장한 검증 가능한 scaffold를 사용하되 실패 사실을 UI/manifest에 남긴다.
+    // 구조적으로 안전 최소 문구조차 만들지 못한 경우에만 사용자가 명시적으로
+    // 재개할 수 있는 상태로 남긴다. 자동 전체 기획 재시도는 하지 않는다.
     current = await creativeGenerationJobStore.update(jobId, (job) => ({
       ...job,
       errors: [...job.errors, `최신 문구 기획: ${message}`].slice(-20),
+      referenceCopyProfiles: attemptedPlanning?.profiles || job.referenceCopyProfiles,
       referenceCopyPlanning: {
-        status: "ready",
+        status: "retryable",
         provider: "fallback",
         error: message,
+        attempts: planningAttempts,
         updatedAt: new Date().toISOString(),
       },
+      results: attemptedPlanning?.plans.length === 6
+        ? job.results.map((result, index) => ({
+            ...result,
+            referenceAdaptedCopyPlan: {
+              ...attemptedPlanning!.plans[index],
+              resultCode: result.hookPlan.hookCode,
+            },
+          }))
+        : job.results,
     }));
     await writeNativeManifest(current).catch(() => undefined);
     return current;
@@ -365,6 +396,7 @@ async function runSafely(jobId: string) {
     if (!recovered || recovered.status === "cancelled") return;
     recovered = await ensureReferenceCopyPlanning(jobId);
     if (!recovered || recovered.status === "cancelled") return;
+    if (recovered.referenceCopyPlanning?.status !== "ready") return;
     // 상품당 한 번 만드는 Meta 기본 문구·광고 제목은 완성 이미지를 기다리지
     // 않는다. ProductTruth와 이미 준비된 대표 후킹으로 즉시 시작하고, 이미지
     // 6장 서버 작업과 병렬로 저장한다.

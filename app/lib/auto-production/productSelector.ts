@@ -20,10 +20,13 @@ function roleScore(candidate: AutoProductionProductCandidate, role: AutoProducti
   const orders = finite(candidate.orders);
   const conversion = finite(candidate.conversionRate);
   const impressions = finite(candidate.impressions);
-  if (role === "core-expansion") return candidate.selectionScore + Math.log10(sales + 1) * 10 + Math.log10(orders + 1) * 8;
-  if (role === "low-exposure-opportunity") return candidate.selectionScore + conversion * 700 - Math.log10(impressions + 1) * 3;
-  if (role === "reactivation") return candidate.selectionScore + (previous > sales && previous > 0 ? 25 : 0) + Math.log10(previous + 1) * 8;
-  return candidate.selectionScore + (candidate.isNew ? 25 : 0) + (candidate.isSeasonal ? 16 : 0) + (candidate.reviewCount ? 6 : 0);
+  // 상세 재분석으로 회복할 수 있는 needs-review 후보를 완전히 버리지는 않되,
+  // 같은 역할에 검증된 상품 이미지가 있으면 먼저 선택해 4개 쿼터를 채운다.
+  const imageReadiness = candidate.imageVerificationStatus === "needs-review" ? -1_000 : 0;
+  if (role === "core-expansion") return imageReadiness + candidate.selectionScore + Math.log10(sales + 1) * 10 + Math.log10(orders + 1) * 8;
+  if (role === "low-exposure-opportunity") return imageReadiness + candidate.selectionScore + conversion * 700 - Math.log10(impressions + 1) * 3;
+  if (role === "reactivation") return imageReadiness + candidate.selectionScore + (previous > sales && previous > 0 ? 25 : 0) + Math.log10(previous + 1) * 8;
+  return imageReadiness + candidate.selectionScore + (candidate.isNew ? 25 : 0) + (candidate.isSeasonal ? 16 : 0) + (candidate.reviewCount ? 6 : 0);
 }
 
 export function eligibleAutoProductionCandidates(candidates: AutoProductionProductCandidate[], config: AutoProductionAdvertiserConfig, recentProductIds: ReadonlySet<string> = new Set()) {
@@ -76,7 +79,7 @@ export function selectAutoProductionCandidates(candidates: AutoProductionProduct
     selectedIds.add(best.id);
     selectedFamilies.add(family);
   }
-  for (const candidate of [...eligible].sort((a, b) => b.selectionScore - a.selectionScore)) {
+  for (const candidate of [...eligible].sort((a, b) => roleScore(b, b.recommendationRole) - roleScore(a, a.recommendationRole))) {
     if (selected.length >= limit) break;
     if (selectedIds.has(candidate.id)) continue;
     const family = candidate.productFamilyKey || productFamilyKey(candidate);

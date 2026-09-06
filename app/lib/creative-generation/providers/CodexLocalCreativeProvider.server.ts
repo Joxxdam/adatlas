@@ -285,8 +285,8 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
 
     const validate = async (input: NativeValidationInput) => {
       trackingContext = { jobId: input.job.id, resultId: input.result.id, purpose: "image-generation" };
-      const validationReferences = [input.adReferencePath, ...input.referencePaths].filter((file, index, files): file is string => Boolean(file) && files.indexOf(file) === index).slice(0, 5);
-      const content = [{ type: "text" as const, text: buildNativeValidationPrompt(input.job, input.result) }, { type: "local_image" as const, path: input.imagePath }, ...validationReferences.map((file) => ({ type: "local_image" as const, path: file }))];
+      const validationReferences = [input.lockedProductStagePath, input.adReferencePath, ...input.referencePaths].filter((file, index, files): file is string => Boolean(file) && files.indexOf(file) === index).slice(0, 5);
+      const content = [{ type: "text" as const, text: buildNativeValidationPrompt(input.job, input.result, { hasLockedProductStage: Boolean(input.lockedProductStagePath) }) }, { type: "local_image" as const, path: input.imagePath }, ...validationReferences.map((file) => ({ type: "local_image" as const, path: file }))];
       let response: StreamedTurnResult;
       try {
         response = await codexCreativeGate.run(() =>

@@ -55,7 +55,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ jobId
       if (body.action === "cancel") {
         return cancelGenerationJob(current);
       }
-      return resumeGenerationJob(current, runnerWasActive);
+      return resumeGenerationJob(current, runnerWasActive, new Date().toISOString(), true);
     });
     if (body.action === "cancel") cancelQueuedGenerationJob(job.id);
     if (body.action === "resume") enqueueGenerationJob(job.id);

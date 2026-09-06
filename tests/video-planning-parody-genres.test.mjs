@@ -34,7 +34,7 @@ function analysis(overrides = {}) {
   };
 }
 
-test("사건·상황극은 시대·사회 세계관극을 포함한 11개 세부 장르를 유지한다", () => {
+test("가벼운 콘셉트 장치는 시대물 오프닝을 포함한 11개 세부 장르를 유지한다", () => {
   assert.equal(VIDEO_PARODY_GENRE_OPTIONS.length, 11);
   assert.equal(new Set(VIDEO_PARODY_GENRE_OPTIONS.map((option) => option.id)).size, 11);
   assert.ok(VIDEO_PARODY_GENRE_OPTIONS.some((option) => option.id === "historical-world-parody"));
@@ -77,10 +77,12 @@ test("일반 판매가만 있는 상품은 억지 가격 실랑이를 기본 선
   assert.notEqual(selected.id, "price-negotiation");
 });
 
-test("시대·사회 세계관극은 창작 세계와 검증 상품 사실을 분리하도록 지시한다", () => {
+test("시대물 오프닝은 드라마를 줄이고 검증 상품 장면으로 바로 전환하게 한다", () => {
   const prompt = videoParodyGenrePrompt("historical-world-parody", []);
-  assert.match(prompt, /선택 장르: 시대·사회 세계관극/);
-  assert.match(prompt, /창작할 수 있지만/);
+  assert.match(prompt, /선택 장르: 시대물 오프닝/);
+  assert.match(prompt, /첫 1~3초/);
+  assert.match(prompt, /최소 70%/);
+  assert.match(prompt, /비밀 장부/);
   assert.match(prompt, /ProductTruth/);
   assert.equal(
     matchesVideoParodyGenre(

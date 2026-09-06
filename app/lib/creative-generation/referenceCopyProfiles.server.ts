@@ -39,7 +39,7 @@ function sheetClaimPolicy(truth: ProductTruth) {
   return `- 이 상품에는 사용자가 제공한 업체 조사 시트가 매칭되어 있다. ProductTruth의 source가 vendor-research인 fact는 이 업체·현재 상품에 한해 승인된 광고 근거다. 수치, 원료 효능 이야기, 쿨링·보습·피부 고민 표현도 해당 fact의 value와 copyEligibility 범위 안이면 약화하거나 임의로 위험 표현으로 판정하지 않는다.
 - 시트 근거를 보고서 문장으로 복사하지 말고 소비자 문제·손실 회피·반전·질문·사용 순간으로 번역한다. 최종 문구에 '소개됨', '방향', '활용', '콘셉트', '이미지' 같은 조사 메타 표현을 남기지 않는다.
 - 번호형 레퍼런스에는 서로 다른 시트 근거를 사용해 실제 구매 이유 목록을 만든다. 같은 상품명·향·용량을 번호만 바꿔 반복하지 않는다.
-- 향 외의 vendor-research 근거가 있으면 6개 중 최소 4개는 서로 다른 수치·원료 스토리·추출 방식·제형·사용 순간을 중심 USP로 사용한다. '향이 좋다', '향으로 기분 전환'처럼 향만 바꾼 소재는 최대 2개다.
+- 향 외의 vendor-research 근거가 있으면 6개 중 최소 4개는 서로 다른 수치·원료 스토리·추출 방식·제형·사용 순간·인증을 중심 USP로 사용한다. 오리지널소스의 향은 기본 구매 이유가 아니며, '향이 좋다', '향으로 기분 전환'처럼 향이 중심인 소재는 최대 1개다.
 - 골라담기 상품은 각 선택지에 연결된 사실을 현재 선택지 이름과 함께 사용한다. 서로 다른 단품의 사실을 한 제품의 단일 성분·효능처럼 합치지 않는다.
 - 이 허용은 현재 ProductTruth에 들어온 vendor-research fact에만 적용된다. 시트에 공개되지 않음·추정·반대 사실로 적힌 내용을 뒤집어 주장하거나 다른 오리지널소스 향의 근거를 섞어서는 안 된다.`;
 }
@@ -64,19 +64,14 @@ function resolvedVendorCopyExamples(truth: ProductTruth) {
 function vendorCopyExamplePromptBlock(truth: ProductTruth) {
   const examples = resolvedVendorCopyExamples(truth);
   if (!examples.length) return "이 상품에 미리 정리된 광고 문구 후보가 없다.";
-  return `다음 문구는 현재 상품 조사에서 미리 검수한 광고용 표현 후보다. 레퍼런스의 줄 수·문장 관계·말투를 우선하면서 상품 사실을 소비자 언어로 바꿀 때 사용한다. 한 소재에 최대 한 후보만 사용하고, 여섯 소재가 같은 후보를 반복하지 않게 한다. factIds가 있는 후보는 해당 근거를 plan.factIds에 포함한다. 예문은 새 사실의 근거가 아니며 현재 레퍼런스 문법에 맞게 자연스럽게 변환한다.\n${JSON.stringify(examples, null, 2)}`;
+  return `다음 문구는 사용자가 제공한 품질 목표·비교 예문이지 복사 템플릿이 아니다. 상품명·명사·조사·어순만 바꿔 재사용하지 않는다. angle과 연결 factIds는 발상 신호로만 참고하고, 현재 소비자 상황·긴장·반응에서 의미적으로 다른 새 문장을 작성한다. 예문은 새 사실의 근거가 아니며, 새 후보가 실질적으로 유사하면 novelty 실패다.\n${JSON.stringify(examples, null, 2)}`;
 }
 
 const cachePath = path.resolve(process.cwd(), ".data", "creative-generation", "reference-copy-profiles.json");
 const sentenceStyles = ["question", "declaration", "dialogue", "contrast", "sensory", "urgency", "proof"] as const;
 let profileCacheWriteQueue: Promise<void> = Promise.resolve();
 
-type PlannerPayload = {
-  profiles: Array<Omit<ReferenceCopyProfile, "id" | "referenceHash" | "profileVersion" | "createdAt" | "analysisSource">>;
-  plans: Array<Pick<ReferenceAdaptedCopyPlan, "resultCode" | "referenceId" | "creativePremise" | "adaptedLines" | "headline" | "subCopy" | "proof" | "offer" | "cta" | "factIds" | "tone" | "sentenceStyle" | "naturalnessScore" | "referenceFitScore" | "factualSafetyScore" | "validationErrors"> & { observedSourceLines: string[] }>;
-};
-
-type ProfilePayload = { profiles: PlannerPayload["profiles"] };
+type ProfilePayload = { profiles: Array<Omit<ReferenceCopyProfile, "id" | "referenceHash" | "profileVersion" | "createdAt" | "analysisSource">> };
 type CriticPayload = {
   reviews: Array<{
     referenceId: string;
@@ -97,46 +92,6 @@ const profileProperties = {
 } as const;
 
 const profileRequired = ["referenceId", "tone", "sentenceStyle", "rhetoricalDevice", "headlineRole", "headlineLineBudget", "headlineCharacterBudget", "supportRole", "supportLineBudget", "supportCharacterBudget", "proofRole", "offerRole", "ctaRole", "numericEmphasis", "density", "punctuationRhythm", "prohibitedLiteralPhrases"] as const;
-
-const plannerSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: ["profiles", "plans"],
-  properties: {
-    profiles: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: profileRequired,
-        properties: profileProperties,
-      },
-    },
-    plans: {
-      type: "array", minItems: 1, maxItems: 6,
-      items: {
-        type: "object", additionalProperties: false,
-        required: ["resultCode", "referenceId", "creativePremise", "observedSourceLines", "adaptedLines", "headline", "subCopy", "proof", "offer", "cta", "factIds", "tone", "sentenceStyle", "naturalnessScore", "referenceFitScore", "factualSafetyScore", "validationErrors"],
-        properties: {
-          resultCode: { type: "string" }, referenceId: { type: "string" }, observedSourceLines: { type: "array", items: { type: "string" }, maxItems: 20 }, adaptedLines: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 20 }, headline: { type: "string" }, subCopy: { type: "string" }, proof: { type: "string" }, offer: { type: "string" }, cta: { type: "string" }, factIds: { type: "array", items: { type: "string" } }, tone: { type: "string" }, sentenceStyle: { type: "string", enum: sentenceStyles },
-          creativePremise: {
-            type: "object", additionalProperties: false,
-            required: ["policyVersion", "kind", "fictionalContext", "character", "situation", "tension", "productBridge", "supportingFactIds", "factBoundary"],
-            properties: {
-              policyVersion: { type: "string", enum: [IMAGE_CREATIVE_PREMISE_POLICY_VERSION] },
-              kind: { type: "string", enum: ["everyday-question-answer", "everyday-relationship", "obvious-ad-metaphor", "usp-focus", "comparison-benefit"] },
-              fictionalContext: { type: "boolean", enum: [true] },
-              character: { type: "string" }, situation: { type: "string" }, tension: { type: "string" }, productBridge: { type: "string" },
-              supportingFactIds: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 3 },
-              factBoundary: { type: "string" },
-            },
-          },
-          naturalnessScore: { type: "integer", minimum: 0, maximum: 100 }, referenceFitScore: { type: "integer", minimum: 0, maximum: 100 }, factualSafetyScore: { type: "integer", minimum: 0, maximum: 100 }, validationErrors: { type: "array", items: { type: "string" }, maxItems: 8 },
-        },
-      },
-    },
-  },
-} as const;
 
 const profileSchema = {
   type: "object", additionalProperties: false, required: ["profiles"],
@@ -228,7 +183,6 @@ export {
   resolvedVendorCopyExamples,
   vendorCopyExamplePromptBlock,
   sentenceStyles,
-  plannerSchema,
   profileSchema,
   criticSchema,
   blueprintForReference,
@@ -237,5 +191,4 @@ export {
   readProfileCache,
   writeProfileCache,
 };
-export type { PlannerPayload, ProfilePayload, CriticPayload };
-
+export type { ProfilePayload, CriticPayload };

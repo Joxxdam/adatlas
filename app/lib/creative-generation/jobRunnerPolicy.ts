@@ -8,7 +8,7 @@ export const failedGenerationResultStatuses = new Set<GenerationResult["status"]
  * 수동·자동 제작이 함께 사용하는 유일한 신규 제작 계약입니다.
  * AUTO 별칭은 저장된 자동제작 코드와 테스트의 하위 호환을 위해 유지합니다.
  */
-export const CURRENT_REFERENCE_COPY_POLICY_VERSION = "reference-native-copy-adapter-v29-everyday-reference-rhetoric";
+export const CURRENT_REFERENCE_COPY_POLICY_VERSION = "reference-native-copy-adapter-v34-lean-copy-contract";
 export const CURRENT_REFERENCE_EDIT_JOB_VERSION = "generation-job-v17-deferred-copy-zero-overlay";
 export const CURRENT_REFERENCE_EDIT_PIPELINE = "reference-first-adapted-copy";
 export const CURRENT_REFERENCE_EDIT_WORKFLOW = "reference-lock-product-then-copy" as const;
@@ -99,14 +99,19 @@ export function cancelGenerationJob(job: GenerationJob, now = new Date().toISOSt
   };
 }
 
-export function resumeGenerationJob(job: GenerationJob, runnerActive: boolean, now = new Date().toISOString()): GenerationJob {
+export function resumeGenerationJob(job: GenerationJob, runnerActive: boolean, now = new Date().toISOString(), restartExhausted = false): GenerationJob {
   return {
     ...job,
     status: "running",
     cancelledAt: undefined,
     completedAt: undefined,
     startedAt: job.startedAt || now,
-    results: job.results.map((result) => (result.status === "cancelled" || result.status === "failed" || (result.status === "running" && !runnerActive) ? { ...result, status: "pending", error: undefined, startedAt: undefined } : result)),
+    referenceCopyPlanning: restartExhausted && job.referenceCopyPlanning?.status === "retryable"
+      ? { status: "pending", attempts: 0, updatedAt: now }
+      : job.referenceCopyPlanning,
+    results: job.results.map((result) => (result.status === "cancelled" || result.status === "failed" || (result.status === "running" && !runnerActive)
+      ? { ...result, status: "pending", attempts: restartExhausted ? 0 : result.attempts, error: undefined, startedAt: undefined }
+      : result)),
   };
 }
 

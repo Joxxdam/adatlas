@@ -269,6 +269,21 @@ test("세트 상품은 실제 판매 구성 이미지가 없으면 확인 필요
   assert.equal(verifyAutoProductionProductImages("한우 4팩 세트", product).status, "verified");
 });
 
+test("자동 상품 쿼터는 이미지 확인 필요 후보보다 검증된 후보를 먼저 채운다", () => {
+  const needsReview = candidate("needs-review-first", {
+    selectionScore: 999,
+    imageVerificationStatus: "needs-review",
+    recommendationRole: "core-expansion",
+  });
+  const verified = candidate("verified-first", {
+    selectionScore: 10,
+    imageVerificationStatus: "verified",
+    recommendationRole: "core-expansion",
+  });
+  const selected = selectAutoProductionCandidates([needsReview, verified], config({ productsPerRun: 1 }));
+  assert.equal(selected[0].id, "verified-first");
+});
+
 test("세트 표기가 없는 수량·묶음·1+1 상품은 세트 이미지 검수를 강제하지 않는다", () => {
   const product = candidate("meal-bundle").productInfo;
   product.sourceImageCandidates = [];

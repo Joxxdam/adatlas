@@ -1,4 +1,5 @@
 import type { GenerationJob, GenerationResult } from "./types";
+import { extractPackOptionCounts } from "./productTruth.ts";
 
 export type ProductRenderingPolicy = "natural-meat-reference" | "ai-packaged-product-reference" | "standard-reference";
 
@@ -16,10 +17,7 @@ export type MeatPresentationContract = {
 };
 
 function parseVerifiedPackCount(values: Array<string | undefined>) {
-  const counts = [...new Set(values
-    .flatMap((value) => Array.from(String(value || "").matchAll(/(?:^|\s|[(/,+])([2-9]|[1-9]\d)\s*(?:팩|개입|개|봉|트레이|박스)(?=세트|입|$|\s|[)}/,+x×])/gi)))
-    .map((match) => Number(match[1]))
-    .filter((count) => Number.isInteger(count) && count >= 2 && count <= 99))];
+  const counts = [...new Set(values.flatMap((value) => extractPackOptionCounts(value)).filter((count) => count >= 2))];
   // "3팩/4팩/5팩 옵션"처럼 선택지 여러 개가 함께 노출되면 현재 판매
   // 단위를 확정할 수 없다. 하나의 고유 팩 수만 반복 확인될 때만 사용한다.
   return counts.length === 1 ? counts[0] : undefined;
@@ -82,7 +80,7 @@ export function resolveMeatPresentationContract(job: GenerationJob, result: Gene
   const verifiedFacts = (job.productTruth.facts || []).filter(
     (fact) => fact.verification !== "unverified" && (fact.evidenceType === "composition" || fact.evidenceType === "quantity")
   );
-  const verifiedPackCount = parseVerifiedPackCount([
+  const verifiedPackCount = job.productTruth.normalized.optionSelectionRequired ? undefined : parseVerifiedPackCount([
     job.productReferenceProfile?.immutableFacts?.count,
     job.productReferenceProfile?.immutableFacts?.quantity,
     ...(job.productReferenceProfile?.immutableFacts?.includedItems || []),
@@ -163,6 +161,9 @@ ${presentationContract}
 - PRODUCT IDENTITY OVERRIDES THE SOURCE FOOD SCENE: a frying pan, grill or plated-steak reference never authorizes converting thin or irregular seller cuts into thick medallions, cubes, fillets or generic steak blocks. Preserve the reference's macro visual footprint and advertising hierarchy, but change the carrier or presentation whenever that is necessary to keep the real sold cut recognizable.
 - Before generating, compare several authoritative raw-product photos and lock the sold cut's cross-section outline, slice width-to-thickness ratio, fat-cap thickness, muscle-group boundaries, marbling frequency, branch thickness and density range. Match the normal/median slice shown by the seller; never make the meat thicker, rounder, redder or more heavily marbled merely to look premium.
 - SHAPE CONSERVATION: copy the seller evidence's median width-to-thickness ratio, irregular perimeter, taper, muscle direction and piece-to-piece variation. Cooking shrinkage may reduce width and add irregular browning, but it must never increase apparent thickness, round the perimeter, regularize every piece into the same rectangle or make multiple pieces look cast from one mold.
+- COOKING-SURFACE TRANSFORMATION: raw marbling must not survive cooking as raised white grooves, worm-like lines, embossed ridges or a printed vein map. Fat partially renders and softens; browned surfaces need irregular sear patches, broken non-repeating fibers and small localized moisture highlights. Never trace the raw marbling onto every cooked piece.
+- DETAIL BUDGET AND PIECE COUNT: a tight hero close-up should show only a small number of fully resolved pieces (normally 3-7). If the reference needs a full plate or pan, overlap and partially occlude the remainder, keep only a few foreground pieces sharp, and avoid rendering dozens of equally detailed cloned rectangles. Each visible sharp piece must differ in outline, orientation, browning and surface grain.
+- When the seller's cooked evidence is small, blurry or compressed, use it only for ordinary doneness, portion shape and color. Move the camera slightly wider and simplify surface detail; never hallucinate macro pores, dense grooves or decorative marbling to compensate for missing resolution.
 - Recreate that same meat naturally in the reference composition with coherent perspective, contact, shadows and food lighting. It must look photographed in the scene, never like a rectangular source photo or detached cutout pasted on top.
 - Preserve fine physical microtexture: non-repeating muscle fibers, naturally uneven fat edges, small thickness variations and believable pores. Every slice must have its own plausible irregular grain; do not clone, mirror or repeat the same vein map across pieces.
 - APPETITE LIGHTING IS REQUIRED: use warm directional commercial food light, rich but credible red lean, creamy natural fat, local contrast and depth, plus small varied specular highlights on fresh cut surfaces and edges. Raw meat must look freshly cut and naturally moist—not matte, chalky, gray, dry or dehydrated. Moisture must remain localized and physically believable, never slimy, lacquered, glassy or uniformly glossy.

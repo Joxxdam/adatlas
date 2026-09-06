@@ -683,14 +683,17 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const allCreativesReady = Boolean(job && progress.total === 6 && completedResults.length === progress.total);
   const referenceAdapted = job?.copyPlanMode === "reference-adapted";
   const copyPlanning = job?.referenceCopyPlanning?.status;
-  const currentStage = copyPlanning === "pending" || copyPlanning === "running"
-    ? "레퍼런스 OCR·상품 조사 근거로 6장 문구 기획·검수 중"
+  const copyPlanningInProgress = copyPlanning === "pending" || copyPlanning === "running";
+  const currentStage = copyPlanning === "retryable"
+    ? "문구 기획을 준비하지 못했습니다 · 명시적으로 재개해 주세요"
+    : copyPlanningInProgress
+      ? "레퍼런스 OCR·상품 조사 근거로 6장 문구 기획·검수 중"
     : activeResults[0]
       ? generationStageLabels[activeResults[0].generationStage || "planned"]
       : generationInProgress
         ? "다음 광고 준비 중"
         : "";
-  const progressHeadline = loading && !job ? "광고 제작 작업을 등록하고 있습니다" : allCreativesReady ? "광고 6장이 모두 완성됐습니다" : activeResults.length ? `${currentOrder}장째 광고를 제작 중입니다` : generationInProgress ? copyPlanning === "pending" || copyPlanning === "running" ? "최신 문구를 먼저 준비하고 있습니다" : `${currentOrder}장째 광고 제작을 준비 중입니다` : recoverable ? "광고 생성이 잠시 멈췄습니다" : attentionResultsWithoutImage.length ? "다시 제작할 광고가 있습니다" : startError ? "광고 제작을 시작하지 못했습니다" : awaitingReferenceConfirmation ? "자동 매칭을 확인·수정해 주세요" : !job ? "이 매칭으로 제작할 준비가 됐습니다" : message;
+  const progressHeadline = loading && !job ? "광고 제작 작업을 등록하고 있습니다" : allCreativesReady ? "광고 6장이 모두 완성됐습니다" : activeResults.length ? `${currentOrder}장째 광고를 제작 중입니다` : generationInProgress ? copyPlanningInProgress ? "최신 문구를 먼저 준비하고 있습니다" : `${currentOrder}장째 광고 제작을 준비 중입니다` : recoverable ? "광고 생성이 잠시 멈췄습니다" : attentionResultsWithoutImage.length ? "다시 제작할 광고가 있습니다" : startError ? "광고 제작을 시작하지 못했습니다" : awaitingReferenceConfirmation ? "자동 매칭을 확인·수정해 주세요" : !job ? "이 매칭으로 제작할 준비가 됐습니다" : message;
 
   return (
     <section className="six-creative-generator" id="creative-results">

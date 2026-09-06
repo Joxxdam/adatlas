@@ -72,7 +72,12 @@ function usablePremiseFacts(truth: ProductTruth) {
   return truth.facts
     .filter((fact) => fact.usableInCopy && fact.verification !== "unverified" && fact.copyEligibility !== "blocked")
     .filter((fact) => !["shipping", "merchant-proof"].includes(fact.evidenceType || ""))
+    .filter((fact) => fact.copyEligibility !== "offerOnly" && fact.copyEligibility !== "identityOnly")
     .filter((fact) => !/배송|출고|도착|택배|판매원|고객센터|교환|환불|양해/u.test(fact.value))
+    // OCR에서 들어온 판매자 수식·행사 조각과 관형형 미완성 문장은 이미지
+    // premise의 상품 USP가 아니다. 가격은 offer 슬롯에서만 별도로 다룬다.
+    .filter((fact) => !/탑\s*브랜드|런칭|첫\s*출시|반값|할인|특가|도매가|주문\s*폭주/u.test(fact.value))
+    .filter((fact) => !/(?:키운|고른|만든|위한|담은|사용한)\s*$/u.test(fact.value.trim()))
     .sort((left, right) => priority(right) - priority(left));
 }
 

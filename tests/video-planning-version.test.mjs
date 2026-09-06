@@ -41,7 +41,7 @@ const guideline = {
   designerNotes: "",
 };
 
-test("최신 기획 계약은 구체적 창작 인물·세계·사건·상품 사실 경계를 모두 요구한다", () => {
+test("최신 기획 계약은 구체적 화자·촬영 환경·상품 행동·사실 경계를 모두 요구한다", () => {
   const latest = {
     conceptArchetype: "usp-focus",
     distinctiveCharacter: "막차 전 오래된 동네 체육관에서 마지막으로 샤워하는 야근 많은 직장인",
@@ -53,6 +53,18 @@ test("최신 기획 계약은 구체적 창작 인물·세계·사건·상품 �
   assert.equal(isCurrentVideoPlanningConcept(latest), true);
   assert.equal(currentVideoCreativePremiseIssue({ ...latest, distinctiveCharacter: "일반 사용자" }).length > 0, true);
   assert.equal(currentVideoCreativePremiseIssue({ ...latest, socialWorld: "욕실" }).length > 0, true);
+});
+
+test("세계관과 위기 중심의 드라마형 요약은 최신 상품 중심 기획으로 인정하지 않는다", () => {
+  const overbuilt = {
+    conceptArchetype: "parody",
+    distinctiveCharacter: "달빛 수라간에서 비밀 장부를 지키는 왕실 감별관",
+    socialWorld: "가상 왕국의 수라간에서 추석 상차림 위기가 벌어지는 밤",
+    storyTrigger: "사라진 고기 상자를 찾아 왕실 위기를 수습하는 장편 사건이 시작된다.",
+    truthBridge: "검증된 상품 구성과 가격을 마지막 반전의 근거로 연결한다.",
+    dramatizationBoundary: "왕국과 인물은 창작 세계관이며 상품 구성과 가격만 검증된 사실이다.",
+  };
+  assert.match(currentVideoCreativePremiseIssue(overbuilt), /드라마 서사/);
 });
 
 test("가상의 의사 가족 추천은 창작 경계를 명시하면 최신 기획으로 허용한다", () => {

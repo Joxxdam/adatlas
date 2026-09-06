@@ -220,7 +220,7 @@ test("블라인드 테스트는 가격 흥정 레퍼런스를 주 블루프린�
   assert.match(selected.parody.reason, /영화식 장치나 다른 장르 문법은 덧붙이지 않습니다/);
 });
 
-test("시대·사회 세계관극은 오리지널소스 실제 20개 자막·장면 레퍼런스를 직접 전달한다", () => {
+test("시대물 오프닝은 오리지널소스 실제 20개 자막·장면 레퍼런스를 직접 전달한다", () => {
   const selected = selectVideoPlanningBlueprints({
     analysis: analysis(),
     archetypes: ["parody"],

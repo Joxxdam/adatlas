@@ -91,10 +91,10 @@ export const VIDEO_CONCEPT_ARCHETYPE_OPTIONS: Array<{
 }> = [
   {
     id: "parody",
-    label: "창작 인물·상황극형",
-    description: "가상의 인물·관계·시대·직업과 사건을 만들어 상품을 이야기의 반전이나 해결로 연결합니다.",
+    label: "가벼운 콘셉트 장치형",
+    description: "뉴스·퀴즈·시대물 같은 화면 문법을 짧은 훅으로만 쓰고 곧바로 실제 상품 확인으로 전환합니다.",
     direction:
-      "가족·직장·시장 같은 현실 관계부터 역사·미래·법정·뉴스·오디션·경매·탐정 같은 창작 세계까지 상품과 맞는 장르 하나를 고른다. 인물과 사건은 자유롭게 창작하되 실제 인물·후기로 사칭하지 않고, 상품의 가격·구성·원료·효능·성과는 검증된 사실만 사용한다. 가상의 의사 가족 추천은 허용하되 의학적 효능이나 보증의 근거로 사용하지 않는다.",
+      "역사·미래·법정·뉴스·오디션·퀴즈·경매·탐정 중 상품과 맞는 화면 장치 하나를 고르되 첫 1~3초 훅과 짧은 전환에만 사용한다. 가상 왕국·인물 이름·위기·구출 같은 드라마 줄거리를 만들지 않고, 한 장소의 한 명 화자가 실제 상품을 확인하는 UGC 흐름을 중심으로 둔다. 상품의 가격·구성·원료·효능·성과는 검증된 사실만 사용한다.",
   },
   {
     id: "real-review",
@@ -494,13 +494,13 @@ export type VideoConcept = {
   targetCallout?: string;
   benefitAvailability?: "verified" | "insufficient";
   blueprintSelection?: VideoPlanningBlueprintSelection;
-  /** 창작 인물·상황극형에서 자동 선택되어 요약과 상세 대본을 끝까지 고정하는 세부 장르. */
+  /** 가벼운 콘셉트 장치형에서 자동 선택되어 화면 문법을 고정하는 세부 장르. */
   parodyGenre?: VideoParodyGenre;
-  /** 이름·관계·직업·습관·경력 중 두 가지 이상이 드러나는 기억 가능한 창작 인물. */
+  /** 실제 광고 촬영에서 바로 이해되는 주 화자의 관계·행동·습관. 고유 이름이나 과한 배경 서사는 필수가 아닙니다. */
   distinctiveCharacter?: string;
-  /** 현재·과거·미래·가상 사회를 포함해 한 장면으로 떠오르는 구체적인 세계와 맥락. */
+  /** 한 장소와 시간대, 사용·구매 맥락이 바로 떠오르는 현실적인 촬영 환경. */
   socialWorld?: string;
-  /** 상품이 등장하기 전에 인물과 배경에서 실제로 벌어지는 한 가지 창작 사건. */
+  /** 상품 확인으로 곧바로 이어지는 한 가지 생활 행동·질문·발견. */
   storyTrigger?: string;
   /** 창작 사건을 상세페이지의 검증된 USP 두세 가지로 설득하는 연결 방식. */
   truthBridge?: string;
@@ -617,6 +617,7 @@ export type VideoProject = {
   conceptFormat?: VideoConceptFormat;
   planningMode?: "four-concepts";
   videoPlanningEngineVersion?:
+    | "reference-product-first-v7"
     | "reference-imaginative-v6"
     | "reference-lifestyle-v5"
     | "story-mechanism-v4"

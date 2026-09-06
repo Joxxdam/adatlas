@@ -12,6 +12,30 @@ export type CreativeBlueprintId = (typeof creativeBlueprintIds)[number];
 export type FactVerification = "verified" | "source-backed" | "user-provided" | "unverified";
 export type ProductEvidenceType = "identity" | "usp" | "ingredient" | "composition" | "quantity" | "usage" | "target" | "price" | "offer" | "shipping" | "review" | "origin" | "certification" | "merchant-proof" | "numeric" | "other";
 
+export const referenceCopyEvidenceDimensions = [
+  "numeric-proof",
+  "ingredient-provenance",
+  "process",
+  "texture",
+  "usage-problem",
+  "certification",
+  "offer",
+  "product-usp",
+  "sensory",
+] as const;
+
+export type ReferenceCopyEvidenceDimension = (typeof referenceCopyEvidenceDimensions)[number];
+
+export type ReferenceCopyEvidenceAssignment = {
+  referenceId: string;
+  referenceMechanism: string;
+  primaryFactId: string;
+  supportingFactIds: string[];
+  evidenceDimension: ReferenceCopyEvidenceDimension;
+  sensoryLed: boolean;
+  assignmentReason: string;
+};
+
 export type ProductFact = {
   id: string;
   key: string;
@@ -87,6 +111,92 @@ export type ImageCreativePremise = {
   factBoundary: string;
 };
 
+export const creativeAngles = [
+  "price-shock",
+  "family-reaction",
+  "alternative-rebuttal",
+  "meme-reaction",
+  "sensory-explosion",
+  "purchase-twist",
+  "insider-secret",
+  "stock-up-scene",
+  "category-replacement",
+  "concrete-usp-discovery",
+  "problem-callout",
+  "usage-moment",
+  "social-reaction",
+  "expectation-reversal",
+] as const;
+
+export type CreativeAngle = (typeof creativeAngles)[number];
+
+export const referenceCopyClaimModes = [
+  "objective-fact",
+  "subjective-reaction",
+  "lifestyle-scenario",
+  "obvious-puffery",
+  "dramatized-persona",
+  "prohibited-or-unsupported",
+] as const;
+
+export type ReferenceCopyClaimMode = (typeof referenceCopyClaimModes)[number];
+export type ReferenceCopyCandidateMode = "reference-faithful" | "performance-bold" | "natural-conversation";
+export type ReferenceCopyBlockRole = "headline" | "support" | "proof" | "offer" | "cta" | "badge" | "other";
+
+export type ReferenceCopyBlock = {
+  role: ReferenceCopyBlockRole;
+  text: string;
+  coreFactIds: string[];
+};
+
+export type ReferenceCopyHookIdea = {
+  id: string;
+  creativeAngle: CreativeAngle;
+  consumerSituation: string;
+  tension: string;
+  reaction: string;
+  productBridge: string;
+  supportingFactIds: string[];
+  referenceMechanism: string;
+  claimMode: ReferenceCopyClaimMode;
+};
+
+export type ReferenceCopyCandidateScore = {
+  stopPower: number;
+  productDifference: number;
+  humanVoice: number;
+  concretePurchaseReason: number;
+  referenceFit: number;
+  novelty: number;
+  clichéPenalty: number;
+  genericCopyPenalty: number;
+  duplicatePenalty: number;
+  unsupportedClaimPenalty: number;
+  templateCopyPenalty: number;
+  categoryMismatchPenalty: number;
+  total: number;
+};
+
+export type ReferenceCopyCandidate = {
+  id: string;
+  creativeAngle: CreativeAngle;
+  candidateMode: ReferenceCopyCandidateMode;
+  claimModes: ReferenceCopyClaimMode[];
+  coreFactIds: string[];
+  fullCopy: string;
+  copyBlocks: ReferenceCopyBlock[];
+  copyRiskFlags: string[];
+  copyReviewRequired: boolean;
+  /** 검토 필요 원안과 별도로 자동 제작이 사용할 수 있는 강한 안전 대체 문구입니다. */
+  safeAlternative?: string;
+  referenceFitReason: string;
+  productDifferenceReason: string;
+  noveltyReason: string;
+  candidateScore?: ReferenceCopyCandidateScore;
+  selectionReason?: string;
+  rejectionReasons?: string[];
+};
+
 export type ReferenceAdaptedCopyPlan = {
   id: string;
   resultCode: string;
@@ -94,6 +204,20 @@ export type ReferenceAdaptedCopyPlan = {
   referenceCopyProfileId: string;
   /** 과거 저장 작업 호환을 위해 optional이며, 최신 작업은 버전 게이트에서 필수입니다. */
   creativePremise?: ImageCreativePremise;
+  /** 아래 필드는 과거 저장 계획에는 없을 수 있으며 normalize 단계에서 안전하게 생략됩니다. */
+  creativeAngle?: CreativeAngle;
+  hookIdea?: ReferenceCopyHookIdea;
+  /** 선택 레퍼런스의 수사와 한 가지 상품 근거를 먼저 고정한 6장 분산 계약입니다. */
+  evidenceAssignment?: ReferenceCopyEvidenceAssignment;
+  candidateMode?: ReferenceCopyCandidateMode;
+  claimModes?: ReferenceCopyClaimMode[];
+  copyRiskFlags?: string[];
+  copyReviewRequired?: boolean;
+  fullCopy?: string;
+  copyBlocks?: ReferenceCopyBlock[];
+  candidateScore?: ReferenceCopyCandidateScore;
+  candidateSelectionReason?: string;
+  copyCandidates?: ReferenceCopyCandidate[];
   /** 선택 레퍼런스에 실제로 적혀 있던 원문과 줄 구조입니다. */
   referenceRawCopy?: string;
   referenceRawLines?: string[];
@@ -132,7 +256,7 @@ export type ReferenceAdaptedCopyPlan = {
   validationStatus: "valid" | "needs-review" | "invalid";
   validationErrors: string[];
   repairCount: number;
-  generationSource: "codex-local" | "repaired-codex-local" | "reference-best-effort" | "safe-minimal";
+  generationSource: "codex-local" | "repaired-codex-local" | "validated-fallback" | "reference-best-effort" | "safe-minimal";
 };
 
 export type ProductEvidence = {
@@ -334,6 +458,10 @@ export type ProductTruth = {
     verifiedBenefits: string[];
     seasonOrEvent?: string;
     packageOrOption?: string;
+    /** 여러 판매 옵션이 함께 노출돼 현재 가격·구성을 한 SKU로 확정할 수 없는 상태입니다. */
+    optionSelectionRequired?: boolean;
+    /** 옵션 선택 전 광고 문구와 이미지 구성에 사용하면 안 되는 판매 단위 후보입니다. */
+    ambiguousOptionCounts?: number[];
     uspCandidates: string[];
     reviewEvidence: string[];
     targetCustomer?: string;
@@ -1250,9 +1378,11 @@ export type GenerationJob = {
    * 완료하기 위한 상태입니다. ready 전에는 이미지 생성 단계를 시작하지 않습니다.
    */
   referenceCopyPlanning?: {
-    status: "pending" | "running" | "ready";
+    status: "pending" | "running" | "retryable" | "ready";
     provider?: "codex-local" | "fallback";
     error?: string;
+    attempts?: number;
+    nextRetryAt?: string;
     updatedAt: string;
   };
 };

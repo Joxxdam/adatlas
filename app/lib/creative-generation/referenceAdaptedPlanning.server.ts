@@ -31,11 +31,13 @@ import {
 } from "./referenceCopyProfiles.server";
 import {
   applyMerchantCredentialGroupRule,
+  createEvidenceSafeMinimalPlan,
   ensureRenderableReferencePlans,
-  fallbackPlan,
   normalizePlan,
 } from "./referenceCopyPlanningCore";
-import { planningPrompt, reviewPlans, runPlanner } from "./referenceCopyPlannerRuntime.server";
+import { hydrateLeanPlannerPayload, planningPrompt, reviewPlans, runPlanner, selectPlannerCandidates } from "./referenceCopyPlannerRuntime.server";
+import { normalizeReferenceCopyPlanMetadata } from "./referenceCopyCandidates.ts";
+import { alignPremiseSeedsToEvidenceAssignments, buildReferenceCopyEvidenceAssignments, referenceRhetoricalMechanism } from "./referenceCopyAngles.ts";
 
 export { REFERENCE_ADAPTED_PLANNER_VERSION, REFERENCE_COPY_PROFILE_VERSION };
 export {
@@ -61,21 +63,24 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
     return {
       ...profile,
       tone: /ㅋㅋ|;;|\.\.|\?\!|\!\?/.test(raw) ? "레퍼런스 원문 구어체" : "레퍼런스 원문 말투",
+      rhetoricalDevice: referenceRhetoricalMechanism(reference),
+      punctuationRhythm: raw.match(/[?!;.~ㅋ]+/gu)?.join(" ") || "원문 문장부호 최소 유지",
       headlineLineBudget: Math.max(1, Math.min(4, reference.nativeCopy?.textRegions.find((region) => region.role === "headline")?.lines.length || 2)),
       supportLineBudget: Math.max(0, Math.min(5, reference.nativeCopy?.rawLines.length || 2)),
       prohibitedLiteralPhrases: [],
       analysisSource: reference.nativeCopy?.extractionSource === "codex-local" ? "codex-local" as const : "safe-minimal" as const,
     };
   }));
+  const evidenceAssignments = buildReferenceCopyEvidenceAssignments(input.truth, input.references);
   const readyEntries = input.references
     .map((reference, index) => ({ reference, profile: profiles[index], index }))
     .filter(({ reference }) => isApprovedReferenceNativeCopy(reference.nativeCopy));
-  const premiseSeeds = buildImageCreativePremiseSeeds(input.truth, input.references);
-  const fallbackPlans = input.references.map((reference, index) => fallbackPlan(input.truth, reference, profiles[index], index, premiseSeeds[index]));
+  const premiseSeeds = alignPremiseSeedsToEvidenceAssignments(input.truth, buildImageCreativePremiseSeeds(input.truth, input.references), evidenceAssignments);
+  const fallbackPlans = input.references.map((reference, index) => createEvidenceSafeMinimalPlan(input.truth, reference, profiles[index], index, premiseSeeds[index], evidenceAssignments[index]));
   if (!readyEntries.length) {
     return {
       profiles,
-      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds }),
+      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds, evidenceAssignments }),
       provider: "fallback" as const,
       warnings: ["저장·자동 검증된 레퍼런스 OCR 원문이 없어 레퍼런스 구성 태그와 상품 사실로 최선 문구를 만들고 제작을 계속합니다. 제작 중 즉석 OCR은 실행하지 않았습니다."],
     };
@@ -85,49 +90,30 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
   const readyPremiseSeeds = readyEntries.map(({ index }) => premiseSeeds[index]);
   try {
     const planningWarnings: string[] = [];
-    const response = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, missingProfileIds: [], copyGuide }));
-    let readyPlans = readyEntries.map(({ reference, profile, index }, readyIndex) => normalizePlan(response.plans.find((plan) => plan.referenceId === reference.id), input.truth, reference, profile, index, readyPremiseSeeds[readyIndex], "codex-local"));
-    try {
-      readyPlans = await reviewPlans({ truth: input.truth, profiles: readyProfiles, plans: readyPlans, copyGuide });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "일괄 문구 자연스러움 검수에 실패했습니다.";
-      // 7점 품질을 확인하지 못한 AI 자체 점수만 신뢰하지 않는다. 제작은 멈추지
-      // 않되 아래 1회 보정 또는 레퍼런스 구조 기반 fallback으로 반드시 교체한다.
-      planningWarnings.push(`문구 품질 검수 호출 실패(미검수 AI 문구 미사용): ${message}`);
-      readyPlans = readyPlans.map((plan) => ({
-        ...plan,
-        validationStatus: "invalid" as const,
-        validationErrors: [...new Set([...plan.validationErrors, "독립 문구 품질 검수를 완료하지 못했습니다."])],
-      }));
-    }
+    const readyEvidenceAssignments = readyEntries.map(({ index }) => evidenceAssignments[index]);
+    const leanResponse = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments, missingProfileIds: [], copyGuide }));
+    let response = hydrateLeanPlannerPayload({ payload: leanResponse, truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments });
+    response = await selectPlannerCandidates({ truth: input.truth, references: readyReferences, evidenceAssignments: readyEvidenceAssignments, payload: response });
+    let readyPlans = readyEntries.map(({ reference, profile, index }, readyIndex) => normalizePlan(response.plans.find((plan) => plan.referenceId === reference.id), input.truth, reference, profile, index, readyPremiseSeeds[readyIndex], "codex-local", readyEvidenceAssignments[readyIndex]));
+    readyPlans = reviewPlans({ truth: input.truth, profiles: readyProfiles, plans: readyPlans, copyGuide });
     // 묶음 중복·가격 반복 오류도 1회 보정 배치에 포함한다. 과거에는 보정이
     // 끝난 뒤 처음 발견되어 고칠 기회 없이 규칙 문구로 교체되던 문제를 막는다.
     readyPlans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(readyPlans, input.truth));
     const failed = readyPlans.filter((plan) => plan.validationStatus === "invalid");
     if (failed.length) {
       try {
-        const repaired = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, missingProfileIds: [], copyGuide, repairPlans: failed }));
+        const leanRepair = await runPlanner(planningPrompt({ truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments, missingProfileIds: [], copyGuide, repairPlans: failed }));
+        let repaired = hydrateLeanPlannerPayload({ payload: leanRepair, truth: input.truth, references: readyReferences, profiles: readyProfiles, premiseSeeds: readyPremiseSeeds, evidenceAssignments: readyEvidenceAssignments });
+        repaired = await selectPlannerCandidates({ truth: input.truth, references: readyReferences, evidenceAssignments: readyEvidenceAssignments, payload: repaired });
         readyPlans = readyPlans.map((plan, readyIndex) => {
           const entry = readyEntries[readyIndex];
-          return plan.validationStatus === "invalid" ? normalizePlan(repaired.plans.find((candidate) => candidate.referenceId === plan.referenceId), input.truth, entry.reference, entry.profile, entry.index, readyPremiseSeeds[readyIndex], "repaired-codex-local") : plan;
+          return plan.validationStatus === "invalid" ? normalizePlan(repaired.plans.find((candidate) => candidate.referenceId === plan.referenceId), input.truth, entry.reference, entry.profile, entry.index, readyPremiseSeeds[readyIndex], "repaired-codex-local", readyEvidenceAssignments[readyIndex]) : plan;
         });
         const repairedReferenceIds = new Set(failed.map((plan) => plan.referenceId));
         const repairedPlans = readyPlans.filter((plan) => repairedReferenceIds.has(plan.referenceId));
-        try {
-          const reviewedRepairs = await reviewPlans({ truth: input.truth, profiles: readyProfiles.filter((profile) => repairedReferenceIds.has(profile.referenceId)), plans: repairedPlans, copyGuide });
-          const reviewedByReference = new Map(reviewedRepairs.map((plan) => [plan.referenceId, plan]));
-          readyPlans = readyPlans.map((plan) => reviewedByReference.get(plan.referenceId) || plan);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "보정 문구 재검수에 실패했습니다.";
-          planningWarnings.push(`보정 문구 품질 재검수 실패(미검수 보정본 미사용): ${message}`);
-          readyPlans = readyPlans.map((plan) => repairedReferenceIds.has(plan.referenceId)
-            ? {
-                ...plan,
-                validationStatus: "invalid" as const,
-                validationErrors: [...new Set([...plan.validationErrors, "보정 문구의 독립 품질 재검수를 완료하지 못했습니다."])],
-              }
-            : plan);
-        }
+        const reviewedRepairs = reviewPlans({ truth: input.truth, profiles: readyProfiles.filter((profile) => repairedReferenceIds.has(profile.referenceId)), plans: repairedPlans, copyGuide });
+        const reviewedByReference = new Map(reviewedRepairs.map((plan) => [plan.referenceId, plan]));
+        readyPlans = readyPlans.map((plan) => reviewedByReference.get(plan.referenceId) || plan);
         readyPlans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(readyPlans, input.truth));
       } catch (error) {
         const message = error instanceof Error ? error.message : "문구 1회 보정에 실패했습니다.";
@@ -137,19 +123,25 @@ export async function planReferenceAdaptedCopies(input: { truth: ProductTruth; r
     const plannedByReference = new Map(readyPlans.map((plan) => [plan.referenceId, plan]));
     let plans = input.references.map((reference, index) => plannedByReference.get(reference.id) || fallbackPlans[index]);
     plans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(plans, input.truth));
-    // AI 보정 실패 상태는 결과의 품질 경고로 보존한다. 이미지 실행 단계는
-    // 사실상 안전하고 편집 가능한 계획이면 우선 생성하고, 빈 슬롯·사실 오류가
-    // 있는 계획만 ProductTruth best-effort 문구로 교체한다.
+    // AI 보정 이후에도 publishable 계약에 미달한 항목은 검증된 결정적
+    // ProductTruth fallback으로 교체한다. 검증되지 않은 best-effort는 실행하지 않는다.
+    plans = ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans, premiseSeeds, evidenceAssignments });
     plans = applyMerchantCredentialGroupRule(applyReferenceCopyGroupRules(plans, input.truth));
     return { profiles, plans, provider: "codex-local" as const, warnings: [...planningWarnings, ...plans.flatMap((plan) => plan.validationErrors)] };
   } catch (error) {
-    return { profiles, plans: fallbackPlans, provider: "fallback" as const, warnings: [error instanceof Error ? error.message : "최신 레퍼런스 문구 계획을 준비하지 못해 이미지 생성을 시작하지 않습니다."] };
+    return {
+      profiles,
+      plans: ensureRenderableReferencePlans({ truth: input.truth, references: input.references, profiles, plans: fallbackPlans, premiseSeeds, evidenceAssignments }),
+      provider: "fallback" as const,
+      warnings: [error instanceof Error ? error.message : "최신 레퍼런스 문구 계획을 준비하지 못해 이미지 생성을 시작하지 않습니다."],
+    };
   }
 }
 export function buildReferenceAdaptedCreativePlan(input: { truth: ProductTruth; references: NativeAdReference[]; copyPlans: ReferenceAdaptedCopyPlan[]; logoPath?: string; adBrief?: AdBrief; testCode?: `T${string}`; provider: "codex-local" | "fallback"; warnings?: string[] }): CreativePlan {
   const brandProfile = withRequestedLogo(matchBrandProfile(input.truth.product), input.logoPath);
   const categoryProfile = matchCategoryProfile(input.truth.product);
-  const hookPlans: HookPlan[] = input.copyPlans.map((plan, index) => {
+  const hookPlans: HookPlan[] = input.copyPlans.map((storedPlan, index) => {
+    const plan = normalizeReferenceCopyPlanMetadata(storedPlan);
     const reference = input.references[index];
     const blueprintId = blueprintForReference(reference);
     return {
@@ -174,7 +166,7 @@ export function buildReferenceAdaptedCreativePlan(input: { truth: ProductTruth; 
       naturalnessScore: plan.naturalnessScore,
       validationStatus: plan.validationStatus === "invalid" ? "invalid" : plan.validationStatus === "needs-review" ? "fallback" : "valid",
       validationErrors: plan.validationErrors,
-      generationSource: plan.generationSource === "reference-best-effort" || plan.generationSource === "safe-minimal" ? "fallback" : plan.generationSource === "repaired-codex-local" ? "repaired-ai" : "ai",
+      generationSource: plan.generationSource === "validated-fallback" || plan.generationSource === "reference-best-effort" || plan.generationSource === "safe-minimal" ? "fallback" : plan.generationSource === "repaired-codex-local" ? "repaired-ai" : "ai",
       repairCount: plan.repairCount,
       sentenceStyle: plan.sentenceStyle,
       selectionReason: reference.selectionReason,

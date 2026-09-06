@@ -3,7 +3,7 @@ import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 import type { CreativeImageAsset, CreativeImageRole, FactVerification, ProductFact, ProductEvidenceType, ProductTruth } from "./types";
 import { isAmbiguousMerchantCredentialCreativeSignal, isDomesticOriginCreativeSignal, isIncompleteOcrCopyFragment, isMalformedProductSignal, isMeatProductContext, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isOriginCreativeSignal, isPackageLabelOcrCopyNoise, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isPromotionalProductSignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim, removeOriginCreativePhrases } from "./productSignalHygiene.ts";
 
-export const PRODUCT_TRUTH_VERSION = "product-truth-v11-brandless-copy-and-clean-title";
+export const PRODUCT_TRUTH_VERSION = "product-truth-v12-explicit-option-safety";
 
 function compact(values: Array<string | undefined>) {
   return Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
@@ -105,6 +105,21 @@ function firstMatch(value: string, pattern: RegExp) {
     ?.trim();
 }
 
+/** `안심4팩세트`처럼 숫자 앞에 공백이 없는 판매 단위도 찾습니다. */
+export function extractPackOptionCounts(value: string | undefined) {
+  return [...new Set(
+    Array.from(String(value || "").normalize("NFKC").matchAll(/(\d{1,2})\s*(?:팩|개입|봉|트레이|박스)(?=\s*(?:세트|입)?(?:\s|[),/·+]|$))/giu))
+      .map((match) => Number(match[1]))
+      .filter((count) => Number.isInteger(count) && count >= 1 && count <= 99)
+  )];
+}
+
+export function hasAmbiguousPackOptions(value: string | undefined) {
+  const normalized = String(value || "").normalize("NFKC");
+  const counts = extractPackOptionCounts(normalized);
+  return counts.length > 1 && /(?:옵션|선택|골라|택\s*\d+|[,/])/u.test(normalized);
+}
+
 function isOriginLike(value: string) {
   return /(?:원산지|산지|국내산|국산|호주산|미국산|뉴질랜드산|캐나다산|제주산)(?:\s|$|[:：,·/])/u.test(`${String(value || "")} `);
 }
@@ -127,13 +142,19 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
   const quantity = firstMatch(`${rawProductTitle} ${description}`, /\d[\d,.]*\s*(?:ml|mL|l|L|g|kg)/i);
   const salesUnit = firstMatch(`${cleanProductName} ${description}`, /(?:\d[\d,.]*\s*(?:봉지|개입|개|팩|병|박스|세트|종)|\d+\s*[~-]\s*\d+\s*인분)(?!\s*(?:구성|세트))/i);
   const backedByTitle = titleBackedClaims(rawProductTitle);
-  const composition = backedByTitle.composition || firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
+  const ambiguousOptionCounts = hasAmbiguousPackOptions(rawProductTitle) ? extractPackOptionCounts(rawProductTitle) : [];
+  const optionSelectionRequired = ambiguousOptionCounts.length > 1;
+  const composition = optionSelectionRequired
+    ? undefined
+    : backedByTitle.composition || firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d+\s*(?:개|팩|병|종)\s*(?:구성|세트)|세트\s*구성)/i);
   const shipping = firstMatch(`${rawProductTitle} ${description}`, /(?:무료\s*배송|당일\s*출고|오늘\s*출발|새벽\s*배송)/i);
   const promotion = firstMatch(`${rawProductTitle} ${description}`, /(?:\d+\s*\+\s*\d+|\d{1,3}\s*%\s*할인|쿠폰|증정|한정\s*(?:특가|판매))/i);
   const advertisingDiscountInfo = isShippingCreativeSignal(product.discountInfo) ? undefined : product.discountInfo;
   const origin = firstMatch(`${rawProductTitle} ${description} ${(product.ingredients || []).join(" ")}`, /(?:원산지\s*[:：]?\s*[가-힣]{2,12}산|국내산|국산|호주산|미국산|뉴질랜드산|캐나다산|제주산)(?=\s|[,·/]|$)/u);
   const seasonOrEvent = firstMatch(`${rawProductTitle} ${description}`, /(?:봄|여름|가을|겨울|명절|설날|추석|크리스마스|신상품|시즌|\d{1,2}일\s*한정|한정\s*판매)/u);
-  const packageOrOption = product.packageType || composition || firstMatch(`${cleanProductName} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
+  const packageOrOption = optionSelectionRequired
+    ? firstMatch(cleanProductName.replace(/\d{1,2}\s*(?:팩|개입|봉|트레이|박스)(?:\s*세트)?/giu, " "), /(?:파우치|튜브|병|박스|세트)/u)
+    : product.packageType || composition || firstMatch(`${cleanProductName} ${description}`, /(?:파우치|튜브|병|팩|박스|세트|택\s*\d+|옵션\s*\d+)/u);
   const promotionalTokens = compact(rawProductTitle.match(/(?:오늘만|지금만|초특가|한정판매|한정특가|무료배송|최저가|핫딜|소량입고|품절임박|단독특가|긴급특가|MD추천|역대급|괴물용량|반란|\d{1,3}\s*%\s*(?:할인|OFF)?|\d+\s*\+\s*\d+)/giu) || []);
   const offerTokens = compact([product.price, product.originalPrice || product.oldPrice, advertisingDiscountInfo, promotion]);
   const selectionTokens = compact(rawProductTitle.match(/(?:택\s*\d+|옵션\s*\d+|골라\s*담기|선택\s*구성|\d+종\s*선택)/giu) || []);
@@ -159,7 +180,7 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
     baseName: baseProductName || cleanProductName,
     verifiedDescriptor,
     descriptor: verifiedDescriptor || baseProductName || cleanProductName,
-    salesUnit: salesUnit || composition || quantity,
+    salesUnit: optionSelectionRequired ? quantity : salesUnit || composition || quantity,
     promotionalTokens,
     offerTokens,
     selectionTokens,
@@ -180,6 +201,8 @@ function normalizedProductTruth(product: ProductInfoForPrompt, rawTitle?: string
     verifiedBenefits,
     seasonOrEvent,
     packageOrOption,
+    optionSelectionRequired,
+    ambiguousOptionCounts,
     uspCandidates: compact([...verifiedBenefits, ...ingredientValues]).slice(0, 8),
     reviewEvidence,
     targetCustomer: safeTargetCustomer,
@@ -519,6 +542,13 @@ export function buildProductTruth(input: { product: ProductInfoForPrompt; rawPro
   ]
     .filter((item): item is ProductFact => Boolean(item))
     .map((item) => {
+      const optionDependentFact = normalizedTruth.optionSelectionRequired && (
+        ["price", "offer", "composition", "quantity"].includes(item.evidenceType || "") ||
+        extractPackOptionCounts(item.value).some((count) => normalizedTruth.ambiguousOptionCounts.includes(count))
+      );
+      if (optionDependentFact) {
+        return { ...item, usableInCopy: false, copyEligibility: "blocked" as const };
+      }
       const originSignal = item.evidenceType === "origin" || isOriginCreativeSignal(item.value);
       if (!originSignal) return item;
       if (!originCopyAllowed || isNonDomesticOriginCreativeSignal(item.value)) {

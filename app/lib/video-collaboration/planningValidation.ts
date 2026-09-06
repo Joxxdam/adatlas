@@ -44,6 +44,8 @@ const DELIVERY_AUDIENCE_COPY = [
   /(?:제주|도서\s*산간|산간\s*지역).*(?:추가|비용|요금|배송)/i,
   /(?:택배|착불)\s*(?:비|비용|요금|안내)/i,
 ];
+const OVERBUILT_DRAMA_COPY = /달빛\s*수라간|비밀\s*장부|가상\s*(?:왕국|세계)|왕실\s*(?:위기|음모)|타임\s*슬립|세계관의\s*위기|(?:구출|실종|복수|운명).*?(?:사건|서사|이야기)/i;
+const PRODUCT_EVIDENCE_SCENE = /상품|제품|패키지|포장|박스|팩|라벨|구성|원료|재료|내용물|질감|제형|거품|팬|불판|굽|조리|자르|단면|한입|사용|바르|씻|향|가격|용량|중량|마블링|육즙|원물/i;
 const CTA_ACTION = /(?:확인(?:해|하세요|하기|해요)|살펴(?:봐|보세요|보기)|비교(?:해|하세요|하기)|구매(?:해|하세요|하기)|주문(?:해|하세요|하기)|예약(?:해|하세요|하기)|신청(?:해|하세요|하기)|담아(?:봐|보세요)|눌러(?:봐|보세요)|챙겨(?:가|가세요|두세요)|쟁여(?:둬|두세요)|선택(?:해|하세요|하기)|만나(?:봐|보세요)|끓여(?:봐|보세요)|먹어(?:봐|보세요)|맛(?:봐|보세요)|써(?:봐|보세요)|사용해(?:봐|보세요))/i;
 const OPENING_RHYTHM_MARKERS = ["잠깐", "진짜", "설마", "왜", "여러분", "형님들"];
 const OPENING_STRENGTH = /[?!]|왜|설마|잠깐|진짜|누가|또|처음|비밀|공개|혼나|냄새|가격|말이 돼|보세요|봐요|멈춰|고르지 마|열자마자|한입|밥|먹|굽|지글|윤기|육즙/i;
@@ -690,6 +692,13 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
     : [];
   const stageDirectionCuts = concept.conceptArchetype ? cuts.filter((cut) => [...STAGE_DIRECTION_COPY, ...AWKWARD_AUDIENCE_COPY].some((pattern) => pattern.test(cut.caption))) : [];
   const deliveryCopyCuts = concept.conceptArchetype ? cuts.filter((cut) => DELIVERY_AUDIENCE_COPY.some((pattern) => pattern.test(`${cut.caption} ${cut.narration}`))) : [];
+  const overbuiltDramaCuts = concept.conceptArchetype
+    ? cuts.filter((cut) => OVERBUILT_DRAMA_COPY.test(`${cut.caption} ${cut.narration} ${cut.sceneDescription}`))
+    : [];
+  const productEvidenceCuts = concept.conceptArchetype
+    ? cuts.filter((cut) => PRODUCT_EVIDENCE_SCENE.test(`${cut.caption} ${cut.narration} ${cut.sceneDescription}`))
+    : cuts;
+  const minimumProductEvidenceCuts = concept.conceptArchetype === "parody" ? Math.ceil(cuts.length * 0.7) : 0;
   const openingMarkerRepeats = OPENING_RHYTHM_MARKERS.filter((marker) => firstThree.filter((cut) => cut.caption.includes(marker)).length > 1);
   const commercialTokens = commercialPlanningFacts(analysis)
     .map((item) => item.value.replace(/\s+/g, "").toLowerCase())
@@ -752,8 +761,8 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
         ),
       message:
         concept.conceptArchetype === "parody" && concept.parodyGenre
-          ? `창작 인물·상황극형은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 장르의 인물·사건·화면 흐름을 상세 대본 끝까지 유지해야 합니다.`
-          : "창작 인물·상황극형은 자동 선택된 세부 장르를 상세 대본 끝까지 유지해야 합니다.",
+          ? `가벼운 콘셉트 장치형은 선택된 '${getVideoParodyGenre(concept.parodyGenre)?.label || concept.parodyGenre}' 화면 문법을 첫 훅이나 짧은 전환에서 분명히 보여줘야 합니다.`
+          : "가벼운 콘셉트 장치형은 자동 선택된 화면 문법을 첫 훅에서 보여줘야 합니다.",
     },
     {
       key: "timeline",
@@ -815,6 +824,17 @@ export function validateDetailedPlanning(concept: VideoConcept, analysis: Produc
       key: "delivery-copy",
       passed: deliveryCopyCuts.length === 0,
       message: deliveryCopyCuts.length ? `영상의 목적과 무관한 배송·배송비 안내가 들어간 자막: ${deliveryCopyCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}. 배송 정보는 자막과 내레이션에서 완전히 제외해 주세요.` : "자막과 내레이션에 배송·배송비 안내가 없습니다.",
+    },
+    {
+      key: "product-first-story",
+      passed:
+        overbuiltDramaCuts.length <= 1 &&
+        (concept.conceptArchetype !== "parody" || productEvidenceCuts.length >= minimumProductEvidenceCuts),
+      message: overbuiltDramaCuts.length > 1
+        ? `가상 세계·위기·구출 중심의 드라마 장면이 ${overbuiltDramaCuts.map((cut) => `${cut.cutNumber}번`).join(", ")}에 반복됩니다. 장르 장치는 첫 훅 한 번만 남기고 실제 상품 확인 장면으로 바꿔 주세요.`
+        : productEvidenceCuts.length < minimumProductEvidenceCuts
+          ? `상품 실물·개봉·구성·조리·사용·질감·가격 확인 장면이 ${productEvidenceCuts.length}/${cuts.length}개입니다. 최소 ${minimumProductEvidenceCuts}개까지 늘려 주세요.`
+        : "장르 장치는 짧게 사용되고 실제 상품 확인 흐름이 중심입니다.",
     },
     {
       key: "spoken-story",

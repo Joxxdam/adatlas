@@ -13,9 +13,8 @@ import { toCreativeAssetSnapshot } from "../creative-assets/types";
 import { creativePreferenceRepository, type CreativePreferenceState } from "./creativePreferenceRepository.server";
 import { CURRENT_REFERENCE_EDIT_WORKFLOW, executionResults, REFERENCE_EDIT_STAGE_ORDER, usesCurrentReferenceEditPipeline } from "./jobRunnerPolicy";
 import { hasExplicitPaidApiAuthorization, type CopyPlan, type GenerationJob, type NativeCreativeValidation } from "./types";
-import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { assertCreativeCopyAllowed } from "./bannedCreativePhrases";
-import { buildProductTruth, extractNumericTokens, validateCopyAgainstTruth } from "./productTruth";
+import { buildProductTruth, validateCopyAgainstTruth } from "./productTruth";
 import { ensureNativeReferenceCopies, selectCategoryNativeAdReferences, selectNativeAdReference, type NativeAdReference } from "./referenceCreativeLibrary.server";
 import { copyReferenceStructureLosslessly } from "./referenceStructureCopy.server";
 import { buildReferenceAdaptedCreativePlan, buildReferenceScenes, hasExecutableReferenceCopyContract, hasPublishableReferenceCopyContract, planReferenceAdaptedCopies } from "./referenceAdaptedPlanning.server";
@@ -102,13 +101,15 @@ function manualReviewValidation(message: string): NativeCreativeValidation {
 function conciseQaFeedback(validation: NativeCreativeValidation, isMeat = false) {
   const failures = validation.failures.slice(0, 6).join("; ");
   const meatRecovery = isMeat
-    ? `\nMEAT IDENTITY RECOVERY — REBUILD, DO NOT RETOUCH THE GENERIC STEAK:
+    ? `\nMEAT IDENTITY RECOVERY — SIMPLIFY AND REBUILD FROM SELLER EVIDENCE:
 - Compare the authoritative product attachments again before drawing any meat. The failed raster is not evidence for cut shape, thickness, marbling or texture.
-- If the failure mentions a thick/round/rectangular block, repeated grain or marbling, waxy/rubbery/glossy texture, or a different cut, discard every failed meat instance and regenerate it from the authoritative seller evidence.
+- If the failure mentions a thick/round/rectangular block, repeated grain or marbling, waxy/rubbery/glossy texture, or a different cut, do not sharpen, trace, emboss or multiply the failed surface. Rebuild the failed food region from the authoritative seller evidence with fewer fully detailed pieces and a slightly wider camera when evidence resolution is limited.
 - A cooked scene is permitted when the authoritative attachments clearly establish the sold raw cut AND the exact hook calls for cooking, eating, serving, searing or juiciness. Rebuild it as that same cut after plausible cooking with appetizing irregular sear, rendered fat, moist cut surfaces and abundant but believable juices. If the hook does not require that payoff, replace it with a polished raw/chilled, verified tray, set or package-led scene. Never keep or retry a generic stock steak.
-- Preserve the seller-proven median width-to-thickness ratio, irregular perimeter, taper, muscle direction, restrained marbling range and piece-to-piece variation. Never turn thin slices into medallions, cubes or identical molded rectangles.`
+- Preserve the seller-proven median width-to-thickness ratio, irregular perimeter, taper, muscle direction, restrained marbling range and piece-to-piece variation. Never turn thin slices into medallions, cubes or identical molded rectangles.
+- Raw marbling must partially render and soften after cooking; never redraw it as raised white grooves, worm-like fibers, engraved loops or the same vein map on every piece.
+- In a close plate or pan, keep only 3-7 foreground pieces fully resolved. Overlap or soften the rest instead of generating dozens of equally sharp patterned pieces. Every sharp piece must have a different outline, orientation, sear and grain.`
     : "";
-  return `AI quality review requested a complete remake. ${failures || "Improve product identity, exact Korean text, hierarchy and coherent hook-specific composition."}\nZERO-CUTOUT REMAKE: rebuild the product, contact surface, reflections, shadows, occlusion, hands and surrounding scene together as one continuous raster. Never crop, extract, paste, overlay, restore, miniaturize or frame any attached product reference. No detached packshot, transparent-background look, white halo, sticker edge, rectangular source-image panel or floating product is allowed.\nPRODUCT VISIBILITY REPAIR: inspect the current raster before adding any product. If the verified target product or set already exists but is small, enlarge and recompose that same instance or whole set in place. Never add a second package, miniature copy, duplicate lineup, detached packshot or rectangular product-reference panel.${meatRecovery}`;
+  return `AI quality review requested a targeted repair. ${failures || "Improve only the failing product, Korean text or local semantic-prop region."}\nMINIMUM-REGION REPAIR: keep every passing copy slot, CTA, badge, panel, product instance, background landmark, camera angle and layout pixel unchanged. Edit only the smallest failed region named above, including the minimum contact shadow and occlusion required for a continuous raster. Never redesign the full advertisement, regenerate a compatible background, crop, paste, overlay, restore, miniaturize or frame an attached product reference.\nPRODUCT VISIBILITY REPAIR: inspect the current raster before adding any product. If the verified target product or set already exists but is small, enlarge and recompose that same instance or whole set in place. Never add a second package, miniature copy, duplicate lineup, detached packshot or rectangular product-reference panel.${meatRecovery}`;
 }
 
 export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation, isMeat = false) {
@@ -127,7 +128,7 @@ export function hasCriticalNativeQaFailure(validation: NativeCreativeValidation,
   if (validation.sourceBrandRegionCleared === false) return true;
   if (validation.comparisonSemanticAligned === false) return true;
   if (validation.productIdentity < 75 || validation.factualAccuracy < 75 || validation.koreanTextAccuracy < 75) return true;
-  if (isMeat && (validation.productIdentity < 82 || validation.foodAppetiteAppeal < 82)) return true;
+  if (isMeat && (validation.productIdentity < 85 || validation.foodAppetiteAppeal < 85 || validation.commercialQuality < 85)) return true;
   return validation.failures.some((failure) => /다른\s*상품|상품\s*왜곡|패키지|용기|라벨|로고|원본\s*광고주|원본\s*인물|같은\s*인물|인물\s*동일|인물\s*구도|원본\s*동물|같은\s*동물|동물\s*교체|원본\s*(?:장소|배경)|배경\s*(?:미교체|재구성)|타깃\s*(?:고객|인물)|포즈|시선|얼굴\s*복제|이전\s*문구|출처\s*문구|원산지|국내산|국산|연출\s*(?:이미지|사진)|예시\s*(?:이미지|사진)|이해를\s*돕기|(?:AI|인공지능)\s*(?:를|을)?\s*(?:활용|사용|생성)|가격|할인|수량|용량|한글|한국어|오탈자|비문|문법|주어|서술어|조사|문장\s*미완성|어색한\s*문구|깨진\s*글자|판독|OCR|잘림|가림|충돌|프라이팬|후라이팬|불판|그릴|정육\s*(?:트레이|용기)|고기\s*(?:트레이|용기)|김치\s*(?:통|용기|트레이)|벌크\s*(?:통|용기)|절임\s*(?:통|용기)|조리\s*(?:도구|용기)|주방\s*도구|의미\s*(?:소품|용기|배경|캐릭터|아이콘|장식)|무관한\s*(?:캐릭터|아이콘|일러스트|재료)|엉뚱한\s*(?:캐릭터|아이콘|일러스트|재료)|카테고리\s*(?:소품|용기|불일치)|source\s*(?:brand|copy|price|person|animal|background)|same\s*(?:person|face|pose|animal)|face\s*(?:cop|swap)|recognizable\s*(?:face|identity)|human\s*(?:composition|pose|framing)|animal\s*(?:replacement|identity)|contextual\s*background|target\s*audience|wrong\s*product|fake\s*(?:label|logo)|broken\s*hangul|clipp|overlap|semantic\s*(?:prop|carrier|container|vessel|motif)|decorative\s*(?:motif|character|icon|illustration)|unrelated\s*(?:character|mascot|icon|illustration|ingredient)|category[-\s]*(?:incompatible|mismatch)|cookware|frying\s*pan|meat\s*tray|kimchi\s*(?:tub|container)|마블링|육질|육섬유|두께|지방\s*(?:분포|층)|절단면|인위적|플라스틱|왁스|고무|거미줄|벌레|반복된\s*(?:결|무늬)|건조|말라|퍽퍽|매트|윤기\s*없|marbling|meat\s*texture|thickness|fat-to-lean|dry|chalky|matte|dehydrat/i.test(failure));
 }
 
@@ -375,6 +376,35 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     initial = job.results.find((result) => result.id === input.resultId)!;
   }
 
+  // 문구·상품 원본·고정 레퍼런스는 결과 상태와 attempts를 변경하기 전에
+  // 확인한다. 이 사전조건 실패는 이미지 생성 시도가 아니므로 retryLimit을
+  // 소모하거나 6개 결과를 failed로 확산시키지 않는다.
+  const referenceStarted = Date.now();
+  const userConfirmedCopy = action === "copy-update";
+  if (!userConfirmedCopy && !hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
+    const reasons = initial.referenceAdaptedCopyPlan?.validationErrors?.slice(0, 3).join(" · ");
+    throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구가 제작 품질 기준을 통과하지 못해 이미지 생성을 시작하지 않았습니다.${reasons ? ` ${reasons}` : " 문구를 다시 준비해 주세요."}`);
+  }
+  if (userConfirmedCopy && !hasExecutableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
+    const reasons = initial.referenceAdaptedCopyPlan?.validationErrors?.slice(0, 3).join(" · ");
+    throw new Error(`수정한 문구에 빈 슬롯·상품 사실·브랜드 사용 오류가 있어 이미지에 반영하지 않았습니다.${reasons ? ` ${reasons}` : " 문구를 다시 확인해 주세요."}`);
+  }
+  const references = await preparedReferences(job);
+  if (!references[0]) throw new Error("AI 광고 제작에 사용할 상세페이지 원본 상품 이미지가 없습니다.");
+  const supportingReferences = references.length > 1 ? [references[1 + ((Math.max(1, initial.order) - 1) % (references.length - 1))], ...references.slice(1).filter((file) => file !== references[1 + ((Math.max(1, initial.order) - 1) % (references.length - 1))])].slice(0, 4) : [];
+  const generationReferences = [references[0], ...supportingReferences].filter(Boolean);
+  // 신규 수동·자동 작업은 생성 시 저장한 레퍼런스를 재시도·복구에서도 그대로 사용한다.
+  // 최신 계약에서 누락값을 재추첨하면 같은 작업의 디자인 원본이 바뀌므로 즉시 중단한다.
+  const selectedAdReferenceCandidate = initial.nativeCreative?.adReference || (usesCurrentReferenceEditPipeline(job) ? undefined : selectNativeAdReference(job, initial));
+  if (!selectedAdReferenceCandidate) {
+    throw new Error("이 작업에 고정된 광고 레퍼런스가 없습니다. 새 수동·자동 제작 작업을 시작해 주세요.");
+  }
+  const selectedAdReference = selectedAdReferenceCandidate as NativeAdReference;
+  if (!(await validStageFile(selectedAdReference.path))) {
+    throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
+  }
+  referenceMs = Date.now() - referenceStarted;
+
   const isRevision = ["regenerate", "regenerate-new-reference", "revise", "copy-update"].includes(action);
   const previousArtifact = initial.nativeCreative;
   const promptVersionChanged = Boolean(previousArtifact && previousArtifact.promptVersion !== NATIVE_FINAL_PROMPT_VERSION);
@@ -416,39 +446,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     ),
   }));
 
-  const referenceStarted = Date.now();
-  const references = await preparedReferences(job);
-  if (!references[0]) throw new Error("AI 광고 제작에 사용할 상세페이지 원본 상품 이미지가 없습니다.");
-  const supportingReferences = references.length > 1 ? [references[1 + ((Math.max(1, initial.order) - 1) % (references.length - 1))], ...references.slice(1).filter((file) => file !== references[1 + ((Math.max(1, initial.order) - 1) % (references.length - 1))])].slice(0, 4) : [];
-  const generationReferences = [references[0], ...supportingReferences].filter(Boolean);
   initial = job.results.find((result) => result.id === input.resultId)!;
-  // 신규 수동·자동 작업은 생성 시 저장한 레퍼런스를 재시도·복구에서도 그대로 사용한다.
-  // 최신 계약에서 누락값을 재추첨하면 같은 작업의 디자인 원본이 바뀌므로 즉시 중단한다.
-  const selectedAdReferenceCandidate = initial.nativeCreative?.adReference || (usesCurrentReferenceEditPipeline(job) ? undefined : selectNativeAdReference(job, initial));
-  if (!selectedAdReferenceCandidate) {
-    throw new Error("이 작업에 고정된 광고 레퍼런스가 없습니다. 새 수동·자동 제작 작업을 시작해 주세요.");
-  }
-  const selectedAdReference = selectedAdReferenceCandidate as NativeAdReference;
-  if (!(await validStageFile(selectedAdReference.path))) {
-    throw new Error("선택된 고품질 광고 레퍼런스 파일을 읽을 수 없습니다.");
-  }
-  // 최신 문구 배치는 6장을 한 번에 만들고 실패 항목만 한 번 수정한다.
-  // 그 뒤에도 자연스러움·레퍼런스 구조·사실 안전성 중 하나라도 미달이면
-  // 비싼 이미지 단계를 열지 않는다. 실패 문구를 이미지에 구워 넣은 뒤
-  // 사람이 발견하는 방식은 허용하지 않는다.
-  const userConfirmedCopy = action === "copy-update";
-  if (!userConfirmedCopy && !hasPublishableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
-    const reasons = initial.referenceAdaptedCopyPlan?.validationErrors?.slice(0, 3).join(" · ");
-    throw new Error(`소재 ${String(initial.order).padStart(2, "0")}의 문구가 제작 품질 기준을 통과하지 못해 이미지 생성을 시작하지 않았습니다.${reasons ? ` ${reasons}` : " 문구를 다시 준비해 주세요."}`);
-  }
-  if (userConfirmedCopy && !hasExecutableReferenceCopyContract(initial.referenceAdaptedCopyPlan)) {
-    const reasons = initial.referenceAdaptedCopyPlan?.validationErrors?.slice(0, 3).join(" · ");
-    throw new Error(`수정한 문구에 빈 슬롯·상품 사실·브랜드 사용 오류가 있어 이미지에 반영하지 않았습니다.${reasons ? ` ${reasons}` : " 문구를 다시 확인해 주세요."}`);
-  }
-  referenceMs = Date.now() - referenceStarted;
   const directory = nativeHookDirectory(job.advertiserId || "unknown-advertiser", job.id, initial.hookPlan.hookCode);
   await mkdir(directory, { recursive: true });
-  const runtime = resolveFastCreativeRuntime();
   const provider = createCreativeGenerationProvider(job.engine || "codex_local", {
     explicitPaidApiAuthorization: hasExplicitPaidApiAuthorization(job.paidApiAuthorization),
   });
@@ -587,6 +587,11 @@ async function runNativeResultGeneration(input: NativeResultInput) {
     let validation: NativeCreativeValidation | undefined;
     let validatedExport: Awaited<ReturnType<typeof optimizeNativeFinalImage>> | undefined;
     let validatedExportSource: string | undefined;
+    let bestGeneratedPath: string | undefined;
+    let bestValidation: NativeCreativeValidation | undefined;
+    let bestValidatedExport: Awaited<ReturnType<typeof optimizeNativeFinalImage>> | undefined;
+    let bestValidatedExportSource: string | undefined;
+    let bestValidationScore = Number.NEGATIVE_INFINITY;
 
     if (action === "revalidate") {
       generatedPath = active.nativeCreative?.finalPath || copyPath || active.nativeCreative?.originalPath;
@@ -653,7 +658,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       }));
     }
 
-    const mandatoryCriticalQaRevisionLimit = Math.max(1, runtime.autoRevisionLimit);
+    // 치명 오류 자동 보정은 한 번만 수행한다. 여러 번의 전체 래스터 재생성으로
+    // 레퍼런스 구도와 이미 통과한 문구가 누적 훼손되는 것을 막는다.
+    const mandatoryCriticalQaRevisionLimit = 1;
     for (let attempt = 0; attempt <= mandatoryCriticalQaRevisionLimit; attempt += 1) {
       job = await updateNativeProgress(job, input.resultId, "quality-check");
       const qaPreviewPath = path.join(directory, `qa-preview-${attempt + 1}.jpg`);
@@ -669,6 +676,7 @@ async function runNativeResultGeneration(input: NativeResultInput) {
           imagePath: qaPreviewPath,
           referencePaths: generationReferences,
           adReferencePath: selectedAdReference.path,
+          lockedProductStagePath: attempt === 0 ? productPath : undefined,
           exportComplianceVerified: true,
         });
         const currentResult = job.results.find((result) => result.id === input.resultId)!;
@@ -684,6 +692,24 @@ async function runNativeResultGeneration(input: NativeResultInput) {
       validationMs += Date.now() - validationStarted;
       const isMeat = resolveProductRenderingPolicy(job) === "natural-meat-reference";
       const criticalFailure = hasCriticalNativeQaFailure(validation, isMeat);
+      const validationScore =
+        (validation.recommendation === "approve" ? 10_000 : validation.recommendation === "manual-review" ? -500 : 0) +
+        validation.productIdentity * 4 +
+        validation.factualAccuracy * 4 +
+        validation.koreanTextAccuracy * 4 +
+        validation.composition * 3 +
+        validation.commercialQuality * 3 +
+        validation.mobileReadability * 2 +
+        validation.hookAlignment * 2 -
+        validation.failures.length * 35 -
+        (criticalFailure ? 1_000 : 0);
+      if (validationScore > bestValidationScore) {
+        bestValidationScore = validationScore;
+        bestGeneratedPath = generatedPath;
+        bestValidation = validation;
+        bestValidatedExport = validatedExport;
+        bestValidatedExportSource = validatedExportSource;
+      }
       if (validation.recommendation !== "revise" || !criticalFailure || action === "revalidate" || attempt >= mandatoryCriticalQaRevisionLimit) break;
       const repairedPath = path.join(directory, `04-qa-repair-${attempt + 1}.png`);
       await runStage("qa-repair", "qa-repairing", repairedPath, generatedPath, [input.feedback, conciseQaFeedback(validation, isMeat)].filter(Boolean).join("\n"));
@@ -701,6 +727,14 @@ async function runNativeResultGeneration(input: NativeResultInput) {
           },
         },
       }));
+    }
+    // 보정본이 기존 결과보다 나빠졌다면 마지막 파일을 무조건 채택하지 않고,
+    // 동일한 구조화 QA 점수로 더 나았던 후보를 최종본으로 되돌린다.
+    if (bestGeneratedPath && bestValidation) {
+      generatedPath = bestGeneratedPath;
+      validation = bestValidation;
+      validatedExport = bestValidatedExport;
+      validatedExportSource = bestValidatedExportSource;
     }
     validation ||= manualReviewValidation("AI 완성 광고를 수동으로 검수해 주세요.");
 
@@ -765,9 +799,9 @@ async function runNativeResultGeneration(input: NativeResultInput) {
                   productSourcePaths: generationReferences,
                   sourceProductImageIds: job.productTruth.imageAssets.filter((asset) => generationReferences.includes(asset.path)).map((asset) => asset.id),
                   finalImageId: result.id,
-                  editableRegions: ["source-product", "source-person-identity", "source-animal-or-animal-character", "contextual-background-scene", "semantic-carrier", "product-linked-character-or-icon", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
-                  lockedRegions: ["background-absent-white-solid-abstract-or-plain-studio-field", "camera-depth", "macro-composition", "text-box-position", "neutral-non-product-graphics"],
-                  productReplacementSummary: "선택 레퍼런스의 상품과 상품 의미가 충돌하는 용기·소품·캐릭터·아이콘을 URL 상품 근거에 맞게 교체",
+                  editableRegions: ["source-product", "source-person-integrated-scene-when-present", "source-animal-or-animal-character", "incompatible-semantic-prop-exact-footprint", "product-linked-character-or-icon", "source-brand-logo", "source-product-copy", "verified-price-offer", "reference-cta-when-present", "minimal-product-accent"],
+                  lockedRegions: ["compatible-background-and-location", "table-or-surface-outside-edited-prop", "camera-depth", "horizon-and-lighting", "macro-composition", "text-box-position", "cta-and-graphic-panels", "neutral-non-product-graphics"],
+                  productReplacementSummary: "선택 레퍼런스의 구도·배경·CTA는 잠그고 상품 및 상품 의미와 충돌하는 소품의 국소 영역만 URL 상품 근거에 맞게 교체",
                   copyReplacementSummary: "원문 줄·문장부호·말투를 기준으로 ProductTruth 상품 관련 표현만 교체",
                   finalOutputPath: finalFile,
                   productQa: { status: validation.productIdentity >= 75 ? "passed" : "manual-review", score: validation.productIdentity },

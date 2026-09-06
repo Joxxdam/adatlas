@@ -268,8 +268,8 @@ export function NewVideoProjectWorkspace() {
             </details>
             <div className={styles.stickyAction}>
               <div>
-                <strong>창작 인물·상황극 · 가족·지인 반응 · 직접 확인·사용 · 구매 고민</strong>
-                <span>22개 레퍼런스의 617개 원문 장면을 직접 활용해, 창작 인물·세계·사건은 넓게 만들고 상품 사실은 상세페이지 근거 안에서 지키는 네 안을 만듭니다.</span>
+                <strong>가벼운 콘셉트 장치 · 가족·지인 반응 · 직접 확인·사용 · 구매 고민</strong>
+                <span>22개 레퍼런스의 617개 원문 장면을 직접 활용하되, 짧은 훅 뒤에는 실제 상품 확인과 사용 장면이 중심인 네 안을 만듭니다.</span>
               </div>
               <button className={styles.primaryButton} disabled={busy || !advertiserName.trim()} onClick={createFourConcepts}>
                 {busy ? stage || "생성 중…" : "4개 콘셉트 생성"}

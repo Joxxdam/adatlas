@@ -16,9 +16,9 @@ export type VideoParodyGenreOption = {
 export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   {
     id: "historical-world-parody",
-    label: "시대·사회 세계관극",
+    label: "시대물 오프닝",
     direction:
-      "현재 상품과 의외로 연결되는 과거·미래 또는 특징적인 사회를 하나 고르고, 이름·관계·직업·습관이 기억되는 인물이 그 세계의 문제를 겪게 한다. 익숙하지만 실패한 해결과 반대편 인물이 아는 비밀을 거쳐 현재 상품의 검증된 USP로 시간과 장소를 전환한다. 실제 역사라고 단정하지 않고 광고용 창작 세계관으로 관리한다.",
+      "첫 1~3초에 시대풍 필터·의상·말투 또는 오래된 가격표 같은 장치 하나만 보여준 뒤 현재의 실제 상품 개봉·조리·사용으로 바로 전환한다. 가상 왕국, 인물 이름, 비밀 장부, 위기와 구출 같은 세계관 서사를 만들지 않는다.",
     signals: /중세|조선|왕실|왕족|귀족|궁궐|과거|미래|시대|세기|년대|옛날|역사|마을|세계관|타임슬립/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
   },
@@ -33,21 +33,21 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   {
     id: "audition-interview",
     label: "오디션·면접",
-    direction: "상품 또는 사용자가 지원자가 되어 질문과 과제를 통과하고 선택 이유를 보여준다.",
+    direction: "주 화자가 후보를 확인하듯 질문 한두 개를 던지고, 실제 상품의 구성·질감·사용 장면으로 곧바로 답한다. 지원자 캐릭터들의 장기 연기나 합격 서사를 만들지 않는다.",
     signals: /오디션|면접|지원자|합격|불합격|심사위원|자기소개/i,
     categoryAffinity: ["beauty", "food", "general"],
   },
   {
     id: "news-report",
     label: "뉴스 속보·현장 취재",
-    direction: "기자와 현장 화자가 상품 관련 사건을 짧게 취재하고 관찰 가능한 장면으로 답한다.",
+    direction: "한 명의 주 화자가 속보 자막과 리포터 말투를 첫 훅에만 사용하고, 이후에는 상품을 직접 열고 써 보는 UGC 화면으로 답한다. 앵커와 기자가 이어지는 뉴스 드라마는 만들지 않는다.",
     signals: /뉴스|속보|기자|현장\s*(?:취재|연결)|제보|앵커|특보/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
   },
   {
     id: "quiz-show",
     label: "퀴즈쇼·선택 게임",
-    direction: "상품 사실을 선택지와 정답 공개로 풀고, 시청자가 함께 맞히는 리듬으로 전개한다.",
+    direction: "첫 훅에서 상품 선택 질문 하나를 띄우고 실제 사용·조리 장면을 정답 근거로 보여준다. 진행자·참가자 역할극 없이 화면 선택지와 주 화자만 사용한다.",
     signals: /퀴즈|정답|오답|선택지|몇\s*번|문제입니다|찬스/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
   },
@@ -61,7 +61,7 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   {
     id: "competition-judging",
     label: "대결·심사",
-    direction: "두 선택이나 사용법이 짧은 대결을 벌이고 명확한 심사 기준으로 상품의 강점을 보여준다.",
+    direction: "두 선택이나 사용법을 한 화면에서 짧게 비교하고 즉시 실제 상품의 차이를 확인한다. 심사위원 캐릭터·토너먼트·우승 서사를 만들지 않는다.",
     signals: /대결|승부|결승|경연|심사\s*(?:기준|평)|우승|도전자/i,
     categoryAffinity: ["meat", "food", "beauty"],
   },
@@ -75,14 +75,14 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   {
     id: "mystery-investigation",
     label: "탐정·미스터리",
-    direction: "상품 차이의 단서를 하나씩 추적하고 마지막에 핵심 USP나 사용 이유를 밝혀낸다.",
+    direction: "돋보기·단서 자막 같은 시각 장치로 상품의 한 가지 궁금증을 열고, 포장·구성·질감·사용 장면에서 바로 답을 찾는다. 용의자·범인·실종 같은 수사 드라마는 만들지 않는다.",
     signals: /탐정|추리|단서|용의자|미스터리|수사|사건의\s*범인/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
   },
   {
     id: "live-auction",
     label: "경매·라이브 판매",
-    direction: "진행자가 확인된 구성과 가격을 순서대로 공개하고 입찰·낙찰 리듬으로 긴장감을 만든다.",
+    direction: "한 명의 진행자가 경매 카운트나 가격 공개 리듬을 짧게 사용하되 대부분은 실물 구성과 사용 결과를 보여준다. 관객·입찰자 역할극이나 낙찰 서사를 길게 만들지 않는다.",
     signals: /경매|낙찰|입찰|호가|라이브\s*(?:판매|방송)|마감합니다/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
     benefitAffinity: true,
@@ -90,13 +90,13 @@ export const VIDEO_PARODY_GENRE_OPTIONS: VideoParodyGenreOption[] = [
   {
     id: "courtroom",
     label: "법정·청문회",
-    direction: "서로 다른 주장을 심리하고 상품 근거를 확인해 결론을 내리되 다른 프로젝트에서 반복 사용하지 않는다.",
+    direction: "이의 제기·판결 자막 같은 법정 장치를 한두 번만 쓰고, 주 화자가 실제 상품 근거를 직접 확인해 결론낸다. 판사·검사·변호사의 대사극이나 재판 사건을 만들지 않는다.",
     signals: /법정|재판|판결|판사|변호사|검사|청문회|이의\s*있|증거를?\s*제출/i,
     categoryAffinity: ["meat", "food", "beauty", "general"],
   },
 ];
 
-/** 새 자동 4안의 창작 인물·상황극 슬롯에서 회전 선택하는 전체 장르입니다. */
+/** 새 자동 4안의 가벼운 화면 장치 슬롯에서 회전 선택하는 전체 장르입니다. */
 export const AUTOMATIC_CREATIVE_GENRES: VideoParodyGenre[] =
   VIDEO_PARODY_GENRE_OPTIONS.map((option) => option.id);
 
@@ -225,7 +225,7 @@ export function matchesVideoParodyGenre(value: VideoConcept | string, genre: Vid
 
 export function videoParodyGenrePrompt(genre?: VideoParodyGenre, recentGenres: VideoParodyGenre[] = []) {
   const selected = getVideoParodyGenre(genre);
-  if (!selected) return "선택된 사건·상황극 세부 장르 없음";
+  if (!selected) return "선택된 콘셉트 장치 없음";
   const excluded = [...new Set(recentGenres)]
     .filter((id) => id !== selected.id)
     .map((id) => getVideoParodyGenre(id)?.label)
@@ -233,11 +233,13 @@ export function videoParodyGenrePrompt(genre?: VideoParodyGenre, recentGenres: V
   return [
     `선택 장르: ${selected.label}`,
     `연출 규칙: ${selected.direction}`,
-    "자동 선택된 창작 장르의 인물 관계·사건·화면 문법을 처음부터 CTA까지 일관되게 사용한다. 시대·직업·관계는 자유롭게 창작하되 실제 인물이나 실제 사건으로 사칭하지 않는다.",
+    "이 장르는 드라마 줄거리가 아니라 스크롤을 멈추게 하는 가벼운 화면·자막 문법이다. 첫 1~3초와 짧은 전환에만 사용하고, 3초 이후에는 한 명의 주 화자가 실제 상품을 확인하는 UGC 흐름으로 옮긴다.",
+    "전체 분량의 최소 70%는 상품 실물·포장 개봉·구성·조리·사용·질감·가격 확인 장면으로 구성한다. 장르 인물끼리 대화하거나 가상 세계를 설명하는 장면은 만들지 않는다.",
+    "장소는 원칙적으로 한 곳, 주 화자는 한 명으로 제한한다. 고유 이름·가상 지역명·세계관 설정·위기·실종·구출·운명·비밀 장부를 만들지 않는다.",
     "선택하지 않은 장르의 대표 소품·직함·결말 문법을 섞지 않는다.",
     selected.id === "historical-world-parody"
-      ? "시대 배경 자체는 창작할 수 있지만 상품의 성분·효능·가격·수치·순위는 현재 ProductTruth에 있는 사실만 사용한다. 레퍼런스의 중세·왕실·레몬을 복사하지 말고 현재 상품에서만 나올 수 있는 세계와 인물로 바꾼다."
-      : "인물과 사회적 배경은 상품에 맞게 구체화하되 실제 후기·경력·자격을 사칭하지 않는다.",
+      ? "시대감은 필터·의상·소품·짧은 말투로만 표현하고 곧바로 현재 상품으로 돌아온다. 상품의 성분·효능·가격·수치·순위는 ProductTruth에 있는 사실만 사용한다."
+      : "화면 장치는 상품에 맞게 구체화하되 실제 후기·경력·자격을 사칭하지 않는다.",
     "가상의 의사 가족이 개인적 취향이나 사용 경험으로 상품을 추천하는 설정은 허용한다. 해당 인물이 광고용 창작임을 dramatizationBoundary와 장면 고지에 명시하고, 의학적 효능·치료·보증의 근거로 사용하지 않는다.",
     excluded.length ? `최근 사용으로 금지된 장르: ${excluded.join(" · ")}` : "최근 사용으로 금지된 장르: 없음",
     selected.id !== "courtroom"

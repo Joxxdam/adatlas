@@ -5252,5 +5252,167 @@
       "warnings": []
     },
     "createdAt": "2026-09-03T09:10:54.177Z"
+  },
+  {
+    "key": "f776b562f44fb906d7ecc684a234458dd213aecbb062f1a133d8f2f803fa0ea1",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T18:34:18.807Z"
+  },
+  {
+    "key": "461c2cda7baf77c81ea8b26dc9d149a2d5bb887bc975ea9e041d1dd2b0cecc61",
+    "insight": {
+      "id": "detail-ocr-9c2edadd023d",
+      "imageUrl": "https://originalsource.co.kr/web/product/big/202607/6168ad5431e1cb8f7a33b35d833c69f4.jpg",
+      "contentHash": "9c2edadd023d1e0831176cd5f894f8ef3f13da84012c009f8c2b8d4f600e9c58",
+      "ocrText": "2+1 꼴라담아 세트\n원하는 향으로 선택 가능\nPECTCLES\n1 30%\nRECICLED\n430%\nTINGLY\nZESTY\nMINTG\nLEMON\nTEA TREE\n&TEATREE\nTROPICA\n2100%\n2100%\nCOCONUT\nFRAGRANCE\nMATURAL\nFRAGRANCE\nNATURAL\n&SHEA BUTTER\nKAIURAI\n100%\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\n+\nORIGINAL\nSOURCE\n7.927\nREAL MINT\nV PCTA\n10REA\nV PCTA\nSHOWER\nTVERT EOTTE\nTEAVES IN\nEVERY BOTTLE\nLMONS 0\nRO AFIROVED\n50mle\nSHOWER 250mle\nSHOWER 250mle\n250ml x 2개\n50ml 증정",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8478260869565217,
+      "copyFacts": [
+        "2+1 꼴라담아 세트",
+        "원하는 향으로 선택 가능"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PECTCLES",
+        "RECICLED",
+        "TINGLY",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TEA TREE",
+        "TROPICA",
+        "COCONUT",
+        "FRAGRANCE",
+        "MATURAL",
+        "NATURAL",
+        "&SHEA BUTTER",
+        "KAIURAI",
+        "ORIGINAL",
+        "SOURCE",
+        "REAL MINT",
+        "V PCTA",
+        "10REA",
+        "SHOWER",
+        "TVERT EOTTE",
+        "TEAVES IN",
+        "EVERY BOTTLE",
+        "LMONS 0"
+      ],
+      "discardedNotices": [
+        "2100%",
+        "7.927",
+        "250ml x 2개",
+        "50ml 증정"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T18:34:19.056Z"
+  },
+  {
+    "key": "1b253919f48915cc648df6ce0677b47ca12e72b00ae51756205e568a66f74103",
+    "insight": {
+      "id": "detail-ocr-9c2edadd023d",
+      "imageUrl": "https://originalsource.co.kr/web/product/small/202607/c091f1a84a5e28a8f51d5348618019d8.jpg",
+      "contentHash": "9c2edadd023d1e0831176cd5f894f8ef3f13da84012c009f8c2b8d4f600e9c58",
+      "ocrText": "2+1 꼴라담아 세트\n원하는 향으로 선택 가능\nPECTCLES\n1 30%\nRECICLED\n430%\nTINGLY\nZESTY\nMINTG\nLEMON\nTEA TREE\n&TEATREE\nTROPICA\n2100%\n2100%\nCOCONUT\nFRAGRANCE\nMATURAL\nFRAGRANCE\nNATURAL\n&SHEA BUTTER\nKAIURAI\n100%\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\n+\nORIGINAL\nSOURCE\n7.927\nREAL MINT\nV PCTA\n10REA\nV PCTA\nSHOWER\nTVERT EOTTE\nTEAVES IN\nEVERY BOTTLE\nLMONS 0\nRO AFIROVED\n50mle\nSHOWER 250mle\nSHOWER 250mle\n250ml x 2개\n50ml 증정",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8478260869565217,
+      "copyFacts": [
+        "2+1 꼴라담아 세트",
+        "원하는 향으로 선택 가능"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PECTCLES",
+        "RECICLED",
+        "TINGLY",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TEA TREE",
+        "TROPICA",
+        "COCONUT",
+        "FRAGRANCE",
+        "MATURAL",
+        "NATURAL",
+        "&SHEA BUTTER",
+        "KAIURAI",
+        "ORIGINAL",
+        "SOURCE",
+        "REAL MINT",
+        "V PCTA",
+        "10REA",
+        "SHOWER",
+        "TVERT EOTTE",
+        "TEAVES IN",
+        "EVERY BOTTLE",
+        "LMONS 0"
+      ],
+      "discardedNotices": [
+        "2100%",
+        "7.927",
+        "250ml x 2개",
+        "50ml 증정"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-03T18:34:19.719Z"
+  },
+  {
+    "key": "344433be604060ee977108ea036d936321c7ca6b53b0c1f1fa4dbf23b5f77394",
+    "insight": {
+      "id": "detail-ocr-be82502acb53",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202501170833262027115e119ce8-ccff-4836-a2d6-de1963cd4057.jpg",
+      "contentHash": "be82502acb5371f20279e68ece7231c3821d1e4bdc57677f232426af17ecec50",
+      "ocrText": "2024 올해의\n소비자 만족지수\n2024\n1위\nTYKB\n올해의 한국브랜드 대상\n******\n코리아 베스트 브랜드어워드\n☆ TYKB 올해의 한국브랜드 대상\n브랜드대상 원위너 어워즈\n* 2024 올해의 대한민국 브랜드 파워 1위\n강소기업개발진흥원\n2024 올해의 소비자 만족지수 1위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8076923076923077,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TYKB"
+      ],
+      "discardedNotices": [
+        "2024 올해의",
+        "2024",
+        "2024 올해의 대한민국 브랜드 파워 1위",
+        "2024 올해의 소비자 만족지수 1위"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-04T08:57:54.054Z"
+  },
+  {
+    "key": "6f79bd213f65952b8ddcf32f866719813ad2ea8f9114d1f541f8387e791d30d7",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "2000원",
+        "2026년에도 최고의 축산물을"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-04T08:57:54.950Z"
   }
 ]

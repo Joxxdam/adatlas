@@ -1,6 +1,6 @@
 import type { VideoConcept } from "./types.ts";
 
-export const CURRENT_VIDEO_PLANNING_ENGINE_VERSION = "reference-imaginative-v6" as const;
+export const CURRENT_VIDEO_PLANNING_ENGINE_VERSION = "reference-product-first-v7" as const;
 
 type CreativePremise = Pick<
   VideoConcept,
@@ -14,6 +14,7 @@ type CreativePremise = Pick<
 
 const GENERIC_CHARACTER = /^(?:일반\s*)?(?:사용자|소비자|고객|타깃|가족|부모|엄마|아빠|친구|직장인|주부|한\s*사람|상품)$/i;
 const GENERIC_WORLD = /^(?:일반적인\s*)?(?:집|주방|욕실|식탁|회사|사무실|일상|생활\s*공간|사용\s*공간|매장)$/i;
+const OVERBUILT_DRAMA = /달빛\s*수라간|비밀\s*장부|가상\s*(?:왕국|세계)|왕실\s*(?:위기|음모)|타임\s*슬립|세계관의\s*위기|(?:구출|실종|복수|운명).*?(?:사건|서사|이야기)/i;
 
 function clean(value: unknown, max: number) {
   return String(value || "")
@@ -35,9 +36,9 @@ export function currentVideoCreativePremiseIssue(concept: CreativePremise) {
   const bridge = clean(concept.truthBridge, 400);
   const boundary = clean(concept.dramatizationBoundary, 400);
   if (character.length < 12 || GENERIC_CHARACTER.test(character))
-    return "인물이 관계·직업·지역·습관 중 두 가지 이상으로 특정되지 않았습니다.";
+    return "주 화자의 관계·행동·습관이 실제 광고 장면으로 구체화되지 않았습니다.";
   if (world.length < 12 || GENERIC_WORLD.test(world))
-    return "장소·시대·사회 또는 사용 맥락이 한 장면으로 떠오를 만큼 구체적이지 않습니다.";
+    return "한 장소·시간대·사용 또는 구매 맥락이 촬영 장면으로 구체화되지 않았습니다.";
   if (trigger.length < 18)
     return "인물에게 실제로 벌어지는 중심 사건이 부족합니다.";
   if (bridge.length < 18)
@@ -50,6 +51,8 @@ export function currentVideoCreativePremiseIssue(concept: CreativePremise) {
   )
     return "창작 설정과 상품 사실의 내부 경계가 명시되지 않았습니다.";
   const premise = `${character} ${world} ${trigger} ${bridge}`;
+  if (OVERBUILT_DRAMA.test(premise))
+    return "상품 광고보다 가상 세계·위기·구출 중심의 드라마 서사가 앞섭니다. 장르는 짧은 화면 장치로만 사용해 주세요.";
   if (/(알레르기|질병|치료|완치|실제\s*고객|(?:실제|실존)\s*(?:의사|전문의))/i.test(premise))
     return "창작 설정에 질병·치료 주장, 실존 전문가 또는 실제 고객 사칭 위험이 있습니다.";
   if (

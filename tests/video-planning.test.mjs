@@ -672,7 +672,7 @@ test("영상 기획은 유형 선택 없이 네 콘셉트를 만들고 선택한
   assert.match(detailPage, /VideoPlanningConceptWorkspace/);
   assert.match(newWorkspace, /4개 콘셉트 생성/);
   assert.doesNotMatch(newWorkspace, /planningMode/);
-  assert.match(newWorkspace, /창작 인물·상황극 · 가족·지인 반응 · 직접 확인·사용 · 구매 고민/);
+  assert.match(newWorkspace, /가벼운 콘셉트 장치 · 가족·지인 반응 · 직접 확인·사용 · 구매 고민/);
   assert.match(typesSource, /VIDEO_DESIGNER_OPTIONS = \["조이", "애니"\]/);
   assert.doesNotMatch(newWorkspace, /VIDEO_DESIGNER_OPTIONS\.map|durationOptions|durationChoice|영상 길이\s*<select|담당 디자이너 선택|제작 마감일/);
   assert.match(newWorkspace, /automaticDuration\(referenceAssets\)/);
@@ -844,6 +844,24 @@ test("내부 검수 말투 CTA는 소비자가 바로 이해하는 행동 문장
     compactPlanningCta("냉동실에 두고, 먹고 싶은 날 해동 없이 바로 끓여보세요.", "상품 정보를 확인하세요", 30),
     "냉동실에 두고, 먹고 싶은 날 해동 없이 바로 끓여보세요."
   );
+  const repairedIncomplete = compactPlanningCta(
+    "추석 고기 가격 때문에 장바구니 닫았던 분들은 찰진등심 1kg 박스의 선별",
+    "상품 정보를 확인하세요",
+    28,
+  );
+  assert.match(repairedIncomplete, /(?:확인|비교|구매|예약)하세요$/);
+  assert.ok(repairedIncomplete.replace(/\s/g, "").length <= 28);
+});
+
+test("가상 세계 드라마가 여러 장면을 차지하면 상품 중심 상세 대본 검수에서 차단한다", () => {
+  const concept = makeDetailed(makeSummary(foodAnalysis, 0, "unexpected-comparison"), foodAnalysis, 20);
+  concept.conceptArchetype = "parody";
+  concept.parodyGenre = "historical-world-parody";
+  concept.cuts[0].sceneDescription = "조선 장터 필터를 씌운 주방에서 화자가 고기 상자를 들어 시대물 오프닝을 짧게 보여주고 곧바로 식탁 위 상품을 향해 손을 옮긴다.";
+  concept.cuts[3].sceneDescription = "달빛 수라간의 비밀 장부를 지키는 인물이 왕실 위기를 설명하고, 카메라는 장부 글자를 오래 따라가며 다음 드라마 장면으로 전환한다.";
+  concept.cuts[4].sceneDescription = "가상 왕국에서 실종된 고기를 구출하는 서사를 여러 인물이 연기하고, 화면은 상품 대신 궁궐 복도와 인물 표정을 차례로 비춘다.";
+  const validation = validateDetailedPlanning(concept, foodAnalysis, 20);
+  assert.equal(validation.checks.find((check) => check.key === "product-first-story")?.passed, false);
 });
 
 test("육류와 바디케어 상품 모두 같은 품질 규칙을 통과한다", () => {
@@ -876,7 +894,7 @@ test("네 콘셉트의 사용자 표시 분류는 이야기 작동 방식으로 
   const { VIDEO_CONCEPT_ARCHETYPE_OPTIONS } = await import("../app/lib/video-collaboration/types.ts");
   assert.deepEqual(
     VIDEO_CONCEPT_ARCHETYPE_OPTIONS.map(({ label }) => label),
-    ["창작 인물·상황극형", "가족·지인 생활 반응형", "직접 확인·조리·사용형", "구매 고민·가격 발견형"]
+    ["가벼운 콘셉트 장치형", "가족·지인 생활 반응형", "직접 확인·조리·사용형", "구매 고민·가격 발견형"]
   );
   const relationship = VIDEO_CONCEPT_ARCHETYPE_OPTIONS.find(({ id }) => id === "real-review");
   assert.match(relationship?.direction || "", /한 팩 더 없냐/);

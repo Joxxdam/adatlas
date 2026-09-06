@@ -161,7 +161,7 @@ export function normalizeNativeCreativeValidation(
   if (contextualBackgroundFailed) {
     normalized.failures = [...new Set([
       ...normalized.failures,
-      `의미 있는 원본 장소·생활 소품 배경을 현재 상품과 문구에 맞는 새 장면으로 재구성하지 못했습니다${normalized.contextualBackgroundFindings.length ? `: ${normalized.contextualBackgroundFindings.join(" / ")}` : "."}`,
+      `배경 맥락을 올바르게 처리하지 못했습니다. 비인물 레퍼런스는 호환 배경을 보존하고 충돌 소품만 국소 교체해야 하며, 인물 레퍼런스만 통합 장면을 재구성합니다${normalized.contextualBackgroundFindings.length ? `: ${normalized.contextualBackgroundFindings.join(" / ")}` : "."}`,
     ])].slice(0, 20);
     normalized.composition = Math.min(normalized.composition, 45);
     normalized.categoryFit = Math.min(normalized.categoryFit, 40);
@@ -204,7 +204,14 @@ export function normalizeNativeCreativeValidation(
       (normalized.meatSetCompositionAccurate === false ||
         normalized.meatObservedPackCount !== meatContract.verifiedPackCount)
   );
-  if (meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed) {
+  const unverifiedMultiPackFailed = Boolean(
+    meatContract?.mode === "clean-retail-cut" && normalized.meatObservedPackCount > 1
+  );
+  const meatQualityThresholdFailed = Boolean(
+    meatContract &&
+      (normalized.productIdentity < 85 || normalized.foodAppetiteAppeal < 85 || normalized.commercialQuality < 85)
+  );
+  if (meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed || unverifiedMultiPackFailed) {
     const findings = [
       ...(normalized.meatArtificialPatternFindings || []),
       ...(normalized.meatGrotesqueDetailFindings || []),
@@ -216,15 +223,22 @@ export function normalizeNativeCreativeValidation(
       meatCookedPolicyFailed ? "판매자 부위 원본과 후킹 조건을 충족하지 않은 구운 고기 장면입니다." : "",
       meatModeFailed ? `확정된 육류 표현 모드(${meatContract?.mode})와 결과가 맞지 않습니다.` : "",
       meatSetFailed ? `검증된 ${meatContract?.verifiedPackCount}팩 구성이 한눈에 정확히 세어지지 않습니다.` : "",
+      unverifiedMultiPackFailed ? `선택·검증되지 않은 ${normalized.meatObservedPackCount}팩 구성을 이미지가 임의로 만들었습니다.` : "",
     ].filter(Boolean);
     normalized.failures = [...new Set([
       ...normalized.failures,
       `${reasons.join(" ")}${findings.length ? ` ${findings.join(" / ")}` : ""}`,
     ])].slice(0, 20);
-    normalized.productIdentity = Math.min(normalized.productIdentity, meatIdentityFailed || meatSetFailed ? 45 : 65);
+    normalized.productIdentity = Math.min(normalized.productIdentity, meatIdentityFailed || meatSetFailed || unverifiedMultiPackFailed ? 45 : 65);
     normalized.foodAppetiteAppeal = Math.min(normalized.foodAppetiteAppeal, meatTextureFailed ? 35 : 65);
     normalized.hookAlignment = Math.min(normalized.hookAlignment, meatModeFailed || meatCookedPolicyFailed ? 45 : normalized.hookAlignment);
     normalized.commercialQuality = Math.min(normalized.commercialQuality, 45);
+  }
+  if (meatQualityThresholdFailed) {
+    normalized.failures = [...new Set([
+      ...normalized.failures,
+      "육류 광고의 상품 동일성·식욕도·상업 품질 중 하나가 출고 하한 85점에 미달했습니다.",
+    ])].slice(0, 20);
   }
   const sourceBrandRegionFailed = options.requiresSourceBrandRegionClear === true && normalized.sourceBrandRegionCleared !== true;
   if (sourceBrandRegionFailed) {
@@ -250,7 +264,7 @@ export function normalizeNativeCreativeValidation(
   // Vision이 failures에 실제 문구·상품 오류를 기록하고도 점수만 높게 주는
   // 응답이 있습니다. 발견된 실패가 하나라도 있으면 approve로 정규화하지 않습니다.
   const reportedFailure = normalized.failures.length > 0;
-  normalized.recommendation = normalized.standaloneLogoDetected || normalized.detachedProductCutoutDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
+  normalized.recommendation = normalized.standaloneLogoDetected || normalized.detachedProductCutoutDetected || humanReplacementFailed || humanSceneBackgroundFailed || humanCopyAlignmentFailed || animalReplacementFailed || contextualBackgroundFailed || sceneProductInteractionFailed || normalized.unrelatedFoodOrIngredientDetected || meatIdentityFailed || meatTextureFailed || meatCookedPolicyFailed || meatModeFailed || meatSetFailed || unverifiedMultiPackFailed || meatQualityThresholdFailed || sourceBrandRegionFailed || comparisonSemanticFailed || reportedFailure ? "revise" : passed ? "approve" : validation.recommendation === "manual-review" ? "manual-review" : "revise";
   return normalized;
 }
 

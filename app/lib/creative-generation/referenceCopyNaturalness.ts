@@ -28,9 +28,31 @@ function hasUnbalancedDelimiters(value: string) {
   return pairs.some(([open, close]) => value.split(open).length - 1 !== value.split(close).length - 1);
 }
 
+function meaningfulWordNgrams(value: string) {
+  const words = cleanLine(value)
+    .replace(/[^0-9a-z가-힣]+/giu, " ")
+    .split(/\s+/u)
+    .filter((word) => word.length >= 2);
+  const grams = new Set<string>();
+  for (const size of [3, 2]) {
+    for (let index = 0; index <= words.length - size; index += 1) {
+      const parts = words.slice(index, index + size);
+      const compactLength = parts.join("").length;
+      if ((size === 3 && compactLength >= 7) || (size === 2 && compactLength >= 9)) grams.add(parts.join(" "));
+    }
+  }
+  return grams;
+}
+
 /** ProductTruth 원문은 보존하고 조사 보고서 말투만 소비자용 작성 힌트로 정리한다. */
 export function consumerFacingFactHint(value: string) {
-  let hint = cleanLine(value);
+  let hint = cleanLine(value)
+    .normalize("NFKC")
+    .replace(/(\d[\d,.]*)\s*時間/gu, "$1시간")
+    .replace(/^\s*(?:[-–—]|[📢🚨✅★☆*"'])+\s*/u, "")
+    .replace(/[“”"]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
   hint = hint
     .replace(/체감\s*온도\s*([^\s]+)로\s*소개된\s*/u, "체감 온도 $1의 ")
     .replace(/사용하는\s*셈으로\s*소개됨[.!?~]*$/u, "사용하는 셈")
@@ -90,6 +112,18 @@ export function findReferenceCopyNaturalnessErrors(plan: CopyPlanLike) {
       errors.push(`${index + 1}번째 문구의 명절 상황과 주체가 불분명합니다. 소비자가 실제로 묻거나 말하는 완결된 상황 문장으로 다시 써야 합니다.`);
     }
   });
+
+  for (let left = 0; left < targetLines.length; left += 1) {
+    const leftGrams = meaningfulWordNgrams(targetLines[left]);
+    if (!leftGrams.size) continue;
+    for (let right = left + 1; right < targetLines.length; right += 1) {
+      const repeated = [...meaningfulWordNgrams(targetLines[right])].find((gram) => leftGrams.has(gram));
+      if (repeated) {
+        errors.push(`${left + 1}번째와 ${right + 1}번째 문구에 같은 핵심 구절(${repeated})이 반복됐습니다.`);
+        break;
+      }
+    }
+  }
 
   const slotHeadlineLines = plan.copySlots?.filter((slot) => slot.role === "headline").map((slot) => cleanLine(slot.targetText)).filter(Boolean) || [];
   const headlineLines = slotHeadlineLines.length ? slotHeadlineLines : [cleanLine(plan.headline)].filter(Boolean);

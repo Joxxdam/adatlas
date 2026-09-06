@@ -29,6 +29,8 @@ export type NativeValidationInput = {
   imagePath: string;
   referencePaths: string[];
   adReferencePath?: string;
+  /** Stage-2 raster whose product and non-copy scene pixels must survive the copy-only edit. */
+  lockedProductStagePath?: string;
   exportComplianceVerified?: boolean;
 };
 
