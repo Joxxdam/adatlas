@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import path from "node:path";
 import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
-import { defaultCompositionTypes, pickCompatibleRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
+import { defaultCompositionTypes, pickUniqueRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
 import { inferNativeReferenceFoodSubcategoryFromText, nativeReferenceFoodSubcategoryLabel, normalizeNativeReferenceCompatibility, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
@@ -161,7 +161,7 @@ export function resolveNativeReferenceFoodSubcategory(job: ReferenceSelectionJob
   if (job.referenceCategoryOverride === "food-snack" || job.referenceCategoryOverride === "food-produce") return "snack";
   // 과거 food-other 작업은 별도 기타 풀을 되살리지 않고 일반 식품 풀로 읽는다.
   if (job.referenceCategoryOverride === "food-other") return undefined;
-  // food 수동 선택은 하위 태그가 없는 일반 식품 풀을 뜻한다.
+  // food 수동 선택은 육류·간식을 포함한 식품 대분류 전체 풀을 뜻한다.
   if (job.referenceCategoryOverride) return undefined;
   if (resolveNativeReferenceCategoryGroup(job) !== "food") return undefined;
   const categoryProfile = resolveCategoryCreativeProfile(job.productTruth).category;
@@ -200,8 +200,9 @@ export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectio
 }
 
 /**
- * 새 작업을 만들 때 식품은 육류·간식 또는 하위 태그 없는 일반 식품으로
- * 분류한 뒤, 해당 풀에서 중복 없이 무작위 레퍼런스를 뽑는다.
+ * 새 작업을 만들 때 식품 대분류는 등록된 식품 전체에서, 육류·간식을
+ * 직접 선택한 경우에는 해당 하위 풀에서 중복 없이 무작위로 뽑는다.
+ * 상품 형태·구도 점수로 후보를 재정렬하거나 우선하지 않는다.
  * 선택 결과는 GenerationJob에 저장되므로 새로고침·재시도·서버 복구 시에는
  * 다시 추첨하지 않고 같은 디자인을 이어서 편집한다.
  */
@@ -214,13 +215,11 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
   const poolName = profile.foodSubcategory
     ? `식품 > ${nativeReferenceFoodSubcategoryLabel(profile.foodSubcategory)} 전용 풀`
-    : `${categoryName} 호환 풀`;
+    : `${categoryName} 전체 풀`;
   const unusedItems = eligibleItems.filter((item) => !recentReferenceIds.has(item.id));
-  const usableItems = unusedItems.filter((item) => scoreReferenceCompatibility(profile, item).score >= 60).length >= count
-    ? unusedItems
-    : eligibleItems;
-  const selected = pickCompatibleRandomItems(usableItems, count, profile, nextIndex);
-  return selected.map((candidate, index) => toNativeAdReference(candidate.item, `${selectionMode} · ${poolName}에서 상품 형태·구도·슬롯 호환 점수 ${candidate.score}점으로 통과한 후보 중 ${index + 1}번째로 무작위 선택했습니다. ${candidate.reasons.join(" · ")}. 선택 결과는 작업에 고정됩니다.`));
+  const usableItems = unusedItems.length >= count ? unusedItems : eligibleItems;
+  const selected = pickUniqueRandomItems(usableItems, count, nextIndex);
+  return selected.map((item, index) => toNativeAdReference(item, `${selectionMode} · ${poolName} ${eligibleItems.length}장 중 ${index + 1}번째로 무작위 선택했습니다. 점수에 따른 우선순위는 적용하지 않았으며 선택 결과는 작업에 고정됩니다.`));
 }
 
 /** 과거 작업처럼 레퍼런스가 저장되지 않은 경우에만 사용하는 결정적 fallback. */

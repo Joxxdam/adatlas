@@ -1388,7 +1388,8 @@ export type GenerationJobStatus = "pending" | "running" | "partial" | "completed
 
 /**
  * 수동 제작에서 자동 상품군 판정을 덮어쓸 때만 저장하는 레퍼런스 풀입니다.
- * 신규 UI는 일반 식품 `food`, 육류 `food-meat`, 간식 `food-snack`만 사용합니다.
+ * 신규 UI의 `food`는 육류·간식을 포함한 식품 전체이고,
+ * `food-meat`와 `food-snack`은 해당 하위 풀만 직접 선택할 때 사용합니다.
  * `food-other`와 `food-produce`는 저장된 과거 작업을 읽기 위한 호환 값이며
  * 각각 일반 식품과 간식으로 해석합니다.
  */

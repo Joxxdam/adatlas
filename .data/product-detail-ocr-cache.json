@@ -6100,5 +6100,209 @@
       "warnings": []
     },
     "createdAt": "2026-09-06T15:36:39.004Z"
+  },
+  {
+    "key": "9ca0adf732e5a5bdf2f74b11872b7e829e67b4b385081d940705a1a31611c5f1",
+    "insight": {
+      "id": "detail-ocr-beaf5226d511",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16888301210446.jpg",
+      "contentHash": "beaf5226d5110baf7b7e103be5f99921a02d3ed0d7df586788710acc020de255",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:22:02.254Z"
+  },
+  {
+    "key": "012744a2351e1720a3d081210fba2a4726d2e1f39deea70f21b502be1fa4b728",
+    "insight": {
+      "id": "detail-ocr-80c76d3afef3",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202606140245477184325d98df63-5292-4013-b46c-51890c11ec38.jpg",
+      "contentHash": "80c76d3afef364c212996420d2e2abfd70f3417e7eea945fabb17e387785f23a",
+      "ocrText": "프리미엄 비프\n설록우 하이마블\n50%\n알등심 스테이크\n할인\n특별기획가\n국대한우 프리미엄 비프\n1kg세트\nPREMIUM BEEF\n[토마호크에서 뺀 고급 특수부위]\n좋은 등심만 골라 만든\n립아이 알등심 스테이크\n) 가성비\n3종선별\n신선 포장\n1등 상품\n우수상품\n빠른 배송\n토마호크에서\n기존가\n특별기획\n79,800원\n뼈를 뺀 고급\n228,000원\n특가\n특수부위",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6538461538461539,
+      "copyFacts": [
+        "프리미엄 비프",
+        "설록우 하이마블",
+        "알등심 스테이크",
+        "국대한우 프리미엄 비프",
+        "1kg세트",
+        "립아이 알등심 스테이크",
+        "3종선별",
+        "신선 포장",
+        "79,800원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM BEEF"
+      ],
+      "discardedNotices": [
+        "특별기획가",
+        "빠른 배송",
+        "토마호크에서",
+        "228,000원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:22:02.335Z"
+  },
+  {
+    "key": "958d770bce08ba80a1027e2a3a06a88eeaaf5d584bf9c743b8ea6533e2547a81",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:22:02.898Z"
+  },
+  {
+    "key": "8d2b03bf4e1a8fa8d2204a245363b1f50a39ae496569d3adad8b7329e36cf800",
+    "insight": {
+      "id": "detail-ocr-b5932d65ecf0",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16397505882556.jpg",
+      "contentHash": "b5932d65ecf003483c024e3117e0a12d073bbc3fb762e3df8383d07eead32438",
+      "ocrText": "설록우리\n8(625)",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6500000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "8(625)"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:22:02.967Z"
+  },
+  {
+    "key": "7c537aff4de26a0b5186584cda6cf5ddec856ee621636836d06c2da4b596a4fe",
+    "insight": {
+      "id": "detail-ocr-591860bc3093",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/2024010410233716912144a54b92-3afa-4187-87f4-82cf058269a3.jpg",
+      "contentHash": "591860bc30934feeb0e4b5b32e7fdd140162a3e7425a561254052a48dcfec819",
+      "ocrText": "HI ECO\n자연으로 돌아가는 하",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "HI ECO"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:29:37.648Z"
+  },
+  {
+    "key": "956b5ee4db7470864c659dec0fb814536c33fc8f7869dc871d096f9f7e2c7715",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:29:38.284Z"
+  },
+  {
+    "key": "e0babcb097586ee60c29ce60bdfd205f3fb3ce937ed4c3f5e3c5e5797c0896bf",
+    "insight": {
+      "id": "detail-ocr-2ed9d3d27c71",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/202401050123283097724283e3fe-70b2-4e62-a6bd-3e2fb87e0022.jpg",
+      "contentHash": "2ed9d3d27c718ed54f4c2de51d01a8dfff3487c3959ac3983971523c92137dcc",
+      "ocrText": "데\n영이\nF",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4333333373069763,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:29:38.872Z"
+  },
+  {
+    "key": "e25e4db0ca39bed43e9073b8d2586a71de3e879ea9331f782d3e69ddd6e44c9c",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:36:34.795Z"
+  },
+  {
+    "key": "d2f6c95614edd9f59a8a3fa3dfea8736a66c201c31cc703c869fe535b218198f",
+    "insight": {
+      "id": "detail-ocr-a0dd8194286e",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260812123035780632bb7159de-ab1d-478f-91b9-5cbb054cea22.jpg",
+      "contentHash": "a0dd8194286eb47e87fcca14ef2594f13172e4c325f83db5bc09ce0394f67a6a",
+      "ocrText": "추석사전 예약시 50% 저렴해요!\n투뿔보다 맛있는\n어린소 특마블 등심\n1kg 실속 도매팩\n도매특가\n188,000원\n도매특가\n64%\n64,800원\n할인!\n프리미엄 설록우로 특별한 가치를 더했습니다",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7272727272727273,
+      "copyFacts": [
+        "어린소 특마블 등심",
+        "1kg 실속 도매팩",
+        "188,000원",
+        "64,800원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "추석사전 예약시 50% 저렴해요!",
+        "투뿔보다 맛있는",
+        "도매특가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T06:36:34.797Z"
   }
 ]

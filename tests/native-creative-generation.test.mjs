@@ -1061,21 +1061,21 @@ test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로
   }
   assert.ok(normalizedFood.filter((item) => !item.foodSubcategory).length >= 6, "일반 식품 레퍼런스가 6장 이상 필요합니다.");
   assert.match(manifest.selectionPolicy, /패션·식품·화장품 세 그룹/);
-  assert.match(manifest.selectionPolicy, /나머지 일반 식품은 별도 기타 풀 없이 식품 대분류에만/);
+  assert.match(manifest.selectionPolicy, /식품 대분류를 선택하면 육류·간식을 포함한 등록 식품 전체/);
   assert.match(manifest.selectionPolicy, /건강·웰니스와 퍼스널케어는 화장품에 포함/);
   assert.match(manifest.selectionPolicy, /등록 여부 자체를 운영자의 품질 승인/);
-  assert.match(manifest.selectionPolicy, /상품군·상품 형태·구도·슬롯 수·사진 유형·지원 플래그·신뢰도 호환 점수/);
-  assert.match(manifest.selectionPolicy, /before\/after와 comparison의 복수 슬롯은 단일 상품의 상태·의미 비교/);
-  assert.match(manifest.selectionPolicy, /비호환 이미지로 임의 보충하지 않으며/);
+  assert.match(manifest.selectionPolicy, /식품 대분류를 선택하면 육류·간식을 포함한 등록 식품 전체/);
+  assert.match(manifest.selectionPolicy, /점수 우선순위 없이 중복 없는 무작위 6장/);
+  assert.match(manifest.selectionPolicy, /미지정 대카테고리로 임의 보충하지 않으며/);
   assert.match(manifest.selectionPolicy, /삭제된 항목은 즉시 선택 대상에서 제외/);
   assert.match(manifest.usagePolicy, /URL 상품과 ProductTruth 문구로 단계별 교체/);
   assert.match(categorySource, /category === "fashion"\) return "fashion"/);
   assert.match(categorySource, /return "beauty";/);
   assert.match(categorySource, /"health-wellness" \|\| value === "general"\) return "beauty"/);
   assert.match(categorySource, /buildProductReferenceCompatibilityProfile/);
-  assert.match(categorySource, /pickCompatibleRandomItems/);
+  assert.match(categorySource, /pickUniqueRandomItems/);
   assert.match(categorySource, /referenceBelongsToSelectionPool\(item, categoryGroup, profile\.foodSubcategory\)/);
-  assert.match(categorySource, /scoreReferenceCompatibility/);
+  assert.match(categorySource, /점수에 따른 우선순위는 적용하지 않았으며/);
   assert.match(categorySource, /recentReferenceIds/);
   assert.doesNotMatch(categorySource, /categorySafeItems|categoryGroup === "fashion"[\s\S]*categoryGroup === "beauty"/);
   assert.match(categorySource, /readNativeReferenceManifestSync/);
@@ -1870,15 +1870,16 @@ test("일반 식품도 상품 형태와 구도 호환을 통과한 후보에서�
   assert.equal(new Set(selected.map((candidate) => candidate.item.id)).size, 6);
 });
 
-test("관리 화면의 육류 태그와 식품 대분류 전용 레퍼런스를 서로 다른 풀로 선택한다", async () => {
+test("식품 대분류는 육류를 포함하고 육류 하위 풀은 육류만 선택한다", async () => {
   const manifest = JSON.parse(await readFile(new URL("../data/native-creative-reference-library.json", import.meta.url), "utf8"));
   const foodReferences = manifest.items.filter((item) => item.categoryGroup === "food").map(normalizeNativeReferenceCompatibility);
   const meatReferences = foodReferences.filter((item) => item.foodSubcategory === "meat");
   const generalFoodReferences = foodReferences.filter((item) => !item.foodSubcategory);
   assert.ok(meatReferences.length >= 6);
   assert.ok(generalFoodReferences.length >= 6);
+  assert.ok(foodReferences.every((item) => referenceBelongsToSelectionPool(item, "food")));
   assert.ok(meatReferences.every((item) => referenceBelongsToSelectionPool(item, "food", "meat")));
-  assert.ok(meatReferences.every((item) => !referenceBelongsToSelectionPool(item, "food")));
+  assert.ok(meatReferences.every((item) => referenceBelongsToSelectionPool(item, "food")));
   assert.ok(generalFoodReferences.every((item) => referenceBelongsToSelectionPool(item, "food")));
   assert.ok(generalFoodReferences.every((item) => !referenceBelongsToSelectionPool(item, "food", "meat")));
   const profile = {
@@ -2081,11 +2082,15 @@ test("새 작업 레퍼런스는 일반 재생성에서 고정되고 명시적 �
   assert.match(generationSource, /작업에 고정된 광고 레퍼런스 파일을 읽을 수 없습니다/);
 });
 
-test("새 작업은 최근 사용·OCR·호환 점수로 등록 레퍼런스를 다시 제외하지 않는다", async () => {
+test("새 작업은 선택된 카테고리 풀에서 점수 우선순위 없이 직접 무작위 추첨한다", async () => {
   const createSource = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
+  const selectorSource = await readFile(new URL("../app/lib/creative-generation/referenceCreativeLibrary.server.ts", import.meta.url), "utf8");
   const selectionBlock = createSource.slice(createSource.indexOf("const selectedAdReferences"), createSource.indexOf("const { creativePlan, scenes }"));
+  const randomSelectionBlock = selectorSource.slice(selectorSource.indexOf("export function selectCategoryNativeAdReferences"), selectorSource.indexOf("/** 과거 작업처럼"));
   assert.match(selectionBlock, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6\)/);
   assert.doesNotMatch(createSource, /recentReferenceJobs|recentReferenceIds/);
+  assert.match(randomSelectionBlock, /pickUniqueRandomItems\(usableItems, count, nextIndex\)/);
+  assert.doesNotMatch(randomSelectionBlock, /pickCompatibleRandomItems|scoreReferenceCompatibility/);
 });
 
 test("새 작업은 레퍼런스와 사용자 입력을 고정하고 별도 문구·후킹 planner를 호출하지 않는다", async () => {

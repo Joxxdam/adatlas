@@ -18,8 +18,8 @@ const maximumFilesPerUpload = 12;
 const supportedFormats = new Set(["jpeg", "png", "webp"]);
 const lockKey = Symbol.for("daywiz.native-reference-library-lock-v1");
 const lockState = globalThis as typeof globalThis & { [lockKey]?: Promise<unknown> };
-const managedManifestVersion = "native-creative-reference-library-v14-food-base-pools";
-const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 기본 대카테고리는 패션·식품·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품은 고기가 상품과 화면의 주인공인 육류, 식사 사이에 먹는 간식만 하위 태그로 구분하고 나머지 일반 식품은 별도 기타 풀 없이 식품 대분류에만 둡니다. 신규 수동·자동 제작은 판정된 풀 안에서만 선택합니다. 기본 분류는 바꾸지 않은 채 운영자가 추가 제작 풀을 지정해 같은 레퍼런스를 여러 상품군에서 함께 사용할 수 있습니다. 각 상품은 상품군·상품 형태·구도·슬롯 수·사진 유형·지원 플래그·신뢰도 호환 점수를 통과한 후보 안에서만 중복 없이 무작위 선택합니다. before/after와 comparison의 복수 슬롯은 단일 상품의 상태·의미 비교로 취급하며 세트 수량으로 오인하지 않습니다. 최근 사용하지 않은 호환 후보가 충분하면 우선 사용하고, 부족할 때만 전체 호환 후보로 돌아갑니다. 미지정 대카테고리나 비호환 이미지로 임의 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
+const managedManifestVersion = "native-creative-reference-library-v15-full-category-random";
+const managedSelectionPolicy = "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 기본 대카테고리는 패션·식품·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품 대분류를 선택하면 육류·간식을 포함한 등록 식품 전체를 사용하고, 식품 · 육류 또는 식품 · 간식을 선택하면 해당 하위 풀만 사용합니다. 신규 수동·자동 제작은 선택되거나 자동 판정된 풀 전체에서 점수 우선순위 없이 중복 없는 무작위 6장을 선택합니다. 기본 분류는 바꾸지 않은 채 운영자가 추가 제작 풀을 지정해 같은 레퍼런스를 여러 상품군에서 함께 사용할 수 있습니다. 다른 레퍼런스로 재생성할 때 제외 목록이 전달된 경우에는 아직 사용하지 않은 항목에서 먼저 무작위 선택하고, 부족할 때만 해당 풀 전체로 돌아갑니다. 미지정 대카테고리로 임의 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.";
 
 function normalizeManifest(value: ManagedNativeReferenceManifest): ManagedNativeReferenceManifest {
   return {

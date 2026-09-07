@@ -9,8 +9,8 @@ export type NativeReferenceFoodSubcategory = (typeof nativeReferenceFoodSubcateg
 
 /**
  * 기본 분류를 바꾸지 않고 같은 레퍼런스를 다른 제작 후보군에서도 함께
- * 활용하기 위한 추가 풀입니다. food는 과거 전체 식품 풀 호환용이고,
- * 신규 제작은 일반 식품(food) 또는 food-meat/food-snack 중 하나를 사용합니다.
+ * 활용하기 위한 추가 풀입니다. food는 육류·간식을 포함한 식품 전체 풀이고,
+ * food-meat/food-snack은 사용자가 하위 풀을 직접 고를 때 사용합니다.
  */
 export const nativeReferenceSelectionPools = ["fashion", "food", "food-meat", "food-snack", "beauty"] as const;
 export type NativeReferenceSelectionPool = (typeof nativeReferenceSelectionPools)[number];
@@ -343,7 +343,7 @@ export function referenceBelongsToSelectionPool(
       || additional.has(`food-${foodSubcategory}` as NativeReferenceSelectionPool);
   }
   if (categoryGroup === "food") {
-    return (item.categoryGroup === "food" && !item.foodSubcategory) || additional.has("food");
+    return item.categoryGroup === "food" || additional.has("food");
   }
   return item.categoryGroup === categoryGroup || additional.has(categoryGroup);
 }

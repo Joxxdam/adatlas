@@ -97,7 +97,7 @@ test("화장품 기본 분류를 유지하면서 간식 제작 풀에도 동시�
   assert.equal(referenceBelongsToSelectionPool(shared, "fashion"), false);
 });
 
-test("일반 식품 풀은 하위 태그가 없는 식품만 사용한다", () => {
+test("식품 대분류 풀은 육류·간식을 포함한 등록 식품 전체를 사용한다", () => {
   const general = normalizeNativeReferenceCompatibility({
     id: "general-food",
     publicPath: "/general-food.jpg",
@@ -114,7 +114,7 @@ test("일반 식품 풀은 하위 태그가 없는 식품만 사용한다", () =
   });
   assert.equal(general.foodSubcategory, undefined);
   assert.equal(referenceBelongsToSelectionPool(general, "food"), true);
-  assert.equal(referenceBelongsToSelectionPool(meat, "food"), false);
+  assert.equal(referenceBelongsToSelectionPool(meat, "food"), true);
   assert.equal(referenceBelongsToSelectionPool(meat, "food", "meat"), true);
 });
 
@@ -258,8 +258,8 @@ test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제�
   assert.match(runner, /isApprovedReferenceNativeCopy/);
   assert.doesNotMatch(selector, /nativeReferenceLibraryRepository\.extractNativeCopy/);
   assert.doesNotMatch(selector, /nativeCopy\?\.analysisStatus\s*===/);
-  assert.match(selector, /호환 풀/);
-  assert.match(selector, /pickCompatibleRandomItems/);
+  assert.match(selector, /전체 풀/);
+  assert.match(selector, /pickUniqueRandomItems/);
   assert.match(planner, /제작 중 즉석 OCR은 실행하지 않았습니다/);
   assert.doesNotMatch(planner, /imagePath 이미지를 직접 읽어 전사한다/);
   assert.match(planner, /isApprovedReferenceNativeCopy\(reference\.nativeCopy\)/);
