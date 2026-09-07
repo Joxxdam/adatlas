@@ -6304,5 +6304,33 @@
       "warnings": []
     },
     "createdAt": "2026-09-07T06:36:34.797Z"
+  },
+  {
+    "key": "3cf2f1d27708a04916128001802f1171307bab5d0f7be6072a31499aff30ab00",
+    "insight": {
+      "id": "detail-ocr-58e274190f2b",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260812013215909308077ab969-7edc-4bdb-a06a-8a21df0ee4b9.jpg",
+      "contentHash": "58e274190f2bdf249886ea37c63e3862ad8198cfab6b052f0a49d215211b8f05",
+      "ocrText": "추석사전 예약시 50% 저렴해요!\n한국에서 가장좋은\n1+급 LA갈비\n1.2kg 박스\n1+급 / 탑초이스등급 / 착한손질\nLA\n갈비\n추석사전예약시\n159,000원\n50%\n할인!\n79,800원\n사전예약 특별가\n☆ 프리미엄 1+급 LA갈비! 탑초이스 등급의 특별한 품질을 경험하세요",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7857142857142857,
+      "copyFacts": [
+        "1+급 LA갈비",
+        "1.2kg 박스",
+        "1+급 / 탑초이스등급 / 착한손질",
+        "79,800원",
+        "☆ 프리미엄 1+급 LA갈비! 탑초이스 등급의 특별한 품질을 경험하세요"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "추석사전 예약시 50% 저렴해요!",
+        "한국에서 가장좋은",
+        "159,000원",
+        "사전예약 특별가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T07:05:16.942Z"
   }
 ]
