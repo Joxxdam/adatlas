@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import { assertCreativeArchiveEntryAccess } from "../../../../lib/creative-archive/access.server";
 import { resolveCreativeArchiveDeliveryFile } from "../../../../lib/creative-archive/branding.server";
+import { getCreativeArchiveEntry } from "../../../../lib/creative-archive/service.server";
 import { MAX_FINAL_BYTES } from "../../../../lib/creative-generation/nativeCreativeStorage.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../../lib/creative-generation/localGenerationAccess.server";
 
@@ -11,8 +13,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, context: { params: Promise<{ entryId: string }> }) {
   try {
-    verifyLocalGenerationAccess(request);
+    const principal = await verifyLocalGenerationAccess(request);
     const { entryId } = await context.params;
+    const entry = await getCreativeArchiveEntry(entryId);
+    if (!entry) return NextResponse.json({ ok: false, error: "아카이브에서 해당 이미지 콘텐츠를 찾지 못했습니다." }, { status: 404 });
+    await assertCreativeArchiveEntryAccess(principal, entry);
     const file = await resolveCreativeArchiveDeliveryFile(entryId);
     const data = await readFile(file);
     const metadata = await sharp(data).metadata();

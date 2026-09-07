@@ -1395,6 +1395,16 @@ export type GenerationJobStatus = "pending" | "running" | "partial" | "completed
  */
 export type ReferenceCategoryOverride = "fashion" | "food" | "food-meat" | "food-snack" | "food-other" | "food-produce" | "beauty";
 
+/**
+ * 외부 Cloudflare Access 사용자가 만든 작업의 소유자입니다.
+ * JWT나 Access 쿠키 자체는 저장하지 않습니다.
+ */
+export type GenerationRequestOwner = {
+  provider: "cloudflare-access";
+  subject: string;
+  email?: string;
+};
+
 export type GenerationJob = {
   id: string;
   status: GenerationJobStatus;
@@ -1432,6 +1442,13 @@ export type GenerationJob = {
   }>;
   executionResultIds?: string[];
   sourceType?: "manual" | "auto-production";
+  /** 외부 Access 사용자가 요청한 수동 작업에만 저장합니다. */
+  requestedBy?: GenerationRequestOwner;
+  /** 수동 제작 요청이 서버에 도착한 순서입니다. 서버 재시작 뒤에도 FIFO 복구에 사용합니다. */
+  manualQueue?: {
+    requestedAt: string;
+    sequence: number;
+  };
   /** 수동 제작자가 선택한 레퍼런스 상품군. 없으면 ProductTruth로 자동 판정합니다. */
   referenceCategoryOverride?: ReferenceCategoryOverride;
   autoProductionRunId?: string;
@@ -1469,6 +1486,17 @@ export type GenerationJob = {
   };
 };
 
+export type ManualGenerationQueueInfo = {
+  state: "running" | "waiting";
+  /** 현재 대기 중인 수동 요청 가운데 1부터 시작하는 순번입니다. */
+  waitingPosition?: number;
+  /** 실행 중인 작업을 포함해 현재 작업보다 먼저 접수된 수동 요청 수입니다. */
+  aheadCount: number;
+  totalCount: number;
+  runningCount: number;
+  requestedAt: string;
+};
+
 export type GenerationJobSummary = {
   jobId: string;
   advertiserId?: string;
@@ -1487,6 +1515,7 @@ export type GenerationJobSummary = {
   currentHookCode?: string;
   status: GenerationJobStatus;
   runnerActive: boolean;
+  manualQueue?: ManualGenerationQueueInfo;
   createdAt: string;
   startedAt?: string;
   updatedAt: string;

@@ -164,7 +164,7 @@ test("reference creatives are server-driven and deliver each completed card imme
   assert.match(generator, /landingUrl=\{job\.productTruth\.product\.landingUrl\}/);
   assert.doesNotMatch(generator, /copyEdits|수정 문구로 전체 광고 재생성|ProductAdCopyPanel/);
   assert.match(generator, /추가\/강조 사항/);
-  assert.match(generator, /숨겨진 기본 프롬프트의 맨 아래에 추가/);
+  assert.match(generator, /입력한 내용은 이미지제작 6장에 동시에 적용됩니다\./);
   assert.doesNotMatch(generator, />Codex에 전달할 프롬프트</);
   assert.match(generator, /수정 반영하기/);
   for (const label of ["후킹", "소재코드", "권장 광고명", "UTM", "최종 랜딩 URL", "이미지 다운로드"]) {

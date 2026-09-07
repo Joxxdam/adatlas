@@ -857,7 +857,7 @@ export function AutoProductionWorkspace() {
                                 rows={3}
                                 value={activeDraft?.additionalInstructions || ""}
                               />
-                              <small>입력한 내용은 이 상품의 숨겨진 기본 프롬프트 맨 아래에 추가되어 6장 생성에 함께 전달됩니다.</small>
+                              <small>입력한 내용은 이미지제작 6장에 동시에 적용됩니다.</small>
                             </label>
                           </div>
                         ) : null}

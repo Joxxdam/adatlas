@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { assertCreativeArchiveEntriesAccess } from "../../../lib/creative-archive/access.server";
 import { createCreativeArchiveProductZip } from "../../../lib/creative-archive/productZip.server";
+import { listCreativeArchiveEntries } from "../../../lib/creative-archive/service.server";
 import { localAccessError, verifyLocalGenerationAccess } from "../../../lib/creative-generation/localGenerationAccess.server";
 
 export const runtime = "nodejs";
@@ -11,11 +13,12 @@ function encodeDownloadFileName(value: string) {
 
 export async function POST(request: Request) {
   try {
-    verifyLocalGenerationAccess(request);
+    const principal = await verifyLocalGenerationAccess(request);
     const body = (await request.json().catch(() => ({}))) as { entryIds?: unknown };
     if (!Array.isArray(body.entryIds) || body.entryIds.some((id) => typeof id !== "string")) {
       return NextResponse.json({ ok: false, error: "상품 ZIP 이미지 선택값이 올바르지 않습니다." }, { status: 400 });
     }
+    await assertCreativeArchiveEntriesAccess(principal, await listCreativeArchiveEntries(), body.entryIds);
     const archive = await createCreativeArchiveProductZip(body.entryIds);
     const encodedFileName = encodeDownloadFileName(archive.fileName);
     return new NextResponse(new Uint8Array(archive.buffer), {

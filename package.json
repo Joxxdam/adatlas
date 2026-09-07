@@ -46,6 +46,7 @@
   "dependencies": {
     "@google-cloud/bigquery": "^9.0.2",
     "@openai/codex-sdk": "^0.147.0",
+    "jose": "^6.2.12",
     "jszip": "^3.10.1",
     "next": "16.2.9",
     "openai": "^7.5.0",

@@ -60,7 +60,6 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
   const [copyDrafts, setCopyDrafts] = useState<Record<string, string>>({});
   const [ocrStatus, setOcrStatus] = useState<OcrStatusPayload | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const ocrAutoStartRequested = useRef(false);
   const ocrLibrarySignature = useRef("");
 
   const visibleItems = useMemo(() => {
@@ -87,20 +86,6 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         const signature = `${payload.counts.readyCount}:${payload.counts.reviewCount}:${payload.counts.unavailableCount}:${payload.counts.pendingCount}`;
         if (ocrLibrarySignature.current && ocrLibrarySignature.current !== signature) void refreshLibrary();
         ocrLibrarySignature.current = signature;
-        if (!readOnly && payload.counts.pendingCount > 0 && payload.run?.status !== "running" && !ocrAutoStartRequested.current) {
-          ocrAutoStartRequested.current = true;
-          const startResponse = await fetch("/api/admin/references/ocr", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "start" }),
-          });
-          const started = await startResponse.json() as OcrStatusPayload & { ok?: boolean; error?: string };
-          if (!startResponse.ok || !started.ok) throw new Error(started.error || "전체 OCR을 시작하지 못했습니다.");
-          if (mounted) {
-            setOcrStatus(started);
-            setMessage(`미분석 레퍼런스 ${started.run?.targetIds.length || payload.counts.pendingCount}장의 정밀 OCR을 자동 시작했습니다.`);
-          }
-        }
       } catch (pollError) {
         if (mounted) setError(pollError instanceof Error ? pollError.message : "OCR 상태를 확인하지 못했습니다.");
       } finally {
@@ -129,7 +114,7 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         })
       );
       setLibrary(result.library);
-      setMessage(`${result.added?.length || 0}장을 등록하고 정밀 OCR 대기열에 자동 추가했습니다.`);
+      setMessage(`${result.added?.length || 0}장을 등록했습니다. 수동·자동 제작 레퍼런스로 바로 사용할 수 있습니다.`);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "업로드에 실패했습니다.");
       setMessage("업로드를 완료하지 못했습니다.");
@@ -276,7 +261,6 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
       const result = await response.json() as OcrStatusPayload & { ok?: boolean; error?: string };
       if (!response.ok || !result.ok) throw new Error(result.error || "정밀 OCR을 시작하지 못했습니다.");
       setOcrStatus(result);
-      ocrAutoStartRequested.current = true;
       setMessage(`정밀 OCR을 백그라운드에서 처리합니다. 완료 ${result.run?.completedIds.length || 0}/${result.run?.targetIds.length || 0}장입니다.`);
     } catch (analysisError) {
       setError(analysisError instanceof Error ? analysisError.message : "미분석 레퍼런스 정밀 분석에 실패했습니다.");

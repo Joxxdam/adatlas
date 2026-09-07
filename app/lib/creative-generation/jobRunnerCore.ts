@@ -2,7 +2,20 @@ export type IdempotentJobRunner = {
   enqueue: (jobId: string, options?: { priority?: boolean }) => boolean;
   cancelQueued: (jobId: string) => boolean;
   isActive: (jobId: string) => boolean;
+  snapshot: () => JobRunnerQueueSnapshot;
   wait: (jobId: string) => Promise<void>;
+};
+
+export type JobRunnerQueueEntry = {
+  jobId: string;
+  priority: boolean;
+  enqueuedAt: number;
+  startedAt?: number;
+};
+
+export type JobRunnerQueueSnapshot = {
+  running: JobRunnerQueueEntry[];
+  queued: JobRunnerQueueEntry[];
 };
 
 export type IdempotentJobRunnerOptions = {
@@ -13,7 +26,8 @@ export type IdempotentJobRunnerOptions = {
 
 export function createIdempotentJobRunner(execute: (jobId: string) => Promise<void>, concurrency = 2, options: IdempotentJobRunnerOptions = {}): IdempotentJobRunner {
   const jobs = new Map<string, Promise<void>>();
-  const queue: Array<{ jobId: string; resolve: () => void; reject: (error: unknown) => void }> = [];
+  const queue: Array<JobRunnerQueueEntry & { resolve: () => void; reject: (error: unknown) => void }> = [];
+  const running = new Map<string, JobRunnerQueueEntry>();
   const limit = Math.max(1, Math.min(2, Math.floor(concurrency) || 2));
   let active = 0;
 
@@ -47,11 +61,18 @@ export function createIdempotentJobRunner(execute: (jobId: string) => Promise<vo
     while (active < limit && queue.length) {
       const item = queue.shift()!;
       active += 1;
+      running.set(item.jobId, {
+        jobId: item.jobId,
+        priority: item.priority,
+        enqueuedAt: item.enqueuedAt,
+        startedAt: Date.now(),
+      });
       void Promise.resolve()
         .then(() => executeWithWatchdog(item.jobId))
         .then(item.resolve, item.reject)
         .finally(() => {
           active -= 1;
+          running.delete(item.jobId);
           jobs.delete(item.jobId);
           drain();
         });
@@ -71,9 +92,16 @@ export function createIdempotentJobRunner(execute: (jobId: string) => Promise<vo
       // rejection으로 개발 서버가 불안정해지지는 않게 한다.
       void running.catch(() => undefined);
       jobs.set(jobId, running);
-      const queued = { jobId, resolve, reject };
-      if (options.priority) queue.unshift(queued);
-      else queue.push(queued);
+      const queued = { jobId, resolve, reject, priority: Boolean(options.priority), enqueuedAt: Date.now() };
+      if (queued.priority) {
+        // 수동 제작은 자동제작보다 우선하지만, 수동 요청끼리는 먼저 등록된
+        // 작업이 먼저 실행되도록 기존 priority 항목의 뒤에 넣습니다.
+        const firstNormalPriority = queue.findIndex((item) => !item.priority);
+        if (firstNormalPriority < 0) queue.push(queued);
+        else queue.splice(firstNormalPriority, 0, queued);
+      } else {
+        queue.push(queued);
+      }
       drain();
       return true;
     },
@@ -87,6 +115,12 @@ export function createIdempotentJobRunner(execute: (jobId: string) => Promise<vo
     },
     isActive(jobId) {
       return jobs.has(jobId);
+    },
+    snapshot() {
+      return {
+        running: Array.from(running.values()).map((item) => ({ ...item })),
+        queued: queue.map(({ jobId, priority, enqueuedAt }) => ({ jobId, priority, enqueuedAt })),
+      };
     },
     async wait(jobId) {
       await jobs.get(jobId);

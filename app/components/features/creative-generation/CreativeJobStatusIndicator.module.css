@@ -52,6 +52,20 @@
   color: #8a5709;
 }
 
+.queued {
+  border-color: #b9d8fa;
+  background: rgba(242, 248, 255, 0.98);
+  color: #1764b2;
+}
+
+.queued > strong {
+  color: #173b64;
+}
+
+.queued > small {
+  color: #55718e;
+}
+
 .close {
   position: absolute;
   top: 8px;

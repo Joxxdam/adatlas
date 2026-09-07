@@ -6416,5 +6416,109 @@
       "warnings": []
     },
     "createdAt": "2026-09-07T09:27:42.075Z"
+  },
+  {
+    "key": "38e4e932464b3ca41ef0f146d27fcafb7aa64b59c093bf23e6ab44b43fb88596",
+    "insight": {
+      "id": "detail-ocr-4a8383e02aea",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/front/moment/img/banner/28799eefea10c7e339e9458d500d8de9_43284.jpg",
+      "contentHash": "4a8383e02aea9257d092c5ca200d75f57d57f8c837d0fd5ae2546f00ad160ca7",
+      "ocrText": "지금 가입해 보세요\n놓칠 수 없는 놀라운 사업자 혜택!\n무료샘플신청, 13만원 상당 쿠폰, 1팩도 도매가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "놓칠 수 없는 놀라운 사업자 혜택!",
+        "무료샘플신청, 13만원 상당 쿠폰, 1팩도 도매가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T10:02:29.825Z"
+  },
+  {
+    "key": "2abfb13393745cc40333d2fa0c043ab41bc736242ffde23d398eb1ed75a2f02f",
+    "insight": {
+      "id": "detail-ocr-1e6c17e18480",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/front/moment/img/banner/171fd35a5860c594f2c48330fd33bf1d_42198.jpg",
+      "contentHash": "1e6c17e1848098d0cb2bc276323860e1906f147302245ed549a405960c33e2e9",
+      "ocrText": "푸딩 직배송 서비스\n주문 다음 날 새벽\n매장 냉동고까지 편하게",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "매장 냉동고까지 편하게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "푸딩 직배송 서비스"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T10:02:29.829Z"
+  },
+  {
+    "key": "4507ead25993c5422027e2fc2b900c4bb9c8f93764ddb1abaa66769b89956aff",
+    "insight": {
+      "id": "detail-ocr-cd78e5410f54",
+      "imageUrl": "https://img.bizthenaum.co.kr/data/contents/202604/ori/202604_DniLblzxK1QGIiDhRBLS.jpg",
+      "contentHash": "cd78e5410f54b3cbfea5c3c5f8d3001cd02034d4fbf7e9846fa768a53572dbd0",
+      "ocrText": "Pich!\n무당!\nFOODINGFACTORY\n10분\n조리\n쉿! 전문가 없이도 굴러가는 주방\n셰프 비법을 그대로 담아\n가성비는 미치도록 높인 푸딩픽!\n요리 기본의 맛은 푸딩이 채웠습니다!\n셰프가 완성한 베이스에 사장님의 한끗만 더하세요.\n누구도 흉내 낼 수 없는 우리 매장만의 시그니처가 탄생합니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7727272727272727,
+      "copyFacts": [
+        "셰프 비법을 그대로 담아",
+        "가성비는 미치도록 높인 푸딩픽!",
+        "요리 기본의 맛은 푸딩이 채웠습니다!",
+        "셰프가 완성한 베이스에 사장님의 한끗만 더하세요."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Pich!",
+        "FOODINGFACTORY"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T10:02:30.544Z"
+  },
+  {
+    "key": "548c859f492dbc71a7092d7f85165e0d8070e363713fb7c5c8edb301a5429266",
+    "insight": {
+      "id": "detail-ocr-1a0cdb4b4591",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20240925122054528457642f1bcd-582b-4249-aa7c-2fe00dd55af4.jpg",
+      "contentHash": "1a0cdb4b4591a092daef357f3038a6668edb3fb7aae73c9f04861945ce27760d",
+      "ocrText": "오",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T14:10:10.483Z"
+  },
+  {
+    "key": "048bc8642e2f08693c5a4077eb206d84c31cfb35bd500528fa5c669f190afd06",
+    "insight": {
+      "id": "detail-ocr-79d51dcf5dbb",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202405191240079982457e694127-23b5-4e43-81c7-fc17072d2dfb.jpg",
+      "contentHash": "79d51dcf5dbba0b984850cb8106574a0a7393788c4cce51808e4d8b78dd71cf4",
+      "ocrText": "your boo)\nRovitolis\nand mind",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "your boo)",
+        "Rovitolis",
+        "and mind"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T14:10:10.489Z"
   }
 ]

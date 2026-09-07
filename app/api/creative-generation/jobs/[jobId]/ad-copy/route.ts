@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildAdCopyCsv } from "../../../../../lib/ad-copy/adCopyValidator";
 import { creativeGenerationJobStore } from "../../../../../lib/creative-generation/jobStore.server";
-import { verifyLocalGenerationAccess, localAccessError } from "../../../../../lib/creative-generation/localGenerationAccess.server";
+import { assertGenerationJobAccess, verifyLocalGenerationAccess, localAccessError } from "../../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError, toPublicGenerationJob } from "../../../../../lib/creative-generation/publicJob.server";
 
 export const runtime = "nodejs";
@@ -33,10 +33,11 @@ function setup(job: NonNullable<Awaited<ReturnType<typeof creativeGenerationJobS
 
 export async function GET(request: Request, context: { params: Promise<{ jobId: string }> }) {
   try {
-    verifyLocalGenerationAccess(request);
+    const principal = await verifyLocalGenerationAccess(request);
     const { jobId } = await context.params;
     const job = await creativeGenerationJobStore.get(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
+    assertGenerationJobAccess(principal, job);
     const format = new URL(request.url).searchParams.get("format");
     if (!format) return NextResponse.json({ ok: true, adCopy: toPublicGenerationJob(job).adCopy });
     const row = setup(job);
@@ -59,8 +60,11 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
 
 export async function POST(request: Request, context: { params: Promise<{ jobId: string }> }) {
   try {
-    verifyLocalGenerationAccess(request);
-    await context.params;
+    const principal = await verifyLocalGenerationAccess(request);
+    const { jobId } = await context.params;
+    const job = await creativeGenerationJobStore.get(jobId);
+    if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
+    assertGenerationJobAccess(principal, job);
     return NextResponse.json(
       { ok: false, error: "상품 전체 문구 생성은 종료되었습니다. 아카이브에서 원하는 이미지의 ‘문구·제목 생성’을 사용해 주세요." },
       { status: 410 }

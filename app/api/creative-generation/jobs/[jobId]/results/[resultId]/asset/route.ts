@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAssetFromGenerationResult } from "../../../../../../../lib/creative-assets/fromGeneration.server";
 import { toCreativeAssetSnapshot } from "../../../../../../../lib/creative-assets/types";
 import { creativeGenerationJobStore } from "../../../../../../../lib/creative-generation/jobStore.server";
-import { localAccessError, verifyLocalGenerationAccess } from "../../../../../../../lib/creative-generation/localGenerationAccess.server";
+import { assertGenerationJobAccess, localAccessError, verifyLocalGenerationAccess } from "../../../../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError, toPublicGenerationJob } from "../../../../../../../lib/creative-generation/publicJob.server";
 
 export const runtime = "nodejs";
@@ -10,10 +10,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, context: { params: Promise<{ jobId: string; resultId: string }> }) {
   try {
-    verifyLocalGenerationAccess(request);
+    const principal = await verifyLocalGenerationAccess(request);
     const { jobId, resultId } = await context.params;
     const job = await creativeGenerationJobStore.get(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "기존 생성 결과를 찾지 못했습니다." }, { status: 404 });
+    assertGenerationJobAccess(principal, job);
     const result = job.results.find((item) => item.id === resultId);
     if (!result) return NextResponse.json({ ok: false, error: "결과 항목을 찾지 못했습니다." }, { status: 404 });
     if (result.creativeAsset) {

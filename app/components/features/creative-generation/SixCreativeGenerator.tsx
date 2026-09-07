@@ -7,7 +7,7 @@ import JSZip from "jszip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
-import { CREATIVE_PLANNER_VERSION, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
+import { CREATIVE_PLANNER_VERSION, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ManualGenerationQueueInfo, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
 import { CURRENT_REFERENCE_EDIT_JOB_VERSION, failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
 import { numberedProductImageFileName, productDownloadStem } from "../../../lib/creative-generation/downloadNaming";
@@ -138,6 +138,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const [providerStatus, setProviderStatus] = useState("로컬 Codex 상태 확인 중…");
   const [latestCompletedResultId, setLatestCompletedResultId] = useState<string>();
   const [runnerActive, setRunnerActive] = useState(false);
+  const [manualQueue, setManualQueue] = useState<ManualGenerationQueueInfo>();
   const previousAnalysisRevision = useRef(props.analysisRevision);
   const creatingJob = useRef(false);
   const restoreRequestVersion = useRef(0);
@@ -238,16 +239,18 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       job?: GenerationJob;
       error?: string;
       runnerActive?: boolean;
+      manualQueue?: ManualGenerationQueueInfo;
     };
     if (!response.ok || !payload.job) throw new Error(payload.error || "작업 조회에 실패했습니다.");
-    return { job: payload.job, runnerActive: Boolean(payload.runnerActive) };
+    return { job: payload.job, runnerActive: Boolean(payload.runnerActive), manualQueue: payload.manualQueue };
   }
 
-  function commitFetchedJob(payload: { job: GenerationJob; runnerActive: boolean }) {
+  function commitFetchedJob(payload: { job: GenerationJob; runnerActive: boolean; manualQueue?: ManualGenerationQueueInfo }) {
     if (dismissedJobIds.current.has(payload.job.id)) return;
     activeJobIdRef.current = payload.job.id;
     setJob(payload.job);
     setRunnerActive(payload.runnerActive);
+    setManualQueue(payload.manualQueue);
     if (restoredReferenceCategoryJobId.current !== payload.job.id) {
       restoredReferenceCategoryJobId.current = payload.job.id;
       setReferenceCategoryOverride(payload.job.referenceCategoryOverride || "");
@@ -353,6 +356,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     setJob(null);
     setStartError("");
     setRunnerActive(false);
+    setManualQueue(undefined);
     setFeedbacks({});
     setReferenceCategoryOverride("");
     restoredReferenceCategoryJobId.current = "";
@@ -370,6 +374,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     const resetTimer = window.setTimeout(() => {
       setJob(null);
       setStartError("");
+      setManualQueue(undefined);
       setFeedbacks({});
       setReferenceCategoryOverride("");
       restoredReferenceCategoryJobId.current = "";
@@ -488,6 +493,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     setLoading(true);
     setStartError("");
     setJob(null);
+    setManualQueue(undefined);
     setFeedbacks({});
     setMessage(mode === "scene"
       ? "호환 레퍼런스 6장을 새로 추첨해 Codex 광고 작업을 등록하고 있어요."
@@ -523,16 +529,20 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
         job?: GenerationJob;
         error?: string;
         runnerActive?: boolean;
+        manualQueue?: ManualGenerationQueueInfo;
       };
       if (!response.ok || !payload.job) throw new Error(payload.error || "광고 제작을 시작하지 못했습니다.");
       setJob(payload.job);
       setStartError("");
       setRunnerActive(Boolean(payload.runnerActive));
+      setManualQueue(payload.manualQueue);
       window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
       if (currentProductUrl) {
         window.localStorage.setItem(activeCreativeProductJobStorageKey(currentProductUrl), payload.job.id);
       }
-      setMessage(payload.runnerActive
+      setMessage(payload.manualQueue?.state === "waiting"
+        ? `수동 제작 대기 ${payload.manualQueue.waitingPosition || 1}번째로 등록됐습니다. 앞선 요청부터 순서대로 시작합니다.`
+        : payload.runnerActive
         ? "Codex 광고 생성을 시작했습니다. 소재마다 새 스레드에 레퍼런스·상품·추가 참고 이미지와 프롬프트를 한 번 전달합니다."
         : "광고 작업은 저장됐지만 생성기가 아직 연결되지 않았습니다. 중단 지점부터 재개해 주세요.");
     } catch (error) {
@@ -580,6 +590,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setJob(null);
       setStartError("");
       setRunnerActive(false);
+      setManualQueue(undefined);
       setFeedbacks({});
       setLatestCompletedResultId(undefined);
       restoredReferenceCategoryJobId.current = "";
@@ -600,10 +611,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "resume" }),
       });
-      const payload = (await response.json()) as { job?: GenerationJob; error?: string };
+      const payload = (await response.json()) as { job?: GenerationJob; error?: string; manualQueue?: ManualGenerationQueueInfo };
       if (!response.ok || !payload.job) throw new Error(payload.error || "작업 재개 실패");
       setJob(payload.job);
       setRunnerActive(true);
+      setManualQueue(payload.manualQueue);
       window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
       setMessage("완료된 광고는 유지하고 중단된 카드부터 서버에서 생성을 재개합니다.");
     } catch (error) {
@@ -708,7 +720,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const defaultCodexJob = job?.pipeline === DEFAULT_CODEX_GENERATION_PIPELINE;
   const historicalJob = Boolean(job && !defaultCodexJob);
   const recoverable = Boolean(job && defaultCodexJob && job.version === CURRENT_REFERENCE_EDIT_JOB_VERSION && ["pending", "running"].includes(job.status) && !runnerActive && job.results.some((result) => result.status === "pending" || result.status === "running"));
-  const generationInProgress = Boolean(job && ["pending", "running"].includes(job.status) && runnerActive);
+  const generationQueued = Boolean(job && ["pending", "running"].includes(job.status) && manualQueue?.state === "waiting");
+  const generationInProgress = Boolean(job && ["pending", "running"].includes(job.status) && runnerActive && !generationQueued);
+  const generationActive = generationQueued || generationInProgress;
   const storedReference = job?.results.find((result) => result.nativeCreative?.adReference)?.nativeCreative?.adReference;
   const selectedCategoryLabel = job?.referenceCategoryOverride
     ? referenceCategoryLabel(job.referenceCategoryOverride)
@@ -734,6 +748,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     ? "광고 제작 작업을 등록하고 있습니다"
     : allCreativesReady
       ? "광고 6장이 모두 완성됐습니다"
+      : generationQueued
+        ? `수동 제작 대기 ${manualQueue?.waitingPosition || 1}번째입니다`
       : activeResults.length
         ? `${currentOrder}장째 광고를 제작 중입니다`
         : generationInProgress
@@ -754,9 +770,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
 
   return (
     <section className="six-creative-generator" id="creative-results">
-      <div className={`simple-generation-status ${allCreativesReady ? "complete" : generationInProgress || loading ? "working" : ""}`} role="status" aria-live="polite">
+      <div className={`simple-generation-status ${allCreativesReady ? "complete" : generationActive || loading ? "working" : ""} ${generationQueued ? "queued" : ""}`} role="status" aria-live="polite">
         <div className="simple-generation-status-icon" aria-hidden="true">
-          {allCreativesReady ? "✓" : generationInProgress || loading ? <i /> : !job ? "⇄" : "!"}
+          {allCreativesReady ? "✓" : generationActive || loading ? <i /> : !job ? "⇄" : "!"}
         </div>
         <div>
           <p className="eyebrow">{historicalJob ? "이전 광고 제작 결과" : "기본 Codex 광고 제작 · 6장"}</p>
@@ -764,6 +780,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           <p>
             {allCreativesReady
               ? "완성된 광고를 확인한 뒤 한 번에 ZIP으로 내려받으세요."
+              : generationQueued
+                ? `현재 수동 요청 ${manualQueue?.totalCount || 1}건 · 앞에 ${manualQueue?.aheadCount || 0}건이 있습니다. 접수 순서대로 자동 시작됩니다.`
               : currentStage
                 ? `${currentStage}${activeResults.length > 1 ? ` · ${activeResults.length}장 동시 처리 중` : ""}`
                 : startError
@@ -777,7 +795,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                     : message}
           </p>
         </div>
-        <strong>{allCreativesReady ? "완료 6/6 · 다운로드 가능" : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${visibleGeneratedResults.length}/${progress.total}`}</strong>
+        <strong>{allCreativesReady ? "완료 6/6 · 다운로드 가능" : generationQueued ? `대기 ${manualQueue?.waitingPosition || 1}번째 · 앞선 요청 ${manualQueue?.aheadCount || 0}건` : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${visibleGeneratedResults.length}/${progress.total}`}</strong>
       </div>
       {!job ? (
         <div className="codex-direct-test-panel">
@@ -844,7 +862,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               rows={3}
               value={directAdditionalInstructions}
             />
-            <small>입력한 내용은 숨겨진 기본 프롬프트의 맨 아래에 추가되어 이번 6장에 함께 전달됩니다.</small>
+            <small>입력한 내용은 이미지제작 6장에 동시에 적용됩니다.</small>
           </label>
           <p>실제 첨부 순서 · 1 광고 레퍼런스 → 2 상품 이미지{selectedDirectSupportingImagePath ? " → 3 라벨·추가 참고 이미지" : ""}{selectedDirectPackagingImagePath ? ` → ${selectedDirectSupportingImagePath ? "4" : "3"} 포장상품 이미지` : ""}</p>
         </div>

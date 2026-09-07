@@ -136,12 +136,13 @@ export function CreativeJobStatusIndicator() {
     );
   }
   if (!job) return null;
-  const stalled = !job.runnerActive;
+  const waiting = job.manualQueue?.state === "waiting";
+  const stalled = !job.runnerActive && !waiting;
   return (
-    <aside className={`${styles.indicator} ${stalled ? styles.stalled : ""}`} aria-live="polite" role="status">
-      <span className={styles.label}>{stalled ? "광고 제작 재개 필요" : "광고 제작 백그라운드 진행 중"}</span>
+    <aside className={`${styles.indicator} ${waiting ? styles.queued : stalled ? styles.stalled : ""}`} aria-live="polite" role="status">
+      <span className={styles.label}>{waiting ? `수동 제작 대기 ${job.manualQueue?.waitingPosition || 1}번째` : stalled ? "광고 제작 재개 필요" : "광고 제작 백그라운드 진행 중"}</span>
       <strong>{job.productName}</strong>
-      <small>{stalled ? `생성 ${job.generatedCount}/${job.totalCount}${job.failedCount ? ` · 실패 ${job.failedCount}` : ""} · 제작 화면에서 이어서 실행해 주세요.` : `${job.currentHookCode ? `${job.currentHookCode} 제작 중 · ` : ""}생성 ${job.generatedCount}/${job.totalCount}${job.failedCount ? ` · 실패 ${job.failedCount}` : ""}`}</small>
+      <small>{waiting ? `앞에 ${job.manualQueue?.aheadCount || 0}건 · 현재 수동 요청 ${job.manualQueue?.totalCount || 1}건 · 접수 순서대로 자동 시작` : stalled ? `생성 ${job.generatedCount}/${job.totalCount}${job.failedCount ? ` · 실패 ${job.failedCount}` : ""} · 제작 화면에서 이어서 실행해 주세요.` : `${job.currentHookCode ? `${job.currentHookCode} 제작 중 · ` : ""}생성 ${job.generatedCount}/${job.totalCount}${job.failedCount ? ` · 실패 ${job.failedCount}` : ""}`}</small>
       <Link className={styles.link} href={`/create-product?step=product&jobId=${encodeURIComponent(job.jobId)}#creative-results`}>
         진행 상황 보기
       </Link>

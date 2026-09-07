@@ -193,11 +193,23 @@ export const creativeGenerationJobStore = {
     return this.list(input);
   },
 
-  async supersedeActiveForProduct(productUrl: string, exceptJobId?: string, sourceType?: GenerationJob["sourceType"]) {
+  async supersedeActiveForProduct(
+    productUrl: string,
+    exceptJobId?: string,
+    sourceType?: GenerationJob["sourceType"],
+    requesterSubject?: string | null
+  ) {
     const normalizedUrl = normalizeCreativeProductUrl(productUrl);
     if (!normalizedUrl) return [] as GenerationJob[];
     const candidates = (await this.active(200)).filter(
-      (job) => job.id !== exceptJobId && (!sourceType || job.sourceType === sourceType) && normalizeCreativeProductUrl(job.productTruth.product.landingUrl) === normalizedUrl
+      (job) =>
+        job.id !== exceptJobId
+        && (!sourceType || job.sourceType === sourceType)
+        && (
+          requesterSubject === undefined
+          || (requesterSubject === null ? !job.requestedBy : job.requestedBy?.subject === requesterSubject)
+        )
+        && normalizeCreativeProductUrl(job.productTruth.product.landingUrl) === normalizedUrl
     );
     return Promise.all(
       candidates.map((candidate) =>

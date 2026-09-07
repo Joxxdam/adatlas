@@ -2,7 +2,7 @@ import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
-import type { GenerationJob } from "./types";
+import type { GenerationJob, ManualGenerationQueueInfo } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
 import { executionResults, hasOrphanedRunningResult, isDefaultCodexGenerationJob, isServerRunnableGenerationJob, resumeGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
@@ -13,8 +13,14 @@ import { DEFAULT_CODEX_GENERATION_PROMPT_VERSION } from "./codexDirectTest";
 // 키에 포함해 이미지/문구/작업 정책 중 하나라도 바뀌면 새 러너를 만들고,
 // 구버전 러너가 최신 작업을 다시 이전 버전으로 되돌리는 일을 막는다.
 const runnerPolicySignature = DEFAULT_CODEX_GENERATION_PROMPT_VERSION;
-const runnerKey = Symbol.for(`daywiz.creative-generation.server-runner:${runnerPolicySignature}`);
+const runnerKey = Symbol.for(`daywiz.creative-generation.server-runner:${runnerPolicySignature}:manual-fifo-v1`);
 const globalRunner = globalThis as typeof globalThis & { [runnerKey]?: IdempotentJobRunner };
+const manualQueueClockKey = Symbol.for("daywiz.creative-generation.manual-queue-clock-v1");
+const queueClockGlobal = globalThis as typeof globalThis & {
+  [manualQueueClockKey]?: { millisecond: number; offset: number };
+};
+const manualQueueClock = queueClockGlobal[manualQueueClockKey] ?? { millisecond: 0, offset: 0 };
+queueClockGlobal[manualQueueClockKey] = manualQueueClock;
 // 한 작업은 서로 다른 Codex 세션으로 광고 6장을 생성하므로 개별 이미지 turn의
 // hard timeout보다 충분히 길게 둡니다. 목적은 정상 장기 작업 제한이
 // 아니라 수일간 남는 유령 Promise가 큐 전체를 막지 않게 하는 것입니다.
@@ -59,13 +65,59 @@ export function isGenerationJobRunnerActive(jobId: string) {
   return runner.isActive(jobId);
 }
 
+export function createManualGenerationQueueMetadata(now = Date.now()) {
+  if (manualQueueClock.millisecond === now) manualQueueClock.offset += 1;
+  else {
+    manualQueueClock.millisecond = now;
+    manualQueueClock.offset = 0;
+  }
+  return {
+    requestedAt: new Date(now).toISOString(),
+    sequence: now * 1_000 + manualQueueClock.offset,
+  };
+}
+
+function manualQueueSequence(job: GenerationJob) {
+  return job.manualQueue?.sequence ?? new Date(job.createdAt).getTime() * 1_000;
+}
+
+function queueRecoveryOrder(left: GenerationJob, right: GenerationJob) {
+  const leftPriority = left.sourceType === "auto-production" ? 1 : 0;
+  const rightPriority = right.sourceType === "auto-production" ? 1 : 0;
+  return leftPriority - rightPriority || manualQueueSequence(left) - manualQueueSequence(right) || left.id.localeCompare(right.id);
+}
+
+export async function getManualGenerationQueueSnapshot() {
+  const activeJobs = (await creativeGenerationJobStore.active(500))
+    .filter((job) => job.sourceType !== "auto-production" && isServerRunnableGenerationJob(job) && ["pending", "running"].includes(job.status))
+    .sort(queueRecoveryOrder);
+  const runnerSnapshot = runner.snapshot();
+  const runningIds = new Set(runnerSnapshot.running.map((entry) => entry.jobId));
+  const waitingJobs = activeJobs.filter((job) => !runningIds.has(job.id));
+  const runningCount = activeJobs.length - waitingJobs.length;
+  const byJobId: Record<string, ManualGenerationQueueInfo> = {};
+  activeJobs.forEach((job, index) => {
+    const running = runningIds.has(job.id);
+    const waitingIndex = running ? -1 : waitingJobs.findIndex((candidate) => candidate.id === job.id);
+    byJobId[job.id] = {
+      state: running ? "running" : "waiting",
+      waitingPosition: waitingIndex >= 0 ? waitingIndex + 1 : undefined,
+      aheadCount: index,
+      totalCount: activeJobs.length,
+      runningCount,
+      requestedAt: job.manualQueue?.requestedAt || job.createdAt,
+    };
+  });
+  return { byJobId, totalCount: activeJobs.length, runningCount, waitingCount: waitingJobs.length };
+}
+
 /**
  * Node 서버가 재시작되면 메모리 러너는 사라지지만 JSON 작업은 남아 있다.
  * 자동제작 관리 화면을 열어야만 복구되는 의존성을 제거하고, 수동·자동
  * 공통 신규 계약의 미완료 작업을 새 러너에 멱등한 방식으로 재등록한다.
  */
 export async function recoverPersistedGenerationJobs(limit = 200) {
-  const candidates = await creativeGenerationJobStore.active(limit);
+  const candidates = (await creativeGenerationJobStore.active(limit)).sort(queueRecoveryOrder);
   const recoveredIds: string[] = [];
   for (const candidate of candidates) {
     if (!isServerRunnableGenerationJob(candidate)) continue;
@@ -75,7 +127,7 @@ export async function recoverPersistedGenerationJobs(limit = 200) {
     if (hasOrphanedRunningResult(job, runnerWasActive)) {
       job = await creativeGenerationJobStore.update(job.id, (current) => resumeGenerationJob(current, false));
     }
-    if (!isGenerationJobRunnerActive(job.id) && enqueueGenerationJob(job.id)) recoveredIds.push(job.id);
+    if (!isGenerationJobRunnerActive(job.id) && enqueueGenerationJob(job.id, { priority: job.sourceType !== "auto-production" })) recoveredIds.push(job.id);
   }
   return recoveredIds;
 }

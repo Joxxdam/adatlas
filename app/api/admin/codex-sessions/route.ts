@@ -9,7 +9,7 @@ const responseOptions = { headers: { "Cache-Control": "private, no-store" } };
 
 export async function GET(request: Request) {
   try {
-    verifyLocalGenerationAccess(request);
+    await verifyLocalGenerationAccess(request);
     return NextResponse.json({ ok: true, status: await getCodexImageSessionRetentionStatus() }, responseOptions);
   } catch (error) {
     return NextResponse.json(
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    verifyLocalGenerationAccess(request);
+    await verifyLocalGenerationAccess(request);
     const cleanup = await cleanupExpiredCodexImageSessions();
     return NextResponse.json({ ok: true, cleanup, status: await getCodexImageSessionRetentionStatus() }, responseOptions);
   } catch (error) {

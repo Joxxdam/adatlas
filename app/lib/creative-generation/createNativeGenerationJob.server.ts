@@ -27,6 +27,8 @@ const internalStrategyText = /(?:T0\d|주력\s*상품|우승\s*소재|판매[·�
 export type NativeGenerationJobOptions = {
   autoStart?: boolean;
   sourceType?: GenerationJob["sourceType"];
+  manualQueue?: GenerationJob["manualQueue"];
+  requestedBy?: GenerationJob["requestedBy"];
   autoProductionRunId?: string;
   autoProductionTaskId?: string;
 };
@@ -270,6 +272,13 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.advertiserName = advertiserName;
   job.visualDiversityMatrix = undefined;
   job.sourceType = options.sourceType || "manual";
+  job.requestedBy = job.sourceType === "manual" ? options.requestedBy : undefined;
+  job.manualQueue = job.sourceType === "manual"
+    ? options.manualQueue || {
+        requestedAt: job.createdAt,
+        sequence: new Date(job.createdAt).getTime() * 1_000,
+      }
+    : undefined;
   job.autoProductionRunId = options.autoProductionRunId;
   job.autoProductionTaskId = options.autoProductionTaskId;
   job.hookLearningApplied = false;
@@ -293,7 +302,12 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   if (job.sourceType === "manual") {
     // 수동 새 작업은 같은 상품의 이전 수동 작업만 교체한다. 자정 자동 제작과
     // 수동 제작이 겹쳐도 서로의 서버 작업을 취소하지 않는다.
-    const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(job.productTruth.product.landingUrl, undefined, "manual");
+    const superseded = await creativeGenerationJobStore.supersedeActiveForProduct(
+      job.productTruth.product.landingUrl,
+      undefined,
+      "manual",
+      job.requestedBy?.subject ?? null
+    );
     superseded.forEach((previous) => cancelQueuedGenerationJob(previous.id));
   }
   await creativeGenerationJobStore.create(job);

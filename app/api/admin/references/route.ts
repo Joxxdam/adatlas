@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
-import { startReferenceOcrRun } from "../../../lib/creative-generation/referenceOcrRunner.server";
 import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
 import { assertReferenceLibraryWritable, isReferenceLibraryReadOnly } from "../../../lib/runtimeStorage.ts";
 
@@ -61,8 +60,12 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
     const result = await nativeReferenceLibraryRepository.add(files);
-    const ocrStatus = await startReferenceOcrRun({ ids: result.added.map((item) => item.id) });
-    return NextResponse.json({ ok: true, added: result.added, nativeCopyAnalysis: { queuedCount: result.added.length }, ocrStatus, library: publicLibrary() }, { status: 202 });
+    return NextResponse.json({
+      ok: true,
+      added: result.added,
+      nativeCopyAnalysis: { queuedCount: 0, automatic: false },
+      library: publicLibrary(),
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "레퍼런스 업로드에 실패했습니다." }, { status: 400 });
   }

@@ -3,7 +3,7 @@ import { creativeGenerationJobStore } from "../../../../../../lib/creative-gener
 import type { CopyPlan } from "../../../../../../lib/creative-generation/types";
 import { handleNativeResultGeneration } from "../../../../../../lib/creative-generation/nativeResultGeneration.server";
 import { writeNativeManifest } from "../../../../../../lib/creative-generation/nativeCreativeStorage.server";
-import { localAccessError, verifyLocalGenerationAccess } from "../../../../../../lib/creative-generation/localGenerationAccess.server";
+import { assertGenerationJobAccess, localAccessError, verifyLocalGenerationAccess } from "../../../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError, toPublicGenerationJob } from "../../../../../../lib/creative-generation/publicJob.server";
 import { isDefaultCodexGenerationJob } from "../../../../../../lib/creative-generation/jobRunnerPolicy";
 
@@ -15,7 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ jobId:
   const startedAtMs = Date.now();
   const { jobId, resultId } = await context.params;
   try {
-    verifyLocalGenerationAccess(request);
+    const principal = await verifyLocalGenerationAccess(request);
     const body = (await request.json().catch(() => ({}))) as {
       copy?: Partial<CopyPlan>;
       requestId?: string;
@@ -25,6 +25,7 @@ export async function POST(request: Request, context: { params: Promise<{ jobId:
     };
     let job = await creativeGenerationJobStore.get(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
+    assertGenerationJobAccess(principal, job);
     if (job.status === "cancelled") return NextResponse.json({ ok: false, error: "취소된 작업입니다." }, { status: 409 });
     const target = job.results.find((result) => result.id === resultId);
     if (!target) return NextResponse.json({ ok: false, error: "결과 항목을 찾지 못했습니다." }, { status: 404 });

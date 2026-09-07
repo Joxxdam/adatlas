@@ -4,6 +4,7 @@ import test from "node:test";
 import { createIdempotentJobRunner } from "../app/lib/creative-generation/jobRunnerCore.ts";
 import { cancelGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION, resumeGenerationJob, selectRunnableResult, selectRunnableResults, staleRunningResultIds } from "../app/lib/creative-generation/jobRunnerPolicy.ts";
 import { DEFAULT_CODEX_GENERATION_PIPELINE, DEFAULT_CODEX_GENERATION_PROMPT_VERSION, DEFAULT_CODEX_GENERATION_STAGE_ORDER, DEFAULT_CODEX_GENERATION_WORKFLOW } from "../app/lib/creative-generation/codexDirectTest.ts";
+import { canAccessGenerationJob, requestOwnerForAccess } from "../app/lib/creative-generation/generationAccess.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -42,20 +43,23 @@ function job(statuses = ["pending", "pending", "pending"]) {
 
 test("1. 작업 생성 API는 저장 직후 서버 runner를 자동 시작하고 202를 반환한다", async () => {
   const [route, service] = await Promise.all([read("app/api/creative-generation/jobs/route.ts"), read("app/lib/creative-generation/createNativeGenerationJob.server.ts")]);
-  assert.match(route, /createNativeGenerationJob\(body\)/);
+  assert.match(route, /createNativeGenerationJob\(body, \{/);
+  assert.match(route, /manualQueue: createManualGenerationQueueMetadata\(\)/);
   assert.match(service, /enqueueGenerationJob\(job\.id, \{ priority: job\.sourceType === "manual" \}\)/);
-  assert.match(service, /supersedeActiveForProduct\(job\.productTruth\.product\.landingUrl, undefined, "manual"\)/);
+  assert.match(service, /supersedeActiveForProduct\([\s\S]*job\.productTruth\.product\.landingUrl[\s\S]*"manual"[\s\S]*job\.requestedBy\?\.subject \?\? null/);
   assert.match(service, /cancelQueuedGenerationJob/);
   assert.match(route, /status: 202/);
 });
 
 test("1-1. 활성 작업 조회는 같은 상품의 최신 작업만 재개하고 전체 조회가 과거 큐를 다시 실행하지 않는다", async () => {
   const active = await read("app/api/creative-generation/jobs/active/route.ts");
-  assert.match(active, /selectedCandidates = requestedProductUrl \? candidates\.slice\(0, 1\) : candidates/);
+  assert.match(active, /visibleCandidates = candidates\.filter/);
+  assert.match(active, /selectedCandidates = requestedProductUrl \? visibleCandidates\.slice\(0, 1\) : visibleCandidates/);
   assert.match(active, /candidate\.sourceType !== "auto-production"/);
-  assert.match(active, /supersedeActiveForProduct\(requestedProductUrl, selectedCandidates\[0\]\.id, "manual"\)/);
+  assert.match(active, /supersedeActiveForProduct\([\s\S]*requestedProductUrl[\s\S]*selectedCandidates\[0\]\.id[\s\S]*"manual"/);
   assert.match(active, /cancelQueuedGenerationJob/);
-  assert.match(active, /enqueueGenerationJob\(job\.id, \{ priority: true \}\)/);
+  assert.match(active, /recoverPersistedGenerationJobs\(200\)/);
+  assert.match(active, /enqueueGenerationJob\(job\.id, \{ priority: job\.sourceType !== "auto-production" \}\)/);
 });
 
 test("2. 클라이언트는 runPending이나 workerCount로 H01~H06을 지휘하지 않는다", async () => {
@@ -111,6 +115,30 @@ test("4-1. 취소된 중복 대기 작업을 제거하고 최신 작업을 우�
   assert.deepEqual(started, ["running-old", "latest"]);
   releases.get("latest")();
   await runner.wait("latest");
+});
+
+test("4-1-1. 수동 우선 작업끼리는 요청 순서대로 실행한다", async () => {
+  const started = [];
+  const releases = new Map();
+  const runner = createIdempotentJobRunner(async (jobId) => {
+    started.push(jobId);
+    await new Promise((resolve) => releases.set(jobId, resolve));
+  }, 1);
+  runner.enqueue("auto-running");
+  runner.enqueue("manual-first", { priority: true });
+  runner.enqueue("manual-second", { priority: true });
+  runner.enqueue("auto-waiting");
+  assert.deepEqual(runner.snapshot().queued.map((entry) => entry.jobId), ["manual-first", "manual-second", "auto-waiting"]);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  releases.get("auto-running")();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  releases.get("manual-first")();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  releases.get("manual-second")();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  releases.get("auto-waiting")();
+  await runner.wait("auto-waiting");
+  assert.deepEqual(started, ["auto-running", "manual-first", "manual-second", "auto-waiting"]);
 });
 
 test("4-2. 실행 함수가 영구 정지해도 watchdog이 슬롯을 반환해 다음 작업을 실행한다", async () => {
@@ -200,6 +228,25 @@ test("10. active API는 진행률·현재 후킹·완료·실패 결과를 공�
   assert.doesNotMatch(publicJob, /failedResults:/);
 });
 
+test("10-1. 수동 제작은 영속 접수 순서와 현재 대기 번호를 API·제작 화면에 표시한다", async () => {
+  const [runner, createRoute, jobRoute, activeRoute, client, indicator] = await Promise.all([
+    read("app/lib/creative-generation/jobRunner.server.ts"),
+    read("app/api/creative-generation/jobs/route.ts"),
+    read("app/api/creative-generation/jobs/[jobId]/route.ts"),
+    read("app/api/creative-generation/jobs/active/route.ts"),
+    read("app/components/features/creative-generation/SixCreativeGenerator.tsx"),
+    read("app/components/features/creative-generation/CreativeJobStatusIndicator.tsx"),
+  ]);
+  assert.match(runner, /manualQueueSequence/);
+  assert.match(runner, /getManualGenerationQueueSnapshot/);
+  assert.match(createRoute, /manualQueue: queue\.byJobId\[job\.id\]/);
+  assert.match(jobRoute, /manualQueue/);
+  assert.match(activeRoute, /queue\.byJobId\[job\.id\]/);
+  assert.match(client, /수동 제작 대기/);
+  assert.match(client, /앞선 요청/);
+  assert.match(indicator, /접수 순서대로 자동 시작/);
+});
+
 test("11. 입력 폼이 비어도 저장 jobId와 ProductTruth로 작업을 복원한다", async () => {
   const client = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
   const storage = await read("app/lib/creative-generation/activeCreativeJob.client.ts");
@@ -261,7 +308,7 @@ test("13. native 최종 파일은 1200×1200 JPEG와 800KB 제한을 계속 검�
   assert.match(download, /metadata\.format !== "jpeg"/);
 });
 
-test("14. Codex 로컬 실패는 유료 API로 자동 전환되지 않고 생성 API는 localhost로 제한된다", async () => {
+test("14. Codex 로컬 실패는 유료 API로 자동 전환되지 않고 외부 생성은 Cloudflare Access JWT를 검증한다", async () => {
   const provider = await read("app/lib/creative-generation/providers/providerFactory.server.ts");
   const access = await read("app/lib/creative-generation/localGenerationAccess.server.ts");
   const publicJob = await read("app/lib/creative-generation/publicJob.server.ts");
@@ -269,6 +316,38 @@ test("14. Codex 로컬 실패는 유료 API로 자동 전환되지 않고 생성
   assert.match(access, /loopbackHosts/);
   assert.match(access, /headers\.get\("host"\)/);
   assert.match(access, /ADATLAS_INTERNAL_GENERATION_TOKEN/);
+  assert.match(access, /cf-access-jwt-assertion/);
+  assert.match(access, /jwtVerify/);
+  assert.match(access, /issuer: config\.issuer/);
+  assert.match(access, /audience: config\.audiences/);
+  assert.match(access, /algorithms: \["RS256"\]/);
   assert.doesNotMatch(publicJob, /codexThreadId/);
   assert.match(publicJob, /finalPath:\s*undefined/);
+});
+
+test("14-1. 외부 사용자는 자신의 작업만 조회하고 localhost·내부 러너는 기존 작업을 관리할 수 있다", () => {
+  const owner = requestOwnerForAccess({ kind: "cloudflare-access", subject: "user-a", email: "a@example.com" });
+  assert.deepEqual(owner, { provider: "cloudflare-access", subject: "user-a", email: "a@example.com" });
+  assert.equal(canAccessGenerationJob({ kind: "cloudflare-access", subject: "user-a" }, { requestedBy: owner }), true);
+  assert.equal(canAccessGenerationJob({ kind: "cloudflare-access", subject: "user-b" }, { requestedBy: owner }), false);
+  assert.equal(canAccessGenerationJob({ kind: "cloudflare-access", subject: "user-a" }, {}), false);
+  assert.equal(canAccessGenerationJob({ kind: "local" }, {}), true);
+  assert.equal(canAccessGenerationJob({ kind: "internal" }, { requestedBy: owner }), true);
+});
+
+test("14-2. 생성·조회·아카이브 API는 Access 소유권을 저장하고 서버에서 범위를 제한한다", async () => {
+  const [createRoute, activeRoute, jobRoute, publicJob, archiveRoute, archiveAccess] = await Promise.all([
+    read("app/api/creative-generation/jobs/route.ts"),
+    read("app/api/creative-generation/jobs/active/route.ts"),
+    read("app/api/creative-generation/jobs/[jobId]/route.ts"),
+    read("app/lib/creative-generation/publicJob.server.ts"),
+    read("app/api/creative-archive/route.ts"),
+    read("app/lib/creative-archive/access.server.ts"),
+  ]);
+  assert.match(createRoute, /requestedBy: requestOwnerForAccess\(principal\)/);
+  assert.match(activeRoute, /canAccessGenerationJob\(principal, candidate\)/);
+  assert.match(jobRoute, /assertGenerationJobAccess\(principal, job\)/);
+  assert.match(publicJob, /requestedBy: undefined/);
+  assert.match(archiveRoute, /filterCreativeArchiveEntriesForAccess/);
+  assert.match(archiveAccess, /assertGenerationJobAccess\(principal, job\)/);
 });

@@ -1,5 +1,5 @@
 import "server-only";
-import type { GenerationJob, GenerationJobSummary } from "./types";
+import type { GenerationJob, GenerationJobSummary, ManualGenerationQueueInfo } from "./types";
 import { executionResults, failedGenerationResultStatuses, terminalGenerationResultStatuses } from "./jobRunnerPolicy";
 import { nativeResultImageUrl } from "./nativeCreativeStorage.server";
 import { DEFAULT_CODEX_GENERATION_PIPELINE } from "./codexDirectTest";
@@ -85,6 +85,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
   };
   const publicJob = {
     ...job,
+    requestedBy: undefined,
     codexDirectTest: job.codexDirectTest
       ? {
           prompt: job.codexDirectTest.prompt,
@@ -262,7 +263,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
   return JSON.parse(serialized) as GenerationJob;
 }
 
-export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean): GenerationJobSummary {
+export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean, manualQueue?: ManualGenerationQueueInfo): GenerationJobSummary {
   const scopedResults = executionResults(job);
   return {
     jobId: job.id,
@@ -284,6 +285,7 @@ export function toGenerationJobSummary(job: GenerationJob, runnerActive: boolean
     })(),
     status: job.status,
     runnerActive,
+    manualQueue,
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     updatedAt: job.updatedAt,

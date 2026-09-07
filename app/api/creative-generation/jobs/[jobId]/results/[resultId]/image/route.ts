@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { creativeGenerationJobStore } from "../../../../../../../lib/creative-generation/jobStore.server";
 import { MAX_FINAL_BYTES, resolveValidatedNativeDownload } from "../../../../../../../lib/creative-generation/nativeCreativeStorage.server";
-import { localAccessError, verifyLocalGenerationAccess } from "../../../../../../../lib/creative-generation/localGenerationAccess.server";
+import { assertGenerationJobAccess, localAccessError, verifyLocalGenerationAccess } from "../../../../../../../lib/creative-generation/localGenerationAccess.server";
 import { toPublicGenerationError } from "../../../../../../../lib/creative-generation/publicJob.server";
 
 export const runtime = "nodejs";
@@ -11,10 +11,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, context: { params: Promise<{ jobId: string; resultId: string }> }) {
   try {
-    verifyLocalGenerationAccess(request);
+    const principal = await verifyLocalGenerationAccess(request);
     const { jobId, resultId } = await context.params;
     const job = await creativeGenerationJobStore.get(jobId);
     if (!job) return NextResponse.json({ ok: false, error: "작업을 찾지 못했습니다." }, { status: 404 });
+    assertGenerationJobAccess(principal, job);
     const result = job.results.find((item) => item.id === resultId);
     if (!result?.imagePath) return NextResponse.json({ ok: false, error: "표시할 광고가 없습니다." }, { status: 404 });
     const file = resolveValidatedNativeDownload(job, resultId);

@@ -214,7 +214,7 @@ test("승인되고 원문이 있는 정밀 분석만 제작 우선 풀 자격을
   assert.equal(isApprovedReferenceNativeCopy({ ...base, useForCopyAdaptation: false, approvalStatus: "auto-approved" }), false);
 });
 
-test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제작 중에는 저장본 또는 안전 최소 문구만 쓴다", async () => {
+test("정밀 OCR은 운영자가 요청할 때만 실행하고 제작 중에는 저장본 또는 이미지 직접 판독을 쓴다", async () => {
   const analyzer = await read("app/lib/creative-generation/referenceNativeCopy.server.ts");
   const repository = await read("app/lib/creative-generation/nativeReferenceLibraryRepository.server.ts");
   const selector = await read("app/lib/creative-generation/referenceCreativeLibrary.server.ts");
@@ -235,7 +235,8 @@ test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제�
   assert.match(repository, /nativeCopy\?\.imageHash === imageHash/);
   assert.match(repository, /options: \{ force\?: boolean \}/);
   assert.match(route, /extractNativeCopy\(id, \{ force: true \}\)/);
-  assert.match(route, /startReferenceOcrRun/);
+  assert.doesNotMatch(route, /startReferenceOcrRun/);
+  assert.match(route, /automatic:\s*false/);
   assert.match(ocrRoute, /getReferenceOcrStatus\(\{ resume: true \}\)/);
   assert.match(ocrRoute, /prioritize-food/);
   assert.match(runner, /prioritizeReferenceOcrRun/);
@@ -263,6 +264,14 @@ test("정밀 OCR은 업로드·백그라운드 재분석에서 저장하고 제�
   assert.match(planner, /제작 중 즉석 OCR은 실행하지 않았습니다/);
   assert.doesNotMatch(planner, /imagePath 이미지를 직접 읽어 전사한다/);
   assert.match(planner, /isApprovedReferenceNativeCopy\(reference\.nativeCopy\)/);
+});
+
+test("레퍼런스 업로드는 OCR을 자동 시작하지 않고 수동 분석 버튼을 유지한다", async () => {
+  const manager = await read("app/components/references/NativeReferenceLibraryManager.tsx");
+  assert.doesNotMatch(manager, /ocrAutoStartRequested/);
+  assert.doesNotMatch(manager, /정밀 OCR을 자동 시작했습니다/);
+  assert.match(manager, /미분석 전체 OCR/);
+  assert.match(manager, /수동·자동 제작 레퍼런스로 바로 사용할 수 있습니다/);
 });
 
 test("관리 화면은 정밀 분석 신뢰도·영역 좌표·승인 상태를 검수할 수 있다", async () => {
