@@ -4,9 +4,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { SiteCandidateAnalysisResult, SiteCandidateSelection, SiteDiscoveryResult } from "./types";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const CACHE_FILE = path.join(process.cwd(), ".data", "site-candidates", "cache.json");
+const CACHE_FILE = runtimeDataPath("site-candidates", "cache.json");
 
 type CacheEntry<T> = { value: T; expiresAt: number };
 type SiteCandidateCache = {

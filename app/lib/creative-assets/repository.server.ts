@@ -4,6 +4,7 @@ import path from "node:path";
 import { createBrandCode, createProductCode, createHookVariantAssetCode, createExplorationAssetCode, extensionFromImageUrl, extractCreativeAssetCode, generateCreativeAssetCode, getHookCode, validateCreativeAssetCode } from "./code.ts";
 import { createExperimentAssetCode } from "../hook-experiments/codes.ts";
 import type { CreateCreativeAssetInput, CreativeAsset, CreativeAssetFilters, CreativeAssetMatchResult, CreativeAssetStatus } from "./types.ts";
+import { creativeAssetsRuntimePath } from "../runtimeStorage.ts";
 
 type CreativeAssetStore = {
   version: "creative-assets-v1";
@@ -61,7 +62,7 @@ function sortNewest(assets: CreativeAsset[]) {
 }
 
 export function createCreativeAssetRepository(options: { dataDirectory?: string } = {}) {
-  const dataDirectory = options.dataDirectory || path.join(process.cwd(), "data", "creative-assets");
+  const dataDirectory = options.dataDirectory || creativeAssetsRuntimePath();
   const storePath = path.join(dataDirectory, "assets.json");
   let queue: Promise<void> = Promise.resolve();
 

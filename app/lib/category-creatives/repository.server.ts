@@ -3,8 +3,9 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import type { CategoryCreativeJob, CategoryCreativeSource } from "./types";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
-const root = path.join(process.cwd(), ".data", "category-creatives");
+const root = runtimeDataPath("category-creatives");
 const sourceRoot = path.join(root, "sources");
 const jobRoot = path.join(root, "jobs");
 const sourceIndexPath = path.join(root, "sources.json");

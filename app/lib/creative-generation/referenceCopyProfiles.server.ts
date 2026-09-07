@@ -6,6 +6,7 @@ import path from "node:path";
 import type { NativeAdReference } from "./referenceCreativeLibrary.server";
 import { CURRENT_REFERENCE_COPY_POLICY_VERSION } from "./jobRunnerPolicy";
 import type { CreativeBlueprintId, ReferenceCopyProfile } from "./types";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 export const REFERENCE_COPY_PROFILE_VERSION = "reference-copy-profile-v1";
 export const REFERENCE_ADAPTED_PLANNER_VERSION = CURRENT_REFERENCE_COPY_POLICY_VERSION;
@@ -13,7 +14,7 @@ export const REFERENCE_ADAPTED_PLANNER_VERSION = CURRENT_REFERENCE_COPY_POLICY_V
 const NATURALNESS_PASS_SCORE = 80;
 const REFERENCE_FIT_PASS_SCORE = 80;
 
-const cachePath = path.resolve(process.cwd(), ".data", "creative-generation", "reference-copy-profiles.json");
+const cachePath = path.resolve(runtimeDataPath("creative-generation", "reference-copy-profiles.json"));
 const sentenceStyles = ["question", "declaration", "dialogue", "contrast", "sensory", "urgency", "proof"] as const;
 let profileCacheWriteQueue: Promise<void> = Promise.resolve();
 

@@ -2,6 +2,7 @@ import "server-only";
 import { access, copyFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 export type AdvertiserThreadRecord = { advertiserId: string; advertiserName: string; domain: string; threadId?: string; turnCount?: number; updatedAt: string };
 type Registry = { version: 1; advertisers: Record<string, AdvertiserThreadRecord> };
@@ -22,7 +23,7 @@ export type GoldenReference = {
 export type AdvertiserBrandMemory = { advertiserId: string; approvedDirections: string[]; rejectedDirections: string[]; feedback: string[]; goldenReferences: GoldenReference[]; updatedAt: string };
 
 const locks = new Map<string, Promise<void>>();
-const root = () => path.join(process.cwd(), ".data", "codex");
+const root = () => runtimeDataPath("codex");
 const registryPath = () => path.join(root(), "advertisers.json");
 
 export function codexProductThreadKey(advertiserId: string, productId: string) {
@@ -153,7 +154,7 @@ function goldenRoot(advertiserId: string) {
 export async function saveGoldenReference(input: Omit<GoldenReference, "id" | "advertiserId" | "imagePath" | "approvedAt"> & { advertiserId: string; sourceImagePath: string }) {
   return serial(memoryPath(input.advertiserId), async () => {
     const source = path.resolve(input.sourceImagePath);
-    const allowedRoot = path.resolve(process.cwd(), ".data", "generated", safeSegment(input.advertiserId));
+    const allowedRoot = path.resolve(runtimeDataPath("generated", safeSegment(input.advertiserId)));
     if (!source.startsWith(`${allowedRoot}${path.sep}`)) throw new Error("검증된 비공개 생성 결과만 골든 레퍼런스로 등록할 수 있습니다.");
     await access(source);
     const id = `golden-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

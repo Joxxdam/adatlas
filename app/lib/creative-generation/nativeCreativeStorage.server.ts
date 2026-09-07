@@ -5,12 +5,13 @@ import sharp from "sharp";
 import { readCreativeRasterAsset } from "./assets.server.ts";
 import type { CreativeImageAsset, GenerationJob, GenerationResult } from "./types.ts";
 import { buildNativeStagePrompt, NATIVE_FINAL_PROMPT_VERSION } from "./nativeCreativePrompt.ts";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 type PromptBrandMemory = import("./codexRegistry.server.ts").AdvertiserBrandMemory;
 
 const PUBLIC_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), "public");
 const LEGACY_GENERATED_ROOT = path.join(PUBLIC_ROOT, "generated");
-const GENERATED_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), ".data", "generated");
+const GENERATED_ROOT = path.resolve(/* turbopackIgnore: true */ runtimeDataPath("generated"));
 const SAFE = /^[a-zA-Z0-9가-힣._-]+$/;
 export const MAX_FINAL_BYTES = 800 * 1024;
 const TARGET_BYTES = 790 * 1024;

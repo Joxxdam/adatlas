@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { CreativeArchiveMetadata } from "./types";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 type CreativeArchiveMetadataStore = {
   version: "creative-archive-metadata-v1";
@@ -25,7 +26,7 @@ function cleanTags(value: unknown) {
 }
 
 export function createCreativeArchiveMetadataRepository(options: { dataDirectory?: string } = {}) {
-  const dataDirectory = options.dataDirectory || path.join(process.cwd(), ".data", "creative-archive");
+  const dataDirectory = options.dataDirectory || runtimeDataPath("creative-archive");
   const storePath = path.join(dataDirectory, "metadata.json");
   let queue: Promise<void> = Promise.resolve();
 

@@ -8,6 +8,7 @@ import sharp from "sharp";
 import { classifyNativeReferenceImage } from "./nativeReferenceClassifier.server";
 import { normalizeNativeReferenceCategory, normalizeNativeReferenceCompatibility, removeManagedNativeReference, type ManagedNativeReferenceItem, type ManagedNativeReferenceManifest, type NativeReferenceCategoryGroup, type ReferenceNativeCopy } from "./referenceLibraryManagement";
 import { extractReferenceNativeCopy, normalizeReferenceNativeCopy, REFERENCE_NATIVE_COPY_ANALYSIS_VERSION } from "./referenceNativeCopy.server";
+import { assertReferenceLibraryWritable } from "../runtimeStorage.ts";
 
 const manifestPath = path.resolve(process.cwd(), "data", "native-creative-reference-library.json");
 const publicRoot = path.resolve(process.cwd(), "public");
@@ -90,6 +91,7 @@ export const nativeReferenceLibraryRepository = {
   },
 
   async add(files: File[]) {
+    assertReferenceLibraryWritable();
     if (!files.length) throw new Error("업로드할 레퍼런스 이미지를 선택해 주세요.");
     if (files.length > maximumFilesPerUpload) {
       throw new Error(`한 번에 최대 ${maximumFilesPerUpload}장까지 업로드할 수 있습니다.`);
@@ -163,6 +165,7 @@ export const nativeReferenceLibraryRepository = {
   },
 
   async updateCompatibility(id: string, patch: Partial<ManagedNativeReferenceItem>) {
+    assertReferenceLibraryWritable();
     return serialize(async () => {
       const manifest = readNativeReferenceManifestSync();
       if (!manifest.items.some((item) => item.id === id)) throw new Error("레퍼런스를 찾지 못했습니다.");
@@ -192,6 +195,7 @@ export const nativeReferenceLibraryRepository = {
   },
 
   async updateNativeCopy(id: string, nativeCopy: Partial<ReferenceNativeCopy>) {
+    assertReferenceLibraryWritable();
     return serialize(async () => {
       const manifest = readNativeReferenceManifestSync();
       const target = manifest.items.find((item) => item.id === id);
@@ -214,6 +218,7 @@ export const nativeReferenceLibraryRepository = {
   },
 
   async extractNativeCopy(id: string, options: { force?: boolean } = {}) {
+    assertReferenceLibraryWritable();
     const manifest = readNativeReferenceManifestSync();
     const target = manifest.items.find((item) => item.id === id);
     if (!target) throw new Error("레퍼런스를 찾지 못했습니다.");
@@ -248,6 +253,7 @@ export const nativeReferenceLibraryRepository = {
   },
 
   async remove(id: string) {
+    assertReferenceLibraryWritable();
     return serialize(async () => {
       const manifest = readNativeReferenceManifestSync();
       const target = manifest.items.find((item) => item.id === id);

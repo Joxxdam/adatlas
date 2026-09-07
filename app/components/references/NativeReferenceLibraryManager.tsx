@@ -13,7 +13,7 @@ type LibraryPayload = {
   foodSubcategoryCounts: Record<NativeReferenceFoodSubcategory, number>;
 };
 
-type Props = { initialLibrary: LibraryPayload };
+type Props = { initialLibrary: LibraryPayload; readOnly?: boolean };
 type Filter = "all" | NativeReferenceCategoryGroup | `food-${NativeReferenceFoodSubcategory}`;
 type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory"> & {
   foodSubcategory?: NativeReferenceFoodSubcategory | null;
@@ -51,7 +51,7 @@ function foodSubcategoryFromFilter(value: Filter): NativeReferenceFoodSubcategor
     : undefined;
 }
 
-export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
+export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false }: Props) {
   const [library, setLibrary] = useState(initialLibrary);
   const [filter, setFilter] = useState<Filter>("all");
   const [busy, setBusy] = useState("");
@@ -87,7 +87,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
         const signature = `${payload.counts.readyCount}:${payload.counts.reviewCount}:${payload.counts.unavailableCount}:${payload.counts.pendingCount}`;
         if (ocrLibrarySignature.current && ocrLibrarySignature.current !== signature) void refreshLibrary();
         ocrLibrarySignature.current = signature;
-        if (payload.counts.pendingCount > 0 && payload.run?.status !== "running" && !ocrAutoStartRequested.current) {
+        if (!readOnly && payload.counts.pendingCount > 0 && payload.run?.status !== "running" && !ocrAutoStartRequested.current) {
           ocrAutoStartRequested.current = true;
           const startResponse = await fetch("/api/admin/references/ocr", {
             method: "POST",
@@ -112,7 +112,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
       mounted = false;
       if (timer) window.clearTimeout(timer);
     };
-  }, []);
+  }, [readOnly]);
 
   async function upload(files: File[]) {
     if (!files.length || busy) return;
@@ -319,7 +319,11 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
         </strong>
       </div>
 
-      <div className={styles.uploader} onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
+      {readOnly ? (
+        <div className={styles.status} role="status">
+          운영 컴퓨터에서는 레퍼런스를 읽기 전용으로 사용합니다. 추가·수정·삭제와 OCR 재분석은 개발 컴퓨터에서 Git에 반영해 주세요.
+        </div>
+      ) : <div className={styles.uploader} onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
         <div>
           <strong>{busy === "upload" ? "업로드하고 자동 분류하는 중입니다" : "새 레퍼런스 이미지 추가"}</strong>
           <span>JPEG·PNG·WebP, 장당 15MB 이하 · 한 번에 최대 12장</span>
@@ -344,7 +348,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
             </button>
           )}
         </div>
-      </div>
+      </div>}
 
       {ocrStatus ? (
         <div className={styles.status} role="status">
@@ -397,9 +401,9 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                 <details className={styles.managePanel}>
                   <summary>
                     <span>분류 및 설정</span>
-                    <small>{nativeReferenceCategoryLabel(item.categoryGroup)}</small>
+                    <small>{readOnly ? "읽기 전용" : nativeReferenceCategoryLabel(item.categoryGroup)}</small>
                   </summary>
-                  <div className={styles.settingsBody}>
+                  <fieldset className={styles.settingsBody} disabled={readOnly}>
                     <label>
                       상품군
                       <select disabled={Boolean(busy)} onChange={(event) => void updateCategory(item, event.target.value as NativeReferenceCategoryGroup)} value={item.categoryGroup}>
@@ -613,7 +617,7 @@ export function NativeReferenceLibraryManager({ initialLibrary }: Props) {
                     <button className={styles.deleteButton} disabled={Boolean(busy)} onClick={() => void remove(item)} type="button">
                       {busy === item.id ? "처리 중…" : "레퍼런스 삭제"}
                     </button>
-                  </div>
+                  </fieldset>
                 </details>
               </div>
             </article>

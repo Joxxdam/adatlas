@@ -11,8 +11,9 @@ import { creativeGenerationJobStore } from "../creative-generation/jobStore.serv
 import { creativeArchiveMetadataRepository } from "./metadataRepository.server";
 import { listCreativeArchiveEntries } from "./service.server";
 import type { CreativeArchiveEntry, StoredCreativeArchiveDeliveryBranding } from "./types";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
-const archiveDeliveryRoot = path.join(process.cwd(), ".data", "creative-archive", "delivery");
+const archiveDeliveryRoot = runtimeDataPath("creative-archive", "delivery");
 
 export type ArchiveBrandingInput = DeliveryBrandingRequest & {
   entryIds: string[];

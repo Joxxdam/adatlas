@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
 import { startReferenceOcrRun } from "../../../lib/creative-generation/referenceOcrRunner.server";
 import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
+import { assertReferenceLibraryWritable, isReferenceLibraryReadOnly } from "../../../lib/runtimeStorage.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ function publicLibrary() {
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [category, manifest.items.filter((item) => item.categoryGroup === category).length])),
     foodSubcategoryCounts: Object.fromEntries(nativeReferenceFoodSubcategories.map((foodSubcategory) => [foodSubcategory, manifest.items.filter((item) => referenceBelongsToSelectionPool(item, "food", foodSubcategory)).length])),
+    readOnly: isReferenceLibraryReadOnly(),
   };
 }
 
@@ -55,6 +57,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     assertTrustedMutation(request);
+    assertReferenceLibraryWritable();
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
     const result = await nativeReferenceLibraryRepository.add(files);
@@ -68,6 +71,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     assertTrustedMutation(request);
+    assertReferenceLibraryWritable();
     const body = await request.json().catch(() => ({}));
     const id = String(body.id || "").trim();
     if (!id) throw new Error("수정할 레퍼런스 ID가 필요합니다.");
@@ -147,6 +151,7 @@ export async function PATCH(request: Request) {
 export async function PUT(request: Request) {
   try {
     assertTrustedMutation(request);
+    assertReferenceLibraryWritable();
     const body = await request.json().catch(() => ({}));
     if (Array.isArray(body.ids)) {
       const ids: string[] = [...new Set<string>(body.ids.map((value: unknown) => String(value || "").trim()).filter((value: string) => Boolean(value)))].slice(0, 3);
@@ -166,6 +171,7 @@ export async function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     assertTrustedMutation(request);
+    assertReferenceLibraryWritable();
     const body = await request.json().catch(() => ({}));
     const id = String(body.id || "").trim();
     if (!id) throw new Error("삭제할 레퍼런스 ID가 필요합니다.");

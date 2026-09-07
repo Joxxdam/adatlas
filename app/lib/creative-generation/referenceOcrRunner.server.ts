@@ -8,6 +8,7 @@ import { creativeGenerationJobStore } from "./jobStore.server";
 import { nativeReferenceLibraryRepository } from "./nativeReferenceLibraryRepository.server";
 import { REFERENCE_NATIVE_COPY_ANALYSIS_VERSION } from "./referenceNativeCopy.server";
 import { isApprovedReferenceNativeCopy } from "./referenceLibraryManagement";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 export type ReferenceOcrRunStatus = "running" | "completed" | "partial" | "cancelled";
 
@@ -38,7 +39,7 @@ export type ReferenceOcrRun = {
   afterCompleteAutoProductionError?: string;
 };
 
-const runPath = path.resolve(process.cwd(), ".data", "creative-generation", "reference-ocr-run.json");
+const runPath = path.resolve(runtimeDataPath("creative-generation", "reference-ocr-run.json"));
 const storeLockKey = Symbol.for("daywiz.reference-ocr-store-lock-v1");
 const runnerKey = Symbol.for("daywiz.reference-ocr-runner-v4-auto-retry-consensus");
 const globalStore = globalThis as typeof globalThis & { [storeLockKey]?: Promise<unknown> };

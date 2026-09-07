@@ -2,9 +2,10 @@ import "server-only";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ApprovedAdCopyMemory, ProductAdCopy } from "./types";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 type Store = { version: 1; records: ProductAdCopy[] };
-const storeFile = () => path.join(process.cwd(), ".data", "ad-copy", "records.json");
+const storeFile = () => runtimeDataPath("ad-copy", "records.json");
 const lockKey = Symbol.for("daywiz.ad-copy.repository-lock");
 const state = globalThis as typeof globalThis & { [lockKey]?: Promise<void> };
 

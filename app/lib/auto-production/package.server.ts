@@ -8,8 +8,9 @@ import { executionResults } from "../creative-generation/jobRunnerPolicy";
 import { resolveValidatedNativeDownload } from "../creative-generation/nativeCreativeStorage.server";
 import { numberedProductImageFileName, productDownloadStem } from "../creative-generation/downloadNaming";
 import { autoProductionRepository } from "./productionRepository.server";
+import { autoProductionRuntimePath } from "../runtimeStorage.ts";
 
-const packagesDirectory = path.join(process.cwd(), "data", "auto-production", "runtime", "packages");
+const packagesDirectory = autoProductionRuntimePath("packages");
 const packageContentVersion = "images-only-flat-v2";
 
 function safeName(value: string) {

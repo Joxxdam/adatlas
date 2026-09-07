@@ -6,9 +6,10 @@ import { nextScheduledAt } from "./schedule";
 import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "./policy";
 import type { AutoProductionAdvertiserConfig, AutoProductionProductImageSelection, AutoProductionRole } from "./types";
 import { autoProductionRoles } from "./types";
+import { autoProductionRuntimePath } from "../runtimeStorage.ts";
 
 const seedFile = path.join(process.cwd(), "data", "auto-production", "advertiser-seed.json");
-const runtimeDirectory = path.join(process.cwd(), "data", "auto-production", "runtime");
+const runtimeDirectory = autoProductionRuntimePath();
 const configFile = path.join(runtimeDirectory, "advertisers.json");
 const settingsFile = path.join(runtimeDirectory, "settings.json");
 const globalKey = Symbol.for("daywiz.auto-production.config-lock");

@@ -9,13 +9,14 @@ import { deleteClosedCodexImageSessionsForResults } from "../creative-generation
 import { buildCreativeArchiveEntries } from "./archive";
 import { creativeArchiveMetadataRepository } from "./metadataRepository.server";
 import type { CreativeArchiveEntry } from "./types";
+import { creativeAssetsRuntimePath, runtimeDataPath } from "../runtimeStorage.ts";
 
 const archiveIndexVersion = "creative-archive-index-v2";
-const archiveDirectory = path.join(process.cwd(), ".data", "creative-archive");
+const archiveDirectory = runtimeDataPath("creative-archive");
 const archiveIndexPath = path.join(archiveDirectory, "index.json");
 const sourcePaths = [
-  path.join(process.cwd(), ".data", "creative-generation", "jobs"),
-  path.join(process.cwd(), "data", "creative-assets", "assets.json"),
+  runtimeDataPath("creative-generation", "jobs"),
+  creativeAssetsRuntimePath("assets.json"),
   path.join(archiveDirectory, "metadata.json"),
   adCopyStoreFilePath(),
 ];

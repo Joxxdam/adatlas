@@ -18,6 +18,14 @@ runtimeGlobal[cacheKey] = cache;
 
 const nonInteractiveAuthEnvironmentKeys = new Set(["OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN", "AZURE_OPENAI_API_KEY", "OPENAI_BASE_URL", "AZURE_OPENAI_ENDPOINT", "OPENAI_ORGANIZATION", "OPENAI_PROJECT"]);
 const secretEnvironmentName = /(?:^|_)(?:API_?KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS?)(?:_|$)/i;
+const codexPlatformPackage = {
+  "darwin-arm64": ["@openai/codex-darwin-arm64", "aarch64-apple-darwin"],
+  "darwin-x64": ["@openai/codex-darwin-x64", "x86_64-apple-darwin"],
+  "linux-arm64": ["@openai/codex-linux-arm64", "aarch64-unknown-linux-musl"],
+  "linux-x64": ["@openai/codex-linux-x64", "x86_64-unknown-linux-musl"],
+  "win32-arm64": ["@openai/codex-win32-arm64", "aarch64-pc-windows-msvc"],
+  "win32-x64": ["@openai/codex-win32-x64", "x86_64-pc-windows-msvc"],
+} as const;
 
 export function codexLocalEnvironment(env: NodeJS.ProcessEnv = process.env) {
   return Object.fromEntries(
@@ -25,14 +33,27 @@ export function codexLocalEnvironment(env: NodeJS.ProcessEnv = process.env) {
   ) as Record<string, string>;
 }
 
+function resolveBundledCodexExecutable() {
+  const target = codexPlatformPackage[`${process.platform}-${process.arch}` as keyof typeof codexPlatformPackage];
+  if (!target) return undefined;
+  const vendorRoot = path.join(process.cwd(), "node_modules", ...target[0].split("/"), "vendor", target[1]);
+  const binaryName = process.platform === "win32" ? "codex.exe" : "codex";
+  for (const candidate of [path.join(vendorRoot, "bin", binaryName), path.join(vendorRoot, "codex", binaryName)]) {
+    if (existsSync(candidate)) return candidate;
+  }
+  return undefined;
+}
+
 export function resolveCodexLocalExecutable() {
   const explicit = process.env.CODEX_CLI_PATH?.trim();
-  if (explicit && existsSync(explicit)) return explicit;
+  // Windows npm installs expose codex.cmd, but the SDK and execFile require
+  // the native codex.exe. Ignore command shims and use the packaged binary.
+  if (explicit && existsSync(explicit) && !(process.platform === "win32" && /\.(?:cmd|bat)$/i.test(explicit))) return explicit;
   for (const directory of (process.env.PATH || "").split(path.delimiter)) {
     const candidate = path.join(directory, process.platform === "win32" ? "codex.exe" : "codex");
     if (existsSync(candidate)) return candidate;
   }
-  return undefined;
+  return resolveBundledCodexExecutable();
 }
 
 export async function codexLocalAuthenticated(options: { force?: boolean } = {}) {

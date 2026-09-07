@@ -4,7 +4,8 @@ import { executionResults, failedGenerationResultStatuses, terminalGenerationRes
 import { nativeResultImageUrl } from "./nativeCreativeStorage.server";
 import { DEFAULT_CODEX_GENERATION_PIPELINE } from "./codexDirectTest";
 
-const localPathPattern = /(?:\/Users|\/private|\/tmp|[A-Z]:\\)[^\s"']+/g;
+const localPathPattern = /(?:\/Users|\/home|\/private|\/tmp|\/var|[A-Z]:[\\/])[^\s"']+/gi;
+const localPathTestPattern = /(?:\/Users|\/home|\/private|\/tmp|\/var|[A-Z]:[\\/])[^\s"']+/i;
 const secretPattern = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/gi;
 
 export function toPublicGenerationError(error: unknown, fallback: string) {
@@ -14,8 +15,7 @@ export function toPublicGenerationError(error: unknown, fallback: string) {
 export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
   const safeWebPath = (value: string | undefined) => {
     const text = String(value || "").trim();
-    if (!text || localPathPattern.test(text) || /(?:^|\/)\.data\//.test(text)) return "";
-    localPathPattern.lastIndex = 0;
+    if (!text || localPathTestPattern.test(text) || /(?:^|\/)\.data\//.test(text)) return "";
     return /^(?:https?:\/\/|\/)/.test(text) ? text : "";
   };
   const product = job.productTruth.product;

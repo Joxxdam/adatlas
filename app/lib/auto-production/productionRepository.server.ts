@@ -3,8 +3,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { AutoProductionRun, AutoProductionRunStatus } from "./types";
 import { normalizeAutoProductionTaskIds } from "./taskIdentity";
+import { autoProductionRuntimePath } from "../runtimeStorage.ts";
 
-const runtimeDirectory = path.join(process.cwd(), "data", "auto-production", "runtime");
+const runtimeDirectory = autoProductionRuntimePath();
 const runsDirectory = path.join(runtimeDirectory, "runs");
 const indexFile = path.join(runtimeDirectory, "run-index.json");
 const globalKey = Symbol.for("daywiz.auto-production.run-locks");

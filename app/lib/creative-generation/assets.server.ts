@@ -2,11 +2,12 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { validatePublicHttpUrl } from "../store-analysis/urlSafety.ts";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 const MAX_ASSET_BYTES = 12 * 1024 * 1024;
 const MAX_REDIRECTS = 4;
 const publicRoot = path.join(process.cwd(), "public");
-const generatedRoot = path.join(process.cwd(), ".data", "generated");
+const generatedRoot = runtimeDataPath("generated");
 
 async function readLimited(response: Response) {
   const declared = Number(response.headers.get("content-length") || 0);

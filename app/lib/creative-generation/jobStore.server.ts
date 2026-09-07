@@ -3,8 +3,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { GenerationJob, GenerationJobStatus } from "./types";
 import { cancelGenerationJob, executionResults, normalizeCreativeProductUrl } from "./jobRunnerPolicy";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
-const jobsDirectory = path.join(process.cwd(), ".data", "creative-generation", "jobs");
+const jobsDirectory = runtimeDataPath("creative-generation", "jobs");
 const globalKey = Symbol.for("daywiz.creative-generation.job-store-locks");
 const activeIndexKey = Symbol.for("daywiz.creative-generation.active-job-index-v1");
 const globalState = globalThis as typeof globalThis & {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cancelReferenceOcrRun, getReferenceOcrStatus, prioritizeReferenceOcrRun, startReferenceOcrRun } from "../../../../lib/creative-generation/referenceOcrRunner.server";
+import { assertReferenceLibraryWritable, isReferenceLibraryReadOnly } from "../../../../lib/runtimeStorage.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +15,11 @@ function assertTrustedMutation(request: Request) {
 
 export async function GET() {
   try {
-    return NextResponse.json({ ok: true, ...(await getReferenceOcrStatus({ resume: true })) });
+    const readOnly = isReferenceLibraryReadOnly();
+    const status = readOnly
+      ? await getReferenceOcrStatus({ resume: false })
+      : await getReferenceOcrStatus({ resume: true });
+    return NextResponse.json({ ok: true, readOnly, ...status });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "OCR 상태를 확인하지 못했습니다." }, { status: 500 });
   }
@@ -23,6 +28,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     assertTrustedMutation(request);
+    assertReferenceLibraryWritable();
     const body = await request.json().catch(() => ({}));
     const ids = Array.isArray(body.ids) ? body.ids.map((value: unknown) => String(value || "").trim()).filter(Boolean) : undefined;
     const afterCompleteAutoProductionAdvertiserId = String(body.afterCompleteAutoProductionAdvertiserId || "").trim() || undefined;
@@ -39,6 +45,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     assertTrustedMutation(request);
+    assertReferenceLibraryWritable();
     const body = await request.json().catch(() => ({}));
     if (body.action === "prioritize-food") {
       return NextResponse.json({ ok: true, ...(await prioritizeReferenceOcrRun()) });

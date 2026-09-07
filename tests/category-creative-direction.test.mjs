@@ -229,8 +229,8 @@ test("12. 골든 레퍼런스의 기존 메인·서브 문구는 새 프롬프�
 
 test("13. 비공개 프롬프트·골든 레퍼런스·내부 작업은 public 폴더에 저장하지 않는다", async () => {
   const [storage, registry, publicJob] = await Promise.all([readFile(new URL("../app/lib/creative-generation/nativeCreativeStorage.server.ts", import.meta.url), "utf8"), readFile(new URL("../app/lib/creative-generation/codexRegistry.server.ts", import.meta.url), "utf8"), readFile(new URL("../app/lib/creative-generation/publicJob.server.ts", import.meta.url), "utf8")]);
-  assert.match(storage, /"\.data",\s*"generated/);
-  assert.match(registry, /"\.data", "codex"/);
+  assert.match(storage, /runtimeDataPath\("generated"\)/);
+  assert.match(registry, /runtimeDataPath\("codex"\)/);
   assert.doesNotMatch(`${storage}\n${registry}`, /public[^\n]{0,80}golden-references/);
   assert.match(publicJob, /candidateHypotheses: undefined/);
   assert.match(publicJob, /nativeCreative: publicNativeCreative/);

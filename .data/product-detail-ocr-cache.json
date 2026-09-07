@@ -6332,5 +6332,89 @@
       "warnings": []
     },
     "createdAt": "2026-09-07T07:05:16.942Z"
+  },
+  {
+    "key": "11e0077ff4ac31e31c1681e9c0e07cb3487e8dc6749179816809cd84e314c7b4",
+    "insight": {
+      "id": "detail-ocr-a98acbfa5a41",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202409050442156553816d7519dd-6d83-48fb-b90e-8796a6b678b2.jpg",
+      "contentHash": "a98acbfa5a419f80951f7e2986a328a58e169e96bf1b73c89b144cb33b730d0c",
+      "ocrText": "N",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T09:27:41.340Z"
+  },
+  {
+    "key": "6dcaed5c06427ff6fc4fe47dc439fc0b0a43059948fab6170531241e65a43da0",
+    "insight": {
+      "id": "detail-ocr-25cb946c1eba",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20251010071145668374316c2254-97c0-4a42-9b23-a0144736bf90.jpg",
+      "contentHash": "25cb946c1ebae2b6333baf7555154747282dc2013eb8ec72d66ae47c252d7583",
+      "ocrText": "《국대가 쏜다® 특별기획상품\n#마물가득 한유 담아이 알등심 1kg\n배송상품 실사진\n반짝 추가할인 특가\n100,400 ) 76,000원\n2세트 이상 무료배송\nTASTE THE TRUE BEEF'",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7857142857142857,
+      "copyFacts": [
+        "#마물가득 한유 담아이 알등심 1kg"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "TASTE THE TRUE BEEF'"
+      ],
+      "discardedNotices": [
+        "배송상품 실사진",
+        "반짝 추가할인 특가",
+        "100,400 ) 76,000원",
+        "2세트 이상 무료배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T09:27:41.383Z"
+  },
+  {
+    "key": "75c77486121f5f1b39f2a36108d6a3aa825540896547f6622771e451b75f6f7a",
+    "insight": {
+      "id": "detail-ocr-6631c27e9ccc",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16729203620549.jpg",
+      "contentHash": "6631c27e9ccc7cd4cb56c230d0be480e014e5f31cd73c79222baa7ddf9a89d3f",
+      "ocrText": "국대《교한우\n1& 준석미엄 홈페라면 브랜드\n맠잡#냐",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.36666667461395264,
+      "copyFacts": [
+        "국대《교한우"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "1& 준석미엄 홈페라면 브랜드"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T09:27:42.073Z"
+  },
+  {
+    "key": "1c4be9c46434d06ce6ccc291b9e7d986aa156217037466f4a9f3913d60b4f45f",
+    "insight": {
+      "id": "detail-ocr-3b95e5fb4810",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16729202660948.jpg",
+      "contentHash": "3b95e5fb4810bf65f11280d59707b369eb87e9f347c72742596d43c7d0af132a",
+      "ocrText": "맘당\nBOLL\nㅎ고뱀났 h논\nOR GADA AUY ST",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.4000000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "BOLL",
+        "OR GADA AUY ST"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-07T09:27:42.075Z"
   }
 ]

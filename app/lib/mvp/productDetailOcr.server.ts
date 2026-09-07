@@ -17,9 +17,10 @@ import {
 import { ocrRasterImage } from "./reviewImageAnalysis.server.ts";
 import { selectProductDetailOcrCandidates } from "./productDetailOcrSelection.ts";
 import type { ProductDetailImageOcrInsight, ProductImageCandidate } from "./types.ts";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 const DETAIL_OCR_VERSION = "product-detail-ocr-v5-product-facts-without-merchant-copy";
-const CACHE_PATH = path.join(process.cwd(), ".data", "product-detail-ocr-cache.json");
+const CACHE_PATH = runtimeDataPath("product-detail-ocr-cache.json");
 const MAX_CONCURRENCY = 2;
 let cacheWriteQueue = Promise.resolve();
 

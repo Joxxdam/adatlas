@@ -5,12 +5,14 @@ import { NativeReferenceLibraryManager } from "../../components/references/Nativ
 import { nativeReferenceLibraryRepository } from "../../lib/creative-generation/nativeReferenceLibraryRepository.server";
 import { nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, referenceBelongsToSelectionPool } from "../../lib/creative-generation/referenceLibraryManagement";
 import { readContentAnalyses, readWatchlist } from "../../lib/watchlist/store";
+import { isReferenceLibraryReadOnly } from "../../lib/runtimeStorage.ts";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReferenceManagementPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab = "library" } = await searchParams;
-  const isLegacyTab = tab === "collection" || tab === "analysis";
+  const readOnly = isReferenceLibraryReadOnly();
+  const isLegacyTab = !readOnly && (tab === "collection" || tab === "analysis");
   const manifest = nativeReferenceLibraryRepository.list();
   const legacyData = isLegacyTab ? await Promise.all([readWatchlist(), readContentAnalyses()]) : [[], []];
   const [brands, analyses] = legacyData;
@@ -34,12 +36,16 @@ export default async function ReferenceManagementPage({ searchParams }: { search
             <Link aria-current={!isLegacyTab ? "page" : undefined} href="/admin/references?tab=library">
               제작 레퍼런스
             </Link>
-            <Link aria-current={tab === "collection" ? "page" : undefined} href="/admin/references?tab=collection">
-              기존 수집 도구
-            </Link>
-            <Link aria-current={tab === "analysis" ? "page" : undefined} href="/admin/references?tab=analysis">
-              기존 분석 도구
-            </Link>
+            {!readOnly ? (
+              <>
+                <Link aria-current={tab === "collection" ? "page" : undefined} href="/admin/references?tab=collection">
+                  기존 수집 도구
+                </Link>
+                <Link aria-current={tab === "analysis" ? "page" : undefined} href="/admin/references?tab=analysis">
+                  기존 분석 도구
+                </Link>
+              </>
+            ) : null}
           </nav>
         </header>
         {isLegacyTab ? (
@@ -48,7 +54,7 @@ export default async function ReferenceManagementPage({ searchParams }: { search
             <WatchlistExplorer brands={brands} analyses={analyses} />
           </>
         ) : (
-          <NativeReferenceLibraryManager initialLibrary={initialLibrary} />
+          <NativeReferenceLibraryManager initialLibrary={initialLibrary} readOnly={readOnly} />
         )}
       </main>
     </FeaturePageShell>

@@ -6,6 +6,7 @@ import { PRODUCT_TRUTH_VERSION } from "./productTruth.ts";
 import { REFERENCE_CREATIVE_GRAMMAR_VERSION } from "./referenceCreativeGrammar.ts";
 import { HOOK_QUALITY_VERSION } from "./hookQuality.ts";
 import { hasBannedCreativePhrase, looksLikeGenericOrRepetitiveCopy } from "./bannedCreativePhrases.ts";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 export const CREATIVE_PLAN_CACHE_VERSION = "creative-plan-cache-v3-quality-gated";
 export const BRAND_RULES_VERSION = "brand-copy-rules-v1";
@@ -60,7 +61,7 @@ export function buildCreativePlanFingerprint(truth: ProductTruth) {
   });
 }
 
-const root = path.join(process.cwd(), ".data", "creative-plan-cache");
+const root = runtimeDataPath("creative-plan-cache");
 
 export async function readCreativePlanCache(fingerprint: string) {
   try {

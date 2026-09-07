@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import { lstat, mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { codexLocalEnvironment, resolveCodexLocalExecutable } from "./codexLocalRuntime.server";
+import { runtimeDataPath } from "../runtimeStorage.ts";
 
 const RETENTION_DAYS = 2;
 const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1000;
@@ -81,7 +82,7 @@ type DiskSummary = {
   filesByThreadId: Map<string, string>;
 };
 
-const registryFile = () => path.join(process.cwd(), ".data", "codex", "image-session-retention.json");
+const registryFile = () => runtimeDataPath("codex", "image-session-retention.json");
 const codexSessionRoot = () => path.join(process.env.CODEX_HOME?.trim() || path.join(homedir(), ".codex"), "sessions");
 const activeThreadIds = (() => {
   const key = Symbol.for("daywiz.codex-image-active-session-ids-v1");
@@ -235,7 +236,9 @@ async function deleteTrackedSessionFile(record: CodexImageSessionRecord, summary
     };
   }
   const info = await stat(file);
-  await execFileAsync(resolveCodexLocalExecutable() || "codex", ["delete", "--force", record.threadId], {
+  const executable = resolveCodexLocalExecutable();
+  if (!executable) throw new Error("Codex 실행 파일을 찾지 못해 종료 세션을 정리하지 못했습니다.");
+  await execFileAsync(executable, ["delete", "--force", record.threadId], {
     cwd: process.cwd(),
     env: codexLocalEnvironment() as NodeJS.ProcessEnv,
     timeout: 30_000,

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { createReadStream } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import { lstat, readdir, realpath, stat } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -17,10 +18,34 @@ const execFileAsync = promisify(execFile);
 const execute = process.argv.includes("--execute");
 const projectRoot = await realpath(process.cwd());
 const codexRoot = await realpath(path.join(process.env.CODEX_HOME?.trim() || path.join(homedir(), ".codex"), "sessions"));
-const generatedPathPattern = new RegExp(
-  `${projectRoot.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replaceAll("/", "\\/")}\\/(?:\\.data\\/generated|public\\/generated)\\/`,
-  "i"
-);
+const runtimeRoot = path.resolve(process.env.ADATLAS_RUNTIME_DATA_ROOT?.trim() || path.join(projectRoot, ".data"));
+const normalizedGeneratedRoots = [
+  path.join(projectRoot, ".data", "generated"),
+  path.join(projectRoot, "public", "generated"),
+  path.join(runtimeRoot, "generated"),
+].map((value) => value.replaceAll("\\", "/").toLowerCase());
+const generatedPathPattern = {
+  test(value) {
+    const normalized = String(value || "").replaceAll("\\", "/").toLowerCase();
+    return normalizedGeneratedRoots.some((root) => normalized.includes(`${root}/`));
+  },
+};
+
+function resolveCodexCommand() {
+  const explicit = process.env.CODEX_CLI_PATH?.trim();
+  if (explicit && existsSync(explicit) && !(process.platform === "win32" && /\.(?:cmd|bat)$/i.test(explicit))) {
+    return { executable: explicit, prefix: [] };
+  }
+  try {
+    const projectRequire = createRequire(path.join(projectRoot, "package.json"));
+    const packageJson = projectRequire.resolve("@openai/codex/package.json");
+    const entry = path.join(path.dirname(packageJson), "bin", "codex.js");
+    if (existsSync(entry)) return { executable: process.execPath, prefix: [entry] };
+  } catch {
+    // Fall through to a native executable available on PATH.
+  }
+  return { executable: process.platform === "win32" ? "codex.exe" : "codex", prefix: [] };
+}
 
 function sessionIdFromFile(file) {
   return path.basename(file).match(/-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl$/i)?.[1];
@@ -126,7 +151,9 @@ for (const [index, candidate] of candidates.entries()) {
       skippedCount += 1;
       continue;
     }
-    await execFileAsync("codex", ["delete", "--force", candidate.threadId], {
+    const codex = resolveCodexCommand();
+    const deleteArgs = ["delete", "--force", candidate.threadId];
+    await execFileAsync(codex.executable, [...codex.prefix, ...deleteArgs], {
       cwd: projectRoot,
       timeout: 30_000,
       maxBuffer: 256 * 1_024,
