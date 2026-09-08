@@ -7,6 +7,9 @@ export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups
 export const nativeReferenceFoodSubcategories = ["meat", "snack"] as const;
 export type NativeReferenceFoodSubcategory = (typeof nativeReferenceFoodSubcategories)[number];
 
+export const nativeReferenceBeautySubcategories = ["design", "hook"] as const;
+export type NativeReferenceBeautySubcategory = (typeof nativeReferenceBeautySubcategories)[number];
+
 /**
  * 기본 분류를 바꾸지 않고 같은 레퍼런스를 다른 제작 후보군에서도 함께
  * 활용하기 위한 추가 풀입니다. food는 육류·간식을 포함한 식품 전체 풀이고,
@@ -34,6 +37,7 @@ export const nativeReferenceCompatibilityConfidences = ["low", "medium", "high"]
 export type NativeReferenceCompatibilityConfidence = (typeof nativeReferenceCompatibilityConfidences)[number];
 
 export type NativeReferenceCompatibility = {
+  beautySubcategory?: NativeReferenceBeautySubcategory;
   productForm: NativeReferenceProductForm;
   productPresentation: NativeReferenceProductPresentation;
   compositionType: NativeReferenceCompositionType;
@@ -172,6 +176,8 @@ export type ManagedNativeReferenceItem = {
   categoryGroup: NativeReferenceCategoryGroup;
   /** 식품 대카테고리 안에서 운영자가 직접 지정하는 선택 풀입니다. */
   foodSubcategory?: NativeReferenceFoodSubcategory;
+  /** 화장품 대카테고리 안의 디자인 중심·후킹 중심 선택 풀입니다. */
+  beautySubcategory?: NativeReferenceBeautySubcategory;
   /** 기본 categoryGroup을 유지한 채 함께 사용할 수동 추가 제작 풀입니다. */
   additionalSelectionPools?: NativeReferenceSelectionPool[];
   ordinal: number;
@@ -224,6 +230,36 @@ function compositionFromLayout(layoutFamily: string): NativeReferenceComposition
   return "product-packshot";
 }
 
+const beautyHookLayouts = new Set(["price-offer", "problem-objection", "social-proof", "usp-evidence"]);
+const beautyHookCompositions = new Set<NativeReferenceCompositionType>(["price-card", "before-after", "comparison", "review-card", "human-use"]);
+const beautyDesignCompositions = new Set<NativeReferenceCompositionType>(["product-packshot", "product-lineup", "sensory-closeup"]);
+const beautyDesignPhotography = new Set<NativeReferencePhotographyType>(["packshot", "editorial"]);
+const beautyHookCopyPattern = /(?:\d[\d,.]*\s*(?:원|%|개|명|일|시간)|\d\s*[+x×]\s*\d|off|sale|할인|특가|쿠폰|증정|무료\s*배송|배송비|오늘|마감|놓치|단독|한정|재구매|후기|추천|비교|전후|before|after|고민|해결|효과|비법|비밀|왜|어떻게|지금\s*사|구매|보러\s*가|클릭|링크|\?|!)/iu;
+
+/** 저장된 시각·OCR 신호로 기존 화장품 레퍼런스도 즉시 두 풀로 나눕니다. */
+export function inferNativeReferenceBeautySubcategory(input: {
+  sourceFile?: string;
+  layoutFamily?: string;
+  compositionType?: NativeReferenceCompositionType;
+  photographyType?: NativeReferencePhotographyType;
+  textDensity?: NativeReferenceTextDensity;
+  supportsHumanModel?: boolean;
+  nativeCopy?: ReferenceNativeCopy;
+}): NativeReferenceBeautySubcategory {
+  if (beautyHookCompositions.has(input.compositionType as NativeReferenceCompositionType)) return "hook";
+  if (beautyHookLayouts.has(String(input.layoutFamily || ""))) return "hook";
+  if (input.photographyType === "human-model" || input.supportsHumanModel) return "hook";
+  const copyText = [input.sourceFile, input.nativeCopy?.rawText, ...(input.nativeCopy?.rawLines || [])].filter(Boolean).join(" ");
+  if (beautyHookCopyPattern.test(copyText)) return "hook";
+
+  // 디자인 풀은 027.webp 같은 제품 중심 브랜드 키비주얼만 허용한다.
+  // 문구가 중간 이상이거나 판정 근거가 부족한 소재는 성과형 후킹 풀로 둔다.
+  const productLedComposition = beautyDesignCompositions.has(input.compositionType as NativeReferenceCompositionType);
+  const productLedPhotography = beautyDesignPhotography.has(input.photographyType as NativeReferencePhotographyType);
+  if (input.textDensity === "light" && productLedComposition && productLedPhotography) return "design";
+  return "hook";
+}
+
 /**
  * 과거 manifest의 카테고리 값은 유지하면서 신규 호환 태그를 보완한다.
  * 육류와 실제 확인한 포장 식품 레퍼런스를 분리해 병음료가 육류 장면을
@@ -237,6 +273,9 @@ export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferen
   ].filter(Boolean).join(" ");
   const inferredFoodSubcategory = item.categoryGroup === "food"
     ? normalizeNativeReferenceFoodSubcategory(item.foodSubcategory) || inferNativeReferenceFoodSubcategoryFromText(referenceIdentityText)
+    : undefined;
+  const inferredBeautySubcategory = item.categoryGroup === "beauty"
+    ? normalizeNativeReferenceBeautySubcategory(item.beautySubcategory) || inferNativeReferenceBeautySubcategory(item)
     : undefined;
   const packagedFoodProfile = item.categoryGroup === "food" ? verifiedPackagedFoodProfiles.get(item.ordinal) : undefined;
   const isPackagedFood = Boolean(packagedFoodProfile);
@@ -270,6 +309,7 @@ export function normalizeNativeReferenceCompatibility(item: ManagedNativeReferen
     // 과거 등록분에 하위 태그가 비어 있어도 저장 OCR과 파일명으로 육류·간식을
     // 복구한다. 둘 다 아니면 별도 '기타' 풀을 만들지 않고 식품에만 둔다.
     foodSubcategory: inferredFoodSubcategory,
+    beautySubcategory: inferredBeautySubcategory,
     additionalSelectionPools: additionalSelectionPools.length ? additionalSelectionPools : undefined,
     productForm: nativeReferenceProductForms.includes(item.productForm as NativeReferenceProductForm)
       && !(item.productForm === "meat-cut" && inferredFoodSubcategory !== "meat")
@@ -317,6 +357,15 @@ export function nativeReferenceFoodSubcategoryLabel(value: NativeReferenceFoodSu
   return "간식";
 }
 
+export function normalizeNativeReferenceBeautySubcategory(value: unknown): NativeReferenceBeautySubcategory | undefined {
+  return nativeReferenceBeautySubcategories.includes(value as NativeReferenceBeautySubcategory) ? (value as NativeReferenceBeautySubcategory) : undefined;
+}
+
+export function nativeReferenceBeautySubcategoryLabel(value: NativeReferenceBeautySubcategory) {
+  if (value === "design") return "디자인";
+  return "후킹";
+}
+
 export function normalizeNativeReferenceSelectionPools(value: unknown): NativeReferenceSelectionPool[] {
   if (!Array.isArray(value)) return [];
   const migrated = value.map((pool) => pool === "food-other" ? "food" : pool === "food-produce" ? "food-snack" : pool);
@@ -346,6 +395,13 @@ export function referenceBelongsToSelectionPool(
     return item.categoryGroup === "food" || additional.has("food");
   }
   return item.categoryGroup === categoryGroup || additional.has(categoryGroup);
+}
+
+export function referenceBelongsToBeautySelectionPool(
+  item: Pick<ManagedNativeReferenceItem, "categoryGroup" | "beautySubcategory">,
+  beautySubcategory: NativeReferenceBeautySubcategory
+) {
+  return item.categoryGroup === "beauty" && normalizeNativeReferenceBeautySubcategory(item.beautySubcategory) === beautySubcategory;
 }
 
 export function inferNativeReferenceFoodSubcategoryFromText(value: string): NativeReferenceFoodSubcategory | undefined {

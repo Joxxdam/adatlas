@@ -5,7 +5,7 @@ import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
 import { defaultCompositionTypes, pickUniqueRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import { inferNativeReferenceFoodSubcategoryFromText, nativeReferenceFoodSubcategoryLabel, normalizeNativeReferenceCompatibility, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
+import { inferNativeReferenceFoodSubcategoryFromText, nativeReferenceBeautySubcategoryLabel, nativeReferenceFoodSubcategoryLabel, normalizeNativeReferenceCompatibility, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceBeautySubcategory, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
 export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
 
@@ -17,6 +17,7 @@ export type NativeAdReference = {
   layoutFamily: string;
   categoryGroup: NativeReferenceCategoryGroup;
   foodSubcategory?: NativeReferenceFoodSubcategory;
+  beautySubcategory?: NativeReferenceBeautySubcategory;
   categoryLabel: string;
   selectionReason: string;
   productForm?: ManagedNativeReferenceItem["productForm"];
@@ -77,6 +78,7 @@ function toNativeAdReference(selected: ManagedNativeReferenceItem, selectionReas
     layoutFamily: selected.layoutFamily,
     categoryGroup: selected.categoryGroup as NativeReferenceCategoryGroup,
     foodSubcategory: selected.foodSubcategory,
+    beautySubcategory: selected.beautySubcategory,
     categoryLabel: categoryLabel(selected.categoryGroup as NativeReferenceCategoryGroup),
     selectionReason,
     productForm: selected.productForm,
@@ -116,7 +118,7 @@ function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
 export function resolveNativeReferenceCategoryGroup(job: ReferenceSelectionJob): NativeReferenceCategoryGroup {
   if (job.referenceCategoryOverride === "fashion") return "fashion";
   if (["food", "food-meat", "food-snack", "food-other", "food-produce"].includes(job.referenceCategoryOverride || "")) return "food";
-  if (job.referenceCategoryOverride === "beauty") return "beauty";
+  if (["beauty", "beauty-design", "beauty-hook"].includes(job.referenceCategoryOverride || "")) return "beauty";
   const category = resolveCategoryCreativeProfile(job.productTruth).category;
   if (category.startsWith("food_")) return "food";
   if (category === "fashion") return "fashion";
@@ -171,6 +173,12 @@ export function resolveNativeReferenceFoodSubcategory(job: ReferenceSelectionJob
   return inferNativeReferenceFoodSubcategoryFromText(identityText);
 }
 
+export function resolveNativeReferenceBeautySubcategory(job: ReferenceSelectionJob): NativeReferenceBeautySubcategory | undefined {
+  if (job.referenceCategoryOverride === "beauty-design") return "design";
+  if (job.referenceCategoryOverride === "beauty-hook") return "hook";
+  return undefined;
+}
+
 function resolveProductCount(job: ReferenceSelectionJob) {
   const text = [job.productTruth.normalized.quantity, job.productTruth.normalized.composition, job.productTruth.normalized.packageOrOption].filter(Boolean).join(" ");
   const match = text.match(/(?:^|\s)([2-6])\s*(?:개|병|캔|팩|박스|세트|입)(?:\s|$)/);
@@ -200,8 +208,9 @@ export function buildProductReferenceCompatibilityProfile(job: ReferenceSelectio
 }
 
 /**
- * 새 작업을 만들 때 식품 대분류는 등록된 식품 전체에서, 육류·간식을
- * 직접 선택한 경우에는 해당 하위 풀에서 중복 없이 무작위로 뽑는다.
+ * 새 작업을 만들 때 전체 카테고리는 모든 등록 레퍼런스에서, 식품 대분류는
+ * 등록된 식품 전체에서, 육류·간식을 직접 선택한 경우에는 해당 하위 풀에서
+ * 중복 없이 무작위로 뽑는다.
  * 상품 형태·구도 점수로 후보를 재정렬하거나 우선하지 않는다.
  * 선택 결과는 GenerationJob에 저장되므로 새로고침·재시도·서버 복구 시에는
  * 다시 추첨하지 않고 같은 디자인을 이어서 편집한다.
@@ -211,9 +220,19 @@ export function selectCategoryNativeAdReferences(job: ReferenceSelectionJob, cou
   const categoryGroup = profile.categoryGroup;
   const categoryName = categoryLabel(categoryGroup);
   const referenceItems = readReferenceItems();
-  const eligibleItems = referenceItems.filter((item) => referenceBelongsToSelectionPool(item, categoryGroup, profile.foodSubcategory));
+  const allCategories = job.referenceCategoryOverride === "all";
+  const beautySubcategory = resolveNativeReferenceBeautySubcategory(job);
+  const eligibleItems = allCategories
+    ? referenceItems
+    : beautySubcategory
+      ? referenceItems.filter((item) => referenceBelongsToBeautySelectionPool(item, beautySubcategory))
+    : referenceItems.filter((item) => referenceBelongsToSelectionPool(item, categoryGroup, profile.foodSubcategory));
   const selectionMode = job.referenceCategoryOverride ? "사용자 수동 지정" : "상품 분석 자동 분류";
-  const poolName = profile.foodSubcategory
+  const poolName = allCategories
+    ? "전체 카테고리 통합 풀"
+    : beautySubcategory
+      ? `화장품 > ${nativeReferenceBeautySubcategoryLabel(beautySubcategory)} 전용 풀`
+    : profile.foodSubcategory
     ? `식품 > ${nativeReferenceFoodSubcategoryLabel(profile.foodSubcategory)} 전용 풀`
     : `${categoryName} 전체 풀`;
   const unusedItems = eligibleItems.filter((item) => !recentReferenceIds.has(item.id));

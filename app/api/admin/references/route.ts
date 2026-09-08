@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { nativeReferenceLibraryRepository } from "../../../lib/creative-generation/nativeReferenceLibraryRepository.server";
-import { nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, nativeReferencePhotographyTypes, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
+import { nativeReferenceBeautySubcategories, nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, nativeReferencePhotographyTypes, normalizeNativeReferenceBeautySubcategory, normalizeNativeReferenceFoodSubcategory, normalizeNativeReferenceSelectionPools, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, normalizeNativeReferenceCategory, normalizeReferenceRawLines, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type ReferenceTextRegion } from "../../../lib/creative-generation/referenceLibraryManagement";
 import { assertReferenceLibraryWritable, isReferenceLibraryReadOnly } from "../../../lib/runtimeStorage.ts";
 
 export const runtime = "nodejs";
@@ -24,6 +24,7 @@ function publicLibrary() {
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((category) => [category, manifest.items.filter((item) => item.categoryGroup === category).length])),
     foodSubcategoryCounts: Object.fromEntries(nativeReferenceFoodSubcategories.map((foodSubcategory) => [foodSubcategory, manifest.items.filter((item) => referenceBelongsToSelectionPool(item, "food", foodSubcategory)).length])),
+    beautySubcategoryCounts: Object.fromEntries(nativeReferenceBeautySubcategories.map((beautySubcategory) => [beautySubcategory, manifest.items.filter((item) => referenceBelongsToBeautySelectionPool(item, beautySubcategory)).length])),
     readOnly: isReferenceLibraryReadOnly(),
   };
 }
@@ -82,6 +83,9 @@ export async function PATCH(request: Request) {
     if (body.categoryGroup !== undefined) patch.categoryGroup = normalizeNativeReferenceCategory(body.categoryGroup);
     if (Object.prototype.hasOwnProperty.call(body, "foodSubcategory")) {
       patch.foodSubcategory = normalizeNativeReferenceFoodSubcategory(body.foodSubcategory);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "beautySubcategory")) {
+      patch.beautySubcategory = normalizeNativeReferenceBeautySubcategory(body.beautySubcategory);
     }
     if (Object.prototype.hasOwnProperty.call(body, "additionalSelectionPools")) {
       patch.additionalSelectionPools = normalizeNativeReferenceSelectionPools(body.additionalSelectionPools);

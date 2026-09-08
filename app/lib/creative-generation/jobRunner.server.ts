@@ -1,6 +1,6 @@
 import "server-only";
 import { creativeGenerationJobStore } from "./jobStore.server";
-import { handleNativeResultGeneration } from "./nativeResultGeneration.server";
+import { activeNativeResultGenerationIds, handleNativeResultGeneration } from "./nativeResultGeneration.server";
 import { writeNativeManifest } from "./nativeCreativeStorage.server";
 import type { GenerationJob, ManualGenerationQueueInfo } from "./types";
 import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunnerCore";
@@ -65,6 +65,10 @@ export function isGenerationJobRunnerActive(jobId: string) {
   return runner.isActive(jobId);
 }
 
+export function activeDirectGenerationResultIds(jobId: string) {
+  return activeNativeResultGenerationIds(jobId);
+}
+
 export function createManualGenerationQueueMetadata(now = Date.now()) {
   if (manualQueueClock.millisecond === now) manualQueueClock.offset += 1;
   else {
@@ -124,8 +128,11 @@ export async function recoverPersistedGenerationJobs(limit = 200) {
     let job = await recoverGenerationJob(candidate.id);
     if (!job || !["pending", "running"].includes(job.status)) continue;
     const runnerWasActive = isGenerationJobRunnerActive(job.id);
-    if (hasOrphanedRunningResult(job, runnerWasActive)) {
-      job = await creativeGenerationJobStore.update(job.id, (current) => resumeGenerationJob(current, false));
+    const activeDirectResultIds = activeNativeResultGenerationIds(job.id);
+    if (hasOrphanedRunningResult(job, runnerWasActive, activeDirectResultIds)) {
+      job = await creativeGenerationJobStore.update(job.id, (current) =>
+        resumeGenerationJob(current, false, new Date().toISOString(), false, activeDirectResultIds)
+      );
     }
     if (!isGenerationJobRunnerActive(job.id) && enqueueGenerationJob(job.id, { priority: job.sourceType !== "auto-production" })) recoveredIds.push(job.id);
   }

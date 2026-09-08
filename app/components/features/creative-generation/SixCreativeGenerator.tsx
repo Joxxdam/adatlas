@@ -4,12 +4,12 @@
 /* eslint-disable @next/next/no-img-element */
 
 import JSZip from "jszip";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
 import { CREATIVE_PLANNER_VERSION, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ManualGenerationQueueInfo, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
 import { CURRENT_REFERENCE_EDIT_JOB_VERSION, failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
-import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
+import { ACTIVE_CREATIVE_JOB_CHANGED_EVENT, ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey, setActiveCreativeJobId } from "../../../lib/creative-generation/activeCreativeJob.client";
 import { numberedProductImageFileName, productDownloadStem } from "../../../lib/creative-generation/downloadNaming";
 import { buildDefaultCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE } from "../../../lib/creative-generation/codexDirectTest";
 
@@ -23,6 +23,7 @@ type Props = {
   analyzedProductUrl: string;
   planConfirmed: boolean;
   productLoaded: boolean;
+  requestedJobId?: string;
   source: "landing-page" | "user-input";
 };
 
@@ -30,12 +31,28 @@ const legacyStoredJobKey = `adatlas-hook-experiment-job-id-${CREATIVE_PLANNER_VE
 
 type ReferenceCategoryChoice = "" | ReferenceCategoryOverride;
 
+type ResultEditKind = "same-reference" | "new-reference" | "feedback";
+
+type ResultEditState = {
+  kind: ResultEditKind;
+  previousResult: GenerationResult;
+};
+
+const resultEditLabels: Record<ResultEditKind, string> = {
+  "same-reference": "동일 레퍼런스로 다시 만드는 중",
+  "new-reference": "새 레퍼런스로 다시 만드는 중",
+  feedback: "수정 요청을 반영하는 중",
+};
+
 const referenceCategoryOptions: Array<{ value: ReferenceCategoryOverride; label: string }> = [
+  { value: "all", label: "전체 카테고리" },
   { value: "fashion", label: "패션" },
   { value: "food", label: "식품" },
   { value: "food-meat", label: "식품 · 육류" },
   { value: "food-snack", label: "식품 · 간식" },
-  { value: "beauty", label: "화장품 · 건강/웰니스" },
+  { value: "beauty", label: "화장품" },
+  { value: "beauty-design", label: "화장품 · 디자인" },
+  { value: "beauty-hook", label: "화장품 · 후킹" },
 ];
 
 function referenceCategoryLabel(value: ReferenceCategoryChoice) {
@@ -131,6 +148,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const [referenceCategoryOverride, setReferenceCategoryOverride] = useState<ReferenceCategoryChoice>("");
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
+  const [resultEditStates, setResultEditStates] = useState<Record<string, ResultEditState>>({});
   const [directProductImagePath, setDirectProductImagePath] = useState("");
   const [directSupportingImagePath, setDirectSupportingImagePath] = useState("");
   const [directPackagingImagePath, setDirectPackagingImagePath] = useState("");
@@ -145,7 +163,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const restoredReferenceCategoryJobId = useRef("");
   const dismissedJobIds = useRef(new Set<string>());
   const activeJobIdRef = useRef("");
-  const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl);
+  // 새로고침 직후에는 analyzedProductUrl 복원이 한 렌더 늦을 수 있다.
+  // 그 사이 다른 상품의 전역 작업이 이 본문을 선점하지 않도록, 주소에서
+  // 이미 전달된 상품 URL도 처음부터 현재 상품의 기준으로 사용한다.
+  const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl || props.product.landingUrl);
+  const requestedJobId = String(props.requestedJobId || "").trim();
   const previousAnalyzedProductUrl = useRef(currentProductUrl);
   const availableProductImagePaths = useMemo(
     () => Array.from(new Set([
@@ -245,7 +267,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     return { job: payload.job, runnerActive: Boolean(payload.runnerActive), manualQueue: payload.manualQueue };
   }
 
-  function commitFetchedJob(payload: { job: GenerationJob; runnerActive: boolean; manualQueue?: ManualGenerationQueueInfo }) {
+  const commitFetchedJob = useCallback((payload: { job: GenerationJob; runnerActive: boolean; manualQueue?: ManualGenerationQueueInfo }) => {
     if (dismissedJobIds.current.has(payload.job.id)) return;
     activeJobIdRef.current = payload.job.id;
     setJob(payload.job);
@@ -256,19 +278,40 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setReferenceCategoryOverride(payload.job.referenceCategoryOverride || "");
     }
     const restoredProductUrl = normalizeCreativeProductUrl(payload.job.productTruth.product.landingUrl);
-    if (shouldPersistGenerationJob(payload.job)) {
-      window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
-      if (restoredProductUrl) window.localStorage.setItem(activeCreativeProductJobStorageKey(restoredProductUrl), payload.job.id);
-    } else {
-      window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
-      if (restoredProductUrl) window.localStorage.removeItem(activeCreativeProductJobStorageKey(restoredProductUrl));
+    // 상품별 작업 연결은 진행 상태가 아니라 "이 제작 화면에서 마지막으로
+    // 보고 있던 작업"을 뜻한다. 완료 직후 이 값을 지우면 본문만 다시 제작
+    // 전 화면으로 돌아가므로, 새 분석·취소 전까지 결과 작업도 보존한다.
+    if (restoredProductUrl) {
+      window.localStorage.setItem(activeCreativeProductJobStorageKey(restoredProductUrl), payload.job.id);
     }
-  }
+    writeCurrentJobIdToAddress(payload.job.id);
+    if (shouldPersistGenerationJob(payload.job)) {
+      setActiveCreativeJobId(payload.job.id);
+    } else if (window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY) === payload.job.id) {
+      setActiveCreativeJobId();
+    }
+  }, []);
 
   async function refreshJob(jobId: string) {
     const payload = await fetchJob(jobId);
     commitFetchedJob(payload);
     return payload.job;
+  }
+
+  function clearCurrentJobIdFromAddress() {
+    const location = new URL(window.location.href);
+    if (!location.searchParams.has("jobId")) return;
+    location.searchParams.delete("jobId");
+    window.history.replaceState(window.history.state, "", `${location.pathname}${location.search}${location.hash}`);
+  }
+
+  function writeCurrentJobIdToAddress(jobId: string) {
+    const normalizedJobId = jobId.trim();
+    if (!normalizedJobId) return;
+    const location = new URL(window.location.href);
+    if (location.searchParams.get("jobId") === normalizedJobId) return;
+    location.searchParams.set("jobId", normalizedJobId);
+    window.history.replaceState(window.history.state, "", `${location.pathname}${location.search}${location.hash}`);
   }
 
   async function findActiveJobId(productUrl = "") {
@@ -293,7 +336,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     const requestVersion = ++restoreRequestVersion.current;
     const isCurrentRequest = () => active && restoreRequestVersion.current === requestVersion;
     async function restore() {
-      const queryJobId = new URLSearchParams(window.location.search).get("jobId");
+      const queryJobId = requestedJobId || new URLSearchParams(window.location.search).get("jobId");
       const productStoredJobId = currentProductUrl ? window.localStorage.getItem(activeCreativeProductJobStorageKey(currentProductUrl)) : null;
       const globalStoredJobId = window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
       let targetId = queryJobId || productStoredJobId || globalStoredJobId;
@@ -303,9 +346,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           const restored = await fetchJob(targetId);
           if (!isCurrentRequest()) return;
           const restoredUrl = normalizeCreativeProductUrl(restored.job.productTruth.product.landingUrl);
-          if ((Boolean(queryJobId) || restoringGlobalWithoutProduct || (currentProductUrl && restoredUrl === currentProductUrl)) && (Boolean(queryJobId) || shouldPersistGenerationJob(restored.job))) {
+          const explicitJobMatchesLoadedProduct = Boolean(queryJobId && (!currentProductUrl || !restoredUrl || restoredUrl === currentProductUrl));
+          const productScopedJobMatchesLoadedProduct = Boolean(productStoredJobId === targetId && currentProductUrl && restoredUrl === currentProductUrl);
+          if ((explicitJobMatchesLoadedProduct || restoringGlobalWithoutProduct || productScopedJobMatchesLoadedProduct) && (Boolean(queryJobId) || productScopedJobMatchesLoadedProduct || shouldPersistGenerationJob(restored.job))) {
             commitFetchedJob(restored);
-            setMessage("진행 중이던 광고 콘텐츠 작업을 불러왔습니다.");
+            setMessage(shouldPersistGenerationJob(restored.job) ? "진행 중이던 광고 콘텐츠 작업을 불러왔습니다." : "완료된 광고 콘텐츠 작업을 불러왔습니다.");
             window.sessionStorage.removeItem(legacyStoredJobKey);
             return;
           }
@@ -316,7 +361,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           window.localStorage.removeItem(activeCreativeProductJobStorageKey(currentProductUrl));
         }
         if (window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY) === targetId) {
-          window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
+          setActiveCreativeJobId();
         }
         targetId = null;
       }
@@ -336,7 +381,62 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     return () => {
       active = false;
     };
-  }, [currentProductUrl]);
+  }, [commitFetchedJob, currentProductUrl, requestedJobId]);
+
+  useEffect(() => {
+    let active = true;
+    async function restoreAnnouncedJob(event: Event) {
+      const announcedJobId = String((event as CustomEvent<{ jobId?: string }>).detail?.jobId || "").trim();
+      if (!announcedJobId || announcedJobId === activeJobIdRef.current || dismissedJobIds.current.has(announcedJobId)) return;
+      const addressedJobId = new URLSearchParams(window.location.search).get("jobId");
+      // 완료/진행 링크로 특정 작업을 연 화면은 다른 상품의 전역 진행 알림에
+      // 의해 본문과 URL이 교체되면 안 된다.
+      if (addressedJobId && addressedJobId !== announcedJobId) return;
+      try {
+        const restored = await fetchJob(announcedJobId);
+        if (!active) return;
+        const restoredUrl = normalizeCreativeProductUrl(restored.job.productTruth.product.landingUrl);
+        if (currentProductUrl && restoredUrl !== currentProductUrl) return;
+        commitFetchedJob(restored);
+        setMessage("방금 등록된 광고 제작 작업을 불러왔습니다.");
+      } catch {
+        // 전역 상태 알림의 다음 polling 또는 URL 작업 복원에서 다시 확인합니다.
+      }
+    }
+    window.addEventListener(ACTIVE_CREATIVE_JOB_CHANGED_EVENT, restoreAnnouncedJob);
+    return () => {
+      active = false;
+      window.removeEventListener(ACTIVE_CREATIVE_JOB_CHANGED_EVENT, restoreAnnouncedJob);
+    };
+  }, [commitFetchedJob, currentProductUrl]);
+
+  useEffect(() => {
+    if (job) return;
+    let active = true;
+    let lastCheckedJobId = "";
+    async function restoreStoredActiveJob() {
+      const productJobId = currentProductUrl ? window.localStorage.getItem(activeCreativeProductJobStorageKey(currentProductUrl)) : "";
+      const storedJobId = productJobId || window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY) || "";
+      if (!storedJobId || storedJobId === lastCheckedJobId || dismissedJobIds.current.has(storedJobId)) return;
+      lastCheckedJobId = storedJobId;
+      try {
+        const restored = await fetchJob(storedJobId);
+        if (!active) return;
+        const restoredUrl = normalizeCreativeProductUrl(restored.job.productTruth.product.landingUrl);
+        if (currentProductUrl && restoredUrl !== currentProductUrl) return;
+        commitFetchedJob(restored);
+        setMessage("서버에 등록된 광고 제작 작업을 현재 화면에 연결했습니다.");
+      } catch {
+        lastCheckedJobId = "";
+      }
+    }
+    void restoreStoredActiveJob();
+    const interval = window.setInterval(() => void restoreStoredActiveJob(), 1_500);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [commitFetchedJob, currentProductUrl, job]);
 
   useEffect(() => {
     if (previousAnalysisRevision.current === props.analysisRevision) return;
@@ -349,7 +449,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     restoreRequestVersion.current += 1;
     if (activeJobIdRef.current) dismissedJobIds.current.add(activeJobIdRef.current);
     activeJobIdRef.current = "";
-    window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
+    setActiveCreativeJobId();
+    clearCurrentJobIdFromAddress();
     for (const productUrl of new Set([previousUrl, currentProductUrl].filter(Boolean))) {
       window.localStorage.removeItem(activeCreativeProductJobStorageKey(productUrl));
     }
@@ -369,8 +470,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     const currentUrl = currentProductUrl;
     const jobUrl = normalizeCreativeProductUrl(job.productTruth.product.landingUrl);
     if (!jobUrl || jobUrl === currentUrl) return;
-    window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
+    setActiveCreativeJobId();
     window.localStorage.removeItem(activeCreativeProductJobStorageKey(jobUrl));
+    clearCurrentJobIdFromAddress();
     const resetTimer = window.setTimeout(() => {
       setJob(null);
       setStartError("");
@@ -536,7 +638,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setStartError("");
       setRunnerActive(Boolean(payload.runnerActive));
       setManualQueue(payload.manualQueue);
-      window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
+      activeJobIdRef.current = payload.job.id;
+      writeCurrentJobIdToAddress(payload.job.id);
+      setActiveCreativeJobId(payload.job.id);
       if (currentProductUrl) {
         window.localStorage.setItem(activeCreativeProductJobStorageKey(currentProductUrl), payload.job.id);
       }
@@ -575,7 +679,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       dismissedJobIds.current.add(cancelledJobId);
       restoreRequestVersion.current += 1;
       if (window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY) === cancelledJobId) {
-        window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
+        setActiveCreativeJobId();
       }
       for (const productUrl of new Set([currentProductUrl, cancelledProductUrl].filter(Boolean))) {
         const storageKey = activeCreativeProductJobStorageKey(productUrl);
@@ -616,7 +720,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setJob(payload.job);
       setRunnerActive(true);
       setManualQueue(payload.manualQueue);
-      window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, payload.job.id);
+      activeJobIdRef.current = payload.job.id;
+      setActiveCreativeJobId(payload.job.id);
       setMessage("완료된 광고는 유지하고 중단된 카드부터 서버에서 생성을 재개합니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "작업 재개 실패");
@@ -638,29 +743,54 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   }
 
   async function retryResult(result: GenerationResult) {
-    if (!job) return;
-    setLoading(true);
-    try {
-      await generateOne(job, result.id, { regenerateScene: true, action: "regenerate" });
-      await refreshJob(job.id);
-      setMessage(`${result.blueprintLabel} 카드를 다시 생성했습니다.`);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "재생성 실패");
-    } finally {
-      setLoading(false);
-    }
+    await editResult(result, "same-reference", { regenerateScene: true, action: "regenerate" });
   }
 
   async function retryResultWithNewReference(result: GenerationResult) {
-    if (!job) return;
+    await editResult(result, "new-reference", { action: "regenerate-new-reference" });
+  }
+
+  async function reviseResult(result: GenerationResult) {
+    const feedback = feedbacks[result.id]?.trim();
+    if (!feedback) return;
+    await editResult(result, "feedback", { action: "revise", feedback });
+  }
+
+  async function editResult(
+    result: GenerationResult,
+    kind: ResultEditKind,
+    options: {
+      regenerateScene?: boolean;
+      action: "regenerate" | "regenerate-new-reference" | "revise";
+      feedback?: string;
+    }
+  ) {
+    if (!job || resultEditStates[result.id]) return;
+    const activeJob = job;
+    setResultEditStates((current) => ({
+      ...current,
+      [result.id]: { kind, previousResult: result },
+    }));
     setLoading(true);
+    setMessage(`소재 ${String(result.order).padStart(2, "0")} · ${resultEditLabels[kind]}입니다.`);
     try {
-      await generateOne(job, result.id, { action: "regenerate-new-reference" });
-      await refreshJob(job.id);
-      setMessage(`소재 ${String(result.order).padStart(2, "0")}에 다른 호환 레퍼런스를 배정해 다시 생성했습니다.`);
+      await generateOne(activeJob, result.id, options);
+      await refreshJob(activeJob.id);
+      setMessage(
+        kind === "new-reference"
+          ? `소재 ${String(result.order).padStart(2, "0")}에 다른 호환 레퍼런스를 배정해 다시 생성했습니다.`
+          : kind === "feedback"
+            ? `소재 ${String(result.order).padStart(2, "0")}에 수정 요청을 반영했습니다.`
+            : `${result.blueprintLabel} 카드를 다시 생성했습니다.`
+      );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "다른 레퍼런스 재생성 실패");
+      setMessage(error instanceof Error ? error.message : kind === "feedback" ? "광고 수정 실패" : kind === "new-reference" ? "다른 레퍼런스 재생성 실패" : "재생성 실패");
     } finally {
+      setResultEditStates((current) => {
+        const next = { ...current };
+        delete next[result.id];
+        return next;
+      });
       setLoading(false);
     }
   }
@@ -705,8 +835,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       anchor.download = `${productDownloadStem(job.productTruth.normalized?.cleanProductName || job.productTruth.product.productName)}.zip`;
       anchor.click();
       URL.revokeObjectURL(url);
-      window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
-      if (currentProductUrl) window.localStorage.removeItem(activeCreativeProductJobStorageKey(currentProductUrl));
+      if (window.localStorage.getItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY) === job.id) {
+        setActiveCreativeJobId();
+      }
       setMessage("다운로드가 완료됐습니다. 같은 상품 URL을 다시 분석하면 새 광고 6장을 제작합니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "전체 다운로드 실패");
@@ -731,14 +862,30 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       : undefined;
   const activeResults = [...(job?.results || [])].filter((result) => result.status === "running").sort((left, right) => left.order - right.order);
   const completedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);
-  const visibleGeneratedResults = [...(job?.results || [])].filter((result) => Boolean(result.imagePath)).sort((left, right) => left.order - right.order);
+  const visibleGeneratedResults = [...(job?.results || [])]
+    .map((result) => {
+      const previousResult = resultEditStates[result.id]?.previousResult;
+      return !result.imagePath && previousResult?.imagePath
+        ? {
+            ...result,
+            imagePath: previousResult.imagePath,
+            deliveryBranding: previousResult.deliveryBranding,
+            completedAt: previousResult.completedAt,
+          }
+        : result;
+    })
+    .filter((result) => Boolean(result.imagePath) || Boolean(resultEditStates[result.id]) || (result.status === "running" && (result.nativeCreative?.revisionCount || 0) > 0))
+    .sort((left, right) => left.order - right.order);
+  const editingResults = [...(job?.results || [])].filter((result) => Boolean(resultEditStates[result.id]) || (result.status === "running" && (result.nativeCreative?.revisionCount || 0) > 0));
+  const editingResult = editingResults.sort((left, right) => left.order - right.order)[0];
+  const individualEditActive = Boolean(editingResult);
   const attentionResults = [...(job?.results || [])].filter((result) => failedGenerationResultStatuses.has(result.status)).sort((left, right) => left.order - right.order);
   const attentionResultsWithoutImage = attentionResults.filter((result) => !result.imagePath);
   const missingImageResults = [...(job?.results || [])].filter((result) => !result.imagePath);
   const canCancelJob = Boolean(job && ["pending", "running"].includes(job.status) && missingImageResults.length > 0);
   const nextPendingResult = job?.results.filter((result) => result.status === "pending").sort((left, right) => left.order - right.order)[0];
   const currentOrder = activeResults[0]?.order || nextPendingResult?.order || Math.min(progress.completed + 1, progress.total);
-  const allCreativesReady = Boolean(job && progress.total === 6 && completedResults.length === progress.total);
+  const allCreativesReady = Boolean(job && !individualEditActive && progress.total === 6 && completedResults.length === progress.total);
   const currentStage = activeResults[0]
       ? generationStageLabels[activeResults[0].generationStage || "planned"]
       : generationInProgress
@@ -746,6 +893,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
         : "";
   const progressHeadline = loading && !job
     ? "광고 제작 작업을 등록하고 있습니다"
+    : editingResult
+      ? `소재 ${String(editingResult.order).padStart(2, "0")} 광고를 수정 중입니다`
     : allCreativesReady
       ? "광고 6장이 모두 완성됐습니다"
       : generationQueued
@@ -770,9 +919,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
 
   return (
     <section className="six-creative-generator" id="creative-results">
-      <div className={`simple-generation-status ${allCreativesReady ? "complete" : generationActive || loading ? "working" : ""} ${generationQueued ? "queued" : ""}`} role="status" aria-live="polite">
+      <div className={`simple-generation-status ${allCreativesReady ? "complete" : generationActive || loading || individualEditActive ? "working" : ""} ${generationQueued ? "queued" : ""}`} role="status" aria-live="polite">
         <div className="simple-generation-status-icon" aria-hidden="true">
-          {allCreativesReady ? "✓" : generationActive || loading ? <i /> : !job ? "⇄" : "!"}
+          {allCreativesReady ? "✓" : generationActive || loading || individualEditActive ? <i /> : !job ? "⇄" : "!"}
         </div>
         <div>
           <p className="eyebrow">{historicalJob ? "이전 광고 제작 결과" : "기본 Codex 광고 제작 · 6장"}</p>
@@ -782,6 +931,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               ? "완성된 광고를 확인한 뒤 한 번에 ZIP으로 내려받으세요."
               : generationQueued
                 ? `현재 수동 요청 ${manualQueue?.totalCount || 1}건 · 앞에 ${manualQueue?.aheadCount || 0}건이 있습니다. 접수 순서대로 자동 시작됩니다.`
+              : individualEditActive
+                ? "기존 완성본을 화면에 유지하면서 선택한 수정 내용을 반영하고 있습니다."
               : currentStage
                 ? `${currentStage}${activeResults.length > 1 ? ` · ${activeResults.length}장 동시 처리 중` : ""}`
                 : startError
@@ -795,9 +946,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                     : message}
           </p>
         </div>
-        <strong>{allCreativesReady ? "완료 6/6 · 다운로드 가능" : generationQueued ? `대기 ${manualQueue?.waitingPosition || 1}번째 · 앞선 요청 ${manualQueue?.aheadCount || 0}건` : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${visibleGeneratedResults.length}/${progress.total}`}</strong>
+        <strong>{individualEditActive ? `소재 ${String(editingResult?.order || 0).padStart(2, "0")} · 수정 중` : allCreativesReady ? "완료 6/6 · 다운로드 가능" : generationQueued ? `대기 ${manualQueue?.waitingPosition || 1}번째 · 앞선 요청 ${manualQueue?.aheadCount || 0}건` : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${completedResults.length}/${progress.total}`}</strong>
       </div>
-      {!job ? (
+      {!job && !loading ? (
         <div className="codex-direct-test-panel">
           <div className="codex-direct-test-heading">
             <div>
@@ -892,7 +1043,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           {job
             ? `현재 작업은 ${selectedCategoryLabel || referenceCategoryLabel(referenceCategoryOverride)} 풀로 고정되어 있습니다.`
             : referenceCategoryOverride
-              ? `${referenceCategoryLabel(referenceCategoryOverride)} 풀 안에서 상품 형태가 맞는 6장을 선택합니다.`
+              ? `${referenceCategoryLabel(referenceCategoryOverride)} 풀에서 중복 없이 6장을 무작위 선택합니다.`
               : "상품명·카테고리·상품 형태를 분석해 가장 잘 맞는 풀을 자동 선택합니다."}
         </p>
       </div>
@@ -945,18 +1096,29 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               </div>
               <div className="six-creative-grid">
                 {visibleGeneratedResults.map((result) => {
+                  const storedResult = job.results.find((item) => item.id === result.id) || result;
+                  const editState = resultEditStates[result.id];
+                  const isEditing = Boolean(editState || (storedResult.status === "running" && (storedResult.nativeCreative?.revisionCount || 0) > 0));
+                  const editLabel = editState ? resultEditLabels[editState.kind] : "개별 광고를 수정하는 중";
                   return (
-                    <article className={`six-creative-card ${result.status} ${result.id === latestCompletedResultId ? "latest" : ""}`} key={result.id}>
+                    <article aria-busy={isEditing} className={`six-creative-card ${result.status} ${result.id === latestCompletedResultId ? "latest" : ""} ${isEditing ? "editing" : ""}`} key={result.id}>
                       <div className="six-creative-card-head">
                         <span>{result.order}</span>
                         <div>
-                          <strong>소재 {String(result.order).padStart(2, "0")} 완성</strong>
-                          <small>{defaultCodexJob ? "레퍼런스·선택 상품 이미지 기반" : result.hookPlan.headline}</small>
+                          <strong>소재 {String(result.order).padStart(2, "0")} {isEditing ? "수정 중" : "완성"}</strong>
+                          <small>{isEditing ? editLabel : defaultCodexJob ? "레퍼런스·선택 상품 이미지 기반" : result.hookPlan.headline}</small>
                         </div>
-                        <b>{["quality-review", "group-review"].includes(result.status) ? "품질 확인 필요 · 다운로드 가능" : "다운로드 가능"}</b>
+                        <b>{isEditing ? "수정 중…" : ["quality-review", "group-review"].includes(result.status) ? "품질 확인 필요 · 다운로드 가능" : "다운로드 가능"}</b>
                       </div>
                       <div className="six-creative-preview">
-                        <img alt={`${result.blueprintLabel} 생성 결과`} src={`${result.imagePath}?v=${encodeURIComponent(result.deliveryBranding?.updatedAt || result.completedAt || job.updatedAt)}`} />
+                        {result.imagePath ? <img alt={`${result.blueprintLabel} 생성 결과`} src={`${result.imagePath}?v=${encodeURIComponent(result.deliveryBranding?.updatedAt || result.completedAt || job.updatedAt)}`} /> : null}
+                        {isEditing ? (
+                          <div className="six-creative-editing-overlay" role="status" aria-live="polite">
+                            <i aria-hidden="true" />
+                            <strong>수정 중…</strong>
+                            <small>{editLabel}</small>
+                          </div>
+                        ) : null}
                       </div>
                       <details className="six-creative-edit">
                         <summary>이 광고 수정·다운로드</summary>
@@ -1008,17 +1170,10 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                           </label>
                           <button
                             disabled={loading || historicalJob || !feedbacks[result.id]?.trim()}
-                            onClick={() =>
-                              void generateOne(job, result.id, {
-                                action: "revise",
-                                feedback: feedbacks[result.id].trim(),
-                              })
-                                .then(() => refreshJob(job.id))
-                                .catch((error) => setMessage(error instanceof Error ? error.message : "광고 수정 실패"))
-                            }
+                            onClick={() => void reviseResult(result)}
                             type="button"
                           >
-                            수정 반영하기
+                            {editState?.kind === "feedback" ? "수정 반영 중…" : "수정 반영하기"}
                           </button>
                         </div>
                         {result.nativeCreative?.adReference ? (
@@ -1083,6 +1238,21 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
               </button>
             ) : null}
           </details>
+        </>
+      ) : loading ? (
+        <>
+          <div className="six-creative-progress" aria-label="광고 작업 등록 진행률">
+            <i className="active" style={{ width: "2%" }} />
+          </div>
+          <ol className="simple-generation-steps" aria-label="광고 6장 등록 상태">
+            {Array.from({ length: 6 }, (_, index) => (
+              <li className={index === 0 ? "active" : "pending"} key={index}>
+                <span>{index + 1}</span>
+                <b>{index === 0 ? "등록 중" : "대기"}</b>
+              </li>
+            ))}
+          </ol>
+          <p className="six-creative-runtime-help">작업이 서버에 접수되는 즉시 실제 제작 진행 상태로 자동 전환됩니다.</p>
         </>
       ) : (
         <div className="simple-generation-preflight">

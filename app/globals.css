@@ -863,6 +863,13 @@
   border-color: #11a98e;
 }
 
+.six-creative-card.editing {
+  border-color: #1677d2;
+  box-shadow:
+    0 0 0 3px rgb(22 119 210 / 12%),
+    0 10px 24px rgb(36 57 88 / 7%);
+}
+
 .six-creative-card.generating {
   border-color: #11a98e;
   box-shadow:
@@ -921,6 +928,7 @@
 }
 
 .six-creative-preview {
+  position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   background: #101827;
@@ -987,6 +995,42 @@
   position: relative;
   display: block;
   padding: 0;
+}
+
+.six-creative-preview > .six-creative-editing-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  padding: 24px;
+  background: rgb(7 20 38 / 68%);
+  color: #fff;
+  text-align: center;
+  backdrop-filter: blur(2px);
+}
+
+.six-creative-editing-overlay > i {
+  width: 34px;
+  height: 34px;
+  border: 4px solid rgb(255 255 255 / 32%);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: six-creative-spinner 0.8s linear infinite;
+}
+
+.six-creative-editing-overlay > strong {
+  font-size: 18px;
+}
+
+.six-creative-editing-overlay > small {
+  color: #dcecff;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .six-creative-reference-preview img {

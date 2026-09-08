@@ -90,7 +90,7 @@ import {
 } from "./MvpDashboardConfig";
 
 
-export function MvpDashboard({ activeFeature = "creative-production", initialActiveMenu = "광고 생성", initialWorkflowStep = "product", initialCreationHandoff, initialProductUrl = "", initialGenerated, initialImages }: Props) {
+export function MvpDashboard({ activeFeature = "creative-production", initialActiveMenu = "광고 생성", initialWorkflowStep = "product", initialCreationHandoff, initialProductUrl = "", initialGenerationJobId = "", initialGenerated, initialImages }: Props) {
   const handoffProductInfo = initialCreationHandoff?.productInfo;
   const initialLandingUrl = handoffProductInfo?.landingUrl || initialCreationHandoff?.productUrl || initialProductUrl;
   const handoffImagePaths = initialCreationHandoff?.productImagePaths ?? emptyRecommendationIds;
@@ -3502,7 +3502,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
                     </section>
                   </details>
                   <div>
-                    <ReferenceFirstCreativeGenerator adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
+                    <ReferenceFirstCreativeGenerator adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} requestedJobId={initialGenerationJobId} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
                   </div>
                   {legacyManualProductionToolsAvailable ? (
                     <details className="advanced-production-workspace" hidden={!currentProductLoaded} id="advanced-generation-settings">

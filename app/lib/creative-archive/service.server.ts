@@ -11,7 +11,7 @@ import { creativeArchiveMetadataRepository } from "./metadataRepository.server";
 import type { CreativeArchiveEntry } from "./types";
 import { creativeAssetsRuntimePath, runtimeDataPath } from "../runtimeStorage.ts";
 
-const archiveIndexVersion = "creative-archive-index-v2";
+const archiveIndexVersion = "creative-archive-index-v3";
 const archiveDirectory = runtimeDataPath("creative-archive");
 const archiveIndexPath = path.join(archiveDirectory, "index.json");
 const sourcePaths = [
@@ -34,7 +34,7 @@ type CreativeArchiveCache = {
   pending?: Promise<CreativeArchiveEntry[]>;
 };
 
-const cacheKey = Symbol.for("adatlas.creative-archive-index-cache-v2");
+const cacheKey = Symbol.for("adatlas.creative-archive-index-cache-v3");
 const archiveGlobal = globalThis as typeof globalThis & { [cacheKey]?: CreativeArchiveCache };
 const archiveCache = archiveGlobal[cacheKey] || {};
 archiveGlobal[cacheKey] = archiveCache;

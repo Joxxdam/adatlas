@@ -777,6 +777,26 @@ test("31. 몰별 예정상품 URL을 수정·확정하고 공용 생성 결과�
   assert.match(packaging, /Boolean\(result\.nativeCreative\?\.finalPath\)/);
 });
 
+test("31-1. 자동제작도 상품별 레퍼런스 카테고리를 저장하고 같은 무작위 선택기에 전달한다", async () => {
+  const [workspace, configRepository, runner, factory, selector] = await Promise.all([
+    read("app/components/auto-production/AutoProductionWorkspace.tsx"),
+    read("app/lib/auto-production/advertiserConfig.server.ts"),
+    read("app/lib/auto-production/productionRunner.server.ts"),
+    read("app/lib/creative-generation/createNativeGenerationJob.server.ts"),
+    read("app/lib/creative-generation/referenceCreativeLibrary.server.ts"),
+  ]);
+  assert.match(workspace, /레퍼런스 카테고리/);
+  assert.match(workspace, /자동 매칭 \(상품 분석 기준\)/);
+  assert.match(workspace, /referenceCategoryOverride: draft\.referenceCategoryOverride \|\| undefined/);
+  assert.match(configRepository, /referenceCategoryOverride/);
+  assert.match(runner, /referenceCategoryOverride: savedImageSelection\?\.referenceCategoryOverride/);
+  assert.match(factory, /const referenceCategoryOverride = normalizeReferenceCategoryOverride\(input\.referenceCategoryOverride\)/);
+  assert.doesNotMatch(factory, /sourceType === "auto-production" \? undefined/);
+  const selectionBlock = selector.slice(selector.indexOf("export function selectCategoryNativeAdReferences"), selector.indexOf("/** 과거 작업처럼"));
+  assert.match(selectionBlock, /pickUniqueRandomItems\(usableItems, count, nextIndex\)/);
+  assert.doesNotMatch(selectionBlock, /scoreReferenceCompatibility|pickCompatibleRandomItems/);
+});
+
 test("32. 수기 예정상품은 1~6개만 저장하고 입력한 수만큼 제작한다", async () => {
   const [policy, configRepository, scheduler] = await Promise.all([
     read("app/lib/auto-production/policy.ts"),

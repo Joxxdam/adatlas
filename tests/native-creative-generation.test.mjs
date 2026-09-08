@@ -149,11 +149,16 @@ test("서버 러너가 사라진 running 결과는 중단 작업으로 감지하
 
   assert.equal(hasOrphanedRunningResult(job, false), true);
   assert.equal(hasOrphanedRunningResult(job, true), false);
+  assert.equal(hasOrphanedRunningResult(job, false, new Set(["result-3"])), false);
 
   const resumed = resumeGenerationJob(job, false, "2026-08-22T00:02:00.000Z");
   assert.equal(resumed.status, "running");
   assert.equal(resumed.results[2].status, "pending");
   assert.equal(resumed.results[2].startedAt, undefined);
+
+  const protectedResume = resumeGenerationJob(job, false, "2026-08-22T00:02:00.000Z", false, new Set(["result-3"]));
+  assert.equal(protectedResume.results[2].status, "running");
+  assert.equal(protectedResume.results[2].startedAt, "2026-08-22T00:00:00.000Z");
 });
 
 test("사용자가 실패 작업을 다시 시작하면 소진된 이미지·문구 재시도 횟수를 새로 연다", () => {
@@ -273,7 +278,7 @@ test("개발 서버 핫리로드는 체크포인트 복구 러너를 사용한�
   assert.doesNotMatch(source, /사전 문구 검증 차단을 해제하고 pending으로 복구/);
   assert.match(source, /resolveFastCreativeRuntime\(\)\.concurrency/);
   assert.match(source, /export async function recoverPersistedGenerationJobs/);
-  assert.match(source, /hasOrphanedRunningResult\(job, runnerWasActive\)/);
+  assert.match(source, /hasOrphanedRunningResult\(job, runnerWasActive, activeDirectResultIds\)/);
   assert.match(instrumentation, /recoverPersistedGenerationJobs\(\)/);
   assert.match(activeRoute, /if \(!isGenerationJobRunnerActive\(job\.id\)\)/);
   assert.match(activeRoute, /enqueueGenerationJob\(job\.id/);
@@ -1057,15 +1062,20 @@ test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로
   assert.ok(manifest.items.every((item) => ["fashion", "food", "beauty"].includes(item.categoryGroup)));
   assert.ok(manifest.items.every((item) => item.productForm && item.compositionType && item.productSlotCount && item.productSlotShape && item.photographyType && item.textDensity && item.compatibilityConfidence));
   const normalizedFood = manifest.items.filter((item) => item.categoryGroup === "food").map(normalizeNativeReferenceCompatibility);
+  const normalizedBeauty = manifest.items.filter((item) => item.categoryGroup === "beauty").map(normalizeNativeReferenceCompatibility);
   for (const foodSubcategory of ["meat", "snack"]) {
     assert.ok(normalizedFood.filter((item) => item.foodSubcategory === foodSubcategory).length >= 6, `${foodSubcategory} 식품 레퍼런스가 6장 이상 필요합니다.`);
   }
   assert.ok(normalizedFood.filter((item) => !item.foodSubcategory).length >= 6, "일반 식품 레퍼런스가 6장 이상 필요합니다.");
+  const beautyDesignCount = normalizedBeauty.filter((item) => item.beautySubcategory === "design").length;
+  const beautyHookCount = normalizedBeauty.filter((item) => item.beautySubcategory === "hook").length;
+  assert.ok(beautyHookCount >= 6, "후킹 화장품 레퍼런스가 6장 이상 필요합니다.");
+  assert.ok(beautyHookCount > beautyDesignCount, "현재 화장품 풀은 판매형 후킹 소재가 디자인 키비주얼보다 많아야 합니다.");
   assert.match(manifest.selectionPolicy, /패션·식품·화장품 세 그룹/);
-  assert.match(manifest.selectionPolicy, /식품 대분류를 선택하면 육류·간식을 포함한 등록 식품 전체/);
+  assert.match(manifest.selectionPolicy, /식품은 육류·간식 하위 풀/);
+  assert.match(manifest.selectionPolicy, /화장품은 디자인·후킹 하위 풀/);
   assert.match(manifest.selectionPolicy, /건강·웰니스와 퍼스널케어는 화장품에 포함/);
   assert.match(manifest.selectionPolicy, /등록 여부 자체를 운영자의 품질 승인/);
-  assert.match(manifest.selectionPolicy, /식품 대분류를 선택하면 육류·간식을 포함한 등록 식품 전체/);
   assert.match(manifest.selectionPolicy, /점수 우선순위 없이 중복 없는 무작위 6장/);
   assert.match(manifest.selectionPolicy, /미지정 대카테고리로 임의 보충하지 않으며/);
   assert.match(manifest.selectionPolicy, /삭제된 항목은 즉시 선택 대상에서 제외/);
@@ -2662,7 +2672,8 @@ test("기본 native 실행은 레퍼런스·선택 이미지·프롬프트를 �
   assert.match(source, /action === "copy-update" \|\| action === "revalidate"/);
   assert.doesNotMatch(source, /provider\.validateGroup\(/);
   assert.doesNotMatch(source, /ensureProductAdCopy/);
-  assert.match(source, /generationRequestKey:\s*`codex-direct-v1:/);
+  assert.match(source, /generationRequestKey:\s*`codex-direct-v1:\$\{job\.id\}:\$\{latest\.id\}`/);
+  assert.doesNotMatch(source, /generationRequestKey:\s*`codex-direct-v1:[^`]*requestId/);
 });
 
 test("레퍼런스 fallback은 브랜드 슬롯을 비우되 강한 원문과 문구 밀도를 상품 사실로 보존한다", async () => {
@@ -2907,9 +2918,15 @@ test("UI는 한 번의 클릭 뒤 기본 Codex 6장 진행·완성 표시·ZIP �
   assert.doesNotMatch(source, /테스트 모드|기존 제작|reference-first-adapted-copy|ProductAdCopyPanel|copyEdits/);
   assert.match(source, /동일 레퍼런스로 다시 만들기/);
   assert.match(source, /다른 레퍼런스로 다시 만들기/);
+  assert.match(source, /resultEditLabels/);
+  assert.match(source, /six-creative-editing-overlay/);
+  assert.match(source, /수정 요청을 반영하는 중/);
   assert.match(source, /value: "food-meat", label: "식품 · 육류"/);
   assert.match(source, /value: "food-snack", label: "식품 · 간식"/);
   assert.match(source, /value: "food", label: "식품"/);
+  assert.match(source, /value: "all", label: "전체 카테고리"/);
+  assert.match(source, /value: "beauty-design", label: "화장품 · 디자인"/);
+  assert.match(source, /value: "beauty-hook", label: "화장품 · 후킹"/);
   assert.doesNotMatch(source, /value: "food-other", label:/);
   assert.match(source, /generationStageProgress/);
   assert.match(source, /장째 광고를 제작 중입니다/);

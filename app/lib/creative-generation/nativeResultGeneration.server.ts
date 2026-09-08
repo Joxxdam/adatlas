@@ -25,7 +25,23 @@ type NativeResultInput = {
   copy?: Partial<CopyPlan>;
 };
 
-const resultLocks = new Map<string, Promise<void>>();
+type NativeResultLockMap = Map<string, Promise<void>>;
+
+// 개발 서버 HMR과 서로 다른 route bundle에서도 같은 직접 수정 작업을
+// 백그라운드 복구 러너가 유실된 작업으로 오인하지 않도록 전역 잠금을 공유한다.
+const resultLocksKey = Symbol.for("daywiz.native-result-generation-locks-v1");
+const resultLocksGlobal = globalThis as typeof globalThis & { [resultLocksKey]?: NativeResultLockMap };
+const resultLocks = resultLocksGlobal[resultLocksKey] ?? new Map<string, Promise<void>>();
+resultLocksGlobal[resultLocksKey] = resultLocks;
+
+export function activeNativeResultGenerationIds(jobId: string) {
+  const prefix = `${jobId}--`;
+  return new Set(
+    [...resultLocks.keys()]
+      .filter((key) => key.startsWith(prefix))
+      .map((key) => key.slice(prefix.length))
+  );
+}
 
 async function validateGeneratedFinal(file: string) {
   let lastError: unknown;
@@ -221,7 +237,10 @@ async function runDefaultCodexResult(
     job,
     result: latest,
     generatedImageUrl: publicImage,
-    generationRequestKey: `codex-direct-v1:${job.id}:${latest.id}:${input.requestId || Date.now()}`,
+    // 개별 수정은 같은 소재의 새 아카이브 카드가 아니라 현재 카드의
+    // 최신 이미지로 반영한다. 생성 요청 자체는 매번 실행하되 자산 등록은
+    // 작업·결과 단위의 안정적인 키로 멱등 처리한다.
+    generationRequestKey: `codex-direct-v1:${job.id}:${latest.id}`,
     copy: {
       headline: latest.hookPlan.headline,
       body: latest.hookPlan.body,

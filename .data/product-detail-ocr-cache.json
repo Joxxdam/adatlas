@@ -6520,5 +6520,400 @@
       "warnings": []
     },
     "createdAt": "2026-09-07T14:10:10.489Z"
+  },
+  {
+    "key": "72d41e8e1e6ae8b9dc87d29f2b0def9d6fef494f0c7eb50c6f5e55f3d9d91d42",
+    "insight": {
+      "id": "detail-ocr-914178cedd99",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/2023090612352358838320462994-52a2-4b8d-b4e1-4a4e46caa387.jpg",
+      "contentHash": "914178cedd99783c9ae031d1bf89a467dfe3920bf6762b2f512bc89f19bc3ce8",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T02:13:53.761Z"
+  },
+  {
+    "key": "233859fdbac4ddc9ee6bd316638c6d9c0194eb3b1c86a48ad95f7272e50602f4",
+    "insight": {
+      "id": "detail-ocr-2b0968933575",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260527074157811108f414d662-ad19-4f0d-a919-81aa676847cf.jpg",
+      "contentHash": "2b0968933575c220a8550ddd0c949baebedf1c4ab89c00bd30efb0998e3c9b34",
+      "ocrText": "설록우 특등심 4팩 세트\n20%\n(고급선물포장 가능)\n특등심 4팩\n더저렴!\n고급선물포장 가능!\n선록우\n선록우\n선록우\n기존가\nVIP특가 69,800원\n170,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5750000029802322,
+      "copyFacts": [
+        "설록우 특등심 4팩 세트",
+        "(고급선물포장 가능)",
+        "특등심 4팩",
+        "VIP특가 69,800원",
+        "170,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T02:13:53.795Z"
+  },
+  {
+    "key": "0cda9ef5b594f4e8fc82a04d235f1c99633ab2883da49e71f7efb33f37169193",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T02:13:54.572Z"
+  },
+  {
+    "key": "48ec5a58696eba6684fdd19913e11cc6c7989199ab755a66ff8169f081d79fbd",
+    "insight": {
+      "id": "detail-ocr-249377d3ce95",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/16303093147315.jpg",
+      "contentHash": "249377d3ce9538eaf7cb77a4aca1461f89b92e90b745530328689c7d9fafed21",
+      "ocrText": "설록우\n설록무리\n설록우리",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T02:13:54.588Z"
+  },
+  {
+    "key": "9f78cb58b57b77a8daf888d6650f383ede54a14e65c59ca009b6e76c63d46f9b",
+    "insight": {
+      "id": "detail-ocr-457d109aac43",
+      "imageUrl": "https://image.lgcare.com/vdlWebSrc/upload/editor/Filedata_20250828113877125.jpg",
+      "contentHash": "457d109aac431416307f122a47577ab790b9739ce937bcb30c3028dfc2c4dd72",
+      "ocrText": "주름 사이에도 끼임없이 밀착",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T06:49:34.121Z"
+  },
+  {
+    "key": "8f025f095442e633768cad42f4f7c0f5556aa7d101df38ab7dfcf37a5ca145c6",
+    "insight": {
+      "id": "detail-ocr-971bc9e792de",
+      "imageUrl": "https://image.lgcare.com/vdlWebSrc/upload/editor/Filedata_20250828113881042.jpg",
+      "contentHash": "971bc9e792de947c6a59761e4635328ec6069944308d55ae05c991dd2d040e78",
+      "ocrText": "Point 02\n주머니에 쏙 SLIM\n웨어러블 슬림 타입\n얇은 용기로 주머니에 쏙\n입술 라인에도 쓱-\nPoint 03\nBITTER ESPRESSO\nCOLOR\n에스프레소바의 메뉴를 옮겨 담은 베이지 브라운 톤의 가을 컬러\nSOMETIMES Bitter\nLIFE CAN BE\nBUT MOSTLY Sweet\nVogy DelicinsLte\nVDL",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8214285714285714,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Point 02",
+        "Point 03",
+        "BITTER ESPRESSO",
+        "COLOR",
+        "SOMETIMES Bitter",
+        "LIFE CAN BE",
+        "BUT MOSTLY Sweet",
+        "Vogy DelicinsLte"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T06:49:35.980Z"
+  },
+  {
+    "key": "aaebf897f19d39634c3b8aea7522f6ba644bb1b4e396f1adf44e22dc059716cc",
+    "insight": {
+      "id": "detail-ocr-6876546b6715",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20250414125221885360275b6915-1f14-4200-b8cd-2e2843ae279b.jpg",
+      "contentHash": "6876546b6715b31b92ba7ff8c567714cef9be31fc81e5a6a0c868d12b1054970",
+      "ocrText": "#\nPREMIUM",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6500000059604645,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:12:53.132Z"
+  },
+  {
+    "key": "a2eed3a2822dc17566b0c2882a92c8f9fa49a9e9ec46e2cfc4d81b77c427f6a2",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:12:53.179Z"
+  },
+  {
+    "key": "5f6fd92c47d969495abcc8313159b96b02c28b1dab38069c3700b528197d70e9",
+    "insight": {
+      "id": "detail-ocr-43e41bf8cb73",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/product/big/202609/45ee65826f5c0e419b3b48bba3b7cdf3.jpg",
+      "contentHash": "43e41bf8cb7322407fcf62ead0357b7565057deb8a1dd56ed7199ea1b6b2994d",
+      "ocrText": "ONLY 공식몰\n첫 매\n, 특가\nBares\nBare\nMool\nMool\no Tint\nTint\nromand\nromand\n첫 구매 한정 4,900원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5833333333333334,
+      "copyFacts": [
+        "첫 구매 한정 4,900원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Bares",
+        "Bare",
+        "Mool",
+        "o Tint",
+        "Tint",
+        "romand"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:20:31.565Z"
+  },
+  {
+    "key": "cac72d944bc319b07fc9443e08a17aa5098a22fc6ce268fa05caae1514537ee3",
+    "insight": {
+      "id": "detail-ocr-3624b27ac182",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20240808/copy-1723100596-240314_5BECB9B4ED8E98355DECB2ABEAB5ACEBA7A4FAQ.jpg",
+      "contentHash": "3624b27ac182447786eee7c962d394e1783c7cb6cc206c3e4889f8ac46eb044c",
+      "ocrText": "롬메이트가 자주 묻는 질문\n첫구매 FAQ\nQ. 첫구매 혜택 상품을 중복으로 담아도 되나요?\nA. [첫구매전용] 혜택은 1인 1상품 1회 적용이 가능하며,\n구매전용 상품을 장바구니에 중복으로 담아 결제하시는\n경우에도 혜택은 1상품, 1개만 적용됩니다.\nQ. 첫구매자 기준이 어떻게 되나요?\nA. [첫구매전용] 혜택을 받아보실 수 있는 첫구매자 기준은\n최근 1년간 주문 기록이 없는 고객님 또는 공식몰 회원 중\n최초 주문 고객님입니다.\nQ. 첫구매자 회원인데 특가가 아니에요!\nA. [첫구매전용] 상품 최종 결제 금액은 결제 시\n[결제 정보]란에서 확인이 가능합니다. 만일 혜택 적용이 되지\n않는 경우 아래 사항 확인을 부탁드리겠습니다.\n1 첫구매전용 페이지 내에서 구매하셨는지\n② 첫구매자 기준에 맞으시는지\nQ. 추가 쿠폰 적용이 되지 않아요!\nA. [첫구매전용] 상품을 구매하신 경우\n다른 상품과 함께 주문한 건에 대해서도 추가 주문서 쿠폰\n적용이 어려운 점 양해 부탁드립니다.\nQ. 첫구매혜택 적용 후 주문했는데 취소 하고 싶어요.!\n추후에 재적용이 가능할까요?\nA. 첫구매 회원의 경우 주문 취소 완료 후\n[첫구매전용] 혜택 적용 가능한 점 안내 드립니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9375,
+      "copyFacts": [
+        "첫구매 FAQ",
+        "Q. 첫구매 혜택 상품을 중복으로 담아도 되나요?",
+        "[첫구매전용] 혜택 적용 가능한 점 안내 드립니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "A. [첫구매전용] 혜택은 1인 1상품 1회 적용이 가능하며,",
+        "구매전용 상품을 장바구니에 중복으로 담아 결제하시는",
+        "경우에도 혜택은 1상품, 1개만 적용됩니다.",
+        "A. [첫구매전용] 혜택을 받아보실 수 있는 첫구매자 기준은",
+        "2 첫구매자 기준에 맞으시는지",
+        "적용이 어려운 점 양해 부탁드립니다.",
+        "Q. 첫구매혜택 적용 후 주문했는데 취소 하고 싶어요.!",
+        "A. 첫구매 회원의 경우 주문 취소 완료 후"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:20:31.777Z"
+  },
+  {
+    "key": "d63b1539a2513743701961bcd3dcd248b7c1b2700b7541a18d921f97296577a6",
+    "insight": {
+      "id": "detail-ocr-d39e8d409641",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/SkinImg/insta_main.png",
+      "contentHash": "d39e8d4096418ecab6e1e373234b973ce68c7c78b514a3b33f3d55e5289f01e9",
+      "ocrText": "@ romand instogram",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "@ romand instogram"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:20:32.182Z"
+  },
+  {
+    "key": "daa653571640a17de133a2ab88b12920399a87e6db399b74fe99fda1d481710d",
+    "insight": {
+      "id": "detail-ocr-415fb2f48870",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20250728/copy-1753691825-EBB2A0EC96B4-EBACBC-ED8BB4ED8AB8_09.jpg",
+      "contentHash": "415fb2f48870c19e18792096b545c4553cc3fef89eb9010f77c255ff7b57ea64",
+      "ocrText": "Bar\nTint",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Tint"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:20:32.813Z"
+  },
+  {
+    "key": "42e0d95466eb463bd38c795f67e5f9202fa7aa21d690962720f1a2b1ee89a75d",
+    "insight": {
+      "id": "detail-ocr-e11eaeeedf29",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20250728/copy-1753691826-EBB2A0EC96B4-EBACBC-ED8BB4ED8AB8_15.jpg",
+      "contentHash": "e11eaeeedf295c4a575f7b73d20942fd5b9e8d3908466ce80e2acc910d561a33",
+      "ocrText": "04 WATER GRAPE\nBARE WATER TINT\n10%\n13 오드 브리즈 가든\ne0? 음두버린 진\n베리 대 치트",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "04 WATER GRAPE",
+        "BARE WATER TINT"
+      ],
+      "discardedNotices": [
+        "13 오드 브리즈 가든",
+        "e0? 음두버린 진"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:20:33.098Z"
+  },
+  {
+    "key": "a125b18d6472c6625f3ae9f44d5b8f87c033b40468ce299297d1fd2862050047",
+    "insight": {
+      "id": "detail-ocr-f008dea6f6a8",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20250728/copy-1753691825-EBB2A0EC96B4-EBACBC-ED8BB4ED8AB8_20.jpg",
+      "contentHash": "f008dea6f6a84b5ae4f4c8d1d7117d50924a39f99a412808e0b50005ba667902",
+      "ocrText": "물든 입술 위에 립펜슬로 라인을 정리해주고\n입술 전체에 글로스를 더해 볼륨감 MAX!\nBare\nrom&nd\nBARE MOOL TINT\n완벽 클렌징 TIP!\n착색력이 강한 제형으로\n롬앤 틴트 리무버 사용을 권장 드립니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6875,
+      "copyFacts": [
+        "롬앤 틴트 리무버 사용을 권장 드립니다."
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Bare",
+        "rom&nd",
+        "BARE MOOL TINT"
+      ],
+      "discardedNotices": [
+        "착색력이 강한 제형으로"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T12:20:33.481Z"
+  },
+  {
+    "key": "6f3f7223a6f3f9060cc9a425ee3877e847f4b7b64e30c54a3a435da448375abd",
+    "insight": {
+      "id": "detail-ocr-7eeb18651588",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/data/brand_info/zetenth77/힘농추석배너.png",
+      "contentHash": "7eeb18651588478ff984b785b099971183dea4731bf2a3432f415d0ef4c19bc0",
+      "ocrText": "풍성한 한가위 보내세요\n농부들과 함께하는\n힘내라 농가\n앱으로 더 간편하고 빠르게!\n카메라로 QR코드를 찍으시면 앱 다운로드로 연결됩니다.\nDownload on the\nDownload on the\nGoogle Play\nAPP STORE",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.9444444444444444,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Download on the",
+        "Google Play",
+        "APP STORE"
+      ],
+      "discardedNotices": [
+        "농부들과 함께하는",
+        "힘내라 농가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:15:03.883Z"
+  },
+  {
+    "key": "06e1beeabb56ad0d2326dc98835641b4d6d1fc3687c80be0a4f5576b719db0f3",
+    "insight": {
+      "id": "detail-ocr-d9623a3ccf80",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/data/goods/zetenth77/small/thum2/05_20260904081302328_1.jpg",
+      "contentHash": "d9623a3ccf80a096f412102c9cbb16939f01456b968a4aa94519f793f51b9f8f",
+      "ocrText": "사이",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:15:04.431Z"
+  },
+  {
+    "key": "ac7f76fba909dada7074c1bae57f8d4f4c6656eea3fd39a4302028c3c1395460",
+    "insight": {
+      "id": "detail-ocr-d7ea39c9f8e7",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumb/202609040811554529620c5ac4e8-2c23-4b22-b347-09dd8bd658c6.jpg",
+      "contentHash": "d7ea39c9f8e734afacd5c983ffb88c8a56953f62c6107d637fdb883af0a4cb67",
+      "ocrText": "송편 4종.\n명절마다 어떤 송편을 사야 할지\n고민이셨나요?\n기본에 충실한 쫀득함! 100% 국내산 멥쌀 반죽을 베이스로,\n모두의 입맛을 저격할 담백 고소한 '녹두/모시녹두송편,\n설탕 제로! 정겨운 옛날 감성의 건강한 서리태 '콩송편,\n뜨거운 불 앞 노동을 없앤 천연 삼색의 달콤한 '찌지않는 깨송편'까지.\n취향에 맞게 골라 담아 가장 풍성한 명절상을 완성해 보세요!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "송편 4종.",
+        "모두의 입맛을 저격할 담백 고소한 '녹두/모시녹두송편,",
+        "뜨거운 불 앞 노동을 없앤 천연 삼색의 달콤한 '찌지않는 깨송편'까지.",
+        "취향에 맞게 골라 담아 가장 풍성한 명절상을 완성해 보세요!"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "기본에 충실한 쫀득함! 100% 국내산 멥쌀 반죽을 베이스로,"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:15:05.079Z"
+  },
+  {
+    "key": "6ebfb287e1e77dbb886ef9fb1c7607e35a1c4912555e5d890a13bcb2777f4fad",
+    "insight": {
+      "id": "detail-ocr-4d54b3e395fc",
+      "imageUrl": "https://flexgcdn-zetenth77.moall.shop/userfiles/zetenth77/thumbpc/20240513011925735232b057ee90-0fa4-4d1f-88d0-b52ee5a8d480.png",
+      "contentHash": "4d54b3e395fc4f1a32bb6f05aec501e190e446eb12bbcdaac8c9cd78e86136a9",
+      "ocrText": "- 힘내라농가에 등록된 판매상품은 판매원 및 공급사로부터 제공받은 것으로\n(주)제트언스에서는 그 내용에 대하여 일체의 책임을 지지 않습니다.\n(주)제트언스는 위탁판매자이며 상품, 상품정보, 거래에 관한 의무와 책임은\n각 판매원 및 공급사에게 있습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "힘내라농가에 등록된 판매상품은 판매원 및 공급사로부터 제공받은 것으로",
+        "(주)제트언스는 위탁판매자이며 상품, 상품정보, 거래에 관한 의무와 책임은",
+        "각 판매원 및 공급사에게 있습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:15:06.751Z"
   }
 ]

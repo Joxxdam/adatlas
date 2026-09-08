@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ACTIVE_CREATIVE_JOB_STORAGE_KEY, completedCreativeJobNoticeStorageKey } from "../../../lib/creative-generation/activeCreativeJob.client";
+import { ACTIVE_CREATIVE_JOB_CHANGED_EVENT, ACTIVE_CREATIVE_JOB_STORAGE_KEY, completedCreativeJobNoticeStorageKey, setActiveCreativeJobId } from "../../../lib/creative-generation/activeCreativeJob.client";
 import type { GenerationJobSummary } from "../../../lib/creative-generation/types";
 import styles from "./CreativeJobStatusIndicator.module.css";
 
 type CompletedNotice = {
   jobId: string;
   productName: string;
+  productUrl: string;
   completedCount: number;
   totalCount: number;
 };
@@ -40,6 +41,7 @@ export function CreativeJobStatusIndicator() {
         const notice = {
           jobId: finished.jobId,
           productName: finished.productName,
+          productUrl: finished.productUrl,
           completedCount: finished.generatedCount,
           totalCount: finished.totalCount,
         };
@@ -75,7 +77,7 @@ export function CreativeJobStatusIndicator() {
           lastActiveJob.current = next;
           setJob(next);
           setCompletedNotice(null);
-          window.localStorage.setItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY, next.jobId);
+          setActiveCreativeJobId(next.jobId);
         } else if (storedId) {
           try {
             const storedSummary = await fetchSummary(storedId);
@@ -89,7 +91,7 @@ export function CreativeJobStatusIndicator() {
             const previous = lastActiveJob.current || storedSummary;
             lastActiveJob.current = null;
             setJob(null);
-            window.localStorage.removeItem(ACTIVE_CREATIVE_JOB_STORAGE_KEY);
+            setActiveCreativeJobId();
             void announceCompletion(previous);
           } catch {
             // 일시적인 조회 실패에는 복원 ID와 현재 표시를 유지한다.
@@ -110,10 +112,22 @@ export function CreativeJobStatusIndicator() {
       if (mounted) timer = window.setTimeout(poll, errors.current >= 3 ? 10_000 : 2_500);
     }
 
+    function refreshFromActiveJobChange() {
+      void refresh();
+    }
+
+    function refreshFromOtherTab(event: StorageEvent) {
+      if (event.key === ACTIVE_CREATIVE_JOB_STORAGE_KEY) void refresh();
+    }
+
+    window.addEventListener(ACTIVE_CREATIVE_JOB_CHANGED_EVENT, refreshFromActiveJobChange);
+    window.addEventListener("storage", refreshFromOtherTab);
     void poll();
     return () => {
       mounted = false;
       if (timer) window.clearTimeout(timer);
+      window.removeEventListener(ACTIVE_CREATIVE_JOB_CHANGED_EVENT, refreshFromActiveJobChange);
+      window.removeEventListener("storage", refreshFromOtherTab);
     };
   }, []);
 
@@ -129,7 +143,7 @@ export function CreativeJobStatusIndicator() {
         <small>
           완성 {completedNotice.completedCount}/{completedNotice.totalCount}장 · 결과를 확인하고 다운로드할 수 있습니다.
         </small>
-        <Link className={styles.link} href={`/create-product?step=product&jobId=${encodeURIComponent(completedNotice.jobId)}#creative-results`}>
+        <Link className={styles.link} href={`/create-product?step=product&productUrl=${encodeURIComponent(completedNotice.productUrl)}&jobId=${encodeURIComponent(completedNotice.jobId)}#creative-results`}>
           완성 결과 확인
         </Link>
       </aside>
@@ -143,7 +157,7 @@ export function CreativeJobStatusIndicator() {
       <span className={styles.label}>{waiting ? `수동 제작 대기 ${job.manualQueue?.waitingPosition || 1}번째` : stalled ? "광고 제작 재개 필요" : "광고 제작 백그라운드 진행 중"}</span>
       <strong>{job.productName}</strong>
       <small>{waiting ? `앞에 ${job.manualQueue?.aheadCount || 0}건 · 현재 수동 요청 ${job.manualQueue?.totalCount || 1}건 · 접수 순서대로 자동 시작` : stalled ? `생성 ${job.generatedCount}/${job.totalCount}${job.failedCount ? ` · 실패 ${job.failedCount}` : ""} · 제작 화면에서 이어서 실행해 주세요.` : `${job.currentHookCode ? `${job.currentHookCode} 제작 중 · ` : ""}생성 ${job.generatedCount}/${job.totalCount}${job.failedCount ? ` · 실패 ${job.failedCount}` : ""}`}</small>
-      <Link className={styles.link} href={`/create-product?step=product&jobId=${encodeURIComponent(job.jobId)}#creative-results`}>
+      <Link className={styles.link} href={`/create-product?step=product&productUrl=${encodeURIComponent(job.productUrl)}&jobId=${encodeURIComponent(job.jobId)}#creative-results`}>
         진행 상황 보기
       </Link>
     </aside>

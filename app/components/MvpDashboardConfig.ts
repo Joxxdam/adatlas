@@ -29,6 +29,7 @@ type Props = {
   initialGenerated: GeneratedAdImage[];
   initialCreationHandoff?: ProductCreationHandoff | null;
   initialProductUrl?: string;
+  initialGenerationJobId?: string;
   initialActiveMenu?: MvpMenu;
   initialWorkflowStep?: "product" | "hooks" | "creative" | "results";
   activeFeature?: AppFeatureKey;
@@ -585,5 +586,4 @@ export type {
   RecentProductSummary,
   Status,
 };
-
 

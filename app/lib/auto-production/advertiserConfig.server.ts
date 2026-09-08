@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { nextScheduledAt } from "./schedule";
 import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL, minimumDailyImageCapacity } from "./policy";
 import type { AutoProductionAdvertiserConfig, AutoProductionProductImageSelection, AutoProductionRole } from "./types";
+import type { ReferenceCategoryOverride } from "../creative-generation/types";
 import { autoProductionRoles } from "./types";
 import { autoProductionRuntimePath } from "../runtimeStorage.ts";
 
@@ -14,6 +15,7 @@ const configFile = path.join(runtimeDirectory, "advertisers.json");
 const settingsFile = path.join(runtimeDirectory, "settings.json");
 const globalKey = Symbol.for("daywiz.auto-production.config-lock");
 const state = globalThis as typeof globalThis & { [globalKey]?: Promise<unknown> };
+const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook"]);
 
 export type AutoProductionGlobalSettings = {
   paused: boolean;
@@ -56,6 +58,9 @@ function normalizeProductImageSelections(value: unknown, productUrls: string[]) 
     if (!entry || typeof entry !== "object") return [];
     const candidate = entry as Partial<AutoProductionProductImageSelection>;
     const productUrl = String(candidate.productUrl || "").trim().slice(0, 2_000);
+    const referenceCategoryOverride = typeof candidate.referenceCategoryOverride === "string" && referenceCategoryOverrides.has(candidate.referenceCategoryOverride as ReferenceCategoryOverride)
+      ? candidate.referenceCategoryOverride as ReferenceCategoryOverride
+      : undefined;
     const productImagePath = String(candidate.productImagePath || "").trim().slice(0, 4_000);
     const supportingImagePath = String(candidate.supportingImagePath || "").trim().slice(0, 4_000);
     const packagingImagePath = String(candidate.packagingImagePath || "").trim().slice(0, 4_000);
@@ -64,6 +69,7 @@ function normalizeProductImageSelections(value: unknown, productUrls: string[]) 
     seen.add(productUrl);
     return [{
       productUrl,
+      referenceCategoryOverride,
       productImagePath,
       supportingImagePath: supportingImagePath && supportingImagePath !== productImagePath ? supportingImagePath : undefined,
       packagingImagePath: packagingImagePath

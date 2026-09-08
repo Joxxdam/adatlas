@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, referenceBelongsToSelectionPool, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
+import { inferNativeReferenceBeautySubcategory, inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceBeautySubcategory, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -118,6 +118,67 @@ test("식품 대분류 풀은 육류·간식을 포함한 등록 식품 전체�
   assert.equal(referenceBelongsToSelectionPool(meat, "food", "meat"), true);
 });
 
+test("화장품 레퍼런스는 디자인·후킹 하위 풀로 자동 분류하고 수동값을 우선한다", () => {
+  const design = normalizeNativeReferenceCompatibility({
+    id: "beauty-design",
+    publicPath: "/beauty-design.jpg",
+    sourceFile: "화장품 제품 비주얼.jpg",
+    layoutFamily: "sensory-editorial",
+    categoryGroup: "beauty",
+    ordinal: 205,
+    compositionType: "product-packshot",
+    photographyType: "editorial",
+    textDensity: "light",
+    nativeCopy: {
+      referenceId: "beauty-design",
+      rawText: "FIIV\nOBJECT TROUVE MATTE FOUNDATION",
+      rawLines: ["FIIV", "OBJECT TROUVE MATTE FOUNDATION"],
+      textRegions: [],
+      manuallyCorrected: false,
+      useForCopyAdaptation: true,
+      extractionSource: "manual",
+      updatedAt: new Date(0).toISOString(),
+    },
+  });
+  const hook = normalizeNativeReferenceCompatibility({
+    ...design,
+    id: "beauty-hook",
+    beautySubcategory: undefined,
+    layoutFamily: "price-offer",
+    compositionType: "price-card",
+  });
+  const humanComparison = normalizeNativeReferenceCompatibility({
+    ...design,
+    id: "beauty-human-comparison",
+    beautySubcategory: undefined,
+    compositionType: "human-use",
+    photographyType: "human-model",
+    textDensity: "medium",
+  });
+  const salesCopy = normalizeNativeReferenceCompatibility({
+    ...design,
+    id: "beauty-sales-copy",
+    beautySubcategory: undefined,
+    nativeCopy: {
+      ...design.nativeCopy,
+      referenceId: "beauty-sales-copy",
+      rawText: "오늘만 20% OFF · 할인특가 >",
+      rawLines: ["오늘만 20% OFF · 할인특가 >"],
+    },
+  });
+  const manualDesign = normalizeNativeReferenceCompatibility({ ...hook, id: "manual-design", beautySubcategory: "design" });
+  assert.equal(inferNativeReferenceBeautySubcategory(design), "design");
+  assert.equal(design.beautySubcategory, "design");
+  assert.equal(hook.beautySubcategory, "hook");
+  assert.equal(humanComparison.beautySubcategory, "hook");
+  assert.equal(salesCopy.beautySubcategory, "hook");
+  assert.equal(manualDesign.beautySubcategory, "design");
+  assert.equal(normalizeNativeReferenceBeautySubcategory("invalid"), undefined);
+  assert.equal(referenceBelongsToBeautySelectionPool(design, "design"), true);
+  assert.equal(referenceBelongsToBeautySelectionPool(design, "hook"), false);
+  assert.equal(referenceBelongsToBeautySelectionPool(hook, "hook"), true);
+});
+
 test("신규 식품 레퍼런스는 육류·간식만 하위분류하고 일반 식품은 대분류에만 둔다", () => {
   assert.equal(inferNativeReferenceFoodSubcategoryFromText("반건조 무화과 간식 광고.jpg"), "snack");
   assert.equal(inferNativeReferenceFoodSubcategoryFromText("과일12.jpg"), "snack");
@@ -135,11 +196,14 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   const factory = await read("app/lib/creative-generation/createNativeGenerationJob.server.ts");
   const selector = await read("app/lib/creative-generation/referenceCreativeLibrary.server.ts");
 
-  assert.match(types, /ReferenceCategoryOverride\s*=\s*"fashion"\s*\|\s*"food"\s*\|\s*"food-meat"\s*\|\s*"food-snack"\s*\|\s*"food-other"\s*\|\s*"food-produce"\s*\|\s*"beauty"/);
+  assert.match(types, /ReferenceCategoryOverride\s*=\s*"all"\s*\|\s*"fashion"\s*\|\s*"food"\s*\|\s*"food-meat"\s*\|\s*"food-snack"\s*\|\s*"food-other"\s*\|\s*"food-produce"\s*\|\s*"beauty"\s*\|\s*"beauty-design"\s*\|\s*"beauty-hook"/);
   assert.match(generator, /자동 매칭 \(상품 분석 기준\)/);
+  assert.match(generator, /\{ value: "all", label: "전체 카테고리" \}/);
   assert.match(generator, /referenceCategoryOverride:\s*referenceCategoryOverride \|\| undefined/);
   assert.match(generator, /식품 · 육류/);
   assert.match(generator, /식품 · 간식/);
+  assert.match(generator, /화장품 · 디자인/);
+  assert.match(generator, /화장품 · 후킹/);
   assert.match(generator, /\{ value: "food", label: "식품" \}/);
   assert.doesNotMatch(generator, /label: "식품 · 기타 식품"/);
   assert.match(factory, /job\.referenceCategoryOverride\s*=/);
@@ -147,7 +211,13 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(selector, /job\.referenceCategoryOverride === "food-meat"/);
   assert.match(selector, /job\.referenceCategoryOverride === "food-snack"/);
   assert.match(selector, /job\.referenceCategoryOverride === "food-other"\) return undefined/);
+  assert.match(selector, /job\.referenceCategoryOverride === "beauty-design"/);
+  assert.match(selector, /job\.referenceCategoryOverride === "beauty-hook"/);
+  assert.match(selector, /referenceBelongsToBeautySelectionPool/);
   assert.match(selector, /referenceBelongsToSelectionPool/);
+  assert.match(selector, /job\.referenceCategoryOverride === "all"/);
+  assert.match(selector, /allCategories\s*\?\s*referenceItems/);
+  assert.match(selector, /전체 카테고리 통합 풀/);
   assert.match(selector, /사용자 수동 지정/);
 });
 
@@ -180,6 +250,8 @@ test("레퍼런스 관리 API는 목록·업로드·분류수정·삭제를 지�
   assert.match(route, /supportsPackagedProduct/);
   assert.match(route, /foodSubcategory/);
   assert.match(route, /foodSubcategoryCounts/);
+  assert.match(route, /beautySubcategory/);
+  assert.match(route, /beautySubcategoryCounts/);
 });
 
 test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업로드·삭제 UI를 표시한다", async () => {
@@ -194,7 +266,13 @@ test("레퍼런스 관리 기본 화면은 실제 제작 라이브러리와 업�
   assert.match(manager, /고급 호환 태그/);
   assert.match(manager, /productForm/);
   assert.match(manager, /foodSubcategoryCounts/);
+  assert.match(manager, /beautySubcategoryCounts/);
   assert.match(manager, /식품 하위분류/);
+  assert.match(manager, /화장품 하위분류/);
+  assert.match(manager, /nativeReferenceBeautySubcategories/);
+  assert.match(manager, /styles\.quickSubcategory/);
+  assert.match(manager, /updateBeautySubcategory/);
+  assert.match(manager, /value=\{item\.beautySubcategory \|\| "hook"\}/);
   assert.match(manager, /nativeReferenceFoodSubcategories/);
   assert.match(management, /if \(value === "meat"\) return "육류"/);
   assert.match(management, /return "간식"/);

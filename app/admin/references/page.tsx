@@ -3,7 +3,7 @@ import { FeaturePageShell } from "../../components/AppFeatureNavigation";
 import { WatchlistExplorer } from "../../components/WatchlistExplorer";
 import { NativeReferenceLibraryManager } from "../../components/references/NativeReferenceLibraryManager";
 import { nativeReferenceLibraryRepository } from "../../lib/creative-generation/nativeReferenceLibraryRepository.server";
-import { nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, referenceBelongsToSelectionPool } from "../../lib/creative-generation/referenceLibraryManagement";
+import { nativeReferenceBeautySubcategories, nativeReferenceCategoryGroups, nativeReferenceFoodSubcategories, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool } from "../../lib/creative-generation/referenceLibraryManagement";
 import { readContentAnalyses, readWatchlist } from "../../lib/watchlist/store";
 import { isReferenceLibraryReadOnly } from "../../lib/runtimeStorage.ts";
 
@@ -22,6 +22,7 @@ export default async function ReferenceManagementPage({ searchParams }: { search
     items: manifest.items,
     counts: Object.fromEntries(nativeReferenceCategoryGroups.map((categoryGroup) => [categoryGroup, manifest.items.filter((item) => item.categoryGroup === categoryGroup).length])) as Record<(typeof nativeReferenceCategoryGroups)[number], number>,
     foodSubcategoryCounts: Object.fromEntries(nativeReferenceFoodSubcategories.map((foodSubcategory) => [foodSubcategory, manifest.items.filter((item) => referenceBelongsToSelectionPool(item, "food", foodSubcategory)).length])) as Record<(typeof nativeReferenceFoodSubcategories)[number], number>,
+    beautySubcategoryCounts: Object.fromEntries(nativeReferenceBeautySubcategories.map((beautySubcategory) => [beautySubcategory, manifest.items.filter((item) => referenceBelongsToBeautySelectionPool(item, beautySubcategory)).length])) as Record<(typeof nativeReferenceBeautySubcategories)[number], number>,
   };
   return (
     <FeaturePageShell activeFeature="references">

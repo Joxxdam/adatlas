@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { creativeGenerationJobStore } from "../../../../lib/creative-generation/jobStore.server";
-import { cancelQueuedGenerationJob, enqueueGenerationJob, getManualGenerationQueueSnapshot, isGenerationJobRunnerActive, recoverGenerationJob } from "../../../../lib/creative-generation/jobRunner.server";
+import { activeDirectGenerationResultIds, cancelQueuedGenerationJob, enqueueGenerationJob, getManualGenerationQueueSnapshot, isGenerationJobRunnerActive, recoverGenerationJob } from "../../../../lib/creative-generation/jobRunner.server";
 import { assertGenerationJobAccess, localAccessError, localAccessErrorStatus, verifyLocalGenerationAccess } from "../../../../lib/creative-generation/localGenerationAccess.server";
 import { toGenerationJobSummary, toPublicGenerationError, toPublicGenerationJob } from "../../../../lib/creative-generation/publicJob.server";
 import { cancelGenerationJob, hasOrphanedRunningResult, isServerRunnableGenerationJob, resumeGenerationJob } from "../../../../lib/creative-generation/jobRunnerPolicy";
@@ -17,8 +17,11 @@ export async function GET(request: Request, context: { params: Promise<{ jobId: 
     assertGenerationJobAccess(principal, job);
     const runnerWasActive = isGenerationJobRunnerActive(job.id);
     if (isServerRunnableGenerationJob(job) && ["pending", "running"].includes(job.status)) {
-      if (hasOrphanedRunningResult(job, runnerWasActive)) {
-        job = await creativeGenerationJobStore.update(job.id, (current) => resumeGenerationJob(current, false));
+      const activeDirectResultIds = activeDirectGenerationResultIds(job.id);
+      if (hasOrphanedRunningResult(job, runnerWasActive, activeDirectResultIds)) {
+        job = await creativeGenerationJobStore.update(job.id, (current) =>
+          resumeGenerationJob(current, false, new Date().toISOString(), false, activeDirectResultIds)
+        );
       }
       enqueueGenerationJob(job.id, { priority: job.sourceType !== "auto-production" });
     }

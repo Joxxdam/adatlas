@@ -4,12 +4,19 @@ import { executionResults, failedGenerationResultStatuses, terminalGenerationRes
 import { nativeResultImageUrl } from "./nativeCreativeStorage.server";
 import { DEFAULT_CODEX_GENERATION_PIPELINE } from "./codexDirectTest";
 
-const localPathPattern = /(?:\/Users|\/home|\/private|\/tmp|\/var|[A-Z]:[\\/])[^\s"']+/gi;
-const localPathTestPattern = /(?:\/Users|\/home|\/private|\/tmp|\/var|[A-Z]:[\\/])[^\s"']+/i;
+// Windows 경로의 `C:/` 형태를 찾는 패턴이 `https://`의 `s:/`까지 잡으면
+// 정상 상품 URL 전체가 "로컬 파일"로 치환된다. 절대경로 시작 또는 명확한
+// 문자열 경계에서만 로컬 경로로 판정해 웹 URL은 그대로 공개한다.
+const localPathPattern = /(^|[\s"'(=,:]|file:\/\/)((?:\/(?:Users|home|private|tmp|var))(?:\/[^\s"']*)?|[A-Z]:[\\/][^\s"']*)/gim;
+const localPathTestPattern = /^(?:(?:file:\/\/)?\/(?:Users|home|private|tmp|var)(?:[\\/]|$)|[A-Z]:[\\/])/i;
 const secretPattern = /\b(?:sk-[A-Za-z0-9_-]{12,}|Bearer\s+[A-Za-z0-9._-]{12,})\b/gi;
 
+function redactLocalPaths(value: string) {
+  return value.replace(localPathPattern, (_match, prefix: string) => `${prefix}로컬 파일`);
+}
+
 export function toPublicGenerationError(error: unknown, fallback: string) {
-  return (error instanceof Error ? error.message : fallback).replace(localPathPattern, "로컬 파일").replace(secretPattern, "[비공개 인증정보]").slice(0, 600);
+  return redactLocalPaths(error instanceof Error ? error.message : fallback).replace(secretPattern, "[비공개 인증정보]").slice(0, 600);
 }
 
 export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
@@ -259,7 +266,7 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
       };
     }),
   };
-  const serialized = JSON.stringify(publicJob).replace(localPathPattern, "로컬 파일").replace(secretPattern, "[비공개 인증정보]");
+  const serialized = redactLocalPaths(JSON.stringify(publicJob)).replace(secretPattern, "[비공개 인증정보]");
   return JSON.parse(serialized) as GenerationJob;
 }
 

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChangeEvent, DragEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { nativeReferenceCategoryGroups, nativeReferenceCategoryLabel, nativeReferenceFoodSubcategories, nativeReferenceFoodSubcategoryLabel, nativeReferenceSelectionPoolLabel, nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferencePhotographyTypes, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceCategoryGroup, type NativeReferenceFoodSubcategory, type NativeReferenceSelectionPool } from "../../lib/creative-generation/referenceLibraryManagement";
+import { nativeReferenceBeautySubcategories, nativeReferenceBeautySubcategoryLabel, nativeReferenceCategoryGroups, nativeReferenceCategoryLabel, nativeReferenceFoodSubcategories, nativeReferenceFoodSubcategoryLabel, nativeReferenceSelectionPoolLabel, nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferencePhotographyTypes, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceBeautySubcategory, type NativeReferenceCategoryGroup, type NativeReferenceFoodSubcategory, type NativeReferenceSelectionPool } from "../../lib/creative-generation/referenceLibraryManagement";
 import styles from "./NativeReferenceLibraryManager.module.css";
 
 type LibraryPayload = {
@@ -11,12 +11,14 @@ type LibraryPayload = {
   items: ManagedNativeReferenceItem[];
   counts: Record<NativeReferenceCategoryGroup, number>;
   foodSubcategoryCounts: Record<NativeReferenceFoodSubcategory, number>;
+  beautySubcategoryCounts: Record<NativeReferenceBeautySubcategory, number>;
 };
 
 type Props = { initialLibrary: LibraryPayload; readOnly?: boolean };
-type Filter = "all" | NativeReferenceCategoryGroup | `food-${NativeReferenceFoodSubcategory}`;
-type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory"> & {
+type Filter = "all" | NativeReferenceCategoryGroup | `food-${NativeReferenceFoodSubcategory}` | `beauty-${NativeReferenceBeautySubcategory}`;
+type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory" | "beautySubcategory"> & {
   foodSubcategory?: NativeReferenceFoodSubcategory | null;
+  beautySubcategory?: NativeReferenceBeautySubcategory | null;
 };
 type OcrStatusPayload = {
   run: null | {
@@ -51,6 +53,14 @@ function foodSubcategoryFromFilter(value: Filter): NativeReferenceFoodSubcategor
     : undefined;
 }
 
+function beautySubcategoryFromFilter(value: Filter): NativeReferenceBeautySubcategory | undefined {
+  if (!value.startsWith("beauty-")) return undefined;
+  const subcategory = value.slice("beauty-".length);
+  return nativeReferenceBeautySubcategories.includes(subcategory as NativeReferenceBeautySubcategory)
+    ? subcategory as NativeReferenceBeautySubcategory
+    : undefined;
+}
+
 export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false }: Props) {
   const [library, setLibrary] = useState(initialLibrary);
   const [filter, setFilter] = useState<Filter>("all");
@@ -64,8 +74,14 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
 
   const visibleItems = useMemo(() => {
     const foodSubcategory = foodSubcategoryFromFilter(filter);
+    const beautySubcategory = beautySubcategoryFromFilter(filter);
     return library.items
-      .filter((item) => filter === "all" || (foodSubcategory ? referenceBelongsToSelectionPool(item, "food", foodSubcategory) : item.categoryGroup === filter))
+      .filter((item) => filter === "all"
+        || (foodSubcategory
+          ? referenceBelongsToSelectionPool(item, "food", foodSubcategory)
+          : beautySubcategory
+            ? referenceBelongsToBeautySelectionPool(item, beautySubcategory)
+            : item.categoryGroup === filter))
       .sort((left, right) => right.ordinal - left.ordinal);
   }, [filter, library.items]);
   useEffect(() => {
@@ -135,6 +151,14 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
 
   async function updateCategory(item: ManagedNativeReferenceItem, categoryGroup: NativeReferenceCategoryGroup) {
     await updateMetadata(item, { categoryGroup }, `${nativeReferenceCategoryLabel(categoryGroup)} 상품군으로 옮겼습니다.`);
+  }
+
+  async function updateBeautySubcategory(item: ManagedNativeReferenceItem, beautySubcategory: NativeReferenceBeautySubcategory) {
+    await updateMetadata(
+      item,
+      { beautySubcategory },
+      `화장품 · ${nativeReferenceBeautySubcategoryLabel(beautySubcategory)} 제작 풀로 분류했습니다.`
+    );
   }
 
   async function updateMetadata(item: ManagedNativeReferenceItem, patch: ReferenceMetadataPatch, successMessage = "고급 호환 태그를 저장했습니다.") {
@@ -363,6 +387,13 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
                   ↳ {nativeReferenceFoodSubcategoryLabel(foodSubcategory)} <b>{library.foodSubcategoryCounts[foodSubcategory] || 0}</b>
                 </button>
               );
+            }) : categoryGroup === "beauty" ? nativeReferenceBeautySubcategories.map((beautySubcategory) => {
+              const beautyFilter = `beauty-${beautySubcategory}` as Filter;
+              return (
+                <button className={`${filter === beautyFilter ? styles.active : ""} ${styles.produceFilter}`.trim()} key={beautySubcategory} onClick={() => setFilter(beautyFilter)} type="button">
+                  ↳ {nativeReferenceBeautySubcategoryLabel(beautySubcategory)} <b>{library.beautySubcategoryCounts[beautySubcategory] || 0}</b>
+                </button>
+              );
             }) : null}
           </Fragment>
         ))}
@@ -377,11 +408,29 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
                 <span>
                   {nativeReferenceCategoryLabel(item.categoryGroup)}
                   {item.foodSubcategory ? ` · ${nativeReferenceFoodSubcategoryLabel(item.foodSubcategory)}` : ""}
+                  {item.beautySubcategory ? ` · ${nativeReferenceBeautySubcategoryLabel(item.beautySubcategory)}` : ""}
                   {item.additionalSelectionPools?.length ? ` · 추가 ${item.additionalSelectionPools.map(nativeReferenceSelectionPoolLabel).join("/")}` : ""}
                 </span>
               </div>
               <div className={styles.cardBody}>
                 <strong title={item.sourceFile}>{item.sourceFile}</strong>
+                {item.categoryGroup === "beauty" ? (
+                  <label className={styles.quickSubcategory}>
+                    화장품 하위분류
+                    <select
+                      aria-label={`${item.sourceFile} 화장품 하위분류`}
+                      disabled={readOnly || Boolean(busy)}
+                      onChange={(event) => void updateBeautySubcategory(item, event.target.value as NativeReferenceBeautySubcategory)}
+                      value={item.beautySubcategory || "hook"}
+                    >
+                      {nativeReferenceBeautySubcategories.map((beautySubcategory) => (
+                        <option key={beautySubcategory} value={beautySubcategory}>
+                          {nativeReferenceBeautySubcategoryLabel(beautySubcategory)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 <details className={styles.managePanel}>
                   <summary>
                     <span>분류 및 설정</span>
@@ -421,7 +470,8 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
                           ))}
                         </select>
                       </label>
-                    ) : nativeReferenceFoodSubcategories.map((foodSubcategory) => (
+                    ) : null}
+                    {item.categoryGroup !== "food" ? nativeReferenceFoodSubcategories.map((foodSubcategory) => (
                       <label className={styles.produceToggle} key={foodSubcategory}>
                         <input
                           checked={(item.additionalSelectionPools || []).includes(foodSelectionPool(foodSubcategory))}
@@ -431,7 +481,7 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
                         />
                         <span>식품 · {nativeReferenceFoodSubcategoryLabel(foodSubcategory)} 제작에도 추가 사용</span>
                       </label>
-                    ))}
+                    )) : null}
                     <details className={styles.nativeCopy} open={!item.nativeCopy?.rawText}>
                       <summary>
                         실제 광고 원문

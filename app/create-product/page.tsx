@@ -65,5 +65,5 @@ export default async function CreateProductPage({ searchParams }: { searchParams
       initialCreationHandoff = null;
     }
   }
-  return <MvpDashboard activeFeature="creative-production" initialActiveMenu={view === "results" && !generationJobId ? "결과 다운로드" : "광고 생성"} initialWorkflowStep={initialWorkflowStep} initialBrands={brands} initialCreationHandoff={initialCreationHandoff} initialProductUrl={initialProductUrl} initialGenerated={generated} initialImages={images} />;
+  return <MvpDashboard key={generationJobId ? `generation-job:${generationJobId}` : "creative-production"} activeFeature="creative-production" initialActiveMenu={view === "results" && !generationJobId ? "결과 다운로드" : "광고 생성"} initialWorkflowStep={initialWorkflowStep} initialBrands={brands} initialCreationHandoff={initialCreationHandoff} initialProductUrl={initialProductUrl} initialGenerationJobId={generationJobId} initialGenerated={generated} initialImages={images} />;
 }

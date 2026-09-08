@@ -2,7 +2,7 @@
   "version": "native-creative-reference-library-v15-full-category-random",
   "importedAt": "2026-08-23T05:38:53.931Z",
   "sourceLabel": "레퍼런스 관리 화면에서 운영하는 제작용 이미지 라이브러리",
-  "selectionPolicy": "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 기본 대카테고리는 패션·식품·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품 대분류를 선택하면 육류·간식을 포함한 등록 식품 전체를 사용하고, 식품 · 육류 또는 식품 · 간식을 선택하면 해당 하위 풀만 사용합니다. 신규 수동·자동 제작은 선택되거나 자동 판정된 풀 전체에서 점수 우선순위 없이 중복 없는 무작위 6장을 선택합니다. 기본 분류는 바꾸지 않은 채 운영자가 추가 제작 풀을 지정해 같은 레퍼런스를 여러 상품군에서 함께 사용할 수 있습니다. 다른 레퍼런스로 재생성할 때 제외 목록이 전달된 경우에는 아직 사용하지 않은 항목에서 먼저 무작위 선택하고, 부족할 때만 해당 풀 전체로 돌아갑니다. 미지정 대카테고리로 임의 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.",
+  "selectionPolicy": "레퍼런스 관리 화면에 현재 등록된 이미지만 사용하며 등록 여부 자체를 운영자의 품질 승인으로 봅니다. 기본 대카테고리는 패션·식품·화장품 세 그룹으로 유지하고 건강·웰니스와 퍼스널케어는 화장품에 포함합니다. 식품은 육류·간식 하위 풀을, 화장품은 디자인·후킹 하위 풀을 선택할 수 있습니다. 신규 수동·자동 제작은 선택되거나 자동 판정된 풀 전체에서 점수 우선순위 없이 중복 없는 무작위 6장을 선택합니다. 기본 분류는 바꾸지 않은 채 운영자가 추가 제작 풀을 지정해 같은 레퍼런스를 여러 상품군에서 함께 사용할 수 있습니다. 다른 레퍼런스로 재생성할 때 제외 목록이 전달된 경우에는 아직 사용하지 않은 항목에서 먼저 무작위 선택하고, 부족할 때만 해당 풀 전체로 돌아갑니다. 미지정 대카테고리로 임의 보충하지 않으며 삭제된 항목은 즉시 선택 대상에서 제외됩니다.",
   "usagePolicy": "선택 결과를 작업에 저장하고 원본을 01-structure로 무손실 복사한 뒤 URL 상품과 ProductTruth 문구로 단계별 교체합니다. 재시도·복구·문구 수정은 같은 레퍼런스를 재사용하며 사용자가 6장 전체 새로 만들기를 실행할 때만 다시 추첨합니다.",
   "items": [
     {
@@ -462,7 +462,8 @@
         "extractedAt": "2026-08-25T12:30:02.962Z",
         "updatedAt": "2026-08-25T12:37:54.624Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-002",
@@ -1508,7 +1509,8 @@
         "extractedAt": "2026-08-25T12:30:02.963Z",
         "updatedAt": "2026-08-25T12:36:55.378Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-005",
@@ -2318,7 +2320,8 @@
         "extractedAt": "2026-08-26T05:45:25.360Z",
         "updatedAt": "2026-08-26T05:56:13.327Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-006",
@@ -2863,7 +2866,8 @@
         "extractedAt": "2026-08-26T09:43:41.355Z",
         "updatedAt": "2026-08-26T09:48:54.344Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-007",
@@ -3596,7 +3600,8 @@
         "extractedAt": "2026-08-25T12:46:39.517Z",
         "updatedAt": "2026-08-25T12:49:07.190Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-009",
@@ -4984,7 +4989,8 @@
         "extractedAt": "2026-08-25T16:21:55.467Z",
         "updatedAt": "2026-08-25T16:31:30.791Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-011",
@@ -10165,7 +10171,8 @@
         "extractedAt": "2026-08-25T16:21:55.466Z",
         "updatedAt": "2026-08-25T16:26:27.335Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-040",
@@ -10730,7 +10737,8 @@
         "extractedAt": "2026-08-25T16:31:30.977Z",
         "updatedAt": "2026-08-25T16:38:28.869Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-041",
@@ -11253,7 +11261,8 @@
         "extractedAt": "2026-08-25T16:31:30.979Z",
         "updatedAt": "2026-08-25T16:35:54.416Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-042",
@@ -12384,7 +12393,8 @@
         "extractedAt": "2026-08-26T05:56:13.797Z",
         "updatedAt": "2026-08-26T06:03:09.468Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-043",
@@ -12904,7 +12914,8 @@
         "extractedAt": "2026-08-25T16:38:29.067Z",
         "updatedAt": "2026-08-25T16:44:05.528Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-044",
@@ -13658,7 +13669,8 @@
         "extractedAt": "2026-08-25T16:45:17.054Z",
         "updatedAt": "2026-08-25T16:51:43.028Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-048",
@@ -14326,7 +14338,8 @@
         "extractedAt": "2026-08-25T16:51:43.231Z",
         "updatedAt": "2026-08-25T16:55:46.541Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-050",
@@ -19091,7 +19104,8 @@
         "extractedAt": "2026-08-25T16:51:43.231Z",
         "updatedAt": "2026-08-25T16:53:44.536Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-070",
@@ -19429,7 +19443,8 @@
         "extractedAt": "2026-08-25T16:55:46.742Z",
         "updatedAt": "2026-08-25T16:58:56.401Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-071",
@@ -19778,7 +19793,8 @@
         "extractedAt": "2026-08-25T16:55:46.743Z",
         "updatedAt": "2026-08-25T16:59:16.923Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-072",
@@ -20232,7 +20248,8 @@
         "extractedAt": "2026-08-25T16:55:46.743Z",
         "updatedAt": "2026-08-25T16:57:26.542Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-073",
@@ -20628,7 +20645,8 @@
         "extractedAt": "2026-08-25T16:59:17.115Z",
         "updatedAt": "2026-08-25T17:04:26.423Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-074",
@@ -20841,7 +20859,8 @@
         "extractedAt": "2026-08-25T17:07:01.532Z",
         "updatedAt": "2026-08-25T17:10:28.420Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-075",
@@ -21354,7 +21373,8 @@
         "extractedAt": "2026-08-25T17:13:58.348Z",
         "updatedAt": "2026-08-25T17:20:40.361Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-076",
@@ -22146,7 +22166,8 @@
         "extractedAt": "2026-08-25T17:07:01.533Z",
         "updatedAt": "2026-08-25T17:13:58.145Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-077",
@@ -22477,7 +22498,8 @@
         "extractedAt": "2026-08-25T17:13:58.349Z",
         "updatedAt": "2026-08-25T17:18:44.442Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-079",
@@ -22929,7 +22951,8 @@
         "extractedAt": "2026-08-25T17:26:03.090Z",
         "updatedAt": "2026-08-25T17:29:28.099Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-080",
@@ -23295,7 +23318,8 @@
         "extractedAt": "2026-08-25T17:20:40.564Z",
         "updatedAt": "2026-08-25T17:25:25.865Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-081",
@@ -23668,7 +23692,8 @@
         "extractedAt": "2026-08-26T05:56:13.797Z",
         "updatedAt": "2026-08-26T06:04:24.205Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-082",
@@ -24184,7 +24209,8 @@
         "extractedAt": "2026-08-25T17:26:03.089Z",
         "updatedAt": "2026-08-25T17:27:55.516Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-083",
@@ -24575,7 +24601,8 @@
         "extractedAt": "2026-08-25T17:31:45.155Z",
         "updatedAt": "2026-08-25T17:35:03.091Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-084",
@@ -25008,7 +25035,8 @@
         "extractedAt": "2026-08-25T17:31:45.156Z",
         "updatedAt": "2026-08-25T17:36:07.211Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-086",
@@ -25396,7 +25424,8 @@
         "extractedAt": "2026-08-25T17:40:42.458Z",
         "updatedAt": "2026-08-25T17:44:43.450Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-087",
@@ -25664,7 +25693,8 @@
         "extractedAt": "2026-08-25T17:40:42.458Z",
         "updatedAt": "2026-08-25T17:44:15.241Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-088",
@@ -26123,7 +26153,8 @@
         "extractedAt": "2026-08-25T17:47:25.996Z",
         "updatedAt": "2026-08-25T17:51:22.175Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-095",
@@ -26648,7 +26679,8 @@
         "extractedAt": "2026-08-25T17:53:17.949Z",
         "updatedAt": "2026-08-25T17:56:06.973Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-096",
@@ -27236,7 +27268,8 @@
         "extractedAt": "2026-08-25T17:53:17.951Z",
         "updatedAt": "2026-08-25T18:00:01.892Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-098",
@@ -27633,7 +27666,8 @@
         "extractedAt": "2026-08-25T17:53:17.951Z",
         "updatedAt": "2026-08-25T17:54:57.304Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-100",
@@ -28029,7 +28063,8 @@
         "extractedAt": "2026-08-25T18:00:02.108Z",
         "updatedAt": "2026-08-25T18:03:32.316Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-101",
@@ -28452,7 +28487,8 @@
         "extractedAt": "2026-08-25T18:07:30.962Z",
         "updatedAt": "2026-08-25T18:12:18.855Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-102",
@@ -28751,7 +28787,8 @@
         "extractedAt": "2026-08-25T18:07:30.962Z",
         "updatedAt": "2026-08-25T18:10:51.374Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-103",
@@ -29018,7 +29055,8 @@
         "extractedAt": "2026-08-25T18:12:19.079Z",
         "updatedAt": "2026-08-25T18:18:23.009Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-105",
@@ -29606,7 +29644,8 @@
         "extractedAt": "2026-08-25T18:12:19.079Z",
         "updatedAt": "2026-08-25T18:19:35.396Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-106",
@@ -30127,7 +30166,8 @@
         "extractedAt": "2026-08-25T18:19:35.611Z",
         "updatedAt": "2026-08-25T18:24:16.788Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-107",
@@ -30684,7 +30724,8 @@
         "extractedAt": "2026-08-25T18:19:35.612Z",
         "updatedAt": "2026-08-25T18:25:20.782Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-108",
@@ -31143,7 +31184,8 @@
         "extractedAt": "2026-08-25T18:19:35.612Z",
         "updatedAt": "2026-08-25T18:23:36.895Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-109",
@@ -31694,7 +31736,8 @@
         "extractedAt": "2026-08-25T18:25:20.980Z",
         "updatedAt": "2026-08-25T18:30:12.844Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-110",
@@ -32139,7 +32182,8 @@
         "extractedAt": "2026-08-25T18:45:04.367Z",
         "updatedAt": "2026-08-25T18:51:52.417Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-111",
@@ -33501,7 +33545,8 @@
         "extractedAt": "2026-08-25T18:32:23.909Z",
         "updatedAt": "2026-08-25T18:43:19.635Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-112",
@@ -34942,7 +34987,8 @@
         "extractedAt": "2026-08-25T18:51:52.619Z",
         "updatedAt": "2026-08-25T18:59:39.975Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-copy-113",
@@ -35495,7 +35541,8 @@
         "extractedAt": "2026-08-25T18:45:04.371Z",
         "updatedAt": "2026-08-25T18:48:59.003Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-85b20724-977c-4018-ac5e-be02e136d378",
@@ -35794,7 +35841,8 @@
         "extractedAt": "2026-08-25T18:51:52.620Z",
         "updatedAt": "2026-08-25T18:55:07.113Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-197394bd-c1c9-4685-a470-319f70398324",
@@ -36320,7 +36368,8 @@
         "extractedAt": "2026-08-25T18:51:52.620Z",
         "updatedAt": "2026-08-25T18:55:58.122Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-add4f50f-587f-42d8-8daf-a3060baec6ae",
@@ -36751,7 +36800,8 @@
         "extractedAt": "2026-08-25T18:59:40.180Z",
         "updatedAt": "2026-08-25T19:02:09.975Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-e81bf32c-d645-4731-9be3-129e2fd0bbd9",
@@ -37080,7 +37130,8 @@
         "extractedAt": "2026-08-25T18:59:40.181Z",
         "updatedAt": "2026-08-25T19:01:26.313Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-7c05de33-1564-45cf-885d-d8bb380a86c3",
@@ -37389,7 +37440,8 @@
         "extractedAt": "2026-08-25T18:59:40.181Z",
         "updatedAt": "2026-08-25T19:02:43.775Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ccb07646-36ce-43eb-82c8-68ee6e67d6cf",
@@ -37788,7 +37840,8 @@
         "extractedAt": "2026-08-25T19:02:43.972Z",
         "updatedAt": "2026-08-25T19:05:58.155Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-80e5eb5e-22fd-4262-af52-6241961fc2c7",
@@ -38215,7 +38268,8 @@
         "extractedAt": "2026-08-25T19:02:43.972Z",
         "updatedAt": "2026-08-25T19:06:25.951Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d91c545e-79ba-4172-b881-77f69cbc7eb5",
@@ -38701,7 +38755,8 @@
         "extractedAt": "2026-08-25T19:02:43.972Z",
         "updatedAt": "2026-08-25T19:05:27.232Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-1d800c42-93f3-4d41-a0e8-3ba44fdedfd9",
@@ -39071,7 +39126,8 @@
         "extractedAt": "2026-08-25T19:06:26.150Z",
         "updatedAt": "2026-08-25T19:11:10.183Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-5bf5a2bb-b969-425e-9abc-fe64c3372c4c",
@@ -39505,7 +39561,8 @@
         "extractedAt": "2026-08-25T19:06:26.149Z",
         "updatedAt": "2026-08-25T19:10:35.794Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-14db7d30-d109-4aa6-baa6-2e560fc0a2c0",
@@ -39811,7 +39868,8 @@
         "extractedAt": "2026-08-25T19:06:26.150Z",
         "updatedAt": "2026-08-25T19:07:38.355Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-66ce195b-fdce-42b6-93e0-7ceb679159b7",
@@ -40177,7 +40235,8 @@
         "extractedAt": "2026-08-25T19:11:10.378Z",
         "updatedAt": "2026-08-25T19:16:54.902Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-df1bc876-d8a3-4478-9bc4-d2edacaad73e",
@@ -40543,7 +40602,8 @@
         "extractedAt": "2026-08-25T19:11:10.378Z",
         "updatedAt": "2026-08-25T19:14:25.905Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ee4627ca-8652-4d15-aa7c-113cfff6b9a1",
@@ -41151,7 +41211,8 @@
         "extractedAt": "2026-08-25T19:16:55.295Z",
         "updatedAt": "2026-08-25T19:23:25.014Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-56a50e2f-cc7f-48d0-b42c-9473869bc5ff",
@@ -41698,7 +41759,8 @@
         "extractedAt": "2026-08-25T19:16:55.294Z",
         "updatedAt": "2026-08-25T19:20:46.847Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-39030706-3836-406d-8426-8e3dbcc4f98a",
@@ -41879,7 +41941,8 @@
         "extractedAt": "2026-08-25T19:16:55.295Z",
         "updatedAt": "2026-08-25T19:18:07.167Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-07e4bca5-55de-4b46-b8db-094be6df4139",
@@ -42504,7 +42567,8 @@
         "extractedAt": "2026-08-25T19:23:25.373Z",
         "updatedAt": "2026-08-25T19:28:58.002Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-4b284c24-f082-4a2f-be67-9d24ae029ad6",
@@ -42808,7 +42872,8 @@
         "extractedAt": "2026-08-25T19:23:25.375Z",
         "updatedAt": "2026-08-25T19:25:35.582Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-6cefe5e8-2b4d-4fa2-8227-765c15fbb1fb",
@@ -43389,7 +43454,8 @@
         "extractedAt": "2026-08-25T19:23:25.375Z",
         "updatedAt": "2026-08-25T19:27:20.281Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a182f208-1eb5-43ac-8296-49323058d7c4",
@@ -43677,7 +43743,8 @@
         "extractedAt": "2026-08-25T19:28:58.351Z",
         "updatedAt": "2026-08-25T19:30:49.224Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a5bf4f86-8d31-4c18-b93f-206a6a18c7a3",
@@ -44234,7 +44301,8 @@
         "extractedAt": "2026-08-25T19:41:06.161Z",
         "updatedAt": "2026-08-25T19:46:25.248Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-658c26a7-3491-43fd-a2d5-ca0845273bb1",
@@ -44692,7 +44760,8 @@
         "extractedAt": "2026-08-25T19:28:58.352Z",
         "updatedAt": "2026-08-25T19:34:00.738Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ca969c9b-dc8c-41ed-978b-ff9c4b6a8c0e",
@@ -44992,7 +45061,8 @@
         "extractedAt": "2026-08-25T19:35:26.574Z",
         "updatedAt": "2026-08-25T19:37:49.506Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-081a4cc0-01d3-46ea-935c-f72030700819",
@@ -45348,7 +45418,8 @@
         "extractedAt": "2026-08-25T19:35:26.574Z",
         "updatedAt": "2026-08-25T19:39:02.591Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-cc16030b-acd8-48d0-ae34-ccc3b8545065",
@@ -45533,7 +45604,8 @@
         "extractedAt": "2026-08-25T19:41:06.162Z",
         "updatedAt": "2026-08-25T19:42:12.255Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a30fbc12-ad54-4cf9-9aa6-570aee557431",
@@ -47564,7 +47636,8 @@
         "extractedAt": "2026-08-25T19:49:24.113Z",
         "updatedAt": "2026-08-25T19:54:11.734Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d09e8764-4375-4da8-b2cb-2102634be1e6",
@@ -48299,7 +48372,8 @@
         "extractedAt": "2026-08-25T19:49:24.115Z",
         "updatedAt": "2026-08-25T19:58:20.648Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-8add8a28-23be-4dc4-a12f-565cf083e4d9",
@@ -50658,7 +50732,8 @@
         "extractedAt": "2026-08-25T19:49:24.115Z",
         "updatedAt": "2026-08-25T19:55:36.338Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-deed9b50-76ea-4c49-af3a-3a6ed7f7a0f1",
@@ -52870,7 +52945,8 @@
         "extractedAt": "2026-08-25T19:58:20.849Z",
         "updatedAt": "2026-08-25T20:05:09.314Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-1b688a8f-8655-4d0b-9f24-60818e181603",
@@ -54670,7 +54746,8 @@
         "extractedAt": "2026-08-25T19:58:20.852Z",
         "updatedAt": "2026-08-25T20:02:05.932Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-037b5814-dfbd-4e6e-8e50-cc989eaf9d3e",
@@ -55616,7 +55693,8 @@
         "extractedAt": "2026-08-25T19:58:20.852Z",
         "updatedAt": "2026-08-25T20:03:10.032Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ec77c25c-b097-4757-b76f-4e1255ef8416",
@@ -56465,7 +56543,8 @@
         "extractedAt": "2026-08-26T06:40:31.898Z",
         "updatedAt": "2026-08-26T06:46:58.937Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-419971d3-92ba-4f73-a2c2-11813bb5db44",
@@ -56860,7 +56939,8 @@
         "extractedAt": "2026-08-26T10:06:29.264Z",
         "updatedAt": "2026-08-26T10:11:42.365Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d7ff2d40-f81f-458c-b343-718e0718442b",
@@ -57166,7 +57246,8 @@
         "extractedAt": "2026-08-25T20:05:09.517Z",
         "updatedAt": "2026-08-25T20:09:22.954Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-acc74df7-f6de-4217-91d2-78910d848ab6",
@@ -57632,7 +57713,8 @@
         "extractedAt": "2026-08-25T20:12:31.132Z",
         "updatedAt": "2026-08-25T20:17:16.723Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-40f11b19-1d01-4ea5-8efd-5c549e50b5e1",
@@ -58044,7 +58126,8 @@
         "extractedAt": "2026-08-25T20:20:13.371Z",
         "updatedAt": "2026-08-25T20:24:51.299Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-7532d2bb-cd54-4f17-8691-aeed6ef1dc4f",
@@ -58665,7 +58748,8 @@
         "extractedAt": "2026-08-25T20:35:29.842Z",
         "updatedAt": "2026-08-25T20:43:29.993Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-8e3bd5d3-8d7f-4349-9f48-5f450778fa06",
@@ -59280,7 +59364,8 @@
         "extractedAt": "2026-08-25T20:27:48.610Z",
         "updatedAt": "2026-08-25T20:32:37.157Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-13b8644b-eeab-471c-a9a5-2cd81e0066c4",
@@ -59765,7 +59850,8 @@
         "extractedAt": "2026-08-25T20:27:48.610Z",
         "updatedAt": "2026-08-25T20:32:38.159Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-5bbc8c19-c027-4a24-ba2b-41471195d597",
@@ -60356,7 +60442,8 @@
         "extractedAt": "2026-08-25T20:43:30.194Z",
         "updatedAt": "2026-08-25T20:47:10.845Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-88c0c189-346a-4ae3-bfad-debdf3c424b9",
@@ -61027,7 +61114,8 @@
       "additionalSelectionPools": [
         "food-snack"
       ],
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-158de1d2-b84d-453e-9991-29ab08c52c88",
@@ -61424,7 +61512,8 @@
         "extractedAt": "2026-08-25T20:50:25.381Z",
         "updatedAt": "2026-08-25T20:53:15.676Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-626db463-17ea-4657-8a23-7477af0cd0f0",
@@ -61849,7 +61938,8 @@
         "extractedAt": "2026-08-25T20:43:30.195Z",
         "updatedAt": "2026-08-25T20:50:25.190Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-4b3acf3a-f038-44de-adc9-34deb6bc375a",
@@ -62562,7 +62652,8 @@
         "extractedAt": "2026-08-25T20:50:25.382Z",
         "updatedAt": "2026-08-25T20:55:14.929Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-fe5db7d8-a539-4804-9eaf-48028978cfae",
@@ -69656,7 +69747,8 @@
         "extractedAt": "2026-08-26T09:57:10.670Z",
         "updatedAt": "2026-08-26T10:05:24.482Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-e4ab9987-5fb0-4e41-aa4e-b9701745bc9b",
@@ -70214,7 +70306,8 @@
         "extractedAt": "2026-08-26T09:57:10.670Z",
         "updatedAt": "2026-08-26T10:01:35.560Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-538f83a5-057d-43e3-932d-92ef8a344a6a",
@@ -70762,7 +70855,8 @@
         "extractedAt": "2026-08-26T10:06:29.264Z",
         "updatedAt": "2026-08-26T10:10:23.777Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-85ce343a-f0dc-4944-a9c0-b89c610f5b02",
@@ -71442,7 +71536,8 @@
         "extractedAt": "2026-08-26T12:42:35.669Z",
         "updatedAt": "2026-08-26T12:48:12.268Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-1fe1fb2c-b706-4b61-8a69-32e4782e806f",
@@ -71911,7 +72006,8 @@
         "extractedAt": "2026-08-26T10:28:09.862Z",
         "updatedAt": "2026-08-26T10:43:30.206Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-93ed16df-1eb5-496e-829f-4fdc1c7f9fba",
@@ -72754,7 +72850,8 @@
       "additionalSelectionPools": [
         "food-snack"
       ],
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-5ce57477-3b85-48ee-a2d2-f3ec6520ff0b",
@@ -73219,7 +73316,8 @@
         "extractedAt": "2026-08-26T12:42:35.669Z",
         "updatedAt": "2026-08-26T12:48:42.607Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ef8cd21d-1808-4b3f-99fe-4f256afb6780",
@@ -73713,7 +73811,8 @@
         "extractedAt": "2026-08-26T12:48:43.225Z",
         "updatedAt": "2026-08-26T12:53:59.893Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ce288884-9807-4c58-be83-08971ee28c1a",
@@ -74294,7 +74393,8 @@
         "extractedAt": "2026-08-26T12:48:43.226Z",
         "updatedAt": "2026-08-26T12:56:27.793Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-24ee17c9-b3b3-49b2-931c-ff0db4b0ae2a",
@@ -74694,7 +74794,8 @@
         "extractedAt": "2026-08-26T12:48:43.226Z",
         "updatedAt": "2026-08-26T12:52:08.204Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-2f55d519-b809-4d11-b79e-8886cf462f08",
@@ -75127,7 +75228,8 @@
       "additionalSelectionPools": [
         "food-snack"
       ],
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-5c1063b9-97e2-45ac-b123-eb5f83679adc",
@@ -75653,7 +75755,8 @@
         "extractedAt": "2026-08-26T11:26:54.558Z",
         "updatedAt": "2026-08-26T11:31:30.981Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-fd21d310-b887-44af-a63c-8e3e692ced63",
@@ -76173,7 +76276,8 @@
         "extractedAt": "2026-08-26T11:31:31.276Z",
         "updatedAt": "2026-08-26T11:36:26.620Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d05b7d58-184c-4007-95b8-c8b74544de6c",
@@ -76961,7 +77065,8 @@
         "extractedAt": "2026-08-26T11:31:31.276Z",
         "updatedAt": "2026-08-26T11:35:55.180Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-3ab6cbda-6e61-4ba1-a07f-aab009cf53c5",
@@ -77521,7 +77626,8 @@
         "extractedAt": "2026-08-26T11:37:24.422Z",
         "updatedAt": "2026-08-26T11:41:03.265Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-896ee740-9e60-456f-8bad-6395c381feab",
@@ -77823,7 +77929,8 @@
         "extractedAt": "2026-08-26T11:37:24.422Z",
         "updatedAt": "2026-08-26T11:40:35.414Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-9d027eba-b492-454f-ab94-741b6e109c71",
@@ -78273,7 +78380,8 @@
         "extractedAt": "2026-08-26T11:42:17.195Z",
         "updatedAt": "2026-08-26T11:47:23.260Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-40d3916e-f5b5-45d5-a85b-ca941a24d566",
@@ -78575,7 +78683,8 @@
         "extractedAt": "2026-08-26T11:42:17.195Z",
         "updatedAt": "2026-08-26T11:50:16.144Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d4b0584e-b0d6-4594-b686-5229ab5e827b",
@@ -79037,7 +79146,8 @@
         "extractedAt": "2026-08-26T12:23:03.609Z",
         "updatedAt": "2026-08-26T12:25:04.124Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-2648f2b3-7285-4fcb-aaba-76a7d0b26c6f",
@@ -81794,7 +81904,8 @@
         "extractedAt": "2026-08-26T12:23:03.608Z",
         "updatedAt": "2026-08-26T12:28:13.151Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-658c035e-a7d3-4743-89b4-d1e51f5f36c8",
@@ -82252,7 +82363,8 @@
         "extractedAt": "2026-08-26T12:28:13.489Z",
         "updatedAt": "2026-08-26T12:38:31.570Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-45723458-80b2-4f21-ad8c-01d1e0067ef6",
@@ -82635,7 +82747,8 @@
         "extractedAt": "2026-08-26T12:38:31.872Z",
         "updatedAt": "2026-08-26T12:42:33.265Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-36e786e7-82a3-4113-b1b7-331f3c7d8f70",
@@ -83344,7 +83457,8 @@
         "extractedAt": "2026-08-26T12:28:13.489Z",
         "updatedAt": "2026-08-26T12:34:09.337Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-b1fcafb1-9660-419c-9e22-51738e11bb75",
@@ -84562,7 +84676,8 @@
         "extractedAt": "2026-08-29T11:56:24.562Z",
         "updatedAt": "2026-08-29T12:01:16.437Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-4c91e17a-3bb2-4502-8416-ee4917862cb2",
@@ -85183,7 +85298,8 @@
         "extractedAt": "2026-08-30T04:54:05.239Z",
         "updatedAt": "2026-08-30T05:00:42.220Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d22dfd41-fe7c-45e6-924f-122458a15df1",
@@ -85618,7 +85734,8 @@
         "extractedAt": "2026-08-29T12:09:02.763Z",
         "updatedAt": "2026-08-29T12:20:11.886Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-2090d6fb-4b64-4cd5-8cb3-935305efe1b1",
@@ -86015,7 +86132,8 @@
         "extractedAt": "2026-08-29T10:54:18.820Z",
         "updatedAt": "2026-08-29T11:00:42.977Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-5d5e0bad-aac1-4072-b7ec-ffab632f558f",
@@ -86881,7 +86999,8 @@
         "extractedAt": "2026-08-29T11:19:25.970Z",
         "updatedAt": "2026-08-29T11:24:04.475Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-e6793209-d347-44b2-8478-a17fbc283ed3",
@@ -87734,7 +87853,8 @@
         "extractedAt": "2026-08-29T11:19:25.968Z",
         "updatedAt": "2026-08-29T11:24:14.269Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-24487076-cf81-4ae7-a176-56be94fda35d",
@@ -90050,7 +90170,8 @@
         "extractedAt": "2026-08-29T12:09:02.764Z",
         "updatedAt": "2026-08-29T12:16:44.296Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-c787fedc-3cdb-4cb0-bb71-3e35ddd614b3",
@@ -90324,7 +90445,8 @@
         "extractedAt": "2026-08-29T12:35:37.151Z",
         "updatedAt": "2026-08-29T12:38:16.150Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d3db3bac-39ca-46b9-982f-d04da52cb1b4",
@@ -90722,7 +90844,8 @@
         "extractedAt": "2026-08-29T12:35:37.151Z",
         "updatedAt": "2026-08-29T12:37:37.778Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-b7bb311d-b365-45b3-a23e-a2384df2b068",
@@ -90935,7 +91058,8 @@
         "extractedAt": "2026-08-29T12:42:56.934Z",
         "updatedAt": "2026-08-29T12:46:54.223Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-b515fac3-fe93-4b8c-8a23-5defdce6bac2",
@@ -91301,7 +91425,8 @@
         "extractedAt": "2026-08-29T12:42:56.935Z",
         "updatedAt": "2026-08-29T12:46:12.592Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-0be4e24d-da1c-4e34-aff4-bb5a75453878",
@@ -91634,7 +91759,8 @@
         "extractedAt": "2026-08-29T12:38:37.817Z",
         "updatedAt": "2026-08-29T12:42:56.642Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-468c995a-3ffb-4f3c-9fb9-249f14eff14a",
@@ -92046,7 +92172,8 @@
         "extractedAt": "2026-08-29T12:50:04.231Z",
         "updatedAt": "2026-08-29T12:53:30.024Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ce91ebe4-57ab-43f5-9525-12d3bc9d9d13",
@@ -92862,7 +92989,8 @@
         "extractedAt": "2026-08-29T12:46:54.509Z",
         "updatedAt": "2026-08-29T12:48:45.069Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a7592db6-9f2f-4fef-8df7-ce820ccc59e1",
@@ -93134,7 +93262,8 @@
         "extractedAt": "2026-08-29T12:46:54.509Z",
         "updatedAt": "2026-08-29T12:50:03.708Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-bd84602b-afee-4383-824a-7fe03c2d4286",
@@ -93474,7 +93603,8 @@
         "extractedAt": "2026-08-29T12:50:04.231Z",
         "updatedAt": "2026-08-29T12:55:05.281Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-5cc984c8-2d52-40b1-8f95-937d482bea27",
@@ -93778,7 +93908,8 @@
         "extractedAt": "2026-08-29T12:50:04.231Z",
         "updatedAt": "2026-08-29T12:53:40.865Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-f2b99663-d2ee-4ce9-8017-d095e2574aa1",
@@ -94021,7 +94152,8 @@
         "extractedAt": "2026-08-29T12:55:05.570Z",
         "updatedAt": "2026-08-29T12:56:16.167Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-22af4659-705f-450e-9cf9-118332cf6000",
@@ -94732,7 +94864,8 @@
         "extractedAt": "2026-08-29T13:18:37.576Z",
         "updatedAt": "2026-08-29T13:25:54.317Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-75536f2b-329b-44c2-894d-5eee9b63b23f",
@@ -94974,7 +95107,8 @@
         "extractedAt": "2026-08-29T12:55:05.571Z",
         "updatedAt": "2026-08-29T12:58:35.798Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-f4dc1796-37d6-48c7-83b1-b534d1fa8fa6",
@@ -95461,7 +95595,8 @@
         "extractedAt": "2026-08-29T13:18:37.578Z",
         "updatedAt": "2026-08-29T13:25:41.579Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-65347525-7c87-4230-9d54-a0bb667ddf98",
@@ -96056,7 +96191,8 @@
         "extractedAt": "2026-08-29T16:56:45.995Z",
         "updatedAt": "2026-08-29T17:03:12.138Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-60392f53-3932-4eb5-aba6-88c3de1f87dd",
@@ -96405,7 +96541,8 @@
         "extractedAt": "2026-08-29T13:25:54.614Z",
         "updatedAt": "2026-08-29T13:29:53.525Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a5b5549f-743c-408d-a44b-f25f8f40d5f4",
@@ -96980,7 +97117,8 @@
         "extractedAt": "2026-08-29T13:25:54.614Z",
         "updatedAt": "2026-08-29T13:32:20.021Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-77b4143f-8421-4308-b2b9-6a1a4896fcc8",
@@ -97221,7 +97359,8 @@
         "extractedAt": "2026-08-29T13:32:20.301Z",
         "updatedAt": "2026-08-29T13:35:43.610Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-35accb77-5c16-4da3-9727-b7094afb6958",
@@ -98700,7 +98839,8 @@
       "additionalSelectionPools": [
         "food-snack"
       ],
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-dd9759fe-f12d-4e1c-b350-376fdc5ae8ff",
@@ -99712,7 +99852,8 @@
         "extractedAt": "2026-08-29T16:41:31.441Z",
         "updatedAt": "2026-08-29T16:46:41.101Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-93472c73-f535-44da-9549-17895c31e42a",
@@ -107293,7 +107434,8 @@
         "extractedAt": "2026-08-30T10:59:06.410Z",
         "updatedAt": "2026-08-30T11:01:03.059Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-90eddc9f-591f-4c8b-9f21-1bbb26e20e25",
@@ -107631,7 +107773,8 @@
         "extractedAt": "2026-08-30T11:04:20.598Z",
         "updatedAt": "2026-08-30T11:08:52.503Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-b3ae1013-51ae-4e36-bd9f-7d67811f2091",
@@ -107993,7 +108136,8 @@
         "extractedAt": "2026-08-30T11:04:20.596Z",
         "updatedAt": "2026-08-30T11:06:23.775Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-250baa48-cf61-4a62-b35b-920b272db2f9",
@@ -108456,7 +108600,8 @@
         "extractedAt": "2026-08-30T11:04:20.598Z",
         "updatedAt": "2026-08-30T11:10:33.991Z"
       },
-      "productPresentation": "unpackaged"
+      "productPresentation": "unpackaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-4685e387-5766-4ad3-8f75-d79c122a9e8a",
@@ -108851,7 +108996,8 @@
         "extractedAt": "2026-08-30T11:42:32.204Z",
         "updatedAt": "2026-08-30T11:45:36.096Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-69521efd-d367-4875-9ddd-8df8a5b72880",
@@ -109907,7 +110053,8 @@
         "extractedAt": "2026-08-31T11:42:43.585Z",
         "updatedAt": "2026-08-31T11:49:42.067Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-27b3893a-ca0a-45b0-8f0d-bd9e568398b3",
@@ -111320,7 +111467,8 @@
         "extractedAt": "2026-09-02T06:47:40.134Z",
         "updatedAt": "2026-09-02T06:50:01.752Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-25fd4a3e-26f5-4685-ae57-8f04c477c7c6",
@@ -111847,7 +111995,8 @@
         "extractedAt": "2026-09-02T06:47:40.135Z",
         "updatedAt": "2026-09-02T06:51:18.748Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-3748e127-88f8-432a-8953-ab26bc5f76c3",
@@ -114218,7 +114367,8 @@
         "extractedAt": "2026-09-03T08:35:54.636Z",
         "updatedAt": "2026-09-03T08:40:20.119Z"
       },
-      "productPresentation": "mixed"
+      "productPresentation": "mixed",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-6154920e-f96b-43c7-8d3c-933cd20bcc1c",
@@ -114959,7 +115109,8 @@
         "extractedAt": "2026-09-04T05:09:53.879Z",
         "updatedAt": "2026-09-04T05:13:58.429Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-0939b9a9-0535-4589-b66e-ad85278a7e24",
@@ -115390,7 +115541,8 @@
         "extractedAt": "2026-09-04T05:09:53.880Z",
         "updatedAt": "2026-09-04T05:14:10.926Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-7e6ecaf5-8c1a-4347-8fdd-5150ac3bf749",
@@ -115688,7 +115840,8 @@
         "extractedAt": "2026-09-04T05:09:53.880Z",
         "updatedAt": "2026-09-04T05:13:53.047Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-7fbe9765-c8d1-40f0-93d7-5e358a5da05e",
@@ -116189,7 +116342,8 @@
         "extractedAt": "2026-09-04T05:27:08.993Z",
         "updatedAt": "2026-09-04T05:31:53.930Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-0d935274-2d19-4e90-a07b-d0678566f29b",
@@ -116926,7 +117080,8 @@
         "extractedAt": "2026-09-04T05:34:36.807Z",
         "updatedAt": "2026-09-04T05:40:28.451Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-25ebf2c6-8d99-4f0b-845e-440c118f2fef",
@@ -117823,7 +117978,8 @@
         "extractedAt": "2026-09-04T06:12:51.556Z",
         "updatedAt": "2026-09-04T06:22:08.211Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-e021e0f1-8475-4e3f-abd2-adb85c5f1cac",
@@ -118203,7 +118359,8 @@
         "extractedAt": "2026-09-04T08:35:57.929Z",
         "updatedAt": "2026-09-04T08:42:37.705Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-6c5514a4-6a78-430a-b36e-58ffb222c85e",
@@ -118575,7 +118732,8 @@
         "extractedAt": "2026-09-04T06:12:51.557Z",
         "updatedAt": "2026-09-04T06:19:22.329Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-0dd47ca4-e6b0-4c95-9bde-69d08f72769f",
@@ -119532,7 +119690,8 @@
         "extractedAt": "2026-09-04T08:14:57.334Z",
         "updatedAt": "2026-09-04T08:22:16.978Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-b8f7e1f5-3e85-4089-82bc-f080907dcc9c",
@@ -123033,7 +123192,8 @@
         "extractedAt": "2026-09-06T05:34:26.134Z",
         "updatedAt": "2026-09-06T05:39:16.756Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-546f5d6a-34e2-42c7-902f-5eceb9ff8cd9",
@@ -124313,7 +124473,8 @@
         "extractedAt": "2026-09-06T05:41:52.099Z",
         "updatedAt": "2026-09-06T05:45:21.712Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-164c451e-4664-4a01-a0ae-8f881a90f7d5",
@@ -124859,7 +125020,8 @@
         "extractedAt": "2026-09-06T05:41:52.097Z",
         "updatedAt": "2026-09-06T05:47:40.557Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-c94a3d1e-3ec2-43be-8714-4241e9d7eff2",
@@ -125193,7 +125355,8 @@
         "extractedAt": "2026-09-06T07:45:57.750Z",
         "updatedAt": "2026-09-06T07:52:09.038Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-f3aee4a1-30ca-4329-860b-19d511f83b7d",
@@ -125465,7 +125628,8 @@
         "extractedAt": "2026-09-06T06:18:49.678Z",
         "updatedAt": "2026-09-06T06:22:56.264Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-d75f9294-cda8-493e-83d7-7c907bad4fc5",
@@ -125892,7 +126056,8 @@
         "extractedAt": "2026-09-06T06:34:59.146Z",
         "updatedAt": "2026-09-06T06:40:33.877Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-e03a9aaa-cc7f-4563-89d4-d64faf6d4e4e",
@@ -127080,7 +127245,8 @@
         "extractedAt": "2026-09-06T07:45:57.752Z",
         "updatedAt": "2026-09-06T07:51:40.805Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-badab74f-164b-41b3-addc-9846fb5f9553",
@@ -130718,7 +130884,8 @@
         "extractedAt": "2026-09-06T09:27:41.911Z",
         "updatedAt": "2026-09-06T09:30:37.192Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-247fa64f-7ce5-4f9a-ac9f-fddef86eacef",
@@ -137791,7 +137958,8 @@
         "extractedAt": "2026-09-06T09:42:04.597Z",
         "updatedAt": "2026-09-06T09:51:15.327Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-ab1ff6ca-9e90-4d77-b541-17df5e452e6a",
@@ -138189,7 +138357,8 @@
         "extractedAt": "2026-09-06T09:35:21.699Z",
         "updatedAt": "2026-09-06T09:40:02.331Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-85a7bc8e-7486-45b8-a24c-d28d40b7ef94",
@@ -138611,7 +138780,8 @@
         "extractedAt": "2026-09-06T09:42:04.596Z",
         "updatedAt": "2026-09-06T09:46:31.795Z"
       },
-      "productPresentation": "packaged"
+      "productPresentation": "packaged",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-2958a23c-b49f-4ee5-9132-e314fbcb4414",
@@ -141202,7 +141372,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T13:42:43.181Z",
         "updatedAt": "2026-09-07T13:49:25.500Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a9d3ad6b-25a6-4134-bc8b-6ca20fdbd71c",
@@ -141597,7 +141768,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T13:42:43.181Z",
         "updatedAt": "2026-09-07T13:46:07.392Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-fe04a5f1-0298-4f96-8be0-d9d9c24ae7d4",
@@ -141839,7 +142011,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T13:53:18.980Z",
         "updatedAt": "2026-09-07T13:58:39.822Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-b19bfbb5-15df-42dc-9f54-fb8f4d3b60f6",
@@ -142395,7 +142568,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T14:03:43.829Z",
         "updatedAt": "2026-09-07T14:09:06.411Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-0e32cef0-052c-4935-a22b-c0243a320207",
@@ -142604,7 +142778,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T14:03:43.827Z",
         "updatedAt": "2026-09-07T14:08:20.964Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-c7d686d3-e065-4a89-a797-8a880462f4e6",
@@ -142877,7 +143052,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T14:03:43.829Z",
         "updatedAt": "2026-09-07T14:07:05.020Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-6e74327b-1185-4256-8136-df7afbb0e041",
@@ -143154,7 +143330,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T14:09:06.487Z",
         "updatedAt": "2026-09-07T14:15:51.047Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-91029da8-02f3-4475-9134-17d7780c47ef",
@@ -143363,7 +143540,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T14:09:06.487Z",
         "updatedAt": "2026-09-07T14:16:36.634Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-a6d2139c-5d7f-4384-8174-067b0f00f0d9",
@@ -143603,7 +143781,8 @@
         "extractionSource": "codex-local",
         "extractedAt": "2026-09-07T14:09:06.486Z",
         "updatedAt": "2026-09-07T14:15:32.390Z"
-      }
+      },
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-6db3f86e-460b-4f34-9a09-f46c4b9f7a45",
@@ -143626,7 +143805,8 @@
       "ordinal": 446,
       "contentHash": "6cec8be7daf368514eb71bb4630f0fb3679384e5857ade5e56242fa049a26df1",
       "uploadedAt": "2026-09-07T13:58:11.029Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-130b1fb7-ecd2-4ef5-a684-e99406e7ea46",
@@ -144069,7 +144249,8 @@
       "ordinal": 448,
       "contentHash": "7edcbdb9c64a6128133d0f50dc6cbf09cbb7333b6983707a4e5251910ffec243",
       "uploadedAt": "2026-09-07T13:58:30.862Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-975f9794-4af9-4b9c-a86a-c9846de7bff1",
@@ -144092,7 +144273,8 @@
       "ordinal": 449,
       "contentHash": "65ca635eea1eca03cf92721918ed50636f49c7c739d85c30e034dda2538b7f10",
       "uploadedAt": "2026-09-07T13:58:39.783Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-699792ee-64c3-4c52-86d9-58277dd44d22",
@@ -146198,7 +146380,8 @@
       "ordinal": 457,
       "contentHash": "95785a77c492ac0997dc4ad4bb3cc773736510d87ae0733389eb109d081bc296",
       "uploadedAt": "2026-09-07T14:15:20.697Z",
-      "classificationMethod": "codex-local"
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
     },
     {
       "id": "reference-upload-2f148387-fdfc-4ec7-8864-49803a56bada",
@@ -147748,8 +147931,3070 @@
       "ordinal": 472,
       "contentHash": "339e131899a0096866f84e4e36216b358afdd3b6f9d7f6e189dfeac77431c11b",
       "uploadedAt": "2026-09-07T14:32:20.034Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-aa6bb129-6b29-4bb0-934a-a30432953a09",
+      "publicPath": "/creative-references/reference-copy/reference-upload-aa6bb129-6b29-4bb0-934a-a30432953a09.jpg",
+      "sourceFile": "화장품1.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 473,
+      "contentHash": "8d3eadea16f419aefddf763c25bde8471afa38b7d213b97f87d52192155a6e76",
+      "uploadedAt": "2026-09-08T11:17:11.758Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-5330a00d-b4c5-4b09-bcc1-afb980cfb377",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5330a00d-b4c5-4b09-bcc1-afb980cfb377.jpg",
+      "sourceFile": "건기식7.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 474,
+      "contentHash": "326e7d61b8361b8062c0032e5b5b93730b0251c6a5be090ed3004a8ded1bb188",
+      "uploadedAt": "2026-09-08T11:17:20.178Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-942edf8f-e488-4639-b688-eb2f9d05d4fa",
+      "publicPath": "/creative-references/reference-copy/reference-upload-942edf8f-e488-4639-b688-eb2f9d05d4fa.jpg",
+      "sourceFile": "건기식6.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 475,
+      "contentHash": "90f22b656ee83f852404669ebe2e9463387fa65fef963ca067c8ec5d37b902f6",
+      "uploadedAt": "2026-09-08T11:17:29.284Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-81b4e8d4-1433-4eaa-a980-b3e2f16b248b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-81b4e8d4-1433-4eaa-a980-b3e2f16b248b.jpg",
+      "sourceFile": "건기식5.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 476,
+      "contentHash": "279b50917a753dd924b88194d4b2033504e55d6e09567f8dd79580f71b29ea2f",
+      "uploadedAt": "2026-09-08T11:17:38.516Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-df77aeee-c31b-4bca-93ea-5b4f33cfa302",
+      "publicPath": "/creative-references/reference-copy/reference-upload-df77aeee-c31b-4bca-93ea-5b4f33cfa302.jpg",
+      "sourceFile": "건기식4.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 477,
+      "contentHash": "1c5d621e5ab30bd18d62c96feb249e5a2a3a1af1567dd4e0c66be5b41edc7611",
+      "uploadedAt": "2026-09-08T11:17:44.283Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-33ec7e65-fee5-4d26-98a4-9e6ee73304c2",
+      "publicPath": "/creative-references/reference-copy/reference-upload-33ec7e65-fee5-4d26-98a4-9e6ee73304c2.jpg",
+      "sourceFile": "건기식3.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 478,
+      "contentHash": "d5207114b443ea0c8e25ea90c6a1c241383d48cf6336d2344674ccd687b3c2b6",
+      "uploadedAt": "2026-09-08T11:17:53.955Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-7df94307-276b-4f15-bbcd-32498a937780",
+      "publicPath": "/creative-references/reference-copy/reference-upload-7df94307-276b-4f15-bbcd-32498a937780.jpg",
+      "sourceFile": "건기식2.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 479,
+      "contentHash": "02ce939a75e2fc46c1f884d5e08586f1d47100554d5f0ff253a2ad9293cfd637",
+      "uploadedAt": "2026-09-08T11:18:00.459Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-698f95a7-4421-4215-ab91-85749e417b69",
+      "publicPath": "/creative-references/reference-copy/reference-upload-698f95a7-4421-4215-ab91-85749e417b69.jpg",
+      "sourceFile": "식품1.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 480,
+      "contentHash": "88fb20bd9d36df19811daff5f8e45d906b5f533dc5f70c7de9ab7a36586a8994",
+      "uploadedAt": "2026-09-08T11:18:09.410Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-6e6dbb83-6517-4a03-9260-152cd8d64471",
+      "publicPath": "/creative-references/reference-copy/reference-upload-6e6dbb83-6517-4a03-9260-152cd8d64471.jpg",
+      "sourceFile": "건기식1.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 481,
+      "contentHash": "50b8e65f97f054120194279b858f43701d23a3eb1b5bf50aa8e5764d4e59f516",
+      "uploadedAt": "2026-09-08T11:18:18.621Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-13ec358a-6354-4d91-88fb-2b693b8d1d0a",
+      "publicPath": "/creative-references/reference-copy/reference-upload-13ec358a-6354-4d91-88fb-2b693b8d1d0a.jpg",
+      "sourceFile": "화장품4.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 482,
+      "contentHash": "255f019313db862ab68ef694a2757f5708e50c3043c1243647d8159dcb3fc25c",
+      "uploadedAt": "2026-09-08T11:18:27.366Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-6af4c141-09a6-4199-87fa-a5ff54a67cc7",
+      "publicPath": "/creative-references/reference-copy/reference-upload-6af4c141-09a6-4199-87fa-a5ff54a67cc7.jpg",
+      "sourceFile": "화장품3.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 483,
+      "contentHash": "065e5279d9c0a6ff49a3c685ab304dcb0f5fbcc89314c6d90bb23e0fc9af5616",
+      "uploadedAt": "2026-09-08T11:18:33.780Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-2cb2bb9d-aa99-4a45-a5a7-dfb99b4caf15",
+      "publicPath": "/creative-references/reference-copy/reference-upload-2cb2bb9d-aa99-4a45-a5a7-dfb99b4caf15.jpg",
+      "sourceFile": "화장품2.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "mixed",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 484,
+      "contentHash": "baa0978de0f90c04530fa00e2c8529718048881a448ccd1816af233a62a354d9",
+      "uploadedAt": "2026-09-08T11:18:41.899Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-88db83df-8a3f-457e-abdd-75b86d5c7170",
+      "publicPath": "/creative-references/reference-copy/reference-upload-88db83df-8a3f-457e-abdd-75b86d5c7170.jpg",
+      "sourceFile": "건기식8.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 485,
+      "contentHash": "169a90dd36385313e2e3eaa87a61fc937a54306357289d9859103b61bb6a0c9d",
+      "uploadedAt": "2026-09-08T11:20:04.913Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-f1d52fae-2c1e-4556-99c8-12e54857a9e0",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f1d52fae-2c1e-4556-99c8-12e54857a9e0.jpg",
+      "sourceFile": "화장품8.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 486,
+      "contentHash": "4c8a1638c7abf7ad7a3fc875c5fc129f540bb754c4aea3b25051c098abb9618e",
+      "uploadedAt": "2026-09-08T11:20:12.423Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-98b81b90-da7d-46b8-8b2a-830b5319ed2c",
+      "publicPath": "/creative-references/reference-copy/reference-upload-98b81b90-da7d-46b8-8b2a-830b5319ed2c.jpg",
+      "sourceFile": "화장품7.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 487,
+      "contentHash": "6dab49977f851942a6db5db97ba624814394ad334014ca34b85757b07f2c1c10",
+      "uploadedAt": "2026-09-08T11:20:19.866Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-2ec51680-0495-44f3-a915-5980e105e930",
+      "publicPath": "/creative-references/reference-copy/reference-upload-2ec51680-0495-44f3-a915-5980e105e930.jpg",
+      "sourceFile": "화장품6.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "productPresentation": "packaged",
+      "compositionType": "comparison",
+      "productSlotCount": 2,
+      "productSlotShape": "square",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 488,
+      "contentHash": "ea7721139ff10fce97b8c5facb46d80d47d0c430d1b23a95ad464aa888cfffda",
+      "uploadedAt": "2026-09-08T11:20:27.760Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-f32079b2-0523-4f13-bf7d-3627b6b8729c",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f32079b2-0523-4f13-bf7d-3627b6b8729c.jpg",
+      "sourceFile": "화장품5.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 489,
+      "contentHash": "f9b5e56f9d3db390491fd423f90110cbddadc615aaa27d51b71e73b5bb0b8044",
+      "uploadedAt": "2026-09-08T11:20:35.013Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-ea10a5bd-9dbe-42a6-bf9a-f04882ad4668",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ea10a5bd-9dbe-42a6-bf9a-f04882ad4668.jpg",
+      "sourceFile": "건기식16.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 490,
+      "contentHash": "d22cb55ab07820b92026525b97cb42cf8138e09d9d41c5a0cf11260b50dccc67",
+      "uploadedAt": "2026-09-08T11:20:42.984Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-8f12d3e2-b8de-4762-9c85-61072fd13386",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8f12d3e2-b8de-4762-9c85-61072fd13386.jpg",
+      "sourceFile": "건기식15.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 491,
+      "contentHash": "0d4d9a5059662d7d68a70f4273233359f99af749b82a4549fc641b55d5645da0",
+      "uploadedAt": "2026-09-08T11:20:50.313Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-f19b779b-5e8b-4b4f-827e-d78399b09726",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f19b779b-5e8b-4b4f-827e-d78399b09726.jpg",
+      "sourceFile": "건기식14.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 492,
+      "contentHash": "c2ca22c4d7c76967d69c4e87fac1939ed7ab93ef08c4c250110af62ec05a8db4",
+      "uploadedAt": "2026-09-08T11:20:57.932Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-476bab3e-c688-4955-870f-aabe9de2814b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-476bab3e-c688-4955-870f-aabe9de2814b.jpg",
+      "sourceFile": "건기식13.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 493,
+      "contentHash": "86e0a8244e419060e35ab6dfdc8eba5120a3f76130f801bb3ecd8ec2d2fca0b7",
+      "uploadedAt": "2026-09-08T11:21:06.313Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-8d5878ed-49fa-4089-9b77-b12599743905",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8d5878ed-49fa-4089-9b77-b12599743905.jpg",
+      "sourceFile": "건기식12.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 494,
+      "contentHash": "01dc6debee818666e050f31a0834b53ca066666d6e539a560c6b92a546969bb7",
+      "uploadedAt": "2026-09-08T11:21:16.864Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-7cc95cd7-cf37-4718-8ae3-b8e5f4a417ec",
+      "publicPath": "/creative-references/reference-copy/reference-upload-7cc95cd7-cf37-4718-8ae3-b8e5f4a417ec.jpg",
+      "sourceFile": "건기식10.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 495,
+      "contentHash": "95505bb65d175320208fa5b44db2006d61bc9fbbd9047650af431c563d47087e",
+      "uploadedAt": "2026-09-08T11:21:29.192Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-46732b9f-9f4d-4b68-a721-002e07e0bb36",
+      "publicPath": "/creative-references/reference-copy/reference-upload-46732b9f-9f4d-4b68-a721-002e07e0bb36.jpg",
+      "sourceFile": "건기식9.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 496,
+      "contentHash": "d71b581405d7aade03cd0a35e86bdecd0fed2108543dc81eafe68457dcab678d",
+      "uploadedAt": "2026-09-08T11:21:38.982Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-f5347e8e-0c52-4f97-bf59-b742c77f00c4",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f5347e8e-0c52-4f97-bf59-b742c77f00c4.jpg",
+      "sourceFile": "01.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 497,
+      "contentHash": "5b31012b96a83842c0119f2bf4868ba7241a9228a8879a79d13ef9d091ae2ca1",
+      "uploadedAt": "2026-09-08T11:24:48.360Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-b4cd1c8d-f5d6-41dc-b8cc-538ba9022928",
+      "publicPath": "/creative-references/reference-copy/reference-upload-b4cd1c8d-f5d6-41dc-b8cc-538ba9022928.jpg",
+      "sourceFile": "오리지널소스1.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 498,
+      "contentHash": "1ccd1e9b5ccfde3f17401277969787f72cde4066774af6d1ec92adeb37a4e119",
+      "uploadedAt": "2026-09-08T11:24:58.876Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-10580337-f6c1-4104-a9fa-f120eba5e880",
+      "publicPath": "/creative-references/reference-copy/reference-upload-10580337-f6c1-4104-a9fa-f120eba5e880.jpg",
+      "sourceFile": "건기식18.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 499,
+      "contentHash": "45ff620c23fad68d9c3cd68f3ff0c8b7aa04d55da090bebc982fda0891cb2a83",
+      "uploadedAt": "2026-09-08T11:25:06.609Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-7c8644bb-35ad-4c0a-9541-cd0b6b6a08ec",
+      "publicPath": "/creative-references/reference-copy/reference-upload-7c8644bb-35ad-4c0a-9541-cd0b6b6a08ec.jpg",
+      "sourceFile": "식품2.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 500,
+      "contentHash": "96ec2296b17b9f096341f1c49d7c040ffba133a9a9bdf590f1616cca518f131f",
+      "uploadedAt": "2026-09-08T11:25:13.081Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-9fe7053c-eb62-42b3-8c3f-aa30ba5d6dd9",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9fe7053c-eb62-42b3-8c3f-aa30ba5d6dd9.jpg",
+      "sourceFile": "화장품15.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 501,
+      "contentHash": "1fd5eb8c531802303c32baa2e71237cadf1e7deb722b0a5a09a95ea572ad7c44",
+      "uploadedAt": "2026-09-08T11:25:19.579Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-65229651-b871-49c1-94f0-506196b720cd",
+      "publicPath": "/creative-references/reference-copy/reference-upload-65229651-b871-49c1-94f0-506196b720cd.jpg",
+      "sourceFile": "건기식17.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "review-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 502,
+      "contentHash": "f0b047115f1b87c8843ea50f7a8265c8bcdbee4c7eccc6450a7252515111e803",
+      "uploadedAt": "2026-09-08T11:25:28.750Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-cec950bf-97bc-407d-a60a-fac82787630c",
+      "publicPath": "/creative-references/reference-copy/reference-upload-cec950bf-97bc-407d-a60a-fac82787630c.jpg",
+      "sourceFile": "화장품16.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 503,
+      "contentHash": "096a3a160cbbe83f09f0ba96cee95a58cc4419c822cc967d49d39c37ae7098ab",
+      "uploadedAt": "2026-09-08T11:25:37.370Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-bbde4ee0-6e52-4ea5-ae31-6e672844ab52",
+      "publicPath": "/creative-references/reference-copy/reference-upload-bbde4ee0-6e52-4ea5-ae31-6e672844ab52.jpg",
+      "sourceFile": "화장품13.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 504,
+      "contentHash": "a7ddda70c62c68931c144fb42f2607323afe36f321169a4b98bf781f7d6a63df",
+      "uploadedAt": "2026-09-08T11:25:44.848Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-33807093-4145-4579-879e-d5a56ec2bc04",
+      "publicPath": "/creative-references/reference-copy/reference-upload-33807093-4145-4579-879e-d5a56ec2bc04.jpg",
+      "sourceFile": "화장품12.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 505,
+      "contentHash": "e81caf9a54f34cae545f01ca5d3017d53fa6d46d6f1c1ef9a32da9a8a6875e0f",
+      "uploadedAt": "2026-09-08T11:25:51.555Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-10cb5e1f-6f8f-4090-95c8-59003a20eadb",
+      "publicPath": "/creative-references/reference-copy/reference-upload-10cb5e1f-6f8f-4090-95c8-59003a20eadb.jpg",
+      "sourceFile": "화장품11.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 506,
+      "contentHash": "9fbb7375b9bd8a1af029775eec1e9e25e2e990416ed71253a4bfedcbbbfe40ce",
+      "uploadedAt": "2026-09-08T11:26:03.175Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-27d77735-86d4-4d8d-99d1-4c16e9286215",
+      "publicPath": "/creative-references/reference-copy/reference-upload-27d77735-86d4-4d8d-99d1-4c16e9286215.jpg",
+      "sourceFile": "화장품9.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 507,
+      "contentHash": "f8fa6fbcb6e7cd2e66c649e07989610fc6a7b386074e4b1fe0ae5ee3a15d0072",
+      "uploadedAt": "2026-09-08T11:26:10.442Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-f1d2d969-9fc7-4abb-8cc0-84e2e653f4c9",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f1d2d969-9fc7-4abb-8cc0-84e2e653f4c9.jpg",
+      "sourceFile": "오리지널소스2.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 508,
+      "contentHash": "8dc8d575e0cffe56f0d4bfd1e58188e5d3b0c44d83cd98643f646007bb2983b1",
+      "uploadedAt": "2026-09-08T11:26:32.766Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-41f34231-b2d8-46d8-a8f9-1f82009a1698",
+      "publicPath": "/creative-references/reference-copy/reference-upload-41f34231-b2d8-46d8-a8f9-1f82009a1698.jpg",
+      "sourceFile": "09.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "editorial",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "medium",
+      "ordinal": 509,
+      "contentHash": "0ee8b46a7f24b3f68bcce94b2b27c9048027e49036f0d2b19247082ceef29503",
+      "uploadedAt": "2026-09-08T11:26:41.884Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-498d4967-9a7c-4342-9a32-6e8f3193c89d",
+      "publicPath": "/creative-references/reference-copy/reference-upload-498d4967-9a7c-4342-9a32-6e8f3193c89d.jpg",
+      "sourceFile": "06.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "comparison",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 510,
+      "contentHash": "eabacb57b84b486a023712a27a0369f5ac3c545b71935238beb90694490ce350",
+      "uploadedAt": "2026-09-08T11:26:49.985Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-362f1616-f202-40cb-82be-856593a7f118",
+      "publicPath": "/creative-references/reference-copy/reference-upload-362f1616-f202-40cb-82be-856593a7f118.jpg",
+      "sourceFile": "오리지널소스5.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 511,
+      "contentHash": "19e91998d0a13c51af2e2ee9b38a6941aed57b83d08d15068c43f8677ce20fbe",
+      "uploadedAt": "2026-09-08T11:26:56.968Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-9c0b3f1b-4041-4a5b-817c-68cb7c4c527e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9c0b3f1b-4041-4a5b-817c-68cb7c4c527e.jpg",
+      "sourceFile": "05.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 512,
+      "contentHash": "8de986b9fae3cf153cf40ba9059ed26758e4ccbf1e7717559e452072c2aa513a",
+      "uploadedAt": "2026-09-08T11:27:07.660Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-366f1be3-f87e-4b53-8390-e064aa87b332",
+      "publicPath": "/creative-references/reference-copy/reference-upload-366f1be3-f87e-4b53-8390-e064aa87b332.jpg",
+      "sourceFile": "오리지널소스4.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 513,
+      "contentHash": "7332b830b414b8c8eb004fd7400271aae8845a9203cbb6056fb7ef3a44b27cac",
+      "uploadedAt": "2026-09-08T11:27:13.095Z",
+      "classificationMethod": "codex-local",
+      "beautySubcategory": "hook"
+    },
+    {
+      "id": "reference-upload-529055f7-002f-401c-b387-b4bc82dc3be7",
+      "publicPath": "/creative-references/reference-copy/reference-upload-529055f7-002f-401c-b387-b4bc82dc3be7.jpg",
+      "sourceFile": "03.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "bottle",
+      "productPresentation": "mixed",
+      "compositionType": "sensory-closeup",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 514,
+      "contentHash": "ce72d2609bc1e4ce322795b21fd53a02b19857bcaa70d414c75d3b064789b67f",
+      "uploadedAt": "2026-09-08T11:27:22.603Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-854f80eb-2e2c-4b9a-9336-87d2c0c4ed50",
+      "publicPath": "/creative-references/reference-copy/reference-upload-854f80eb-2e2c-4b9a-9336-87d2c0c4ed50.jpg",
+      "sourceFile": "10.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 515,
+      "contentHash": "926271ad6024e2b4cba162f718c529156407ab2ad57e703f6c2c0b47326cd46a",
+      "uploadedAt": "2026-09-08T11:46:53.327Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-bff56e5b-5011-4dc4-89e6-f7c66362299c",
+      "publicPath": "/creative-references/reference-copy/reference-upload-bff56e5b-5011-4dc4-89e6-f7c66362299c.jpg",
+      "sourceFile": "22.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "before-after",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 516,
+      "contentHash": "4df8102417f5c2119dac7dca888141a8fc9180576e7f43c802620fd84203fdf1",
+      "uploadedAt": "2026-09-08T11:47:01.788Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-93a3b73b-3cc4-4b85-b166-1f55c4c909be",
+      "publicPath": "/creative-references/reference-copy/reference-upload-93a3b73b-3cc4-4b85-b166-1f55c4c909be.jpg",
+      "sourceFile": "20.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "comparison",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 517,
+      "contentHash": "ab703d72320d6c547d790382e7af4d75aee5fa957c42e35f7c6534921e42f834",
+      "uploadedAt": "2026-09-08T11:47:11.434Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-bdb384ef-b9c5-4964-a5ee-138661a49c07",
+      "publicPath": "/creative-references/reference-copy/reference-upload-bdb384ef-b9c5-4964-a5ee-138661a49c07.jpg",
+      "sourceFile": "19.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 518,
+      "contentHash": "9708eccac65560b2532afe114c2c817b3912ad25d7e83807323b06065212f332",
+      "uploadedAt": "2026-09-08T11:47:20.663Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-5533d759-249b-43ab-8e55-4c80f5e016e8",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5533d759-249b-43ab-8e55-4c80f5e016e8.jpg",
+      "sourceFile": "18.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "editorial",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 519,
+      "contentHash": "5eb0e481e51732de4adc71012c857b9b4f330de26e107b6dabdf9600007573c2",
+      "uploadedAt": "2026-09-08T11:47:33.598Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a400ee2c-d23f-4ced-82dd-8f713588a3f3",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a400ee2c-d23f-4ced-82dd-8f713588a3f3.jpg",
+      "sourceFile": "17.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 520,
+      "contentHash": "581e3f73e43c61124a42f2ef90011dcbe942c857d92f87d2a4344e04f9b10a6c",
+      "uploadedAt": "2026-09-08T11:47:41.242Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-20099442-fac4-401d-a0d1-8c9331bae2eb",
+      "publicPath": "/creative-references/reference-copy/reference-upload-20099442-fac4-401d-a0d1-8c9331bae2eb.jpg",
+      "sourceFile": "16.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 521,
+      "contentHash": "1533cdbcc8268acda33ff8c41304de998c75538ceabdc62b39fe2cbfe951b145",
+      "uploadedAt": "2026-09-08T11:47:49.689Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-e16626f0-b588-48f5-a163-aa68fbb1ebcc",
+      "publicPath": "/creative-references/reference-copy/reference-upload-e16626f0-b588-48f5-a163-aa68fbb1ebcc.jpg",
+      "sourceFile": "15.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 522,
+      "contentHash": "0776e6fe66cd01f60144f8f554378ced7040cef62f6d1f816b97d173f7ce4243",
+      "uploadedAt": "2026-09-08T11:47:55.445Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-dabd9ee9-a68f-48f0-96f4-00f44de61fac",
+      "publicPath": "/creative-references/reference-copy/reference-upload-dabd9ee9-a68f-48f0-96f4-00f44de61fac.jpg",
+      "sourceFile": "14.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 523,
+      "contentHash": "ec623d24ef2775b340140d7a0eee8b871f1f1e166d7cb68799e1bfd8a5d2efca",
+      "uploadedAt": "2026-09-08T11:48:02.796Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-5c4a8fd2-841b-404c-9c72-e1802dddc072",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5c4a8fd2-841b-404c-9c72-e1802dddc072.jpg",
+      "sourceFile": "13.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 524,
+      "contentHash": "5afa354d1731840f99b900a79568fc84929fed7d3298ef9e81abd3e7fac3c974",
+      "uploadedAt": "2026-09-08T11:48:21.511Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-139e8c29-972c-413b-87fa-4a781217890e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-139e8c29-972c-413b-87fa-4a781217890e.jpg",
+      "sourceFile": "12.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "editorial",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 525,
+      "contentHash": "25dd6131fd78656446b3ad37fe2413138fc269ecd80f3e7b8fdd9aecce8ffa96",
+      "uploadedAt": "2026-09-08T11:48:30.938Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-34f4543b-4d9d-4a3c-8dc9-f4a113ee5c87",
+      "publicPath": "/creative-references/reference-copy/reference-upload-34f4543b-4d9d-4a3c-8dc9-f4a113ee5c87.jpg",
+      "sourceFile": "11.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "pouch",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 526,
+      "contentHash": "53142d7f6a154b0e77c9a8608b11fe8f4f2068de260be0caac1cde6c591dfc40",
+      "uploadedAt": "2026-09-08T11:48:42.749Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-524f62ea-fbb3-443c-9dc3-c2b2462d32e8",
+      "publicPath": "/creative-references/reference-copy/reference-upload-524f62ea-fbb3-443c-9dc3-c2b2462d32e8.jpg",
+      "sourceFile": "23.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "before-after",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 527,
+      "contentHash": "26d0341682f58ce1989db97be75f8d7347ce56fb3805a0296f0523e32a17fa67",
+      "uploadedAt": "2026-09-08T11:51:10.833Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-8374313d-b67f-4456-a8bd-2d39951bac04",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8374313d-b67f-4456-a8bd-2d39951bac04.jpg",
+      "sourceFile": "007.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "mixed",
+      "compositionType": "price-card",
+      "productSlotCount": 4,
+      "productSlotShape": "flexible",
+      "photographyType": "editorial",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 528,
+      "contentHash": "e4760685ec6dc41cf07f19c4baa0bf8948ea4e17b57f37ad1e68e2182791374b",
+      "uploadedAt": "2026-09-08T11:51:26.742Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-5f23a21d-3a19-4370-894e-b93152c26a28",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5f23a21d-3a19-4370-894e-b93152c26a28.jpg",
+      "sourceFile": "006.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 529,
+      "contentHash": "226574eb118c954b1ded09b10ce86f5017b328e649d5cd3fa73fdd6f41d71efc",
+      "uploadedAt": "2026-09-08T11:51:36.594Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-342ed592-14f4-460c-88f5-81dfee9ef8e6",
+      "publicPath": "/creative-references/reference-copy/reference-upload-342ed592-14f4-460c-88f5-81dfee9ef8e6.jpg",
+      "sourceFile": "005.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 530,
+      "contentHash": "b9bc5905a133c4858a894ea463267cbe381c2ac998d0aaf50f36e687012b8dd7",
+      "uploadedAt": "2026-09-08T11:51:48.506Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-f19054dc-216d-4145-a508-b4ecf520583a",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f19054dc-216d-4145-a508-b4ecf520583a.jpg",
+      "sourceFile": "004.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 531,
+      "contentHash": "dfef83c473340e1966302ab6a3ad1b9be190ead772cc0643251dccfa1b6bce45",
+      "uploadedAt": "2026-09-08T11:51:55.592Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-a5593db2-7cf0-4879-a534-c8b4e984b9e4",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a5593db2-7cf0-4879-a534-c8b4e984b9e4.jpg",
+      "sourceFile": "003.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 532,
+      "contentHash": "5bd14b8c5460640a0b0f7a44ad2bf119e37a8b56061318e8bd3d11cbcb087364",
+      "uploadedAt": "2026-09-08T11:52:04.192Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-a17c1fca-90dd-454c-96b2-822088070e3b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a17c1fca-90dd-454c-96b2-822088070e3b.jpg",
+      "sourceFile": "002.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "mixed",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 533,
+      "contentHash": "3a34a8112364486c38dbc1fc74580d9c267a7199fae300fe2f70f51207a541c9",
+      "uploadedAt": "2026-09-08T11:52:15.666Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-ebfab785-c139-4082-8aba-b79193bc1fd7",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ebfab785-c139-4082-8aba-b79193bc1fd7.jpg",
+      "sourceFile": "001.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 534,
+      "contentHash": "d829c825b8ccbe8626459188d47e0df57cecbb478e25d31c739bba7dc6e0b095",
+      "uploadedAt": "2026-09-08T11:52:27.007Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-63a2378e-163e-4509-96bc-6197eebaa8dd",
+      "publicPath": "/creative-references/reference-copy/reference-upload-63a2378e-163e-4509-96bc-6197eebaa8dd.jpg",
+      "sourceFile": "26.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 535,
+      "contentHash": "65caf673503d671baceeda8dd0de93a8dd6dc0e69e6aacfad95966a8457b141b",
+      "uploadedAt": "2026-09-08T11:52:42.764Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-e026b619-5a1e-4192-945f-8efde4af3c90",
+      "publicPath": "/creative-references/reference-copy/reference-upload-e026b619-5a1e-4192-945f-8efde4af3c90.jpg",
+      "sourceFile": "25.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 536,
+      "contentHash": "54fea035884cd5b81146169a7e75481d47157cd5783a133b87c50d90c0e42e53",
+      "uploadedAt": "2026-09-08T11:52:51.317Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-551474ec-5082-493a-ae06-f3895d1d0548",
+      "publicPath": "/creative-references/reference-copy/reference-upload-551474ec-5082-493a-ae06-f3895d1d0548.jpg",
+      "sourceFile": "008.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 537,
+      "contentHash": "bd572c6cab2bdd5e6428a223f9167d01d9b2ed0acc81ef2ac01866b0a35050b1",
+      "uploadedAt": "2026-09-08T11:53:14.051Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-1caa506a-848b-4fef-83b3-f9971e9a7fd1",
+      "publicPath": "/creative-references/reference-copy/reference-upload-1caa506a-848b-4fef-83b3-f9971e9a7fd1.jpg",
+      "sourceFile": "020.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "mixed",
+      "compositionType": "product-lineup",
+      "productSlotCount": 4,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 538,
+      "contentHash": "f59648439b652d486307ad1ea4e311489841738c106bb004a7ae632ded1cc4a1",
+      "uploadedAt": "2026-09-08T11:53:32.634Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-58f420c7-42bf-45b3-bbc4-586e3f423efc",
+      "publicPath": "/creative-references/reference-copy/reference-upload-58f420c7-42bf-45b3-bbc4-586e3f423efc.jpg",
+      "sourceFile": "019.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "universal-packshot",
+      "productPresentation": "unpackaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "medium",
+      "beautySubcategory": "design",
+      "ordinal": 539,
+      "contentHash": "c3c36ce834d46bb4bacfd4e79eb8d6b371de9c9a293ea9f4070c7fe34c2f5342",
+      "uploadedAt": "2026-09-08T11:53:41.454Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-9aa9ec76-25a3-4b92-ade2-ff578b87b081",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9aa9ec76-25a3-4b92-ade2-ff578b87b081.jpg",
+      "sourceFile": "016.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 540,
+      "contentHash": "83070aafc8661a59c5ce2df74ba3ed74c00042de1bb67f7b8ce446e24ba6c4e2",
+      "uploadedAt": "2026-09-08T11:53:47.181Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-3b80a31d-f1e3-4b3b-b286-f20415010195",
+      "publicPath": "/creative-references/reference-copy/reference-upload-3b80a31d-f1e3-4b3b-b286-f20415010195.jpg",
+      "sourceFile": "015.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "human-model",
+      "textDensity": "light",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "medium",
+      "beautySubcategory": "design",
+      "ordinal": 541,
+      "contentHash": "bd91d80e0d70182f819104a312a8dcc5f48df0172760eb42991ece7da22fc884",
+      "uploadedAt": "2026-09-08T11:53:58.071Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-f2344e01-8998-40d2-92aa-2c3de5cb67c3",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f2344e01-8998-40d2-92aa-2c3de5cb67c3.jpg",
+      "sourceFile": "014.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 542,
+      "contentHash": "0481e75defc8293bfabbd35ea4da7497ad01f6e38b733d2f598d526a08a6251d",
+      "uploadedAt": "2026-09-08T11:54:09.225Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-8d67aa46-32f6-4ff2-b946-5935df7f8453",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8d67aa46-32f6-4ff2-b946-5935df7f8453.jpg",
+      "sourceFile": "013.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 543,
+      "contentHash": "fb090c5c69b115af79f7f7700c17210df638ee1fd3b7d8d5b370d9ad37087d5f",
+      "uploadedAt": "2026-09-08T11:54:19.254Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-d8e699a8-5ad7-41d9-a9e2-8c43d1da29f7",
+      "publicPath": "/creative-references/reference-copy/reference-upload-d8e699a8-5ad7-41d9-a9e2-8c43d1da29f7.jpg",
+      "sourceFile": "011.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "mixed",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 544,
+      "contentHash": "fc4dcf76269892f1c3ba44283a926245ba16a0a98141379b5e532281102cdf80",
+      "uploadedAt": "2026-09-08T11:54:28.991Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-5652289f-ce89-4ca9-bbfb-94dcca183de3",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5652289f-ce89-4ca9-bbfb-94dcca183de3.jpg",
+      "sourceFile": "010.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 545,
+      "contentHash": "480f786cf2621d2295086753382f0fc3c18106261f18b7f1c785f951d55aa3d5",
+      "uploadedAt": "2026-09-08T11:54:36.478Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-8d4e328c-49e5-47e8-9164-cf7358a35a7f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8d4e328c-49e5-47e8-9164-cf7358a35a7f.jpg",
+      "sourceFile": "009.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "unpackaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "medium",
+      "beautySubcategory": "design",
+      "ordinal": 546,
+      "contentHash": "8c6132c24fb3d128a4bd37b6892b624573a388ee87f87fa243f779be74da3aff",
+      "uploadedAt": "2026-09-08T11:54:46.898Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-5609e308-2257-417b-8ad0-a39a90690af2",
+      "publicPath": "/creative-references/reference-copy/reference-upload-5609e308-2257-417b-8ad0-a39a90690af2.jpg",
+      "sourceFile": "022.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 547,
+      "contentHash": "ed08de704a0602214db2851ae5f8cc45efb3f93bb30b99b4ee876feeac57d762",
+      "uploadedAt": "2026-09-08T12:15:01.895Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a4517ed8-612a-45b7-a7c5-812be4e62dee",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a4517ed8-612a-45b7-a7c5-812be4e62dee.jpg",
+      "sourceFile": "040.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "universal-packshot",
+      "productPresentation": "unpackaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 548,
+      "contentHash": "3bd7f382274f9c8e018ff6731ea27b05b4171a6a8a8e6ca3f85ab72b34a3d29a",
+      "uploadedAt": "2026-09-08T12:15:12.965Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-c2440a99-3a3b-4522-8984-2d2edc51144e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-c2440a99-3a3b-4522-8984-2d2edc51144e.jpg",
+      "sourceFile": "036.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 549,
+      "contentHash": "e0966b87a17990623f507793d0bef8bc718f9ebb623e845ac8bfeb9c727bb117",
+      "uploadedAt": "2026-09-08T12:15:20.364Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-db27ab06-abfb-4686-aca3-762ed977846f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-db27ab06-abfb-4686-aca3-762ed977846f.jpg",
+      "sourceFile": "034.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "editorial",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 550,
+      "contentHash": "a48f28367930b1861c0c9e36d8082f2bb087312b1c867643d77a39aa15f1b47a",
+      "uploadedAt": "2026-09-08T12:15:30.503Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-31a64133-1b1c-4445-9ac5-ecfa7fe4640e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-31a64133-1b1c-4445-9ac5-ecfa7fe4640e.jpg",
+      "sourceFile": "035.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 551,
+      "contentHash": "e5ef4ad8d4d98d4df8adaf2e312b592a3e9dd3d0250633b082ee6f5c4ad591f8",
+      "uploadedAt": "2026-09-08T12:15:36.178Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-ba6d6b16-e7b8-4adc-ab55-a0312f23d2de",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ba6d6b16-e7b8-4adc-ab55-a0312f23d2de.jpg",
+      "sourceFile": "033.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "productPresentation": "packaged",
+      "compositionType": "before-after",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 552,
+      "contentHash": "ea0d666ddd97b12180670c792602fa2818dbdee02d5fa8952bc71d4ab2526751",
+      "uploadedAt": "2026-09-08T12:15:43.979Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-08c96308-db42-4986-bb15-ec7e9b6b00e6",
+      "publicPath": "/creative-references/reference-copy/reference-upload-08c96308-db42-4986-bb15-ec7e9b6b00e6.jpg",
+      "sourceFile": "031.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "editorial",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 553,
+      "contentHash": "df458dccb442c58d4d509eedbdfc3c224b76d28c80544ccb95dd1157edea618d",
+      "uploadedAt": "2026-09-08T12:15:52.076Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-c6d126a9-1103-4078-be6c-9c5d2e0cc5cd",
+      "publicPath": "/creative-references/reference-copy/reference-upload-c6d126a9-1103-4078-be6c-9c5d2e0cc5cd.jpg",
+      "sourceFile": "029.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "square",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 554,
+      "contentHash": "5932f8a0490ec336d40f0ccc98d9de9f88f4c617354728f053a5a98e187ed9fd",
+      "uploadedAt": "2026-09-08T12:16:00.176Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-2edb3b83-f26c-4ba9-bcb6-5995b5d6ad89",
+      "publicPath": "/creative-references/reference-copy/reference-upload-2edb3b83-f26c-4ba9-bcb6-5995b5d6ad89.jpg",
+      "sourceFile": "028.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 4,
+      "productSlotShape": "square",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 555,
+      "contentHash": "1fa2a69c920805747ad3b02369bb7af2a03651d0b22d68bf4167776152e38816",
+      "uploadedAt": "2026-09-08T12:16:12.416Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-2e8e302b-a396-428f-815b-c00573980be4",
+      "publicPath": "/creative-references/reference-copy/reference-upload-2e8e302b-a396-428f-815b-c00573980be4.jpg",
+      "sourceFile": "027.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "editorial",
+      "textDensity": "light",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 556,
+      "contentHash": "bfe23c1c553d1f07e279908cf17eef5bcfba95e91216522865e41b6560089d93",
+      "uploadedAt": "2026-09-08T12:16:18.418Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-32ad6284-9516-429f-a628-6b90c137634f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-32ad6284-9516-429f-a628-6b90c137634f.jpg",
+      "sourceFile": "026.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "jar",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "editorial",
+      "textDensity": "light",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 557,
+      "contentHash": "9c6ed7fab472e46e79cd0f1ec1f5cfb54c31ccaefa76b3b827e62ab76da900ea",
+      "uploadedAt": "2026-09-08T12:16:25.095Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-9d703c37-6668-45a9-83c3-2d76c95dc42b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9d703c37-6668-45a9-83c3-2d76c95dc42b.jpg",
+      "sourceFile": "024.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "design",
+      "ordinal": 558,
+      "contentHash": "3128f48bb06b7596f2c14077baa6b06add3cd4f961b6179177bb1b10fd783050",
+      "uploadedAt": "2026-09-08T12:16:30.653Z",
+      "classificationMethod": "manual"
+    },
+    {
+      "id": "reference-upload-3635348f-979f-41ad-87a5-41599570e71f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-3635348f-979f-41ad-87a5-41599570e71f.jpg",
+      "sourceFile": "041.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 559,
+      "contentHash": "80202f61e975d1a0de0b9964680ceb61029441298e9999bb3f73976aa9f43e2e",
+      "uploadedAt": "2026-09-08T14:00:34.696Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-72ae0507-760f-450a-b9ce-3b1231644822",
+      "publicPath": "/creative-references/reference-copy/reference-upload-72ae0507-760f-450a-b9ce-3b1231644822.jpg",
+      "sourceFile": "052.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 5,
+      "productSlotShape": "tall",
+      "photographyType": "editorial",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 560,
+      "contentHash": "2c85732789f6bd6ffa6ad797ec03ae143d7bc57b53144578061c3edf3d0ba3c5",
+      "uploadedAt": "2026-09-08T14:00:49.244Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-d7255d3f-7244-4b76-bf9b-96ff3988e6fb",
+      "publicPath": "/creative-references/reference-copy/reference-upload-d7255d3f-7244-4b76-bf9b-96ff3988e6fb.jpg",
+      "sourceFile": "051.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 561,
+      "contentHash": "763af8e9ca03136c57228699c88f644665717e81da4ba952a3d5c05ef23a269d",
+      "uploadedAt": "2026-09-08T14:00:55.570Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-0d00fc66-f8f6-45b1-ae29-a0c57b3e1791",
+      "publicPath": "/creative-references/reference-copy/reference-upload-0d00fc66-f8f6-45b1-ae29-a0c57b3e1791.jpg",
+      "sourceFile": "50.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 562,
+      "contentHash": "4290084d638825ce900ef978de6d0f992ccbaed101f572394ae802321c98f6bd",
+      "uploadedAt": "2026-09-08T14:01:06.280Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-271c62a9-b6de-42ef-bff5-eebd263d6e09",
+      "publicPath": "/creative-references/reference-copy/reference-upload-271c62a9-b6de-42ef-bff5-eebd263d6e09.jpg",
+      "sourceFile": "049.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "lifestyle",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 563,
+      "contentHash": "8e817c0216785f4806ed8c50b55e8474c160adcb75685995e2234619d8c35bdc",
+      "uploadedAt": "2026-09-08T14:01:29.048Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-44dfe3b1-4e6e-4f41-a233-4a019ee90683",
+      "publicPath": "/creative-references/reference-copy/reference-upload-44dfe3b1-4e6e-4f41-a233-4a019ee90683.jpg",
+      "sourceFile": "048.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 4,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 564,
+      "contentHash": "7fa4ce10dd2195e4420f197d79e11c5674f40ed97528bb866f2de17fe05cbcd3",
+      "uploadedAt": "2026-09-08T14:01:38.088Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-01a8643e-e958-4fd2-b9c9-4b6f20dfdfc8",
+      "publicPath": "/creative-references/reference-copy/reference-upload-01a8643e-e958-4fd2-b9c9-4b6f20dfdfc8.jpg",
+      "sourceFile": "047.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 565,
+      "contentHash": "546da34876d1489d7170b2661ddc54d3f4f3f5d4a763cff0edbd1fcacaf954ad",
+      "uploadedAt": "2026-09-08T14:01:48.725Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-2b62f211-6967-4f99-aac8-0e4b215aa0c2",
+      "publicPath": "/creative-references/reference-copy/reference-upload-2b62f211-6967-4f99-aac8-0e4b215aa0c2.jpg",
+      "sourceFile": "046.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bundle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "editorial",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 566,
+      "contentHash": "1eea477c8ea2834fa30ac5898c679fb50d18265137dcfcaacaeef7c4e609ad07",
+      "uploadedAt": "2026-09-08T14:02:00.669Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-9e9281c3-673c-46ac-b8c1-c9c3fd126e53",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9e9281c3-673c-46ac-b8c1-c9c3fd126e53.jpg",
+      "sourceFile": "043.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-lineup",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 567,
+      "contentHash": "97ad8a0acf34a8e1c9c3bf014a0aeae555a23c42d65bce933d4844c70caceadf",
+      "uploadedAt": "2026-09-08T14:02:12.651Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-392ac6c6-609d-4d19-8b25-95cff05f37bb",
+      "publicPath": "/creative-references/reference-copy/reference-upload-392ac6c6-609d-4d19-8b25-95cff05f37bb.jpg",
+      "sourceFile": "042.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 568,
+      "contentHash": "7f9d0271df1e5e39aff054f8f839a3015f2c016166ebe49481c4540c0708dc06",
+      "uploadedAt": "2026-09-08T14:02:20.038Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a80cdce7-c097-4788-b0e0-aea8c8ec730c",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a80cdce7-c097-4788-b0e0-aea8c8ec730c.jpg",
+      "sourceFile": "045.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 4,
+      "productSlotShape": "tall",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 569,
+      "contentHash": "c7723590527e2d1edc0ff2cbf5d71c5486ce6343eec0134c8df57e0040e50404",
+      "uploadedAt": "2026-09-08T14:02:28.504Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-6752971a-6923-47a0-a470-97799b152ed6",
+      "publicPath": "/creative-references/reference-copy/reference-upload-6752971a-6923-47a0-a470-97799b152ed6.jpg",
+      "sourceFile": "053.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 3,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 570,
+      "contentHash": "009466540be793587509cc476897e3af4473fab8f247d85a8df541c31b3a1a18",
+      "uploadedAt": "2026-09-08T14:07:39.228Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-78f88abb-aab6-40e7-8071-73b2fe75739f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-78f88abb-aab6-40e7-8071-73b2fe75739f.jpg",
+      "sourceFile": "071.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "flexible",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 571,
+      "contentHash": "dced73b8b0b5c514de6dd10abcd40c29dda6d8b51646d769da35282eedcbd487",
+      "uploadedAt": "2026-09-08T14:07:51.757Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-7fd7291e-f751-45a1-8c6f-c5ff57cb4b7f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-7fd7291e-f751-45a1-8c6f-c5ff57cb4b7f.jpg",
+      "sourceFile": "070.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "productPresentation": "unpackaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "snack",
+      "ordinal": 572,
+      "contentHash": "6e0e6d39de3965879874b23abfd622fb7e37f5c1f9b0e2cede413db69816fca2",
+      "uploadedAt": "2026-09-08T14:08:01.927Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-caa9991c-2d4b-40e5-8b40-97096f15068e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-caa9991c-2d4b-40e5-8b40-97096f15068e.jpg",
+      "sourceFile": "061.jpg",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 573,
+      "contentHash": "a63c477a2c53eec241802e5aacd85eb863d5a303059532f089e8dbde05bb1943",
+      "uploadedAt": "2026-09-08T14:08:08.826Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-04887916-cee4-447e-bf1d-94cae28aef1b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-04887916-cee4-447e-bf1d-94cae28aef1b.jpg",
+      "sourceFile": "059.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 574,
+      "contentHash": "d24eb54f908f829265b7805a1e5baba635dbe4b236559437e6aa0a15758dccff",
+      "uploadedAt": "2026-09-08T14:08:15.464Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-b5fa3757-5fcb-4600-aca4-fb68e9bc008e",
+      "publicPath": "/creative-references/reference-copy/reference-upload-b5fa3757-5fcb-4600-aca4-fb68e9bc008e.jpg",
+      "sourceFile": "058.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 575,
+      "contentHash": "db2a7c8dca98efe222a0d7157171780e29579175ae1b546454ca319248d78e48",
+      "uploadedAt": "2026-09-08T14:08:23.930Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a4d53d51-f031-47a7-b8e0-6bd1ad14e56b",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a4d53d51-f031-47a7-b8e0-6bd1ad14e56b.jpg",
+      "sourceFile": "057.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 576,
+      "contentHash": "77a5c389f0e1001b0c236c308ef97783777c3b60e2f08f50442afc23a7465bbb",
+      "uploadedAt": "2026-09-08T14:08:31.479Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-eece6d4d-38fc-4bb8-a7ba-f271f5e31160",
+      "publicPath": "/creative-references/reference-copy/reference-upload-eece6d4d-38fc-4bb8-a7ba-f271f5e31160.jpg",
+      "sourceFile": "056.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "sensory-closeup",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 577,
+      "contentHash": "756a96fac3fd2326026b2eed72dcacf4d69b7c0a5625a8c187935ee8bcc5a36a",
+      "uploadedAt": "2026-09-08T14:08:40.198Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-f38d1ca2-4781-4fbb-b3ec-3e1e8715146f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f38d1ca2-4781-4fbb-b3ec-3e1e8715146f.jpg",
+      "sourceFile": "055.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 578,
+      "contentHash": "bd18f5b87f68747632662ab9f0e050c2e00bd0284ecd8729b2081f1046215231",
+      "uploadedAt": "2026-09-08T14:08:46.739Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a331770c-590e-42a8-951b-3ad74843a233",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a331770c-590e-42a8-951b-3ad74843a233.jpg",
+      "sourceFile": "054.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "productPresentation": "unpackaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "editorial",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "medium",
+      "foodSubcategory": "snack",
+      "ordinal": 579,
+      "contentHash": "9c0dcce7e72480d850f2f45e1141f6efeda2d1f131f518eb98559d5b32a9a3ea",
+      "uploadedAt": "2026-09-08T14:08:58.239Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-c0d3a8de-b645-436b-8679-d401bdea41d6",
+      "publicPath": "/creative-references/reference-copy/reference-upload-c0d3a8de-b645-436b-8679-d401bdea41d6.jpg",
+      "sourceFile": "073.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "productPresentation": "unpackaged",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 580,
+      "contentHash": "0dec03ac146ecc9a1a3f43ff5cd3721c5f2c658dc816790b9f58df9093df0e80",
+      "uploadedAt": "2026-09-08T14:10:56.865Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-183df992-d8c6-404a-899e-355c5d71f80d",
+      "publicPath": "/creative-references/reference-copy/reference-upload-183df992-d8c6-404a-899e-355c5d71f80d.jpg",
+      "sourceFile": "086.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "lifestyle",
+      "textDensity": "light",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 581,
+      "contentHash": "fc61b65720bceaa3a5c96fda1202d9d89700e27b2324ea9739ad20caf267887e",
+      "uploadedAt": "2026-09-08T14:11:07.723Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-ccb61474-0e07-49aa-b90d-2f3b9a431405",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ccb61474-0e07-49aa-b90d-2f3b9a431405.jpg",
+      "sourceFile": "084.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "meat-cut",
+      "productPresentation": "unpackaged",
+      "compositionType": "lifestyle-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "square",
+      "photographyType": "natural-food",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "meat",
+      "ordinal": 582,
+      "contentHash": "9bc554c70fc2e8633dc9d0263ede6e13f1fb91c6986398eda3d9605cf9df10bc",
+      "uploadedAt": "2026-09-08T14:11:14.304Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-665b9614-b974-4cd3-9640-2d353910ed8d",
+      "publicPath": "/creative-references/reference-copy/reference-upload-665b9614-b974-4cd3-9640-2d353910ed8d.jpg",
+      "sourceFile": "081.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "box",
+      "productPresentation": "packaged",
+      "compositionType": "price-card",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 583,
+      "contentHash": "6605b6d57ba36a5c2f8d3c26b8be100efdb6201dc0e38d95d46555deae40a0c9",
+      "uploadedAt": "2026-09-08T14:11:26.281Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-c2ee9d8a-cbb9-4b26-bd90-6ec0592d54f7",
+      "publicPath": "/creative-references/reference-copy/reference-upload-c2ee9d8a-cbb9-4b26-bd90-6ec0592d54f7.jpg",
+      "sourceFile": "080.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "price-card",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "snack",
+      "ordinal": 584,
+      "contentHash": "84e59ca14089b591a095bfa6a6da3931d41b2088a3c375bb45b84340bf519b2d",
+      "uploadedAt": "2026-09-08T14:11:35.561Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-f44506c2-063a-435d-8378-5a39dad97f71",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f44506c2-063a-435d-8378-5a39dad97f71.jpg",
+      "sourceFile": "079.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "box",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "flexible",
+      "photographyType": "lifestyle",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 585,
+      "contentHash": "ddf920628f8e331cf12f9698ac68be245c01bcd92fb36f3ea863129790b827c5",
+      "uploadedAt": "2026-09-08T14:11:48.330Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-62baf746-0a21-4274-be47-a7aec7aeb8a7",
+      "publicPath": "/creative-references/reference-copy/reference-upload-62baf746-0a21-4274-be47-a7aec7aeb8a7.jpg",
+      "sourceFile": "077.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "ordinal": 586,
+      "contentHash": "febc3e66238254ef58c60f9e0091063ed7238f0c168c9224bed90bd480c5aae5",
+      "uploadedAt": "2026-09-08T14:12:00.989Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a9e16b0a-9193-4d1c-8a73-5ab41bf217d3",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a9e16b0a-9193-4d1c-8a73-5ab41bf217d3.jpg",
+      "sourceFile": "076.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 3,
+      "productSlotShape": "square",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "medium",
+      "ordinal": 587,
+      "contentHash": "faf24f15509852af3456b851a60dd7816e942fd833bc2847d6591ceb8ec50611",
+      "uploadedAt": "2026-09-08T14:12:14.204Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-fbf6e019-9e88-4c9a-8a3a-3564bbd600fb",
+      "publicPath": "/creative-references/reference-copy/reference-upload-fbf6e019-9e88-4c9a-8a3a-3564bbd600fb.jpg",
+      "sourceFile": "075.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "review-card",
+      "productSlotCount": 3,
+      "productSlotShape": "flexible",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "snack",
+      "ordinal": 588,
+      "contentHash": "2969660b4155f309dd58bb491dc765367ed76299db5ef5cc091e75c5344ef2c6",
+      "uploadedAt": "2026-09-08T14:12:26.494Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-ef364b7e-0e51-45d2-b172-ec8ff0e2cc58",
+      "publicPath": "/creative-references/reference-copy/reference-upload-ef364b7e-0e51-45d2-b172-ec8ff0e2cc58.jpg",
+      "sourceFile": "074.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "bundle",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "snack",
+      "ordinal": 589,
+      "contentHash": "c7017f7af6c9f6a35e1d96852ce28fe26f10f3037c3b712768d0db25d675b168",
+      "uploadedAt": "2026-09-08T14:12:37.198Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-28706f4b-e58c-4d0f-af36-f633d64f6451",
+      "publicPath": "/creative-references/reference-copy/reference-upload-28706f4b-e58c-4d0f-af36-f633d64f6451.jpg",
+      "sourceFile": "085.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "natural-food",
+      "productPresentation": "unpackaged",
+      "compositionType": "natural-food-scene",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "natural-food",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": true,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "ordinal": 590,
+      "contentHash": "682746c5d912026570962326c1597644f721fa2e006b25f6ebb659213dd35e02",
+      "uploadedAt": "2026-09-08T14:23:34.738Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-f07d0761-714c-4329-8206-fb3acab8fb46",
+      "publicPath": "/creative-references/reference-copy/reference-upload-f07d0761-714c-4329-8206-fb3acab8fb46.jpg",
+      "sourceFile": "092.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "fashion-item",
+      "productPresentation": "unpackaged",
+      "compositionType": "human-use",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 591,
+      "contentHash": "5db34ef5efdb18663ca1de388a98b4ff8b6f86c515e23d3be2af56be0d417811",
+      "uploadedAt": "2026-09-08T14:23:44.074Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-8dfdba57-5dc5-4fab-98e3-4212e15f84ec",
+      "publicPath": "/creative-references/reference-copy/reference-upload-8dfdba57-5dc5-4fab-98e3-4212e15f84ec.jpg",
+      "sourceFile": "091.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "universal-packshot",
+      "productPresentation": "unpackaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "wide",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 592,
+      "contentHash": "d96749f9239e58df28dec84ae7fb0291680dea9796396acc82d095e3e1024f2a",
+      "uploadedAt": "2026-09-08T14:23:57.842Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-fb6263d1-8697-4703-8bc1-93f96f3c388f",
+      "publicPath": "/creative-references/reference-copy/reference-upload-fb6263d1-8697-4703-8bc1-93f96f3c388f.jpg",
+      "sourceFile": "090.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "universal-packshot",
+      "productPresentation": "unpackaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 1,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "dense",
+      "supportsPackagedProduct": false,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 593,
+      "contentHash": "6c37e14ab049656279e096f8da8decab1f65eacedd6518778026dcee093c4bbf",
+      "uploadedAt": "2026-09-08T14:24:09.568Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-a2906db0-99b3-4cc1-8b0f-a9be11bc4b97",
+      "publicPath": "/creative-references/reference-copy/reference-upload-a2906db0-99b3-4cc1-8b0f-a9be11bc4b97.jpg",
+      "sourceFile": "089.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "product-packshot",
+      "productSlotCount": 2,
+      "productSlotShape": "flexible",
+      "photographyType": "packshot",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": true,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 594,
+      "contentHash": "96aca1681b25d07e607ae8ccabbecb49f465db37e1ef3532b274591a8df54ec7",
+      "uploadedAt": "2026-09-08T14:24:17.517Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-33b7e89a-2b1e-4917-83e5-30e821e74e45",
+      "publicPath": "/creative-references/reference-copy/reference-upload-33b7e89a-2b1e-4917-83e5-30e821e74e45.jpg",
+      "sourceFile": "088.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "medium",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 595,
+      "contentHash": "591c30c9f2e6b37b0828064959134a707e21e87e24dca90234a3d39b06c792c2",
+      "uploadedAt": "2026-09-08T14:24:23.719Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-cf1af4e8-916b-4105-9d13-376d130de914",
+      "publicPath": "/creative-references/reference-copy/reference-upload-cf1af4e8-916b-4105-9d13-376d130de914.jpg",
+      "sourceFile": "087.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "food",
+      "productForm": "pouch",
+      "productPresentation": "mixed",
+      "compositionType": "review-card",
+      "productSlotCount": 2,
+      "productSlotShape": "wide",
+      "photographyType": "lifestyle",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": false,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "foodSubcategory": "snack",
+      "ordinal": 596,
+      "contentHash": "57123cbeb219974383f112b3782282bc37daf2415283f786f0db7ce2e427f18c",
+      "uploadedAt": "2026-09-08T14:24:37.098Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-12d3edeb-49e5-4a93-977e-e3fcc5fa0778",
+      "publicPath": "/creative-references/reference-copy/reference-upload-12d3edeb-49e5-4a93-977e-e3fcc5fa0778.jpg",
+      "sourceFile": "093.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "before-after",
+      "productSlotCount": 2,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 597,
+      "contentHash": "632964d4d1fc496033830d4056689f320535f941d28b1d176acb70407c1e3060",
+      "uploadedAt": "2026-09-08T14:27:53.657Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-9d101135-da4e-4eba-b37f-9a157ce4ec91",
+      "publicPath": "/creative-references/reference-copy/reference-upload-9d101135-da4e-4eba-b37f-9a157ce4ec91.jpg",
+      "sourceFile": "097.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "mixed",
+      "compositionType": "human-use",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 598,
+      "contentHash": "076a9f982388b5e60e01cfc16b225af9a8a10b132b540e1805bb9ab1686f77d6",
+      "uploadedAt": "2026-09-08T14:28:02.973Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-0e0316e6-9096-4275-984a-3ee8c65af331",
+      "publicPath": "/creative-references/reference-copy/reference-upload-0e0316e6-9096-4275-984a-3ee8c65af331.jpg",
+      "sourceFile": "096.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "tube",
+      "productPresentation": "mixed",
+      "compositionType": "before-after",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 599,
+      "contentHash": "95abf5f16d4a01ba85c4902296509401cf0c17504582d0dc172ce7946a8a2012",
+      "uploadedAt": "2026-09-08T14:28:14.004Z",
+      "classificationMethod": "codex-local"
+    },
+    {
+      "id": "reference-upload-3955fb6f-e479-4272-850f-aad42d706013",
+      "publicPath": "/creative-references/reference-copy/reference-upload-3955fb6f-e479-4272-850f-aad42d706013.jpg",
+      "sourceFile": "094.webp",
+      "layoutFamily": "managed-reference",
+      "categoryGroup": "beauty",
+      "productForm": "bottle",
+      "productPresentation": "packaged",
+      "compositionType": "before-after",
+      "productSlotCount": 1,
+      "productSlotShape": "tall",
+      "photographyType": "human-model",
+      "textDensity": "dense",
+      "supportsPackagedProduct": true,
+      "supportsNaturalFood": false,
+      "supportsHumanModel": true,
+      "supportsMultipleProducts": false,
+      "compatibilityConfidence": "high",
+      "beautySubcategory": "hook",
+      "ordinal": 600,
+      "contentHash": "475cf405530c5e7edebf97949df6566095df7655f0011f4db106c17520fb68d5",
+      "uploadedAt": "2026-09-08T14:28:21.838Z",
       "classificationMethod": "codex-local"
     }
   ],
-  "updatedAt": "2026-09-07T14:47:31.516Z"
+  "updatedAt": "2026-09-08T14:28:21.838Z"
 }

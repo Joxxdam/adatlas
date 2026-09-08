@@ -252,6 +252,7 @@ async function prepareTask(run: AutoProductionRun, config: AutoProductionAdverti
       source: "landing-page",
       adBrief: adBrief(config, productionTask),
       engine: "codex_local",
+      referenceCategoryOverride: savedImageSelection?.referenceCategoryOverride,
       codexDirectTest: {
         prompt: buildDefaultCodexGenerationPrompt({
           landingUrl: productLandingUrl,

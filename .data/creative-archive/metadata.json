@@ -6880,6 +6880,582 @@
       "note": "",
       "deletedAt": "2026-09-06T15:24:45.921Z",
       "updatedAt": "2026-09-06T15:24:45.921Z"
+    },
+    "asset:8e873e54-1fbb-4ca9-ac28-1d5092f40876": {
+      "entryId": "asset:8e873e54-1fbb-4ca9-ac28-1d5092f40876",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:c0c23a5f-18ab-4cfe-9c4a-288ad9cbe996": {
+      "entryId": "asset:c0c23a5f-18ab-4cfe-9c4a-288ad9cbe996",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:81a07a5f-c516-4b2e-8ae8-39ef9139229f": {
+      "entryId": "asset:81a07a5f-c516-4b2e-8ae8-39ef9139229f",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:c7dbd624-e598-4afd-bdb1-23672922ba16": {
+      "entryId": "asset:c7dbd624-e598-4afd-bdb1-23672922ba16",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:d7729847-3820-4ce5-874a-cf5ba0c7186d": {
+      "entryId": "asset:d7729847-3820-4ce5-874a-cf5ba0c7186d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:549648c4-5b36-48ae-9f45-0cc5e2a576f4": {
+      "entryId": "asset:549648c4-5b36-48ae-9f45-0cc5e2a576f4",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:ea1df1e5-caa0-402f-91fa-5c5c5930152b": {
+      "entryId": "asset:ea1df1e5-caa0-402f-91fa-5c5c5930152b",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:6793d1f3-7030-407e-858e-8fc81b80695b": {
+      "entryId": "asset:6793d1f3-7030-407e-858e-8fc81b80695b",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:9d0277ac-ae5d-4a60-8491-6dabf0b6e99d": {
+      "entryId": "asset:9d0277ac-ae5d-4a60-8491-6dabf0b6e99d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfnae0j-0-pwuuus:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfnae0j-0-pwuuus:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfnae0j-0-pwuuus:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfnae0j-0-pwuuus:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfnae0j-0-pwuuus:result-H04-editorial-story": {
+      "entryId": "result:creative-job-mtfnae0j-0-pwuuus:result-H04-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfnae0j-0-pwuuus:result-H01-editorial-story": {
+      "entryId": "result:creative-job-mtfnae0j-0-pwuuus:result-H01-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfnae0j-0-pwuuus:result-H03-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfnae0j-0-pwuuus:result-H03-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtferzmr-0-l2xl7y:result-H05-editorial-story": {
+      "entryId": "result:creative-job-mtferzmr-0-l2xl7y:result-H05-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtferzmr-0-l2xl7y:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtferzmr-0-l2xl7y:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtferzmr-0-l2xl7y:result-H04-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtferzmr-0-l2xl7y:result-H04-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtferzmr-0-l2xl7y:result-H03-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtferzmr-0-l2xl7y:result-H03-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtferzmr-0-l2xl7y:result-H01-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtferzmr-0-l2xl7y:result-H01-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtferzmr-0-l2xl7y:result-H02-editorial-story": {
+      "entryId": "result:creative-job-mtferzmr-0-l2xl7y:result-H02-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfcxtdy-0-ou403x:result-H05-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfcxtdy-0-ou403x:result-H05-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfcxtdy-0-ou403x:result-H04-proof-data": {
+      "entryId": "result:creative-job-mtfcxtdy-0-ou403x:result-H04-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfcxtdy-0-ou403x:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfcxtdy-0-ou403x:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfcxtdy-0-ou403x:result-H03-problem-solution-split": {
+      "entryId": "result:creative-job-mtfcxtdy-0-ou403x:result-H03-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfcxtdy-0-ou403x:result-H01-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfcxtdy-0-ou403x:result-H01-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtfcxtdy-0-ou403x:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtfcxtdy-0-ou403x:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtb7gc7d-0-ank0t8:result-H05-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtb7gc7d-0-ank0t8:result-H05-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtb7gc7d-0-ank0t8:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtb7gc7d-0-ank0t8:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtb7gc7d-0-ank0t8:result-H04-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtb7gc7d-0-ank0t8:result-H04-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtb7gc7d-0-ank0t8:result-H01-problem-solution-split": {
+      "entryId": "result:creative-job-mtb7gc7d-0-ank0t8:result-H01-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtb7gc7d-0-ank0t8:result-H03-proof-data": {
+      "entryId": "result:creative-job-mtb7gc7d-0-ank0t8:result-H03-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtb7gc7d-0-ank0t8:result-H02-proof-data": {
+      "entryId": "result:creative-job-mtb7gc7d-0-ank0t8:result-H02-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtamquld-0-op8bke:result-H01-proof-data": {
+      "entryId": "result:creative-job-mtamquld-0-op8bke:result-H01-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtaltydk-0-gadzkb:result-H03-editorial-story": {
+      "entryId": "result:creative-job-mtaltydk-0-gadzkb:result-H03-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mtaltydk-0-gadzkb:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mtaltydk-0-gadzkb:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mta4pvtg-0-39ux26:result-H04-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mta4pvtg-0-39ux26:result-H04-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mta4pvtg-0-39ux26:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mta4pvtg-0-39ux26:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mta4pvtg-0-39ux26:result-H05-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mta4pvtg-0-39ux26:result-H05-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mta4pvtg-0-39ux26:result-H01-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mta4pvtg-0-39ux26:result-H01-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mta4pvtg-0-39ux26:result-H03-editorial-story": {
+      "entryId": "result:creative-job-mta4pvtg-0-39ux26:result-H03-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mta4pvtg-0-39ux26:result-H02-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mta4pvtg-0-39ux26:result-H02-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt7aqyp7-0-53cp1t:result-H04-editorial-story": {
+      "entryId": "result:creative-job-mt7aqyp7-0-53cp1t:result-H04-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt7aqyp7-0-53cp1t:result-H06-proof-data": {
+      "entryId": "result:creative-job-mt7aqyp7-0-53cp1t:result-H06-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt7aqyp7-0-53cp1t:result-H05-proof-data": {
+      "entryId": "result:creative-job-mt7aqyp7-0-53cp1t:result-H05-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt7aqyp7-0-53cp1t:result-H03-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt7aqyp7-0-53cp1t:result-H03-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt7aqyp7-0-53cp1t:result-H02-proof-data": {
+      "entryId": "result:creative-job-mt7aqyp7-0-53cp1t:result-H02-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt7aqyp7-0-53cp1t:result-H01-editorial-story": {
+      "entryId": "result:creative-job-mt7aqyp7-0-53cp1t:result-H01-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt70ls9q-0-sl1a9v:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt70ls9q-0-sl1a9v:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt70ls9q-0-sl1a9v:result-H04-proof-data": {
+      "entryId": "result:creative-job-mt70ls9q-0-sl1a9v:result-H04-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt70ls9q-0-sl1a9v:result-H05-editorial-story": {
+      "entryId": "result:creative-job-mt70ls9q-0-sl1a9v:result-H05-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt70ls9q-0-sl1a9v:result-H01-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt70ls9q-0-sl1a9v:result-H01-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt70ls9q-0-sl1a9v:result-H03-proof-data": {
+      "entryId": "result:creative-job-mt70ls9q-0-sl1a9v:result-H03-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt70ls9q-0-sl1a9v:result-H02-editorial-story": {
+      "entryId": "result:creative-job-mt70ls9q-0-sl1a9v:result-H02-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6xp24l-0-mfdy5f:result-H06-problem-solution-split": {
+      "entryId": "result:creative-job-mt6xp24l-0-mfdy5f:result-H06-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6xp24l-0-mfdy5f:result-H04-problem-solution-split": {
+      "entryId": "result:creative-job-mt6xp24l-0-mfdy5f:result-H04-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6xp24l-0-mfdy5f:result-H05-editorial-story": {
+      "entryId": "result:creative-job-mt6xp24l-0-mfdy5f:result-H05-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6xp24l-0-mfdy5f:result-H02-editorial-story": {
+      "entryId": "result:creative-job-mt6xp24l-0-mfdy5f:result-H02-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6xp24l-0-mfdy5f:result-H01-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt6xp24l-0-mfdy5f:result-H01-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6xp24l-0-mfdy5f:result-H03-editorial-story": {
+      "entryId": "result:creative-job-mt6xp24l-0-mfdy5f:result-H03-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6d98vr-0-mg10jo:result-H06-editorial-story": {
+      "entryId": "result:creative-job-mt6d98vr-0-mg10jo:result-H06-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6d98vr-0-mg10jo:result-H04-proof-data": {
+      "entryId": "result:creative-job-mt6d98vr-0-mg10jo:result-H04-proof-data",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6d98vr-0-mg10jo:result-H05-problem-solution-split": {
+      "entryId": "result:creative-job-mt6d98vr-0-mg10jo:result-H05-problem-solution-split",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6d98vr-0-mg10jo:result-H03-editorial-story": {
+      "entryId": "result:creative-job-mt6d98vr-0-mg10jo:result-H03-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6d98vr-0-mg10jo:result-H01-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt6d98vr-0-mg10jo:result-H01-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt6d98vr-0-mg10jo:result-H02-editorial-story": {
+      "entryId": "result:creative-job-mt6d98vr-0-mg10jo:result-H02-editorial-story",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "result:creative-job-mt3n91un-0-aqvowl:result-H06-product-hero-lifestyle": {
+      "entryId": "result:creative-job-mt3n91un-0-aqvowl:result-H06-product-hero-lifestyle",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:11.559Z",
+      "updatedAt": "2026-09-08T12:23:11.559Z"
+    },
+    "asset:7810cb40-f291-4a90-9013-9ac399e61e1f": {
+      "entryId": "asset:7810cb40-f291-4a90-9013-9ac399e61e1f",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:23:55.393Z",
+      "updatedAt": "2026-09-08T12:23:55.393Z"
+    },
+    "asset:5d22f1b2-ac93-45e9-b831-4d0f47f449ef": {
+      "entryId": "asset:5d22f1b2-ac93-45e9-b831-4d0f47f449ef",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:27:20.437Z",
+      "updatedAt": "2026-09-08T12:27:20.437Z"
+    },
+    "asset:59fb338a-8b03-4723-b71a-7e9cabcf0501": {
+      "entryId": "asset:59fb338a-8b03-4723-b71a-7e9cabcf0501",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:27:20.437Z",
+      "updatedAt": "2026-09-08T12:27:20.437Z"
+    },
+    "asset:fb61cc6f-2616-4084-8045-89b441f3e278": {
+      "entryId": "asset:fb61cc6f-2616-4084-8045-89b441f3e278",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T12:27:20.437Z",
+      "updatedAt": "2026-09-08T12:27:20.437Z"
+    },
+    "asset:11352057-4c87-4201-ba6c-b27e8221ea4d": {
+      "entryId": "asset:11352057-4c87-4201-ba6c-b27e8221ea4d",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T13:54:46.902Z",
+      "updatedAt": "2026-09-08T13:54:46.902Z"
+    },
+    "asset:0e7cd47d-eea4-46f3-b3a2-fc0839d1085a": {
+      "entryId": "asset:0e7cd47d-eea4-46f3-b3a2-fc0839d1085a",
+      "savedAsReference": false,
+      "tags": [],
+      "note": "",
+      "deletedAt": "2026-09-08T13:54:46.902Z",
+      "updatedAt": "2026-09-08T13:54:46.902Z"
     }
   }
 }

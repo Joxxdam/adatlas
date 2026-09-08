@@ -129,7 +129,13 @@ export function cancelGenerationJob(job: GenerationJob, now = new Date().toISOSt
   };
 }
 
-export function resumeGenerationJob(job: GenerationJob, runnerActive: boolean, now = new Date().toISOString(), restartExhausted = false): GenerationJob {
+export function resumeGenerationJob(
+  job: GenerationJob,
+  runnerActive: boolean,
+  now = new Date().toISOString(),
+  restartExhausted = false,
+  activeDirectResultIds: ReadonlySet<string> = new Set()
+): GenerationJob {
   return {
     ...job,
     status: "running",
@@ -139,14 +145,18 @@ export function resumeGenerationJob(job: GenerationJob, runnerActive: boolean, n
     referenceCopyPlanning: restartExhausted && job.referenceCopyPlanning?.status === "retryable"
       ? { status: "pending", attempts: 0, updatedAt: now }
       : job.referenceCopyPlanning,
-    results: job.results.map((result) => (result.status === "cancelled" || result.status === "failed" || (result.status === "running" && !runnerActive)
+    results: job.results.map((result) => (result.status === "cancelled" || result.status === "failed" || (result.status === "running" && !runnerActive && !activeDirectResultIds.has(result.id))
       ? { ...result, status: "pending", attempts: restartExhausted ? 0 : result.attempts, error: undefined, startedAt: undefined }
       : result)),
   };
 }
 
-export function hasOrphanedRunningResult(job: GenerationJob, runnerActive: boolean) {
-  return Boolean(!runnerActive && job.status !== "cancelled" && executionResults(job).some((result) => result.status === "running"));
+export function hasOrphanedRunningResult(job: GenerationJob, runnerActive: boolean, activeDirectResultIds: ReadonlySet<string> = new Set()) {
+  return Boolean(
+    !runnerActive &&
+    job.status !== "cancelled" &&
+    executionResults(job).some((result) => result.status === "running" && !activeDirectResultIds.has(result.id))
+  );
 }
 
 export function staleRunningResultIds(job: GenerationJob, nowMs: number, staleMs: number, runnerActive: boolean) {

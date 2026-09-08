@@ -31,6 +31,29 @@ function resultKey(jobId: string, resultId: string) {
   return `${jobId}:${resultId}`;
 }
 
+function nativeGenerationAssetIdentity(asset: CreativeAsset) {
+  const parts = String(asset.generationRequestKey || "").split(":");
+  return parts[0] === "codex-direct-v1" && parts[1] && parts[2] ? `${parts[1]}:${parts[2]}` : "";
+}
+
+function latestNativeAssets(assets: CreativeAsset[]) {
+  const latestByIdentity = new Map<string, CreativeAsset>();
+  for (const asset of assets) {
+    const identity = nativeGenerationAssetIdentity(asset);
+    if (!identity) continue;
+    const current = latestByIdentity.get(identity);
+    if (
+      !current ||
+      asset.createdAt > current.createdAt ||
+      (asset.createdAt === current.createdAt && asset.version > current.version) ||
+      (asset.createdAt === current.createdAt && asset.version === current.version && asset.updatedAt > current.updatedAt)
+    ) {
+      latestByIdentity.set(identity, asset);
+    }
+  }
+  return latestByIdentity;
+}
+
 function registeredResultContext(jobs: GenerationJob[]) {
   const byAssetId = new Map<string, { job: GenerationJob; result: GenerationResult }>();
   const byAssetCode = new Map<string, { job: GenerationJob; result: GenerationResult }>();
@@ -65,8 +88,11 @@ export function buildCreativeArchiveEntries(input: { assets: CreativeAsset[]; jo
   const registeredAssetIds = new Set<string>();
   const registeredCodes = new Set<string>();
   const registeredPaths = new Set<string>();
+  const latestNativeAssetByIdentity = latestNativeAssets(input.assets);
 
   for (const asset of input.assets) {
+    const nativeIdentity = nativeGenerationAssetIdentity(asset);
+    if (nativeIdentity && latestNativeAssetByIdentity.get(nativeIdentity)?.id !== asset.id) continue;
     const id = `asset:${asset.id}`;
     const context = contexts.byAssetId.get(asset.id) || contexts.byAssetCode.get(asset.assetCode) || contexts.byImagePath.get(asset.generatedImageUrl);
     const product = context?.job.productTruth.product;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { creativeGenerationJobStore } from "../../../../lib/creative-generation/jobStore.server";
-import { cancelQueuedGenerationJob, enqueueGenerationJob, getManualGenerationQueueSnapshot, isGenerationJobRunnerActive, recoverGenerationJob, recoverPersistedGenerationJobs } from "../../../../lib/creative-generation/jobRunner.server";
+import { activeDirectGenerationResultIds, cancelQueuedGenerationJob, enqueueGenerationJob, getManualGenerationQueueSnapshot, isGenerationJobRunnerActive, recoverGenerationJob, recoverPersistedGenerationJobs } from "../../../../lib/creative-generation/jobRunner.server";
 import { canAccessGenerationJob, localAccessError, localAccessErrorStatus, verifyLocalGenerationAccess } from "../../../../lib/creative-generation/localGenerationAccess.server";
 import { toGenerationJobSummary, toPublicGenerationError } from "../../../../lib/creative-generation/publicJob.server";
 import { hasOrphanedRunningResult, isServerRunnableGenerationJob, normalizeCreativeProductUrl, resumeGenerationJob } from "../../../../lib/creative-generation/jobRunnerPolicy";
@@ -39,8 +39,11 @@ export async function GET(request: Request) {
       let job = await recoverGenerationJob(candidate.id);
       if (!job || !["pending", "running"].includes(job.status)) continue;
       const runnerWasActive = isGenerationJobRunnerActive(job.id);
-      if (hasOrphanedRunningResult(job, runnerWasActive)) {
-        job = await creativeGenerationJobStore.update(job.id, (current) => resumeGenerationJob(current, false));
+      const activeDirectResultIds = activeDirectGenerationResultIds(job.id);
+      if (hasOrphanedRunningResult(job, runnerWasActive, activeDirectResultIds)) {
+        job = await creativeGenerationJobStore.update(job.id, (current) =>
+          resumeGenerationJob(current, false, new Date().toISOString(), false, activeDirectResultIds)
+        );
       }
       // 이 상태 API는 전체 화면의 백그라운드 알림이 주기적으로 호출한다.
       // 개발 서버 HMR로 인메모리 러너만 교체된 경우, 영상기획 등 다른

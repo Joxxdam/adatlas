@@ -1,5 +1,5 @@
 import type { ProductInfoForPrompt } from "../mvp/types";
-import type { GenerationResultStatus, HookMessageCode } from "../creative-generation/types";
+import type { GenerationResultStatus, HookMessageCode, ReferenceCategoryOverride } from "../creative-generation/types";
 import type { ProductAdCopy } from "../ad-copy/types";
 
 export const autoProductionRoles = ["core-expansion", "low-exposure-opportunity", "reactivation", "new-exploration"] as const;
@@ -10,6 +10,8 @@ export type AutoProductionVisibilityMode = "site-visible-only" | "include-crema-
 
 export type AutoProductionProductImageSelection = {
   productUrl: string;
+  /** 이 상품의 광고 레퍼런스를 뽑을 풀. 없으면 상품 분석으로 자동 판정 */
+  referenceCategoryOverride?: ReferenceCategoryOverride;
   /** Codex 직접 제작 프롬프트의 두 번째 첨부 이미지 */
   productImagePath: string;
   /** 선택 사항: 라벨 또는 분위기 참고용 세 번째 첨부 이미지 */

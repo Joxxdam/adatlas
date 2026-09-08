@@ -167,12 +167,15 @@ test("reference creatives are server-driven and deliver each completed card imme
   assert.match(generator, /입력한 내용은 이미지제작 6장에 동시에 적용됩니다\./);
   assert.doesNotMatch(generator, />Codex에 전달할 프롬프트</);
   assert.match(generator, /수정 반영하기/);
+  assert.match(generator, /소재 \$\{String\(editingResult\.order\).*광고를 수정 중입니다/);
+  assert.match(generator, /six-creative-editing-overlay/);
+  assert.match(generator, /기존 완성본을 화면에 유지하면서 선택한 수정 내용을 반영하고 있습니다/);
   for (const label of ["후킹", "소재코드", "권장 광고명", "UTM", "최종 랜딩 URL", "이미지 다운로드"]) {
     assert.match(assetActions, new RegExp(label));
   }
 });
 
-test("같은 URL도 다시 분석하면 새 제작을 시작하고 진행 중 작업만 복원한다", async () => {
+test("같은 URL도 다시 분석하면 새 제작을 시작하되 현재 상품의 완료 결과는 새 분석 전까지 복원한다", async () => {
   const [dashboard, generator, jobStorage, activeRoute, downloadRoute, assetRoute] = await Promise.all([read("app/components/MvpDashboard.tsx"), read("app/components/features/creative-generation/SixCreativeGenerator.tsx"), read("app/lib/creative-generation/activeCreativeJob.client.ts"), read("app/api/creative-generation/jobs/active/route.ts"), read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/download/route.ts"), read("app/api/creative-generation/jobs/[jobId]/results/[resultId]/asset/route.ts")]);
 
   assert.match(dashboard, /analyzedProductUrl=\{lastLoadedProductUrl\}/);
@@ -184,11 +187,16 @@ test("같은 URL도 다시 분석하면 새 제작을 시작하고 진행 중 �
   assert.match(generator, /function shouldPersistGenerationJob\(job: GenerationJob\) \{\s*return hasGenerationWorkRemaining\(job\);/);
   assert.match(generator, /\["pending", "running"\]\.includes\(candidate\.status\)/);
   assert.match(generator, /activeCreativeProductJobStorageKey\(currentProductUrl\)/);
+  assert.match(generator, /productScopedJobMatchesLoadedProduct/);
+  assert.match(generator, /완료된 광고 콘텐츠 작업을 불러왔습니다/);
+  assert.match(generator, /writeCurrentJobIdToAddress\(payload\.job\.id\)/);
+  assert.match(generator, /location\.searchParams\.set\("jobId", normalizedJobId\)/);
   assert.match(jobStorage, /daywiz-active-creative-job-id/);
   assert.match(generator, /상품 분석을 다시 완료해 이전 제작 카드를 비웠습니다\. 이 상품으로 새 광고 6장을 제작합니다/);
   assert.doesNotMatch(generator, /같은 상품 분석이 갱신되어 진행 중인 광고 작업을 그대로 유지합니다/);
   assert.match(generator, /dismissedJobIds\.current\.add\(activeJobIdRef\.current\)/);
   assert.match(generator, /다운로드가 완료됐습니다\. 같은 상품 URL을 다시 분석하면 새 광고 6장을 제작합니다/);
+  assert.doesNotMatch(generator, /if \(currentProductUrl\) window\.localStorage\.removeItem\(activeCreativeProductJobStorageKey\(currentProductUrl\)\);\s*setMessage\("다운로드가 완료됐습니다/);
   assert.match(generator, /jobs\/active\$\{query\}/);
   assert.match(generator, /jobs\/recent\?limit=10/);
   assert.match(activeRoute, /requestedProductUrl/);

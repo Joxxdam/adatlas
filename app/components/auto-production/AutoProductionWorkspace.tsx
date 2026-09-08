@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AutoProductionAdvertiserConfig, AutoProductionDashboardStatus, AutoProductionPreview, AutoProductionProductImageSelection, AutoProductionProductTask, AutoProductionRun } from "../../lib/auto-production/types";
+import type { ReferenceCategoryOverride } from "../../lib/creative-generation/types";
 import type { ExtractedProductInfo, ProductInfoForPrompt } from "../../lib/mvp/types";
 import { AUTO_PRODUCTION_CREATIVES_PER_PRODUCT, AUTO_PRODUCTION_DEFAULT_SCHEDULE_TIME, AUTO_PRODUCTION_IMAGES_PER_MALL, AUTO_PRODUCTION_MANUAL_QUEUE_LIMIT, AUTO_PRODUCTION_PRODUCTS_PER_MALL } from "../../lib/auto-production/policy";
 import styles from "./AutoProductionWorkspace.module.css";
@@ -18,6 +19,7 @@ type ProductImageDraft = {
   productUrl: string;
   productName: string;
   imagePaths: string[];
+  referenceCategoryOverride: "" | ReferenceCategoryOverride;
   productImagePath: string;
   supportingImagePath: string;
   packagingImagePath: string;
@@ -63,6 +65,17 @@ const emptyForm: FormState = {
 };
 
 const weekdayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+
+const referenceCategoryOptions: Array<{ value: ReferenceCategoryOverride; label: string }> = [
+  { value: "all", label: "전체 카테고리" },
+  { value: "fashion", label: "패션" },
+  { value: "food", label: "식품" },
+  { value: "food-meat", label: "식품 · 육류" },
+  { value: "food-snack", label: "식품 · 간식" },
+  { value: "beauty", label: "화장품" },
+  { value: "beauty-design", label: "화장품 · 디자인" },
+  { value: "beauty-hook", label: "화장품 · 후킹" },
+];
 
 const roleLabels: Record<AutoProductionProductTask["selectedRole"], string> = {
   "core-expansion": "꾸준히 잘 팔리는 주력상품",
@@ -179,6 +192,7 @@ function uniqueImagePaths(product?: Partial<ExtractedProductInfo & ProductInfoFo
 function sameImageSelections(left: AutoProductionProductImageSelection[], right: AutoProductionProductImageSelection[]) {
   return left.length === right.length && left.every((value, index) =>
     value.productUrl === right[index]?.productUrl &&
+    (value.referenceCategoryOverride || "") === (right[index]?.referenceCategoryOverride || "") &&
     value.productImagePath === right[index]?.productImagePath &&
     (value.supportingImagePath || "") === (right[index]?.supportingImagePath || "") &&
     (value.packagingImagePath || "") === (right[index]?.packagingImagePath || "") &&
@@ -337,6 +351,7 @@ export function AutoProductionWorkspace() {
               productUrl,
               productName: "",
               imagePaths,
+              referenceCategoryOverride: selection?.referenceCategoryOverride || "",
               productImagePath: selection?.productImagePath || "",
               supportingImagePath: selection?.supportingImagePath || "",
               packagingImagePath: selection?.packagingImagePath || "",
@@ -454,6 +469,7 @@ export function AutoProductionWorkspace() {
         productUrl: value.trim(),
         productName: "",
         imagePaths: [saved?.productImagePath || "", saved?.supportingImagePath || "", saved?.packagingImagePath || ""].filter(Boolean),
+        referenceCategoryOverride: saved?.referenceCategoryOverride || "",
         productImagePath: saved?.productImagePath || "",
         supportingImagePath: saved?.supportingImagePath || "",
         packagingImagePath: saved?.packagingImagePath || "",
@@ -474,7 +490,7 @@ export function AutoProductionWorkspace() {
     setProductImageDrafts((current) => ({
       ...current,
       [key]: {
-        ...(current[key] || { productUrl, productName: "", imagePaths: [], productImagePath: "", supportingImagePath: "", packagingImagePath: "", additionalInstructions: "" }),
+        ...(current[key] || { productUrl, productName: "", imagePaths: [], referenceCategoryOverride: "", productImagePath: "", supportingImagePath: "", packagingImagePath: "", additionalInstructions: "" }),
         productUrl,
         loading: true,
         error: "",
@@ -508,6 +524,7 @@ export function AutoProductionWorkspace() {
             productUrl,
             productName: payload.productInfo.productName || "",
             imagePaths,
+            referenceCategoryOverride: active.referenceCategoryOverride || "",
             productImagePath,
             supportingImagePath,
             packagingImagePath,
@@ -523,7 +540,7 @@ export function AutoProductionWorkspace() {
       setProductImageDrafts((current) => ({
         ...current,
         [key]: {
-          ...(current[key] || { productUrl, productName: "", imagePaths: [], productImagePath: "", supportingImagePath: "", packagingImagePath: "", additionalInstructions: "" }),
+          ...(current[key] || { productUrl, productName: "", imagePaths: [], referenceCategoryOverride: "", productImagePath: "", supportingImagePath: "", packagingImagePath: "", additionalInstructions: "" }),
           loading: false,
           error: message,
         },
@@ -580,6 +597,19 @@ export function AutoProductionWorkspace() {
     });
   }
 
+  function updatePlannedProductReferenceCategory(advertiserId: string, index: number, productUrl: string, value: "" | ReferenceCategoryOverride) {
+    const key = imageDraftKey(advertiserId, index);
+    setSavedPlanId("");
+    setProductImageDrafts((current) => {
+      const draft = current[key];
+      if (!draft || draft.productUrl !== productUrl) return current;
+      return {
+        ...current,
+        [key]: { ...draft, referenceCategoryOverride: value },
+      };
+    });
+  }
+
   function plannedImageSelections(advertiserId: string, urls: string[]) {
     const advertiser = advertisers.find((item) => item.advertiserId === advertiserId);
     return urls.flatMap((productUrl): AutoProductionProductImageSelection[] => {
@@ -587,6 +617,7 @@ export function AutoProductionWorkspace() {
       if (draft?.productUrl === productUrl && draft.productImagePath) {
         return [{
           productUrl,
+          referenceCategoryOverride: draft.referenceCategoryOverride || undefined,
           productImagePath: draft.productImagePath,
           supportingImagePath: draft.supportingImagePath || undefined,
           packagingImagePath: draft.packagingImagePath || undefined,
@@ -821,6 +852,20 @@ export function AutoProductionWorkspace() {
                               </button>
                             </div>
                             {activeDraft?.error ? <p className={styles.productImageError}>{activeDraft.error}</p> : null}
+                            <label className={styles.referenceCategoryPicker}>
+                              <span>레퍼런스 카테고리</span>
+                              <select
+                                aria-label={`${advertiser.advertiserName} ${index + 1}번 예정 상품 레퍼런스 카테고리`}
+                                onChange={(event) => updatePlannedProductReferenceCategory(advertiser.advertiserId, index, productUrl, event.target.value as "" | ReferenceCategoryOverride)}
+                                value={activeDraft?.referenceCategoryOverride || ""}
+                              >
+                                <option value="">자동 매칭 (상품 분석 기준)</option>
+                                {referenceCategoryOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                              <small>선택한 카테고리 풀 안에서 점수 우선순위 없이 레퍼런스 6장을 무작위로 뽑습니다.</small>
+                            </label>
                             {activeDraft?.imagePaths.length ? (
                               <div className={styles.productImageGrid}>
                                 {activeDraft.imagePaths.map((imagePath, imageIndex) => {

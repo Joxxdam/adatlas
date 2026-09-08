@@ -154,6 +154,53 @@ test("아카이브는 소재 자산과 과거 AI 결과를 합치되 동일 이�
   assert.equal(entries.find((entry) => entry.hookCode === "H01").landingUrl, "https://originalsource.example/mint");
 });
 
+test("같은 소재를 개별 수정한 이력은 아카이브에 최신 이미지 한 장만 표시한다", () => {
+  const generationPrefix = "codex-direct-v1:creative-job-archive-test-001:result-h01";
+  const original = asset({
+    id: "asset-original",
+    assetCode: "AT-ORS-MINT-T01-H01-V01",
+    generationRequestKey: `${generationPrefix}:server-runner:1`,
+    generatedImageUrl: "/generated-ads/mint-original.jpg",
+    createdAt: "2026-08-21T01:00:00.000Z",
+    updatedAt: "2026-08-21T01:00:00.000Z",
+    version: 1,
+  });
+  const backgroundDuplicate = asset({
+    id: "asset-background-duplicate",
+    assetCode: "AT-ORS-MINT-T01-H01-V02",
+    generationRequestKey: `${generationPrefix}:server-runner:2`,
+    generatedImageUrl: "/generated-ads/mint-background-duplicate.jpg",
+    createdAt: "2026-08-21T01:01:00.000Z",
+    updatedAt: "2026-08-21T01:01:00.000Z",
+    version: 2,
+  });
+  const revision = asset({
+    id: "asset-revision",
+    assetCode: "AT-ORS-MINT-T01-H01-V03",
+    generationRequestKey: `${generationPrefix}:manual-revision`,
+    generatedImageUrl: "/generated-ads/mint-revision.jpg",
+    createdAt: "2026-08-21T01:02:00.000Z",
+    updatedAt: "2026-08-21T01:02:00.000Z",
+    version: 3,
+  });
+  const matching = result({
+    id: "result-h01",
+    hookCode: "H01",
+    imagePath: revision.generatedImageUrl,
+    creativeAsset: { id: revision.id, assetCode: revision.assetCode },
+  });
+
+  const entries = buildCreativeArchiveEntries({
+    assets: [original, revision, backgroundDuplicate],
+    jobs: [job([matching])],
+    metadata: {},
+  });
+
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].assetCode, revision.assetCode);
+  assert.equal(entries[0].imageUrl, revision.generatedImageUrl);
+});
+
 test("과거 작업에 도메인으로 저장된 광고주는 브랜드 표시명으로 통합한다", () => {
   const entries = buildCreativeArchiveEntries({
     assets: [
@@ -302,7 +349,7 @@ test("아카이브는 이미지·영상 제작과 별도의 주 메뉴 및 독�
   assert.match(workspace, /다운로드로 적용한 로고와 AI 고지는 파일에만 들어가고 화면과 AI 고지 선택은 자동으로 원본 상태로 돌아옵니다/);
   assert.match(workspace, /ARCHIVE_RENDER_PAGE_SIZE = 48/);
   assert.match(workspace, /다음 \{Math\.min\(ARCHIVE_RENDER_PAGE_SIZE/);
-  assert.match(archiveService, /creative-archive-index-v2/);
+  assert.match(archiveService, /creative-archive-index-v3/);
   assert.match(archiveService, /adCopyRepository\.list/);
   assert.match(archiveService, /listCreativeArchivePage/);
   assert.match(collectionRoute, /url\.searchParams\.has\("limit"\)/);
