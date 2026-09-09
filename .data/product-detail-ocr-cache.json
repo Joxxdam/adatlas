@@ -1,27 +1,5 @@
 [
   {
-    "key": "112aa702d3247c7f53e24f4189ae4f83f9dee0ce3450d64ce8d43ba96c2af34e",
-    "insight": {
-      "id": "detail-ocr-1e9174dfbf60",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014611635_2024090202582403386107c94465-2103-4863-a97c-602f491b1fee.jpg",
-      "contentHash": "1e9174dfbf6025c3fbd4e999f2a1b843cd14da029ba5c68f438510dd6a670ca5",
-      "ocrText": "바삭하게~\n추억의 맛 그대로\n익숙한맛\n가족 다같이\n커피나차에\n더 맛있게\n먹기 좋은\n곁들이기",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.5625,
-      "copyFacts": [
-        "추억의 맛 그대로",
-        "익숙한맛",
-        "가족 다같이",
-        "더 맛있게",
-        "곁들이기"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:17.795Z"
-  },
-  {
     "key": "fa76f3bd8707207f6021c90e81428d0dea0e82aba57bfa7aaeea39922b4eeb00",
     "insight": {
       "id": "detail-ocr-9a728d437a16",
@@ -7233,5 +7211,49 @@
       "warnings": []
     },
     "createdAt": "2026-09-08T15:23:56.419Z"
+  },
+  {
+    "key": "1be077c3f71240a3964ef010c0be0304160c9291f97e60d26c2f4fb061656c50",
+    "insight": {
+      "id": "detail-ocr-621bda738135",
+      "imageUrl": "https://megaposting.kr/images/2026-02-24160956.png",
+      "contentHash": "621bda7381353652c6476353a7943762beef1be2ac6478736608a8d627e15b03",
+      "ocrText": "포스팅 세팅\n수동 포스팅 관리\n키워드 관리\n마케팅 관리\n댓글 관리",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8,
+      "copyFacts": [
+        "포스팅 세팅",
+        "수동 포스팅 관리",
+        "키워드 관리",
+        "마케팅 관리",
+        "댓글 관리"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-09T10:45:14.976Z"
+  },
+  {
+    "key": "bf3fcb7a1367dedb9b9f7970e6de4a929413f310af1a28421c711482e5f0b0fd",
+    "insight": {
+      "id": "detail-ocr-96d81ce769aa",
+      "imageUrl": "https://megaposting.kr/images/2026-02-24160937.png",
+      "contentHash": "96d81ce769aa0cb89d3f31365c2a5995ad4066a5330c41276e6db995bc7deb97",
+      "ocrText": "작업 세팅\n챗 GPT 세팅\n카페 세팅\n블로그 세팅\n티스토리 세팅\n워드프레스 세팅",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "카페 세팅",
+        "블로그 세팅",
+        "티스토리 세팅"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-09T10:45:17.556Z"
   }
 ]
