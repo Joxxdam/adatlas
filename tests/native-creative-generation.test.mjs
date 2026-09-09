@@ -204,10 +204,13 @@ test("Codex 테스트 모드는 선택 상품 URL과 첨부 순서를 명시하�
   assert.match(prompt, /조리사진이 있거나 인물사진이 있다면/);
   assert.match(prompt, /카툰\/실사\/손그림\/3d캐릭터\/상품의마스코트캐릭터/);
   assert.match(prompt, /식품의경우 조리사진은 최대한 자연스럽게/);
-  assert.match(prompt, /레퍼런스에 원본상품\+포장상품도 같이 포함되어있을경우 4번이미지\(포장상품이미지\)를 같이 활용하면된다/);
-  assert.match(prompt, /한우랑 설록우는 다름\. 한우라는 단어는 상품이 한우일때만 콘텐츠에 표기가능함/);
+  assert.match(prompt, /\*참고사항 1 : 레퍼런스에 원본상품\+포장상품도 같이 포함되어있을경우 4번이미지\(포장상품이미지\)를 같이 활용하면된다/);
+  assert.match(prompt, /\*참고사항 2 : 전체적인 색감은 상품에 맞게 변형가능함/);
+  assert.match(prompt, /\*주의사항 1 : 한우랑 설록우는 다름\. 한우라는 단어는 상품이 한우일때만 콘텐츠에 표기가능함/);
   assert.match(prompt, /설록우는 특별히 강조할 문구나 특징이아니다\. 굳이 표기할 필요없다\./);
   assert.match(prompt, /오히려 상품이름앞에는 상품의 특징정보가 있으면 좋다! 찰진~등심\/고소한등심\/존맛등심 등등/);
+  assert.match(prompt, /\*주의사항 2 : 레퍼런스에 인물\/캐릭터가 있을 경우 상품에 맞게 변형해야 된다/);
+  assert.doesNotMatch(prompt, /인물\/캐릭터가 있을경우 상품에 맞게 변형가능/);
   assert.match(prompt, new RegExp(landingUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   const promptWithAdditionalInstructions = appendCodexGenerationAdditionalInstructions(prompt, "선물용 구성을 가장 먼저 강조해줘.");
   assert.equal(appendCodexGenerationAdditionalInstructions(prompt, "  "), prompt);

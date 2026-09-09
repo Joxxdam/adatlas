@@ -6915,5 +6915,323 @@
       "warnings": []
     },
     "createdAt": "2026-09-08T14:15:06.751Z"
+  },
+  {
+    "key": "fabc7394f38b7f7bbb558bc0aaea3030b763cb65b0f75786343d60b4c3bad85a",
+    "insight": {
+      "id": "detail-ocr-1e2adec6ac47",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20251010060634082676d486fa67-7f42-4ca2-a6cb-bbc634108f5e.jpg",
+      "contentHash": "1e2adec6ac4771a98ed6d84405bde7d0b0113070a5167da4bd10d03a37991506",
+      "ocrText": "\"스테셜특수부위 모듬구이 세트®\n설록우\n설록우\n설록우\n(배송상품 실사진)\n설록우리\n리얼 특수부위 5종 특가\n88,000원\n288,000\n행사기간중 무료배송",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5700000047683715,
+      "copyFacts": [
+        "\"스테셜특수부위 모듬구이 세트®",
+        "88,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "(배송상품 실사진)",
+        "리얼 특수부위 5종 특가",
+        "288,000",
+        "행사기간중 무료배송"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:54:24.859Z"
+  },
+  {
+    "key": "047736d00ec36376b3eb5b6a0a770f916b599fd27e3e11ab408473ee76de907e",
+    "insight": {
+      "id": "detail-ocr-a80fb0713ed1",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026083106231787421880280977-a604-42a8-aff3-bf51673f42d3.jpg",
+      "contentHash": "a80fb0713ed15cdfd6f616ed77438c1fcfd80efae96f3b018cc0fc52605476f1",
+      "ocrText": "주석 스페셜 루부의 5등트\n어린소라 너무 연해요\nPREMIUM\nPREMIUM\n69%\n88,000원\n기획특가\n할인!\n정상가\n288,000원\n프리미엄 비프 추석 스페셜 특수부위 5종세트\n*",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7916666666666666,
+      "copyFacts": [
+        "주석 스페셜 루부의 5등트",
+        "어린소라 너무 연해요",
+        "88,000원",
+        "288,000원",
+        "프리미엄 비프 추석 스페셜 특수부위 5종세트"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PREMIUM"
+      ],
+      "discardedNotices": [
+        "기획특가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:54:24.869Z"
+  },
+  {
+    "key": "f8df6df6c044ce1317329cc8a1a7006660e8992681a601783aaefc71f02171a9",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202609030118203728453de614c3-e369-4f0e-9a9d-09567d880382.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:54:24.899Z"
+  },
+  {
+    "key": "37223c26b93e7b7ce56916c291a66a3de58dc4248309e9f5429de2ade6030214",
+    "insight": {
+      "id": "detail-ocr-e68c27833dbf",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/20260903011833448980626d6550-6b90-4bf3-9709-f55bea61f63b.jpg",
+      "contentHash": "e68c27833dbf09f8306588bbf4da5ab22e83f32ebc36e01573ef891d9a529e0a",
+      "ocrText": "[2026추석 노마진 대표 가성비상품]\n한우안심스테이크 선물세트\n(추석 스페셜/국내산 한우)\n[대한민국 최저가 1000세트 한정]\nPremiun Bed\n[1팩당 24,500원꼴]\n구나한우 프리티벌 비드\n240,000z\n특별기획특가 74,000원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7222222222222222,
+      "copyFacts": [
+        "한우안심스테이크 선물세트",
+        "(추석 스페셜/국내산 한우)",
+        "특별기획특가 74,000원"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Premiun Bed"
+      ],
+      "discardedNotices": [
+        "[2026추석 노마진 대표 가성비상품]",
+        "[대한민국 최저가 1000세트 한정]",
+        "[1팩당 24,500원꼴]",
+        "240,000z"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:54:24.920Z"
+  },
+  {
+    "key": "724f0666288698381fa36699cb209708603d23c42c184ee4815115d9f2e0bb62",
+    "insight": {
+      "id": "detail-ocr-be882ee99030",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/202401270459315847297e0731c0-7965-4be8-9a65-caed2bbb534f.jpg",
+      "contentHash": "be882ee9903051172b56f7889f96d551e95f759e3ebd22cd6740ff69fc16630b",
+      "ocrText": "^대 ..못하 0",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "^대 ..못하 0"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:54:25.761Z"
+  },
+  {
+    "key": "ea114598e8bd2873035b5d1ca0a00a2aa0b8e354e2360043a59e8ecb829a4b56",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T14:54:25.817Z"
+  },
+  {
+    "key": "0f1f8222d1ef6a4c1d50abdfd616a23f16c94b4d095db171507ff94dd2340f64",
+    "insight": {
+      "id": "detail-ocr-1e6c17e18480",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/front/moment/img/banner/171fd35a5860c594f2c48330fd33bf1d_42198.jpg",
+      "contentHash": "1e6c17e1848098d0cb2bc276323860e1906f147302245ed549a405960c33e2e9",
+      "ocrText": "푸딩 직배송 서비스\n주문 다음 날 새벽\n매장 냉동고까지 편하게",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [
+        "매장 냉동고까지 편하게"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "푸딩 직배송 서비스"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:11:09.142Z"
+  },
+  {
+    "key": "ab4d1de71be73106f9f5698a18c0ad761232fbff57b18d080b288b245c76f294",
+    "insight": {
+      "id": "detail-ocr-4a8383e02aea",
+      "imageUrl": "https://thenaum.cdn-nhncommerce.com/data/skin/front/moment/img/banner/28799eefea10c7e339e9458d500d8de9_43284.jpg",
+      "contentHash": "4a8383e02aea9257d092c5ca200d75f57d57f8c837d0fd5ae2546f00ad160ca7",
+      "ocrText": "지금 가입해 보세요\n놓칠 수 없는 놀라운 사업자 혜택!\n무료샘플신청, 13만원 상당 쿠폰, 1팩도 도매가",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "놓칠 수 없는 놀라운 사업자 혜택!",
+        "무료샘플신청, 13만원 상당 쿠폰, 1팩도 도매가"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:11:09.147Z"
+  },
+  {
+    "key": "bb422159ba450f8bd8694215597cf87cd1d151cd3637415676ced1ed1891699d",
+    "insight": {
+      "id": "detail-ocr-cb5de7f10726",
+      "imageUrl": "https://godomall.speedycdn.net/ec5d2a1c8483712efb957784c858b320/goods/1000000307/image/detail/1000000307_detail_058.jpg",
+      "contentHash": "cb5de7f1072688ea3e9d466772cd41ad06af5eaa651607911a227a72fab804c2",
+      "ocrText": "10\ninch",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "inch"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:11:09.733Z"
+  },
+  {
+    "key": "bbe4cc020d6bc681879d834eeb0afa422e8232576be86e135783feca07f18915",
+    "insight": {
+      "id": "detail-ocr-81686c1d3c0b",
+      "imageUrl": "https://flexgcdn-zetenth777.moall.shop/userfiles/zetenth777/thumfull/20260708092935194139d9d43c70-15ff-4db1-89e4-8314e157bcad.jpg",
+      "contentHash": "81686c1d3c0bd6d8c4ac49cc9eb0b1a152499749e93542ef34dc6cae5a6914c7",
+      "ocrText": "대한한우\nKorea Korean Beef\n전국왕도매가로 산지직송! 단골들만 찾는 축산맛집",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6666666666666666,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "Korea Korean Beef"
+      ],
+      "discardedNotices": [
+        "전국왕도매가로 산지직송! 단골들만 찾는 축산맛집"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:23:55.086Z"
+  },
+  {
+    "key": "9e8c31904fd49c278e0fbc2db1a78b150363d4d38057b19d570206013ebb88f4",
+    "insight": {
+      "id": "detail-ocr-9f4d6b91aacb",
+      "imageUrl": "https://flexgcdn-zetenth777.moall.shop/userfiles/zetenth777/thumfull/20250513045220586910ae00f1f9-78c1-40be-a710-6cbcce364d77.jpg",
+      "contentHash": "9f4d6b91aacb05707ff0831d0e8ebd221942ef99b138061c2fd5f97adc300756",
+      "ocrText": "대한한우는 그 누구보다 정직하게\n작업하여 고객님께 보내드리고 있습니다.\n태극 마크를 달고 있는\n대한민국 국가대표 축산 브랜드 대한한우\n좋은 가격, 좋은 품질로 고객님께 보답하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "태극 마크를 달고 있는",
+        "대한민국 국가대표 축산 브랜드 대한한우"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:23:55.089Z"
+  },
+  {
+    "key": "8e2ce321f615226a639b426402a76bab5475e274a17a234112a141c3e159aa98",
+    "insight": {
+      "id": "detail-ocr-b7186519f4c6",
+      "imageUrl": "https://flexgcdn-zetenth777.moall.shop/data/goods/zetenth777/small/thum2/%EC%8D%B8%EB%84%A4%EC%9D%BC2%EC%95%8C%EB%93%B1%EC%8B%AC.jpg",
+      "contentHash": "b7186519f4c638681f22430bb5ee1b5a975f455aef25bc53b40828a9a0161b77",
+      "ocrText": "특급선별 황제 알등심 스테이크\n재구매 100%(새우살+린아이)\n(전국최저단가)\n49,000원 17,800원",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.625,
+      "copyFacts": [
+        "특급선별 황제 알등심 스테이크"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "재구매 100%(새우살+린아이)",
+        "49,000원 17,800원"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:23:55.808Z"
+  },
+  {
+    "key": "66d5af6fd1cd563694e4381fb9db596d6f704fcf9c2de39e2227cfd161fb1c42",
+    "insight": {
+      "id": "detail-ocr-9f3af2e6c4a3",
+      "imageUrl": "https://flexgcdn-zetenth777.moall.shop/userfiles/zetenth777/thumfull/202505230429594113478c3f0e99-9e87-46b1-a8be-a9c666060e59.jpg",
+      "contentHash": "9f3af2e6c4a3740b147f3fd7895ee26404901747245a938e64422341db17320a",
+      "ocrText": "불필요한\n유통과정\nZERO\n대한한수\n한우값이 비싼이유는 과도한유통과정!\n대한 한우는 유통과정 없이 합리적인\n가격으로 품질 좋은 한우를 판매합니다!",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7142857142857143,
+      "copyFacts": [
+        "대한 한우는 유통과정 없이 합리적인"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "ZERO"
+      ],
+      "discardedNotices": [
+        "불필요한"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:23:55.834Z"
+  },
+  {
+    "key": "fe072b62cf189c1e888b737b7683157613d5e383cc708c9b781f9f866d9c1968",
+    "insight": {
+      "id": "detail-ocr-74e21ac050ce",
+      "imageUrl": "https://flexgcdn-zetenth777.moall.shop/userfiles/zetenth777/thumbpc/20241218074950309159a0594b30-9343-437b-8c2c-d718a49c6048.png",
+      "contentHash": "74e21ac050ce7c880ba9420f1ff6e2fe654efe644888a46701d4043ab4691f70",
+      "ocrText": "- 대한한우에 등록된 판매상품은 판매원 및 공급사로부터 제공받은 것으로\n(주)제트언스에서는 그 내용에 대하여 일체의 책임을 지지 않습니다.\n- (주)제트언스는 위탁판매자이며 상품, 상품정보, 거래에 관한 의무와 책임\n은 각 판매원 및 공급사에게 있습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "대한한우에 등록된 판매상품은 판매원 및 공급사로부터 제공받은 것으로",
+        "(주)제트언스는 위탁판매자이며 상품, 상품정보, 거래에 관한 의무와 책임",
+        "은 각 판매원 및 공급사에게 있습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-08T15:23:56.419Z"
   }
 ]
