@@ -1,6 +1,6 @@
 import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 
-export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty"] as const;
+export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty", "service"] as const;
 
 export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups)[number];
 
@@ -15,7 +15,7 @@ export type NativeReferenceBeautySubcategory = (typeof nativeReferenceBeautySubc
  * 활용하기 위한 추가 풀입니다. food는 육류·간식을 포함한 식품 전체 풀이고,
  * food-meat/food-snack은 사용자가 하위 풀을 직접 고를 때 사용합니다.
  */
-export const nativeReferenceSelectionPools = ["fashion", "food", "food-meat", "food-snack", "beauty"] as const;
+export const nativeReferenceSelectionPools = ["fashion", "food", "food-meat", "food-snack", "beauty", "service"] as const;
 export type NativeReferenceSelectionPool = (typeof nativeReferenceSelectionPools)[number];
 
 export const nativeReferenceProductForms = ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] as const;
@@ -213,6 +213,7 @@ export type ManagedNativeReferenceManifest = {
 const fashionPattern = /패션|의류|옷|원피스|티셔츠|셔츠|바지|팬츠|스커트|신발|구두|운동화|가방|모자|양말|fashion|apparel|dress|shirt|pants|skirt|shoes|sneaker|bag/i;
 const foodPattern = /식품|음식|먹거리|한우|고기|육류|과일|채소|농산|수산|간식|과자|음료|커피|차|우유|요거트|소스|반찬|food|beef|meat|fruit|snack|drink|coffee|milk/i;
 const beautyPattern = /화장품|뷰티|스킨|로션|크림|세럼|앰플|샴푸|린스|트리트먼트|바디|샤워|클렌징|향수|메이크업|립|마스크팩|웰니스|건강|건기식|건강기능|영양제|비타민|유산균|홍삼|퍼스널케어|beauty|cosmetic|skin|cream|serum|shampoo|body|shower|wellness|vitamin/i;
+const servicePattern = /서비스|교육|강의|클래스|과정|취업|부트캠프|컨설팅|코칭|대행|솔루션|플랫폼|소프트웨어|웹사이트|홈페이지|앱\s*(?:제작|개발)|ai\s*서비스|saas|course|class|bootcamp|consulting|coaching|solution|platform|software/i;
 const verifiedPackagedFoodProfiles = new Map<number, Pick<NativeReferenceCompatibility, "productForm" | "compositionType" | "productSlotCount" | "supportsMultipleProducts">>([
   [2, { productForm: "bundle", compositionType: "product-lineup", productSlotCount: 3, supportsMultipleProducts: true }],
   [9, { productForm: "pouch", compositionType: "product-lineup", productSlotCount: 3, supportsMultipleProducts: true }],
@@ -340,7 +341,8 @@ export function normalizeNativeReferenceCategory(value: unknown): NativeReferenc
 export function nativeReferenceCategoryLabel(value: NativeReferenceCategoryGroup) {
   if (value === "fashion") return "패션";
   if (value === "food") return "식품";
-  return "화장품";
+  if (value === "beauty") return "화장품";
+  return "서비스";
 }
 
 export function normalizeNativeReferenceFoodSubcategory(value: unknown): NativeReferenceFoodSubcategory | undefined {
@@ -377,7 +379,8 @@ export function nativeReferenceSelectionPoolLabel(value: NativeReferenceSelectio
   if (value === "food") return "식품";
   if (value === "food-meat") return "식품 · 육류";
   if (value === "food-snack") return "식품 · 간식";
-  return "화장품";
+  if (value === "beauty") return "화장품";
+  return "서비스";
 }
 
 /** 기본 분류와 운영자가 체크한 추가 풀을 하나의 선택 멤버십으로 해석합니다. */
@@ -418,6 +421,7 @@ export function inferNativeReferenceFoodSubcategoryFromText(value: string): Nati
 
 export function inferNativeReferenceCategoryFromText(value: string): NativeReferenceCategoryGroup {
   if (fashionPattern.test(value)) return "fashion";
+  if (servicePattern.test(value)) return "service";
   if (beautyPattern.test(value)) return "beauty";
   if (foodPattern.test(value)) return "food";
   return "beauty";

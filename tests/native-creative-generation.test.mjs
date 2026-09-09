@@ -1049,7 +1049,7 @@ test("식품으로 분류한 건강간식·봉지 제품은 건강식품 패키�
   assert.equal(resolveProductRenderingPolicy(snackJob), "standard-reference");
 });
 
-test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로 등록한다", async () => {
+test("관리 화면의 실제 광고 레퍼런스를 네 상품군 선택 풀로 등록한다", async () => {
   const manifest = JSON.parse(await readFile(new URL("../data/native-creative-reference-library.json", import.meta.url), "utf8"));
   const categorySource = await readFile(new URL("../app/lib/creative-generation/referenceCreativeLibrary.server.ts", import.meta.url), "utf8");
   assert.ok(manifest.items.length >= 6);
@@ -1062,7 +1062,7 @@ test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로
   );
   assert.ok((categoryCounts.beauty || 0) >= 6);
   assert.ok((categoryCounts.food || 0) >= 6);
-  assert.ok(manifest.items.every((item) => ["fashion", "food", "beauty"].includes(item.categoryGroup)));
+  assert.ok(manifest.items.every((item) => ["fashion", "food", "beauty", "service"].includes(item.categoryGroup)));
   assert.ok(manifest.items.every((item) => item.productForm && item.compositionType && item.productSlotCount && item.productSlotShape && item.photographyType && item.textDensity && item.compatibilityConfidence));
   const normalizedFood = manifest.items.filter((item) => item.categoryGroup === "food").map(normalizeNativeReferenceCompatibility);
   const normalizedBeauty = manifest.items.filter((item) => item.categoryGroup === "beauty").map(normalizeNativeReferenceCompatibility);
@@ -1074,7 +1074,7 @@ test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로
   const beautyHookCount = normalizedBeauty.filter((item) => item.beautySubcategory === "hook").length;
   assert.ok(beautyHookCount >= 6, "후킹 화장품 레퍼런스가 6장 이상 필요합니다.");
   assert.ok(beautyHookCount > beautyDesignCount, "현재 화장품 풀은 판매형 후킹 소재가 디자인 키비주얼보다 많아야 합니다.");
-  assert.match(manifest.selectionPolicy, /패션·식품·화장품 세 그룹/);
+  assert.match(manifest.selectionPolicy, /패션·식품·화장품·서비스 네 그룹/);
   assert.match(manifest.selectionPolicy, /식품은 육류·간식 하위 풀/);
   assert.match(manifest.selectionPolicy, /화장품은 디자인·후킹 하위 풀/);
   assert.match(manifest.selectionPolicy, /건강·웰니스와 퍼스널케어는 화장품에 포함/);
@@ -1091,7 +1091,7 @@ test("관리 화면의 실제 광고 레퍼런스를 세 상품군 선택 풀로
   assert.match(categorySource, /referenceBelongsToSelectionPool\(item, categoryGroup, profile\.foodSubcategory\)/);
   assert.match(categorySource, /점수에 따른 우선순위는 적용하지 않았으며/);
   assert.match(categorySource, /recentReferenceIds/);
-  assert.doesNotMatch(categorySource, /categorySafeItems|categoryGroup === "fashion"[\s\S]*categoryGroup === "beauty"/);
+  assert.doesNotMatch(categorySource, /categorySafeItems/);
   assert.match(categorySource, /readNativeReferenceManifestSync/);
 });
 
@@ -2930,6 +2930,7 @@ test("UI는 한 번의 클릭 뒤 기본 Codex 6장 진행·완성 표시·ZIP �
   assert.match(source, /value: "all", label: "전체 카테고리"/);
   assert.match(source, /value: "beauty-design", label: "화장품 · 디자인"/);
   assert.match(source, /value: "beauty-hook", label: "화장품 · 후킹"/);
+  assert.match(source, /value: "service", label: "서비스"/);
   assert.doesNotMatch(source, /value: "food-other", label:/);
   assert.match(source, /generationStageProgress/);
   assert.match(source, /장째 광고를 제작 중입니다/);

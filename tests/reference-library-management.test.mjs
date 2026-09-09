@@ -5,11 +5,28 @@ import { inferNativeReferenceBeautySubcategory, inferNativeReferenceCategoryFrom
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
-test("업로드 파일명 fallback도 패션·식품·화장품 세 그룹만 사용한다", () => {
+test("업로드 파일명 fallback은 패션·식품·화장품·서비스 네 그룹을 사용한다", () => {
   assert.equal(inferNativeReferenceCategoryFromText("여름 원피스 광고.png"), "fashion");
   assert.equal(inferNativeReferenceCategoryFromText("한우 선물세트.jpg"), "food");
   assert.equal(inferNativeReferenceCategoryFromText("비타민 건강기능식품.webp"), "beauty");
+  assert.equal(inferNativeReferenceCategoryFromText("AI 서비스 PM 취업 광고.webp"), "service");
+  assert.equal(inferNativeReferenceCategoryFromText("온라인 강의 부트캠프.webp"), "service");
   assert.equal(inferNativeReferenceCategoryFromText("알 수 없는 상품.jpg"), "beauty");
+});
+
+test("서비스 레퍼런스는 서비스 제작 풀에만 기본 포함된다", () => {
+  const service = normalizeNativeReferenceCompatibility({
+    id: "service-reference",
+    publicPath: "/service-reference.jpg",
+    sourceFile: "AI 서비스 취업 광고.webp",
+    layoutFamily: "social-proof",
+    categoryGroup: "service",
+    ordinal: 300,
+  });
+  assert.equal(service.categoryGroup, "service");
+  assert.equal(referenceBelongsToSelectionPool(service, "service"), true);
+  assert.equal(referenceBelongsToSelectionPool(service, "beauty"), false);
+  assert.equal(referenceBelongsToSelectionPool(service, "food"), false);
 });
 
 test("육류·간식만 식품 하위 태그로 쓰고 기존 기타 값은 식품 대분류로 복구한다", () => {
@@ -196,7 +213,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   const factory = await read("app/lib/creative-generation/createNativeGenerationJob.server.ts");
   const selector = await read("app/lib/creative-generation/referenceCreativeLibrary.server.ts");
 
-  assert.match(types, /ReferenceCategoryOverride\s*=\s*"all"\s*\|\s*"fashion"\s*\|\s*"food"\s*\|\s*"food-meat"\s*\|\s*"food-snack"\s*\|\s*"food-other"\s*\|\s*"food-produce"\s*\|\s*"beauty"\s*\|\s*"beauty-design"\s*\|\s*"beauty-hook"/);
+  assert.match(types, /ReferenceCategoryOverride\s*=\s*"all"\s*\|\s*"fashion"\s*\|\s*"food"\s*\|\s*"food-meat"\s*\|\s*"food-snack"\s*\|\s*"food-other"\s*\|\s*"food-produce"\s*\|\s*"beauty"\s*\|\s*"beauty-design"\s*\|\s*"beauty-hook"\s*\|\s*"service"/);
   assert.match(generator, /자동 매칭 \(상품 분석 기준\)/);
   assert.match(generator, /\{ value: "all", label: "전체 카테고리" \}/);
   assert.match(generator, /referenceCategoryOverride:\s*referenceCategoryOverride \|\| undefined/);
@@ -204,6 +221,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(generator, /식품 · 간식/);
   assert.match(generator, /화장품 · 디자인/);
   assert.match(generator, /화장품 · 후킹/);
+  assert.match(generator, /\{ value: "service", label: "서비스" \}/);
   assert.match(generator, /\{ value: "food", label: "식품" \}/);
   assert.doesNotMatch(generator, /label: "식품 · 기타 식품"/);
   assert.match(factory, /job\.referenceCategoryOverride\s*=/);
@@ -213,6 +231,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(selector, /job\.referenceCategoryOverride === "food-other"\) return undefined/);
   assert.match(selector, /job\.referenceCategoryOverride === "beauty-design"/);
   assert.match(selector, /job\.referenceCategoryOverride === "beauty-hook"/);
+  assert.match(selector, /job\.referenceCategoryOverride === "service"/);
   assert.match(selector, /referenceBelongsToBeautySelectionPool/);
   assert.match(selector, /referenceBelongsToSelectionPool/);
   assert.match(selector, /job\.referenceCategoryOverride === "all"/);

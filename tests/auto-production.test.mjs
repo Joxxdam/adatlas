@@ -787,6 +787,7 @@ test("31-1. 자동제작도 상품별 레퍼런스 카테고리를 저장하고 
   ]);
   assert.match(workspace, /레퍼런스 카테고리/);
   assert.match(workspace, /자동 매칭 \(상품 분석 기준\)/);
+  assert.match(workspace, /\{ value: "service", label: "서비스" \}/);
   assert.match(workspace, /referenceCategoryOverride: draft\.referenceCategoryOverride \|\| undefined/);
   assert.match(configRepository, /referenceCategoryOverride/);
   assert.match(runner, /referenceCategoryOverride: savedImageSelection\?\.referenceCategoryOverride/);

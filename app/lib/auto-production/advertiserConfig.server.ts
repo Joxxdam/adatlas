@@ -15,7 +15,7 @@ const configFile = path.join(runtimeDirectory, "advertisers.json");
 const settingsFile = path.join(runtimeDirectory, "settings.json");
 const globalKey = Symbol.for("daywiz.auto-production.config-lock");
 const state = globalThis as typeof globalThis & { [globalKey]?: Promise<unknown> };
-const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook"]);
+const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook", "service"]);
 
 export type AutoProductionGlobalSettings = {
   paused: boolean;

@@ -84,7 +84,7 @@ export function CreationModeSelector() {
           </div>
           <ul>
             <li>기존 제작 레퍼런스 확인</li>
-            <li>패션·식품·화장품 및 식품 육류·간식·기타 분류</li>
+            <li>패션·식품·화장품·서비스 및 식품 육류·간식 분류</li>
             <li>새 이미지 업로드</li>
             <li>분류 수정·삭제</li>
           </ul>

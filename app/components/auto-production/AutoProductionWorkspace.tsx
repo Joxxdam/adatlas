@@ -75,6 +75,7 @@ const referenceCategoryOptions: Array<{ value: ReferenceCategoryOverride; label:
   { value: "beauty", label: "화장품" },
   { value: "beauty-design", label: "화장품 · 디자인" },
   { value: "beauty-hook", label: "화장품 · 후킹" },
+  { value: "service", label: "서비스" },
 ];
 
 const roleLabels: Record<AutoProductionProductTask["selectedRole"], string> = {

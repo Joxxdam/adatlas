@@ -830,7 +830,7 @@ export type NativeCreativeArtifact = {
     publicPath?: string;
     sourceFile?: string;
     layoutFamily: string;
-    categoryGroup?: "fashion" | "food" | "beauty";
+    categoryGroup?: import("./referenceLibraryManagement").NativeReferenceCategoryGroup;
     foodSubcategory?: import("./referenceLibraryManagement").NativeReferenceFoodSubcategory;
     beautySubcategory?: import("./referenceLibraryManagement").NativeReferenceBeautySubcategory;
     categoryLabel?: string;
@@ -1389,14 +1389,15 @@ export type GenerationJobStatus = "pending" | "running" | "partial" | "completed
 
 /**
  * 수동 제작에서 자동 상품군 판정을 덮어쓸 때만 저장하는 레퍼런스 풀입니다.
- * `all`은 패션·식품·화장품을 합친 전체 등록 풀입니다.
+ * `all`은 패션·식품·화장품·서비스를 합친 전체 등록 풀입니다.
  * 신규 UI의 `food`는 육류·간식을 포함한 식품 전체이고,
  * `food-meat`와 `food-snack`은 해당 하위 풀만 직접 선택할 때 사용하고,
  * `beauty-design`과 `beauty-hook`은 화장품 하위 풀을 직접 선택할 때 사용합니다.
+ * `service`는 교육·취업·컨설팅·소프트웨어 등 서비스 광고 풀입니다.
  * `food-other`와 `food-produce`는 저장된 과거 작업을 읽기 위한 호환 값이며
  * 각각 일반 식품과 간식으로 해석합니다.
  */
-export type ReferenceCategoryOverride = "all" | "fashion" | "food" | "food-meat" | "food-snack" | "food-other" | "food-produce" | "beauty" | "beauty-design" | "beauty-hook";
+export type ReferenceCategoryOverride = "all" | "fashion" | "food" | "food-meat" | "food-snack" | "food-other" | "food-produce" | "beauty" | "beauty-design" | "beauty-hook" | "service";
 
 /**
  * 외부 Cloudflare Access 사용자가 만든 작업의 소유자입니다.

@@ -21,7 +21,7 @@ import { buildDefaultCodexGenerationPlan } from "./defaultCodexGenerationPlan.se
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
-const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook"]);
+const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook", "service"]);
 const internalStrategyText = /(?:T0\d|주력\s*상품|우승\s*소재|판매[·ㆍ,\s-]*노출[·ㆍ,\s-]*구매\s*근거|기존\s*우수\s*소재|광고\s*가설|성과\s*학습|USP[·ㆍ,\s-]*가격[·ㆍ,\s-]*랜딩\s*조건\s*점검|랜딩\s*(?:조건|페이지)\s*(?:점검|확인)|내부\s*(?:전략|점검|검토))/i;
 
 export type NativeGenerationJobOptions = {

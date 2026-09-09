@@ -5,9 +5,9 @@ import type { GenerationJob, GenerationResult } from "./types";
 import { resolveCategoryCreativeProfile } from "./categoryCreativeRouter";
 import { defaultCompositionTypes, pickUniqueRandomItems, scoreReferenceCompatibility, type ProductReferenceCompatibilityProfile } from "./referenceSelection";
 import { readNativeReferenceManifestSync } from "./nativeReferenceLibraryRepository.server";
-import { inferNativeReferenceFoodSubcategoryFromText, nativeReferenceBeautySubcategoryLabel, nativeReferenceFoodSubcategoryLabel, normalizeNativeReferenceCompatibility, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceBeautySubcategory, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
+import { inferNativeReferenceFoodSubcategoryFromText, nativeReferenceBeautySubcategoryLabel, nativeReferenceFoodSubcategoryLabel, normalizeNativeReferenceCompatibility, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceBeautySubcategory, type NativeReferenceCategoryGroup, type NativeReferenceFoodSubcategory, type NativeReferenceProductForm } from "./referenceLibraryManagement";
 
-export type NativeReferenceCategoryGroup = "fashion" | "food" | "beauty";
+export type { NativeReferenceCategoryGroup } from "./referenceLibraryManagement";
 
 export type NativeAdReference = {
   id: string;
@@ -43,7 +43,7 @@ function categoryGroupFromOrdinal(ordinal: number): NativeReferenceCategoryGroup
 }
 
 function normalizeCategoryGroup(value: string | undefined, ordinal: number): NativeReferenceCategoryGroup {
-  if (value === "food" || value === "fashion" || value === "beauty") return value;
+  if (value === "food" || value === "fashion" || value === "beauty" || value === "service") return value;
   if (value === "beauty-personal-care" || value === "health-wellness" || value === "general") return "beauty";
   return categoryGroupFromOrdinal(ordinal);
 }
@@ -112,11 +112,13 @@ export async function ensureNativeReferenceCopies(references: NativeAdReference[
 function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
   if (categoryGroup === "fashion") return "패션";
   if (categoryGroup === "food") return "식품";
-  return "화장품";
+  if (categoryGroup === "beauty") return "화장품";
+  return "서비스";
 }
 
 export function resolveNativeReferenceCategoryGroup(job: ReferenceSelectionJob): NativeReferenceCategoryGroup {
   if (job.referenceCategoryOverride === "fashion") return "fashion";
+  if (job.referenceCategoryOverride === "service") return "service";
   if (["food", "food-meat", "food-snack", "food-other", "food-produce"].includes(job.referenceCategoryOverride || "")) return "food";
   if (["beauty", "beauty-design", "beauty-hook"].includes(job.referenceCategoryOverride || "")) return "beauty";
   const category = resolveCategoryCreativeProfile(job.productTruth).category;
@@ -135,6 +137,7 @@ export function resolveNativeReferenceCategoryGroup(job: ReferenceSelectionJob):
   ].filter(Boolean).join(" ").toLowerCase();
   if (/food|snack|dessert|meat|fruit|produce|식품|음식|간식|스낵|과자|디저트|육류|한우|한돈|소고기|돼지고기|닭고기|등뼈|안창살|갈비|삼겹|불고기|제육|바베큐|바비큐|과일|채소|농산|무화과|곶감|건조|말랭이|김치|반찬|음료|주스/.test(identityText)) return "food";
   if (/fashion|apparel|clothing|패션|의류|원피스|셔츠|바지|신발|가방/.test(identityText)) return "fashion";
+  if (/service|course|class|bootcamp|consulting|coaching|solution|platform|software|saas|서비스|교육|강의|클래스|과정|취업|부트캠프|컨설팅|코칭|대행|솔루션|플랫폼|소프트웨어|웹사이트|홈페이지/.test(identityText)) return "service";
   return "beauty";
 }
 

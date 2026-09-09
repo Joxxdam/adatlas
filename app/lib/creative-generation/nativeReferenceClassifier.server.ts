@@ -14,7 +14,7 @@ const classificationSchema = {
   additionalProperties: false,
   required: ["categoryGroup", "foodSubcategory", "beautySubcategory", "productForm", "productPresentation", "compositionType", "productSlotCount", "productSlotShape", "photographyType", "textDensity", "supportsPackagedProduct", "supportsNaturalFood", "supportsHumanModel", "supportsMultipleProducts", "compatibilityConfidence"],
   properties: {
-    categoryGroup: { type: "string", enum: ["fashion", "food", "beauty"] },
+    categoryGroup: { type: "string", enum: ["fashion", "food", "beauty", "service"] },
     foodSubcategory: { type: "string", enum: ["meat", "snack", "none"] },
     beautySubcategory: { type: "string", enum: ["design", "hook", "none"] },
     productForm: { type: "string", enum: ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] },
@@ -68,6 +68,7 @@ export async function classifyNativeReferenceImage(input: { imagePath: string; s
 - fashion: 의류, 신발, 가방, 패션 잡화
 - food: 육류, 간식, 그 밖의 일반 식품·음료·농수산물
 - beauty: 화장품, 스킨케어, 헤어·바디·퍼스널케어, 건강·웰니스·건강기능식품
+- service: 교육·강의·취업·컨설팅·코칭·대행·소프트웨어·플랫폼처럼 실물 상품이 아니라 서비스 이용을 광고하며, 화면·성과·과정·기능을 보여주는 소재
 foodSubcategory는 두 경우에만 지정한다.
 - meat: 정육·한우·소고기·돼지고기·닭고기·갈비·등뼈·안창살·삼겹살뿐 아니라 불고기·제육·바베큐·닭가슴살처럼 고기가 판매 상품과 화면의 주인공인 조리 장면
 - snack: 과일·건과·과자·디저트·빵·떡·견과처럼 식사 사이에 먹는 상품. 육포처럼 상품 형태가 명백한 간식이면 snack 우선
@@ -87,7 +88,7 @@ productPresentation은 이 레퍼런스 화면에 실제로 보이는 판매 상
       }
     );
     const parsed = JSON.parse(response.finalResponse) as Omit<Partial<NativeReferenceCompatibility>, "beautySubcategory"> & { categoryGroup?: string; foodSubcategory?: "meat" | "snack" | "none"; beautySubcategory?: "design" | "hook" | "none" };
-    const categoryGroup = ["fashion", "food", "beauty"].includes(parsed.categoryGroup || "") ? (parsed.categoryGroup as NativeReferenceCategoryGroup) : fallback;
+    const categoryGroup = ["fashion", "food", "beauty", "service"].includes(parsed.categoryGroup || "") ? (parsed.categoryGroup as NativeReferenceCategoryGroup) : fallback;
     const { categoryGroup: _parsedCategory, foodSubcategory: parsedFoodSubcategory, beautySubcategory: parsedBeautySubcategory, ...parsedCompatibility } = parsed;
     void _parsedCategory;
     const compatibility: ClassifiedReferenceCompatibility = {
