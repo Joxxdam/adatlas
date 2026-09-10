@@ -36,7 +36,18 @@ export type NativeValidationInput = {
   exportComplianceVerified?: boolean;
 };
 
+export type ServiceStorySessionPlanningInput = {
+  jobId: string;
+  prompt: string;
+  imagePaths: string[];
+  outputSchema: object;
+  idleTimeoutMs: number;
+  hardTimeoutMs: number;
+};
+
 export interface NativeCreativeSession {
+  /** 스토리형 전용 세션의 첫 turn에서 6장 공통 기획을 준비합니다. */
+  planServiceStory?(input: ServiceStorySessionPlanningInput): Promise<{ finalResponse: string }>;
   generate(input: NativeGenerationInput): Promise<{ outputPath: string }>;
   validate(input: NativeValidationInput): Promise<NativeCreativeValidation>;
   close(): Promise<void>;

@@ -5,7 +5,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { creativeGenerationJobStore } from "./jobStore.server";
 import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
-import { withNativeCreativeSession } from "./providers/CreativeGenerationProvider";
+import { withNativeCreativeSession, type NativeCreativeSession } from "./providers/CreativeGenerationProvider";
 import { nativeHookDirectory, nativeResultImageUrl, optimizeNativeFinalImage, prepareDefaultCodexGenerationImages, writeNativeManifest } from "./nativeCreativeStorage.server";
 import { createAssetFromGenerationResult } from "../creative-assets/fromGeneration.server";
 import { toCreativeAssetSnapshot } from "../creative-assets/types";
@@ -23,6 +23,8 @@ type NativeResultInput = {
   feedback?: string;
   /** 과거 API 요청 형태를 읽기 위한 호환 필드입니다. 신규 기본 제작에서는 사용하지 않습니다. */
   copy?: Partial<CopyPlan>;
+  /** 사이트 스토리형 전용 러너가 기획부터 유지하는 단일 세션입니다. HTTP 입력으로 받지 않습니다. */
+  session?: NativeCreativeSession;
 };
 
 type NativeResultLockMap = Map<string, Promise<void>>;
@@ -137,6 +139,9 @@ async function runDefaultCodexResult(
   }
 
   if (action === "regenerate-new-reference") {
+    if (job.productTruth.product.analysisMode === "site" && job.codexDirectTest?.serviceCreativeMode === "story") {
+      throw new Error("스토리형 6장은 하나의 공통 레퍼런스를 사용합니다. 새 레퍼런스는 6장 전체 새 제작에서 변경해 주세요.");
+    }
     const excludedReferenceIds = new Set(job.results.map((item) => item.nativeCreative?.adReference?.id).filter((id): id is string => Boolean(id)));
     const [replacementReference] = await ensureNativeReferenceCopies(
       selectCategoryNativeAdReferences(job, 1, undefined, excludedReferenceIds)
@@ -214,7 +219,7 @@ async function runDefaultCodexResult(
     action === "revise" && input.feedback?.trim() ? `추가 수정 요청:\n${input.feedback.trim()}` : "",
   ].filter(Boolean).join("\n\n");
 
-  await withNativeCreativeSession(provider, async (session) => {
+  const generateWithSession = async (session: NativeCreativeSession) => {
     await session.generate({
       job,
       result,
@@ -225,7 +230,9 @@ async function runDefaultCodexResult(
       stage: "codex-direct-test",
       directPrompt,
     });
-  });
+  };
+  if (input.session) await generateWithSession(input.session);
+  else await withNativeCreativeSession(provider, generateWithSession);
   await validateGeneratedFinal(generatedPath);
 
   const finalFile = path.join(directory, "final.jpg");

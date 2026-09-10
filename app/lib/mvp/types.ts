@@ -66,7 +66,134 @@ export type AdImageLabel = {
 
 export type ProductTargetAgeGroup = "teens" | "twenties" | "thirties" | "forties" | "fifties" | "senior" | "kids" | "family" | "couple" | "friends" | "no_people";
 
+export type SiteAnalysisTarget = {
+  rank: number;
+  name: string;
+  fit: "high" | "medium" | "low";
+  reason: string;
+  painPoint: string;
+  message: string;
+};
+
+export type SiteAnalysisAdDirection = {
+  target: string;
+  angle: string;
+  sampleMessage: string;
+  channels: string[];
+};
+
+export type SiteAnalysisSourcePage = {
+  url: string;
+  title: string;
+};
+
+export type SiteAnalysisProfile = {
+  siteName: string;
+  oneLineSummary: string;
+  businessModel: string;
+  offerings: string[];
+  coreValueProps: string[];
+  targetPriorities: SiteAnalysisTarget[];
+  customerProblems: string[];
+  differentiators: string[];
+  trustSignals: string[];
+  conversionOffers: string[];
+  adDirections: SiteAnalysisAdDirection[];
+  cautions: string[];
+  sourcePages: SiteAnalysisSourcePage[];
+  analyzedPageCount: number;
+  renderedSectionCount: number;
+  usedAi: boolean;
+  warnings: string[];
+};
+
+export type SiteVisualRole = "logo" | "mascot" | "feature";
+
+export type SiteVisualSelection = {
+  imagePath: string;
+  label: string;
+  role: SiteVisualRole;
+};
+
+export type ProductSupplementFileInsight = {
+  fileName: string;
+  fileType: string;
+  summary: string;
+  notablePoints: string[];
+  warnings: string[];
+};
+
+export type ProductSupplementExplorationCategory =
+  | "ingredient"
+  | "sourcing"
+  | "processing"
+  | "history"
+  | "season"
+  | "lifestyle";
+
+export type ProductSupplementExplorationSeed = {
+  id: string;
+  category: ProductSupplementExplorationCategory;
+  title: string;
+  summary: string;
+  sourceEvidence: string[];
+  sourceFileNames: string[];
+};
+
+export type ProductSupplementResearchSource = {
+  title: string;
+  url: string;
+  publisher: string;
+};
+
+export type ProductSupplementCreativeHook = {
+  id: string;
+  title: string;
+  target: string;
+  background: string;
+  hook: string;
+  visualDirection: string;
+  copyDirection: string;
+  evidenceBasis: string;
+  evidenceLevel: "verified" | "supported-inference" | "creative-association";
+};
+
+export type ProductSupplementExplorationResult = {
+  researchedAt: string;
+  seed: ProductSupplementExplorationSeed;
+  overview: string;
+  verifiedFacts: string[];
+  easyExplanation: string;
+  hooks: ProductSupplementCreativeHook[];
+  sources: ProductSupplementResearchSource[];
+  cautions: string[];
+};
+
+/**
+ * 사용자가 상품 분석에 선택적으로 더한 참고자료의 별도 분석 결과입니다.
+ * ProductInfo/ProductTruth에 합치지 않으므로 광고 제작 입력에는 자동 전달되지 않습니다.
+ */
+export type ProductSupplementAnalysis = {
+  analyzedAt: string;
+  fileCount: number;
+  usedAi: boolean;
+  overallSummary: string;
+  files: ProductSupplementFileInsight[];
+  productConnections: string[];
+  audienceInsights: string[];
+  toneInsights: string[];
+  usageScenarios: string[];
+  documentClaims: string[];
+  conflicts: string[];
+  cautions: string[];
+  /** 사용자가 선택해 심층 조사할 수 있는 소재이며 제작 프롬프트에는 자동 전달되지 않습니다. */
+  explorationSeeds: ProductSupplementExplorationSeed[];
+};
+
 export type ProductInfoForPrompt = {
+  analysisMode?: "product" | "site";
+  siteAnalysis?: SiteAnalysisProfile;
+  siteVisualSelections?: SiteVisualSelection[];
   productName: string;
   category: string;
   price: string;
@@ -674,6 +801,8 @@ export type GeneratedAdStrategyPrompt = {
 };
 
 export type ExtractedProductInfo = {
+  analysisMode?: "product" | "site";
+  siteAnalysis?: SiteAnalysisProfile;
   productName: string;
   category: string;
   price: string;

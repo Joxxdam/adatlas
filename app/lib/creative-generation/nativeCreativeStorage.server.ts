@@ -201,17 +201,22 @@ export async function prepareNativeReferenceImages(job: GenerationJob, result?: 
 export async function prepareDefaultCodexGenerationImages(job: GenerationJob, result: GenerationResult) {
   const request = job.codexDirectTest;
   if (!request?.productImagePath) throw new Error("기본 제작의 선택 상품 이미지가 없습니다.");
-  const sources = [request.productImagePath, request.supportingImagePath, request.packagingImagePath].filter((value): value is string => Boolean(value));
+  const siteAnalysisMode = job.productTruth.product.analysisMode === "site";
+  const sources = siteAnalysisMode && request.siteVisualImagePaths?.length
+    ? request.siteVisualImagePaths.slice(0, 5)
+    : [request.productImagePath, request.supportingImagePath, request.packagingImagePath].filter((value): value is string => Boolean(value));
   const directory = path.join(nativeJobDirectory(job.advertiserId || "unknown-advertiser", job.id), "references", segment(result.id), "direct-test");
   await mkdir(directory, { recursive: true });
   const files: string[] = [];
   for (let index = 0; index < sources.length; index += 1) {
     const buffer = await readCreativeRasterAsset(sources[index]);
-    const file = path.join(directory, index === 0
-      ? "02-selected-product.png"
-      : request.supportingImagePath && sources[index] === request.supportingImagePath
-        ? "03-selected-supporting.png"
-        : "04-selected-packaging.png");
+    const file = path.join(directory, siteAnalysisMode
+      ? `${String(index + 2).padStart(2, "0")}-selected-site-visual.png`
+      : index === 0
+        ? "02-selected-product.png"
+        : request.supportingImagePath && sources[index] === request.supportingImagePath
+          ? "03-selected-supporting.png"
+          : "04-selected-packaging.png");
     const normalized = await sharp(buffer, { limitInputPixels: 50_000_000 })
       .rotate()
       .flatten({ background: "#ffffff" })

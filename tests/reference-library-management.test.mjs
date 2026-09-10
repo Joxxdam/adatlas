@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { inferNativeReferenceBeautySubcategory, inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, normalizeNativeReferenceBeautySubcategory, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
+import { inferNativeReferenceBeautySubcategory, inferNativeReferenceCategoryFromText, inferNativeReferenceFoodSubcategoryFromText, isApprovedReferenceNativeCopy, nativeReferenceCategoryGroups, nativeReferenceCategoryLabel, normalizeNativeReferenceBeautySubcategory, normalizeNativeReferenceCompatibility, normalizeNativeReferenceFoodSubcategory, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, removeManagedNativeReference } from "../app/lib/creative-generation/referenceLibraryManagement.ts";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
@@ -27,6 +27,31 @@ test("서비스 레퍼런스는 서비스 제작 풀에만 기본 포함된다",
   assert.equal(referenceBelongsToSelectionPool(service, "service"), true);
   assert.equal(referenceBelongsToSelectionPool(service, "beauty"), false);
   assert.equal(referenceBelongsToSelectionPool(service, "food"), false);
+});
+
+test("GFA는 자동 추론과 분리된 직접 업로드·제작 풀이다", async () => {
+  const gfa = normalizeNativeReferenceCompatibility({
+    id: "gfa-reference",
+    publicPath: "/gfa-reference.jpg",
+    sourceFile: "직접 등록 광고.webp",
+    layoutFamily: "managed-reference",
+    categoryGroup: "gfa",
+    ordinal: 400,
+  });
+  assert.ok(nativeReferenceCategoryGroups.includes("gfa"));
+  assert.equal(nativeReferenceCategoryLabel("gfa"), "GFA");
+  assert.equal(referenceBelongsToSelectionPool(gfa, "gfa"), true);
+  assert.equal(referenceBelongsToSelectionPool(gfa, "service"), false);
+
+  const [manager, route, repository] = await Promise.all([
+    read("app/components/references/NativeReferenceLibraryManager.tsx"),
+    read("app/api/admin/references/route.ts"),
+    read("app/lib/creative-generation/nativeReferenceLibraryRepository.server.ts"),
+  ]);
+  assert.match(manager, /GFA 직접 지정/);
+  assert.match(manager, /formData\.append\("categoryGroup", "gfa"\)/);
+  assert.match(route, /nativeReferenceLibraryRepository\.add\(files, \{ categoryGroup \}\)/);
+  assert.match(repository, /options\.categoryGroup[\s\S]*classificationMethod: "manual"/);
 });
 
 test("육류·간식만 식품 하위 태그로 쓰고 기존 기타 값은 식품 대분류로 복구한다", () => {
@@ -222,6 +247,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(generator, /화장품 · 디자인/);
   assert.match(generator, /화장품 · 후킹/);
   assert.match(generator, /\{ value: "service", label: "서비스" \}/);
+  assert.match(generator, /\{ value: "gfa", label: "GFA" \}/);
   assert.match(generator, /\{ value: "food", label: "식품" \}/);
   assert.doesNotMatch(generator, /label: "식품 · 기타 식품"/);
   assert.match(factory, /job\.referenceCategoryOverride\s*=/);
@@ -232,6 +258,7 @@ test("수동 광고 제작은 자동 매칭을 기본으로 두고 레퍼런스 
   assert.match(selector, /job\.referenceCategoryOverride === "beauty-design"/);
   assert.match(selector, /job\.referenceCategoryOverride === "beauty-hook"/);
   assert.match(selector, /job\.referenceCategoryOverride === "service"/);
+  assert.match(selector, /job\.referenceCategoryOverride === "gfa"/);
   assert.match(selector, /referenceBelongsToBeautySelectionPool/);
   assert.match(selector, /referenceBelongsToSelectionPool/);
   assert.match(selector, /job\.referenceCategoryOverride === "all"/);

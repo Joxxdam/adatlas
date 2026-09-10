@@ -339,6 +339,7 @@ function normalizeAnalysisDraft(draft?: Partial<AdImageAnalysisDraft>): AdImageA
 }
 
 const emptyProductInfo: ProductInfoForPrompt = {
+  analysisMode: "product",
   productName: "",
   category: "",
   price: "",
@@ -586,4 +587,3 @@ export type {
   RecentProductSummary,
   Status,
 };
-

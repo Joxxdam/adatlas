@@ -86,7 +86,7 @@ export function CodexSessionCleanupWorkspace() {
         <div>
           <p>IMAGE PRODUCTION MANAGEMENT</p>
           <h1>Codex 세션 정리</h1>
-          <span>이미지 제작이 끝난 Codex 세션만 관리합니다. 완성 이미지, 아카이브와 제작 작업은 삭제하지 않습니다.</span>
+          <span>AdAtlas의 제작·분석이 끝난 Codex 세션만 관리합니다. 완성 이미지, 분석 결과, 아카이브와 제작 작업은 삭제하지 않습니다.</span>
         </div>
         <button disabled={working} onClick={() => void cleanupNow()} type="button">
           {working ? "정리 확인 중…" : "지금 정리 확인"}
@@ -126,7 +126,7 @@ export function CodexSessionCleanupWorkspace() {
 
       <footer className={styles.footer}>
         <p>최근 점검: {localDateTime(status?.lastCleanupAt)} · 최근 삭제 {status?.lastCleanupDeletedCount ?? 0}개 · 최근 확보 {fileSize(status?.lastCleanupReclaimedBytes)}</p>
-        <p>추적 기능 적용 이후 AdAtlas가 이미지 제작용으로 생성한 세션만 자동 정리합니다. 기존의 다른 Codex 대화는 자동 삭제하지 않습니다.</p>
+        <p>추적 기능 적용 이후 AdAtlas가 이미지 제작·서비스 스토리·첨부자료 분석용으로 생성한 세션만 자동 정리합니다. 기존의 다른 Codex 대화는 자동 삭제하지 않습니다.</p>
         {status?.lastCleanupError || status?.errorCount ? <p className={styles.warning}>정리 확인 필요: {status?.lastCleanupError || `${status?.errorCount || 0}개 세션에서 오류가 기록되었습니다.`}</p> : null}
       </footer>
     </main>

@@ -124,6 +124,57 @@ test("create-product defaults to URL analysis and preserves admin entry points",
   assert.match(dashboard, /AppSidebar/);
 });
 
+test("상품 참고파일은 선택적으로 분석하고 사용자가 고른 심층 후킹만 추가 입력한다", async () => {
+  const [dashboard, panel, route, exploreRoute, analyzer, explorer, generator, promptContract, workflowStyles] = await Promise.all([
+    read("app/components/MvpDashboard.tsx"),
+    read("app/components/features/product-brief/ProductSupplementAnalysisPanel.tsx"),
+    read("app/api/extract/product-supplements/route.ts"),
+    read("app/api/extract/product-supplements/explore/route.ts"),
+    read("app/lib/mvp/productSupplementAnalysis.server.ts"),
+    read("app/lib/mvp/productSupplementExploration.server.ts"),
+    read("app/components/features/creative-generation/SixCreativeGenerator.tsx"),
+    read("app/lib/creative-generation/codexDirectTest.ts"),
+    read("app/components/features/creative-workflow/CreativeWorkflow.module.css"),
+  ]);
+  assert.match(dashboard, /\/api\/extract\/product-supplements/);
+  assert.match(dashboard, /analysisMode === "product" && productSupplementFiles\.length/);
+  assert.match(panel, /참고파일도 함께 분석할까요/);
+  assert.match(panel, /첨부하지 않아도 기존 상품 분석과 광고 제작은 그대로 사용할 수 있습니다/);
+  assert.match(panel, /첨부자료 분석 결과/);
+  for (const label of ["한눈에 보기", "광고 기획에 활용할 내용", "사실·주의사항 검토", "파일별 상세 근거"]) {
+    assert.match(panel, new RegExp(label));
+  }
+  assert.match(panel, /supplementResultMetrics/);
+  assert.match(panel, /readableFileType/);
+  for (const label of ["원료·성분", "산지·재배·채취", "제조·가공", "역사·문화", "계절·시기", "생활·고객 맥락"]) {
+    assert.match(panel, new RegExp(label));
+  }
+  assert.match(panel, /인터넷 심층 분석/);
+  assert.match(panel, /추가 프롬프트에 입력하기/);
+  assert.match(panel, /선택한 역사적 사건·배경·성분·계절·타깃·후킹/);
+  assert.match(workflowStyles, /\.supplementHookGrid label input\[type="checkbox"\][\s\S]*?min-height: 14px/);
+  assert.match(workflowStyles, /\.supplementHookGrid[\s\S]*?repeat\(auto-fit, minmax\(min\(100%, 420px\), 1fr\)\)/);
+  assert.match(workflowStyles, /\.supplementHookGrid dd[\s\S]*?overflow-wrap: anywhere/);
+  assert.match(route, /request\.formData\(\)/);
+  assert.match(exploreRoute, /researchProductSupplementSeed/);
+  assert.match(analyzer, /광고 제작이나 카피를 생성하지 말고 분석 결과만 반환합니다/);
+  assert.match(analyzer, /explorationSeeds/);
+  assert.match(analyzer, /documentClaims/);
+  assert.match(analyzer, /conflicts/);
+  assert.match(analyzer, /@openai\/codex-sdk/);
+  assert.match(analyzer, /requireFreshCodexLocalChatGptLogin/);
+  assert.match(analyzer, /ADATLAS_CODEX_SUPPLEMENT_ANALYSIS_MODEL/);
+  assert.match(analyzer, /modelReasoningEffort: "medium"/);
+  assert.match(analyzer, /outputSchema: analysisSchema/);
+  assert.doesNotMatch(analyzer, /client\.responses\.create/);
+  assert.match(explorer, /tools: \[\{ type: "web_search" \}\]/);
+  assert.match(explorer, /타깃, 이해하기 쉬운 배경, 한 줄 후킹/);
+  assert.match(dashboard, /additionalInstructionsInsertion=\{productSupplementPromptInsertion \|\| undefined\}/);
+  assert.match(generator, /additionalInstructionsInsertion/);
+  assert.doesNotMatch(generator, /productSupplement/);
+  assert.doesNotMatch(promptContract, /productSupplement|첨부자료 분석 결과|상품 참고자료/);
+});
+
 test("광고 제작 전 자동 매칭을 수정하고 명시적으로 제작을 시작한다", async () => {
   const generator = await read("app/components/features/creative-generation/SixCreativeGenerator.tsx");
   assert.match(generator, /if \(!props\.productLoaded && !job\) return null/);

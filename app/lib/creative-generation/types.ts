@@ -1389,15 +1389,16 @@ export type GenerationJobStatus = "pending" | "running" | "partial" | "completed
 
 /**
  * 수동 제작에서 자동 상품군 판정을 덮어쓸 때만 저장하는 레퍼런스 풀입니다.
- * `all`은 패션·식품·화장품·서비스를 합친 전체 등록 풀입니다.
+ * `all`은 패션·식품·화장품·서비스·GFA를 합친 전체 등록 풀입니다.
  * 신규 UI의 `food`는 육류·간식을 포함한 식품 전체이고,
  * `food-meat`와 `food-snack`은 해당 하위 풀만 직접 선택할 때 사용하고,
  * `beauty-design`과 `beauty-hook`은 화장품 하위 풀을 직접 선택할 때 사용합니다.
  * `service`는 교육·취업·컨설팅·소프트웨어 등 서비스 광고 풀입니다.
+ * `gfa`는 운영자가 GFA로 직접 등록한 광고 레퍼런스 전용 풀입니다.
  * `food-other`와 `food-produce`는 저장된 과거 작업을 읽기 위한 호환 값이며
  * 각각 일반 식품과 간식으로 해석합니다.
  */
-export type ReferenceCategoryOverride = "all" | "fashion" | "food" | "food-meat" | "food-snack" | "food-other" | "food-produce" | "beauty" | "beauty-design" | "beauty-hook" | "service";
+export type ReferenceCategoryOverride = "all" | "fashion" | "food" | "food-meat" | "food-snack" | "food-other" | "food-produce" | "beauty" | "beauty-design" | "beauty-hook" | "service" | "gfa";
 
 /**
  * 외부 Cloudflare Access 사용자가 만든 작업의 소유자입니다.
@@ -1407,6 +1408,29 @@ export type GenerationRequestOwner = {
   provider: "cloudflare-access";
   subject: string;
   email?: string;
+};
+
+export type ServiceCreativeMode = "independent" | "story";
+export type ServiceStoryWorkflowVersion = "site-story-sequential-v1";
+
+export type ServiceStorySlidePlan = {
+  order: number;
+  purpose: string;
+  keyMessage: string;
+  visualDirection: string;
+  transition: string;
+};
+
+export type ServiceStoryPlan = {
+  status: "pending" | "running" | "ready";
+  provider?: "codex-local" | "fallback";
+  title?: string;
+  narrativeArc?: string;
+  visualContinuity?: string;
+  slides: ServiceStorySlidePlan[];
+  attempts: number;
+  error?: string;
+  updatedAt: string;
 };
 
 export type GenerationJob = {
@@ -1486,8 +1510,16 @@ export type GenerationJob = {
     productImagePath: string;
     supportingImagePath?: string;
     packagingImagePath?: string;
+    /** 사이트 분석에서 사용자가 고른 로고·마스코트·기능 이미지입니다. */
+    siteVisualImagePaths?: string[];
     additionalInstructions?: string;
+    /** 사이트 분석 제작에서 독립 광고 6장과 연속 스토리 6장을 구분합니다. */
+    serviceCreativeMode?: ServiceCreativeMode;
+    /** 전용 스토리 버튼으로 만든 신규 작업만 단일 세션 순차 제작을 사용합니다. */
+    serviceStoryWorkflowVersion?: ServiceStoryWorkflowVersion;
   };
+  /** 스토리형 서비스 제작에서 이미지 생성 전에 한 번만 만든 6장 공통 기획입니다. */
+  serviceStoryPlan?: ServiceStoryPlan;
 };
 
 export type ManualGenerationQueueInfo = {
@@ -1548,7 +1580,11 @@ export type CreateGenerationJobInput = {
     productImagePath: string;
     supportingImagePath?: string;
     packagingImagePath?: string;
+    /** 사이트 분석에서 사용자가 고른 로고·마스코트·기능 이미지입니다. */
+    siteVisualImagePaths?: string[];
     additionalInstructions?: string;
+    serviceCreativeMode?: ServiceCreativeMode;
+    serviceStoryWorkflowVersion?: ServiceStoryWorkflowVersion;
   };
   forceSceneRevision?: boolean;
   strategyVariation?: number;

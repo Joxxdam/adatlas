@@ -46,7 +46,9 @@ export function isDefaultCodexGenerationJob(job: GenerationJob) {
     !job.codexDirectTest.productImagePath.trim()
   ) return false;
   const references = job.results.map((result) => result.nativeCreative?.adReference?.id).filter(Boolean);
-  return references.length === 6 && new Set(references).size === 6 && job.results.every((result) =>
+  const storyMode = job.productTruth?.product?.analysisMode === "site" && job.codexDirectTest.serviceCreativeMode === "story";
+  const validReferenceSet = storyMode ? new Set(references).size === 1 : new Set(references).size === 6;
+  return references.length === 6 && validReferenceSet && job.results.every((result) =>
     result.nativeCreative?.workflow === DEFAULT_CODEX_GENERATION_WORKFLOW &&
     result.nativeCreative.promptVersion === DEFAULT_CODEX_GENERATION_PROMPT_VERSION
   );
@@ -54,7 +56,7 @@ export function isDefaultCodexGenerationJob(job: GenerationJob) {
 
 export function assertDefaultCodexGenerationJob(job: GenerationJob) {
   if (!isDefaultCodexGenerationJob(job)) {
-    throw new Error("기본 Codex 제작의 프롬프트·상품 이미지·고정 레퍼런스 6장을 확인해 주세요.");
+    throw new Error("기본 Codex 제작의 프롬프트·선택 이미지·고정 레퍼런스를 확인해 주세요.");
   }
   return job;
 }

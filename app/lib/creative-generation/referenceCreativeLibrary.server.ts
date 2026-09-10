@@ -43,7 +43,7 @@ function categoryGroupFromOrdinal(ordinal: number): NativeReferenceCategoryGroup
 }
 
 function normalizeCategoryGroup(value: string | undefined, ordinal: number): NativeReferenceCategoryGroup {
-  if (value === "food" || value === "fashion" || value === "beauty" || value === "service") return value;
+  if (value === "food" || value === "fashion" || value === "beauty" || value === "service" || value === "gfa") return value;
   if (value === "beauty-personal-care" || value === "health-wellness" || value === "general") return "beauty";
   return categoryGroupFromOrdinal(ordinal);
 }
@@ -113,12 +113,14 @@ function categoryLabel(categoryGroup: NativeReferenceCategoryGroup) {
   if (categoryGroup === "fashion") return "패션";
   if (categoryGroup === "food") return "식품";
   if (categoryGroup === "beauty") return "화장품";
-  return "서비스";
+  if (categoryGroup === "service") return "서비스";
+  return "GFA";
 }
 
 export function resolveNativeReferenceCategoryGroup(job: ReferenceSelectionJob): NativeReferenceCategoryGroup {
   if (job.referenceCategoryOverride === "fashion") return "fashion";
   if (job.referenceCategoryOverride === "service") return "service";
+  if (job.referenceCategoryOverride === "gfa") return "gfa";
   if (["food", "food-meat", "food-snack", "food-other", "food-produce"].includes(job.referenceCategoryOverride || "")) return "food";
   if (["beauty", "beauty-design", "beauty-hook"].includes(job.referenceCategoryOverride || "")) return "beauty";
   const category = resolveCategoryCreativeProfile(job.productTruth).category;

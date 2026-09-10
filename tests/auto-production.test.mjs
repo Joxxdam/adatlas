@@ -435,7 +435,7 @@ test("15. 자동·수동 제작은 같은 공용 6장 레퍼런스 작업 생성
   assert.match(runner, /isCurrentAutoProductionGenerationJob/);
   assert.match(runner, /assignedReferences/);
   assert.doesNotMatch(runner, /config\.creativesPerProduct|fullHookTestForNewProducts/);
-  assert.match(factory, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6/);
+  assert.match(factory, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, serviceCreativeMode === "story" \? 1 : 6\)/);
   assert.match(factory, /buildDefaultCodexGenerationPlan/);
   assert.doesNotMatch(factory, /prepareReferenceAdaptedCopyScaffold|buildReferenceAdaptedCreativePlan|analyzeProductReferences/);
   assert.match(factory, /job\.pipeline = DEFAULT_CODEX_GENERATION_PIPELINE/);
@@ -788,6 +788,7 @@ test("31-1. 자동제작도 상품별 레퍼런스 카테고리를 저장하고 
   assert.match(workspace, /레퍼런스 카테고리/);
   assert.match(workspace, /자동 매칭 \(상품 분석 기준\)/);
   assert.match(workspace, /\{ value: "service", label: "서비스" \}/);
+  assert.match(workspace, /\{ value: "gfa", label: "GFA" \}/);
   assert.match(workspace, /referenceCategoryOverride: draft\.referenceCategoryOverride \|\| undefined/);
   assert.match(configRepository, /referenceCategoryOverride/);
   assert.match(runner, /referenceCategoryOverride: savedImageSelection\?\.referenceCategoryOverride/);

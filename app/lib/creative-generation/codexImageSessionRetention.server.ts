@@ -15,7 +15,15 @@ const MAX_HISTORY_RECORDS = 5_000;
 const THREAD_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const execFileAsync = promisify(execFile);
 
-export type CodexImageSessionPurpose = "image-generation" | "group-validation";
+// 기존 저장 파일과 API 이름은 호환을 위해 유지하지만, AdAtlas가 직접 만든
+// 분석·기획 세션도 이미지 제작 세션과 같은 2일 보관 정책으로 관리합니다.
+export type CodexImageSessionPurpose =
+  | "image-generation"
+  | "group-validation"
+  | "service-generation"
+  | "service-story-planning"
+  | "service-story-generation"
+  | "product-supplement-analysis";
 type SessionState = "active" | "closed" | "deleted" | "missing" | "error";
 
 type CodexImageSessionRecord = {

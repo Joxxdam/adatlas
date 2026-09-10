@@ -16,12 +16,12 @@ import { assertDefaultCodexGenerationJob, CURRENT_REFERENCE_EDIT_JOB_VERSION } f
 import { isMalformedProductSignal, isMerchantCredentialCreativeSignal, isNonDomesticOriginCreativeSignal, isPriceOnlyCreativeSignal, isProhibitedAdCopySignal, isShippingCreativeSignal, isVagueStandaloneSensoryClaim } from "./productSignalHygiene.ts";
 import { isDifferentProductImage } from "../mvp/productImageIdentity.ts";
 import { applyOriginalSourceVendorResearch } from "../product-research/originalSourceResearch.ts";
-import { appendCodexGenerationAdditionalInstructions, buildDefaultCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE, DEFAULT_CODEX_GENERATION_PROMPT_VERSION, DEFAULT_CODEX_GENERATION_STAGE_ORDER, DEFAULT_CODEX_GENERATION_WORKFLOW, normalizeCodexGenerationAdditionalInstructions, normalizeDefaultCodexGenerationPrompt } from "./codexDirectTest.ts";
+import { appendCodexGenerationAdditionalInstructions, buildDefaultCodexGenerationPrompt, buildServiceAnalysisCodexGenerationPrompt, buildServiceStoryCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE, DEFAULT_CODEX_GENERATION_PROMPT_VERSION, DEFAULT_CODEX_GENERATION_STAGE_ORDER, DEFAULT_CODEX_GENERATION_WORKFLOW, normalizeCodexGenerationAdditionalInstructions, normalizeDefaultCodexGenerationPrompt, SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION } from "./codexDirectTest.ts";
 import { buildDefaultCodexGenerationPlan } from "./defaultCodexGenerationPlan.server";
 
 const objectives = new Set<AdBrief["adObjective"]>(["purchase", "signup", "awareness", "retargeting"]);
 const approaches = new Set<AdBrief["creativeIntensity"]>(["brand", "balanced", "performance"]);
-const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook", "service"]);
+const referenceCategoryOverrides = new Set<ReferenceCategoryOverride>(["all", "fashion", "food", "food-meat", "food-snack", "food-other", "food-produce", "beauty", "beauty-design", "beauty-hook", "service", "gfa"]);
 const internalStrategyText = /(?:T0\d|주력\s*상품|우승\s*소재|판매[·ㆍ,\s-]*노출[·ㆍ,\s-]*구매\s*근거|기존\s*우수\s*소재|광고\s*가설|성과\s*학습|USP[·ㆍ,\s-]*가격[·ㆍ,\s-]*랜딩\s*조건\s*점검|랜딩\s*(?:조건|페이지)\s*(?:점검|확인)|내부\s*(?:전략|점검|검토))/i;
 
 export type NativeGenerationJobOptions = {
@@ -31,6 +31,8 @@ export type NativeGenerationJobOptions = {
   requestedBy?: GenerationJob["requestedBy"];
   autoProductionRunId?: string;
   autoProductionTaskId?: string;
+  /** 사이트 스토리형 전용 API만 설정합니다. 일반 상품·사이트 제작 요청에서는 허용하지 않습니다. */
+  serviceStorySequential?: boolean;
 };
 
 function resolveAdBrief(value: Partial<AdBrief> | undefined): AdBrief {
@@ -175,18 +177,35 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const directProductImagePath = normalizedImagePath(input.codexDirectTest?.productImagePath);
   const directSupportingImagePath = normalizedImagePath(input.codexDirectTest?.supportingImagePath);
   const directPackagingImagePath = normalizedImagePath(input.codexDirectTest?.packagingImagePath);
-  const directBasePrompt = normalizeDefaultCodexGenerationPrompt(input.codexDirectTest?.prompt) || buildDefaultCodexGenerationPrompt({
-    landingUrl: product.landingUrl,
-    hasSupportingImage: Boolean(directSupportingImagePath),
-    hasPackagingImage: Boolean(directPackagingImagePath),
-  });
+  const siteAnalysisMode = product.analysisMode === "site";
+  const storyModeRequested = siteAnalysisMode && input.codexDirectTest?.serviceCreativeMode === "story";
+  if (storyModeRequested && !options.serviceStorySequential) {
+    throw new Error("스토리형 서비스 제작은 스토리형 광고 제작 버튼의 전용 경로에서만 시작할 수 있습니다.");
+  }
+  const serviceCreativeMode = storyModeRequested && options.serviceStorySequential
+    ? "story" as const
+    : "independent" as const;
+  const requestedSiteVisualImagePaths = Array.from(new Set(
+    (input.codexDirectTest?.siteVisualImagePaths || []).map(normalizedImagePath).filter(Boolean)
+  )).slice(0, 5);
+  const directBasePrompt = siteAnalysisMode
+    ? serviceCreativeMode === "story"
+      ? buildServiceStoryCodexGenerationPrompt()
+      : buildServiceAnalysisCodexGenerationPrompt()
+    : normalizeDefaultCodexGenerationPrompt(input.codexDirectTest?.prompt) || buildDefaultCodexGenerationPrompt({
+        landingUrl: product.landingUrl,
+        hasSupportingImage: Boolean(directSupportingImagePath),
+        hasPackagingImage: Boolean(directPackagingImagePath),
+      });
   const directAdditionalInstructions = normalizeCodexGenerationAdditionalInstructions(input.codexDirectTest?.additionalInstructions);
   const directPrompt = appendCodexGenerationAdditionalInstructions(directBasePrompt, directAdditionalInstructions);
   // 화면에서 선택한 2·3·4번 첨부는 자동 역할 분류·점수화 없이 그대로 사용합니다.
   // 전체 상세페이지 후보를 기준으로 검증하므로 뒤쪽 이미지를 골라도 잘리지 않습니다.
   const currentPathSet = new Set(resolvedPaths.allPaths);
   if (!directProductImagePath || !currentPathSet.has(directProductImagePath)) {
-    throw new Error("상품 이미지는 현재 선택한 상품의 상세페이지 이미지에서 골라 주세요.");
+    throw new Error(siteAnalysisMode
+      ? "서비스 제작에 사용할 사이트 시각 자료를 선택해 주세요."
+      : "상품 이미지는 현재 선택한 상품의 상세페이지 이미지에서 골라 주세요.");
   }
   if (directSupportingImagePath && (!currentPathSet.has(directSupportingImagePath) || directSupportingImagePath === directProductImagePath)) {
     throw new Error("라벨·추가 참고 이미지는 같은 상품의 다른 상세페이지 이미지에서 골라 주세요.");
@@ -198,7 +217,13 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   )) {
     throw new Error("포장상품 이미지는 같은 상품의 다른 상세페이지 이미지에서 골라 주세요.");
   }
-  const directReferencePaths = [directProductImagePath, directSupportingImagePath, directPackagingImagePath].filter((value): value is string => Boolean(value));
+  const invalidSiteVisualImage = requestedSiteVisualImagePaths.find((imagePath) => !currentPathSet.has(imagePath));
+  if (siteAnalysisMode && invalidSiteVisualImage) {
+    throw new Error("로고·마스코트·기능 이미지는 현재 분석한 사이트의 시각 자료에서 선택해 주세요.");
+  }
+  const directReferencePaths = siteAnalysisMode
+    ? requestedSiteVisualImagePaths.length ? requestedSiteVisualImagePaths : [directProductImagePath]
+    : [directProductImagePath, directSupportingImagePath, directPackagingImagePath].filter((value): value is string => Boolean(value));
   const productReferencePaths = directReferencePaths;
   const allowedProductPaths = new Set(productReferencePaths);
   const currentProductAssets = (input.imageAssets || []).filter((asset) =>
@@ -225,10 +250,13 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   const advertiserId = product.creativeContext?.advertiserId || advertiser.id;
   const advertiserName = product.advertiserName || advertiser.name;
   const planningFingerprint = buildCreativePlanFingerprint(truth);
-  const referenceCategoryOverride = normalizeReferenceCategoryOverride(input.referenceCategoryOverride);
-  const selectedAdReferences = await ensureNativeReferenceCopies(
-    selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, 6)
+  const referenceCategoryOverride = normalizeReferenceCategoryOverride(input.referenceCategoryOverride) || (siteAnalysisMode ? "service" : undefined);
+  const selectedReferenceSet = await ensureNativeReferenceCopies(
+    selectCategoryNativeAdReferences({ productTruth: truth, referenceCategoryOverride }, serviceCreativeMode === "story" ? 1 : 6)
   );
+  const selectedAdReferences = serviceCreativeMode === "story"
+    ? Array.from({ length: 6 }, () => selectedReferenceSet[0]).filter(Boolean)
+    : selectedReferenceSet;
   const { creativePlan, scenes } = buildDefaultCodexGenerationPlan({
     truth,
     references: selectedAdReferences,
@@ -294,10 +322,18 @@ export async function createNativeGenerationJob(input: CreateGenerationJobInput,
   job.codexDirectTest = {
     prompt: directPrompt,
     productImagePath: directProductImagePath,
-    supportingImagePath: directSupportingImagePath || undefined,
-    packagingImagePath: directPackagingImagePath || undefined,
+    supportingImagePath: siteAnalysisMode ? undefined : directSupportingImagePath || undefined,
+    packagingImagePath: siteAnalysisMode ? undefined : directPackagingImagePath || undefined,
+    siteVisualImagePaths: siteAnalysisMode ? directReferencePaths : undefined,
     additionalInstructions: directAdditionalInstructions || undefined,
+    serviceCreativeMode: siteAnalysisMode ? serviceCreativeMode : undefined,
+    serviceStoryWorkflowVersion: serviceCreativeMode === "story"
+      ? SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION
+      : undefined,
   };
+  job.serviceStoryPlan = serviceCreativeMode === "story"
+    ? { status: "pending", slides: [], attempts: 0, updatedAt: job.createdAt }
+    : undefined;
   assertDefaultCodexGenerationJob(job);
   if (job.sourceType === "manual") {
     // 수동 새 작업은 같은 상품의 이전 수동 작업만 교체한다. 자정 자동 제작과

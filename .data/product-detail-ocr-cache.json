@@ -1,45 +1,5 @@
 [
   {
-    "key": "fa76f3bd8707207f6021c90e81428d0dea0e82aba57bfa7aaeea39922b4eeb00",
-    "insight": {
-      "id": "detail-ocr-9a728d437a16",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014591268_202409020258236431780cc814c4-f647-4f32-aefa-388ffb34c1bc.jpg",
-      "contentHash": "9a728d437a16bfc34a20abbdf75ed40033e5da84f54525053fea60fc2cde5ddf",
-      "ocrText": "전통 그대로 온가족 간식\n한가득 종합전병",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.75,
-      "copyFacts": [
-        "전통 그대로 온가족 간식",
-        "한가득 종합전병"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:17.804Z"
-  },
-  {
-    "key": "c5c67fad2cd0a530c85110766d43cf02dcc63b2f473ab2ae3de58d63686123dc",
-    "insight": {
-      "id": "detail-ocr-311dc4a5a44a",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014648282_2024090202582478397381694e69-1336-4845-9904-1e45b994d011.jpg",
-      "contentHash": "311dc4a5a44a8cdbd52a7008f32afd74f27265a748d9b6222efe288fbab489f4",
-      "ocrText": "명절마다 주문폭주 인기품목\n600g 가득 담은 괴물 용량\n무로배송\n부담없이 넉넉하게\n언제든 간식으로 맛있게!",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.8,
-      "copyFacts": [
-        "600g 가득 담은 괴물 용량",
-        "언제든 간식으로 맛있게!"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [
-        "무로배송"
-      ],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:19.416Z"
-  },
-  {
     "key": "6007d866f52f0143002df25fd2ea1cacc35ce3b1854aec4b17822a6f2eb2fdda",
     "insight": {
       "id": "detail-ocr-8a4e565320f8",
@@ -7255,5 +7215,72 @@
       "warnings": []
     },
     "createdAt": "2026-09-09T10:45:17.556Z"
+  },
+  {
+    "key": "90ccd461df058adb4d96d202a31781073e3180e28abc3635b79acbb2cca4a1a7",
+    "insight": {
+      "id": "detail-ocr-b85531b4e407",
+      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
+      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
+      "ocrText": "NI\nC",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T02:36:24.417Z"
+  },
+  {
+    "key": "3b6982d2c97079a05b193a7203614cfe9f5f8732e1845db9e2c5323531d223b5",
+    "insight": {
+      "id": "detail-ocr-9c2edadd023d",
+      "imageUrl": "https://originalsource.co.kr/web/product/big/202607/6168ad5431e1cb8f7a33b35d833c69f4.jpg",
+      "contentHash": "9c2edadd023d1e0831176cd5f894f8ef3f13da84012c009f8c2b8d4f600e9c58",
+      "ocrText": "2+1 꼴라담아 세트\n원하는 향으로 선택 가능\nPECTCLES\n1 30%\nRECICLED\n430%\nTINGLY\nZESTY\nMINTG\nLEMON\nTEA TREE\n&TEATREE\nTROPICA\n2100%\n2100%\nCOCONUT\nFRAGRANCE\nMATURAL\nFRAGRANCE\nNATURAL\n&SHEA BUTTER\nKAIURAI\n100%\nORIGINAL\nORIGINAL\nSOURCE\nSOURCE\n+\nORIGINAL\nSOURCE\n7.927\nREAL MINT\nV PCTA\n10REA\nV PCTA\nSHOWER\nTVERT EOTTE\nTEAVES IN\nEVERY BOTTLE\nLMONS 0\nRO AFIROVED\n50mle\nSHOWER 250mle\nSHOWER 250mle\n250ml x 2개\n50ml 증정",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.8478260869565217,
+      "copyFacts": [
+        "2+1 꼴라담아 세트",
+        "원하는 향으로 선택 가능"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "PECTCLES",
+        "RECICLED",
+        "TINGLY",
+        "ZESTY",
+        "MINTG",
+        "LEMON",
+        "TEA TREE",
+        "TROPICA",
+        "COCONUT",
+        "FRAGRANCE",
+        "MATURAL",
+        "NATURAL",
+        "&SHEA BUTTER",
+        "KAIURAI",
+        "ORIGINAL",
+        "SOURCE",
+        "REAL MINT",
+        "V PCTA",
+        "10REA",
+        "SHOWER",
+        "TVERT EOTTE",
+        "TEAVES IN",
+        "EVERY BOTTLE",
+        "LMONS 0"
+      ],
+      "discardedNotices": [
+        "2100%",
+        "7.927",
+        "250ml x 2개",
+        "50ml 증정"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T02:36:24.651Z"
   }
 ]

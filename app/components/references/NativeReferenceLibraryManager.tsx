@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChangeEvent, DragEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { nativeReferenceBeautySubcategories, nativeReferenceBeautySubcategoryLabel, nativeReferenceCategoryGroups, nativeReferenceCategoryLabel, nativeReferenceFoodSubcategories, nativeReferenceFoodSubcategoryLabel, nativeReferenceSelectionPoolLabel, nativeReferenceCompatibilityConfidences, nativeReferenceCompositionTypes, nativeReferencePhotographyTypes, nativeReferenceProductForms, nativeReferenceProductPresentations, nativeReferenceSlotShapes, nativeReferenceTextDensities, referenceBelongsToBeautySelectionPool, referenceBelongsToSelectionPool, type ManagedNativeReferenceItem, type NativeReferenceBeautySubcategory, type NativeReferenceCategoryGroup, type NativeReferenceFoodSubcategory, type NativeReferenceSelectionPool } from "../../lib/creative-generation/referenceLibraryManagement";
 import styles from "./NativeReferenceLibraryManager.module.css";
 
@@ -16,6 +16,7 @@ type LibraryPayload = {
 
 type Props = { initialLibrary: LibraryPayload; readOnly?: boolean };
 type Filter = "all" | NativeReferenceCategoryGroup | `food-${NativeReferenceFoodSubcategory}` | `beauty-${NativeReferenceBeautySubcategory}`;
+type UploadCategory = "auto" | "gfa";
 type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory" | "beautySubcategory"> & {
   foodSubcategory?: NativeReferenceFoodSubcategory | null;
   beautySubcategory?: NativeReferenceBeautySubcategory | null;
@@ -64,6 +65,7 @@ function beautySubcategoryFromFilter(value: Filter): NativeReferenceBeautySubcat
 export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false }: Props) {
   const [library, setLibrary] = useState(initialLibrary);
   const [filter, setFilter] = useState<Filter>("all");
+  const [uploadCategory, setUploadCategory] = useState<UploadCategory>("auto");
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -119,10 +121,11 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
     if (!files.length || busy) return;
     setBusy("upload");
     setError("");
-    setMessage(`${files.length}장 업로드 및 상품군 자동 분류 중입니다.`);
+    setMessage(uploadCategory === "gfa" ? `${files.length}장을 GFA 레퍼런스로 등록 중입니다.` : `${files.length}장 업로드 및 상품군 자동 분류 중입니다.`);
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
+      if (uploadCategory === "gfa") formData.append("categoryGroup", "gfa");
       const result = await parseResponse(
         await fetch("/api/admin/references", {
           method: "POST",
@@ -130,7 +133,7 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         })
       );
       setLibrary(result.library);
-      setMessage(`${result.added?.length || 0}장을 등록했습니다. 수동·자동 제작 레퍼런스로 바로 사용할 수 있습니다.`);
+      setMessage(`${result.added?.length || 0}장을 ${uploadCategory === "gfa" ? "GFA에 " : ""}등록했습니다. 수동·자동 제작 레퍼런스로 바로 사용할 수 있습니다.`);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "업로드에 실패했습니다.");
       setMessage("업로드를 완료하지 못했습니다.");
@@ -333,13 +336,20 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         </div>
       ) : <div className={styles.uploader} onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
         <div>
-          <strong>{busy === "upload" ? "업로드하고 자동 분류하는 중입니다" : "새 레퍼런스 이미지 추가"}</strong>
+          <strong>{busy === "upload" ? (uploadCategory === "gfa" ? "GFA에 등록하는 중입니다" : "업로드하고 자동 분류하는 중입니다") : "새 레퍼런스 이미지 추가"}</strong>
           <span>JPEG·PNG·WebP, 장당 15MB 이하 · 한 번에 최대 12장</span>
         </div>
         <input accept="image/jpeg,image/png,image/webp" disabled={Boolean(busy)} multiple onChange={handleFiles} ref={fileInput} type="file" />
         <div className={styles.uploaderActions}>
+          <label className={styles.uploadCategory}>
+            업로드 분류
+            <select disabled={Boolean(busy)} onChange={(event) => setUploadCategory(event.target.value as UploadCategory)} value={uploadCategory}>
+              <option value="auto">자동 분류</option>
+              <option value="gfa">GFA 직접 지정</option>
+            </select>
+          </label>
           <button disabled={Boolean(busy)} onClick={() => fileInput.current?.click()} type="button">
-            {busy === "upload" ? "자동 분류 중…" : "이미지 업로드"}
+            {busy === "upload" ? (uploadCategory === "gfa" ? "GFA 등록 중…" : "자동 분류 중…") : "이미지 업로드"}
           </button>
           {ocrStatus?.run?.status === "running" ? (
             <button className={styles.analysisButton} disabled={Boolean(busy)} onClick={() => void cancelOcr()} type="button">
@@ -371,36 +381,39 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         </div>
       ) : null}
 
-      <div className={styles.filters} aria-label="레퍼런스 상품군 필터">
-        <button className={filter === "all" ? styles.active : ""} onClick={() => setFilter("all")} type="button">
-          전체 <b>{library.items.length}</b>
-        </button>
-        {nativeReferenceCategoryGroups.map((categoryGroup) => (
-          <Fragment key={categoryGroup}>
-            <button className={filter === categoryGroup ? styles.active : ""} onClick={() => setFilter(categoryGroup)} type="button">
-              {nativeReferenceCategoryLabel(categoryGroup)} <b>{library.counts[categoryGroup] || 0}</b>
-            </button>
-            {categoryGroup === "food" ? nativeReferenceFoodSubcategories.map((foodSubcategory) => {
-              const foodFilter = `food-${foodSubcategory}` as Filter;
-              return (
-                <button className={`${filter === foodFilter ? styles.active : ""} ${styles.produceFilter}`.trim()} key={foodSubcategory} onClick={() => setFilter(foodFilter)} type="button">
-                  ↳ {nativeReferenceFoodSubcategoryLabel(foodSubcategory)} <b>{library.foodSubcategoryCounts[foodSubcategory] || 0}</b>
-                </button>
-              );
-            }) : categoryGroup === "beauty" ? nativeReferenceBeautySubcategories.map((beautySubcategory) => {
-              const beautyFilter = `beauty-${beautySubcategory}` as Filter;
-              return (
-                <button className={`${filter === beautyFilter ? styles.active : ""} ${styles.produceFilter}`.trim()} key={beautySubcategory} onClick={() => setFilter(beautyFilter)} type="button">
-                  ↳ {nativeReferenceBeautySubcategoryLabel(beautySubcategory)} <b>{library.beautySubcategoryCounts[beautySubcategory] || 0}</b>
-                </button>
-              );
-            }) : null}
-          </Fragment>
-        ))}
-      </div>
+      <div className={styles.libraryBrowser}>
+        <nav className={styles.filters} aria-label="레퍼런스 상품군 필터">
+          <strong className={styles.filterTitle}>카테고리</strong>
+          <button className={filter === "all" ? styles.active : ""} onClick={() => setFilter("all")} type="button">
+            <span>전체</span><b>{library.items.length}</b>
+          </button>
+          {nativeReferenceCategoryGroups.map((categoryGroup) => (
+            <div className={styles.filterGroup} key={categoryGroup}>
+              <button className={filter === categoryGroup ? styles.active : ""} onClick={() => setFilter(categoryGroup)} type="button">
+                <span>{nativeReferenceCategoryLabel(categoryGroup)}</span><b>{library.counts[categoryGroup] || 0}</b>
+              </button>
+              {categoryGroup === "food" ? nativeReferenceFoodSubcategories.map((foodSubcategory) => {
+                const foodFilter = `food-${foodSubcategory}` as Filter;
+                return (
+                  <button className={`${filter === foodFilter ? styles.active : ""} ${styles.produceFilter}`.trim()} key={foodSubcategory} onClick={() => setFilter(foodFilter)} type="button">
+                    <span>{nativeReferenceFoodSubcategoryLabel(foodSubcategory)}</span><b>{library.foodSubcategoryCounts[foodSubcategory] || 0}</b>
+                  </button>
+                );
+              }) : categoryGroup === "beauty" ? nativeReferenceBeautySubcategories.map((beautySubcategory) => {
+                const beautyFilter = `beauty-${beautySubcategory}` as Filter;
+                return (
+                  <button className={`${filter === beautyFilter ? styles.active : ""} ${styles.produceFilter}`.trim()} key={beautySubcategory} onClick={() => setFilter(beautyFilter)} type="button">
+                    <span>{nativeReferenceBeautySubcategoryLabel(beautySubcategory)}</span><b>{library.beautySubcategoryCounts[beautySubcategory] || 0}</b>
+                  </button>
+                );
+              }) : null}
+            </div>
+          ))}
+        </nav>
 
-      {visibleItems.length ? (
-        <div className={styles.grid}>
+        <div className={styles.referenceResults}>
+          {visibleItems.length ? (
+            <div className={styles.grid}>
           {visibleItems.map((item) => (
             <article className={styles.card} key={item.id}>
               <div className={styles.imageFrame}>
@@ -656,10 +669,12 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
               </div>
             </article>
           ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>이 상품군에 등록된 레퍼런스가 없습니다.</div>
+          )}
         </div>
-      ) : (
-        <div className={styles.empty}>이 상품군에 등록된 레퍼런스가 없습니다.</div>
-      )}
+      </div>
     </section>
   );
 }

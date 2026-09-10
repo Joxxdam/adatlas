@@ -7,7 +7,7 @@ import type { CreativeQualityScore, VisualDirection } from "../lib/creative/type
 import { evaluateCreativeQuality } from "../lib/creative/creativeQualityEvaluator";
 import { getCreativeTextStylePreset } from "../lib/creative/textStylePresets";
 import type { AdaptiveCreativePlan, AdaptiveCreativeRenderResult, AudienceProfile, BackgroundLibraryItem, BackgroundRecommendation, BackgroundRecommendationHistory, CreativeGenerationMode } from "../lib/background-library/types";
-import type { AdImageAnalysisDraft, AdImageLabel, BatchRenderResult, BatchRenderStatus, CollectedAdImage, CreativeStrategy, GeneratedAdImage, GeneratedAdCopy, GeneratedImageAsset, GptImageCandidate, GptImageFailureReason, GptImageGenerationMode, GptImagePreservationMode, GptImageSourceMode, GptPromptTemplateMode, GptCustomPromptState, ExtractedProductInfo, MvpBrand, ProductImageEffectPreset, ProductCutoutQuality, ProductExtractionScope, ProductImageMode, ProductRepresentation, ProductRepresentationType, ProductImageRenderEffect, ProductImageState, ProductInfoForPrompt, RenderDiagnostics, SelectedAdImageSource, SelectedAdImageState, SourceImageCandidate, SourceImageSelectionState, TemplateCopyApplyMode, TemplateCopyPreview, TemplateFittedCopy } from "../lib/mvp/types";
+import type { AdImageAnalysisDraft, AdImageLabel, BatchRenderResult, BatchRenderStatus, CollectedAdImage, CreativeStrategy, GeneratedAdImage, GeneratedAdCopy, GeneratedImageAsset, GptImageCandidate, GptImageFailureReason, GptImageGenerationMode, GptImagePreservationMode, GptImageSourceMode, GptPromptTemplateMode, GptCustomPromptState, ExtractedProductInfo, MvpBrand, ProductImageEffectPreset, ProductCutoutQuality, ProductExtractionScope, ProductImageMode, ProductRepresentation, ProductRepresentationType, ProductImageRenderEffect, ProductImageState, ProductInfoForPrompt, ProductSupplementAnalysis, RenderDiagnostics, SelectedAdImageSource, SelectedAdImageState, SiteVisualSelection, SourceImageCandidate, SourceImageSelectionState, TemplateCopyApplyMode, TemplateCopyPreview, TemplateFittedCopy } from "../lib/mvp/types";
 import { inferProductRepresentation } from "../lib/mvp/productImagePipeline";
 import { requestProductCutout } from "../lib/mvp/productImageClient";
 import { evaluateCopyQuality, tightenCopyToTemplate } from "../lib/mvp/copyQualityEvaluator";
@@ -25,6 +25,8 @@ import { CopyQualityPanel } from "./features/copy-generator/CopyQualityPanel";
 import { MessageHierarchyEditor } from "./features/copy-generator/MessageHierarchyEditor";
 import { useCreativeWorkflow } from "./features/creative-workflow/useCreativeWorkflow";
 import { ProductAnalysisSummary } from "./features/product-brief/ProductAnalysisSummary";
+import { ProductSupplementAnalysisPanel } from "./features/product-brief/ProductSupplementAnalysisPanel";
+import { SiteAnalysisSummary } from "./features/product-brief/SiteAnalysisSummary";
 import { StrategySelector } from "./features/strategy/StrategySelector";
 import { BackgroundRecommendationPanel } from "./features/background-library/BackgroundRecommendationPanel";
 import { AdaptiveCreativePanel } from "./features/background-library/AdaptiveCreativePanel";
@@ -135,6 +137,14 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
   const [productExtractStatus, setProductExtractStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
     message: initialCreationHandoff ? `${handoffSourceLabel}에서 상품정보와 이미지 후보를 불러왔습니다. 필요하면 다시 추출할 수 있습니다.` : initialLandingUrl ? "광고 분석 결과에서 선택한 상품 URL을 자동으로 입력했습니다. 상품 분석하기를 눌러 상세정보를 불러오세요." : "상품 URL을 입력하면 상세페이지 정보를 먼저 불러올 수 있습니다.",
+  });
+  const [analysisRequestMode, setAnalysisRequestMode] = useState<"product" | "site" | null>(null);
+  const [productSupplementFiles, setProductSupplementFiles] = useState<File[]>([]);
+  const [productSupplementAnalysis, setProductSupplementAnalysis] = useState<ProductSupplementAnalysis | null>(null);
+  const [productSupplementPromptInsertion, setProductSupplementPromptInsertion] = useState<{ id: string; value: string } | null>(null);
+  const [productSupplementStatus, setProductSupplementStatus] = useState<Status>({
+    kind: "idle",
+    message: "참고파일은 선택사항입니다. 파일을 고른 뒤 상품을 분석하면 함께 확인합니다.",
   });
   const [strategyStatus, setStrategyStatus] = useState<Status>({
     kind: initialCreationHandoff ? "success" : "idle",
@@ -884,6 +894,13 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
     setProductInfo((current) => ({ ...current, [fieldKey]: value }));
 
     if (fieldKey === "landingUrl" && value.trim() !== productInfo.landingUrl.trim()) {
+      setProductSupplementFiles([]);
+      setProductSupplementAnalysis(null);
+      setProductSupplementPromptInsertion(null);
+      setProductSupplementStatus({
+        kind: "idle",
+        message: "상품 URL이 바뀌었습니다. 필요하면 이 상품의 참고파일을 다시 선택해 주세요.",
+      });
       activeProductImagePathRef.current = "";
       setSelectedAdImages(emptySelectedAdImages);
       setSourceImageSelection(emptySourceImageSelection);
@@ -913,6 +930,90 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       setAdaptiveCreativeResults([]);
       setAutomaticCopySet([]);
     }
+  }
+
+  function selectProductSupplementFiles(files: File[]) {
+    const supported = /\.(?:png|jpe?g|webp|pdf|docx|pptx|xlsx?|txt|md|csv|json)$/i;
+    if (files.length > 6) {
+      setProductSupplementStatus({ kind: "error", message: "참고파일은 한 번에 최대 6개까지 선택할 수 있습니다." });
+      return;
+    }
+    const invalid = files.find((file) => !supported.test(file.name) || file.size <= 0 || file.size > 10 * 1024 * 1024);
+    if (invalid) {
+      setProductSupplementStatus({ kind: "error", message: `${invalid.name}: 지원하지 않는 형식이거나 10MB를 초과했습니다.` });
+      return;
+    }
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > 25 * 1024 * 1024) {
+      setProductSupplementStatus({ kind: "error", message: "선택한 참고파일 전체 용량은 25MB 이하여야 합니다." });
+      return;
+    }
+    setProductSupplementFiles(files);
+    setProductSupplementAnalysis(null);
+    setProductSupplementStatus({
+      kind: "idle",
+      message: files.length ? `${files.length}개 파일을 선택했습니다. 상품 분석 시 함께 분석합니다.` : "참고파일을 첨부하지 않아도 상품 분석을 진행할 수 있습니다.",
+    });
+  }
+
+  function removeProductSupplementFile(index: number) {
+    setProductSupplementFiles((current) => {
+      const next = current.filter((_, itemIndex) => itemIndex !== index);
+      setProductSupplementAnalysis(null);
+      setProductSupplementStatus({
+        kind: "idle",
+        message: next.length ? `${next.length}개 파일이 선택되어 있습니다.` : "참고파일을 첨부하지 않아도 상품 분석을 진행할 수 있습니다.",
+      });
+      return next;
+    });
+  }
+
+  async function analyzeSelectedProductSupplements(targetProduct: ProductInfoForPrompt = productInfo) {
+    if (!productSupplementFiles.length) return null;
+    if (!targetProduct.productName.trim() || targetProduct.analysisMode === "site") {
+      setProductSupplementStatus({ kind: "error", message: "상품 분석을 먼저 완료한 뒤 참고파일을 분석해 주세요." });
+      return null;
+    }
+
+    setProductSupplementStatus({ kind: "loading", message: `참고파일 ${productSupplementFiles.length}개의 내용을 상품 분석 결과와 함께 확인하고 있습니다.` });
+    try {
+      const form = new FormData();
+      productSupplementFiles.forEach((file) => form.append("files", file));
+      form.set("product", JSON.stringify({
+        productName: targetProduct.productName,
+        brandName: targetProduct.brandName || targetProduct.advertiserName,
+        category: targetProduct.category,
+        price: targetProduct.price,
+        originalPrice: targetProduct.originalPrice || targetProduct.oldPrice,
+        discountInfo: targetProduct.discountInfo,
+        mainBenefit: targetProduct.mainBenefit,
+        description: targetProduct.extractedDescription,
+        landingUrl: targetProduct.landingUrl,
+      }));
+      const response = await fetch("/api/extract/product-supplements", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok || !payload.analysis) throw new Error(payload.error || "첨부자료 분석에 실패했습니다.");
+      setProductSupplementAnalysis(payload.analysis as ProductSupplementAnalysis);
+      setProductSupplementStatus({ kind: "success", message: `참고파일 ${payload.analysis.fileCount || productSupplementFiles.length}개 분석을 완료했습니다.` });
+      return payload.analysis as ProductSupplementAnalysis;
+    } catch (error) {
+      setProductSupplementAnalysis(null);
+      setProductSupplementStatus({ kind: "error", message: error instanceof Error ? error.message : "첨부자료 분석에 실패했습니다." });
+      return null;
+    }
+  }
+
+  function updateSiteVisualSelections(selections: SiteVisualSelection[]) {
+    const selectedImagePaths = selections.map((selection) => selection.imagePath);
+    setGenerationPlanConfirmed(false);
+    setProductInfo((current) => ({ ...current, siteVisualSelections: selections }));
+    setSelectedAdImages({
+      selectedImagePaths,
+      primaryImagePath: selectedImagePaths[0] || "",
+      secondaryImagePath: selectedImagePaths[1] || "",
+      source: selectedImagePaths.length ? "detail" : "unknown",
+      updatedAt: selectedImagePaths.length ? new Date().toISOString() : "",
+    });
   }
 
   function updateMessageHierarchy(nextHierarchy: typeof creativeWorkflow.messageHierarchy) {
@@ -960,6 +1061,9 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
 
     return {
       ...current,
+      analysisMode: extracted.analysisMode || "product",
+      siteAnalysis: replaceExtractedFields ? extracted.siteAnalysis : current.siteAnalysis || extracted.siteAnalysis,
+      siteVisualSelections: replaceExtractedFields ? [] : current.siteVisualSelections || [],
       productName: replaceExtractedFields ? extracted.productName || "" : current.productName || extracted.productName || "",
       category: replaceExtractedFields ? extractedCategory : current.category || extractedCategory,
       productSubCategory: replaceExtractedFields ? extracted.productSubCategory || "" : current.productSubCategory || extracted.productSubCategory || "",
@@ -995,37 +1099,42 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
     };
   }
 
-  async function loadProductInfoFromUrl(options: { silent?: boolean } = {}) {
+  async function loadProductInfoFromUrl(options: { silent?: boolean; mode?: "product" | "site" } = {}) {
     const productUrl = productInfo.landingUrl.trim();
+    const analysisMode = options.mode || productInfo.analysisMode || "product";
 
     if (!productUrl) {
-      setProductExtractStatus({ kind: "error", message: "상품 URL을 먼저 입력해주세요." });
+      setProductExtractStatus({ kind: "error", message: "상품 또는 사이트 URL을 먼저 입력해주세요." });
       return productInfo;
     }
 
     const isNewProductUrl = productUrl !== lastLoadedProductUrl;
 
     if (!options.silent) {
+      setAnalysisRequestMode(analysisMode);
       setGenerationPlanConfirmed(false);
       // URL 분석 버튼은 같은 주소여도 새 제작 흐름을 시작한다. 긴 상품 분석
       // 중에 이전 광고 카드가 계속 보이거나 다시 복원되지 않게 즉시 비운다.
       setProductAnalysisRevision((current) => current + 1);
       setProductExtractStatus({
         kind: "loading",
-        message: "상품 상세페이지 정보를 불러오는 중입니다.",
+        message: analysisMode === "site" ? "사이트의 공개 페이지·서비스·타겟·시각 자료를 함께 분석하는 중입니다." : "상품 상세페이지 정보를 불러오는 중입니다.",
       });
     }
 
     try {
-      const response = await fetch("/api/extract/product", {
+      const requestOptions: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productUrl }),
-      });
+        body: JSON.stringify(analysisMode === "site" ? { siteUrl: productUrl } : { productUrl }),
+      };
+      const response = analysisMode === "site"
+        ? await fetch("/api/extract/site", requestOptions)
+        : await fetch("/api/extract/product", requestOptions);
       const result = await response.json();
 
       if (!response.ok || !result.ok) {
-        throw new Error(result.error ?? "상품 정보 추출 실패");
+        throw new Error(result.error ?? (analysisMode === "site" ? "사이트 분석 실패" : "상품 정보 추출 실패"));
       }
 
       let mergedProductInfo = productInfo;
@@ -1087,6 +1196,9 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
         message: "원본 기준 이미지 후보를 불러왔습니다. GPT 생성 기준 이미지를 선택할 수 있습니다.",
       });
       setLastLoadedProductUrl(productUrl);
+      if (!options.silent && analysisMode === "product" && productSupplementFiles.length) {
+        await analyzeSelectedProductSupplements(mergedProductInfo);
+      }
       if (replaceExtractedFieldsForUrl) {
         setGeneratedBannerPath("");
         setGptMainImagePath("");
@@ -1099,13 +1211,13 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       }
       setProductExtractStatus({
         kind: "success",
-        message: "상품 확인이 끝났어요. 아래 정보가 맞는지 확인해 주세요.",
+        message: analysisMode === "site" ? `사이트 ${result.debug?.crawledPageCount || mergedProductInfo.siteAnalysis?.analyzedPageCount || 1}개 페이지와 시각 자료 ${result.images?.length || mergedProductInfo.extractedGalleryImages?.length || 0}개를 분석했습니다.` : "상품 확인이 끝났어요. 아래 정보가 맞는지 확인해 주세요.",
       });
       return mergedProductInfo;
     } catch {
       setProductExtractStatus({
         kind: "error",
-        message: "상품 정보를 가져오지 못했어요. 주소를 확인하고 다시 시도해 주세요.",
+        message: analysisMode === "site" ? "사이트를 분석하지 못했어요. 공개 접근 가능한 주소인지 확인해 주세요." : "상품 정보를 가져오지 못했어요. 주소를 확인하고 다시 시도해 주세요.",
       });
       if (!options.silent) {
         setCopyStatus({
@@ -1114,6 +1226,8 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
         });
       }
       return productInfo;
+    } finally {
+      if (!options.silent) setAnalysisRequestMode(null);
     }
   }
 
@@ -3420,24 +3534,75 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
 
               <div className="ad-generation-flow">
                 <div className="banner-builder">
-                  <section className="strategy-form landing-url-panel" id="product-url-step">
+                  <section
+                    aria-busy={productExtractStatus.kind === "loading"}
+                    className="strategy-form landing-url-panel"
+                    id="product-url-step"
+                  >
                     <p className="eyebrow">1 · 상품 확인</p>
-                    <h3>어떤 상품의 광고를 만들까요?</h3>
-                    <p>쇼핑몰의 상품 상세페이지 주소를 붙여 넣어주세요.</p>
+                    <h3>어떤 상품이나 사이트의 광고를 만들까요?</h3>
+                    <p>상품 상세페이지는 상품 분석으로, 서비스·브랜드 페이지는 사이트 분석으로 불러오세요.</p>
                     <div className="product-url-entry">
                       <label>
-                        <span className="sr-only">상품 페이지 주소</span>
-                        <input id="product-url-input" onChange={(event) => updateProductInfoField("landingUrl", event.target.value)} placeholder="https://shop.example.com/products/123" value={productInfo.landingUrl} />
+                        <span className="sr-only">상품 또는 사이트 페이지 주소</span>
+                        <input id="product-url-input" onChange={(event) => updateProductInfoField("landingUrl", event.target.value)} placeholder="https://example.com/page" value={productInfo.landingUrl} />
                       </label>
-                      <button disabled={productExtractStatus.kind === "loading"} onClick={() => loadProductInfoFromUrl()} type="button">
-                        {productExtractStatus.kind === "loading" ? "상품을 확인하고 있어요…" : "상품 분석하기"}
-                      </button>
+                      <div className="product-url-actions" role="group" aria-label="URL 분석 방식">
+                        <button disabled={productExtractStatus.kind === "loading"} onClick={() => loadProductInfoFromUrl({ mode: "product" })} type="button">
+                          {analysisRequestMode === "product" ? "상품 확인 중…" : "상품 분석하기"}
+                        </button>
+                        <button className="site-analysis-button" disabled={productExtractStatus.kind === "loading"} onClick={() => loadProductInfoFromUrl({ mode: "site" })} type="button">
+                          {analysisRequestMode === "site" ? "사이트 전체 분석 중…" : "사이트 분석하기"}
+                        </button>
+                      </div>
                     </div>
-                    <small>예: 브랜드몰·스마트스토어·카페24의 개별 상품 주소</small>
-                    <div className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
+                    <small>상품 분석은 기존 추출 방식을 그대로 사용합니다. 사이트 분석은 동일 도메인의 공개 페이지를 탐색해 서비스·타겟·광고 방향과 화면 구간을 함께 수집합니다.</small>
+                    {productExtractStatus.kind === "loading" && analysisRequestMode === "site" ? (
+                      <div aria-live="polite" className="site-analysis-progress" role="status">
+                        <span aria-hidden="true" className="site-analysis-progress-spinner" />
+                        <div>
+                          <strong>사이트 전체를 분석하고 있습니다</strong>
+                          <p>페이지 수에 따라 잠시 걸릴 수 있어요. 이 화면을 그대로 두면 완료 결과가 자동으로 표시됩니다.</p>
+                          <ol aria-label="사이트 분석 과정">
+                            <li>내부 페이지 탐색</li>
+                            <li>서비스·타겟 분석</li>
+                            <li>이미지·화면 수집</li>
+                            <li>광고 방향 정리</li>
+                          </ol>
+                          <span aria-hidden="true" className="site-analysis-progress-track">
+                            <span />
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div aria-live="polite" className={`mvp-status ${productExtractStatus.kind}`}>{productExtractStatus.message}</div>
+                    )}
+                    {!currentProductLoaded || productInfo.analysisMode !== "site" ? (
+                      <ProductSupplementAnalysisPanel
+                        analysis={productSupplementAnalysis}
+                        files={productSupplementFiles}
+                        key={productSupplementAnalysis?.analyzedAt || "product-supplement-empty"}
+                        onAnalyze={() => {
+                          analyzeSelectedProductSupplements().catch(() => undefined);
+                        }}
+                        onFilesChange={selectProductSupplementFiles}
+                        onInsertPrompt={(value) => {
+                          setProductSupplementPromptInsertion({ id: globalThis.crypto?.randomUUID?.() || `${Date.now()}`, value });
+                          window.requestAnimationFrame(() => {
+                            document.getElementById("codex-additional-instructions")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          });
+                        }}
+                        onRemoveFile={removeProductSupplementFile}
+                        product={productInfo}
+                        productLoaded={currentProductLoaded}
+                        siteAnalysisMode={productInfo.analysisMode === "site"}
+                        status={productSupplementStatus.kind}
+                        statusMessage={productSupplementStatus.message}
+                      />
+                    ) : null}
                     {recentProducts.length ? (
-                      <div className="recent-product-list" aria-label="최근 분석한 상품">
-                        <span>최근 상품</span>
+                      <div className="recent-product-list" aria-label="최근 분석한 주소">
+                        <span>최근 분석</span>
                         <div>
                           {recentProducts.map((item) => (
                             <button
@@ -3461,24 +3626,42 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
                       </div>
                     ) : null}
                   </section>
-                  <ProductAnalysisSummary
-                    brief={creativeWorkflow.adBrief}
-                    imagePaths={hookExperimentProductImagePaths}
-                    loaded={currentProductLoaded}
-                    onChooseOther={() => {
-                      document.getElementById("product-url-input")?.focus();
-                      document.getElementById("product-url-step")?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }}
-                    onUseProduct={() => {
-                      setGenerationPlanConfirmed(true);
-                      window.requestAnimationFrame(() => document.getElementById("creative-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-                    }}
-                    product={productInfo}
-                    references={autoMatchedReferenceLabels}
-                    selectedForGeneration={generationPlanConfirmed}
-                  />
+                  {productInfo.analysisMode === "site" ? (
+                    <SiteAnalysisSummary
+                      imagePaths={hookExperimentProductImagePaths}
+                      loaded={currentProductLoaded}
+                      onChooseOther={() => {
+                        document.getElementById("product-url-input")?.focus();
+                        document.getElementById("product-url-step")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                      onUseSite={() => {
+                        setGenerationPlanConfirmed(true);
+                        window.requestAnimationFrame(() => document.getElementById("creative-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+                      }}
+                      onVisualSelectionsChange={updateSiteVisualSelections}
+                      product={productInfo}
+                      selectedForGeneration={generationPlanConfirmed}
+                    />
+                  ) : (
+                    <ProductAnalysisSummary
+                      brief={creativeWorkflow.adBrief}
+                      imagePaths={hookExperimentProductImagePaths}
+                      loaded={currentProductLoaded}
+                      onChooseOther={() => {
+                        document.getElementById("product-url-input")?.focus();
+                        document.getElementById("product-url-step")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                      onUseProduct={() => {
+                        setGenerationPlanConfirmed(true);
+                        window.requestAnimationFrame(() => document.getElementById("creative-results")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+                      }}
+                      product={productInfo}
+                      references={autoMatchedReferenceLabels}
+                      selectedForGeneration={generationPlanConfirmed}
+                    />
+                  )}
                   <details className="product-info-details" hidden={!currentProductLoaded}>
-                    <summary>불러온 상품 정보 확인·수정</summary>
+                    <summary>불러온 {productInfo.analysisMode === "site" ? "사이트" : "상품"} 정보 확인·수정</summary>
                     <section className="strategy-form banner-product-form">
                       <p className="eyebrow">Product Info</p>
                       {productFields
@@ -3502,7 +3685,7 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
                     </section>
                   </details>
                   <div>
-                    <ReferenceFirstCreativeGenerator adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} requestedJobId={initialGenerationJobId} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
+                    <ReferenceFirstCreativeGenerator additionalInstructionsInsertion={productSupplementPromptInsertion || undefined} adBrief={creativeWorkflow.adBrief} analysisRevision={productAnalysisRevision} analyzedProductUrl={lastLoadedProductUrl} logoPath={brandLogoPath} planConfirmed={generationPlanConfirmed} productLoaded={currentProductLoaded} product={productInfo} productImagePaths={hookExperimentProductImagePaths} requestedJobId={initialGenerationJobId} selectedAdImages={selectedAdImages.selectedImagePaths} source={lastLoadedProductUrl && productInfo.landingUrl.trim() === lastLoadedProductUrl ? "landing-page" : "user-input"} />
                   </div>
                   {legacyManualProductionToolsAvailable ? (
                     <details className="advanced-production-workspace" hidden={!currentProductLoaded} id="advanced-generation-settings">

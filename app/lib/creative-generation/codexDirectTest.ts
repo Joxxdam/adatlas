@@ -7,12 +7,41 @@ export const DEFAULT_CODEX_GENERATION_PIPELINE = "codex-direct-test" as const;
 export const DEFAULT_CODEX_GENERATION_WORKFLOW = "codex-direct-test" as const;
 export const DEFAULT_CODEX_GENERATION_PROMPT_VERSION = "codex-direct-test-v1";
 export const DEFAULT_CODEX_GENERATION_STAGE_ORDER = ["codex-direct-test"] as const;
+export const SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION = "site-story-sequential-v1" as const;
 
 /** 저장된 작업과 기존 import를 읽기 위한 호환 별칭입니다. */
 export const CODEX_DIRECT_TEST_PIPELINE = DEFAULT_CODEX_GENERATION_PIPELINE;
 export const CODEX_DIRECT_TEST_WORKFLOW = DEFAULT_CODEX_GENERATION_WORKFLOW;
 export const CODEX_DIRECT_TEST_PROMPT_VERSION = DEFAULT_CODEX_GENERATION_PROMPT_VERSION;
 export const CODEX_DIRECT_TEST_STAGE_ORDER = DEFAULT_CODEX_GENERATION_STAGE_ORDER;
+
+export const SERVICE_ANALYSIS_CODEX_GENERATION_PROMPT = `해당 레퍼런스를 참고해서 서비스분석내용을 바탕으로 분석한 서비스에 맞는 콘텐츠를 ImageGen기능을 활용하여 1200*1200 사이즈로 제작해줘.
+
+
+*참고사항
+1.마스코트/로고/기능이미지는 전달시에 크롭해서 활용할수도있고, 안해도돼.
+2.전체적인 색감/캐릭터(카툰/동물/3d/손그림)/인물/배경은 분석한 서비스에 어울리게 구현해줘.
+
+*주의사항
+1.문구뉘앙스는 유지해도 좋지만,그대로 쓰면 안되고 변형해줘.`;
+
+export const SERVICE_STORY_CODEX_GENERATION_PROMPT = `해당 레퍼런스를 참고해서 서비스분석내용을 바탕으로 분석한 서비스에 맞는 콘텐츠를 ImageGen기능을 활용하여 1200*1200 사이즈로 제작해줘.
+
+6장에 해당 서비스의 스토리가 잘녹아들면서 순서대로 이해가 쉽도록 기획후 제작해줘.
+
+*참고사항
+1.마스코트/로고/기능이미지는 전달시에 크롭해서 활용할수도있고, 안해도돼.
+2.전체적인 색감/캐릭터(카툰/동물/3d/손그림)/인물/배경은 분석한 서비스에 어울리게 구현해줘.
+*주의사항
+1.문구뉘앙스는 유지해도 좋지만,그대로 쓰면 안되고 변형해줘.`;
+
+export function buildServiceAnalysisCodexGenerationPrompt() {
+  return SERVICE_ANALYSIS_CODEX_GENERATION_PROMPT;
+}
+
+export function buildServiceStoryCodexGenerationPrompt() {
+  return SERVICE_STORY_CODEX_GENERATION_PROMPT;
+}
 
 export function buildDefaultCodexDirectTestPrompt(input: {
   landingUrl: string;
@@ -55,7 +84,7 @@ export function normalizeCodexDirectTestPrompt(value: unknown) {
 export const normalizeDefaultCodexGenerationPrompt = normalizeCodexDirectTestPrompt;
 
 export function normalizeCodexGenerationAdditionalInstructions(value: unknown) {
-  return String(value || "").normalize("NFKC").trim().slice(0, 2_000);
+  return String(value || "").normalize("NFKC").trim().slice(0, 6_000);
 }
 
 export function appendCodexGenerationAdditionalInstructions(basePrompt: string, value: unknown) {
@@ -71,22 +100,119 @@ export function buildCodexDirectTestExecutionNote(input: {
   outputPath: string;
   hasSupportingImage: boolean;
   hasPackagingImage?: boolean;
+  analysisMode?: "product" | "site";
+  siteVisualCount?: number;
 }) {
-  const attachmentOrder = [
-    "1) 광고 레퍼런스",
-    "2) 선택 상품 이미지",
-    input.hasSupportingImage ? "3) 라벨 또는 추가 참고 이미지" : "",
-    input.hasPackagingImage
-      ? `${input.hasSupportingImage ? "4" : "3"}) 포장상품 이미지${input.hasSupportingImage ? "" : " (프롬프트의 선택 4번 역할)"}`
-      : "",
-  ].filter(Boolean).join(" ");
+  const siteAnalysisMode = input.analysisMode === "site";
+  const siteVisualCount = Math.max(0, Math.min(5, Math.floor(input.siteVisualCount || 0)));
+  const attachmentOrder = siteAnalysisMode
+    ? `1) 광고 레퍼런스${siteVisualCount ? ` 2~${siteVisualCount + 1}) 사이트에서 선택한 로고·마스코트·기능 이미지` : ""}`
+    : [
+        "1) 광고 레퍼런스",
+        "2) 선택 상품 이미지",
+        input.hasSupportingImage ? "3) 라벨 또는 추가 참고 이미지" : "",
+        input.hasPackagingImage
+          ? `${input.hasSupportingImage ? "4" : "3"}) 포장상품 이미지${input.hasSupportingImage ? "" : " (프롬프트의 선택 4번 역할)"}`
+          : "",
+      ].filter(Boolean).join(" ");
   return [
     "[AdAtlas 실행 정보 — 창작 지시를 추가하거나 바꾸지 마세요]",
     `첨부 순서: ${attachmentOrder}`,
-    `선택 상품 URL: ${input.landingUrl}`,
+    `${siteAnalysisMode ? "분석 사이트" : "선택 상품"} URL: ${input.landingUrl}`,
     "imagegen 스킬로 결과 이미지 한 장을 생성하세요.",
     `최종 결과를 정확히 다음 경로에 저장하세요: ${input.outputPath}`,
   ].join("\n");
+}
+
+function compactServiceAnalysisValue(value: unknown, max = 600) {
+  const normalized = String(value || "").normalize("NFKC").replace(/\s+/g, " ").trim();
+  return normalized.length > max ? `${normalized.slice(0, max - 1)}…` : normalized;
+}
+
+function compactServiceAnalysisList(values: unknown, maxItems = 8) {
+  return Array.isArray(values)
+    ? values.map((value) => compactServiceAnalysisValue(value, 240)).filter(Boolean).slice(0, maxItems).join(" · ")
+    : "";
+}
+
+/** 사용자가 작성한 서비스 프롬프트를 바꾸지 않고 별도 근거 블록으로 전달합니다. */
+export function buildServiceAnalysisCodexContext(input: {
+  siteName?: string;
+  oneLineSummary?: string;
+  businessModel?: string;
+  offerings?: string[];
+  coreValueProps?: string[];
+  customerProblems?: string[];
+  differentiators?: string[];
+  trustSignals?: string[];
+  conversionOffers?: string[];
+  targetPriorities?: Array<{ rank?: number; name?: string; reason?: string }>;
+  adDirections?: Array<{ target?: string; angle?: string; sampleMessage?: string }>;
+  cautions?: string[];
+  selectedVisuals?: Array<{ role?: string; label?: string }>;
+}) {
+  const targets = (input.targetPriorities || []).slice(0, 6).map((target) =>
+    compactServiceAnalysisValue([target.rank ? `${target.rank}순위` : "", target.name, target.reason].filter(Boolean).join(" · "), 360)
+  ).filter(Boolean).join(" / ");
+  const directions = (input.adDirections || []).slice(0, 6).map((direction) =>
+    compactServiceAnalysisValue([direction.target, direction.angle, direction.sampleMessage].filter(Boolean).join(" · "), 420)
+  ).filter(Boolean).join(" / ");
+  const visuals = (input.selectedVisuals || []).slice(0, 5).map((visual) =>
+    compactServiceAnalysisValue(`${visual.role || "시각 자료"}: ${visual.label || "선택 이미지"}`, 180)
+  ).filter(Boolean).join(" · ");
+  return [
+    "[AdAtlas 서비스 분석 정보]",
+    input.siteName ? `서비스명: ${compactServiceAnalysisValue(input.siteName, 240)}` : "",
+    input.oneLineSummary ? `서비스 요약: ${compactServiceAnalysisValue(input.oneLineSummary)}` : "",
+    input.businessModel ? `서비스 구조: ${compactServiceAnalysisValue(input.businessModel)}` : "",
+    compactServiceAnalysisList(input.offerings) ? `제공 서비스: ${compactServiceAnalysisList(input.offerings)}` : "",
+    compactServiceAnalysisList(input.coreValueProps) ? `핵심 가치: ${compactServiceAnalysisList(input.coreValueProps)}` : "",
+    compactServiceAnalysisList(input.customerProblems) ? `고객 문제: ${compactServiceAnalysisList(input.customerProblems)}` : "",
+    compactServiceAnalysisList(input.differentiators) ? `차별점: ${compactServiceAnalysisList(input.differentiators)}` : "",
+    compactServiceAnalysisList(input.trustSignals) ? `신뢰 근거: ${compactServiceAnalysisList(input.trustSignals)}` : "",
+    compactServiceAnalysisList(input.conversionOffers) ? `전환 요소: ${compactServiceAnalysisList(input.conversionOffers)}` : "",
+    targets ? `우선 타겟: ${targets}` : "",
+    directions ? `분석된 광고 방향: ${directions}` : "",
+    compactServiceAnalysisList(input.cautions) ? `확인 사항: ${compactServiceAnalysisList(input.cautions)}` : "",
+    visuals ? `선택한 시각 자료: ${visuals}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+/** 공통 기획은 별도 근거 블록으로 붙여 사용자가 확정한 스토리 프롬프트를 바꾸지 않습니다. */
+export function buildServiceStoryCodexContext(input: {
+  title?: string;
+  narrativeArc?: string;
+  visualContinuity?: string;
+  slides: Array<{
+    order: number;
+    purpose: string;
+    keyMessage: string;
+    visualDirection: string;
+    transition: string;
+  }>;
+  currentSlideOrder: number;
+}) {
+  const current = input.slides.find((slide) => slide.order === input.currentSlideOrder);
+  if (!current) return "";
+  const fullSequence = input.slides
+    .slice()
+    .sort((left, right) => left.order - right.order)
+    .map((slide) => `${slide.order}장: ${compactServiceAnalysisValue(slide.purpose, 160)} · ${compactServiceAnalysisValue(slide.keyMessage, 220)}`)
+    .join("\n");
+  return [
+    "[AdAtlas 6장 스토리 공통 기획 — 순서를 바꾸지 마세요]",
+    input.title ? `스토리 제목: ${compactServiceAnalysisValue(input.title, 220)}` : "",
+    input.narrativeArc ? `전체 흐름: ${compactServiceAnalysisValue(input.narrativeArc, 600)}` : "",
+    input.visualContinuity ? `6장 공통 시각 연결: ${compactServiceAnalysisValue(input.visualContinuity, 600)}` : "",
+    "전체 6장 순서:",
+    fullSequence,
+    `지금 생성할 장: ${current.order}/6`,
+    `이번 장의 역할: ${compactServiceAnalysisValue(current.purpose, 300)}`,
+    `이번 장의 핵심 메시지: ${compactServiceAnalysisValue(current.keyMessage, 420)}`,
+    `이번 장의 화면 방향: ${compactServiceAnalysisValue(current.visualDirection, 500)}`,
+    `다음 장과의 연결: ${compactServiceAnalysisValue(current.transition, 300)}`,
+    "이번 호출에서는 위 순서 중 지금 생성할 장 한 장만 완성하세요.",
+  ].filter(Boolean).join("\n");
 }
 
 export const buildDefaultCodexGenerationExecutionNote = buildCodexDirectTestExecutionNote;

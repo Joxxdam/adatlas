@@ -99,7 +99,10 @@ export function toPublicGenerationJob(job: GenerationJob): GenerationJob {
           productImagePath: safeWebPath(job.codexDirectTest.productImagePath),
           supportingImagePath: safeWebPath(job.codexDirectTest.supportingImagePath) || undefined,
           packagingImagePath: safeWebPath(job.codexDirectTest.packagingImagePath) || undefined,
+          siteVisualImagePaths: (job.codexDirectTest.siteVisualImagePaths || []).map(safeWebPath).filter(Boolean),
           additionalInstructions: job.codexDirectTest.additionalInstructions,
+          serviceCreativeMode: job.codexDirectTest.serviceCreativeMode,
+          serviceStoryWorkflowVersion: job.codexDirectTest.serviceStoryWorkflowVersion,
         }
       : undefined,
     paidApiAuthorization: undefined,

@@ -1,17 +1,18 @@
 import "server-only";
+import { existsSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { Codex, type Input, type Thread, type TurnOptions } from "@openai/codex-sdk";
 import { codexLocalAuthenticated, codexLocalEnvironment, resolveCodexLocalExecutable } from "../codexLocalRuntime.server.ts";
 import { buildNativeGroupValidationPrompt, buildNativeStagePrompt, buildNativeValidationPrompt, nativePlannedSubjectMode, nativeReferenceContainsPerson, nativeReferenceRequiresComparisonSemantics, nativeReferenceRequiresContextualBackgroundRebuild, nativeReferenceRequiresHumanReplacement, nativeReferenceRequiresSourceBrandRegionClear } from "../nativeCreativePrompt.ts";
 import type { NativeCreativeValidation, NativeGroupValidation } from "../types.ts";
-import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput, ProviderStatus } from "./CreativeGenerationProvider.ts";
+import type { CreativeGenerationProvider, NativeCreativeSession, NativeGenerationInput, NativeValidationInput, ProviderStatus, ServiceStorySessionPlanningInput } from "./CreativeGenerationProvider.ts";
 import { resolveFastCreativeRuntime } from "../fastCreativeRuntime";
 import { codexCreativeGate } from "../asyncConcurrencyGate";
 import { resolveRuntimeTimeout } from "../fastCreativeRuntime";
 import { normalizeNativeCreativeValidation } from "../nativeCreativeValidation";
 import { resolveMeatPresentationContract, resolveProductRenderingPolicy } from "../productRenderingPolicy.ts";
 import { closeCodexImageSession, trackCodexImageSession, type CodexImageSessionPurpose } from "../codexImageSessionRetention.server";
-import { buildDefaultCodexGenerationExecutionNote } from "../codexDirectTest.ts";
+import { buildDefaultCodexGenerationExecutionNote, buildServiceAnalysisCodexContext, buildServiceStoryCodexContext, SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION } from "../codexDirectTest.ts";
 
 const DEFAULT_IMAGE_GENERATION_IDLE_TIMEOUT_MS = 12 * 60 * 1000;
 const DEFAULT_IMAGE_GENERATION_HARD_TIMEOUT_MS = 40 * 60 * 1000;
@@ -262,20 +263,100 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
       await trackCodexImageSession({ threadId, ...trackingContext }).catch(() => undefined);
     };
 
+    const planServiceStory = async (input: ServiceStorySessionPlanningInput) => {
+      trackingContext = { jobId: input.jobId, resultId: "service-story-plan", purpose: "service-story-planning" };
+      let response: StreamedTurnResult;
+      try {
+        response = await codexCreativeGate.run(() =>
+          runThreadWithIdleTimeout(
+            activeThread(),
+            [
+              { type: "text" as const, text: input.prompt },
+              ...input.imagePaths
+                .filter((file, index, files) => Boolean(file) && files.indexOf(file) === index)
+                .slice(0, 6)
+                .map((file) => ({ type: "local_image" as const, path: file })),
+            ],
+            { outputSchema: input.outputSchema },
+            input.idleTimeoutMs,
+            input.hardTimeoutMs
+          )
+        );
+      } finally {
+        await syncThreadTracking();
+      }
+      return response;
+    };
+
     const generate = async (input: NativeGenerationInput) => {
-      trackingContext = { jobId: input.job.id, resultId: input.result.id, purpose: "image-generation" };
       const stage = input.stage || "copy-replacement";
       const productReferences = input.productReferencePaths || input.referencePaths;
       const directGeneration = stage === "codex-direct-test";
+      const siteAnalysisMode = directGeneration && input.job.productTruth.product.analysisMode === "site";
+      const sequentialStoryMode = siteAnalysisMode
+        && input.job.codexDirectTest?.serviceCreativeMode === "story"
+        && input.job.codexDirectTest?.serviceStoryWorkflowVersion === SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION;
+      trackingContext = {
+        jobId: input.job.id,
+        resultId: input.result.id,
+        purpose: sequentialStoryMode ? "service-story-generation" : siteAnalysisMode ? "service-generation" : "image-generation",
+      };
       const stageSource = directGeneration ? input.adReferencePath : stage === "structure-recreation" ? input.adReferencePath || input.sourceImagePath : input.sourceImagePath;
       if (!stageSource) throw new Error(`${stage} 단계의 첫 번째 편집 소스가 없습니다.`);
+      const previousStoryImagePath = sequentialStoryMode
+        ? input.job.results
+            .filter((candidate) => candidate.order < input.result.order)
+            .sort((left, right) => right.order - left.order)
+            .map((candidate) => candidate.nativeCreative?.finalPath || candidate.nativeCreative?.originalPath)
+            .find((file): file is string => Boolean(file && existsSync(file)))
+        : undefined;
       const attachments = directGeneration
-        ? [stageSource, ...productReferences.slice(0, 3)]
+        ? [
+            stageSource,
+            ...productReferences.slice(0, siteAnalysisMode ? sequentialStoryMode && previousStoryImagePath ? 4 : 5 : 3),
+            ...(previousStoryImagePath ? [previousStoryImagePath] : []),
+          ]
         : [stageSource, ...(stage === "structure-recreation" ? [] : productReferences.slice(0, 4)), ...(stage === "structure-recreation" || !input.adReferencePath ? [] : [input.adReferencePath])];
       const uniqueAttachments = attachments.filter((file, index, files) => Boolean(file) && files.indexOf(file) === index).slice(0, 6);
+      const siteAnalysis = input.job.productTruth.product.siteAnalysis;
+      const serviceAnalysisContext = siteAnalysisMode
+        ? buildServiceAnalysisCodexContext({
+            siteName: siteAnalysis?.siteName,
+            oneLineSummary: siteAnalysis?.oneLineSummary,
+            businessModel: siteAnalysis?.businessModel,
+            offerings: siteAnalysis?.offerings,
+            coreValueProps: siteAnalysis?.coreValueProps,
+            customerProblems: siteAnalysis?.customerProblems,
+            differentiators: siteAnalysis?.differentiators,
+            trustSignals: siteAnalysis?.trustSignals,
+            conversionOffers: siteAnalysis?.conversionOffers,
+            targetPriorities: siteAnalysis?.targetPriorities,
+            adDirections: siteAnalysis?.adDirections,
+            cautions: siteAnalysis?.cautions,
+            selectedVisuals: input.job.productTruth.product.siteVisualSelections,
+          })
+        : "";
+      const storyPlan = siteAnalysisMode && input.job.codexDirectTest?.serviceCreativeMode === "story"
+        ? input.job.serviceStoryPlan
+        : undefined;
+      const serviceStoryContext = storyPlan?.status === "ready"
+        ? buildServiceStoryCodexContext({
+            title: storyPlan.title,
+            narrativeArc: storyPlan.narrativeArc,
+            visualContinuity: storyPlan.visualContinuity,
+            slides: storyPlan.slides,
+            currentSlideOrder: input.result.order,
+          })
+        : "";
+      if (siteAnalysisMode && input.job.codexDirectTest?.serviceCreativeMode === "story" && !serviceStoryContext) {
+        throw new Error("6장 스토리 공통 기획이 준비되지 않았습니다.");
+      }
       const content = directGeneration
         ? [
             { type: "text" as const, text: input.directPrompt?.trim() || input.job.codexDirectTest?.prompt.trim() || "" },
+            ...(serviceAnalysisContext ? [{ type: "text" as const, text: serviceAnalysisContext }] : []),
+            ...(serviceStoryContext ? [{ type: "text" as const, text: serviceStoryContext }] : []),
+            ...(previousStoryImagePath ? [{ type: "text" as const, text: "[스토리 연속성 참고] 마지막 첨부 이미지는 바로 앞에서 완성한 슬라이드입니다. 캐릭터·색감·시각 언어를 이어가되, 이번 장의 내용과 구도는 현재 순서에 맞게 완성하세요." }] : []),
             {
               type: "text" as const,
               text: buildDefaultCodexGenerationExecutionNote({
@@ -283,6 +364,8 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
                 outputPath: input.outputPath,
                 hasSupportingImage: Boolean(input.job.codexDirectTest?.supportingImagePath),
                 hasPackagingImage: Boolean(input.job.codexDirectTest?.packagingImagePath),
+                analysisMode: siteAnalysisMode ? "site" : "product",
+                siteVisualCount: siteAnalysisMode ? productReferences.length : 0,
               }),
             },
             ...uniqueAttachments.map((file) => ({ type: "local_image" as const, path: file })),
@@ -350,6 +433,7 @@ export class CodexLocalCreativeProvider implements CreativeGenerationProvider {
     };
 
     return {
+      planServiceStory,
       generate,
       validate,
       async close() {

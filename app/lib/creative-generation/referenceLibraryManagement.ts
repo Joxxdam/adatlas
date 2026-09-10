@@ -1,6 +1,6 @@
 import { referenceRequiresComparisonSemantics } from "./referenceSemanticRoles.ts";
 
-export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty", "service"] as const;
+export const nativeReferenceCategoryGroups = ["fashion", "food", "beauty", "service", "gfa"] as const;
 
 export type NativeReferenceCategoryGroup = (typeof nativeReferenceCategoryGroups)[number];
 
@@ -15,7 +15,7 @@ export type NativeReferenceBeautySubcategory = (typeof nativeReferenceBeautySubc
  * 활용하기 위한 추가 풀입니다. food는 육류·간식을 포함한 식품 전체 풀이고,
  * food-meat/food-snack은 사용자가 하위 풀을 직접 고를 때 사용합니다.
  */
-export const nativeReferenceSelectionPools = ["fashion", "food", "food-meat", "food-snack", "beauty", "service"] as const;
+export const nativeReferenceSelectionPools = ["fashion", "food", "food-meat", "food-snack", "beauty", "service", "gfa"] as const;
 export type NativeReferenceSelectionPool = (typeof nativeReferenceSelectionPools)[number];
 
 export const nativeReferenceProductForms = ["bottle", "tube", "pouch", "box", "tray", "jar", "can", "fashion-item", "natural-food", "meat-cut", "produce", "bundle", "universal-packshot"] as const;
@@ -342,7 +342,8 @@ export function nativeReferenceCategoryLabel(value: NativeReferenceCategoryGroup
   if (value === "fashion") return "패션";
   if (value === "food") return "식품";
   if (value === "beauty") return "화장품";
-  return "서비스";
+  if (value === "service") return "서비스";
+  return "GFA";
 }
 
 export function normalizeNativeReferenceFoodSubcategory(value: unknown): NativeReferenceFoodSubcategory | undefined {
@@ -380,7 +381,8 @@ export function nativeReferenceSelectionPoolLabel(value: NativeReferenceSelectio
   if (value === "food-meat") return "식품 · 육류";
   if (value === "food-snack") return "식품 · 간식";
   if (value === "beauty") return "화장품";
-  return "서비스";
+  if (value === "service") return "서비스";
+  return "GFA";
 }
 
 /** 기본 분류와 운영자가 체크한 추가 풀을 하나의 선택 멤버십으로 해석합니다. */

@@ -7,13 +7,14 @@ import JSZip from "jszip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CreativeAssetActions, markCreativeAssetExported } from "../creative-assets/CreativeAssetActions";
 import type { AdBrief, ProductInfoForPrompt } from "../../../lib/mvp/types";
-import { CREATIVE_PLANNER_VERSION, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ManualGenerationQueueInfo, type ReferenceCategoryOverride } from "../../../lib/creative-generation/types";
+import { CREATIVE_PLANNER_VERSION, type GenerationJob, type GenerationJobSummary, type GenerationResult, type ManualGenerationQueueInfo, type ReferenceCategoryOverride, type ServiceCreativeMode } from "../../../lib/creative-generation/types";
 import { CURRENT_REFERENCE_EDIT_JOB_VERSION, failedGenerationResultStatuses, normalizeCreativeProductUrl, terminalGenerationResultStatuses } from "../../../lib/creative-generation/jobRunnerPolicy";
 import { ACTIVE_CREATIVE_JOB_CHANGED_EVENT, ACTIVE_CREATIVE_JOB_STORAGE_KEY, activeCreativeProductJobStorageKey, setActiveCreativeJobId } from "../../../lib/creative-generation/activeCreativeJob.client";
 import { numberedProductImageFileName, productDownloadStem } from "../../../lib/creative-generation/downloadNaming";
-import { buildDefaultCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE } from "../../../lib/creative-generation/codexDirectTest";
+import { buildDefaultCodexGenerationPrompt, buildServiceAnalysisCodexGenerationPrompt, buildServiceStoryCodexGenerationPrompt, DEFAULT_CODEX_GENERATION_PIPELINE } from "../../../lib/creative-generation/codexDirectTest";
 
 type Props = {
+  additionalInstructionsInsertion?: { id: string; value: string };
   analysisRevision: number;
   product: ProductInfoForPrompt;
   productImagePaths: string[];
@@ -54,6 +55,7 @@ const referenceCategoryOptions: Array<{ value: ReferenceCategoryOverride; label:
   { value: "beauty-design", label: "화장품 · 디자인" },
   { value: "beauty-hook", label: "화장품 · 후킹" },
   { value: "service", label: "서비스" },
+  { value: "gfa", label: "GFA" },
 ];
 
 function referenceCategoryLabel(value: ReferenceCategoryChoice) {
@@ -147,6 +149,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const [startError, setStartError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [referenceCategoryOverride, setReferenceCategoryOverride] = useState<ReferenceCategoryChoice>("");
+  const [serviceCreativeMode, setServiceCreativeMode] = useState<ServiceCreativeMode>("independent");
   const [message, setMessage] = useState("상품 상세페이지를 확인하면 같은 상품군의 ZIP 레퍼런스 6장으로 광고 제작을 시작할 수 있습니다.");
   const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
   const [resultEditStates, setResultEditStates] = useState<Record<string, ResultEditState>>({});
@@ -164,12 +167,20 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const restoredReferenceCategoryJobId = useRef("");
   const dismissedJobIds = useRef(new Set<string>());
   const activeJobIdRef = useRef("");
+  const appliedAdditionalInstructionsInsertionId = useRef("");
   // 새로고침 직후에는 analyzedProductUrl 복원이 한 렌더 늦을 수 있다.
   // 그 사이 다른 상품의 전역 작업이 이 본문을 선점하지 않도록, 주소에서
   // 이미 전달된 상품 URL도 처음부터 현재 상품의 기준으로 사용한다.
   const currentProductUrl = normalizeCreativeProductUrl(props.analyzedProductUrl || props.product.landingUrl);
   const requestedJobId = String(props.requestedJobId || "").trim();
   const previousAnalyzedProductUrl = useRef(currentProductUrl);
+  const siteAnalysisMode = props.product.analysisMode === "site";
+  const siteVisualSelections = props.product.siteVisualSelections || [];
+  const siteVisualRoleCounts = {
+    logo: siteVisualSelections.filter((selection) => selection.role === "logo").length,
+    mascot: siteVisualSelections.filter((selection) => selection.role === "mascot").length,
+    feature: siteVisualSelections.filter((selection) => selection.role === "feature").length,
+  };
   const availableProductImagePaths = useMemo(
     () => Array.from(new Set([
       ...props.productImagePaths,
@@ -183,13 +194,20 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     ].filter((value): value is string => Boolean(value?.trim())))),
     [props.product, props.productImagePaths]
   );
+  const selectedSiteVisualImagePaths = Array.from(new Set(
+    siteVisualSelections
+      .map((selection) => selection.imagePath)
+      .filter((imagePath) => availableProductImagePaths.includes(imagePath))
+  )).slice(0, 5);
   const storedProductImagePath = job?.codexDirectTest?.productImagePath || "";
   const storedSupportingImagePath = job?.codexDirectTest?.supportingImagePath || "";
   const storedPackagingImagePath = job?.codexDirectTest?.packagingImagePath || "";
   const storedAdditionalInstructions = job?.codexDirectTest?.additionalInstructions || "";
-  const selectedDirectProductImagePath = availableProductImagePaths.includes(directProductImagePath || storedProductImagePath)
-    ? directProductImagePath || storedProductImagePath
-    : availableProductImagePaths[0] || "";
+  const selectedDirectProductImagePath = siteAnalysisMode && selectedSiteVisualImagePaths[0]
+    ? selectedSiteVisualImagePaths[0]
+    : availableProductImagePaths.includes(directProductImagePath || storedProductImagePath)
+      ? directProductImagePath || storedProductImagePath
+      : availableProductImagePaths[0] || "";
   const selectedDirectSupportingImagePath = availableProductImagePaths.includes(directSupportingImagePath || storedSupportingImagePath) && (directSupportingImagePath || storedSupportingImagePath) !== selectedDirectProductImagePath
     ? directSupportingImagePath || storedSupportingImagePath
     : "";
@@ -201,11 +219,33 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const directAdditionalInstructions = directAdditionalInstructionsOverride?.productUrl === currentProductUrl
     ? directAdditionalInstructionsOverride.value
     : storedAdditionalInstructions;
-  const directPrompt = buildDefaultCodexGenerationPrompt({
-    landingUrl: props.product.landingUrl || props.analyzedProductUrl,
-    hasSupportingImage: Boolean(selectedDirectSupportingImagePath),
-    hasPackagingImage: Boolean(selectedDirectPackagingImagePath),
-  });
+
+  useEffect(() => {
+    const insertion = props.additionalInstructionsInsertion;
+    if (!insertion?.id || !insertion.value.trim() || appliedAdditionalInstructionsInsertionId.current === insertion.id || job) return;
+    appliedAdditionalInstructionsInsertionId.current = insertion.id;
+    setDirectAdditionalInstructionsOverride((current) => {
+      const currentValue = current?.productUrl === currentProductUrl ? current.value : storedAdditionalInstructions;
+      const addition = insertion.value.normalize("NFKC").trim();
+      const value = currentValue.includes(addition)
+        ? currentValue
+        : [currentValue.trim(), addition].filter(Boolean).join("\n\n").slice(0, 6_000);
+      return { productUrl: currentProductUrl, value };
+    });
+    window.requestAnimationFrame(() => {
+      const field = document.getElementById("codex-additional-instructions") as HTMLTextAreaElement | null;
+      field?.focus({ preventScroll: true });
+    });
+  }, [currentProductUrl, job, props.additionalInstructionsInsertion, storedAdditionalInstructions]);
+  const directPrompt = siteAnalysisMode
+    ? serviceCreativeMode === "story"
+      ? buildServiceStoryCodexGenerationPrompt()
+      : buildServiceAnalysisCodexGenerationPrompt()
+    : buildDefaultCodexGenerationPrompt({
+        landingUrl: props.product.landingUrl || props.analyzedProductUrl,
+        hasSupportingImage: Boolean(selectedDirectSupportingImagePath),
+        hasPackagingImage: Boolean(selectedDirectPackagingImagePath),
+      });
   const canGenerate = Boolean(props.product.productName.trim() && availableProductImagePaths.length);
   const defaultGenerationReady = Boolean(selectedDirectProductImagePath);
   const canStart = canGenerate && props.planConfirmed && defaultGenerationReady;
@@ -277,6 +317,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     if (restoredReferenceCategoryJobId.current !== payload.job.id) {
       restoredReferenceCategoryJobId.current = payload.job.id;
       setReferenceCategoryOverride(payload.job.referenceCategoryOverride || "");
+      setServiceCreativeMode(payload.job.codexDirectTest?.serviceCreativeMode || "independent");
     }
     const restoredProductUrl = normalizeCreativeProductUrl(payload.job.productTruth.product.landingUrl);
     // 상품별 작업 연결은 진행 상태가 아니라 "이 제작 화면에서 마지막으로
@@ -461,6 +502,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     setManualQueue(undefined);
     setFeedbacks({});
     setReferenceCategoryOverride("");
+    setServiceCreativeMode("independent");
     restoredReferenceCategoryJobId.current = "";
     setLatestCompletedResultId(undefined);
     setMessage("상품 분석을 다시 완료해 이전 제작 카드를 비웠습니다. 이 상품으로 새 광고 6장을 제작합니다.");
@@ -480,6 +522,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setManualQueue(undefined);
       setFeedbacks({});
       setReferenceCategoryOverride("");
+      setServiceCreativeMode("independent");
       restoredReferenceCategoryJobId.current = "";
       setLatestCompletedResultId(undefined);
       setMessage("새 상품 분석이 완료되어 이전 상품의 생성 카드를 비웠습니다. 아카이브의 기존 결과는 유지됩니다.");
@@ -599,10 +642,19 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     setManualQueue(undefined);
     setFeedbacks({});
     setMessage(mode === "scene"
-      ? "호환 레퍼런스 6장을 새로 추첨해 Codex 광고 작업을 등록하고 있어요."
-      : "선택한 상품 이미지와 프롬프트로 Codex 광고 작업을 등록하고 있어요.");
+      ? serviceCreativeMode === "story"
+        ? "서비스 레퍼런스 1장을 새로 추첨해 6장 스토리 작업을 등록하고 있어요."
+        : "호환 레퍼런스 6장을 새로 추첨해 Codex 광고 작업을 등록하고 있어요."
+      : serviceCreativeMode === "story"
+        ? "공통 레퍼런스 1장과 사이트 분석으로 6장 스토리 작업을 등록하고 있어요."
+        : "선택한 상품 이미지와 프롬프트로 Codex 광고 작업을 등록하고 있어요.");
     try {
-      const response = await fetch("/api/creative-generation/jobs", {
+      // 스토리형만 전용 API로 보내 서버에서도 버튼 선택 여부를 강제합니다.
+      // 상품 제작과 사이트 독립형은 기존 작업 API를 그대로 사용합니다.
+      const generationEndpoint = siteAnalysisMode && serviceCreativeMode === "story"
+        ? "/api/creative-generation/site-story-jobs"
+        : "/api/creative-generation/jobs";
+      const response = await fetch(generationEndpoint, {
         method: "POST",
         // 개발 서버나 네트워크가 비정상 상태여도 버튼이 영구 로딩으로 남지
         // 않습니다. 정상 사전점검의 네트워크 상한보다 넉넉하게 두고, 서버가
@@ -621,9 +673,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           codexDirectTest: {
             prompt: directPrompt,
             productImagePath: selectedDirectProductImagePath,
-            supportingImagePath: selectedDirectSupportingImagePath || undefined,
-            packagingImagePath: selectedDirectPackagingImagePath || undefined,
+            supportingImagePath: siteAnalysisMode ? undefined : selectedDirectSupportingImagePath || undefined,
+            packagingImagePath: siteAnalysisMode ? undefined : selectedDirectPackagingImagePath || undefined,
+            siteVisualImagePaths: siteAnalysisMode ? selectedSiteVisualImagePaths : undefined,
             additionalInstructions: directAdditionalInstructions.trim() || undefined,
+            serviceCreativeMode: siteAnalysisMode ? serviceCreativeMode : undefined,
           },
         }),
       });
@@ -648,7 +702,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
       setMessage(payload.manualQueue?.state === "waiting"
         ? `수동 제작 대기 ${payload.manualQueue.waitingPosition || 1}번째로 등록됐습니다. 앞선 요청부터 순서대로 시작합니다.`
         : payload.runnerActive
-        ? "Codex 광고 생성을 시작했습니다. 소재마다 새 스레드에 레퍼런스·상품·추가 참고 이미지와 프롬프트를 한 번 전달합니다."
+        ? serviceCreativeMode === "story"
+          ? "6장 공통 스토리를 먼저 기획한 뒤, 같은 레퍼런스와 기획 순서로 이미지를 제작합니다."
+          : "Codex 광고 생성을 시작했습니다. 소재마다 새 스레드에 레퍼런스·상품·추가 참고 이미지와 프롬프트를 한 번 전달합니다."
         : "광고 작업은 저장됐지만 생성기가 아직 연결되지 않았습니다. 중단 지점부터 재개해 주세요.");
     } catch (error) {
       const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError" || /timed?\s*out|시간.*초과/iu.test(error.message));
@@ -855,6 +911,9 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
   const generationQueued = Boolean(job && ["pending", "running"].includes(job.status) && manualQueue?.state === "waiting");
   const generationInProgress = Boolean(job && ["pending", "running"].includes(job.status) && runnerActive && !generationQueued);
   const generationActive = generationQueued || generationInProgress;
+  const activeServiceCreativeMode = job?.codexDirectTest?.serviceCreativeMode || serviceCreativeMode;
+  const storyMode = siteAnalysisMode && activeServiceCreativeMode === "story";
+  const storyPlanningInProgress = Boolean(job && storyMode && job.serviceStoryPlan?.status !== "ready" && ["pending", "running"].includes(job.status));
   const storedReference = job?.results.find((result) => result.nativeCreative?.adReference)?.nativeCreative?.adReference;
   const selectedCategoryLabel = job?.referenceCategoryOverride
     ? referenceCategoryLabel(job.referenceCategoryOverride)
@@ -896,6 +955,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
     ? "광고 제작 작업을 등록하고 있습니다"
     : editingResult
       ? `소재 ${String(editingResult.order).padStart(2, "0")} 광고를 수정 중입니다`
+    : storyPlanningInProgress
+      ? "6장에 이어질 서비스 스토리를 먼저 기획 중입니다"
     : allCreativesReady
       ? "광고 6장이 모두 완성됐습니다"
       : generationQueued
@@ -915,7 +976,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                   : awaitingReferenceConfirmation
                     ? "자동 매칭을 확인·수정해 주세요"
                     : !job
-                      ? "상품 이미지와 추가 사항을 확인해 주세요"
+                    ? siteAnalysisMode ? "사이트 시각 자료와 추가 사항을 확인해 주세요" : "상품 이미지와 추가 사항을 확인해 주세요"
                       : message;
 
   return (
@@ -925,7 +986,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           {allCreativesReady ? "✓" : generationActive || loading || individualEditActive ? <i /> : !job ? "⇄" : "!"}
         </div>
         <div>
-          <p className="eyebrow">{historicalJob ? "이전 광고 제작 결과" : "기본 Codex 광고 제작 · 6장"}</p>
+          <p className="eyebrow">{historicalJob ? "이전 광고 제작 결과" : storyMode ? "스토리형 Codex 슬라이드 제작 · 6장" : "기본 Codex 광고 제작 · 6장"}</p>
           <h4>{progressHeadline}</h4>
           <p>
             {allCreativesReady
@@ -934,6 +995,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                 ? `현재 수동 요청 ${manualQueue?.totalCount || 1}건 · 앞에 ${manualQueue?.aheadCount || 0}건이 있습니다. 접수 순서대로 자동 시작됩니다.`
               : individualEditActive
                 ? "기존 완성본을 화면에 유지하면서 선택한 수정 내용을 반영하고 있습니다."
+              : storyPlanningInProgress
+                ? "무작위로 고정한 레퍼런스 1장과 서비스 분석을 바탕으로 1~6장 전체 흐름을 한 번에 준비하고 있습니다."
               : currentStage
                 ? `${currentStage}${activeResults.length > 1 ? ` · ${activeResults.length}장 동시 처리 중` : ""}`
                 : startError
@@ -943,62 +1006,104 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                   : historicalJob
                     ? "기존 결과는 그대로 열람·다운로드할 수 있습니다. 새 제작은 현재 기본 방식으로 시작됩니다."
                     : !job
-                    ? loading ? message : "레퍼런스 상품군과 상품 이미지를 확인하고, 필요하면 추가/강조 사항을 입력한 뒤 제작 시작 버튼을 눌러주세요."
+                    ? loading ? message : siteAnalysisMode
+                      ? "사이트 분석에서 선택한 시각 자료를 사용합니다. 필요하면 추가/강조 사항을 입력한 뒤 제작 시작 버튼을 눌러주세요."
+                      : "레퍼런스 상품군과 상품 이미지를 확인하고, 필요하면 추가/강조 사항을 입력한 뒤 제작 시작 버튼을 눌러주세요."
                     : message}
           </p>
         </div>
-        <strong>{individualEditActive ? `소재 ${String(editingResult?.order || 0).padStart(2, "0")} · 수정 중` : allCreativesReady ? "완료 6/6 · 다운로드 가능" : generationQueued ? `대기 ${manualQueue?.waitingPosition || 1}번째 · 앞선 요청 ${manualQueue?.aheadCount || 0}건` : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${completedResults.length}/${progress.total}`}</strong>
+        <strong>{individualEditActive ? `소재 ${String(editingResult?.order || 0).padStart(2, "0")} · 수정 중` : allCreativesReady ? "완료 6/6 · 다운로드 가능" : generationQueued ? `대기 ${manualQueue?.waitingPosition || 1}번째 · 앞선 요청 ${manualQueue?.aheadCount || 0}건` : storyPlanningInProgress ? "스토리 기획 중" : !job ? "제작 전 · 수정 가능" : `현재 진행 ${Math.max(1, currentOrder)}/${progress.total} · 생성 완료 ${completedResults.length}/${progress.total}`}</strong>
       </div>
       {!job && !loading ? (
         <div className="codex-direct-test-panel">
-          <div className="codex-direct-test-heading">
-            <div>
-              <strong>Codex에 전달할 상품 이미지 선택</strong>
-              <small>첫 번째 첨부는 자동 추첨된 광고 레퍼런스입니다. 2번 상품 이미지는 필수이며, 3번 라벨·분위기와 4번 포장상품 이미지는 선택입니다.</small>
-            </div>
-            <span>수동·자동 공통 기본 방식</span>
-          </div>
-          <div className="codex-direct-test-images">
-            {availableProductImagePaths.map((imagePath, index) => {
-              const primary = selectedDirectProductImagePath === imagePath;
-              const supporting = selectedDirectSupportingImagePath === imagePath;
-              const packaging = selectedDirectPackagingImagePath === imagePath;
-              return (
-                <article className={primary || supporting || packaging ? "selected" : ""} key={`${imagePath}-${index}`}>
-                  <img alt={`상세페이지 상품 후보 ${index + 1}`} src={imagePath} />
-                  <div>
-                    <button
-                      className={primary ? "active" : ""}
-                      onClick={() => {
-                        setDirectProductImagePath(imagePath);
-                        if (supporting) chooseDirectSupportingImage(imagePath);
-                        if (packaging) chooseDirectPackagingImage(imagePath);
-                      }}
-                      type="button"
-                    >
-                      {primary ? "✓ 2번 상품 이미지" : "2번 상품 이미지"}
-                    </button>
-                    <button
-                      className={supporting ? "active" : ""}
-                      disabled={primary}
-                      onClick={() => chooseDirectSupportingImage(imagePath)}
-                      type="button"
-                    >
-                      {supporting ? "✓ 3번 추가 참고" : "3번 라벨·추가 참고"}
-                    </button>
-                    <button
-                      className={packaging ? "active" : ""}
-                      disabled={primary}
-                      onClick={() => chooseDirectPackagingImage(imagePath)}
-                      type="button"
-                    >
-                      {packaging ? "✓ 4번 포장상품" : "4번 포장상품"}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          {siteAnalysisMode ? (
+            <>
+              <div className="service-creative-mode-picker" role="radiogroup" aria-label="서비스 콘텐츠 제작 방식">
+                <button
+                  aria-checked={serviceCreativeMode === "independent"}
+                  className={serviceCreativeMode === "independent" ? "active" : ""}
+                  onClick={() => setServiceCreativeMode("independent")}
+                  role="radio"
+                  type="button"
+                >
+                  <strong>독립 광고 6개</strong>
+                  <small>서로 다른 레퍼런스 6장으로 각각 완성된 광고를 만듭니다.</small>
+                </button>
+                <button
+                  aria-checked={serviceCreativeMode === "story"}
+                  className={serviceCreativeMode === "story" ? "active" : ""}
+                  onClick={() => setServiceCreativeMode("story")}
+                  role="radio"
+                  type="button"
+                >
+                  <strong>스토리형 슬라이드 6장</strong>
+                  <small>레퍼런스 1장을 공통 적용하고 6장 전체 스토리를 먼저 기획합니다.</small>
+                </button>
+              </div>
+              <div className="codex-site-visual-selection-summary">
+                <div>
+                  <strong>사이트 시각 자료 선택 완료</strong>
+                  <small>이미지 역할은 위의 사이트 분석 결과에서 변경할 수 있습니다.</small>
+                </div>
+                <ul aria-label="선택한 사이트 시각 자료 요약">
+                  <li>로고 <b>{siteVisualRoleCounts.logo}</b></li>
+                  <li>마스코트 <b>{siteVisualRoleCounts.mascot}</b></li>
+                  <li>기능 이미지 <b>{siteVisualRoleCounts.feature}</b></li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="codex-direct-test-heading">
+                <div>
+                  <strong>Codex에 전달할 상품 이미지 선택</strong>
+                  <small>첫 번째 첨부는 자동 추첨된 광고 레퍼런스입니다. 2번 상품 이미지는 필수이며, 3번 라벨·분위기와 4번 포장상품 이미지는 선택입니다.</small>
+                </div>
+                <span>수동·자동 공통 기본 방식</span>
+              </div>
+              <div className="codex-direct-test-images">
+                {availableProductImagePaths.map((imagePath, index) => {
+                  const primary = selectedDirectProductImagePath === imagePath;
+                  const supporting = selectedDirectSupportingImagePath === imagePath;
+                  const packaging = selectedDirectPackagingImagePath === imagePath;
+                  return (
+                    <article className={primary || supporting || packaging ? "selected" : ""} key={`${imagePath}-${index}`}>
+                      <img alt={`상세페이지 상품 후보 ${index + 1}`} src={imagePath} />
+                      <div>
+                        <button
+                          className={primary ? "active" : ""}
+                          onClick={() => {
+                            setDirectProductImagePath(imagePath);
+                            if (supporting) chooseDirectSupportingImage(imagePath);
+                            if (packaging) chooseDirectPackagingImage(imagePath);
+                          }}
+                          type="button"
+                        >
+                          {primary ? "✓ 2번 상품 이미지" : "2번 상품 이미지"}
+                        </button>
+                        <button
+                          className={supporting ? "active" : ""}
+                          disabled={primary}
+                          onClick={() => chooseDirectSupportingImage(imagePath)}
+                          type="button"
+                        >
+                          {supporting ? "✓ 3번 추가 참고" : "3번 라벨·추가 참고"}
+                        </button>
+                        <button
+                          className={packaging ? "active" : ""}
+                          disabled={primary}
+                          onClick={() => chooseDirectPackagingImage(imagePath)}
+                          type="button"
+                        >
+                          {packaging ? "✓ 4번 포장상품" : "4번 포장상품"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </>
+          )}
           <label className="codex-direct-test-url">
             <span>선택 상품 URL · 자동 전달</span>
             <input readOnly value={props.product.landingUrl || props.analyzedProductUrl} />
@@ -1006,7 +1111,8 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           <label className="codex-direct-test-prompt">
             <span>추가/강조 사항 <small>(선택)</small></span>
             <textarea
-              maxLength={2_000}
+              id="codex-additional-instructions"
+              maxLength={6_000}
               onChange={(event) => {
                 setDirectAdditionalInstructionsOverride({ productUrl: currentProductUrl, value: event.target.value });
               }}
@@ -1016,7 +1122,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
             />
             <small>입력한 내용은 이미지제작 6장에 동시에 적용됩니다.</small>
           </label>
-          <p>실제 첨부 순서 · 1 광고 레퍼런스 → 2 상품 이미지{selectedDirectSupportingImagePath ? " → 3 라벨·추가 참고 이미지" : ""}{selectedDirectPackagingImagePath ? ` → ${selectedDirectSupportingImagePath ? "4" : "3"} 포장상품 이미지` : ""}</p>
+          {siteAnalysisMode ? (
+            <p>사이트 시각 자료는 위의 사이트 분석 결과에서 한 번만 선택합니다.</p>
+          ) : (
+            <p>실제 첨부 순서 · 1 광고 레퍼런스 → 2 상품 이미지{selectedDirectSupportingImagePath ? " → 3 라벨·추가 참고 이미지" : ""}{selectedDirectPackagingImagePath ? ` → ${selectedDirectSupportingImagePath ? "4" : "3"} 포장상품 이미지` : ""}</p>
+          )}
         </div>
       ) : null}
       <div className="simple-reference-category-picker">
@@ -1042,10 +1152,16 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
         </label>
         <p>
           {job
-            ? `현재 작업은 ${selectedCategoryLabel || referenceCategoryLabel(referenceCategoryOverride)} 풀로 고정되어 있습니다.`
+            ? storyMode
+              ? `현재 스토리 6장은 ${selectedCategoryLabel || referenceCategoryLabel(referenceCategoryOverride)} 풀에서 뽑은 레퍼런스 1장으로 고정되어 있습니다.`
+              : `현재 작업은 ${selectedCategoryLabel || referenceCategoryLabel(referenceCategoryOverride)} 풀로 고정되어 있습니다.`
             : referenceCategoryOverride
-              ? `${referenceCategoryLabel(referenceCategoryOverride)} 풀에서 중복 없이 6장을 무작위 선택합니다.`
-              : "상품명·카테고리·상품 형태를 분석해 가장 잘 맞는 풀을 자동 선택합니다."}
+              ? serviceCreativeMode === "story" && siteAnalysisMode
+                ? `${referenceCategoryLabel(referenceCategoryOverride)} 풀에서 1장을 무작위 선택해 6장에 공통 적용합니다.`
+                : `${referenceCategoryLabel(referenceCategoryOverride)} 풀에서 중복 없이 6장을 무작위 선택합니다.`
+              : serviceCreativeMode === "story" && siteAnalysisMode
+                ? "서비스 풀에서 1장을 무작위 선택해 6장에 공통 적용합니다."
+                : "상품명·카테고리·상품 형태를 분석해 가장 잘 맞는 풀을 자동 선택합니다."}
         </p>
       </div>
       {job ? (
@@ -1152,9 +1268,11 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
                           <button disabled={loading || historicalJob || job.status === "cancelled"} onClick={() => void retryResult(result)} type="button">
                             동일 레퍼런스로 다시 만들기
                           </button>
-                          <button disabled={loading || historicalJob || job.status === "cancelled"} onClick={() => void retryResultWithNewReference(result)} type="button">
-                            다른 레퍼런스로 다시 만들기
-                          </button>
+                          {!storyMode ? (
+                            <button disabled={loading || historicalJob || job.status === "cancelled"} onClick={() => void retryResultWithNewReference(result)} type="button">
+                              다른 레퍼런스로 다시 만들기
+                            </button>
+                          ) : null}
                           <label>
                             <span>광고 수정 요청</span>
                             <textarea
@@ -1260,7 +1378,7 @@ export function ReferenceFirstCreativeGenerator(props: Props) {
           <p>{props.planConfirmed ? `선택값 · ${referenceCategoryLabel(referenceCategoryOverride)}. 제작을 시작하면 이번 6장에는 이 설정이 고정됩니다.` : "위 상품 카드에서 ‘이 상품으로 광고 만들기’를 눌러 상품 선택을 완료하면 제작을 시작할 수 있습니다."}</p>
           {startError ? <p className="simple-generation-start-error" role="alert">{startError}</p> : null}
           <button className="simple-generation-start" disabled={!canStart || loading} onClick={() => void startOrResumeGeneration()} type="button">
-            {loading ? "광고 제작 준비 중…" : props.planConfirmed ? "광고 6장 생성 시작" : "상품 선택 후 제작 가능"}
+            {loading ? "광고 제작 준비 중…" : props.planConfirmed ? storyMode ? "스토리형 6장 생성 시작" : "광고 6장 생성 시작" : "상품 선택 후 제작 가능"}
           </button>
         </div>
       )}

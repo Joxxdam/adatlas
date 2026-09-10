@@ -4,9 +4,13 @@ import test from "node:test";
 
 const read = (file) => readFile(new URL(`../${file}`, import.meta.url), "utf8");
 
-test("AdAtlas 이미지 세션만 2일 보관 후 공식 Codex 삭제 명령으로 정리한다", async () => {
+test("AdAtlas가 추적한 Codex 세션만 2일 보관 후 공식 Codex 삭제 명령으로 정리한다", async () => {
   const source = await read("app/lib/creative-generation/codexImageSessionRetention.server.ts");
   assert.match(source, /const RETENTION_DAYS = 2/);
+  assert.match(source, /"service-generation"/);
+  assert.match(source, /"service-story-planning"/);
+  assert.match(source, /"service-story-generation"/);
+  assert.match(source, /"product-supplement-analysis"/);
   assert.match(source, /THREAD_ID_PATTERN/);
   assert.match(source, /path\.basename\(candidate\)\.endsWith\(`-\$\{threadId\}\.jsonl`\)/);
   assert.match(source, /\["delete", "--force", record\.threadId\]/);
@@ -21,6 +25,18 @@ test("생성 공급자는 성공·실패 모두 세션을 등록하고 닫으며
   assert.match(provider, /closeCodexImageSession/);
   assert.match(provider, /finally \{\s+await syncThreadTracking\(\)/);
   assert.match(provider, /closeCodexImageSession\(threadId\)\.catch\(\(\) => undefined\)/);
+  assert.match(provider, /purpose: sequentialStoryMode \? "service-story-generation" : siteAnalysisMode \? "service-generation" : "image-generation"/);
+});
+
+test("첨부자료 분석과 독립 서비스 스토리 기획도 완료 뒤 2일 정리 대상으로 닫는다", async () => {
+  const [supplement, storyPlanner] = await Promise.all([
+    read("app/lib/mvp/productSupplementAnalysis.server.ts"),
+    read("app/lib/creative-generation/serviceStoryPlanner.server.ts"),
+  ]);
+  assert.match(supplement, /purpose: "product-supplement-analysis"/);
+  assert.match(supplement, /closeCodexImageSession\(threadId\)\.catch\(\(\) => undefined\)/);
+  assert.match(storyPlanner, /purpose: "service-story-planning"/);
+  assert.match(storyPlanner, /closeCodexImageSession\(threadId\)\.catch\(\(\) => undefined\)/);
 });
 
 test("서버 자동 점검과 이미지 제작 관리 화면은 세션 ID나 로컬 경로를 공개하지 않는다", async () => {
@@ -34,7 +50,7 @@ test("서버 자동 점검과 이미지 제작 관리 화면은 세션 ID나 로
   assert.match(route, /verifyLocalGenerationAccess\(request\)/);
   assert.doesNotMatch(route, /threadId|sessionPath|codexSessionRoot/);
   assert.match(workspace, /Codex 세션 정리/);
-  assert.match(workspace, /완성 이미지, 아카이브와 제작 작업은 삭제하지 않습니다/);
+  assert.match(workspace, /완성 이미지, 분석 결과, 아카이브와 제작 작업은 삭제하지 않습니다/);
   assert.match(workspace, /기존의 다른 Codex 대화는 자동 삭제하지 않습니다/);
 });
 

@@ -89,7 +89,25 @@
   display: flex;
   grid-column: 2;
   flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: flex-end;
+}
+.uploader .uploadCategory {
+  display: grid;
+  gap: 5px;
+  color: #53677f;
+  font-size: 12px;
+  font-weight: 900;
+}
+.uploader .uploadCategory select {
+  min-width: 150px;
+  min-height: 44px;
+  border: 1px solid #b9d4ed;
+  border-radius: 12px;
+  padding: 0 12px;
+  color: #173552;
+  background: #fff;
+  font-weight: 800;
 }
 .uploader .analysisButton {
   border: 1px solid #9fc7ef;
@@ -111,27 +129,47 @@
   background: #fff0f0;
 }
 
+.libraryBrowser {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
 .filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
   border: 1px solid #e1e8f0;
   border-radius: 14px;
-  padding: 9px;
+  padding: 12px;
   background: #fff;
 }
+.filterTitle {
+  padding: 2px 4px 6px;
+  color: #1d3652;
+  font-size: 14px;
+}
+.filterGroup {
+  display: grid;
+  gap: 6px;
+}
 .filters button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
   min-height: 36px;
   border: 0;
-  border-radius: 999px;
-  padding: 0 13px;
+  border-radius: 10px;
+  padding: 0 11px;
   color: #40546c;
   background: #f4f7fa;
   font-weight: 900;
+  text-align: left;
   cursor: pointer;
 }
 .filters b {
-  margin-left: 4px;
   color: #1574d1;
 }
 .filters .active {
@@ -143,16 +181,23 @@
   color: #fff;
 }
 .filters .produceFilter {
-  margin-left: -2px;
+  width: calc(100% - 12px);
+  margin-left: 12px;
   border: 1px dashed #b7ddce;
+  padding-left: 13px;
   color: #23785d;
   background: #f2fbf7;
+  font-size: 12px;
 }
 .filters .produceFilter.active {
   color: #fff;
   border-style: solid;
   border-color: #16815f;
   background: #16815f;
+}
+
+.referenceResults {
+  min-width: 0;
 }
 
 .grid {
@@ -527,6 +572,15 @@
   }
   .uploader {
     grid-template-columns: 1fr;
+  }
+  .libraryBrowser {
+    grid-template-columns: 1fr;
+  }
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .filterTitle {
+    grid-column: 1 / -1;
   }
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

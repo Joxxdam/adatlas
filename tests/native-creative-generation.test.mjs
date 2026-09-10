@@ -36,7 +36,7 @@ import { assignNativeProductSources, isCookedProductSource, resolveNativeReferen
 import { inspectProductTruthImages } from "../app/lib/creative-generation/productImages.server.ts";
 import { applyNativeRasterRegionLock, resolveReferenceCopyRasterRegions } from "../app/lib/creative-generation/nativeRasterProtection.server.ts";
 import { hasVerifiedPriceFact } from "../app/lib/creative-generation/referenceCopyAngles.ts";
-import { appendCodexGenerationAdditionalInstructions, buildCodexDirectTestExecutionNote, buildDefaultCodexDirectTestPrompt, CODEX_DIRECT_TEST_PIPELINE, CODEX_DIRECT_TEST_PROMPT_VERSION, CODEX_DIRECT_TEST_STAGE_ORDER, CODEX_DIRECT_TEST_WORKFLOW } from "../app/lib/creative-generation/codexDirectTest.ts";
+import { appendCodexGenerationAdditionalInstructions, buildCodexDirectTestExecutionNote, buildDefaultCodexDirectTestPrompt, buildServiceAnalysisCodexContext, buildServiceAnalysisCodexGenerationPrompt, buildServiceStoryCodexContext, buildServiceStoryCodexGenerationPrompt, CODEX_DIRECT_TEST_PIPELINE, CODEX_DIRECT_TEST_PROMPT_VERSION, CODEX_DIRECT_TEST_STAGE_ORDER, CODEX_DIRECT_TEST_WORKFLOW } from "../app/lib/creative-generation/codexDirectTest.ts";
 
 async function readJoinedSource(relativePaths) {
   return (await Promise.all(relativePaths.map((relativePath) => readFile(new URL(relativePath, import.meta.url), "utf8")))).join("\n");
@@ -241,6 +241,125 @@ test("Codex 테스트 모드는 선택 상품 URL과 첨부 순서를 명시하�
   assert.equal(isCodexDirectTestGenerationJob(directJob), true);
   assert.equal(isServerRunnableGenerationJob(directJob), true);
   assert.equal(isCodexDirectTestGenerationJob({ ...directJob, sourceType: "auto-production" }), true);
+  const storyJob = {
+    ...directJob,
+    productTruth: { product: { analysisMode: "site" } },
+    codexDirectTest: { ...directJob.codexDirectTest, serviceCreativeMode: "story" },
+    results: directJob.results.map((result) => ({
+      ...result,
+      nativeCreative: { ...result.nativeCreative, adReference: { id: "shared-service-reference", path: "/service-reference.jpg" } },
+    })),
+  };
+  assert.equal(isCodexDirectTestGenerationJob(storyJob), true);
+  assert.equal(isCodexDirectTestGenerationJob({
+    ...storyJob,
+    codexDirectTest: { ...storyJob.codexDirectTest, serviceCreativeMode: "independent" },
+  }), false);
+});
+
+test("사이트 분석은 상품 프롬프트를 바꾸지 않고 별도 서비스 프롬프트와 분석 근거를 전달한다", () => {
+  const prompt = buildServiceAnalysisCodexGenerationPrompt();
+  assert.equal(prompt, `해당 레퍼런스를 참고해서 서비스분석내용을 바탕으로 분석한 서비스에 맞는 콘텐츠를 ImageGen기능을 활용하여 1200*1200 사이즈로 제작해줘.
+
+
+*참고사항
+1.마스코트/로고/기능이미지는 전달시에 크롭해서 활용할수도있고, 안해도돼.
+2.전체적인 색감/캐릭터(카툰/동물/3d/손그림)/인물/배경은 분석한 서비스에 어울리게 구현해줘.
+
+*주의사항
+1.문구뉘앙스는 유지해도 좋지만,그대로 쓰면 안되고 변형해줘.`);
+  assert.doesNotMatch(prompt, /해당상품으로 상품만 교체|한우랑 설록우/);
+  const context = buildServiceAnalysisCodexContext({
+    siteName: "메가포스팅",
+    oneLineSummary: "블로그 자동 포스팅 서비스",
+    offerings: ["AI 포스팅", "원격 지원"],
+    coreValueProps: ["업무 시간 절감"],
+    targetPriorities: [{ rank: 1, name: "초기 마케터", reason: "반복 업무가 많음" }],
+    adDirections: [{ target: "초기 마케터", angle: "자동화", sampleMessage: "반복 작업을 줄이세요" }],
+    selectedVisuals: [{ role: "logo", label: "메가포스팅 로고" }],
+  });
+  assert.match(context, /서비스명: 메가포스팅/);
+  assert.match(context, /제공 서비스: AI 포스팅 · 원격 지원/);
+  assert.match(context, /선택한 시각 자료: logo: 메가포스팅 로고/);
+  const executionNote = buildCodexDirectTestExecutionNote({
+    landingUrl: "https://service.example/",
+    outputPath: "/tmp/service-result.png",
+    hasSupportingImage: false,
+    analysisMode: "site",
+    siteVisualCount: 3,
+  });
+  assert.match(executionNote, /1\) 광고 레퍼런스 2~4\) 사이트에서 선택한 로고·마스코트·기능 이미지/);
+  assert.match(executionNote, /분석 사이트 URL: https:\/\/service\.example\//);
+});
+
+test("스토리형 서비스 제작은 사용자 원문 프롬프트와 6장 공통 기획을 별도 블록으로 유지한다", () => {
+  const prompt = buildServiceStoryCodexGenerationPrompt();
+  assert.equal(prompt, `해당 레퍼런스를 참고해서 서비스분석내용을 바탕으로 분석한 서비스에 맞는 콘텐츠를 ImageGen기능을 활용하여 1200*1200 사이즈로 제작해줘.
+
+6장에 해당 서비스의 스토리가 잘녹아들면서 순서대로 이해가 쉽도록 기획후 제작해줘.
+
+*참고사항
+1.마스코트/로고/기능이미지는 전달시에 크롭해서 활용할수도있고, 안해도돼.
+2.전체적인 색감/캐릭터(카툰/동물/3d/손그림)/인물/배경은 분석한 서비스에 어울리게 구현해줘.
+*주의사항
+1.문구뉘앙스는 유지해도 좋지만,그대로 쓰면 안되고 변형해줘.`);
+  const slides = Array.from({ length: 6 }, (_, index) => ({
+    order: index + 1,
+    purpose: `${index + 1}장 역할`,
+    keyMessage: `${index + 1}장 메시지`,
+    visualDirection: `${index + 1}장 화면`,
+    transition: `${index + 2}장 연결`,
+  }));
+  const context = buildServiceStoryCodexContext({
+    title: "서비스 이야기",
+    narrativeArc: "문제에서 해결로",
+    visualContinuity: "같은 색감과 캐릭터",
+    slides,
+    currentSlideOrder: 3,
+  });
+  assert.match(context, /전체 6장 순서:/);
+  assert.match(context, /지금 생성할 장: 3\/6/);
+  assert.match(context, /이번 장의 핵심 메시지: 3장 메시지/);
+  assert.match(context, /이번 호출에서는 위 순서 중 지금 생성할 장 한 장만 완성하세요/);
+});
+
+test("스토리형 서비스 제작은 사용자가 스토리형 버튼을 선택한 경우에만 활성화된다", async () => {
+  const uiSource = await readFile(new URL("../app/components/features/creative-generation/SixCreativeGenerator.tsx", import.meta.url), "utf8");
+  const createSource = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
+  const storyRouteSource = await readFile(new URL("../app/api/creative-generation/site-story-jobs/route.ts", import.meta.url), "utf8");
+
+  assert.match(uiSource, /useState<ServiceCreativeMode>\("independent"\)/);
+  assert.match(uiSource, /onClick=\{\(\) => setServiceCreativeMode\("story"\)\}/);
+  assert.match(uiSource, /serviceCreativeMode: siteAnalysisMode \? serviceCreativeMode : undefined/);
+  assert.match(uiSource, /siteAnalysisMode && serviceCreativeMode === "story"[\s\S]*"\/api\/creative-generation\/site-story-jobs"[\s\S]*"\/api\/creative-generation\/jobs"/);
+  assert.match(storyRouteSource, /body\.product\?\.analysisMode !== "site" \|\| body\.codexDirectTest\?\.serviceCreativeMode !== "story"/);
+  assert.match(storyRouteSource, /serviceStorySequential: true/);
+  assert.match(createSource, /const storyModeRequested = siteAnalysisMode && input\.codexDirectTest\?\.serviceCreativeMode === "story"/);
+  assert.match(createSource, /if \(storyModeRequested && !options\.serviceStorySequential\)/);
+  assert.match(createSource, /serviceStoryWorkflowVersion: serviceCreativeMode === "story"[\s\S]*SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION/);
+  assert.match(createSource, /: "independent" as const/);
+});
+
+test("신규 사이트 스토리형만 한 Codex 세션에서 기획 후 1~6장을 순차 생성한다", async () => {
+  const [runnerSource, providerSource, resultSource, plannerSource] = await Promise.all([
+    readFile(new URL("../app/lib/creative-generation/jobRunner.server.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/creative-generation/providers/CodexLocalCreativeProvider.server.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/creative-generation/serviceStoryPlanner.server.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(plannerSource, /serviceStoryWorkflowVersion === SITE_STORY_SEQUENTIAL_WORKFLOW_VERSION/);
+  assert.match(runnerSource, /withNativeCreativeSession\(provider, async \(session\) =>/);
+  assert.match(runnerSource, /ensureServiceStoryPlanInSession\(jobId, session\)/);
+  assert.match(runnerSource, /selectRunnableResults\(job, attempted, 1\)/);
+  assert.match(runnerSource, /handleNativeResultGeneration\(\{[\s\S]*requestId: `site-story-runner:[\s\S]*session,/);
+  assert.match(runnerSource, /if \(!job \|\| !isServerRunnableGenerationJob\(job\) \|\| job\.status === "cancelled" \|\| isSequentialServiceStoryGenerationJob\(job\)\) return/);
+  assert.match(runnerSource, /isSequentialServiceStoryGenerationJob\(recovered\)[\s\S]*storyRunner\.enqueue\(jobId/);
+  assert.match(providerSource, /const planServiceStory = async/);
+  assert.match(providerSource, /return \{[\s\S]*planServiceStory,[\s\S]*generate,[\s\S]*validate/);
+  assert.match(providerSource, /previousStoryImagePath/);
+  assert.match(resultSource, /if \(input\.session\) await generateWithSession\(input\.session\)/);
+  assert.match(resultSource, /else await withNativeCreativeSession\(provider, generateWithSession\)/);
 });
 
 test("기본 Codex 제작은 문구 플래너·그룹 QA 없이 첨부를 레퍼런스부터 전달한다", async () => {
@@ -250,7 +369,7 @@ test("기본 Codex 제작은 문구 플래너·그룹 QA 없이 첨부를 레퍼
   const uiSource = await readFile(new URL("../app/components/features/creative-generation/SixCreativeGenerator.tsx", import.meta.url), "utf8");
   assert.match(runnerSource, /isDefaultCodexGenerationJob\(recovered\)/);
   assert.doesNotMatch(runnerSource, /ensureReferenceCopyPlanning|planReferenceAdaptedCopies|validateCompletedReferenceGroup/);
-  assert.match(providerSource, /\? \[stageSource, \.\.\.productReferences\.slice\(0, 3\)\]/);
+  assert.match(providerSource, /productReferences\.slice\(0, siteAnalysisMode \? sequentialStoryMode && previousStoryImagePath \? 4 : 5 : 3\)/);
   assert.match(resultSource, /stage: "codex-direct-test"/);
   assert.match(resultSource, /prepareDefaultCodexGenerationImages/);
   assert.doesNotMatch(resultSource.slice(resultSource.indexOf("async function runDefaultCodexResult"), resultSource.indexOf("async function runNativeResultGeneration")), /session\.validate/);
@@ -1049,7 +1168,7 @@ test("식품으로 분류한 건강간식·봉지 제품은 건강식품 패키�
   assert.equal(resolveProductRenderingPolicy(snackJob), "standard-reference");
 });
 
-test("관리 화면의 실제 광고 레퍼런스를 네 상품군 선택 풀로 등록한다", async () => {
+test("관리 화면의 실제 광고 레퍼런스를 다섯 상품군 선택 풀로 등록한다", async () => {
   const manifest = JSON.parse(await readFile(new URL("../data/native-creative-reference-library.json", import.meta.url), "utf8"));
   const categorySource = await readFile(new URL("../app/lib/creative-generation/referenceCreativeLibrary.server.ts", import.meta.url), "utf8");
   assert.ok(manifest.items.length >= 6);
@@ -1062,7 +1181,7 @@ test("관리 화면의 실제 광고 레퍼런스를 네 상품군 선택 풀로
   );
   assert.ok((categoryCounts.beauty || 0) >= 6);
   assert.ok((categoryCounts.food || 0) >= 6);
-  assert.ok(manifest.items.every((item) => ["fashion", "food", "beauty", "service"].includes(item.categoryGroup)));
+  assert.ok(manifest.items.every((item) => ["fashion", "food", "beauty", "service", "gfa"].includes(item.categoryGroup)));
   assert.ok(manifest.items.every((item) => item.productForm && item.compositionType && item.productSlotCount && item.productSlotShape && item.photographyType && item.textDensity && item.compatibilityConfidence));
   const normalizedFood = manifest.items.filter((item) => item.categoryGroup === "food").map(normalizeNativeReferenceCompatibility);
   const normalizedBeauty = manifest.items.filter((item) => item.categoryGroup === "beauty").map(normalizeNativeReferenceCompatibility);
@@ -1074,7 +1193,7 @@ test("관리 화면의 실제 광고 레퍼런스를 네 상품군 선택 풀로
   const beautyHookCount = normalizedBeauty.filter((item) => item.beautySubcategory === "hook").length;
   assert.ok(beautyHookCount >= 6, "후킹 화장품 레퍼런스가 6장 이상 필요합니다.");
   assert.ok(beautyHookCount > beautyDesignCount, "현재 화장품 풀은 판매형 후킹 소재가 디자인 키비주얼보다 많아야 합니다.");
-  assert.match(manifest.selectionPolicy, /패션·식품·화장품·서비스 네 그룹/);
+  assert.match(manifest.selectionPolicy, /패션·식품·화장품·서비스·GFA 다섯 그룹/);
   assert.match(manifest.selectionPolicy, /식품은 육류·간식 하위 풀/);
   assert.match(manifest.selectionPolicy, /화장품은 디자인·후킹 하위 풀/);
   assert.match(manifest.selectionPolicy, /건강·웰니스와 퍼스널케어는 화장품에 포함/);
@@ -2089,7 +2208,7 @@ test("01-structure는 원본 레퍼런스를 바이트와 SHA-256까지 동일�
 test("새 작업 레퍼런스는 일반 재생성에서 고정되고 명시적 다른 레퍼런스 요청에서만 바뀐다", async () => {
   const createSource = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
   const generationSource = await readFile(new URL("../app/lib/creative-generation/nativeResultGeneration.server.ts", import.meta.url), "utf8");
-  assert.match(createSource, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6/);
+  assert.match(createSource, /serviceCreativeMode === "story" \? 1 : 6/);
   assert.match(createSource, /adReference: selectedAdReferences\[index\]/);
   assert.match(generationSource, /if \(action === "regenerate-new-reference"\)/);
   assert.match(generationSource, /const selectedAdReference = result\.nativeCreative\?\.adReference/);
@@ -2099,9 +2218,10 @@ test("새 작업 레퍼런스는 일반 재생성에서 고정되고 명시적 �
 test("새 작업은 선택된 카테고리 풀에서 점수 우선순위 없이 직접 무작위 추첨한다", async () => {
   const createSource = await readFile(new URL("../app/lib/creative-generation/createNativeGenerationJob.server.ts", import.meta.url), "utf8");
   const selectorSource = await readFile(new URL("../app/lib/creative-generation/referenceCreativeLibrary.server.ts", import.meta.url), "utf8");
-  const selectionBlock = createSource.slice(createSource.indexOf("const selectedAdReferences"), createSource.indexOf("const { creativePlan, scenes }"));
+  const selectionBlock = createSource.slice(createSource.indexOf("const selectedReferenceSet"), createSource.indexOf("const { creativePlan, scenes }"));
   const randomSelectionBlock = selectorSource.slice(selectorSource.indexOf("export function selectCategoryNativeAdReferences"), selectorSource.indexOf("/** 과거 작업처럼"));
-  assert.match(selectionBlock, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, 6\)/);
+  assert.match(selectionBlock, /selectCategoryNativeAdReferences\(\{ productTruth: truth, referenceCategoryOverride \}, serviceCreativeMode === "story" \? 1 : 6\)/);
+  assert.match(selectionBlock, /Array\.from\(\{ length: 6 \}, \(\) => selectedReferenceSet\[0\]\)/);
   assert.doesNotMatch(createSource, /recentReferenceJobs|recentReferenceIds/);
   assert.match(randomSelectionBlock, /pickUniqueRandomItems\(usableItems, count, nextIndex\)/);
   assert.doesNotMatch(randomSelectionBlock, /pickCompatibleRandomItems|scoreReferenceCompatibility/);
@@ -2578,7 +2698,9 @@ test("기본 Codex 제작은 사용자가 고른 상품·추가 참고·포장�
   assert.match(prompt, /Product attachment 2: UNPACKAGED\/RAW SOURCE/);
   assert.match(prompt, /No cooked seller photo is attached or permitted/);
   assert.doesNotMatch(prompt, /compare several authoritative raw-product photos/);
-  assert.match(factorySource, /const directReferencePaths = \[directProductImagePath, directSupportingImagePath, directPackagingImagePath\]/);
+  assert.match(factorySource, /const directReferencePaths = siteAnalysisMode/);
+  assert.match(factorySource, /requestedSiteVisualImagePaths\.length \? requestedSiteVisualImagePaths : \[directProductImagePath\]/);
+  assert.match(factorySource, /\[directProductImagePath, directSupportingImagePath, directPackagingImagePath\]/);
   assert.match(factorySource, /productImagePaths: directReferencePaths/);
   assert.match(resultGenerationSource, /prepareDefaultCodexGenerationImages\(job, result\)/);
   assert.doesNotMatch(resultGenerationSource, /assignNativeProductSources|supportingReferences/);
@@ -2931,6 +3053,7 @@ test("UI는 한 번의 클릭 뒤 기본 Codex 6장 진행·완성 표시·ZIP �
   assert.match(source, /value: "beauty-design", label: "화장품 · 디자인"/);
   assert.match(source, /value: "beauty-hook", label: "화장품 · 후킹"/);
   assert.match(source, /value: "service", label: "서비스"/);
+  assert.match(source, /value: "gfa", label: "GFA"/);
   assert.doesNotMatch(source, /value: "food-other", label:/);
   assert.match(source, /generationStageProgress/);
   assert.match(source, /장째 광고를 제작 중입니다/);

@@ -7,6 +7,9 @@ import { createIdempotentJobRunner, type IdempotentJobRunner } from "./jobRunner
 import { executionResults, hasOrphanedRunningResult, isDefaultCodexGenerationJob, isServerRunnableGenerationJob, resumeGenerationJob, selectRunnableResults, staleRunningResultIds } from "./jobRunnerPolicy";
 import { resolveFastCreativeRuntime } from "./fastCreativeRuntime";
 import { DEFAULT_CODEX_GENERATION_PROMPT_VERSION } from "./codexDirectTest";
+import { ensureServiceStoryPlan, ensureServiceStoryPlanInSession, isSequentialServiceStoryGenerationJob, isServiceStoryGenerationJob } from "./serviceStoryPlanner.server";
+import { createCreativeGenerationProvider } from "./providers/providerFactory.server";
+import { withNativeCreativeSession } from "./providers/CreativeGenerationProvider";
 
 // 개발 서버 HMR은 globalThis를 보존하므로 고정 키를 쓰면 새 프롬프트 코드가
 // 이전 runSafely 콜백을 가진 러너를 재사용할 수 있다. 실제 실행 계약 버전을
@@ -46,6 +49,26 @@ const runner = globalRunner[runnerKey] ?? createIdempotentJobRunner(runSafely, 2
 });
 globalRunner[runnerKey] = runner;
 
+// 신규 사이트 스토리형만 사용하는 별도 러너입니다. 기존 runner의 전역 키를
+// 바꾸지 않으므로 이미 제작 중인 상품·사이트 기본형 작업은 현재 세션에서
+// 중단되거나 새 실행 경로로 갈아타지 않습니다.
+const storyRunnerKey = Symbol.for(`daywiz.creative-generation.site-story-runner:${runnerPolicySignature}:sequential-v1`);
+const storyRunnerGlobal = globalThis as typeof globalThis & { [storyRunnerKey]?: IdempotentJobRunner };
+const storyRunner = storyRunnerGlobal[storyRunnerKey] ?? createIdempotentJobRunner(runSequentialStorySafely, 2, {
+  executionTimeoutMs: runnerWatchdogMs(),
+  onExecutionTimeout: async (jobId) => {
+    await creativeGenerationJobStore.update(jobId, (job) => ({
+      ...job,
+      errors: [...job.errors, "스토리형 생성의 최종 시간 상한을 넘어 서버 슬롯을 반환했습니다. 저장된 완료 장부터 자동 복구합니다."].slice(-20),
+      recoveryLog: [
+        ...(job.recoveryLog || []),
+        { at: new Date().toISOString(), message: "스토리형 단일 세션 러너 슬롯 자동 반환", resultIds: executionResults(job).filter((result) => result.status === "running").map((result) => result.id) },
+      ].slice(-20),
+    })).catch(() => undefined);
+  },
+});
+storyRunnerGlobal[storyRunnerKey] = storyRunner;
+
 const defaultStaleMs = 12 * 60 * 1000;
 
 function staleAfterMs() {
@@ -62,7 +85,7 @@ function runnerErrorMessage(error: unknown) {
 }
 
 export function isGenerationJobRunnerActive(jobId: string) {
-  return runner.isActive(jobId);
+  return runner.isActive(jobId) || storyRunner.isActive(jobId);
 }
 
 export function activeDirectGenerationResultIds(jobId: string) {
@@ -95,8 +118,8 @@ export async function getManualGenerationQueueSnapshot() {
   const activeJobs = (await creativeGenerationJobStore.active(500))
     .filter((job) => job.sourceType !== "auto-production" && isServerRunnableGenerationJob(job) && ["pending", "running"].includes(job.status))
     .sort(queueRecoveryOrder);
-  const runnerSnapshot = runner.snapshot();
-  const runningIds = new Set(runnerSnapshot.running.map((entry) => entry.jobId));
+  const runnerSnapshots = [runner.snapshot(), storyRunner.snapshot()];
+  const runningIds = new Set(runnerSnapshots.flatMap((snapshot) => snapshot.running.map((entry) => entry.jobId)));
   const waitingJobs = activeJobs.filter((job) => !runningIds.has(job.id));
   const runningCount = activeJobs.length - waitingJobs.length;
   const byJobId: Record<string, ManualGenerationQueueInfo> = {};
@@ -206,11 +229,64 @@ async function markResultFailed(jobId: string, resultId: string, error: unknown)
   if (failed.engine) await writeNativeManifest(failed).catch(() => undefined);
 }
 
+async function runSequentialServiceStoryJob(jobId: string) {
+  const provider = createCreativeGenerationProvider("codex_local");
+  await withNativeCreativeSession(provider, async (session) => {
+    let job = await ensureServiceStoryPlanInSession(jobId, session);
+    if (!job || !isSequentialServiceStoryGenerationJob(job) || job.status === "cancelled") return;
+    const attempted = new Set<string>();
+    while (true) {
+      job = await creativeGenerationJobStore.get(jobId);
+      if (!job || !isSequentialServiceStoryGenerationJob(job) || job.status === "cancelled") return;
+      const [next] = selectRunnableResults(job, attempted, 1);
+      if (!next) {
+        const retryLimit = job.retryLimit;
+        const hasRetryableWork = executionResults(job).some(
+          (result) => result.status === "pending" || (result.status === "failed" && result.attempts <= Math.max(0, retryLimit))
+        );
+        if (hasRetryableWork && attempted.size) {
+          attempted.clear();
+          continue;
+        }
+        const scopedResults = executionResults(job);
+        if (scopedResults.length && scopedResults.every((result) => !["pending", "running"].includes(result.status))) {
+          const successCount = scopedResults.filter((result) => ["success", "approved"].includes(result.status)).length;
+          const finalized = await creativeGenerationJobStore.update(job.id, (current) => ({
+            ...current,
+            status: successCount === scopedResults.length ? "completed" : successCount > 0 ? "partial" : "failed",
+            completedAt: new Date().toISOString(),
+            timing: { ...current.timing, totalMs: Date.now() - new Date(current.createdAt).getTime() },
+          }));
+          await writeNativeManifest(finalized).catch(() => undefined);
+        }
+        return;
+      }
+      attempted.add(next.id);
+      try {
+        await handleNativeResultGeneration({
+          jobId,
+          resultId: next.id,
+          requestId: `site-story-runner:${jobId}:${next.id}:${next.attempts + 1}`,
+          action: "generate",
+          feedback: next.userFeedback,
+          session,
+        });
+      } catch (error) {
+        await markResultFailed(jobId, next.id, error);
+      }
+    }
+  });
+}
+
 export async function runGenerationJob(jobId: string) {
   const attempted = new Set<string>();
   while (true) {
     let job = await creativeGenerationJobStore.get(jobId);
-    if (!job || !isServerRunnableGenerationJob(job) || job.status === "cancelled") return;
+    if (!job || !isServerRunnableGenerationJob(job) || job.status === "cancelled" || isSequentialServiceStoryGenerationJob(job)) return;
+    if (isServiceStoryGenerationJob(job) && job.serviceStoryPlan?.status !== "ready") {
+      job = await ensureServiceStoryPlan(jobId) || job;
+      if (job.status === "cancelled") return;
+    }
     const configuredConcurrency = resolveFastCreativeRuntime().concurrency;
     if (job.concurrency !== configuredConcurrency) {
       job = await creativeGenerationJobStore.update(job.id, (current) => ({
@@ -266,7 +342,23 @@ async function runSafely(jobId: string) {
     const recovered = await recoverGenerationJob(jobId, true);
     if (!recovered || recovered.status === "cancelled") return;
     if (!isDefaultCodexGenerationJob(recovered)) return;
+    if (isSequentialServiceStoryGenerationJob(recovered)) {
+      storyRunner.enqueue(jobId, { priority: recovered.sourceType !== "auto-production" });
+      return;
+    }
     await runGenerationJob(jobId);
+  } catch (error) {
+    const message = runnerErrorMessage(error);
+    await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, message].slice(-20) })).catch(() => undefined);
+  }
+}
+
+async function runSequentialStorySafely(jobId: string) {
+  try {
+    const recovered = await recoverGenerationJob(jobId, true);
+    if (!recovered || recovered.status === "cancelled") return;
+    if (!isDefaultCodexGenerationJob(recovered) || !isSequentialServiceStoryGenerationJob(recovered)) return;
+    await runSequentialServiceStoryJob(jobId);
   } catch (error) {
     const message = runnerErrorMessage(error);
     await creativeGenerationJobStore.update(jobId, (job) => ({ ...job, errors: [...job.errors, message].slice(-20) })).catch(() => undefined);
@@ -278,9 +370,9 @@ export function enqueueGenerationJob(jobId: string, options: { priority?: boolea
 }
 
 export function cancelQueuedGenerationJob(jobId: string) {
-  return runner.cancelQueued(jobId);
+  return runner.cancelQueued(jobId) || storyRunner.cancelQueued(jobId);
 }
 
 export async function waitForGenerationJobForTests(jobId: string) {
-  await runner.wait(jobId);
+  await Promise.all([runner.wait(jobId), storyRunner.wait(jobId)]);
 }

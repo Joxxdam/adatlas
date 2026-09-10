@@ -60,7 +60,9 @@ export async function POST(request: Request) {
     assertReferenceLibraryWritable();
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
-    const result = await nativeReferenceLibraryRepository.add(files);
+    const requestedCategoryGroup = String(formData.get("categoryGroup") || "").trim();
+    const categoryGroup = requestedCategoryGroup === "gfa" ? "gfa" as const : undefined;
+    const result = await nativeReferenceLibraryRepository.add(files, { categoryGroup });
     return NextResponse.json({
       ok: true,
       added: result.added,
