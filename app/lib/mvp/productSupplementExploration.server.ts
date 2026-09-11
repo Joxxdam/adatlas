@@ -140,13 +140,12 @@ function productContextText(product: ProductSupplementContext) {
 }
 
 function relatedAnalysisText(analysis: ProductSupplementAnalysis) {
+  const filePoints = analysis.files.flatMap((file) => file.notablePoints).slice(0, 12);
   return [
-    `전체 요약: ${compact(analysis.overallSummary, 900)}`,
-    `상품 연결: ${unique(analysis.productConnections, 8, 240).join(" / ")}`,
-    `타깃 단서: ${unique(analysis.audienceInsights, 8, 240).join(" / ")}`,
-    `활용 상황: ${unique(analysis.usageScenarios, 8, 240).join(" / ")}`,
+    `첨부자료 요약: ${compact(analysis.overallSummary, 900)}`,
+    `파일 핵심: ${unique(filePoints, 12, 240).join(" / ")}`,
     `자료 주장: ${unique(analysis.documentClaims, 10, 260).join(" / ")}`,
-    `주의사항: ${unique([...analysis.conflicts, ...analysis.cautions], 8, 260).join(" / ")}`,
+    `주의사항: ${unique(analysis.cautions, 8, 260).join(" / ")}`,
   ].filter((line) => !line.endsWith(": ")).join("\n");
 }
 

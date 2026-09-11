@@ -141,7 +141,10 @@ test("상품 참고파일은 선택적으로 분석하고 사용자가 고른 �
   assert.match(panel, /참고파일도 함께 분석할까요/);
   assert.match(panel, /첨부하지 않아도 기존 상품 분석과 광고 제작은 그대로 사용할 수 있습니다/);
   assert.match(panel, /첨부자료 분석 결과/);
-  for (const label of ["한눈에 보기", "광고 기획에 활용할 내용", "사실·주의사항 검토", "파일별 상세 근거"]) {
+  for (const label of ["한눈에 보기", "사실·주의사항 검토", "파일별 상세 근거"]) {
+    assert.match(panel, new RegExp(label));
+  }
+  for (const label of ["탐색 소재", "자료 주장", "파일 핵심", "확인 필요"]) {
     assert.match(panel, new RegExp(label));
   }
   assert.match(panel, /supplementResultMetrics/);
@@ -156,14 +159,17 @@ test("상품 참고파일은 선택적으로 분석하고 사용자가 고른 �
   assert.match(workflowStyles, /\.supplementHookGrid[\s\S]*?repeat\(auto-fit, minmax\(min\(100%, 420px\), 1fr\)\)/);
   assert.match(workflowStyles, /\.supplementHookGrid dd[\s\S]*?overflow-wrap: anywhere/);
   assert.match(route, /request\.formData\(\)/);
+  assert.doesNotMatch(dashboard, /form\.set\("product"/);
   assert.match(exploreRoute, /researchProductSupplementSeed/);
-  assert.match(analyzer, /광고 제작이나 카피를 생성하지 말고 분석 결과만 반환합니다/);
+  assert.match(analyzer, /광고 제작이나 카피를 생성하지 말고 첨부자료 분석 결과만 반환합니다/);
   assert.match(analyzer, /explorationSeeds/);
   assert.match(analyzer, /documentClaims/);
-  assert.match(analyzer, /conflicts/);
+  assert.doesNotMatch(analyzer, /PRODUCT_CONTEXT/);
+  assert.doesNotMatch(route, /form\.get\("product"\)|productContext/);
   assert.match(analyzer, /@openai\/codex-sdk/);
   assert.match(analyzer, /requireFreshCodexLocalChatGptLogin/);
   assert.match(analyzer, /ADATLAS_CODEX_SUPPLEMENT_ANALYSIS_MODEL/);
+  assert.match(analyzer, /skipGitRepoCheck: true/);
   assert.match(analyzer, /modelReasoningEffort: "medium"/);
   assert.match(analyzer, /outputSchema: analysisSchema/);
   assert.doesNotMatch(analyzer, /client\.responses\.create/);

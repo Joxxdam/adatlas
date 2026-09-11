@@ -50,8 +50,22 @@ test("GFA는 자동 추론과 분리된 직접 업로드·제작 풀이다", asy
   ]);
   assert.match(manager, /GFA 직접 지정/);
   assert.match(manager, /formData\.append\("categoryGroup", "gfa"\)/);
-  assert.match(route, /nativeReferenceLibraryRepository\.add\(files, \{ categoryGroup \}\)/);
+  assert.match(route, /nativeReferenceLibraryRepository\.add\(files, \{ categoryGroup, beautySubcategory \}\)/);
   assert.match(repository, /options\.categoryGroup[\s\S]*classificationMethod: "manual"/);
+});
+
+test("화장품 디자인 레퍼런스는 자동 판정 없이 직접 업로드할 수 있다", async () => {
+  const [manager, route, repository] = await Promise.all([
+    read("app/components/references/NativeReferenceLibraryManager.tsx"),
+    read("app/api/admin/references/route.ts"),
+    read("app/lib/creative-generation/nativeReferenceLibraryRepository.server.ts"),
+  ]);
+  assert.match(manager, /화장품 디자인 직접 지정/);
+  assert.match(manager, /formData\.append\("categoryGroup", "beauty"\)/);
+  assert.match(manager, /formData\.append\("beautySubcategory", "design"\)/);
+  assert.match(route, /requestedCategoryGroup === "beauty" && requestedBeautySubcategory === "design"/);
+  assert.match(route, /nativeReferenceLibraryRepository\.add\(files, \{ categoryGroup, beautySubcategory \}\)/);
+  assert.match(repository, /classification\.categoryGroup === "beauty" && options\.beautySubcategory/);
 });
 
 test("육류·간식만 식품 하위 태그로 쓰고 기존 기타 값은 식품 대분류로 복구한다", () => {

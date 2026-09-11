@@ -179,11 +179,16 @@ export type ProductSupplementAnalysis = {
   usedAi: boolean;
   overallSummary: string;
   files: ProductSupplementFileInsight[];
+  /** 과거 저장 결과 호환용입니다. 신규 1차 파일 분석에서는 채우지 않습니다. */
   productConnections: string[];
+  /** 과거 저장 결과 호환용입니다. 신규 1차 파일 분석에서는 채우지 않습니다. */
   audienceInsights: string[];
+  /** 과거 저장 결과 호환용입니다. 신규 1차 파일 분석에서는 채우지 않습니다. */
   toneInsights: string[];
+  /** 과거 저장 결과 호환용입니다. 신규 1차 파일 분석에서는 채우지 않습니다. */
   usageScenarios: string[];
   documentClaims: string[];
+  /** 과거 상품 대조 결과 호환용입니다. 신규 1차 파일 분석에서는 채우지 않습니다. */
   conflicts: string[];
   cautions: string[];
   /** 사용자가 선택해 심층 조사할 수 있는 소재이며 제작 프롬프트에는 자동 전달되지 않습니다. */

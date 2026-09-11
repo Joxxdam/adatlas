@@ -61,8 +61,14 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll("files").filter((value): value is File => value instanceof File);
     const requestedCategoryGroup = String(formData.get("categoryGroup") || "").trim();
-    const categoryGroup = requestedCategoryGroup === "gfa" ? "gfa" as const : undefined;
-    const result = await nativeReferenceLibraryRepository.add(files, { categoryGroup });
+    const requestedBeautySubcategory = String(formData.get("beautySubcategory") || "").trim();
+    const categoryGroup = requestedCategoryGroup === "gfa"
+      ? "gfa" as const
+      : requestedCategoryGroup === "beauty" && requestedBeautySubcategory === "design"
+        ? "beauty" as const
+        : undefined;
+    const beautySubcategory = categoryGroup === "beauty" ? "design" as const : undefined;
+    const result = await nativeReferenceLibraryRepository.add(files, { categoryGroup, beautySubcategory });
     return NextResponse.json({
       ok: true,
       added: result.added,

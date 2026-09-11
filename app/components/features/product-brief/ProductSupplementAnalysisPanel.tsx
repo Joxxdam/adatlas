@@ -192,6 +192,9 @@ export function ProductSupplementAnalysisPanel(props: {
   const selectedHooks = useMemo(() => Object.values(researchResults).flatMap((result) =>
     result.hooks.flatMap((hook) => selectedHookKeys.has(`${result.seed.id}:${hook.id}`) ? [{ result, hook }] : [])
   ), [researchResults, selectedHookKeys]);
+  const filePointCount = props.analysis?.files.reduce((count, file) => count + file.notablePoints.length, 0) || 0;
+  const reviewCount = (props.analysis?.cautions.length || 0)
+    + (props.analysis?.files.reduce((count, file) => count + file.warnings.length, 0) || 0);
 
   async function researchSeed(seed: ProductSupplementExplorationSeed) {
     if (!props.analysis || researchingSeedId) return;
@@ -262,7 +265,7 @@ export function ProductSupplementAnalysisPanel(props: {
         <div>
           <span className={styles.sectionStep}>선택 · 상품 참고자료</span>
           <h4>참고파일도 함께 분석할까요?</h4>
-          <p>첨부하지 않아도 기존 상품 분석과 광고 제작은 그대로 사용할 수 있습니다.</p>
+          <p>첨부하지 않아도 기존 상품 분석과 광고 제작은 그대로 사용할 수 있습니다. 먼저 파일 자체만 정리하고, 상품 연결·타깃·후킹은 원하는 소재를 선택할 때 분석합니다.</p>
         </div>
         <label className={styles.supplementFileButton}>
           참고파일 선택
@@ -323,20 +326,20 @@ export function ProductSupplementAnalysisPanel(props: {
 
           <dl className={styles.supplementResultMetrics} aria-label="분석 항목 요약">
             <div>
-              <dt>상품 연결</dt>
-              <dd>{props.analysis.productConnections.length}</dd>
+              <dt>탐색 소재</dt>
+              <dd>{props.analysis.explorationSeeds.length}</dd>
             </div>
             <div>
-              <dt>타깃 단서</dt>
-              <dd>{props.analysis.audienceInsights.length}</dd>
+              <dt>자료 주장</dt>
+              <dd>{props.analysis.documentClaims.length}</dd>
             </div>
             <div>
-              <dt>활용 상황</dt>
-              <dd>{props.analysis.usageScenarios.length}</dd>
+              <dt>파일 핵심</dt>
+              <dd>{filePointCount}</dd>
             </div>
-            <div data-attention={props.analysis.conflicts.length + props.analysis.cautions.length > 0 ? "true" : "false"}>
+            <div data-attention={reviewCount > 0 ? "true" : "false"}>
               <dt>확인 필요</dt>
-              <dd>{props.analysis.conflicts.length + props.analysis.cautions.length}</dd>
+              <dd>{reviewCount}</dd>
             </div>
           </dl>
 
@@ -413,38 +416,19 @@ export function ProductSupplementAnalysisPanel(props: {
             </section>
           ) : null}
 
-          <section className={styles.supplementResultGroup} aria-label="광고 기획에 활용할 내용">
-            <div className={styles.supplementGroupHeading}>
-              <div>
-                <span>{availableCategories.length ? "02" : "01"}</span>
-                <div>
-                  <h5>광고 기획에 활용할 내용</h5>
-                  <p>상품과 연결되는 메시지부터 타깃·상황·표현 순으로 확인하세요.</p>
-                </div>
-              </div>
-            </div>
-            <div className={styles.supplementInsightGrid}>
-              <InsightList eyebrow="MESSAGE" title="상품과 연결되는 내용" values={props.analysis.productConnections} tone="connection" />
-              <InsightList eyebrow="AUDIENCE" title="타깃 단서" values={props.analysis.audienceInsights} tone="audience" />
-              <InsightList eyebrow="SCENE" title="활용 상황" values={props.analysis.usageScenarios} tone="scenario" />
-              <InsightList eyebrow="TONE" title="표현·톤 단서" values={props.analysis.toneInsights} tone="tone" />
-            </div>
-          </section>
-
           <section className={styles.supplementResultGroup} aria-label="사실과 주의사항 검토">
             <div className={styles.supplementGroupHeading}>
               <div>
                 <span>{availableCategories.length ? "03" : "02"}</span>
                 <div>
                   <h5>사실·주의사항 검토</h5>
-                  <p>자료에 적힌 주장과 상품정보 충돌 가능성을 제작 전에 구분해 확인하세요.</p>
+                  <p>자료에 직접 적힌 주장과 확인이 필요한 내용을 구분해 보세요.</p>
                 </div>
               </div>
             </div>
-            {props.analysis.documentClaims.length || props.analysis.conflicts.length || props.analysis.cautions.length ? (
+            {props.analysis.documentClaims.length || props.analysis.cautions.length ? (
               <div className={styles.supplementReviewGrid}>
                 <InsightList eyebrow="SOURCE FACTS" title="첨부자료에 적힌 주장" values={props.analysis.documentClaims} tone="evidence" />
-                <InsightList eyebrow="CONFLICT" title="상품정보와 충돌 가능성" values={props.analysis.conflicts} tone="danger" />
                 <InsightList eyebrow="CAUTION" title="주의해서 볼 내용" values={props.analysis.cautions} tone="warning" />
               </div>
             ) : (
@@ -455,7 +439,7 @@ export function ProductSupplementAnalysisPanel(props: {
           <details className={styles.supplementFileDetails}>
             <summary>
               <span>
-                <b>{availableCategories.length ? "04" : "03"}</b>
+                <b>{availableCategories.length ? "03" : "02"}</b>
                 <span>
                   <strong>파일별 상세 근거</strong>
                   <small>{props.analysis.fileCount}개 파일의 요약과 세부 내용을 확인할 수 있습니다.</small>

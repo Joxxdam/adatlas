@@ -975,21 +975,10 @@ export function MvpDashboard({ activeFeature = "creative-production", initialAct
       return null;
     }
 
-    setProductSupplementStatus({ kind: "loading", message: `참고파일 ${productSupplementFiles.length}개의 내용을 상품 분석 결과와 함께 확인하고 있습니다.` });
+    setProductSupplementStatus({ kind: "loading", message: `참고파일 ${productSupplementFiles.length}개의 내용과 심층 탐색 소재를 확인하고 있습니다.` });
     try {
       const form = new FormData();
       productSupplementFiles.forEach((file) => form.append("files", file));
-      form.set("product", JSON.stringify({
-        productName: targetProduct.productName,
-        brandName: targetProduct.brandName || targetProduct.advertiserName,
-        category: targetProduct.category,
-        price: targetProduct.price,
-        originalPrice: targetProduct.originalPrice || targetProduct.oldPrice,
-        discountInfo: targetProduct.discountInfo,
-        mainBenefit: targetProduct.mainBenefit,
-        description: targetProduct.extractedDescription,
-        landingUrl: targetProduct.landingUrl,
-      }));
       const response = await fetch("/api/extract/product-supplements", { method: "POST", body: form });
       const payload = await response.json();
       if (!response.ok || !payload.ok || !payload.analysis) throw new Error(payload.error || "첨부자료 분석에 실패했습니다.");

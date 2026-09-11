@@ -6,7 +6,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { classifyNativeReferenceImage } from "./nativeReferenceClassifier.server";
-import { normalizeNativeReferenceCategory, normalizeNativeReferenceCompatibility, removeManagedNativeReference, type ManagedNativeReferenceItem, type ManagedNativeReferenceManifest, type NativeReferenceCategoryGroup, type ReferenceNativeCopy } from "./referenceLibraryManagement";
+import { normalizeNativeReferenceCategory, normalizeNativeReferenceCompatibility, removeManagedNativeReference, type ManagedNativeReferenceItem, type ManagedNativeReferenceManifest, type NativeReferenceBeautySubcategory, type NativeReferenceCategoryGroup, type ReferenceNativeCopy } from "./referenceLibraryManagement";
 import { extractReferenceNativeCopy, normalizeReferenceNativeCopy, REFERENCE_NATIVE_COPY_ANALYSIS_VERSION } from "./referenceNativeCopy.server";
 import { assertReferenceLibraryWritable } from "../runtimeStorage.ts";
 
@@ -90,7 +90,7 @@ export const nativeReferenceLibraryRepository = {
     return readNativeReferenceManifestSync();
   },
 
-  async add(files: File[], options: { categoryGroup?: NativeReferenceCategoryGroup } = {}) {
+  async add(files: File[], options: { categoryGroup?: NativeReferenceCategoryGroup; beautySubcategory?: NativeReferenceBeautySubcategory } = {}) {
     assertReferenceLibraryWritable();
     if (!files.length) throw new Error("업로드할 레퍼런스 이미지를 선택해 주세요.");
     if (files.length > maximumFilesPerUpload) {
@@ -135,6 +135,9 @@ export const nativeReferenceLibraryRepository = {
               layoutFamily: "managed-reference",
               categoryGroup: classification.categoryGroup,
               ...classification.compatibility,
+              ...(classification.categoryGroup === "beauty" && options.beautySubcategory
+                ? { beautySubcategory: options.beautySubcategory }
+                : {}),
               ordinal: nextOrdinal,
               contentHash: normalized.contentHash,
               uploadedAt: new Date().toISOString(),

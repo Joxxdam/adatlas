@@ -1,181 +1,5 @@
 [
   {
-    "key": "6007d866f52f0143002df25fd2ea1cacc35ce3b1854aec4b17822a6f2eb2fdda",
-    "insight": {
-      "id": "detail-ocr-8a4e565320f8",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014630936_202409020258243932906111b3b7-380b-4930-a848-773c0438cead.jpg",
-      "contentHash": "8a4e565320f86f940f6fac2b19f986b9c62c92658b19af35d7c69904dc9e67cd",
-      "ocrText": "- 명• 절•대•비\n온과족 간식으로 딱좋은\n한가득 종합전병",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.4333333373069763,
-      "copyFacts": [
-        "온과족 간식으로 딱좋은",
-        "한가득 종합전병"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:19.423Z"
-  },
-  {
-    "key": "72a32bb5b288e90a77a670157d37d3667038325d776164a875f8453282bce3bc",
-    "insight": {
-      "id": "detail-ocr-8a39c452264d",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014703361_20240902025825549714ad350db8-c4fc-416a-a43d-727024d4b2ad.jpg",
-      "contentHash": "8a39c452264d771a8830060ead36c4b59f7aeeaba37742f7952739c32d5bfeaa",
-      "ocrText": "너무 달지 않고\n부담없이 바삭한 전병",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.75,
-      "copyFacts": [
-        "부담없이 바삭한 전병"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:21.119Z"
-  },
-  {
-    "key": "6365f669dd859e76233054e340445dc34d0da995b573ef34e57b67385a310e5d",
-    "insight": {
-      "id": "detail-ocr-70b32ec37512",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014670267_20240902025825127774af10fc96-5da4-48cb-b467-49903947e817.jpg",
-      "contentHash": "70b32ec37512b6c0f7522d987e2a8579198cdf0b38450f89a5e961538e6ecff6",
-      "ocrText": "부채전병\n파래가 듬뿍 들어가\n질리지 않는 담백함과\n바삭함이 일품입니다.\n생강전병\n달달함 사이로 알싸한\n생강향이 퍼져요.\n질리지 않는 조화!\n땅콩전병\n땅콩이 콕콕 박혀있어\n고소한 풍미가 더\n강한 전병입니다.\n김말이전병\n달고 고소한 맛과\n풍부한 파래향의 조화.\n한입에 먹기 좋아요!\n오란다강정\n깊고 달달한 조청맛과\n바삭쫀득한 맛 사이로\n호박씨가 콕콕!\n바삭함 가득!\n가장 맛있는 구성으로",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.6590909090909091,
-      "copyFacts": [
-        "생강향이 퍼져요.",
-        "고소한 풍미가 더",
-        "달고 고소한 맛과",
-        "풍부한 파래향의 조화.",
-        "깊고 달달한 조청맛과",
-        "바삭쫀득한 맛 사이로",
-        "바삭함 가득!",
-        "가장 맛있는 구성으로"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:21.125Z"
-  },
-  {
-    "key": "c32faf7b3a801df327a31f9f417b68c9337d7afb6c59c2f23a79488bbd3925ce",
-    "insight": {
-      "id": "detail-ocr-53a168a37fe8",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014725239_202409020258259247693ad7defd-c4a7-4c7f-9338-d613d9584754.jpg",
-      "contentHash": "53a168a37fe898678b7ad6fe5faf6b00596cde61206f433875d8d8b386bca2f7",
-      "ocrText": "좋은 재료로 정성들이굽는\n종합전병",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.5,
-      "copyFacts": [
-        "종합전병"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:22.707Z"
-  },
-  {
-    "key": "a477bc656ec37ed8bc750796edf5c31820a6cc3a9aab07bbf385a8de30e34e0f",
-    "insight": {
-      "id": "detail-ocr-5d41ae3680c5",
-      "imageUrl": "https://zetenth88.flexgate.co.kr/userfiles/zetenth88/thumb/2025012121014745844_20240902025826299824125ae27e-544f-4854-b827-405160823ef1.jpg",
-      "contentHash": "5d41ae3680c5254e4a4b90333e6cb4dc61b273d34b6d81ab8b9d743fc2318ff4",
-      "ocrText": "커피, 차등\n이러음료와함까",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.4000000059604645,
-      "copyFacts": [],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T04:18:22.711Z"
-  },
-  {
-    "key": "1c63845a693e09b460dee53523766c0772e9b41f5ae7c27c3a7bc6921b6bd43f",
-    "insight": {
-      "id": "detail-ocr-b85531b4e407",
-      "imageUrl": "https://originalsource.co.kr/web/img/nice_ic.png",
-      "contentHash": "b85531b4e407dc6a102102745cd108a15675c9232a2a1037aec49850f2b23ac0",
-      "ocrText": "NI\nC",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.5,
-      "copyFacts": [],
-      "productConstraints": [],
-      "discardedNotices": [],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T10:03:05.727Z"
-  },
-  {
-    "key": "59c960545771636cba7222804d8b5fdefe6dc82a80acfd300cd5a8cf4d11af6e",
-    "insight": {
-      "id": "detail-ocr-563c15eb99dd",
-      "imageUrl": "https://originalsource.co.kr/web/product/small/202511/18f859f2eb4fda68bf7e73e969807b43.jpg",
-      "contentHash": "563c15eb99dde49ff05c872bcf7bc04a47b3cc0dd9623782068492474b326b72",
-      "ocrText": "RECYCLED\n1M 30%\nTINGLY\nMINTG\nTEA TREE\n0100%\nNATURAL\n\"\nFRAGRANCE\nORIGINAL\nSOURCE\n7.927\nO PCTA\nREAL MINT\nLEAVES IN\nEVERY BOTTLE\nClosal aimat Tot Putic\nSHOWER 250mle",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.8777777784400516,
-      "copyFacts": [
-        "SHOWER 250mle"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [
-        "1M 30%",
-        "0100%",
-        "7.927"
-      ],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T10:03:05.755Z"
-  },
-  {
-    "key": "ce1a4f969871a50d171b8d266f7b94b500912154d9aff6c5d23ea9b35be13a55",
-    "insight": {
-      "id": "detail-ocr-9ec7c957c6b2",
-      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/6dfae35a092f2bbbdbfbf2f3a93fb66d.jpg",
-      "contentHash": "9ec7c957c6b2a54556a8b6e388f2fff2fab36aaaa50b3c42ff4519d3e175b4d9",
-      "ocrText": "땀찌든 날\n냄새 싹 쿨하게\nRECYCLED\nTINGIY\nMINTG\nI TEA TREE\n9100%\nFRABRANCE\nKATURAL\nORIGINAL\nSOURCE\n7.927\nREAL MINT\nLEAVES IN\nEB ATROVED\nPPeTA\nSHOWER 250ml (3\n{VERY BOTTLE\n©",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.7526315795747858,
-      "copyFacts": [],
-      "productConstraints": [],
-      "discardedNotices": [
-        "9100%",
-        "7.927",
-        "SHOWER 250ml (3"
-      ],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T10:03:06.639Z"
-  },
-  {
-    "key": "442d84e6bfa97a2e87060e3b086ba70fc406ade3d42e897335e8fbf7c33d4768",
-    "insight": {
-      "id": "detail-ocr-d9527004be7d",
-      "imageUrl": "https://originalsource.co.kr/web/product/extra/small/202509/a23175eb5076a970cd505377e899fe99.jpg",
-      "contentHash": "d9527004be7def48ad1b775847837bf25f90cd4a450b2e0e260ea08f33d32c48",
-      "ocrText": "IM 30%\nRECYCLED\nTINGLY\nMINTG\n『TEA TREE\n100%\nNATURAL\nFRAGRANCE\nORIGINAL\nSOURCE\n1927\n) PCTA\nREAL MINT\nLEAVES IN\nAPPROVBD\nEVERY BOTTLE\n0fOOnEANImIGE LeSE POHC\nSHOWER 250mle",
-      "ocrProvider": "apple-vision",
-      "ocrConfidence": 0.8611111111111112,
-      "copyFacts": [
-        "SHOWER 250mle"
-      ],
-      "productConstraints": [],
-      "discardedNotices": [
-        "IM 30%",
-        "1927",
-        "0fOOnEANImIGE LeSE POHC"
-      ],
-      "warnings": []
-    },
-    "createdAt": "2026-08-30T10:03:06.640Z"
-  },
-  {
     "key": "777be7c60828fac763f0be6b759bc329d93a07b6a38ed9705b0cc76348dfa49e",
     "insight": {
       "id": "detail-ocr-b85531b4e407",
@@ -7282,5 +7106,206 @@
       "warnings": []
     },
     "createdAt": "2026-09-10T02:36:24.651Z"
+  },
+  {
+    "key": "b8cdf3d91fbeb2f42965c311199202d9ebc9af0afbffa52a339da81ca598e2c0",
+    "insight": {
+      "id": "detail-ocr-72200b599d17",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/product/big/202608/41a2bb0f29d209d5c226462616602015.jpg",
+      "contentHash": "72200b599d175e5157c2ab324878446062389853040077d748b53ed71c1bd899",
+      "ocrText": "9월 MONTHLY SALE\nTHE JUICY LASTING TINT\nGIFT\n키치\n+\n틴뚜링 증정",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.75,
+      "copyFacts": [
+        "틴뚜링 증정"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "THE JUICY LASTING TINT",
+        "GIFT"
+      ],
+      "discardedNotices": [
+        "9월 MONTHLY SALE"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T06:48:43.568Z"
+  },
+  {
+    "key": "dba4828bbde984f1d83599feb38b07c0d0e4c004e84e3298e7d8c5de52bf737b",
+    "insight": {
+      "id": "detail-ocr-7215073190e7",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20260630/EB9190EC9CA0ECBBACEBA089EC859820EB8D9420ECA5ACEC8B9CEB9E98EC8AA4ED8C8520ED8BB4ED8AB820EC8381EC84B8ED8E98EC9DB4ECA780_KR_03.jpg",
+      "contentHash": "7215073190e79675808424c77f22b1f36857276a3cdef9f566549a3dee959c10",
+      "ocrText": "ROM&ND\nTINT\nJuicy\nTHE JUCYLASTING TXT\n아몬드\n소이\n피그\n소이\nNEW\nTHE JUICY LASTING TINT\n롬앤 더 쥬시 래스팅 틴트\n1\n두유 탄 듯 차분해진\n소프트 뮤트 컬러",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6428571428571429,
+      "copyFacts": [
+        "롬앤 더 쥬시 래스팅 틴트"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "ROM&ND",
+        "TINT",
+        "Juicy",
+        "THE JUCYLASTING TXT",
+        "THE JUICY LASTING TINT"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T06:48:43.574Z"
+  },
+  {
+    "key": "c3feb3d325b3708c7f57a96848c5e7b0dd9e37eaaca2f7821751ae952594e854",
+    "insight": {
+      "id": "detail-ocr-d39e8d409641",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/SkinImg/insta_main.png",
+      "contentHash": "d39e8d4096418ecab6e1e373234b973ce68c7c78b514a3b33f3d55e5289f01e9",
+      "ocrText": "@ romand instogram",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "@ romand instogram"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T06:48:44.088Z"
+  },
+  {
+    "key": "329ffd7eb827c2243838a96c62052a81699c59ff9496cdb3fd2de176da40d5ce",
+    "insight": {
+      "id": "detail-ocr-569868589bd0",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20260630/copy-1782818640-EB9190EC9CA0ECBBACEBA089EC859820EB8D9420ECA5ACEC8B9CEB9E98EC8AA4ED8C8520ED8BB4ED8AB820EC8381EC84B8ED8E98EC9DB4ECA780_ED86B5ED95A9_OY_06.jpg",
+      "contentHash": "569868589bd0c02f90e844337c0cb016429baa9a7a7451ae09615fdd4d815080",
+      "ocrText": "soys\n'ALMOND\n• rom&nd\nALMOND\nSoy\nUSED pRODUCS",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.5833333333333334,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "soys",
+        "'ALMOND",
+        "rom&nd",
+        "USED pRODUCS"
+      ],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T06:48:44.355Z"
+  },
+  {
+    "key": "244f20c25a50a0d112f1c783199e4203641e6ace28b06216f08ce47e0b93a911",
+    "insight": {
+      "id": "detail-ocr-3141580e402a",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20260630/copy-1782818640-EB9190EC9CA0ECBBACEBA089EC859820EB8D9420ECA5ACEC8B9CEB9E98EC8AA4ED8C8520ED8BB4ED8AB820EC8381EC84B8ED8E98EC9DB4ECA780_ED86B5ED95A9_OY_12.jpg",
+      "contentHash": "3141580e402a35186a2f5eeac5e8381d4546dd8274207c82f199288fe6a4d468",
+      "ocrText": "과일에서 죽은 시크니저 MLB.\nTHE MIBB\n포도의 속상협러들 담아낸 포크 버이지\n03 베어 그레이프\n무한과 컬러를 그대로 닦으 로즈 MIBE\n04 피그 피그\n대주 컬러를 그대로 남아는 코딩 MLB\n05 쥬쥬브\n차분해밀려난장이빗M:\n... 아모드 르지\n15 베어 피크\n고양이 분위기 한 맛을 부드러운 로즈MI8\n20 쥬쥬 피그\n과일을 그대로 담아낸 싱그러운 코랄\nTHE CORAL\n08 핑크 펌킨\n09 멀드 피치\n투명하고 여렁하살구 수살킥:\n10 베어 애프리콧\n11 mm우지\n피치 컬러에 베이지 한 맛을 피치 코어\n23 피치 피치 미",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.6272727278145876,
+      "copyFacts": [
+        "피치 컬러에 베이지 한 맛을 피치 코어"
+      ],
+      "productConstraints": [],
+      "identityOnlyLabels": [
+        "THE MIBB",
+        "THE CORAL"
+      ],
+      "discardedNotices": [
+        "03 베어 그레이프",
+        "04 피그 피그",
+        "05 쥬쥬브",
+        "15 베어 피크",
+        "고양이 분위기 한 맛을 부드러운 로즈MI8",
+        "20 쥬쥬 피그",
+        "08 핑크 펌킨",
+        "09 멀드 피치",
+        "10 베어 애프리콧",
+        "11 mm우지",
+        "23 피치 피치 미"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T06:48:44.987Z"
+  },
+  {
+    "key": "376c775258147fb964f3e2f8037e3cfb80e85e90d196329847fae19df7897dbb",
+    "insight": {
+      "id": "detail-ocr-6fc04ade240d",
+      "imageUrl": "https://cafe24.poxo.com/ec01/romand/6aDrbsrpgztyixM+aENnH1D89vbvN874SJZ0smDxiaa/k9zGF5hClK+Cdcc6Crl70h/a8RobAiR24eeOO4zRMg==/_/web/upload/NNEditor/20260630/copy-1782818637-EB9190EC9CA0ECBBACEBA089EC859820EB8D9420ECA5ACEC8B9CEB9E98EC8AA4ED8C8520ED8BB4ED8AB820EC8381EC84B8ED8E98EC9DB4ECA780_ED86B5ED95A9_OY_23.jpg",
+      "contentHash": "6fc04ade240d817636d04e05b6b18e88fd17a3f1095e925f4b8a598c96773486",
+      "ocrText": "도톰한 광택 그대로\n12시간 유지되는 광택 지속력",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 1,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "12시간 유지되는 광택 지속력"
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T06:48:45.307Z"
+  },
+  {
+    "key": "30b7d23db6eb9426b448a06cab72b14b43e92166471deb0dbbbfcb845b737941",
+    "insight": {
+      "id": "detail-ocr-3dd332f795b8",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/20230906124143632838526b8ad8-e46c-478d-90be-ada958a60a8b.jpg",
+      "contentHash": "3dd332f795b85da20846577be6de5b39cff780c792a8ef92eb7a54046e4baab1",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T08:33:29.529Z"
+  },
+  {
+    "key": "8ddd9712953cfc39d4d3a9aff14f88ce54bc3e74489fc2b8dbcfbd7241e38a05",
+    "insight": {
+      "id": "detail-ocr-9b2e92641a44",
+      "imageUrl": "https://spdy-flexg-main.flexgate.co.kr/userfiles/meatmania0726/thumb/2026020501554686555805f6855c-8dfe-4041-b712-b1d4c8451463.jpg",
+      "contentHash": "9b2e92641a44d8e8f07f1b68b03ec0e1942277592d7d8e2d2644c38d0e4e896a",
+      "ocrText": "한국 1위 국가대표\n축산물 쇼핑몰\n국대한우 쇼핑몰\n누적판매금액\n국대한우!\n2000원\n돌파\n2026년에도 최고의 축산물을\n합리적 가격에 공급하겠습니다.",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.7777777777777778,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [
+        "한국 1위 국가대표",
+        "축산물 쇼핑몰",
+        "국대한우 쇼핑몰",
+        "2000원",
+        "2026년에도 최고의 축산물을",
+        "합리적 가격에 공급하겠습니다."
+      ],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T08:33:30.151Z"
+  },
+  {
+    "key": "fa31862772c8ec7b11b59defd1a9fbcca927b715073e21b788aa9850dfe3ff32",
+    "insight": {
+      "id": "detail-ocr-3dd332f795b8",
+      "imageUrl": "https://srookpay.com/userfiles/treeshade/thumb/20230906124203116848e4eceb91-97af-46c4-8c46-522146971ef9.jpg",
+      "contentHash": "3dd332f795b85da20846577be6de5b39cff780c792a8ef92eb7a54046e4baab1",
+      "ocrText": "설록우",
+      "ocrProvider": "apple-vision",
+      "ocrConfidence": 0.30000001192092896,
+      "copyFacts": [],
+      "productConstraints": [],
+      "identityOnlyLabels": [],
+      "discardedNotices": [],
+      "warnings": []
+    },
+    "createdAt": "2026-09-10T08:33:30.799Z"
   }
 ]

@@ -16,7 +16,7 @@ type LibraryPayload = {
 
 type Props = { initialLibrary: LibraryPayload; readOnly?: boolean };
 type Filter = "all" | NativeReferenceCategoryGroup | `food-${NativeReferenceFoodSubcategory}` | `beauty-${NativeReferenceBeautySubcategory}`;
-type UploadCategory = "auto" | "gfa";
+type UploadCategory = "auto" | "beauty-design" | "gfa";
 type ReferenceMetadataPatch = Omit<Partial<ManagedNativeReferenceItem>, "foodSubcategory" | "beautySubcategory"> & {
   foodSubcategory?: NativeReferenceFoodSubcategory | null;
   beautySubcategory?: NativeReferenceBeautySubcategory | null;
@@ -121,11 +121,21 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
     if (!files.length || busy) return;
     setBusy("upload");
     setError("");
-    setMessage(uploadCategory === "gfa" ? `${files.length}장을 GFA 레퍼런스로 등록 중입니다.` : `${files.length}장 업로드 및 상품군 자동 분류 중입니다.`);
+    setMessage(
+      uploadCategory === "gfa"
+        ? `${files.length}장을 GFA 레퍼런스로 등록 중입니다.`
+        : uploadCategory === "beauty-design"
+          ? `${files.length}장을 화장품 · 디자인 레퍼런스로 등록 중입니다.`
+          : `${files.length}장 업로드 및 상품군 자동 분류 중입니다.`
+    );
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
       if (uploadCategory === "gfa") formData.append("categoryGroup", "gfa");
+      if (uploadCategory === "beauty-design") {
+        formData.append("categoryGroup", "beauty");
+        formData.append("beautySubcategory", "design");
+      }
       const result = await parseResponse(
         await fetch("/api/admin/references", {
           method: "POST",
@@ -133,7 +143,8 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         })
       );
       setLibrary(result.library);
-      setMessage(`${result.added?.length || 0}장을 ${uploadCategory === "gfa" ? "GFA에 " : ""}등록했습니다. 수동·자동 제작 레퍼런스로 바로 사용할 수 있습니다.`);
+      const destination = uploadCategory === "gfa" ? "GFA에 " : uploadCategory === "beauty-design" ? "화장품 · 디자인에 " : "";
+      setMessage(`${result.added?.length || 0}장을 ${destination}등록했습니다. 수동·자동 제작 레퍼런스로 바로 사용할 수 있습니다.`);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "업로드에 실패했습니다.");
       setMessage("업로드를 완료하지 못했습니다.");
@@ -336,7 +347,7 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
         </div>
       ) : <div className={styles.uploader} onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
         <div>
-          <strong>{busy === "upload" ? (uploadCategory === "gfa" ? "GFA에 등록하는 중입니다" : "업로드하고 자동 분류하는 중입니다") : "새 레퍼런스 이미지 추가"}</strong>
+          <strong>{busy === "upload" ? (uploadCategory === "gfa" ? "GFA에 등록하는 중입니다" : uploadCategory === "beauty-design" ? "화장품 · 디자인에 등록하는 중입니다" : "업로드하고 자동 분류하는 중입니다") : "새 레퍼런스 이미지 추가"}</strong>
           <span>JPEG·PNG·WebP, 장당 15MB 이하 · 한 번에 최대 12장</span>
         </div>
         <input accept="image/jpeg,image/png,image/webp" disabled={Boolean(busy)} multiple onChange={handleFiles} ref={fileInput} type="file" />
@@ -345,11 +356,12 @@ export function NativeReferenceLibraryManager({ initialLibrary, readOnly = false
             업로드 분류
             <select disabled={Boolean(busy)} onChange={(event) => setUploadCategory(event.target.value as UploadCategory)} value={uploadCategory}>
               <option value="auto">자동 분류</option>
+              <option value="beauty-design">화장품 디자인 직접 지정</option>
               <option value="gfa">GFA 직접 지정</option>
             </select>
           </label>
           <button disabled={Boolean(busy)} onClick={() => fileInput.current?.click()} type="button">
-            {busy === "upload" ? (uploadCategory === "gfa" ? "GFA 등록 중…" : "자동 분류 중…") : "이미지 업로드"}
+            {busy === "upload" ? (uploadCategory === "gfa" ? "GFA 등록 중…" : uploadCategory === "beauty-design" ? "화장품 디자인 등록 중…" : "자동 분류 중…") : "이미지 업로드"}
           </button>
           {ocrStatus?.run?.status === "running" ? (
             <button className={styles.analysisButton} disabled={Boolean(busy)} onClick={() => void cancelOcr()} type="button">
